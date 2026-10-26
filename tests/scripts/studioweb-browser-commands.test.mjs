@@ -10,6 +10,7 @@ import {
   countUnallowed,
   extractVerbTokens,
   HOST_SERVED,
+  mentionCommand,
   mentionKind,
   RATCHET,
   resolves,
@@ -104,6 +105,16 @@ test("a mention is node-only when the Node CLI has it, unknown when it is a stal
   assert.equal(mentionKind(tokens("uip solution pack"), browser, nodeVerbs), "node-only");
   assert.equal(mentionKind(tokens("uip maestro case instance list"), browser, nodeVerbs), "unknown");
   assert.equal(mentionKind(tokens("uip cicd"), browser, nodeVerbs), "unknown");
+});
+
+test("a mention is keyed on its command path, so rewording prose or an argument keeps the key", () => {
+  const nodeVerbs = new Set(["login", "login status", "codedagent", "codedagent new"]);
+
+  assert.equal(mentionCommand(tokens("uip login first"), nodeVerbs), "login");
+  assert.equal(mentionCommand(tokens("uip login and have access to the audit service"), nodeVerbs), "login");
+  assert.equal(mentionCommand(tokens("uip login status"), nodeVerbs), "login status");
+  assert.equal(mentionCommand(tokens("uip codedagent new my-agent"), nodeVerbs), "codedagent new");
+  assert.equal(mentionCommand(tokens("uip cicd run pipeline"), nodeVerbs), "cicd");
 });
 
 test("an allowlist entry covers its command in its file only", () => {

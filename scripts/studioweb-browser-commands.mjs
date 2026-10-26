@@ -18,8 +18,10 @@
  *   - `allow`: `{ file, command, reason }` entries — prose and deliberate
  *     Node-only notes. A regex cannot tell an instruction from a mention, so a
  *     human says which is which. An entry covers every mention of `command`
- *     in `file` (relative to the skill).
- *   - `ceiling`: the count of every other such mention, per command — today's
+ *     (a command path, as for `ceiling`) in `file` (relative to the skill).
+ *   - `ceiling`: the count of every other such mention, per command path
+ *     (the longest prefix the Node catalog knows, else the first token, so
+ *     rewording prose or renaming an example argument keeps the key) — today's
  *     debt, driven down per skill. Above it, the test fails. Below it, the
  *     test passes, so a flavor fix needs no edit to this root-owned file; the
  *     scheduled refresh (`--lower-ceiling`) lowers the ceiling to the count.
@@ -116,11 +118,27 @@ export function usableBrowserCommands(snapshot, hostServed = {}) {
  * tool the browser has (`maestro case instance list`), not a Node-only command.
  */
 export function mentionKind(tokens, browser, nodeVerbs) {
+  const path = nodeCommandPath(tokens, nodeVerbs);
+  return path && !browser.groups.has(path) ? "node-only" : "unknown";
+}
+
+/** The longest prefix of `tokens` the Node catalog knows, or null. */
+function nodeCommandPath(tokens, nodeVerbs) {
   for (let n = tokens.length; n > 0; n--) {
     const prefix = tokens.slice(0, n).join(" ");
-    if (nodeVerbs.has(prefix)) return browser.groups.has(prefix) ? "unknown" : "node-only";
+    if (nodeVerbs.has(prefix)) return prefix;
   }
-  return "unknown";
+  return null;
+}
+
+/**
+ * The key a mention is counted and allowlisted under: its Node command path,
+ * else its first token. The raw tokens keep prose words and argument values
+ * (`login first`, `codedagent new my-agent`), so keying on them would move a
+ * count to a new key on every reworded sentence or renamed example.
+ */
+export function mentionCommand(tokens, nodeVerbs) {
+  return nodeCommandPath(tokens, nodeVerbs) ?? tokens[0];
 }
 
 function markdownFiles(root) {
@@ -139,7 +157,8 @@ function markdownFiles(root) {
 /**
  * Every mention in `treeRoot` (one directory per skill) that the browser
  * bundle cannot run: `{ skill, file, line, command, kind, text }`, where
- * `kind` is `node-only` when the Node CLI has it and `unknown` when neither does.
+ * `command` is its `mentionCommand` key and `kind` is `node-only` when the
+ * Node CLI has it and `unknown` when neither does.
  */
 export function unrunnableMentions(treeRoot, browser, nodeVerbs) {
   const out = [];
@@ -154,7 +173,7 @@ export function unrunnableMentions(treeRoot, browser, nodeVerbs) {
           if (tokens.length === 0 || resolves(tokens, browser)) continue;
           const kind = mentionKind(tokens, browser, nodeVerbs);
           if (kind === "unknown" && PROSE_NOISE.has(tokens[0])) continue;
-          out.push({ skill, file, line: index + 1, command: tokens.join(" "), kind, text: text.trim() });
+          out.push({ skill, file, line: index + 1, command: mentionCommand(tokens, nodeVerbs), kind, text: text.trim() });
         }
       });
   }
