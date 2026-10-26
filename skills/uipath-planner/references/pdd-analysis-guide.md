@@ -55,7 +55,22 @@ Record each value as:
 | Field name | Corresponding field in §5 Data Definitions. |
 | Value | Literal value, quoted exactly. |
 
-Write values to the SDD's §17 Testing Strategy → Canonical Test Case table, with a separate Expected Output subsection. Use them for §4 Business Rule test oracles, §17 Happy Path Assertions (canonical case first), and §17 Output validation tests (including output-format regex checks; see template §4 prompt block). A present canonical example is fact, not `[SME REVIEW]`; apply `[SME REVIEW]` only after all listed surfaces contain no value, and fire the gap row only when extraction is empty.
+### Where to write the extracted values
+
+Write the canonical examples into the SDD's §17 Testing Strategy → Canonical Test Case table. Use the field/value rows of that table to capture the input set, and add a separate Expected Output subsection for the output values. The values feed:
+
+- **§4 Business Rule test oracles** — every business rule with a concrete example becomes a test assertion using these values (e.g., `BR-04: SHA1(input) == '<canonical hash>'`).
+- **§17 Happy Path Assertions** — the canonical case is the first row of happy-path tests.
+- **§17 Output validation tests** — the canonical output value is the oracle for output-format regex checks (see template §4 prompt block).
+
+### Canonical examples are NOT `[SME REVIEW]` items
+
+A canonical example present anywhere in the PDD is **fact**, not user-supplied data. Do not mark it as `[SME REVIEW]`. The `[SME REVIEW]` fallback applies only when:
+
+- The entire PDD has been scanned (all screenshots, all tables, all step descriptions, all appendices) AND
+- No concrete value can be derived for the field.
+
+If scanning finds at least one concrete value, treat it as the canonical case — the gap-detection row "Test data / canonical case" only fires when extraction returns empty.
 
 Before Phase 1 extraction is complete, verify every screenshot was visually inspected for values (not only labels/buttons), every inline-quoted string was captured, every example table was read row by row, §17 Canonical Test Case has at least one canonical input set and expected output or the genuine no-example `[SME REVIEW]` fallback, and hash/regex/format-shaped values are paired with the BR they validate (for example, a SHA1 output with its SHA1 format rule).
 

@@ -210,11 +210,19 @@ For mutually exclusive conditional-branch tasks, make each branch `Required: No`
 
 ### XOR terminal stages
 
-For mutually exclusive happy-path terminals, detect multiple terminal candidates plus an earlier branching decision at Sketch and surface both sanctioned patterns in one question before drafting rows.
+Mutually-exclusive happy-path terminals ("Funding on approve, Adverse Action Notice on decline"): case completion accepts only `required-stages-completed`, so the XOR lives at stage entry. Two sanctioned patterns — when detected at sketch time (multiple terminal candidates plus an earlier branching decision), surface both in one question before drafting rows:
 
-**Gated entry + required terminals (default; every tenant):** both terminals `Required for case completion: Yes`; each entry `selected-stage-completed("<DecisionStage>")` plus guard `IF` (`=js:vars.decision === "Approve"` / `!== "Approve"`, exact inverses); each completes with `required-tasks-completed`, `Marks Stage Complete: Yes`; false entry IF causes runtime `Skipped`, which still counts toward `required-stages-completed`; one case-exit row `required-stages-completed`, `Marks Case Complete: Yes`, `IF: —`.
+**Gated entry + required terminals (default — works on every tenant):**
 
-**Connector-event close:** only when both terminals genuinely emit a shared case-done event. Terminals `Required: No`; entries as above; each last task emits the shared event; one case-exit `wait-for-connector` keyed to it.
+1. Both terminal stages `Required for case completion: Yes`.
+2. Each terminal's entry: `selected-stage-completed("<DecisionStage>")` + its lane guard `IF` (`=js:vars.decision === "Approve"` / `!== "Approve"` — exact inverses).
+3. Each terminal completes normally: `required-tasks-completed`, `Marks Stage Complete: Yes`.
+4. Runtime stage-skip: entry `IF` is evaluated at activation; a terminal whose `IF` is false auto-completes with status `Skipped` and still counts toward `required-stages-completed` closure.
+5. Case exit: ONE row, `required-stages-completed`, `Marks Case Complete: Yes`, `IF: —`.
+
+**Connector-event close** (only when both terminals genuinely emit a shared case-done event): terminals `Required: No`; entries as above; each terminal's last task emits the shared event; the case exit is ONE `wait-for-connector` row keyed on it.
+
+---
 
 ## Layer 3 — Data: variables & expressions
 
@@ -301,9 +309,9 @@ Thresholded policy must appear in executable owner/recipient, WHEN/IF, or task i
 
 ### External names — schema fields are lookup keys
 
-Schema field names match byte-for-byte. This includes `Input`/`Output Schema`, `response.<field>`, `=vars.<id>.<sub>`, `=trigger.<field>`, `<- "Stage"."Task".<out>`, and Section 4 Output Fields.
+A schema field name is an **external lookup key**, not a label: the runtime matches it byte-for-byte, so `request_body`, `requestBody`, and `RequestBody` are three different fields and only one of them exists. This covers every place a design names a field it did not invent — `Input`/`Output Schema` cells, `response.<field>`, `=vars.<id>.<sub>`, `=trigger.<field>`, `<- "Stage"."Task".<out>`, and the Section 4 Output Fields list.
 
-- Copy names from user/source/resource schema; never re-case or convert them, and never make them match case or variable names.
+- **Carry the spelling, never derive it.** Copy the name from the user, the source document, or (at build time) the resource's own schema. Never re-case it, never convert between conventions, never make it match the case name or a neighbouring variable.
 - **Never read names off a `--output json` envelope.** `case spec` and `registry search` PascalCase object **keys** recursively (`request_body` → `RequestBody`, `poText` → `PoText`); the true names are the **values** under `Outputs.ResponseFields[].Name`. Wiring against the keys binds to fields the resource does not have and fails only after build — Studio Web reports *"RequestBody not found, did you mean request_body"*. Canonical statement of the trap, build side: the `uipath-maestro-case` skill, its registry-discovery reference, § "Do NOT read I/O field names from `Resource.{Inputs,Outputs}`".
 - Unsourced casing is `<UNRESOLVED>`, never a guess; pair it with a review item. Discovery is build work (§ lane guide § Tenant grounding).
 

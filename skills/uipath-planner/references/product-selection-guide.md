@@ -157,11 +157,18 @@ Do not choose Maestro for one RPA Dispatcher→Performer or a single approval: u
 
 ### Solution Signals
 
-Choose Solution when the PDD names: (1) two or more distinct top-level products that coexist; (2) reusable components plus a standalone process using them; (3) a dedicated test/regression suite alongside the tested process; or (4) multiple independent streams with no single runtime orchestrator. Pre-compose the matched products. Otherwise choose the highest single-product match.
+A Solution is the correct primary when any of the following applies, even if a single product would otherwise match at priority 1-6:
 
-Deliverables named by requirements determine scope, never design part count. A supporting wrapper API Workflow, connector, IXP model, Coded Function, or Library inherits consumer scope: integrated-component row plus build task before its consumer; no Solution overview, per-project SDD, or `SDD scope: solution` flip.
+- The PDD describes **two or more distinct top-level products** that must coexist (e.g., Flow that calls an API Workflow that is itself a deliverable).
+- The PDD mentions **reusable components** that other automations consume (Library) AND a standalone process that uses them.
+- The PDD calls out a **dedicated test suite / regression pack** alongside the process being tested (Test Automation + the Process it validates).
+- The PDD describes **multiple independent streams** with no single runtime orchestrator (e.g., separate dispatchers feeding separate performers with no Flow tying them together).
 
-If exactly two products match similarly and no Solution signal applies, recommend the higher-priority single product and offer Solution (customize); confirm with `AskUserQuestion`.
+When any of the above applies, set the default primary to **Solution** and pre-compose the product list from the matched signals. Otherwise default to the highest single-product match.
+
+**Derived components never escalate scope.** Deliverables named by the requirements set the scope; the part count of the design never does. Solution Signals test what the **PDD names as deliverables** — every scope-shaped decision downstream (single-product vs Solution, template choice, SDD file layout, packaging) follows that answer, never the number of buildable parts the design ends up with. Any supporting component the design introduces (wrapper API Workflow, custom connector, IXP model, Coded Function, Library) inherits its consumer's scope: an integrated-component row in the primary's template plus a build task ordered before its consumer — no solution overview, no per-project SDD, no `SDD scope: solution` flip.
+
+> **Ambiguous dual-product PDDs:** If exactly two products match with similar strength and no Solution signal applies, mark the higher-priority match as the default single-product recommendation and offer Solution (customize) as an alternative in the recommendation screen. Let the user confirm via `AskUserQuestion`.
 
 ### Signals per product
 
@@ -247,7 +254,20 @@ AskUserQuestion({
 })
 ```
 
-Pre-select conceptually from matched signals: RPA (UI/transaction/queue), Maestro (Flow/BPMN/orchestration), Case (stages/SLA/approvals), Agents (reasoning/tools), Coded Apps (custom UI/forms), API Workflows (API signal or callable integration need), RPA Library (shared helpers/NuGet; also RPA), and RPA Test Automation (regression/assertions; also RPA). Because options have no pre-selection field, put recommended options first, append **(Recommended)**, and state the matched set. Unmatched options have no tag.
+**Pre-selection rules** — before calling `AskUserQuestion`, mark each option as pre-selected if the corresponding Level 1 signal matched:
+
+| Option | Pre-select when |
+|---|---|
+| RPA | Level 1 RPA signals matched (UI, transactional processing, queue-based) |
+| Maestro orchestration | Level 1 Flow signals matched OR Maestro BPMN signals matched (orchestration across products, or BPMN gateways / events / subprocess / parallel structure) |
+| Case Management | Level 1 Case signals matched (stages, SLA, approvals) |
+| Agents | Level 1 Agent signals matched (AI reasoning, tool use) |
+| Coded Apps | Level 1 Coded Apps signals matched (custom UI, data entry forms) |
+| API Workflows | Level 1 API Workflow signals matched OR another selected product needs a callable integration |
+| RPA Library | Library signals matched in the PDD (shared helpers, NuGet distribution) — and pre-select RPA if so |
+| RPA Test Automation | Test Automation signals matched (regression pack, assertions) — and pre-select RPA if so |
+
+`AskUserQuestion` options have no pre-selection field (options carry only label / description). Mark the recommendation instead: order recommended options first, append **"(Recommended)"** to their labels, and state the signal-matched set in the question text (e.g., "Signals matched: RPA + Agents — keep or adjust"). The user confirms, adds, or removes. Options with no matching signals get no "(Recommended)" tag — the user adds them explicitly if they disagree.
 
 ### Pass A.5 — Disambiguate the Maestro engine (only when "Maestro orchestration" is selected)
 

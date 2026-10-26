@@ -92,14 +92,14 @@ Apply to every RPA Process project; skip Library, Test Automation, and non-RPA p
 
 Queue design is independent of decomposition: a Single Project that is queue-triggered, consumes an existing queue, or self-dispatches still fills §12 Queue Architecture; only a project with no queue involvement omits it.
 
-| # | Signal in PDD | Meaning |
+| # | Signal in PDD | What it means |
 |---|---|---|
-| 1 | Distinct stages with different characteristics | Projects can be developed, tested, and scaled independently |
-| 2 | Items fail independently and require per-item retry | Queue-based retry supports Performer projects using REFramework |
-| 3 | Document Understanding or AI extraction with human validation (Action Centre) | DU/validation is a distinct stage with its own project and queue |
-| 4 | Different processing speeds per stage | Independent robot counts balance throughput |
-| 5 | Reporting requirements (Excel, email, dashboard data) | Reporting project reads a reporting queue populated by other stages |
-| 6 | Multiple output channels from one input | A Performer per channel avoids unrelated integration coupling |
+| 1 | Process has distinct stages with different characteristics (e.g., email ingestion vs. data extraction vs. output generation) | Each stage becomes a separate project that can be developed, tested, and scaled independently |
+| 2 | Transactional processing where items can fail independently and must be retried per item | Queue-based retry requires Performer projects consuming from Orchestrator queues using REFramework |
+| 3 | Document Understanding or AI extraction with human validation (Action Centre) | DU + validation is a distinct processing stage that benefits from its own project and queue |
+| 4 | Different processing speeds per stage (e.g., fast email download vs. slow DU extraction) | Independent projects allow different robot counts per stage for throughput balancing |
+| 5 | Reporting requirements (Excel report, email summary, dashboard data) | Dedicated Reporting project reads from a reporting queue populated by all other stages |
+| 6 | Multiple output channels from a single input (e.g., XML to MQ + files to FTP + report to email) | Separate Performer per output channel avoids coupling unrelated integrations |
 
 ### Common decomposition patterns
 

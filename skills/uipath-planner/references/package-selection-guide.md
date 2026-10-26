@@ -14,7 +14,7 @@ Distinguish NuGet packages, Integration Service connectors, and product-specific
 
 ## Application Type → Package Matrix
 
-Infer packages from §9 Application Inventory by Interface and Access Method; install every package matching multiple rows.
+Infer packages from §9 Application Inventory by Interface and Access Method. If an application matches multiple rows, install all listed packages.
 
 ### Email
 
@@ -62,7 +62,7 @@ If the PDD mentions “Integration Service” or a preconfigured connector slug,
 |---|---|---|
 | Generic REST calls (HTTP verbs, headers, auth) | `UiPath.WebAPI.Activities` | `HTTPRequest` / `NetHTTPRequest` activity. |
 | Web UI automation | `UiPath.UIAutomation.Activities` | Same package as desktop UI. |
-| Modern browsers (Edge, Chrome, Firefox) via Selenium | `UiPath.UIAutomationModern.Activities` | Studio installs it alongside UIAutomation. |
+| Modern browsers (Edge, Chrome, Firefox) via Selenium | `UiPath.UIAutomationModern.Activities` | If using the modern experience. Studio installs alongside UIAutomation. |
 | Terminal/mainframe (3270, 5250, VT) | `UiPath.Terminal.Activities` | |
 | FTP/SFTP | `UiPath.FTP.Activities` | |
 

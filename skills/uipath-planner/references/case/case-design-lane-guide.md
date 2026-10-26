@@ -70,11 +70,19 @@ Three moves only: **Listen** takes all offered input; **Sketch** completes the m
 
 ### Listen
 
-For a bare request, send exactly:
+The opening move for a bare request. One message, one prompt:
 
 > Tell me about the case you want to build. What kicks it off, what stages does it move through, and how does it close out? Drop in any docs you have — paths, paste, or attach.
 
-Read every mentioned path, dragged file, or named document immediately, in parallel when possible; never ask permission. “Everything in `~/process-docs/`” means `ls` plus parallel Reads. Narrate content, not filenames, with one short line per document. For documents past ~2000 lines, read an initial chunk, narrate its signal, and decide whether more is needed. For unreadable `.docx`, `.pptx`, or scanned PDFs request one paste; read PDFs ≤ 10 pages directly. Documents added after a sketch are first-class: reread, update the model, and narrate the delta. Use named systems, deployed resources, apps, and connectors to seed grounding. Listen asks nothing beyond the opener. Gaps are filled by assumption in Sketch, not by questions.
+What the agent does as input arrives:
+
+- **Reads everything mentioned — never asks permission.** Path, dragged file, named doc → read immediately, in parallel when multiple. "Everything in `~/process-docs/`" → `ls` + parallel Reads.
+- **Narrates content, not filenames.** One short line per doc about *what's in it*: `vendor-onboarding.md — 4 stages (Intake → Compliance → Finance → Activation), 2 personas, 8-hour SLA on Compliance.`
+- **Partial reads for huge docs.** Past ~2000 lines, read the first chunk, narrate the signal, decide if more is needed. Unreadable formats (`.docx`, `.pptx`, scanned PDFs) → one paste request; PDFs ≤ 10 pages read directly.
+- **Mid-flow docs are first-class.** New doc after the sketch exists → re-read, update the model, narrate the delta.
+- **Named systems seed grounding.** Deployed resources, apps, connectors, systems named by the user feed §Tenant grounding.
+
+Listen asks nothing beyond the opener. Gaps are filled by assumption in Sketch, not by questions.
 
 #### Domain-vocabulary capture (during Listen)
 
@@ -222,7 +230,7 @@ A `gateDecision` means the user answered and build must execute it without re-as
 
 ## HTML preview
 
-Optional and on-request only; never offer proactively. Read [`assets/templates/case/sdd-viewer.html`](../../assets/templates/case/sdd-viewer.html), replace the `__SDD_DATA__` token inside the element with `id="sdd-data"` using JSON serialized from the live in-memory model (schema is in the template header; do not reparse SDD). Leave the second token in the later error string unchanged. Write `./sdd-viewer.html` and say: `Generated ./sdd-viewer.html — open it in a browser to review.` On failure, give one-line notice and continue. Downstream build ignores this file.
+Optional, **on-request only** — never offered proactively. Self-contained local HTML review of the case design (Case Definition, collapsible Stages & Tasks, Personas, Integrations; filters and search). Generation: Read [`assets/templates/case/sdd-viewer.html`](../../assets/templates/case/sdd-viewer.html), replace the `__SDD_DATA__` token inside the element with `id="sdd-data"` — the file carries a second copy of that token in an error string further down, which stays as it is — with JSON serialized from the in-memory model (schema in the template's header comment — do NOT re-parse the SDD when the model is live), Write `./sdd-viewer.html`, tell the user: `Generated ./sdd-viewer.html — open it in a browser to review.` Failure → one-line notice, continue. Downstream build phases ignore this file.
 
 ## Resumption
 
