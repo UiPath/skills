@@ -2,7 +2,7 @@
 
 Artifact type: `mapping` | Media type: `application/yaml` | File: `{name}-mapping.yarrrml.yml`
 
-The mapping binds each class to a local entity **by name**. The ontology service resolves `table:` to the entity in the deployment folder at install. The mapping never carries `entityId` or `folderId`. It is an `application/yaml` artifact: check it with `uip ont artifacts check --content-type application/yaml --type mapping`, and the CLI sends it to the service as YAML.
+The mapping binds each class to a local entity **by name**. The ontology service resolves `table:` to the entity in the deployment folder at install. The mapping never carries `entityId` or `folderId`. It is an `application/yaml` artifact: check it with `uip ont artifacts check {name}-mapping.yarrrml.yml --content-type application/yaml --type mapping --file <path>`, and the CLI sends it to the service as YAML.
 
 ---
 

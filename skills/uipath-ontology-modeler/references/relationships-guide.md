@@ -54,7 +54,7 @@ sh:property [ sh:path ont:placedBy ; sh:class ont:Customer ; sh:minCount 1 ] ;
 ## Rules the validator checks
 
 - Every join in a mapping uses an object property declared in the schema.
-- Every object property whose domain and range are both mapped classes has a join in the domain class's mapping.
+- Every object property whose domain and range are both mapped classes has a join in the domain class's mapping. **Exception:** a property declared `InverseObjectProperties` of a property that already has a join gets none; the inverse is answered from that join. Sub-properties (`SubObjectPropertyOf`) are not exempt and need their own join.
 - Every `$(column)` in a join is a field of its entity (or of the entity of the mapping it joins to), or a system field.
 - Do not write an inline `~iri` relationship. Use the join form above.
 
@@ -69,6 +69,11 @@ sh:property [ sh:path ont:placedBy ; sh:class ont:Customer ; sh:minCount 1 ] ;
 A key column holds the same kind of value as the column it joins to. `Id` is a system field, so a foreign key to it is `STRING`.
 
 If the key is missing from an entity you did not write (`ENTITY_SOURCE` is `supplied`), ask the user before adding it. Do not change a supplied body on your own.
+
+## Inverses and sub-properties
+
+- **Inverse.** `prescribedBy` (domain `Prescription`, holds `doctorId`) is joined. Its inverse `prescribes` (domain `Doctor`) is declared with `InverseObjectProperties(:prescribes :prescribedBy)` and has no join. Join the side that holds the key.
+- **Sub-property.** `primaryDoctor` is a `SubObjectPropertyOf` `treatingDoctor`. Each has its own join, even if both use the same columns.
 
 ## Many-to-many
 

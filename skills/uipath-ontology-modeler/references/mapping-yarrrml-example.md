@@ -2,7 +2,7 @@
 
 Read this only if `uip ont validate --local` reports a mapping problem and you need a concrete reference, or you judge [`mapping-yarrrml-guide.md`](mapping-yarrrml-guide.md) alone isn't enough for this request. It is a full worked example, not a template to copy verbatim — the class names, entity names, and column names below are specific to the Clinic domain.
 
-The three local entities are `Doctor`, `Patient` and `Prescription`. Keys are plain fields: `Patient.primaryDoctorId`, `Prescription.doctorId` and `Prescription.patientId` are `STRING` fields joined to the target's `Id`. Every `$(column)` below is a field of the entity named in that block's `table:`, or the system field `Id`.
+The three local entities are `Doctor`, `Patient` and `Prescription`. Keys are plain fields: `Patient.primaryDoctorId`, `Patient.treatingDoctorId`, `Prescription.doctorId` and `Prescription.patientId` are `STRING` fields joined to the target's `Id`. `primaryDoctor` is a sub-property of `treatingDoctor`, so each has its own join. `prescribes` is declared the inverse of `prescribedBy`, so it has no join; it is answered from the `prescribedBy` join. Every `$(column)` below is a field of the entity named in that block's `table:`, or the system field `Id`.
 
 ## Full example — Clinic
 
@@ -44,6 +44,16 @@ mappings:
         - $(bloodGroup)
       - - ont:Patient.name
         - $(fullName)
+      - p: ont:treatingDoctor
+        o:
+          mapping: Doctor
+          condition:
+            function: equal
+            parameters:
+              - - str1
+                - $(treatingDoctorId)
+              - - str2
+                - $(Id)
       - p: ont:primaryDoctor
         o:
           mapping: Doctor

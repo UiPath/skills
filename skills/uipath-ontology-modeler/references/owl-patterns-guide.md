@@ -48,8 +48,8 @@ Missing `rdfs:comment` means the AI agent reading this ontology cannot answer qu
 A syntax check alone does not catch these — forbidden constructs parse cleanly but fail any QL reasoner. `uip ont validate --local` (rule `XF-005`) rejects them; fix every violation before packing.
 
 **QL-legal object property axioms — confirmed by example artifacts, use freely:**
-- `InverseObjectProperties(:a :b)` — marks two properties as semantic inverses
-- `SubObjectPropertyOf(:child :parent)` — declares a sub-property hierarchy (e.g. `primaryDoctor ⊑ treatingDoctor`)
+- `InverseObjectProperties(:a :b)` — marks two properties as semantic inverses. Only one of the pair gets a mapping join; see the join rule below
+- `SubObjectPropertyOf(:child :parent)` — declares a sub-property hierarchy (e.g. `primaryDoctor ⊑ treatingDoctor`). Each of the two still needs its own mapping join
 
 **Forbidden — never write these:**
 - `ObjectExactCardinality` / `DataExactCardinality`
@@ -124,10 +124,12 @@ When the relationship is "exactly one", append the cardinality note to the comme
 AnnotationAssertion(rdfs:comment :prescribedBy "Each Prescription is prescribed by one Doctor. Join: Prescription.doctorId = Doctor.Id. 'Exactly one' is QL-inexpressible; recorded here.")
 ```
 
-**Inverse pair** — when two properties are semantic inverses of each other:
+**Join rule.** Every object property between two mapped classes needs its own join in the mapping, on plain columns (`XF-015`). The one exception is a property declared `InverseObjectProperties` of a property that already has a join: the inverse is answered from that join and gets none. Sub-properties are not exempt; `primaryDoctor` and `treatingDoctor` each need a join.
+
+**Inverse pair** — when two properties are semantic inverses of each other (join only `prescribedBy`, the side that holds the key; `prescribes` gets none):
 ```
 AnnotationAssertion(rdfs:label :prescribes "Prescribes")
-AnnotationAssertion(rdfs:comment :prescribes "Inverse of :prescribedBy. A doctor prescribes prescriptions.")
+AnnotationAssertion(rdfs:comment :prescribes "Inverse of :prescribedBy. A doctor prescribes prescriptions. No join of its own; answered from prescribedBy (Prescription.doctorId = Doctor.Id).")
 InverseObjectProperties(:prescribes :prescribedBy)
 ObjectPropertyDomain(:prescribes :Doctor)
 ObjectPropertyRange(:prescribes :Prescription)
@@ -136,7 +138,7 @@ ObjectPropertyRange(:prescribes :Prescription)
 **Sub-property** — when one relationship is a specialisation of another:
 ```
 AnnotationAssertion(rdfs:label :primaryDoctor "Primary doctor")
-AnnotationAssertion(rdfs:comment :primaryDoctor "Specialisation of :treatingDoctor. The patient's designated primary doctor.")
+AnnotationAssertion(rdfs:comment :primaryDoctor "Specialisation of :treatingDoctor. The patient's designated primary doctor. Join: Patient.primaryDoctorId = Doctor.Id.")
 SubObjectPropertyOf(:primaryDoctor :treatingDoctor)
 ObjectPropertyDomain(:primaryDoctor :Patient)
 ObjectPropertyRange(:primaryDoctor :Doctor)
@@ -144,7 +146,7 @@ ObjectPropertyRange(:primaryDoctor :Doctor)
 
 - Name with a verb: `orderedBy`, `belongsToCategory`, `prescribedBy`, `prescriptionFor`
 - Standard `rdfs:comment` form: business sentence + join columns + cardinality note if "exactly one"
-- Inverse `rdfs:comment` form: `"Inverse of :{primaryProp}. {One-line meaning.}"`
+- Inverse `rdfs:comment` form: `"Inverse of :{primaryProp}. {One-line meaning.}"` (no join of its own)
 - Sub-property `rdfs:comment` form: `"Specialisation of :{parentProp}. {One-line meaning.}"`
 
 ---
@@ -222,15 +224,6 @@ AnnotationAssertion(rdfs:comment :Order.isPaid "Compare true/false, never 1/0.")
 | URL, link, URI | `xsd:anyURI` |
 
 Each range maps to one of the nine local entity types; see [`entity-format-guide.md`](entity-format-guide.md) for the mapping (for example `xsd:integer` is `DECIMAL` with `decimalPrecision: 0`, `xsd:dateTime` is `DATETIME_WITH_TZ`).
-
----|---|
-| text, name, description, code, ID (string) | `xsd:string` |
-| price, amount, cost, rate, percentage | `xsd:decimal` |
-| count, quantity, number of | `xsd:integer` |
-| date, timestamp, created at | `xsd:dateTime` |
-| date only (no time) | `xsd:date` |
-| true/false, flag, enabled | `xsd:boolean` |
-| URL, link, URI | `xsd:anyURI` |
 
 ---
 

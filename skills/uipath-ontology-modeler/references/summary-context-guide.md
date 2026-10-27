@@ -7,7 +7,7 @@ Both files are optional. Each is a JSON object. Write at most one summary and on
 | `{name}-summary.json` | `summary` | `application/json` |
 | `{name}-context.json` | `context` | `application/json` |
 
-Add them with `uip ont files add`. Pass `--type summary` or `--type context` if the CLI cannot work out the type from the file name. Run `uip ont artifacts check` first.
+Add them with `uip ont files add`. Pass `--type summary` or `--type context` if the CLI cannot work out the type from the file name. Run `uip ont artifacts check <file-name> --content-type application/json --type <summary|context> --file <path>` first.
 
 ---
 
