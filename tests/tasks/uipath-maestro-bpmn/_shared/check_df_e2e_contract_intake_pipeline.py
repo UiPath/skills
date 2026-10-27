@@ -138,6 +138,7 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
+    query_parameters,
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -270,11 +271,7 @@ def named_inputs(task: ET.Element) -> list[tuple[str, str]]:
 
 
 def query_inputs(task: ET.Element) -> list[tuple[str, str]]:
-    return [
-        ((inp.attrib.get("name") or "").strip().lower(), (inp.attrib.get("value") or inp.text or "").strip())
-        for inp in node_inputs(task)
-        if inp.attrib.get("target") == "query"
-    ]
+    return [(name.strip().lower(), value) for name, value in query_parameters(task).items()]
 
 
 def sent_body(task: ET.Element) -> dict:

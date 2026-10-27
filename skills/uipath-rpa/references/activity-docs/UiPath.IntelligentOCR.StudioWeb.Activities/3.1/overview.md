@@ -1,50 +1,46 @@
 # UiPath Document Understanding Activities
 
-`UiPath.DocumentUnderstanding.Activities`
-
-Activities for document classification, data extraction, and human-in-the-loop validation using the UiPath Document Understanding framework. Supports pretrained models for standard document types and custom DU project models.
+`UiPath.DocumentUnderstanding.Activities` provides document classification, extraction, and human validation with UiPath Document Understanding, including pretrained standard-document models and custom DU project models.
 
 ## Documentation
 
-- [XAML Activities Reference](activities/) — Per-activity documentation for XAML workflows
+- [XAML Activities Reference](activities/) — Per-activity XAML documentation.
 
 ## Activities
 
 ### Document Understanding
 
 | Activity | Description |
-|----------|-------------|
-| [Classify Document](activities/ClassifyDocument.md) | Classifies a document according to the configured classifier. |
-| [Extract Document Data](activities/ExtractDocumentData.md) | Extracts data from a document using pretrained or custom project extractors. |
+|---|---|
+| [Classify Document](activities/ClassifyDocument.md) | Classifies a document with the configured classifier. |
+| [Extract Document Data](activities/ExtractDocumentData.md) | Extracts data with pretrained or custom project extractors. |
 
 ### Document Validation — Extraction
 
 | Activity | Description |
-|----------|-------------|
-| [Create Validation Task and Wait](activities/CreateValidationTaskAndWait.md) | Creates a Document Validation Task in Action Center and waits for completion. |
-| [Create Validation Task](activities/CreateValidationTask.md) | Creates a Document Validation Task in Action Center without waiting. |
-| [Wait for Validation Task and Resume](activities/WaitForValidationTaskAndResume.md) | Waits for a Document Validation Task to be completed and resumes the workflow. |
+|---|---|
+| [Create Validation Task and Wait](activities/CreateValidationTaskAndWait.md) | Creates an Action Center Document Validation Task and waits. |
+| [Create Validation Task](activities/CreateValidationTask.md) | Creates an Action Center Document Validation Task without waiting. |
+| [Wait for Validation Task and Resume](activities/WaitForValidationTaskAndResume.md) | Waits for a Document Validation Task, then resumes. |
 
 ### Document Validation — Classification
 
 | Activity | Description |
-|----------|-------------|
-| [Create Classification Validation Task](activities/CreateClassificationValidationTask.md) | Creates a Classification Validation Task in Action Center without waiting. |
-| [Create Classification Validation Task and Wait](activities/CreateClassificationValidationTaskAndWait.md) | Creates a Classification Validation Task in Action Center and waits for completion. |
-| [Wait for Classification Validation Task & Resume](activities/WaitForClassificationValidationTaskAndResume.md) | Waits for a Classification Validation Task to be completed and resumes the workflow. |
+|---|---|
+| [Create Classification Validation Task](activities/CreateClassificationValidationTask.md) | Creates an Action Center Classification Validation Task without waiting. |
+| [Create Classification Validation Task and Wait](activities/CreateClassificationValidationTaskAndWait.md) | Creates an Action Center Classification Validation Task and waits. |
+| [Wait for Classification Validation Task & Resume](activities/WaitForClassificationValidationTaskAndResume.md) | Waits for a Classification Validation Task, then resumes. |
 
 ### Document Validation — Artifacts
 
 | Activity | Description |
-|----------|-------------|
-| [Create Document Validation Artifacts](activities/CreateDocumentValidationArtifacts.md) | Uploads extraction results to an Orchestrator storage bucket for external validation via UiPath Apps. |
+|---|---|
+| [Create Document Validation Artifacts](activities/CreateDocumentValidationArtifacts.md) | Uploads extraction results to an Orchestrator storage bucket for external validation through UiPath Apps. |
 | [Retrieve Document Validation Artifacts](activities/RetrieveDocumentValidationArtifacts.md) | Retrieves validated extraction results from an Orchestrator storage bucket. |
 
 ## Required XAML Namespace Declarations
 
-All Document Understanding activities require these namespace declarations.
-
-**XAML xmlns prefixes:**
+All Document Understanding activities require:
 
 ```xml
 xmlns:du="clr-namespace:UiPath.IntelligentOCR.StudioWeb.Activities;assembly=UiPath.IntelligentOCR.StudioWeb.Activities"
@@ -56,7 +52,7 @@ xmlns:uicore="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activi
 xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
 ```
 
-**TextExpression.NamespacesForImplementation** (required for VB expressions referencing DU types):
+VB expressions referencing DU types require:
 
 ```xml
 <TextExpression.NamespacesForImplementation>
@@ -69,8 +65,6 @@ xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
 </TextExpression.NamespacesForImplementation>
 ```
 
-**TextExpression.ReferencesForImplementation:**
-
 ```xml
 <TextExpression.ReferencesForImplementation>
   <scg:List x:TypeArguments="AssemblyReference">
@@ -81,19 +75,19 @@ xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
 
 ## Type Reference
 
-Key types used across Document Understanding activities. All types are in assembly `UiPath.IntelligentOCR.StudioWeb.Activities`.
+All following types are in assembly `UiPath.IntelligentOCR.StudioWeb.Activities`.
 
 ### DocumentData (Classification)
 
-**CLR type:** `UiPath.IntelligentOCR.StudioWeb.Activities.DocumentClassification.DocumentData`
+**CLR type:** `UiPath.IntelligentOCR.StudioWeb.Activities.DocumentClassification.DocumentData`  
 **XAML xmlns:** `clr-namespace:UiPath.IntelligentOCR.StudioWeb.Activities.DocumentClassification;assembly=UiPath.IntelligentOCR.StudioWeb.Activities`
 
-Output of ClassifyDocument. Implements `IDocumentData` and `ILocalResource`.
+`ClassifyDocument` output; implements `IDocumentData` and `ILocalResource`.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `DocumentType` | `DocumentType` | The classified document type (see below). |
-| `SubDocuments` | `IDocumentData[]` | Array of subdocuments when splitting is enabled. |
+| Property | Type | Meaning |
+|---|---|---|
+| `DocumentType` | `DocumentType` | Classified document type. |
+| `SubDocuments` | `IDocumentData[]` | Subdocuments when splitting is enabled. |
 | `FileDetails` | `FileDetails` | File path, name, extension, and page range. |
 | `DocumentMetadata` | `DocumentMetadata` | OCR text, DOM, language, and results as DataTables. |
 
@@ -101,109 +95,79 @@ Output of ClassifyDocument. Implements `IDocumentData` and `ILocalResource`.
 
 **CLR type:** `UiPath.IntelligentOCR.StudioWeb.Activities.DocumentClassification.DocumentType`
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `DisplayName` | `string` | Human-readable label (e.g., `"Invoices"`). |
-| `Id` | `string` | Machine identifier (e.g., `"invoices"`). Use this for programmatic comparisons. |
-| `Confidence` | `float` | Classification confidence score (0.0 to 1.0). |
-| `Name` | `string` | **Obsolete.** Use `Id` instead. |
+| Property | Type | Meaning |
+|---|---|---|
+| `DisplayName` | `string` | Human-readable label, such as `"Invoices"`. |
+| `Id` | `string` | Machine identifier, such as `"invoices"`; use for programmatic comparisons. |
+| `Confidence` | `float` | Classification confidence from 0.0 to 1.0. |
+| `Name` | `string` | **Obsolete;** use `Id`. |
 | `Url` | `string` | Reference URL for the document type definition. |
 
 ### IDocumentData\<T\> (Extraction)
 
-**CLR type:** `UiPath.IntelligentOCR.StudioWeb.Activities.DataExtraction.IDocumentData<T>`
+**CLR type:** `UiPath.IntelligentOCR.StudioWeb.Activities.DataExtraction.IDocumentData<T>`  
 **XAML xmlns:** `clr-namespace:UiPath.IntelligentOCR.StudioWeb.Activities.DataExtraction;assembly=UiPath.IntelligentOCR.StudioWeb.Activities`
 
-Output of ExtractDocumentData. Extends the classification `IDocumentData` with strongly-typed extraction results.
+`ExtractDocumentData` output; extends classification `IDocumentData`.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `Data` | `T` | Strongly-typed extraction results (available when `GenerateData=True`). |
-| `DocumentType` | `DocumentType` | The document type used for extraction. |
-| `SubDocuments` | `IDocumentData[]` | Subdocuments (if splitting occurred upstream). |
+| Property | Type | Meaning |
+|---|---|---|
+| `Data` | `T` | Strongly typed results when `GenerateData=True`. |
+| `DocumentType` | `DocumentType` | Type used for extraction. |
+| `SubDocuments` | `IDocumentData[]` | Subdocuments created upstream. |
 | `DocumentMetadata` | `DocumentMetadata` | OCR text, DOM, and `ResultsAsDataTables` for tabular export. |
 
 ### ExtendedExtractionResultsForDocumentData
 
 **CLR type:** `UiPath.IntelligentOCR.StudioWeb.Activities.DataExtraction.ExtendedExtractionResultsForDocumentData`
 
-Base type argument for `ExtractDocumentDataWithDocumentData<T>`. When `GenerateData=True`, Studio generates a subclass with strongly-typed properties for each extracted field.
+Base type argument for `ExtractDocumentDataWithDocumentData<T>`. With `GenerateData=True`, Studio generates a subclass with strongly typed properties for extracted fields.
 
 ### DictionaryData
 
-**CLR type:** `UiPath.IntelligentOCR.StudioWeb.Activities.DataExtraction.DictionaryData`
+**CLR type:** `UiPath.IntelligentOCR.StudioWeb.Activities.DataExtraction.DictionaryData`  
 **XAML xmlns:** `clr-namespace:UiPath.IntelligentOCR.StudioWeb.Activities.DataExtraction;assembly=UiPath.IntelligentOCR.StudioWeb.Activities` (prefix `dux`)
 
-Extends `ExtendedExtractionResultsForDocumentData`. Provides methods to access extracted fields and tables by name or ID. **Recommended type argument for agent-generated workflows** since it does not require Studio's design-time JIT code generation.
+Extends `ExtendedExtractionResultsForDocumentData`; recommended for agent-generated workflows because it avoids Studio design-time JIT code generation.
 
-| Method | Return Type | Description |
-|--------|-------------|-------------|
-| `GetField(string fieldIdOrName)` | `ResultsDataPoint` | Returns a field by ID or name. |
-| `GetFieldValue(string fieldIdOrName)` | `ResultsValue` | Returns the first value of a field. |
-| `GetFieldValues(string fieldIdOrName)` | `ResultsValue[]` | Returns all values of a field. |
-| `GetFields()` | `ResultsDataPoint[]` | Returns all non-table fields. |
-| `GetTable(string tableIdOrName)` | `ResultsTable` | Returns a table by ID or name. |
-| `GetTables()` | `ResultsTable[]` | Returns all tables. |
+| Method | Return type | Meaning |
+|---|---|---|
+| `GetField(string fieldIdOrName)` | `ResultsDataPoint` | Field by ID or name. |
+| `GetFieldValue(string fieldIdOrName)` | `ResultsValue` | First field value. |
+| `GetFieldValues(string fieldIdOrName)` | `ResultsValue[]` | All field values. |
+| `GetFields()` | `ResultsDataPoint[]` | All non-table fields. |
+| `GetTable(string tableIdOrName)` | `ResultsTable` | Table by ID or name. |
+| `GetTables()` | `ResultsTable[]` | All tables. |
 
-See [Data Type Patterns](activities/ExtractDocumentData/data-type-patterns.md) for the full API reference, including setter methods, lookup behavior, and **table access patterns** (`ResultsTable` → `ResultsTableValue` → `ResultsTableCell` type hierarchy with code examples).
+See [Data Type Patterns](activities/ExtractDocumentData/data-type-patterns.md) for setters, lookup behavior, and table access patterns: `ResultsTable` → `ResultsTableValue` → `ResultsTableCell`, with code examples.
 
 ## Activity Data Flow
 
-Document Understanding workflows follow a pipeline pattern. The output of each activity feeds into the next. The type argument `<T>` chosen for extraction must be consistent across all downstream extraction validation activities.
+Use this pipeline, keeping one extraction type argument `<T>` throughout extraction and validation:
 
-```
+```text
 ClassifyDocument
-  Output: DocumentData ──────────────────────────────────┐
-                                                          │
-  ┌───────────────────────────────────────────────────────┘
-  │
-  ├──> [Optional] Classification Validation
-  │    CreateClassificationValidationAction
-  │      Input:  DocumentData
-  │      Output: CreatedClassificationValidationAction (token)
-  │                │
-  │    WaitForClassificationValidationAction
-  │      Input:  CreatedClassificationValidationAction
-  │      Output: DocumentData (validated)
-  │
-  ├──> ExtractDocumentDataWithDocumentData<T>
-  │      Input:  DocumentData (as FileInput — implements IResource)
-  │      Output: IDocumentData<T>
-  │                │
-  │    ┌───────────┘
-  │    │
-  │    ├──> [Optional] Extraction Validation (Action Center)
-  │    │    CreateValidationAction<T>
-  │    │      Input:  IDocumentData<T>
-  │    │      Output: CreatedValidationAction<T> (token)
-  │    │                │
-  │    │    WaitForValidationAction<T>
-  │    │      Input:  CreatedValidationAction<T>
-  │    │      Output: IDocumentData<T> (validated)
-  │    │
-  │    └──> [Alternative] Extraction Validation (UiPath Apps)
-  │         CreateDocumentValidationArtifacts<T>
-  │           Input:  IDocumentData<T>
-  │           Output: ContentValidationData
-  │                     │
-  │         RetrieveDocumentValidationArtifacts
-  │           Input:  ContentValidationData
-  │           Output: IDocumentData<DictionaryData> (validated)
+  DocumentData
+    ├─ optional CreateClassificationValidationAction
+    │    CreatedClassificationValidationAction (token)
+    │    └─ WaitForClassificationValidationAction → validated DocumentData
+    └─ ExtractDocumentDataWithDocumentData<T>
+         input: DocumentData as FileInput (implements IResource)
+         output: IDocumentData<T>
+           ├─ optional CreateValidationAction<T>
+           │    CreatedValidationAction<T> (token)
+           │    └─ WaitForValidationAction<T> → validated IDocumentData<T>
+           └─ alternative CreateDocumentValidationArtifacts<T>
+                ContentValidationData
+                └─ RetrieveDocumentValidationArtifacts
+                     → validated IDocumentData<DictionaryData>
 ```
 
-**Key points:**
-- `DocumentData` from ClassifyDocument implements `IResource`, so it can be passed directly as `FileInput` to ExtractDocumentData.
-- `<T>` is either `DictionaryData` (recommended for agents) or a Studio-generated type. All generic activities in the extraction validation path must use the same `T`.
-- Classification validation activities are **not** generic.
-- The "and Wait" variants (`CreateClassificationValidationActionAndWait`, `ValidateDocumentDataWithDocumentData`) combine the create + wait steps into a single persistent activity.
+`T` is `DictionaryData` (recommended for agents) or a Studio-generated type. Classification validation is not generic. The “and Wait” variants (`CreateClassificationValidationActionAndWait`, `ValidateDocumentDataWithDocumentData`) combine creation and waiting in one persistent activity. `DocumentData` implements `IResource` and can be passed directly as `FileInput`.
 
 ## Persistence Requirement for Validation Workflows
 
-Workflows that use any `Wait` or `...AndWait` validation activity suspend execution until a human completes a task in Action Center. For this to work, the UiPath project must have persistence enabled in `project.json`.
-
-**When to enable:** Any workflow containing `WaitForValidationAction`, `WaitForClassificationValidationAction`, `ValidateDocumentDataWithDocumentData`, or `CreateClassificationValidationActionAndWait`.
-
-**How to enable:** Set `"supportsPersistence": true` inside the `"runtimeOptions"` object in `project.json`:
+Any workflow containing `WaitForValidationAction`, `WaitForClassificationValidationAction`, `ValidateDocumentDataWithDocumentData`, or `CreateClassificationValidationActionAndWait` suspends until a human completes an Action Center task. Enable persistence by setting `"supportsPersistence": true` inside `"runtimeOptions"` in `project.json`:
 
 ```json
 {
@@ -213,7 +177,7 @@ Workflows that use any `Wait` or `...AndWait` validation activity suspend execut
 }
 ```
 
-If this setting is missing or `false`, the workflow will fail at runtime when it reaches a persistent activity. **Agents must always set this when generating workflows that include validation activities.**
+Agents must always set this for workflows containing validation activities. If missing or `false`, runtime execution fails at the persistent activity. This applies to every `Wait` or `...AndWait` activity, including `WaitForValidationAction`, `WaitForClassificationValidationAction`, `ValidateDocumentDataWithDocumentData`, and `CreateClassificationValidationActionAndWait`.
 
 ## Common Patterns
 
@@ -402,115 +366,90 @@ This example processes all files from a folder. Adapt by replacing the `ForEach`
 
 ### Custom DU Project Pipeline
 
-To use a custom Document Understanding project instead of Predefined, substitute these values in the pipeline above. Studio resolves all names to internal GUIDs at design time — the agent only needs names from the user, not GUIDs.
+Replace Predefined values as follows:
 
 ```xml
-<!-- ClassifyDocument: replace Predefined project and classifier -->
 <du:ClassifyDocument
-    ProjectId="placeholder"
-    ProjectName="{Your Project Name}"
-    ProjectTag="{your-version-tag}"
-    ProjectVersionName="{your-version-tag}"
-    ProjectVersionNumber="0"
-    ClassifierId="{your-classifier-name}"
-    ClassifierName="{your-classifier-name}"
-    ... />
+  ProjectId="placeholder" ProjectName="{Your Project Name}"
+  ProjectTag="{your-version-tag}" ProjectVersionName="{your-version-tag}"
+  ProjectVersionNumber="0" ClassifierId="{your-classifier-name}"
+  ClassifierName="{your-classifier-name}" ... />
 
-<!-- ExtractDocumentDataWithDocumentData: replace Predefined project and extractor -->
 <du:ExtractDocumentDataWithDocumentData
-    x:TypeArguments="dux:DictionaryData"
-    ActivityMajorVersion="2"
-    ProjectId="placeholder"
-    ProjectName="{Your Project Name}"
-    ProjectTag="{your-version-tag}"
-    ProjectVersionName="{your-version-tag}"
-    ProjectVersionNumber="0"
-    DocType="{document-type-name}"
-    ExtractorName="{document-type-name}"
-    ModernDocumentTypeId="{document-type-name}"
-    ModernDocumentTypeName="{document-type-name}"
-    ... />
+  x:TypeArguments="dux:DictionaryData" ActivityMajorVersion="2"
+  ProjectId="placeholder" ProjectName="{Your Project Name}"
+  ProjectTag="{your-version-tag}" ProjectVersionName="{your-version-tag}"
+  ProjectVersionNumber="0" DocType="{document-type-name}"
+  ExtractorName="{document-type-name}" ModernDocumentTypeId="{document-type-name}"
+  ModernDocumentTypeName="{document-type-name}" ... />
 ```
 
-**Project name resolution:** `ProjectName` is the driving property. When the user opens the workflow in Studio, it performs the following resolutions at design time:
-- `ProjectId` is resolved from `ProjectName` to the actual project GUID
-- `ProjectVersionNumber` is resolved from `ProjectTag` to the correct version number
-- Classifier and extractor names are resolved to internal identifiers
+`ProjectName` drives design-time resolution. Studio resolves `ProjectId` to the project GUID, `ProjectVersionNumber` from `ProjectTag`, and classifier/extractor names to internal identifiers when the workflow is opened. This applies to DU and IXP projects; `ProjectId="placeholder"` and `ProjectVersionNumber="0"` are safe when the user supplies no GUID or number. Use a supplied GUID when available.
 
-This works for both DU and IXP projects. The agent can set `ProjectId="placeholder"` and `ProjectVersionNumber="0"` — Studio overwrites both with the correct values.
+Custom-project rules:
 
-**Key differences from Predefined:**
-- `ProjectName` is the project's display name. Studio uses it to resolve `ProjectId` to the correct GUID at design time.
-- `ProjectId` can be a placeholder — Studio resolves it from `ProjectName`. If the user provides the GUID, use it; otherwise `"placeholder"` works.
-- `ClassifierId` is the **classifier name** from the custom project. Studio resolves the name to the internal GUID at design time. Set `ClassifierName` to the same value.
-- `DocType` is the **document type name** from the project (e.g., `"invoices"`). Studio resolves the name to the correct extractor at design time. When using `ModernDocumentTypeId="use_classification_result"`, set `DocType="{x:Null}"`.
-- `ModernDocumentTypeId` is the **document type name** from the project (same value as `DocType`). Studio resolves it to the internal GUID at design time. Alternatively, set to `"use_classification_result"` to dynamically resolve from the classification output (set `DocType="{x:Null}"` when using this).
-- `ProjectTag` and `ProjectVersionNumber` reflect the custom project's version. When `ProjectTag` is set, `ProjectVersionNumber` is auto-resolved by Studio — agents can set `ProjectVersionNumber="0"` as a safe placeholder.
-- Classification and extraction can use **different projects**. For example, `ClassifyDocument` can use a DU classification project while `ExtractDocumentDataWithDocumentData` uses a separate IXP extraction project. When `ModernDocumentTypeId="use_classification_result"` is set, the extraction project resolves the document type from the classification output at runtime, even across projects.
+- `ProjectName` is the display name and drives `ProjectId` resolution.
+- `ClassifierId` and `ClassifierName` are both the custom classifier name.
+- `DocType`, `ExtractorName`, `ModernDocumentTypeId`, and `ModernDocumentTypeName` are the document type name, such as `"invoices"`, unless using `ModernDocumentTypeId="use_classification_result"`; then set `DocType="{x:Null}"`.
+- `ProjectTag` and `ProjectVersionName` identify the version; Studio resolves `ProjectVersionNumber`, so agents may use `"0"`.
+- Classification and extraction may use different projects, including DU and IXP projects. `ModernDocumentTypeId="use_classification_result"` resolves the extraction document type from classification output at runtime across projects.
 
 ### Agent Guidance: Custom DU Projects
 
-When a user says "use my DU project called X", the agent already has the project name. Collect the remaining values below. **No GUIDs are needed** — Studio resolves all names to GUIDs at design time.
+When the user names a DU project, collect the remaining values; no GUIDs are needed because Studio resolves names at design time.
 
 #### Required Information Checklist
 
-| # | What to ask the user | Maps to XAML property |
-|---|----------------------|-----------------------|
-| 1 | **Project name** — typically already given in the user's request (e.g., "use my project called X") | `ProjectName` on both `ClassifyDocument` and `ExtractDocumentDataWithDocumentData`. **This is the driving property** — Studio uses it to resolve `ProjectId` to the correct GUID at design time. |
-| 2 | **Version tag or number** — e.g., `"Production"`, `"live"` | `ProjectTag` and `ProjectVersionName` (use the tag string), **or** `ProjectVersionNumber` (use the number). When `ProjectTag` is set, Studio auto-resolves `ProjectVersionNumber`. |
-| 3 | **Classifier name** — the name of the classifier in the project. Ask the user. | `ClassifierId` and `ClassifierName` on `ClassifyDocument` (set both to the same name). Studio resolves the name to the internal GUID at design time. |
-| 4 | **Document type name(s)** — the name of each document type to extract (e.g., `"invoices"`, `"purchase_orders"`). Ask the user. | `DocType`, `ModernDocumentTypeId`, `ExtractorName`, `ModernDocumentTypeName` on `ExtractDocumentDataWithDocumentData` (set all four to the same name). Studio resolves names to GUIDs at design time. |
+| # | Ask for | XAML mapping |
+|---|---|---|
+| 1 | Project name, usually already supplied | `ProjectName` on both activities; drives `ProjectId`. |
+| 2 | Version tag or number, such as `"Production"` or `"live"` | Tag → `ProjectTag` and `ProjectVersionName`; or number → `ProjectVersionNumber`. |
+| 3 | Classifier name | Set `ClassifierId` and `ClassifierName` to the same name. |
+| 4 | Document type name(s), such as `"invoices"` or `"purchase_orders"` | Set `DocType`, `ModernDocumentTypeId`, `ExtractorName`, and `ModernDocumentTypeName` to the same name. |
+
+If classification validation is included, use `ModernDocumentTypeId="use_classification_result"` and `DocType="{x:Null}"` instead of asking for item 4.
 
 #### What the agent can set without asking
 
-- `ProjectId="placeholder"` — Studio resolves the correct GUID from `ProjectName` at design time. If the user provides a GUID, use it; otherwise a placeholder works.
-- `ProjectVersionNumber="0"` — when `ProjectTag` is set, Studio auto-resolves the correct version number. Use `0` as a safe placeholder.
+- `ProjectId="placeholder"` unless the user supplies a GUID.
+- `ProjectVersionNumber="0"` when `ProjectTag` is set.
 - `GenerateData="False"` — always use this for agent-generated workflows.
 - `ActivityMajorVersion="2"` — always set this on `ExtractDocumentDataWithDocumentData`.
 - `x:TypeArguments="dux:DictionaryData"` — always use this type argument.
-- `TimeoutInSeconds="[3600]"` — standard default.
-- `ProjectTag` / `ProjectVersionName` — if the user says "production", use `"Production"`.
-- If the user confirms that classification validation is in the pipeline, the agent can use `ModernDocumentTypeId="use_classification_result"` with `DocType="{x:Null}"` instead of asking for document type names (item 4). This dynamically resolves the extractor from the classification result.
+- `TimeoutInSeconds="[3600]"`.
+- `ProjectTag` and `ProjectVersionName` to `"Production"` when the user says “production”.
+- `ModernDocumentTypeId="use_classification_result"` with `DocType="{x:Null}"` when classification validation is confirmed.
 
 #### UI-to-XAML Property Mapping
 
-The table below shows how values from the Document Understanding UI map to XAML attributes on each activity.
-
 **ClassifyDocument:**
 
-| User-provided value | XAML property | Format | Example |
-|---------------------|---------------|--------|---------|
-| Project name | `ProjectName` | Display string — **Studio resolves `ProjectId` from this** | `"My Invoice Project"` |
-| (auto-resolved) | `ProjectId` | GUID or placeholder — Studio resolves from `ProjectName` | `"placeholder"` |
-| Version tag | `ProjectTag` | String | `"Production"` |
-| Version tag | `ProjectVersionName` | Same as `ProjectTag` | `"Production"` |
-| (auto-resolved) | `ProjectVersionNumber` | Integer — Studio resolves from `ProjectTag`. Use `"0"` as placeholder. | `"0"` |
-| Classifier name | `ClassifierId` | Classifier name — Studio resolves to GUID | `"My Classifier"` |
-| Classifier name | `ClassifierName` | Same name | `"My Classifier"` |
+| User value | Property | Format | Example |
+|---|---|---|---|
+| Project name | `ProjectName` | Display string; Studio resolves `ProjectId`. | `"My Invoice Project"` |
+| Auto-resolved | `ProjectId` | GUID or placeholder. | `"placeholder"` |
+| Version tag | `ProjectTag`, `ProjectVersionName` | Same string. | `"Production"` |
+| Auto-resolved | `ProjectVersionNumber` | Integer; use `"0"` placeholder. | `"0"` |
+| Classifier name | `ClassifierId`, `ClassifierName` | Same name; Studio resolves `ClassifierId`. | `"My Classifier"` |
 
 **ExtractDocumentDataWithDocumentData:**
 
-| User-provided value | XAML property | Format | Example |
-|---------------------|---------------|--------|---------|
-| Project name | `ProjectName` | Display string — **Studio resolves `ProjectId` from this** | `"My Invoice Project"` |
-| (auto-resolved) | `ProjectId` | GUID or placeholder — Studio resolves from `ProjectName` | `"placeholder"` |
-| Version tag | `ProjectTag` | String | `"Production"` |
-| Version tag | `ProjectVersionName` | Same as `ProjectTag` | `"Production"` |
-| (auto-resolved) | `ProjectVersionNumber` | Integer — Studio resolves from `ProjectTag`. Use `"0"` as placeholder. | `"0"` |
-| Document type name | `DocType` | Lowercase document type name — Studio resolves to extractor | `"invoices"` |
-| Document type name | `ExtractorName` | Same name | `"invoices"` |
-| Document type name | `ModernDocumentTypeId` | Same name — Studio resolves to GUID | `"invoices"` |
-| Document type name | `ModernDocumentTypeName` | Same name | `"invoices"` |
+| User value | Property | Format | Example |
+|---|---|---|---|
+| Project name | `ProjectName` | Display string; Studio resolves `ProjectId`. | `"My Invoice Project"` |
+| Auto-resolved | `ProjectId` | GUID or placeholder. | `"placeholder"` |
+| Version tag | `ProjectTag`, `ProjectVersionName` | Same string. | `"Production"` |
+| Auto-resolved | `ProjectVersionNumber` | Integer; use `"0"` placeholder. | `"0"` |
+| Document type name | `DocType`, `ExtractorName`, `ModernDocumentTypeId`, `ModernDocumentTypeName` | Same lowercase/name value; Studio resolves identifiers. | `"invoices"` |
 
-> **Note:** Studio resolves all names to internal GUIDs at design time when the user opens the workflow. The agent does not need any GUIDs from the user — `ProjectName` drives the resolution of `ProjectId`, and all other names (classifier, document type, extractor) are resolved similarly.
+Studio resolves all names to internal GUIDs when the user opens the workflow; the agent does not need GUIDs.
 
 #### Example agent interaction
 
-> **User:** "Create a DU workflow using my project called Invoice Processing"
->
-> **Agent should ask:** "I have the project name ('Invoice Processing'). To complete the workflow, I also need:
-> 1. The **classifier name** from your project (e.g., 'My Classifier')
-> 2. The **document type name(s)** you want to extract (e.g., 'invoices')
-> 3. The **version tag** (e.g., 'Production') or version number to use
->
-> If classification validation is part of the workflow, I can skip the document type names and use the classification result directly. No GUIDs are needed — Studio resolves everything from the names when you open the workflow."
+For “Create a DU workflow using my project called Invoice Processing,” retain the project name and ask for:
+
+1. Classifier name (e.g., `"My Classifier"`).
+2. Document type name(s) (e.g., `"invoices"`), unless classification validation allows `ModernDocumentTypeId="use_classification_result"` with `DocType="{x:Null}"`.
+3. Version tag, such as `"Production"`, or version number.
+
+Tell the user that no GUIDs are needed because Studio resolves names when the workflow opens.

@@ -141,6 +141,8 @@ Do not edit files, refresh, validate, or respond to the user between
 row is not a completed schema check and is never permission to skip the
 command.
 
+> `ToolInputs` / `ToolOutputs` carry the text payload only. For a guardrail with `detectionScope: "Files"` or `"Both"`, the reviewer does not receive file contents; the flagged file names are in the evaluation's `reason` (`Flagged files: …`), reachable through `AgentTrace`. See [files-guide.md](files-guide.md).
+
 **Step 2 — Verify the app exposes the guardrail action-schema contract** (do this **before** writing the guardrail JSON — an incompatible app must be rejected, not authored).
 
 **Required command gate:** execute

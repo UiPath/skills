@@ -1,22 +1,25 @@
 ---
 name: uipath-maestro-case
-description: "TRIGGER for authoring UiPath Maestro Case plans as `<Name>.case.ts` with the reference-mode TypeScript builder SDK (`@uipath/maestro-builder-sdk/case`), compiling to `caseplan.json`, and running the `uip maestro case` check/compile/validate loop. Covers stages, tasks, rules, bindings, published-resource references, and brownfield decompile/edit/recompile. Flow builder authoring → uipath-maestro-flow; structural-core BPMN → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
+description: "TRIGGER for authoring UiPath Maestro Case plans as `<Name>.case.ts` with the reference-mode TypeScript builder SDK (`@uipath/maestro-builder-sdk/case`), compiling into the project's plan file, and running the `uip maestro case` check/compile/validate loop. Covers stages, tasks, rules, bindings, published-resource references, and brownfield decompile/edit/recompile. Flow builder authoring → uipath-maestro-flow; structural-core BPMN → uipath-maestro-bpmn. DO NOT TRIGGER for C#/XAML automation → uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
 # UiPath Case Management — TypeScript Builder SDK
 
-Author a Case plan as TypeScript and compile it to schema V30 `caseplan.json`; a Case plan declares stages and conditions, not control-flow edges.
+Author a Case plan as TypeScript and compile it to schema V30 into the project's plan file; a Case plan declares stages and conditions, not control-flow edges.
 
 Use this as a router: read only the capability reference you need, then let TypeScript and `case check` provide the detailed contract.
 
 ## Workflow
 
+**Stop rule, before any step:** when the request says design-only, Phase 1 only, review first, not to build, not to create the case plan, or to stop before tenant work, run no `solution init`, `case init`, `decompile` or `compile`. Write no `<Name>.case.ts`, `caseplan.case` or `caseplan.json`, and no `tasks/tasks.md` or other restatement of the SDD unless the request asks for one. When the request says Phase 1 only, review first, or not to build, or asks for registry or resource lookups, run step 0 for an approved `sdd.md` plus any lookup the request asks for, then stop. Otherwise (design-only, no case plan, stop before tenant work) run no registry or other tenant command. Report the deferred build work in the reply.
+
+0. When the input is an approved `sdd.md` that names published resources, resolve them first: `registry pull`, then `sdd resolve` into `tasks/registry-resolved.json`, then ask the user about what it leaves ([Registry resolution](references/registry-resolution.md)). Stop there when the request is Phase 1 only.
 1. Scaffold once, running `case init` **from inside the solution dir**: `uip solution init <SolutionName> && cd <SolutionName> && uip maestro case init <CaseName>`. It walks UP for the enclosing `.uipx`; run from anywhere else it finds none, silently creates a SECOND solution `<CaseName>Solution/`, registers the project there, and leaves the first empty with two `project.uiproj` on disk — so check the reply carries no `Data.AutoCreatedSolution`. Exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates; if a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
 2. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
 3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
 4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
-5. Seed the source by decompiling the stub `case init` wrote — `uip maestro case decompile <CaseName>/caseplan.json -o <Name>.case.ts --no-pipeline` — rather than hand-writing the skeleton: it carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned, and `entry-points.json` references that trigger id. Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
+5. Seed the source by decompiling the plan `case init` seeded (`caseplan.case`, or an older `caseplan.json`) instead of hand-writing the skeleton: `uip maestro case decompile <project>/<plan> -o <Name>.case.ts --no-pipeline`. It carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned; `entry-points.json` references that trigger id. Compile back into that same `<plan>`, never a second plan beside it: pack and debug read only one. Compile with plain `-o <project>/<plan>` and no `--bindings <plan>`; it needs `@uipath/maestro-builder-sdk` 6.50.1 or later to keep a Designer-saved plan's binding map ([Brownfield](references/case-runtime.md#brownfield-editing)). Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
 6. Run `uip maestro case check <Name>.case.ts --source` after each structural change.
 7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
 8. Run live debug only when requested and tenant resources are available.
@@ -39,13 +42,14 @@ three entry points; each file's header spells the paths its rows resolve against
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
 | Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Resolving SDD resources against the tenant | `uip maestro case registry pull`, `uip maestro case sdd resolve` | [Registry resolution](references/registry-resolution.md) | — |
 | Human work | `action` | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | Timers | `waitForTimer` | [TimerSpecData](#api-index) | `examples/NightlyRollup.case.ts` |
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
 | Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
-| Existing Case plans | `case decompile` and generated pipeline | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
+| Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
 
 ## Minimal shape
 
@@ -79,8 +83,9 @@ export default casePlan('loan-approval')
 
 ```bash
 uip maestro case check <Name>.case.ts --source
-uip maestro case compile <Name>.case.ts -o <project>/caseplan.json
-uip maestro case validate <project>/caseplan.json --output json
+uip maestro case compile <Name>.case.ts -o <project>/<plan>
+uip maestro case validate <project>/<plan> --strict --sdd <sdd.md> --output json  # SDD supplied
+uip maestro case validate <project>/<plan> --strict --output json                 # no SDD
 uip solution resources remove <orphan-key> --solution-folder <solution> --output json
 uip solution resources refresh --solution-folder <solution> --output json
 ```
@@ -88,6 +93,26 @@ uip solution resources refresh --solution-folder <solution> --output json
 `check` owns source-level invariants and emits teaching diagnostics. Product
 validation owns the compiled Case contract. Do not repair emitted JSON by hand;
 change the TypeScript source and rebuild.
+
+The build is complete only when `validate --strict` passes. When the request
+supplies an `sdd.md`, add `--sdd <path>`: it audits the plan against the SDD.
+Without an SDD, run `--strict` alone. A default-profile `Valid` whose
+`Data.Suppressed.Errors` is above 0 is not completion; run the command its
+`Instructions` names. Fix each finding in the TypeScript source and recompile.
+If a finding persists after a source fix and recompile, stop and report its
+code as unfinished; never patch emitted JSON.
+
+`check` also reads the connector library, the same one `compile` resolves
+against: `$FLOW_SDK_LIBRARY_JSON`, else the `uip maestro registry pull`
+snapshot, plus `.flow-sdk/connectors-local` when `registry prepare` wrote it.
+A connector task, external task, event trigger or wait-for-connector that
+`compile` cannot resolve fails `check` first, with compile's code and text.
+
+Before `check` on a Case with connector work, run `uip maestro registry pull`:
+with no library cached these rules stay silent, so a clean `check` proves
+nothing about the connector. To use another library, set
+`$FLOW_SDK_LIBRARY_JSON` for both `check` and `compile`, not `--library`, so
+both resolve against the same one.
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
 API workflow, or sub-case; never fabricate a name or folder. A destination's
@@ -98,4 +123,5 @@ API workflow, or sub-case; never fabricate a name or folder. A destination's
 Static success proves the source and artifact contracts. It proves neither live
 behavior (resource resolution, human outcomes, timers, skipped-task completion,
 business calendars) nor the design decisions no schema checks: lane routing,
-non-completing exits, declared optionality, SDD fidelity. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.
+non-completing exits, declared optionality, and SDD intent beyond what the
+`--sdd` audit compares. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.

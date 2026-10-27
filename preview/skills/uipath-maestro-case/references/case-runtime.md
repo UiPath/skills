@@ -120,10 +120,17 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Brownfield editing
 
 <!-- RULE:case.brownfield.pipeline -->
-- Start with `uip maestro case decompile`. Edit the generated `.case.ts`, retain
-  `preserveCaseJson(...)`, and run the generated pipeline to keep foreign
-  metadata and bindings that the typed surface does not own. Strict decompile
-  fails closed on unresolved references. For an explicitly broken input, rerun
+- Start with `uip maestro case decompile <plan> -o <Name>.case.ts --no-pipeline`.
+  Edit the generated `.case.ts` and retain `preserveCaseJson(...)`: it keeps
+  the foreign metadata the typed surface does not own. Compile back into the
+  same plan: `uip maestro case compile <Name>.case.ts -o <plan>`. Needs
+  `@uipath/maestro-builder-sdk` 6.50.1 or later, which resolves the decompiled
+  labels (for example `bOC1`) against that plan's own `bindings` array; an
+  older SDK writes the label in as the key, so upgrade first. Do not pass
+  `--bindings <plan>`: it replaces `bindings.json`, so a connector the edit
+  adds loses its mapping. Do not run `<Name>.pipeline.mjs`: it writes a plan
+  pack and debug never read. Strict decompile fails closed on unresolved
+  references. For an explicitly broken input, rerun
   with `--best-effort`, inspect every reported diagnostic, and replace every
   `__UNRESOLVED_*` marker before checking or compiling the repair. Removing or
   repointing a bound task also requires the orphan cleanup under
@@ -136,9 +143,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   is minted from its name rather than copied from it, task and condition ids are
   derived, and companions are wired to match. A hand-edit fixes the field you
   looked at and leaves the derived ones carrying whatever the broken input had,
-  which is a class of defect `uip maestro case validate` does not report: it
-  checks the contract, not whether an id was supposed to be distinct from the
-  name beside it. Round-tripping the whole plan re-derives all of them at once.
+  which plain `uip maestro case validate` does not report. `--strict` rejects a
+  slot id copied from its name (`STRICT_FORMAL_ARG_ID`), but neither profile
+  checks that task and condition ids match their derived form, so `Valid` from
+  either does not prove a hand-edit is complete. Round-tripping the whole plan
+  re-derives all of them at once.
 
 ## Product boundary
 

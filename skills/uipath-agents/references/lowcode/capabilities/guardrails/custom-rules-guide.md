@@ -4,6 +4,8 @@ Deterministic rules you define — word matching, number comparison, boolean che
 
 Custom guardrails use deterministic rules you define. They have a `rules` array containing one or more rule objects.
 
+> **Custom rules never read file contents.** A `job-attachment` field exposes only `ID`, `FullName`, `MimeType`, and `Metadata` to word / number / boolean rules — a word rule on such a field matches the file name, not the document. The `always` rule's `applyTo` (`input` / `output` / `inputAndOutput`) is unrelated to the built-in validators' `detectionScope` (`Text` / `Files` / `Both`); custom guardrails have no `validatorParameters`. File inspection: [files-guide.md](files-guide.md).
+
 > **Rule combination logic is AND.** Multiple rules in a single guardrail are evaluated with AND — all rules must match for the guardrail to trigger. Multiple fields selected within a single rule (via `$selectorType: "specific"` with multiple `fields` entries) are also AND — every listed field must satisfy the operator.
 >
 > Example with two rules and multi-field selector:

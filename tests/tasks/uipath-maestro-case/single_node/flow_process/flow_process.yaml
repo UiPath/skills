@@ -1,0 +1,150 @@
+task_id: skill-case-single-flow-process
+description: >
+  Build a Case Management definition from an sdd.md whose only task is a
+  flow-process that starts the deployed CaseEvalFlowFixture flow in
+  Shared/CaseEvalFlowFixture (a fixture kept for case evals: one string input
+  invoiceNumber, one string output status = "received-<invoiceNumber>"). The
+  skill must resolve the flow from flow-index.json, bind it as a bare `process`
+  with no resourceSubType as the Case Designer does, and wire the input and the
+  status output. Validates the case, then runs `uip maestro case debug` and
+  requires the case and the flow task's own execution to complete. Case debug
+  reports element executions, not variable values, so the status value is not
+  graded.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry]
+max_iterations: 1
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "FlowProcessCase"
+  containing a project also named "FlowProcessCase" from the sdd.md
+  below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — FlowProcessCase
+
+  Single-stage case that hands an invoice number to a deployed Maestro Flow and keeps its acknowledgement.
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | FlowProcessCase |
+  | Case Description | Acknowledges an invoice through the CaseEvalFlowFixture flow. |
+  | Case Identifier | Prefix: FPC, Type: constant |
+  | Case-Level SLA | 1 d |
+  | SLA Type | Static |
+
+  ### Case Triggers
+  | T# | Trigger Type | Source | Configuration |
+  |---|---|---|---|
+  | T02 | Manual | Manual | N/A |
+
+  ### Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete | Display Name |
+  |---|---|---|---|---|
+  | required-stages-completed | — | Case exited | Yes | Done |
+
+  ### Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | invoiceNumber | In | string | | | INV-1042 | The invoice to acknowledge. |
+  | ackStatus | Variable | string | | | | The flow's acknowledgement; populated by Acknowledge Invoice. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Intake (`intake`)
+  **Type:** Stage
+  **Description:** Acknowledge the invoice.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting | Display Name |
+  |---|---|---|---|
+  | case-entered | — | No | — |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+  |---|---|---|---|---|
+  | required-tasks-completed | — | exit-only | Yes | Acknowledged |
+
+  #### Tasks
+  | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
+  |---|---|---|---|---|---|---|---|---|
+  | 1 | Acknowledge Invoice | flow-process | parallel | stage enters | Yes | Yes | system | — |
+
+  ##### Task 1.1: Acknowledge Invoice
+
+  **Type:** flow-process
+  **Activation Mode:** parallel
+  **Design Rationale:** The acknowledgement logic already ships as a deployed flow.
+
+  **Entry Condition:**
+  | WHEN | IF | Display Name |
+  |---|---|---|
+  | current-stage-entered | — | — |
+
+  **Task envelope**
+  | Required | Run Only Once |
+  |---|---|
+  | Yes | Yes |
+
+  ###### Process / Agent / RPA / API Workflow Task Detail
+
+  **Resolved Resource:** CaseEvalFlowFixture
+  **Folder Path:** Shared/CaseEvalFlowFixture
+
+  **Inputs:**
+  | Field | Type | Binding |
+  |---|---|---|
+  | invoiceNumber | string | =vars.invoiceNumber |
+
+  **Outputs:**
+  | Field | Binding / Value |
+  |---|---|
+  | status | -> ackStatus |
+  ```
+
+  Treat all build gates as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish
+  with `uip maestro case validate` passing on the resulting case plan.
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated case plan"
+    command: "p=$(ls FlowProcessCase/FlowProcessCase/caseplan.case FlowProcessCase/FlowProcessCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The flow-process task binds CaseEvalFlowFixture as a bare process, wires invoiceNumber in and status out, and debug completes with the task executed"
+    command: "python3 $REFERENCE_DIR/_shared/check_flow_process_case.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

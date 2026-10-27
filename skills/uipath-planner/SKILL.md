@@ -1,6 +1,6 @@
 ---
 name: uipath-planner
-description: "UiPath solution planner & designer. Always invoke for PDD / SDD files (`pdd.md`, `*-sdd.md`). Authors a Solution Design Document (SDD) from a Process Design Document (PDD) — or from another process-knowledge source (Confluence page, SOP, BPMN model, meeting transcript) — then derives the multi-skill, multi-project task list from an SDD, emitting live TaskCreate calls. Known-product single-project build, no PDD/SDD→that skill; ambiguous/'what should I build'→here. For `uip solution` lifecycle & `.uipx`→uipath-solution. For non-solution Orchestrator/IS/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For building/editing .bpmn→uipath-maestro-bpmn (a .bpmn as design input routes here). For agent.json/.py→uipath-agents. Sole case-SDD author. For caseplan.json build→uipath-maestro-case."
+description: "UiPath solution planner & designer. Always invoke for PDD / SDD files (`pdd.md`, `*-sdd.md`). Authors a Solution Design Document (SDD) from a Process Definition Document (PDD) — or from another process-knowledge source (Confluence page, SOP, BPMN model, meeting transcript) — then derives the multi-skill, multi-project task list from an SDD, emitting live TaskCreate calls. Known-product single-project build, no PDD/SDD→that skill; ambiguous/'what should I build'→here. For `uip solution` lifecycle & `.uipx`→uipath-solution. For non-solution Orchestrator/IS/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For building/editing .bpmn→uipath-maestro-bpmn (a .bpmn as design input routes here). For agent.json/.py→uipath-agents. Sole case-SDD author. For caseplan.json build→uipath-maestro-case."
 when_to_use: "User provides a PDD/SDD (or another process-knowledge source or a prompt — the planner asks clarifying questions), says 'generate SDD'/'analyze this PDD'/design/architect a UiPath solution, OR makes a non-trivial request spanning SEPARATE buildable projects (a Flow orchestrating RPA processes that must be built, 'build a solution from scratch'). A PDD or SDD ALWAYS routes here (Phase D) — author its SDD even for ONE RPA process; never hand a raw PDD to a specialist. Load BEFORE authoring an SDD or deriving tasks. Skip ONLY when no PDD/SDD and the request targets one project — even with inline HITL/script/connector nodes — invoke that specialist directly. Flow calling only existing/deployed processes→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Glob, Grep, WebFetch, AskUserQuestion, EnterPlanMode, ExitPlanMode, TaskCreate, TaskUpdate, TaskList
 ---
@@ -9,7 +9,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, WebFetch, AskUserQuestion, EnterPl
 
 Two jobs, one entry point:
 
-1. **Design** — turn a Process Design Document (PDD) into an implementation-ready Solution Design Document (SDD). Select scope (single product or multi-project Solution), write the SDD.
+1. **Design** — turn a Process Definition Document (PDD) into an implementation-ready Solution Design Document (SDD). Select scope (single product or multi-project Solution), write the SDD.
 <!--skill-flavor:plan-job:start-->
 2. **Plan** — derive the per-skill task list from an SDD (or a non-PDD request), route to specialists, emit live `TaskCreate` calls.
 <!--skill-flavor:plan-job:end-->
@@ -97,7 +97,7 @@ Run this guard before anything else.
 3. Otherwise (no marker, ambiguous, or unparseable) — ask via AskUserQuestion:
 
    > What is the document at <path>?
-   > 1. Process Design Document (PDD) — author the SDD (Phase D — Design), then derive tasks
+   > 1. Process Definition Document (PDD) — author the SDD (Phase D — Design), then derive tasks
    > 2. Solution Design Document (SDD) — proceed with task generation (Lane A — PDD-driven)
    > 3. Other context — read it; use its content to resolve Lane B elicitation
    >    questions (skip any question it answers) and as plan input (Lane B — Non-PDD)
@@ -180,6 +180,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | [Case Design Lane Guide](references/case/case-design-lane-guide.md) | The case design conversation — entry, tenant grounding, authoring policy, the one Case Review, and the write |
 | [Case Design Layers Guide](references/case/case-design-layers-guide.md) | The case model and every design **Default** — skeleton (triggers, stages, the ten task types), gates (lifecycle rules, exits, sequencing, secondary lanes), data (variables, outputs, expressions), time (SLAs, escalations, responses), naming rules, and the closure checklist |
 | [PDD Analysis Guide](references/pdd-analysis-guide.md) | How to extract structured data from PDDs in any format |
+| [Business Rules Guide](references/business-rules-guide.md) | Validation vs decision vs reasoning rules; DMN-style decision tables; reasoning list. Load when filling RPA §4 or BPMN §5. |
 | [Product Selection Guide](references/product-selection-guide.md) | **Constraint Gate** (delivery model + exclusions filter), **Level 1** (primary scope), **Level 1.75** (Solution composition), **Level 2.5 Part B** (cross-product project list merge), **Level 3** (capability add-ons), template mapping |
 | [Platform Availability Guide](references/platform-availability-guide.md) | Product × delivery-model availability matrix (Cloud / Automation Suite / standalone), alternatives for blocked products, verification rule for uncertain cells. Load whenever the Constraint Gate runs — every delivery model: "Cloud is not uniform", variants (GovCloud / Dedicated / Test Cloud) and per-tenant entitlements can block products inside the Cloud column. |
 | [RPA Product Guide](references/rpa-product-guide.md) | RPA **Level 1.5** (sub-type), **Level 2** (authoring mode), **Level 2.5 Part A** (RPA decomposition), R-07 naming, REFramework. Load when Level 1 = RPA or a Solution includes RPA. |

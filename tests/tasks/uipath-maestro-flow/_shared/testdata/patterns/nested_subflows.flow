@@ -1,0 +1,266 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "eachClaim",
+   "type": "core.logic.loop",
+   "inputs": {
+    "collection": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.claims",
+     "fieldType": "array"
+    },
+    "parallel": false,
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "perClaim",
+   "type": "core.subflow",
+   "parentId": "eachClaim",
+   "inputs": {
+    "c": {
+     "type": "jsExpression",
+     "expression": "$vars.eachClaim.currentItem",
+     "fieldType": "object"
+    },
+    "errorHandlingEnabled": true
+   }
+  },
+  {
+   "id": "end4",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "eachClaim",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "eachClaim",
+   "sourcePort": "start",
+   "targetNodeId": "perClaim",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "perClaim",
+   "sourcePort": "error",
+   "targetNodeId": "eachClaim",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "perClaim",
+   "sourcePort": "output",
+   "targetNodeId": "eachClaim",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "eachClaim",
+   "sourcePort": "success",
+   "targetNodeId": "end4",
+   "targetPort": "input"
+  }
+ ],
+ "subflows": {
+  "reviewAndApply": {
+   "nodes": [
+    {
+     "id": "reviewAndApplyStart",
+     "type": "core.trigger.manual",
+     "inputs": {}
+    },
+    {
+     "id": "lowConfidence",
+     "type": "core.logic.decision",
+     "inputs": {
+      "trueLabel": "True",
+      "falseLabel": "False",
+      "expression": "$vars.reviewAndApplyStart.output.confidence < 0.8"
+     }
+    },
+    {
+     "id": "reviewDecision",
+     "type": "uipath.human-in-the-loop",
+     "inputs": {
+      "type": "quick",
+      "title": "Review",
+      "priority": "Low",
+      "recipient": {
+       "channels": [
+        "Email",
+        "ActionCenter"
+       ],
+       "connections": {},
+       "assignee": {
+        "type": "group"
+       }
+      },
+      "schema": {
+       "schemaId": "4d5ec1aa-17aa-5044-8983-6f2bd61d0616",
+       "fields": [
+        {
+         "id": "decision",
+         "label": "decision",
+         "type": "string",
+         "direction": "input",
+         "binding": "vars.reviewAndApplyStart.output.decision"
+        }
+       ],
+       "outcomes": [
+        {
+         "id": "approve",
+         "name": "Approve",
+         "type": "string",
+         "isPrimary": true,
+         "action": "Continue"
+        },
+        {
+         "id": "reject",
+         "name": "Reject",
+         "type": "string",
+         "isPrimary": false,
+         "action": "Continue"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "id": "end",
+     "type": "core.control.end",
+     "inputs": {}
+    },
+    {
+     "id": "applyDecision",
+     "type": "core.logic.mock",
+     "inputs": {}
+    },
+    {
+     "id": "end2",
+     "type": "core.control.end",
+     "inputs": {}
+    }
+   ],
+   "edges": [
+    {
+     "sourceNodeId": "reviewAndApplyStart",
+     "sourcePort": "output",
+     "targetNodeId": "lowConfidence",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "lowConfidence",
+     "sourcePort": "true",
+     "targetNodeId": "reviewDecision",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "reviewDecision",
+     "sourcePort": "outcome-reject",
+     "targetNodeId": "end",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "lowConfidence",
+     "sourcePort": "false",
+     "targetNodeId": "applyDecision",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "applyDecision",
+     "sourcePort": "output",
+     "targetNodeId": "end2",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "reviewDecision",
+     "sourcePort": "outcome-approve",
+     "targetNodeId": "applyDecision",
+     "targetPort": "input"
+    }
+   ]
+  },
+  "perClaim": {
+   "nodes": [
+    {
+     "id": "perClaimStart",
+     "type": "core.trigger.manual",
+     "inputs": {}
+    },
+    {
+     "id": "decide",
+     "type": "uipath.agent.autonomous",
+     "inputs": {
+      "source": "477b6e64-50f1-41f8-b5a0-234803bb6284",
+      "agentInputVariables": [
+       {
+        "id": "perClaimStart__output__c",
+        "type": "string",
+        "binding": "=js:$vars.perClaimStart.output.c"
+       }
+      ],
+      "agentOutputVariables": [
+       {
+        "id": "decision",
+        "type": "string"
+       },
+       {
+        "id": "confidence",
+        "type": "number"
+       }
+      ]
+     }
+    },
+    {
+     "id": "reviewAndApply",
+     "type": "core.subflow",
+     "inputs": {
+      "decision": {
+       "type": "jsExpression",
+       "expression": "$vars.decide.output.decision",
+       "fieldType": "string"
+      },
+      "confidence": {
+       "type": "jsExpression",
+       "expression": "$vars.decide.output.confidence",
+       "fieldType": "number"
+      }
+     }
+    },
+    {
+     "id": "end3",
+     "type": "core.control.end",
+     "inputs": {}
+    }
+   ],
+   "edges": [
+    {
+     "sourceNodeId": "perClaimStart",
+     "sourcePort": "output",
+     "targetNodeId": "decide",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "decide",
+     "sourcePort": "success",
+     "targetNodeId": "reviewAndApply",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "reviewAndApply",
+     "sourcePort": "output",
+     "targetNodeId": "end3",
+     "targetPort": "input"
+    }
+   ]
+  }
+ }
+}

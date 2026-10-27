@@ -55,18 +55,29 @@ cannot make: which node, which topology, what an output means, and what to ask.
    for invalid input", "handle timeouts"); an unhandled failure must fault the
    run. A handler either genuinely recovers or reaches a terminal the caller
    can tell apart from success — a distinct `.return`, or `.terminate`.
-8. **Never invent the business meaning of a named output — ask.** When a
-   request names an output (`caseKey`, `severity`, `ticketId`) without saying
-   how to derive it, whether it passes through or is reformatted is the
-   user's rule. Ask, or state the assumption and confirm it. A guessed format
-   compiles and validates and returns the wrong value.
+8. **Never invent the business meaning of a named output or an uncovered
+   input case — ask.** When a request names an output (`caseKey`, `severity`,
+   `ticketId`) without saying how to derive it, whether it passes through or
+   is reformatted is the user's rule. Ask, or state the assumption and confirm
+   it. A guessed format compiles and validates and returns the wrong value.
+   Rules that cover only some input values, ranges, or combinations leave the
+   rest open: `High` for refunds over $500 and `Low` under $50 leave $50 to
+   $500 unassigned; `Expedite` for an overdue order from a Gold customer
+   leaves overdue orders from every other tier unassigned. Check coverage over
+   the valid values of the inputs the stated rules read; invalid input stays
+   under rule 7. List each uncovered case and ask; never fold it into a stated
+   value or a default the user did not give. When the request says no one will
+   answer (headless, CI), the no-folding rule lifts: map each uncovered case
+   to the most defensible stated value rather than stopping, and list each
+   under Open questions as **[REQUIRED]**.
 9. **Present a finite decision as a list of options, with "Something else"
    last.** Which solution, which connector, which trigger, which resource to
    bind: ask with the enumerated choices, never as an open question. Without a
    structured-question tool, ask in chat as a numbered list. With nobody to ask
    (CI, headless), take the recommended option and record it prominently in
    the final report; if none is recommended, stop and report the open
-   decision. Consent gates — destructive operations, tenant writes — are never
+   decision, except an uncovered rule case (rule 8), which you still decide.
+   Consent gates — destructive operations, tenant writes — are never
    auto-answered.
 10. **Look for an existing solution before `uip solution init`.** Run
     `find . -maxdepth 2 -name '*.uipx'`. If one exists, ask which to use (one
@@ -123,6 +134,41 @@ recommended).
 branching or parallel paths, SLAs, cross-product composition, or per-case
 visibility. A single-wait, mostly linear process may be simpler as a queue plus
 Action Center; say so before designing topology.
+
+### Patterns
+
+Six topologies the Flow canvas also inserts. When a new flow or an edit has one
+of these shapes, or finishes one the canvas inserted ([`brownfield.md`](brownfield.md)),
+read its guide before choosing nodes. With two or more, also read
+[composing-guide.md](patterns/composing-guide.md).
+
+| Pattern | Reach for it when | Guide |
+| --- | --- | --- |
+| `ai-decision-human-review` | An agent decides or proposes an action, and a person reviews or approves it before the flow acts | [guide](patterns/ai-decision-human-review-guide.md) |
+| `routing-triage` | Emails, tickets or claims are classified and routed by category, with a person catching low-confidence or unmatched items | [guide](patterns/routing-triage-guide.md) |
+| `batch-ai` | An agent handles each item of a list, and one bad item must not stop the rest | [guide](patterns/batch-ai-guide.md) |
+| `conversational-intake` | A chat or chatbot answers or gathers a request over several turns | [guide](patterns/conversational-intake-guide.md) |
+| `parallel-agents` | Several AI agents work one input at once, and one agent merges them | [guide](patterns/parallel-agents-guide.md) |
+| `voice-agents` | A phone call or call line is handled by voice agents | [guide](patterns/voice-agents-guide.md) |
+
+Not for a linear pipeline, a single node, a human approval with no agent
+deciding, an agent that classifies with no person in the request
+(`inlineAgent()` plus `.branch()` or `.switch()`), a switch on a field, or an
+edit that adds none of these. `summarize()` and `batchTransform()` are single
+nodes, not patterns.
+
+1. Adapt counts and branches to the request, but keep what the guide's "Why it
+   works" names, or say you are building something else.
+2. A shape table marks each step **Entry**, **Mechanism** or **Placeholder**.
+   Entry steps are the pattern's own start and end: drop an Entry start when
+   the flow already has one, and drop an Entry End when steps follow, wiring
+   its inbound edge to them. Keep every Mechanism step. Choose a Placeholder
+   like any node (rule 1), or skip it when the flow already does that work.
+3. An agent step is a published agent the search found, else an
+   `inlineAgent()`; never `mock()`. Write its prompt; never decide its runtime
+   answer while authoring.
+4. A threshold the request leaves out is an open question (rule 8): ask, or
+   headless, use the guide's value and list it as **[REQUIRED]**.
 
 ## Anti-patterns
 

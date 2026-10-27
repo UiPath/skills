@@ -18,7 +18,8 @@ uip maestro flow format <Name>.flow --output json
 upstream needs it, and `validate` passes without it. It becomes one here, the
 moment a file `compile` wrote from scratch is opened by something that draws
 it: `solution upload`, `flow debug`, or a person opening the project in a
-designer. Run `format` before any of those, on the artifact as last emitted.
+designer. Run `format` before any of those, on the artifact as last emitted,
+unless its source sets `.layout()` (below).
 
 `compile` writes a placeholder `ui.position` on each node and no top-level
 `layout` block. The canvas places each node from its `layout.nodes[<id>]`
@@ -33,6 +34,44 @@ file is the most common cause of misshapen nodes in Studio Web.
 holds the canvas author's positions, and `merge` keeps them. `format` re-lays
 out every node and discards them. Upload or debug the merged file as `merge`
 wrote it.
+
+### Lay out from source instead: `.layout()`, `at()`, `dim()`
+
+The builder can place the nodes itself, so the emitted file never needs `format` — provided every node that is not 96 × 96 carries its size (rule 1).
+`.layout({ nodes })` on the flow takes one entry per node, keyed by node id; `at(x, y)` writes an entry, and `dim(width, height)` the size a container needs.
+A step's id is its name.
+The trigger's is `start` unless `.triggerId()` renamed it.
+An End's is the `name` its `.return` gave it, and an unnamed End is `end`, then `end2`, `end3`, … in emission order, so a flow with several unnamed Ends has that many keys to write.
+Use it when the request asks for a particular arrangement, or when a decompiled source already carries one ([`brownfield.md`](brownfield.md#the-same-loop-by-hand)).
+Otherwise `format` is less work and lays out as well.
+
+```ts
+import { at, dim, flow } from '@uipath/maestro-builder-sdk';
+
+export default flow('invoice-intake')
+  // …steps…
+  .layout({
+    nodes: {
+      start: at(256, 144), fetch: at(448, 144), eachInvoice: at(640, 144, dim(576, 320)),
+      extract: at(144, 96), route: at(336, 96), // inside eachInvoice, relative to it
+      review: at(1312, 144, dim(288, 96)), // an agent node carries its size
+      done: at(1696, 144),
+      onFailure: at(448, 528), end: at(640, 528), // below the container, not beside its body
+    },
+  })
+  .build();
+```
+
+Rules:
+
+1. **Use the canvas grid.** A node is 96 px square; a column is 192 px, a row 160 px: `x = 256 + 192 × column`, `y = 144 + 160 × row`.
+   The main path goes on row 0 left to right; an error handler or a side arm takes the row below.
+   Compile writes 96 × 96 on every node and the designer draws the persisted size, so a node whose canvas shape is larger must carry it: an agent node (`inlineAgent`, `conversationalAgent`, `voiceAgent`) is `at(x, y, dim(288, 96))`, and the next column starts 384 px to its right; a container carries its `dim()` (rule 2), and the row below it starts one row gap (64 px) under its bottom edge, not at the next 160 px row.
+2. **A child's position is relative to its container.** A loop or do-while body starts at `at(144, 96)` inside the container's padding, and the container needs a `dim()` that holds the body: the right edge of its rightmost child plus 144, by the bottom edge of its lowest child plus 96, never smaller than `format`'s `dim(560, 320)`.
+   For one row of 96 px nodes that is `dim(max(560, 192 × bodyNodes + 192), 320)`; a body with an inline agent, a second row or a nested container is measured from its own entries, not from the node count.
+3. **Name every node, or none.** A missing entry falls back to compile's one-row placeholder, which lands on top of your layout; an unknown key fails `compile`.
+4. **Never `format` a file whose source sets `.layout()`.** `format` re-lays out every node and discards the source's positions, exactly as it does to a merged brownfield file.
+5. **`at` and `dim` need `@uipath/maestro-builder-sdk` 6.36.0 or later** — check that `dist/api-index.md` of the SDK copy in use lists them. If not, upgrade that copy: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy (it is used before the global one), else `npm install -g @uipath/maestro-builder-sdk@latest`; or write the entry long-hand, `{ position: { x, y } }` with an optional `size: { width, height }`.
 
 ## Refresh solution resources first
 
@@ -103,6 +142,13 @@ Operational constraints, each of which has its own failure:
 - **`Debug polling timed out after <N>s` is not a failure.** The run continues
   server-side. Take `instanceId` from stderr and poll
   `uip maestro flow debug-instance status <INSTANCE_ID> --output json`.
+- **An RPA step does not run under a headless debug** ([rpa-workflow.md](rpa-workflow.md#evidence-boundary)).
+- **Every process and connection node must resolve.** A node bound to a
+  resource the tenant lacks (a placeholder key awaiting the real process, a stub
+  connection) fails provisioning and starts no instance; `Data.missingResources`
+  names it, though `check` and `validate` pass it. To debug the rest before the
+  resource exists, debug a scratch copy of the project without those nodes,
+  delete the copy afterwards, and report the run as the copy's.
 - **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into your
   personal workspace; a shared folder fails `HTTP 500` at
   `Stage: prepare-custom-debug` with no instance started. Shared resources reach
@@ -130,7 +176,11 @@ the input's own name:
 ```
 
 At run time that variable is an OBJECT, not a path — a script reads the uploaded
-name as `$vars.<triggerNodeId>.output.<inputName>.FullName`.
+name as `$vars.<triggerNodeId>.output.<inputName>.FullName`. A script sees only
+that reference (`ID`, `FullName`, `MimeType`, `Metadata`), never the file's
+content: a flow that parses an uploaded file hands the reference to a step that
+reads files, such as an RPA process taking it as its file argument
+([rpa-workflow.md](rpa-workflow.md#where-the-job-runs)).
 
 **A flow with more than one root starts at the default root.** That is the
 trigger marked `isDefaultEntryPoint`, else the first trigger. To run another
@@ -149,6 +199,9 @@ debug uploads, returns
 `Code: FlowDebugStudioWebHandoff` with `Data.studioWebUrl`, and starts no run;
 `--timeout` does nothing. Chat from Studio Web (`--open-in-browser` opens it) or
 the Maestro VS Code extension.
+
+**An inbound voice flow cannot be debugged at all.** Do not run debug on a
+`voiceTrigger()` flow; [voice.md](voice.md#evidence-boundary) has the test loop.
 
 ### Reporting a debug run
 

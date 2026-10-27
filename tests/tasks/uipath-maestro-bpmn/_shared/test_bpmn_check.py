@@ -20,6 +20,7 @@ from bpmn_check import (  # noqa: E402
     has_type,
     has_typed_uipath_extension,
     has_uipath_extension,
+    tag_case_hint,
 )
 
 
@@ -45,22 +46,58 @@ def test_typed_extension_accepts_nested_type_child() -> None:
     assert has_uipath_extension(task, "Orchestrator.StartJob")
 
 
-def test_typed_extension_accepts_registry_direct_type_attribute() -> None:
-    task = _service_task(
-        '<uipath:activity type="Orchestrator.StartAgentJob" version="v1" />'
-    )
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '<bpmn:extensionElements><uipath:activity type="Orchestrator.StartAgentJob" '
+        'version="v1" /></bpmn:extensionElements>',
+        '<uipath:activity version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" /></uipath:activity>',
+        '<bpmn:extensionElements><uipath:activity type="Orchestrator.StartAgentJob" '
+        'version="v1"><uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:activity></bpmn:extensionElements>",
+    ],
+)
+def test_typed_extension_rejects_shapes_the_runtime_ignores(payload: str) -> None:
+    task = _service_task(payload)
 
-    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
-    assert has_uipath_extension(task, "Orchestrator.StartAgentJob")
+    assert not has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
 
 
 def test_typed_extension_rejects_wrong_wrapper_or_type() -> None:
     task = _service_task(
-        '<uipath:event type="Orchestrator.StartAgentJob" version="v1" />'
+        '<bpmn:extensionElements><uipath:event version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:event></bpmn:extensionElements>"
     )
 
+    assert has_typed_uipath_extension(task, "event", "Orchestrator.StartAgentJob")
     assert not has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
     assert not has_typed_uipath_extension(task, "event", "Orchestrator.StartJob")
+
+
+def test_typed_extension_accepts_the_requested_type_version() -> None:
+    task = _service_task(
+        '<bpmn:extensionElements><uipath:activity version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:activity></bpmn:extensionElements>"
+    )
+
+    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob", version="v2")
+
+
+@pytest.mark.parametrize("type_attrs", ['version="v1"', ""])
+def test_typed_extension_rejects_another_type_version(type_attrs: str) -> None:
+    task = _service_task(
+        '<bpmn:extensionElements><uipath:activity version="v2">'
+        f'<uipath:type value="Orchestrator.StartAgentJob" {type_attrs} />'
+        "</uipath:activity></bpmn:extensionElements>"
+    )
+
+    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
+    assert not has_typed_uipath_extension(
+        task, "activity", "Orchestrator.StartAgentJob", version="v2"
+    )
 
 
 def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
@@ -74,10 +111,17 @@ def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
         "folderPath",
     ]
     assert start_agent["bindingInfo"]["contextField"] == "name"
-    assert '<uipath:activity type="Orchestrator.StartAgentJob"' in start_agent[
-        "xmlTemplate"
-    ]
-    assert "<bpmn:extensionElements>" not in start_agent["xmlTemplate"]
+    template = ET.fromstring(
+        start_agent["xmlTemplate"].replace(
+            "<bpmn:ServiceTask",
+            f'<bpmn:ServiceTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}"',
+            1,
+        )
+    )
+    type_elem = template.find("bpmn:extensionElements/uipath:activity/uipath:type", NS)
+    assert type_elem is not None
+    assert type_elem.attrib == {"value": "Orchestrator.StartAgentJob", "version": "v2"}
+    assert "type" not in template.find("bpmn:extensionElements/uipath:activity", NS).attrib
     assert "releaseKey" not in start_agent["xmlTemplate"]
 
 
@@ -595,6 +639,147 @@ def test_body_object_is_empty_without_body_inputs() -> None:
     assert bpmn_check.body_fields(task) == []
 
 
+def test_path_parameters_reads_v1_per_field_inputs() -> None:
+    task = _send_task(
+        '<uipath:input name="entityName" type="string" target="path" value="FlowCodeEvalEntity" />'
+        '<uipath:input name="recordId" type="string" target="path" value="=vars.Id" />'
+        '<uipath:input name="limit" type="number" target="query" value="100" />'
+    )
+    assert bpmn_check.path_parameters(task) == {
+        "entityName": "FlowCodeEvalEntity",
+        "recordId": "=vars.Id",
+    }
+
+
+def test_path_parameters_reads_the_v2_json_input() -> None:
+    task = _send_task(
+        '<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA['
+        '{"entityName": "NonExistentEntity", "fieldName": " file "}]]></uipath:input>'
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityName": "QueryOnly"}]]></uipath:input>'
+    )
+    assert bpmn_check.path_parameters(task) == {
+        "entityName": "NonExistentEntity",
+        "fieldName": "file",
+    }
+
+
+def test_query_parameters_reads_both_shapes() -> None:
+    task = _send_task(
+        '<uipath:input name="isAscending" type="boolean" target="query" value="false" />'
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityScope": "tenant", "tenantEntityName": "NonExistentEntity", "limit": 5, '
+        '"ratio": 0.5, "count": true}]]></uipath:input>'
+        '<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA['
+        '{"entityName": "PathOnly"}]]></uipath:input>'
+    )
+    assert bpmn_check.query_parameters(task) == {
+        "isAscending": "false",
+        "entityScope": "tenant",
+        "tenantEntityName": "NonExistentEntity",
+        "limit": "5",
+        "ratio": "0.5",
+        "count": "true",
+    }
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "not json",
+        '["NonExistentEntity"]',
+        '{"entityName": null}',
+        '{"entityName": {"name": "X"}}',
+        '{"entityName": ["X"]}',
+        "",
+    ],
+)
+def test_path_parameters_skips_a_v2_payload_that_names_nothing(payload: str) -> None:
+    task = _send_task(
+        f'<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA[{payload}]]></uipath:input>'
+    )
+    assert bpmn_check.path_parameters(task) == {}
+
+
+QUERY_V2_SEND_AS = (
+    '<uipath:input name="queryParameters" type="json" target="queryParameters">'
+    '<![CDATA[{{"send_as": {}}}]]></uipath:input>'
+)
+QUERY_V1_SEND_AS = '<uipath:input name="send_as" type="string" target="query" value="user" />'
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        (QUERY_V1_SEND_AS, ["user"]),
+        (QUERY_V2_SEND_AS.format('"user"'), ["user"]),
+        (QUERY_V2_SEND_AS.format('"bot"'), ["bot"]),
+        (QUERY_V1_SEND_AS.replace('"user"', '"user "'), ["user "]),
+        (QUERY_V2_SEND_AS.format('" user"'), [" user"]),
+        (QUERY_V2_SEND_AS.format("true"), ["true"]),
+        (QUERY_V2_SEND_AS.format("null"), ["null"]),
+        (QUERY_V1_SEND_AS + QUERY_V2_SEND_AS.format('"user"'), ["user", "user"]),
+        (QUERY_V2_SEND_AS.format('"user"') * 2, ["user", "user"]),
+        (QUERY_V2_SEND_AS.format('"user"').replace("send_as", "other"), []),
+        (QUERY_V2_SEND_AS.format('"user"').replace('{"send_as": "user"}', "not json"), []),
+        (
+            '<uipath:input name="pathParameters" type="json" target="pathParameters">'
+            '<![CDATA[{"send_as": "user"}]]></uipath:input>',
+            [],
+        ),
+    ],
+    ids=[
+        "v1",
+        "v2",
+        "v2-bot",
+        "v1-unstripped",
+        "v2-unstripped",
+        "v2-bool",
+        "v2-null",
+        "both-shapes",
+        "two-v2-inputs",
+        "v2-other-key",
+        "v2-not-json",
+        "v2-path",
+    ],
+)
+def test_query_values_counts_every_occurrence(payload: str, expected: list[str]) -> None:
+    assert bpmn_check.query_values(_send_task(payload), "send_as") == expected
+
+
+def test_query_filter_text_reads_a_v2_query_expression() -> None:
+    grader = _load("check_df_smoke_query_filter")
+    task = _send_task(
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"queryExpression": "title = \'FilterFixture-Matrix\' ORDER BY score DESC", '
+        '"folderKey": "=bindings.Binding_DataFabricFolder"}]]></uipath:input>'
+    )
+    pairs, text = grader.node_representation(task)
+
+    assert "=bindings" not in text
+    assert grader.has_expected_filter(text, *grader.EXPECTED["string"])
+    assert grader.sorted_field(pairs, text) == "score"
+    assert grader.is_descending(pairs, text)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ('{"queryExpression": "=js:\'InvoiceNumber = \' + vars.Var_Invoice"}', True),
+        ('{"queryExpression": ""}', False),
+        ('{"limit": 100}', False),
+    ],
+    ids=["v2-expression", "v2-empty", "v2-no-filter"],
+)
+def test_billing_filter_reads_a_v2_query_expression(query: str, expected: bool) -> None:
+    grader = _load("check_billing_invoice_lookup")
+    task = _send_task(
+        '<uipath:input name="queryParameters" type="json" target="queryParameters">'
+        f"<![CDATA[{query}]]></uipath:input>"
+    )
+    assert grader.has_nonempty_filter(task) is expected
+
+
 def test_body_object_is_empty_for_an_empty_body_input() -> None:
     task = _send_task('<uipath:input name="body" type="json" target="body" />')
     assert bpmn_check.body_object(task) == {}
@@ -612,3 +797,175 @@ def test_body_object_fails_a_malformed_body_blob() -> None:
     )
     with pytest.raises(bpmn_check.BodyShapeError, match="must be an object"):
         bpmn_check.body_object(not_object)
+
+
+def _process(nodes: str) -> ET.Element:
+    return ET.fromstring(f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}"><bpmn:process id="P">{nodes}</bpmn:process></bpmn:definitions>')
+
+
+def test_tag_case_hint_names_the_pascal_case_tag() -> None:
+    hint = tag_case_hint(_process('<bpmn:UserTask id="T" />'), "userTask")
+    assert hint == " (found bpmn:UserTask; tags are case-sensitive, expected bpmn:userTask)"
+
+
+@pytest.mark.parametrize(
+    "nodes",
+    ['<bpmn:userTask id="T" />', '<bpmn:userTask id="T" /><bpmn:UserTask id="U" />', '<bpmn:serviceTask id="S" />'],
+    ids=["exact-case", "both-cases", "absent"],
+)
+def test_tag_case_hint_silent(nodes) -> None:
+    assert tag_case_hint(_process(nodes), "userTask") == ""
+
+
+def _connector_task(type_value: str, context: str, body: dict | None = None) -> str:
+    body_input = (
+        f'<uipath:input name="body" type="json" target="body"><![CDATA[{json.dumps(body)}]]></uipath:input>'
+        if body is not None
+        else ""
+    )
+    return (
+        f'<bpmn:sendTask id="Task_{type_value}"><bpmn:extensionElements><uipath:activity version="v1">'
+        f'<uipath:type value="{type_value}" version="v1" /><uipath:context>{context}</uipath:context>'
+        f"{body_input}</uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+    )
+
+
+def _requests(*tasks: str) -> list[tuple[str, str, str, bpmn_check.RequestShape]]:
+    root = ET.fromstring(
+        f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}">'
+        f'<bpmn:process id="P">{"".join(tasks)}</bpmn:process></bpmn:definitions>'
+    )
+    return [
+        (task.attrib["id"], method, path, shape)
+        for task, method, path, shape in bpmn_check.connector_requests(root, "uipath-uipath-testmanager")
+    ]
+
+
+HTTP_CONTEXT = '<uipath:input name="connectorKey" type="string" value="uipath-uipath-http" />'
+
+
+def test_connector_requests_reads_activity_execution_context() -> None:
+    task = _connector_task(
+        "Intsvc.ActivityExecution",
+        '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />'
+        '<uipath:input name="method" type="string" value="GETBYID" />'
+        '<uipath:input name="path" type="string" value="/v2/{projectId}/testexecutions/{id}" />',
+    )
+    assert _requests(task) == [
+        (
+            "Task_Intsvc.ActivityExecution",
+            "GETBYID",
+            "/v2/{projectId}/testexecutions/{id}",
+            bpmn_check.RequestShape.ACTIVITY,
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "url, expected",
+    [
+        ("=js:'/v2/' + vars.P + '/testexecutions/' + vars.Id", "/v2/{}/testexecutions/{}"),
+        ('=js:"/v2/" + vars.P + "/teststeplogs"', "/v2/{}/teststeplogs"),
+        ("=js:`/v2/${vars.P}/testcaselogs/${vars.Id}`", "/v2/{}/testcaselogs/{}"),
+        ("=js:'/v2/' + vars.P + `/testcaselogs/${vars.Id}`", "/v2/{}/testcaselogs/{}"),
+        ("=js:('/v2/' + vars.P + '/teststeplogs')", "/v2/{}/teststeplogs"),
+        ("=vars.Url", "{}"),
+        ("/v2/{projectId}/teststeplogs", "/v2/{projectId}/teststeplogs"),
+    ],
+)
+def test_connector_requests_reads_connector_mode_http_body(url: str, expected: str) -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "GET",
+        "url": url,
+    }
+    task = _connector_task("Intsvc.UnifiedHttpRequest", HTTP_CONTEXT, body)
+    assert _requests(task) == [
+        ("Task_Intsvc.UnifiedHttpRequest", "GET", expected, bpmn_check.RequestShape.HTTP)
+    ]
+
+
+def test_connector_requests_falls_back_to_body_path() -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "DELETE",
+        "path": "/v2/p/testexecutions/1",
+    }
+    task = _connector_task("Intsvc.UnifiedHttpRequest", HTTP_CONTEXT, body)
+    assert _requests(task) == [
+        (
+            "Task_Intsvc.UnifiedHttpRequest",
+            "DELETE",
+            "/v2/p/testexecutions/1",
+            bpmn_check.RequestShape.HTTP,
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"authentication": "manual"},
+        {"targetConnector": "uipath-salesforce-slack"},
+        {"targetConnector": None},
+    ],
+)
+def test_connector_requests_skips_other_http_requests(overrides: dict) -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "GET",
+        "url": "/v2/p/teststeplogs",
+    }
+    body.update(overrides)
+    body = {k: v for k, v in body.items() if v is not None}
+    task = _connector_task("Intsvc.UnifiedHttpRequest", HTTP_CONTEXT, body)
+    assert _requests(task) == []
+
+
+def test_connector_requests_skips_mismatched_shells() -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "GET",
+        "url": "/v2/p/teststeplogs",
+    }
+    other_connector = _connector_task(
+        "Intsvc.ActivityExecution",
+        '<uipath:input name="connectorKey" type="string" value="uipath-salesforce-slack" />',
+    )
+    http_on_tm_key = _connector_task(
+        "Intsvc.UnifiedHttpRequest",
+        '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />',
+        body,
+    )
+    assert _requests(other_connector, http_on_tm_key) == []
+
+
+def test_connector_requests_skips_unreadable_body() -> None:
+    task = _connector_task("Intsvc.UnifiedHttpRequest", HTTP_CONTEXT).replace(
+        "</uipath:activity>",
+        '<uipath:input name="body" type="json" target="body" value="=vars.Body" /></uipath:activity>',
+    )
+    assert _requests(task) == []
+
+
+def test_connector_requests_reads_sdk_connector_http_as_http() -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "GET",
+        "url": "=js:'/v2/' + vars.P + '/teststeplogs'",
+    }
+    context = (
+        '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />'
+        '<uipath:input name="objectName" type="string" value="http-request" />'
+        '<uipath:input name="method" type="string" value="POST" />'
+    )
+    task = _connector_task("Intsvc.ActivityExecution", context, body)
+    assert _requests(task) == [
+        ("Task_Intsvc.ActivityExecution", "GET", "/v2/{}/teststeplogs", bpmn_check.RequestShape.HTTP)
+    ]
+    assert _requests(task.replace('"connector"', '"manual"')) == []

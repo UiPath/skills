@@ -20,11 +20,12 @@ Profiles:
           steps and criteria present, a Transactional Shape that is the stub or has flows that each name their
           unit of work, Source Map tokens, expected facts; in an extracted genome (one with a Source Map), a
           `### Steps` table with exactly one row per Workflow step.
-  strict  core plus every mechanical format rule of genome-format-guide.md: behavioural wording (no
-          code-level tokens), configuration question kind and default, bold step names, numbered acceptance
-          criteria, the As-is table, exactly the outcome rows rule 4 allows, split options named by letter
-          with only their Requires and Changes cells, complete for every unit and alternative unit, retry and
-          consecutive-failure stop; step table cells holding references only.
+  strict  core plus every mechanical format rule of genome-format-guide.md, transactional-shape-guide.md and
+          extracted-genome-guide.md: behavioural wording (no code-level tokens), configuration question kind
+          and default, bold step names, numbered acceptance criteria, the As-is table, exactly the outcome
+          rows rule 4 allows, split options named by letter with only their Requires and Changes cells,
+          complete for every unit and alternative unit, retry and consecutive-failure stop; step table cells
+          holding references only.
 
 Export check (--processes and --recordsets, both required together):
   --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
@@ -56,8 +57,8 @@ VALID_SKILLS = {
 OPERATE_SKILLS = {  # allowed in Platform Dependencies / Deployment, never in Build With or Components
     "uipath-platform", "uipath-tasks", "uipath-test", "uipath-admin", "uipath-insights",
     "uipath-troubleshoot", "uipath-governance", "uipath-review", "uipath-planner", "uipath-aops",
-    "uipath-automationhub", "uipath-automation-discovery", "uipath-feedback",
-    "uipath-activity-migrator", "uipath-knowledge-bundles",
+    "uipath-automationhub", "uipath-feedback",
+    "uipath-activity-migrator", "uipath-knowledge-bundles", "uipath-vertical-solutions",
 }
 RETIRED_SKILLS = {"uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"}
 
@@ -88,9 +89,9 @@ MIN_CRITERIA_BY_COMPLEXITY = {"simple": 3, "medium": 5, "complex": 7}
 SPLIT_OPTIONS = {"A", "B", "C"}
 SPLIT_COLUMNS = ["unit of work", "option", "requires", "changes against as-is"]
 STUB = "Not transactional"
-# format guide § Transactional Shape rule 9: a flow with one side outside the genome names it instead of the table
+# transactional shape guide rule 9: a flow with one side outside the genome names it instead of the table
 EXTERNAL_SIDE = re.compile(r"Split options:(?:\*\*)? none\s*[—–-]+\s*the (consumer|producer) is outside this genome", re.I)
-# format guide § Source Map: the step table
+# extracted genome guide § Source Map: the step table
 STEPS_COLUMNS = ["step", "source objects", "data sets", "captures", "notes"]
 REFERENCE = re.compile(r"`([^`]+)`(?:\s*\(((?:[^()`]|`[^`]*`)*)\))?")  # `Name`, `Name` (id), `Name` (id, locator)
 
@@ -283,7 +284,7 @@ def effective_flows(ts: str) -> tuple[list[tuple[str, str]], bool]:
 
 
 def check_transactional(text: str, level: str, r: Report, part_of: bool = False) -> None:
-    """Transactional Shape: the stub, or flow blocks the format guide describes."""
+    """Transactional Shape: the stub, or flow blocks the transactional shape guide describes."""
     ts = section_body(text, "Transactional Shape")
     if not ts.strip() or ts.strip().startswith(STUB):
         return
@@ -326,7 +327,7 @@ def check_transactional(text: str, level: str, r: Report, part_of: bool = False)
                     r.strict(f"Transactional Shape {name}: no '{needed}' outcome row")
             for extra in [x for x in rows if x not in OUTCOME_ROWS]:
                 r.strict(f"Transactional Shape {name}: outcome row '{extra}' — a source's own results map to Success or a Business exception")
-            # the consumer owes the item retry and the consecutive-failure stop (format guide rule 4)
+            # the consumer owes the item retry and the consecutive-failure stop (transactional shape guide rule 4)
             if not re.search(r"retr(y|ie)", body, re.I) or not re.search(r"consecutive|stops? after \d", body, re.I):
                 r.strict(f"Transactional Shape {name}: outcomes do not state the item retry and the consecutive-failure stop")
         if external:
@@ -337,7 +338,7 @@ def check_transactional(text: str, level: str, r: Report, part_of: bool = False)
             if m:
                 units.setdefault(row[0], set()).add(m.group(1))
             if len(row) >= 2 and row[1].strip() not in SPLIT_OPTIONS:
-                r.strict(f"Transactional Shape {name}: option cell '{row[1]}' of '{row[0]}' holds more than its letter — the format guide defines A, B and C")
+                r.strict(f"Transactional Shape {name}: option cell '{row[1]}' of '{row[0]}' holds more than its letter — the transactional shape guide defines A, B and C")
         for unit, opts in units.items():
             if opts != SPLIT_OPTIONS:
                 r.strict(f"Transactional Shape {name}: unit '{unit}' lacks option(s) {sorted(SPLIT_OPTIONS - opts)}")

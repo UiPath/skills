@@ -25,9 +25,11 @@ Walk down. Each rung narrows the blast radius; stop at the rung that answers the
 | 4. Step detail | `uip tm teststeplog list --project-key <KEY> --test-case-log-id <UUID>` | Which step it broke on |
 | 5. Evidence | `uip tm attachment download --execution-id <UUID> --only-failed --result-path <DIR>` | Screenshots / logs for the failures |
 
-`--only-failed` on rung 2 is the difference between reading 4 rows and reading 400. Use it — do not pull every log and filter client-side (Critical Rule #9).
+`--only-failed` on rung 2 is the difference between reading 4 rows and reading 400. Use it — do not pull every log and filter client-side (Critical Rule #8).
 
 IDs chain downward: `testcaselogs list` returns the `test-case-log-id` that rungs 3 and 4 need. Do not guess it.
+
+Once a failure is a real regression, raise a defect on it, or read the defect already raised through the row's `DefectId`: see [defects-guide.md](defects-guide.md).
 
 ## Real defect, or flaky test?
 

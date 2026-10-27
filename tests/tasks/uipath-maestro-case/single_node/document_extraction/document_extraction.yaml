@@ -1,0 +1,148 @@
+task_id: skill-case-single-document-extraction
+description: >
+  Build a Case Management definition from an sdd.md whose only task is a
+  document-extraction on the tenant's "Case Eval Expense" IXP deployment in
+  Shared. The SDD names the deployment and its folder but leaves Model Name,
+  Deployment Key and Folder Key unresolved, so the skill must fill them from
+  the read-only lookups in the document-extraction plugin (IXP deployments are
+  not in the registry cache), add the deployment to the solution with `uip
+  solution resources add --source remote`, and sync its bindings sidecar entry.
+  Grades the task against the tenant's own deployment record, including that
+  Model Name is the DeploymentName and not the IXP project's name. No debug:
+  `case debug` passes no case inputs, so `fileRef` would be empty and the task
+  faults 430002.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node, feature:registry]
+max_iterations: 1
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "DocumentExtractionCase"
+  containing a project also named "DocumentExtractionCase" from the sdd.md
+  below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — DocumentExtractionCase
+
+  Single-stage case that extracts the fields of an expense receipt.
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | DocumentExtractionCase |
+  | Case Description | Reads an uploaded expense receipt with the expense IXP model. |
+  | Case Identifier | Prefix: DXC, Type: constant |
+  | Case-Level SLA | 1 d |
+  | SLA Type | Static |
+
+  ### Case Triggers
+  | T# | Trigger Type | Source | Configuration |
+  |---|---|---|---|
+  | T02 | Manual | Manual | N/A |
+
+  ### Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete | Display Name |
+  |---|---|---|---|---|
+  | required-stages-completed | — | Case exited | Yes | Done |
+
+  ### Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | expenseReceipt | In | file | | | | The receipt the submitter uploads. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Intake (`intake`)
+  **Type:** Stage
+  **Description:** Extract the receipt's fields.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting | Display Name |
+  |---|---|---|---|
+  | case-entered | — | No | — |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+  |---|---|---|---|---|
+  | required-tasks-completed | — | exit-only | Yes | Extracted |
+
+  #### Tasks
+  | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
+  |---|---|---|---|---|---|---|---|---|
+  | 1 | Extract Receipt | document-extraction | parallel | stage enters | Yes | Yes | system | — |
+
+  ##### Task 1.1: Extract Receipt
+
+  **Type:** document-extraction
+  **Activation Mode:** parallel
+  **Design Rationale:** The expense model is already deployed; the case only runs it.
+
+  **Entry Condition:**
+  | WHEN | IF | Display Name |
+  |---|---|---|
+  | current-stage-entered | — | — |
+
+  **Task envelope**
+  | Required | Run Only Once |
+  |---|---|
+  | Yes | Yes |
+
+  ###### Document Extraction Task Detail (type: `document-extraction`)
+
+  **IXP Deployment:** Case Eval Expense
+  **Model Name:** <UNRESOLVED>
+  **Folder Path:** Shared
+  **Deployment Key:** <UNRESOLVED>
+  **Folder Key:** <UNRESOLVED>
+
+  **Inputs:**
+  | Field | Type | Binding |
+  |---|---|---|
+  | fileRef | file | =vars.expenseReceipt |
+  ```
+
+  The three unresolved lines may be filled in sdd.md. Treat all build gates
+  as pre-approved — do NOT block on the HARD STOP / AskUserQuestion approval
+  step. Do NOT run `uip maestro case debug`. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish
+  with `uip maestro case validate` passing on the resulting case plan.
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated case plan"
+    command: "p=$(ls DocumentExtractionCase/DocumentExtractionCase/caseplan.case DocumentExtractionCase/DocumentExtractionCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The document-extraction task runs the tenant's deployment (key, folder, DeploymentName as Model Name), the solution holds the deployment, and the sidecar carries its entry"
+    command: "python3 $REFERENCE_DIR/_shared/check_document_extraction_case.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120
