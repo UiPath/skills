@@ -50,20 +50,20 @@ These actions may contact UiPath services or external systems.
 
 | Journey | Read |
 | --- | --- |
-| Package and upload or publish | [references/ship.md](ship.md) |
-| Debug/run and inspect execution | [references/run.md](run.md) |
-| Manage a running instance | [references/manage.md](manage.md) |
+| Package and upload or publish | [ship.md](ship.md) |
+| Debug/run and inspect execution | [run.md](run.md) |
+| Manage a running instance | [manage.md](manage.md) |
 
 ## Common tasks
 
 | I need to... | Read these |
 | --- | --- |
-| Prepare for Studio Web upload | [references/ship.md](ship.md), [shared/project-layout.md](../shared/project-layout.md) |
-| Deploy to Orchestrator | [references/ship.md](ship.md) |
-| Run/debug a BPMN process | [references/run.md](run.md) |
-| Inspect job or instance status | [references/run.md](run.md) |
-| Pause/resume/cancel/retry | [references/manage.md](manage.md) |
-| Migrate or move an instance cursor | [references/manage.md](manage.md) |
+| Prepare for Studio Web upload | [ship.md](ship.md), [shared/project-layout.md](../shared/project-layout.md) |
+| Deploy to Orchestrator | [ship.md](ship.md) |
+| Run/debug a BPMN process | [run.md](run.md) |
+| Inspect job or instance status | [run.md](run.md) |
+| Pause/resume/cancel/retry | [manage.md](manage.md) |
+| Migrate or move an instance cursor | [manage.md](manage.md) |
 | Correlate a running instance to deployed BPMN | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 | Diagnose a failed run | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 
