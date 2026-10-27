@@ -49,7 +49,9 @@ Context signature:
 
 Resolve the index from the tenant.
 Know the name: use `solution resources list` below.
+<!--skill-flavor:cg-discover:start-->
 Discovering what exists: use the `uip context-grounding` bridge, which reports every index with its folder.
+<!--skill-flavor:cg-discover:end-->
 Not `uip maestro flow registry` (node manifests), not `uip maestro registry` (the connector library), not `uip or folders list`.
 
 ```bash
@@ -64,6 +66,7 @@ Resource entries may carry `nodeId` / `source` / `label` from decompile; see [br
 Local execution has no semantic retrieval service, so an inline-agent answer is ungrounded even when the resource wiring is present.
 Platform evidence must establish that the intended index was used and that its retrieved knowledge influenced the answer.
 
+<!--skill-flavor:cg-bridge:start-->
 The `uip context-grounding` bridge runs in the project's Python environment.
 Activate the existing environment and run setup once before list/search; setup
 is the command itself, not a `setup --help` probe:
@@ -81,6 +84,7 @@ Use `--folder-key` instead of `--folder-path` when that is the known identity.
 The delegated command uses `--format json`; it does not use the outer CLI's
 `--output json` spelling. One search that answers the stated grounding claim is
 enough; do not repeat paraphrases solely for confidence.
+<!--skill-flavor:cg-bridge:end-->
 
 ## Tools
 

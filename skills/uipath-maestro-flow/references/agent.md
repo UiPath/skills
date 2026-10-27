@@ -72,6 +72,7 @@ at author time.
 
 ## Task-created in-solution coded agent
 
+<!--skill-flavor:agent-scaffold:start-->
 1. Scaffold the solution and Flow project.
 2. Scaffold and implement the coded agent as a sibling directory.
 3. Register the sibling with `uip solution projects add`.
@@ -163,6 +164,7 @@ resolved to.
 wiring: re-adding the project or hand-editing `uipath.json` will not change it,
 so read the identifiers and wire the Flow rather than trying to correct it
 first.
+<!--skill-flavor:agent-scaffold:end-->
 
 ```ts
 .step('analyze', agent({
