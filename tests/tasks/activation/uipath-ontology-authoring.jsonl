@@ -1,7 +1,7 @@
-{"id":"uipath-ontology-authoring-001","prompt":"Create an ontology from docs/order-management-sdd.md and build it as a local solution I can pack","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-001","prompt":"Create an ontology from docs/order-management-sdd.md and build it as a local solution I can hand to deploy","expected_skill":"uipath-ontology-authoring"}
 {"id":"uipath-ontology-authoring-002","prompt":"Read this PDD and turn its domain into an ontology with local entity definitions in a solution","expected_skill":"uipath-ontology-authoring"}
-{"id":"uipath-ontology-authoring-003","prompt":"Use this design document to create the ontology, its entities by name, the mapping, and a packed solution","expected_skill":"uipath-ontology-authoring"}
-{"id":"uipath-ontology-authoring-004","prompt":"Generate an ontology from the attached domain specification and pack it as a UiPath solution with its entities","expected_skill":"uipath-ontology-authoring"}
-{"id":"uipath-ontology-authoring-005","prompt":"Create an ontology solution from an SDD, but stop before packing if mapping generation has unresolved class, field, or relationship ambiguity","expected_skill":"uipath-ontology-authoring"}
-{"id":"uipath-ontology-authoring-006","prompt":"Turn the attached invoice-processing SDD into a UiPath ontology with its entities and pack the solution","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-003","prompt":"Use this design document to create the ontology, its entities by name, the mapping, and a validated local solution","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-004","prompt":"Generate an ontology from the attached domain specification and build it as a local UiPath solution with its entities","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-005","prompt":"Create an ontology solution from an SDD, but stop before building the solution if mapping generation has unresolved class, field, or relationship ambiguity","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-006","prompt":"Turn the attached invoice-processing SDD into a UiPath ontology with its entities in a local solution","expected_skill":"uipath-ontology-authoring"}
 {"id":"uipath-ontology-authoring-007","prompt":"Read docs/claims-pdd.docx and build an ontology solution from the process described in it","expected_skill":"uipath-ontology-authoring"}

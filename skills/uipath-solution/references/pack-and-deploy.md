@@ -343,6 +343,17 @@ uip solution deploy config set config.json --all conflictFixingAction UseExistin
 
 `--all` is restricted to `conflictFixingAction` — the field that controls what happens when a resource with the same name already exists in the target folder.
 
+#### Ontology name conflict
+
+Ontology names are unique per tenant, so the conflict can come from an ontology in another folder, not only the target folder. The only allowed action for an ontology is `RenameInSolution`. Set it, and a new name, per resource and never with `--all`:
+
+```bash
+uip solution deploy config set config.json MyOntology conflictFixingAction RenameInSolution
+uip solution deploy config set config.json MyOntology name MyOntologyV2
+```
+
+Never use `RenameExisting` or `UseExisting` for an ontology.
+
 ### Link to an Existing Orchestrator Resource
 
 Add `linkToResource` so the deployment binds to an existing entity instead of creating a new one:
