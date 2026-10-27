@@ -9,6 +9,8 @@ uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label
 uip maestro flow validate <file> --output json
 ```
 
+**Support for this node is new.** A CLI that predates it refuses the type, and the `nodes` group itself answers `error: unknown command` on a CLI older still. Either means the installed `uip` is behind the commands rather than the node being wrong — say so and let the user update
+
 ## Which extraction node the user wants
 
 Three node families share the `uipath.ixp.` prefix and they are not interchangeable. Decide before adding anything.

@@ -11,6 +11,8 @@ uip maestro flow nodes schema set <file> --node-id <id> --file <taxonomy.json> -
 
 Both edit the `.flow` on disk and need no login. `--schema '<json>'` takes the document inline instead of `--file`.
 
+**These commands are new.** A CLI that predates them answers `error: unknown command 'schema'` with `"Result": "ValidationError"`. That means the installed `uip` is older than the commands, not that the node or the flow is wrong — so tell the user to update their CLI.
+
 Because they edit the `.flow`, they do not survive a project that generates it from TypeScript source: if the project has a `.flow-sdk/` directory, the next compile overwrites the taxonomy. See [extract-document-node.md](extract-document-node.md) for which authoring mode to pick.
 
 For the node itself — checking the tenant has it, adding it, wiring `fileRef`, choosing it over a published IXP model — see [extract-document-node.md](extract-document-node.md). This guide assumes the node already exists.
