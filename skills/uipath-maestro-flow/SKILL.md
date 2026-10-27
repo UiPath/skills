@@ -222,8 +222,8 @@ defensible stated value and list it under Open questions as
 **[REQUIRED]**); bind every declared output on every
 path (`check` misses a missing one, and the run returns `undefined`); handle an
 error only when the request says what should happen; add a human task only
-when the request says the run itself waits for a person (a person acting on the
-flow's output, such as a Draft response mode, is not one). The rest is in
+when the request has the run wait for a person (a person who reviews the output
+afterward, such as a drafted reply, is not one). The rest is in
 **[`references/author.md`](references/author.md)**.
 A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
