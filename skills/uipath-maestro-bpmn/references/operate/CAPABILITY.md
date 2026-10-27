@@ -88,6 +88,6 @@ These actions may contact UiPath services or external systems.
 ### Cross-capability
 
 - [shared/project-layout.md](../shared/project-layout.md) - package files and content
-- [shared/cli-conventions.md](../cli-conventions.md) - side effects, login, JSON output
-- [author/validation.md](../structural-bpmn.md) - pre-operate validation
+- [cli-conventions.md](../cli-conventions.md) - side effects, login, JSON output
+- [structural-bpmn.md](../structural-bpmn.md) - pre-operate validation
 - [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) - failure investigation

@@ -93,7 +93,7 @@ For Integration Service enrichment details, read
 
 ### Cross-capability
 
-- [shared/bpmn-xml-contract.md](../structural-bpmn.md) - XML authoring and validation boundaries
+- [structural-bpmn.md](../structural-bpmn.md) - XML authoring and validation boundaries
 - [shared/project-layout.md](../shared/project-layout.md) - generated files and package shape
-- [shared/variables-bindings-expressions.md](../expression-authoring.md) - mappings and binding expressions
-- [shared/public-safety.md](../public-safety.md) - redaction and sanitization
+- [expression-authoring.md](../expression-authoring.md) - mappings and binding expressions
+- [public-safety.md](../public-safety.md) - redaction and sanitization
