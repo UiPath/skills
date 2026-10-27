@@ -362,6 +362,7 @@ Same source rule for `documentClassify`, `dynamicExtract`, `ixpExtract`,
 upstream `out('<step>', '<fileField>')`, or any step whose declared output type
 is a file. The runtime is the file reference, never the bytes.
 
+<!--skill-flavor:operation-doc:start-->
 **Read the operation's own doc before guessing anything.** The connector library
 ships a Markdown page per operation, and an environment that stages a library
 points `$FLOW_SDK_LIBRARY_MD` at it (`uip maestro registry path --library-md --output plain`
@@ -375,6 +376,7 @@ That page names the connector *UiPath Data Fabric*, gives the HTTP route
 (`POST /v2/{entityName}/CreateEntityRecord`), and prints the exact
 `prepare-connector … -f entityName=<value>` line to run — before any of it has to
 be inferred.
+<!--skill-flavor:operation-doc:end-->
 
 ## Evidence boundary
 

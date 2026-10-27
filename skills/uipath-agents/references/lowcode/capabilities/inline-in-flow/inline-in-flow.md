@@ -390,9 +390,11 @@ The execution is asynchronous. The flow pauses at the agent node and resumes whe
 
 See [../../critical-rules/autonomous-critical-rules.md](../../critical-rules/autonomous-critical-rules.md) Critical Rule 1. The skill explicitly defers flow authoring to `uipath-maestro-flow` — it does not invoke that skill automatically ([../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rule 15).
 
+<!--skill-flavor:flow-sdk-inline-agent-bindings:start-->
 **Capability bindings must be propagated to the flow project's `bindings_v2.json`.** Only project-level bindings are scanned by `uip solution resources refresh`. Pass `--bindings-target <FlowProjectDir>/bindings_v2.json` to `uip agent refresh --inline-in-flow` — refresh is the command that writes the bindings. Without project-level propagation, Studio Web debug can fail because no solution-level resource file is created for the external capability.
 
 Run the final `uip agent refresh --inline-in-flow --bindings-target …` as the **last step** before `uip solution resources refresh`, after all flow graph edits are complete. See the [Walkthrough](#walkthrough--end-to-end) for the correct sequence.
+<!--skill-flavor:flow-sdk-inline-agent-bindings:end-->
 
 ## References
 

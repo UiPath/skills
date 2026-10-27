@@ -168,6 +168,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `runtime-payload key-casing contract guard` | `test-helpers.yml` |
 | `maestro-bpmn contract guards` | `test-helpers.yml` |
 | `catalog build integrity guards` | `test-helpers.yml` |
+| `CLI declaration refresh unit tests` | `test-helpers.yml` |
 | `skills.sh grouping checker unit tests` | `test-helpers.yml` |
 | `sensitive-content checker unit tests` | `test-helpers.yml` |
 | `telemetry hook contract guard` | `test-helpers.yml` |
