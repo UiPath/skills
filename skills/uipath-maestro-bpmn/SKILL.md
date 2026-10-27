@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects. For .flow use uipath-maestro-flow; for case plans use uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, diagnose, and evaluate .bpmn projects. Evaluate: eval sets, evaluators, simulations, eval runs. For .flow use uipath-maestro-flow; for case plans use uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -765,14 +765,20 @@ Draft mode only.
   Assumed: <...>  Unverified: <...>
   ```
 
-## Operate and diagnose
+## Operate, evaluate, and diagnose
 
-Beyond authoring, this skill packages, ships, runs, and diagnoses Maestro
-projects through the UiPath CLI.
+Beyond authoring, this skill packages, ships, runs, evaluates, and diagnoses
+Maestro projects through the UiPath CLI.
 
 - **Package and operate** (package a project, upload to Studio Web, publish or
   deploy, run or debug instances, and manage jobs, instances, incidents, and
   lifecycle actions): see [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
+- **Evaluate** (design evaluators and eval sets, add data points and
+  simulations, and start/monitor/compare Studio Web evaluation runs for a BPMN
+  project): see [references/evaluate.md](references/evaluate.md).
+  Local CRUD is offline; `eval run *` requires `uip login` and a BPMN solution
+  already in Studio Web. Never auto-run `uip solution upload` to satisfy that
+  prerequisite — ask the user, the same way Rule 10 governs `solution upload`.
 - **Diagnose** (fetch incidents, variables, and element executions, and trace a
   failed run back to its BPMN element): see [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
   Runtime evidence — incidents, variables, element executions, cursors, the
@@ -822,5 +828,6 @@ and honestly surfaced to the user as gaps when asked.
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
 | Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |
 | Package, upload, publish, run, or manage instances | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
+| Design and run BPMN evaluations (evaluators, eval sets, data points, simulations, runs) | [references/evaluate.md](references/evaluate.md) |
 | Diagnose a failed or misbehaving run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
 | Project layout and generated package files | [references/shared/project-layout.md](references/shared/project-layout.md) |

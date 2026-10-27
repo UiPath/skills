@@ -58,6 +58,33 @@ Final is the latest run after the review fixes; each row's earlier result is kep
 | `connector_features/path_params.yaml` | `connector_features/path_params/` | PASS (run 36056004092) | earlier PASS it.2 (run 35790934047); it.1 agent left the issue key as an unbound variable |
 | `connector_features/paginated_reference_lookup.yaml` | `connector_features/paginated_reference_lookup/` | FAIL (runs 36053143338, 36056004092) | after the review fixes the agent never resolved the channel id in either run; earlier PASS it.3 (run 35791969905); it.1 channel by name, no pagination; it.2 channel id with its last character dropped |
 
+### Evaluate (BPMN eval CLI, UiPath/cli#5169)
+
+The initial classification (2026-09-19) parked every `evaluate/` task as "Not
+portable — Flow evaluate capability has no BPMN counterpart." That premise no
+longer holds: `uip maestro bpmn eval` (UiPath/cli#5169) gives BPMN the same
+evaluator / eval-set / simulation / run surface, built on the shared
+`@uipath/eval-sdk`. Five of the six Flow evaluate tasks port; `inline_agent_eval`
+stays Flow-only because BPMN has no inline agent.
+
+| Flow task | BPMN port | Notes |
+|---|---|---|
+| `evaluate/local_crud.yaml` | `evaluate/local_crud.yaml` | exact-match evaluator + eval set + data point; offline CRUD |
+| `evaluate/no_auto_upload.yaml` | `evaluate/no_auto_upload.yaml` | upload-safety refusal; cites the `evaluate.md` "Never upload" rule |
+| `evaluate/evaluator_type_choice.yaml` | `evaluate/evaluator_type_choice.yaml` | shared evaluator taxonomy; identical type ids |
+| `evaluate/simulation/simulation_crud.yaml` | `evaluate/simulation/simulation_crud.yaml` | Static + Llm sims; **Llm requires explicit `--output-schema`** (BPMN cannot auto-resolve it, unlike Flow) |
+| `evaluate/child_simulation/child_simulation_crud.yaml` | `evaluate/child_simulation/child_simulation_crud.yaml` | `--parent` child tool sims; Llm child also requires explicit `--output-schema` |
+| `evaluate/inline_agent_eval/inline_agent_eval.yaml` | — | not ported: inline agents are Flow-only (BPMN agents are published via `Orchestrator.StartAgentJob`) |
+
+Divergences from the Flow tasks, forced by the BPMN eval contract (verified
+against `maestro-tool` on `feat/maestro-bpmn-eval-clean`): every `Llm` simulation
+passes `--output-schema` (the CLI rejects it otherwise); simulation targets are
+component ids, not nodes that must exist in the `.bpmn` (BPMN never resolves the
+node when a schema is supplied); the entry point is a start-event id and
+CLI-authored sets are always `flow`-scoped. Graders are near-verbatim ports — the
+on-disk eval JSON shapes are the shared eval-sdk's, so they match Flow's. Tasks
+pending a `run-coder-eval.yml` run to record pass ids.
+
 ### Parked (branch `test/bpmn-port-parked`, all `skip: true`)
 
 | Flow task | BPMN port | Evidence |
@@ -201,7 +228,11 @@ The buckets the ports were chosen from. The ledger above supersedes a row once i
 | `multi_node/billing_resolution_writer/billing_resolution_writer.yaml` | inline agent → StartAgentJob substitute |
 | `single_node/file_attachment/file_attachment.yaml` | file-typed process variable: confirm canvas variable contract supports it |
 
-### Not portable (Flow-only surface) (30)
+### Not portable (Flow-only surface) (25)
+
+> The six `evaluate/` rows left this bucket once `uip maestro bpmn eval`
+> (UiPath/cli#5169) landed — five ported, `inline_agent_eval` stays Flow-only.
+> See the **Evaluate** section above.
 
 | Flow task | BPMN target / note |
 |---|---|
@@ -214,12 +245,7 @@ The buckets the ports were chosen from. The ledger above supersedes a row once i
 | `context-grounding/batch_transform/batch_transform.yaml` | Flow pattern node (batch transform) is Flow-only |
 | `context-grounding/summarize/summarize.yaml` | Flow pattern node (deep-rag) is Flow-only |
 | `conversational/conversational_chat_loop.yaml` | conversational agent loop is Flow-only |
-| `evaluate/child_simulation/child_simulation_crud.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
-| `evaluate/evaluator_type_choice.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
-| `evaluate/inline_agent_eval/inline_agent_eval.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
-| `evaluate/local_crud.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
-| `evaluate/no_auto_upload.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
-| `evaluate/simulation/simulation_crud.yaml` | Flow evaluate capability (eval sets, simulations) has no BPMN counterpart |
+| `evaluate/inline_agent_eval/inline_agent_eval.yaml` | inline agents are Flow-only (BPMN agents are published via `Orchestrator.StartAgentJob`); the other five `evaluate/` tasks are now ported — see the **Evaluate** section above |
 | `interactive/ixp_invoice_extraction_simulated/ixp_invoice_extraction_simulated.yaml` | IXP node is Flow-only |
 | `ixp/e2e_01_invoice_extraction_greenfield.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
 | `ixp/e2e_02_project_selection.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
