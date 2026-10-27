@@ -61,7 +61,7 @@ node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
 | `ok` | Record `exe` as `<MIGRATOR_EXE>` and `version`. Continue. |
 | `error`, `code: not-windows` | Rule 1. Stop. |
 | `error`, `code: runtime-missing` | Relay the script's message; it names the fix. Stop. |
-| `error`, `code: download-failed` | Relay the script's message, which names each downloader's error, and give the manual steps from [acquisition-guide.md § Manual placement](references/acquisition-guide.md#manual-placement). Stop. |
+| `error`, `code: download-failed` | When the result names a `holder`, another run of the script is downloading on this machine: wait a minute, then rerun. When it carries `completedBytes`, rerun the script: the download resumes from the bytes kept. At most three reruns of either kind in one task. Otherwise, relay the script's message, which names each downloader's error, and give the manual steps from [acquisition-guide.md § Manual placement](references/acquisition-guide.md#manual-placement). Stop. |
 | `error` with an `env` field | Put that assignment, as is, at the start of this script's command and of every `"<MIGRATOR_EXE>"` command from here on, then rerun the script. In PowerShell write it as `$env:<NAME> = '<value>';` in the same command. Never drop or alter the assignment. |
 | any other `error` | Show `message`. Stop. |
 
