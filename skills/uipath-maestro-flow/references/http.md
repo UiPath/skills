@@ -5,9 +5,9 @@
 Always author `http({ managed: true, ... })`; non-2xx responses take the error
 path. `managed: false` (`core.action.http`) no longer runs: the tenant answers 500
 `No handler registered for extension type 'Intsvc.HttpExecution'`, even though
-`check` only warns (`HTTP_V1_RETIRED`). An existing `managed: false` step in a
-flow you edit gets the same switch, and every read of its `statusCode` becomes an
-`.onError()` handler ([error-handling.md](error-handling.md)).
+`check` only warns (`HTTP_V1_RETIRED`). A `managed: false` step you edit gets
+the same switch, and every read of its `statusCode` becomes an `.onError()`
+handler ([error-handling.md](error-handling.md)); leave an untouched one alone.
 
 Signature:
 `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
