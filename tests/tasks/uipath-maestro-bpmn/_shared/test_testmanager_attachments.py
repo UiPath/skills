@@ -161,13 +161,32 @@ def test_http_with_unfilled_project_id_fails(tmp_path: Path, project: str) -> No
     assert "'/v2/{projectId}/attachments/{objType}/{id}/upload' with every placeholder" in result.stderr
 
 
-@pytest.mark.parametrize("slot", ["{}", "${id}", "<id>", ":id"])
+MID_URL_EXPRESSIONS = ["=js:vars.Var_Id.id", "=vars.Var_Id", "vars.Var_Id.id", "$vars.Var_Id.id"]
+
+
+@pytest.mark.parametrize("slot", ["{}", "${id}", "<id>", ":id", *MID_URL_EXPRESSIONS])
 def test_http_literal_url_with_unfilled_slot_fails(tmp_path: Path, slot: str) -> None:
     nodes = _http_nodes()
     nodes[0] = HTTP_NODE.format(index=0, body=_http_body("POST", f"/v2/p/attachments/t/{slot}/upload"))
     result = _write(tmp_path, "".join(nodes), "--all-ops")
     assert result.returncode != 0
     assert _missing(result.stderr) == ["upload an attachment"]
+
+
+@pytest.mark.parametrize("operation", range(len(HTTP_OPERATIONS)))
+def test_http_mid_url_expression_is_literal_text(tmp_path: Path, operation: int) -> None:
+    paths = [
+        "/v2/p/attachments/TestCase/=js:vars.Var_ReqCreate_body.id/upload",
+        "/v2/p/attachments/TestCase/=js:vars.Var_ReqCreate_body.id/all",
+        "/v2/p/attachments/TestCase/=js:vars.Var_ReqCreate_body.id/download",
+        "/v2/p/attachments/TestCase/=js:vars.Var_ReqCreate_body.id",
+    ]
+    nodes = _http_nodes()
+    method = HTTP_OPERATIONS[operation][0]
+    nodes[operation] = HTTP_NODE.format(index=operation, body=_http_body(method, paths[operation]))
+    result = _write(tmp_path, "".join(nodes), "--all-ops")
+    assert result.returncode != 0
+    assert _missing(result.stderr) == [LABELS[operation]]
 
 
 def test_http_with_catalog_template_paths_fails(tmp_path: Path) -> None:

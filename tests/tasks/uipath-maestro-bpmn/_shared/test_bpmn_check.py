@@ -1178,6 +1178,27 @@ def test_require_operations_keeps_placeholders_off_alternative_literals() -> Non
     assert "\n  update an item (" in str(exc.value)
 
 
+@pytest.mark.parametrize(
+    "item",
+    [
+        "=js:vars.Var_ReqCreate_body.id",
+        "=vars.Var_ReqCreate_body.id",
+        "vars.Var_ReqCreate_body.id",
+        "$vars.Var_ReqCreate_body.id",
+        "x=js:vars.Var_ReqCreate_body.id",
+    ],
+)
+def test_require_operations_rejects_expression_written_mid_url(item: str) -> None:
+    operations = [
+        bpmn_check.ConnectorOperation("get an item", "Item", {"get"}, "/v2/{p}/requirements/{id}"),
+    ]
+    requests = _http_item_requests(("GET", f"/v2/253699db-0c2e/requirements/{item}"))
+    with pytest.raises(SystemExit) as exc:
+        bpmn_check.require_operations(requests, operations, "item")
+    assert "\n  get an item (" in str(exc.value)
+
+
+
 def test_require_operations_ignores_method_case() -> None:
     operations = [
         bpmn_check.ConnectorOperation("get an item", "Item", {"GETBYID", "GET"}, "/v2/{p}/items/{id}"),

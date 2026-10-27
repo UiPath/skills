@@ -506,7 +506,10 @@ def connector_requests(
         yield task, method, path, RequestShape.ACTIVITY
 
 
-_PATH_SEGMENT = r"(?![^/]*%7B[^/]*%7D)(?![^/]*<[^/]*>)(?!:\w)(?:\{\}|[^/{])+"
+_PATH_SEGMENT = (
+    r"(?!=)(?![^/]*=js:)(?!\$?vars\.)(?![^/]*%7B[^/]*%7D)(?![^/]*<[^/]*>)(?!:\w)"
+    r"(?:\{\}|[^/{])+"
+)
 _PLACEHOLDER_RE = re.compile(r"\{[^/}]*\}")
 _CATALOG_ONLY_METHODS = {"getbyid"}
 
