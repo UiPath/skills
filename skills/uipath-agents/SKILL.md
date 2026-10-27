@@ -58,7 +58,7 @@ Determine the agent mode before proceeding:
 | Work with file attachments (input, output, or created mid-run) | Coded | [coded/capabilities/file-attachments.md](references/coded/capabilities/file-attachments.md) | |
 | Build a conversational (chat-style) agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
 | Add a low-code context (Context Grounding RAG / attachments / DataFabric entity set) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/context/*` |
-| Add a low-code memory space or seed memory items | Low-code | [lowcode/capabilities/memory/memory.md](references/lowcode/capabilities/memory/memory.md) | use `uip agent memory`, then refresh/validate |
+| Add a low-code memory space, or promote runs into memory items | Low-code | [lowcode/capabilities/memory/memory.md](references/lowcode/capabilities/memory/memory.md) | use `uip agent memory`, then refresh/validate |
 | Add an Action Center escalation (HITL) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/escalation/escalation.md` |
 | Add guardrails (PII, harmful content, custom rules) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/guardrails/guardrails.md` |
 | Guard attached or produced files with guardrails (`detectionScope`: Text / Files / Both) | Low-code | [lowcode/capabilities/guardrails/guardrails.md](references/lowcode/capabilities/guardrails/guardrails.md) § Files and attachments | `lowcode/capabilities/guardrails/files-guide.md` |
