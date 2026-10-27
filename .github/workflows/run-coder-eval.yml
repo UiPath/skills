@@ -66,6 +66,12 @@ on:
         description: '@uipath/cli version.'
         type: string
         default: dev
+      # TEST-ONLY (throwaway branch): build maestro-tool + case-tool from this
+      # UiPath/cli ref and copy their self-contained dist/ over the image's.
+      cli_tool_overlay_ref:
+        description: 'UiPath/cli ref to overlay maestro-tool + case-tool from (blank = none).'
+        type: string
+        default: ''
       # delegate = UiPath Autopilot's Delegate agent, a coder-eval built-in that
       # drives the @uipath/delegate-stdio host. Linux runs it through the docker
       # overlay image; Windows runs it in-process on the host (tempdir driver)
@@ -356,6 +362,51 @@ jobs:
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        if: inputs.cli_tool_overlay_ref != ''
+        with:
+          repository: UiPath/cli
+          ref: ${{ inputs.cli_tool_overlay_ref }}
+          token: ${{ secrets.GH_PAT }}
+          path: cli-overlay
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        if: inputs.cli_tool_overlay_ref != ''
+        with:
+          bun-version: 1.4.2
+
+      - name: Overlay maestro-tool + case-tool from UiPath/cli ref
+        if: inputs.cli_tool_overlay_ref != ''
+        env:
+          DOCKER_BUILDKIT: "1"
+          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          cd cli-overlay
+          echo "UiPath/cli overlay at $(git rev-parse HEAD)"
+          bun install --frozen-lockfile --network-concurrency=4
+          bunx nx run @uipath/maestro-tool:build
+          bunx nx run @uipath/case-tool:build
+          grep -l 'maestroEngineVersion version=' packages/maestro-tool/dist/*.js >/dev/null
+          root="$(docker run --rm --entrypoint npm skills-image:latest root -g)"
+          echo "image npm root: $root"
+          ctx="$RUNNER_TEMP/tool-overlay"; mkdir -p "$ctx"
+          cp -R packages/maestro-tool/dist "$ctx/maestro-tool-dist"
+          cp -R packages/case-tool/dist "$ctx/case-tool-dist"
+          cat > "$ctx/Dockerfile" <<EOF
+          FROM skills-image:latest
+          RUN rm -rf "$root/@uipath/maestro-tool/dist" "$root/@uipath/case-tool/dist"
+          COPY maestro-tool-dist $root/@uipath/maestro-tool/dist
+          COPY case-tool-dist $root/@uipath/case-tool/dist
+          RUN cd /tmp && rm -rf v2probe && mkdir v2probe && cd v2probe \
+           && uip maestro bpmn init P --skip-solution-registration --output json >/dev/null \
+           && grep -q 'maestroEngineVersion version="v2"' P/P.bpmn \
+           && uip maestro bpmn validate P/P.bpmn --output json \
+           && cd / && rm -rf /tmp/v2probe
+          EOF
+          docker build -t skills-image:latest "$ctx"
 
       # delegate under the docker driver: the orchestrator runs INSIDE the
       # container, so the @uipath/delegate-stdio Node host that coder-eval's
