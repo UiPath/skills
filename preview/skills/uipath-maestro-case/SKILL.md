@@ -118,7 +118,7 @@ nothing about the connector. To use another library, set
 both resolve against the same one.
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
-API workflow, or sub-case; never fabricate a name or folder. A destination's
+API workflow, Coded Function, or sub-case; never fabricate a name or folder. A destination's
 `selected-stage-completed` entry does not imply a source `exitToStage` hand-off.
 
 ## Evidence boundary
