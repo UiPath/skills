@@ -28,6 +28,9 @@ advances:
       code: 'return $vars.fetch.output.body.name;' }))))
 ```
 
+A non-2xx fails `fetch` and faults the loop. To skip that item instead, end an
+`.onError()` handler on `fetch` with `.continue()` ([Loop options](#loop-options)).
+
 The loop runs sequentially (`parallel: false`). Inside the body, read
 `$vars.<loop>.currentItem` and `$vars.<loop>.currentIteration` — or
 `v('eachOrder.currentItem')` from the builder.
