@@ -266,6 +266,53 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `extractionResult` to the upstream extract step's `ExtractionResult`.
   `render: 'custom'` requires `taxonomy` (and takes `app`).
 
+## Action App inputs and answers
+
+On `variant: 'action-app'`, give the app's action schema as `app.actionSchema`.
+For a coded action app, copy the contents of its `action-schema.json`;
+otherwise copy the platform's action schema (the solution resource's
+`spec.actionSchema`, or what the Apps API returns). Both spellings are accepted
+as they are.
+
+```ts
+.step('review', hitl({
+  variant: 'action-app',
+  app: {
+    name: 'InvoiceReview', key: appKey, folderPath: 'Shared',
+    inputs: { invoiceAmount: input('invoice_amount'), variancePct: out('math', 'variance_pct') },
+    actionSchema: {                       // the app's action-schema.json
+      inputs: { type: 'object', properties: {
+        invoiceAmount: { type: 'number', required: true },
+        variancePct: { type: 'number', required: true } } },
+      outputs: { type: 'object', properties: {
+        reviewerComments: { type: 'string', required: true } } },
+      outcomes: { type: 'object', properties: { Approve: { type: 'string' }, Reject: { type: 'string' } } },
+    },
+  },
+  outcomes: ['Approve', 'Reject'],
+}))
+.return({ decision: out('review', 'Action'), comments: out('review', 'reviewerComments') })
+```
+
+- **Without it every input reaches the app as a string.** The task's input
+  schema is built from `actionSchema`; with none, the platform types each
+  `app.inputs` key as `string`, so `invoiceAmount: 10450` arrives as
+  `"10450"`. `check` warns (`HITL_APP_NO_SCHEMA`) when inputs are sent with no
+  schema.
+- **`check` holds the flow to the schema:** an input the app does not declare
+  (`HITL_APP_INPUT_UNKNOWN`), a required input left unbound
+  (`HITL_APP_INPUT_REQUIRED`), an outcome the app has no button for
+  (`HITL_APP_OUTCOME_UNKNOWN`), and a value that is not an action schema
+  (`HITL_APP_SCHEMA_INVALID`) are errors.
+- **The app's answers become readable.** The schema's `outputs` and `inOuts`
+  are the task's typed answer fields, so `out('review', 'reviewerComments')`
+  passes `check`. Without the schema such a read fails
+  (`HITL_READ_UNKNOWN_FIELD`).
+- A decompiled action-app task keeps its schema as `app.actionSchema`.
+
+Needs a `@uipath/maestro-builder-sdk` release later than 6.57.1; an older SDK
+has no `actionSchema` on `app`.
+
 ## Variant judgment
 
 Use the node variant explicitly named by the scenario. The default and
