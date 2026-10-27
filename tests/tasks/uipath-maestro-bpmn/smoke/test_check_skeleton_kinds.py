@@ -43,13 +43,14 @@ def _cwd(path: str):
 
 
 REGISTRY = {"Data": {"ExtensionTypes": [
-    {"ExtensionType": "Actions.HITL", "Kind": "Action app", "Label": "Create action app task"},
-    {"ExtensionType": "Orchestrator.StartJob", "Kind": "RPA workflow", "Label": "Start and wait for RPA workflow"},
-    {"ExtensionType": "BPMN.ScriptTask", "Kind": None, "Label": "Execute script"},
-    {"ExtensionType": "Orchestrator.BusinessRules", "Kind": None, "Label": "Execute business rule [Preview]"},
-    {"ExtensionType": "Maestro.NotificationService", "Kind": None, "Label": "Notification service"},
-    {"ExtensionType": "Maestro.CaseManagerPlaceholder", "Kind": None, "Label": "Case manager placeholder"},
-    {"ExtensionType": "BPMN.Variables", "Kind": None, "Label": "BPMN Variables"},
+    {"ExtensionType": "Actions.HITL", "Label": "Create action app task"},
+    {"ExtensionType": "Orchestrator.StartJob", "Label": "Start and wait for RPA workflow"},
+    {"ExtensionType": "BPMN.ScriptTask", "Label": "Execute script"},
+    {"ExtensionType": "Intsvc.ActivityExecution", "Label": "Execute connector activity"},
+    {"ExtensionType": "Orchestrator.BusinessRules", "Label": "Execute business rule [Preview]"},
+    {"ExtensionType": "Maestro.NotificationService", "Label": "Notification service"},
+    {"ExtensionType": "Maestro.CaseManagerPlaceholder", "Label": "Case manager placeholder"},
+    {"ExtensionType": "BPMN.Variables", "Label": "BPMN Variables"},
 ]}}
 
 
@@ -60,17 +61,24 @@ class KindTests(unittest.TestCase):
     def check(self, boxes):
         return kinds.check(boxes, self.toolbox, self.case_only)
 
-    def test_kinds_and_labels_from_the_list_pass(self):
-        self.assertEqual(self.check(BOXES + ["Score risk [Execute business rule [Preview]]",
+    def test_table_kinds_and_other_labels_pass(self):
+        self.assertEqual(self.check(BOXES + ["Score risk [Business rule]",
                                              "Classify [RPA workflow] → Classification",
-                                             "Review [action app]"]), [])
+                                             "Review [action app]",
+                                             "Notify [Execute connector activity]",
+                                             "Start child [Maestro Flow]"]), [])
+
+    def test_long_label_of_a_table_type_fails(self):
+        errors = self.check(["Score risk [Execute business rule [Preview]]", "Review [Create action app task]"])
+        self.assertEqual(len(errors), 2, errors)
+        self.assertTrue(all("neither a toolbox kind" in e for e in errors), errors)
 
     def test_box_without_a_kind_fails(self):
         self.assertTrue(self.check(["Record invoice"]))
 
     def test_invented_kind_fails(self):
         errors = self.check(["Send summary [Email]"])
-        self.assertIn("not a Kind or Label", errors[0])
+        self.assertIn("neither a toolbox kind", errors[0])
 
     def test_case_only_type_fails(self):
         errors = self.check(["Tell the manager [Notification service]", "Hold [Case manager placeholder]"])

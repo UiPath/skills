@@ -3,19 +3,25 @@
 
 Usage (cwd = sandbox root): check_skeleton_kinds.py <ProjectName> [--registry-json <file>]
 
-Phase 2 labels every box ``<action> [<kind>]``, the kind taken verbatim from
-the toolbox list preflight 1a reads: an extension type's ``Kind``, or its
-``Label`` when it has none. This passes when every task box carries a
-bracketed kind and each one is a ``Kind`` or ``Label`` of a type Studio Web's
-BPMN toolbox offers. It fails on a box with no kind, on a kind that is not in
-the list (an invented or paraphrased one), and on a case-management-only type
-(the ones 1a's filter drops), which the BPMN toolbox does not offer.
+Phase 2 labels every box ``<action> [<kind>]``. The kind is the short name
+Studio Web's BPMN toolbox shows, from the skill's "Toolbox kinds" table
+(phase-2-skeleton-guide.md) for the types that table lists, and the type's
+registry ``Label`` for every other type. This passes when every task box
+carries a bracketed kind and each one is such a name. It fails on a box with
+no kind, on a name that is neither (an invented or paraphrased one, or the
+long ``Label`` of a type the table names), and on a case-management-only
+type (the ones 1a's filter drops), which the BPMN toolbox does not offer.
 
-The list comes from the installed CLI, not a copy pinned here:
+The table is embedded below (TOOLBOX_KINDS), not parsed from the skill: the
+grader cannot assume where an agent harness installed the skill, and the
+reference directory holds only the graders. Keep it in step with the
+guide's table.
+
+The Labels come from the installed CLI, not a copy pinned here:
 ``uip maestro bpmn registry list`` reads the CLI's built-in catalog, needs no
 login or network, and is the same call (same binary) the agent made in 1a,
 so the grade cannot drift from what the agent was shown when the CLI adds or
-renames a kind. ``--registry-json`` grades against a saved list instead
+renames a type. ``--registry-json`` grades against a saved list instead
 (fixtures).
 
 Standalone on purpose (stdlib only, no ``_shared`` import): the smoke tasks
@@ -45,6 +51,23 @@ REGISTRY_TIMEOUT_SECONDS = 30
 CASE_ONLY_EXACT = {"Maestro.UpdateCaseState", "Maestro.RetrieveCaseState", "Maestro.NotificationService",
                    "Maestro.AcquireLock", "Maestro.ReleaseLock", "BPMN.Variables", "uipath:Activity"}
 CASE_ONLY_PREFIX = "Maestro.Case"
+
+# phase-2-skeleton-guide.md "Toolbox kinds": the toolbox's short name for
+# these types, used instead of their registry Label.
+TOOLBOX_KINDS = {
+    "Actions.HITL": "Action app",
+    "Orchestrator.StartJob": "RPA workflow",
+    "Orchestrator.StartAgentJob": "Agent",
+    "Orchestrator.ExecuteApiWorkflowAsync": "API workflow",
+    "Orchestrator.ExecuteFunctionAsync": "Function",
+    "Orchestrator.BusinessRules": "Business rule",
+    "Orchestrator.StartAgenticProcess": "Maestro BPMN",
+    "Orchestrator.StartAgenticProcessAsync": "Maestro BPMN",
+    "Orchestrator.StartCaseMgmtProcess": "Maestro Case",
+    "Orchestrator.StartCaseMgmtProcessAsync": "Maestro Case",
+    "Orchestrator.StartFlowProcess": "Maestro Flow",
+    "Orchestrator.StartFlowProcessAsync": "Maestro Flow",
+}
 
 
 def fail(message: str) -> None:
@@ -83,14 +106,21 @@ def load_registry(saved: str | None) -> list[dict]:
 
 
 def kind_sets(types: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
-    """(toolbox kinds, case-only kinds), each mapping normalized text -> display text."""
-    toolbox: dict[str, str] = {}
+    """(toolbox kinds, case-only kinds), each mapping normalized text -> display text.
+
+    A type the table lists contributes only its table kind; any other type
+    contributes its registry Label. The table's kinds are allowed even when
+    the installed CLI does not list the type.
+    """
+    toolbox: dict[str, str] = {_norm(k): k for k in TOOLBOX_KINDS.values()}
     case_only: dict[str, str] = {}
     for t in types:
-        target = case_only if is_case_only(t.get("ExtensionType") or "") else toolbox
-        for value in (t.get("Kind"), t.get("Label")):
-            if value:
-                target.setdefault(_norm(value), value)
+        ext = t.get("ExtensionType") or ""
+        if ext in TOOLBOX_KINDS:
+            continue
+        label = t.get("Label")
+        if label:
+            (case_only if is_case_only(ext) else toolbox).setdefault(_norm(label), label)
     for key in toolbox:
         case_only.pop(key, None)
     return toolbox, case_only
@@ -134,7 +164,7 @@ def check(boxes: list[str], toolbox: dict[str, str], case_only: dict[str, str]) 
         if hit:
             errors.append(f"box {box!r} uses {hit!r}, a case-management type the BPMN toolbox does not offer")
         else:
-            errors.append(f"box {box!r}: {shown!r} is not a Kind or Label in `registry list`")
+            errors.append(f"box {box!r}: {shown!r} is neither a toolbox kind from the table nor a `registry list` Label")
     return errors
 
 

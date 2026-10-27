@@ -117,7 +117,7 @@ success_criteria:
     pass_threshold: 0
 
   - type: run_command
-    description: "Every box is labeled with a toolbox kind from `registry list`, never an invented or case-only one"
+    description: "Every box is labeled with a toolbox kind (the skill's table, else the type's `registry list` Label), never an invented or case-only one"
     command: "python3 $REFERENCE_DIR/check_skeleton_kinds.py InvoiceIntakeSketch"
     timeout: 60
     expected_exit_code: 0
