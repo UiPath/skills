@@ -38,6 +38,9 @@ test case" operation. Nothing else is normalised -- a mismatched method on
 any other operation fails. An HTTP request takes the HTTP verb only: GET,
 never GETBYID.
 
+HTTP upload is credited on verb + path alone, though connector-mode HTTP likely
+cannot carry the multipart ``file``. A pass is not proof the upload works.
+
 Assertion map (Flow -> BPMN):
   F criterion 2   flow_contains 'uipath-uipath-testmanager.'            -> connector_requests() non-empty (main(), no --all-ops)
   F criterion 4   flow_contains <4 node types>                          -> one classified node per op (main(), --all-ops)
