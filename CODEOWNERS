@@ -127,9 +127,6 @@
 
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
-# Previous Flow generation (JSON authoring), kept only because the Studio Web
-# flavor pins it (skill-flavors/studioweb/uipath-maestro-flow/.canonical).
-/classic/skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team @astridstaicu
 # Flow test tasks (general) — more specific subfolder rules below override this
 /tests/tasks/uipath-maestro-flow/ @UiPath/maestro-cli-team
 /tests/tasks/activation/uipath-maestro-flow.jsonl @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
