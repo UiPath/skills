@@ -83,7 +83,7 @@ OPERATIONS = [
     ConnectorOperation("create a requirement", "Requirement", {"post"},
                        "/v2/{ProjectId}/requirements"),
     ConnectorOperation("get the requirement", "Requirement", {"getbyid", "get"},
-                       "/v2/{ProjectId}/requirements/{id}"),
+                       "/v2/{ProjectId}/requirements/{id}", operation="Retrieve"),
     ConnectorOperation("update the requirement", "Requirement", {"patch"},
                        "/v2/{ProjectId}/requirements/{id}"),
     ConnectorOperation("delete the requirement", "Requirement", {"delete"},

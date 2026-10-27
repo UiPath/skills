@@ -362,7 +362,39 @@ def test_generic_update_accepts_put(tmp_path: Path) -> None:
     assert result.returncode == 0, result.output
 
 
-def test_generic_v1_get_is_list_not_get(tmp_path: Path) -> None:
+def _sdk_node(index: int, object_name: str, method: str, operation: str) -> str:
+    return NODE.format(index=index, object_name=object_name, method=method).replace(
+        '<uipath:input name="method"',
+        f'<uipath:input name="operation" type="string" value="{operation}" />'
+        '<uipath:input name="method"',
+    )
+
+
+@pytest.mark.parametrize("retrieve", ["Retrieve", "retrieve", "RETRIEVE"])
+def test_generic_sdk_shape_passes(tmp_path: Path, retrieve: str) -> None:
+    args, _ = CHECKERS["generic_records"]
+    nodes = [
+        _sdk_node(0, "TestCase", "POST", "Create"),
+        _sdk_node(1, "TestCase", "GET", retrieve),
+        _sdk_node(2, "TestCase", "PATCH", "Update"),
+        _sdk_node(3, "TestCase", "DELETE", "Delete"),
+        _sdk_node(4, "TestCase", "GET", "List"),
+    ]
+    result = _run(tmp_path, "generic_records", "".join(nodes), *args)
+    assert result.returncode == 0, result.output
+
+
+@pytest.mark.parametrize("operation", ["List", "Create"])
+def test_generic_get_node_needs_retrieve_operation(tmp_path: Path, operation: str) -> None:
+    args, ops = CHECKERS["generic_records"]
+    nodes = [NODE.format(index=i, object_name=op[1], method=op[2]) for i, op in enumerate(ops)]
+    nodes[1] = _sdk_node(1, "TestCase", "GET", operation)
+    result = _run(tmp_path, "generic_records", "".join(nodes), *args)
+    assert result.returncode != 0
+    assert _missing(ops, result.stderr) == [ops[1][0]]
+
+
+def test_generic_bare_v1_get_is_list_not_get(tmp_path: Path) -> None:
     args, ops = CHECKERS["generic_records"]
     nodes = [NODE.format(index=i, object_name=op[1], method=op[2]) for i, op in enumerate(ops)]
     nodes[1] = NODE.format(index=1, object_name="TestCase", method="GET")
@@ -370,6 +402,56 @@ def test_generic_v1_get_is_list_not_get(tmp_path: Path) -> None:
         result = _run(tmp_path, "generic_records", body, *args)
         assert result.returncode != 0
         assert _missing(ops, result.stderr) == [ops[1][0]]
+
+
+@pytest.mark.parametrize("name", ["crud_grounded", "testcase_lifecycle", "requirement_lifecycle",
+                                  "testset_lifecycle"])
+def test_lifecycle_get_node_reads_the_operation(tmp_path: Path, name: str) -> None:
+    args, ops = CHECKERS[name]
+    nodes = [NODE.format(index=i, object_name=op[1], method=op[2]) for i, op in enumerate(ops)]
+    nodes[1] = _sdk_node(1, ops[1][1], "GET", "Retrieve")
+    result = _run(tmp_path, name, "".join(nodes), *args)
+    assert result.returncode == 0, result.output
+
+    nodes[1] = _sdk_node(1, ops[1][1], "GET", "List")
+    result = _run(tmp_path, name, "".join(nodes), *args)
+    assert result.returncode != 0
+    assert _missing(ops, result.stderr) == [ops[1][0]]
+
+
+@pytest.mark.parametrize("index", range(1, len(REQUIREMENT)))
+def test_requirement_mid_url_expression_is_literal_text(tmp_path: Path, index: int) -> None:
+    args, ops = CHECKERS["requirement_lifecycle"]
+    nodes = _http_nodes(ops)
+    op = ops[index]
+    url = re.sub(r"\{ProjectId\}", "253699db-0c2e", op[4])
+    url = re.sub(r"\{[iI]d\}", "=js:vars.Var_ReqCreate_body.id", url)
+    nodes[index] = _http_node(index, op[3], url)
+    result = _run(tmp_path, "requirement_lifecycle", "".join(nodes), *args)
+    assert result.returncode != 0
+    assert _missing(ops, result.stderr) == [op[0]]
+
+
+ATTACHMENT_URLS = [
+    (0, "POST", "upload"),
+    (1, "GET", "download"),
+    (3, "DELETE", ""),
+    (4, "GET", "all"),
+]
+
+
+@pytest.mark.parametrize("object_type", ["TestCase", "testCase", "TestExecution"])
+@pytest.mark.parametrize("index, verb, suffix", ATTACHMENT_URLS)
+def test_generic_accepts_literal_attachment_object_type(
+    tmp_path: Path, index: int, verb: str, suffix: str, object_type: str
+) -> None:
+    args, ops = CHECKERS["generic_records"]
+    nodes = _http_nodes(ops)
+    tail = f" + '/{suffix}'" if suffix else ""
+    url = f"=js:'/v2/' + vars.Var_P + '/attachments/{object_type}/' + vars.Var_Id{tail}"
+    nodes[index] = _http_node(index, verb, url)
+    result = _run(tmp_path, "generic_records", "".join(nodes), *args)
+    assert result.returncode == 0, result.output
 
 
 @pytest.mark.parametrize("index, object_name", [(0, "TestCaseLog"), (2, "TestExecution"),

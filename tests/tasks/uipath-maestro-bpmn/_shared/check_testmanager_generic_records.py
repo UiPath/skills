@@ -33,7 +33,8 @@ catalog object that supports the IS operation (``uip is resources list
 uipath-uipath-testmanager``): an ``Intsvc.ActivityExecution`` node matches on
 any such ``objectName`` + ``method``, an HTTP node on any such object's IS
 enrichment path (``registry get`` without ``--input-details``) + HTTP verb,
-every placeholder filled.
+every placeholder filled. A node's context ``operation`` (any case), when it
+has one, decides over its ``method``.
 
     insert a record -> Create,   POST            (11 objects)
     get a record    -> Retrieve, GETBYID (HTTP GET) (10 objects)
@@ -129,18 +130,21 @@ LIST = [
 ]
 
 
-def _any_object(label: str, methods: set[str], targets: list[tuple[str, str]]) -> ConnectorOperation:
+def _any_object(
+    label: str, operation: str, methods: set[str], targets: list[tuple[str, str]]
+) -> ConnectorOperation:
     (object_name, path), *alternatives = targets
-    return ConnectorOperation(label, object_name, methods, path, tuple(alternatives))
+    return ConnectorOperation(label, object_name, methods, path, tuple(alternatives), operation)
 
 
 OPERATIONS = [
-    _any_object("insert a record", {"post"}, CREATE),
-    # Every Retrieve object emits GETBYID; a V1 GET is a List.
-    _any_object("get a record", {"getbyid"}, RETRIEVE),
-    _any_object("update a record", {"patch", "put"}, UPDATE),
-    _any_object("delete a record", {"delete"}, DELETE),
-    _any_object("list records", {"get"}, LIST),
+    _any_object("insert a record", "Create", {"post"}, CREATE),
+    # `registry get` writes GETBYID for a Retrieve; the SDK writes GET and
+    # operation=Retrieve. Without an operation, a V1 GET is a List.
+    _any_object("get a record", "Retrieve", {"getbyid"}, RETRIEVE),
+    _any_object("update a record", "Update", {"patch", "put"}, UPDATE),
+    _any_object("delete a record", "Delete", {"delete"}, DELETE),
+    _any_object("list records", "List", {"get"}, LIST),
 ]
 
 

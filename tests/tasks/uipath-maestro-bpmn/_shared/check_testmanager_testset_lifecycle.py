@@ -86,7 +86,7 @@ OPERATIONS = [
     ConnectorOperation("create a test set", "TestSet", {"post"},
                        "/v2/{ProjectId}/testsets"),
     ConnectorOperation("get the test set", "TestSet", {"getbyid", "get"},
-                       "/v2/{ProjectId}/testsets/{id}"),
+                       "/v2/{ProjectId}/testsets/{id}", operation="Retrieve"),
     ConnectorOperation("update the test set", "TestSet", {"patch"},
                        "/v2/{ProjectId}/testsets/{id}"),
     ConnectorOperation("delete the test set", "TestSet", {"delete"},

@@ -515,32 +515,45 @@ _CATALOG_ONLY_METHODS = {"getbyid"}
 
 
 @lru_cache(maxsize=None)
-def _filled_path_re(template: str, taken: frozenset[tuple[int, str]]) -> re.Pattern[str]:
+def _filled_path_re(template: str, taken: frozenset[tuple[str, str]]) -> re.Pattern[str]:
     """End-anchored match for an IS path, each ``{name}`` one filled segment:
     ``/v2/{projectId}/items`` matches ``/v2/{}/items`` and ``/v2/p/items``,
     not ``/v2/{projectId}/items``, ``/v2/${projectId}/items``,
     ``/v2/<projectId>/items`` or ``/v2/:projectId/items``. A placeholder
-    segment never takes a ``(position, literal)`` in ``taken``."""
+    segment never takes a ``(parent, literal)`` in ``taken``, ``parent`` being
+    the ``_parent`` of that segment."""
     segments: list[str] = []
-    for position, segment in enumerate(template.split("/")):
+    template_segments = template.split("/")
+    for position, segment in enumerate(template_segments):
         parts = _PLACEHOLDER_RE.split(segment)
         guard = ""
         if parts == ["", ""]:
-            literals = sorted(s for p, s in taken if p == position)
+            parent = _parent(template_segments[:position])
+            literals = sorted(s for p, s in taken if p == parent)
             guard = "".join(rf"(?!{re.escape(s)}(?:/|$))" for s in literals)
         segments.append(guard + _PATH_SEGMENT.join(re.escape(part) for part in parts))
     return re.compile("/".join(segments) + "/?$", re.IGNORECASE)
 
 
+def _parent(segments: list[str]) -> str:
+    """The segments above one, each placeholder as ``{}``:
+    ``/v2/{ProjectId}/items`` -> ``/v2/{}/items``."""
+    return "/".join("{}" if "{" in s else s.lower() for s in segments)
+
+
 class ConnectorOperation(NamedTuple):
     """``alternatives``: further ``(object_name, path)`` targets that also
-    satisfy the operation."""
+    satisfy the operation. ``operation``: the activity operation (``Create``,
+    ``Retrieve``, ...) an ``Intsvc.ActivityExecution`` node writes in its
+    context, any case. When the node has one it decides, whatever its
+    ``method``; without one, ``methods`` decides."""
 
     label: str
     object_name: str
     methods: set[str]
     path: str
     alternatives: tuple[tuple[str, str], ...] = ()
+    operation: str = ""
 
 
 def _targets(operation: ConnectorOperation) -> list[tuple[str, str]]:
@@ -555,12 +568,13 @@ def _http_methods(operation: ConnectorOperation) -> set[str]:
     return {"get" if m in _CATALOG_ONLY_METHODS else m for m in _methods(operation)}
 
 
-def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[int, str]]:
+def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[str, str]]:
     return frozenset(
-        (position, segment.lower())
+        (_parent(segments[:position]), segment.lower())
         for operation in operations
         for _, path in _targets(operation)
-        for position, segment in enumerate(path.split("/"))
+        for segments in [path.split("/")]
+        for position, segment in enumerate(segments)
         if segment and "{" not in segment
     )
 
@@ -571,13 +585,19 @@ def _operation_matches(
     path: str,
     shape: RequestShape,
     operation: ConnectorOperation,
-    taken: frozenset[tuple[int, str]],
+    taken: frozenset[tuple[str, str]],
 ) -> bool:
     method = method.lower()
     targets = _targets(operation)
     if shape is RequestShape.ACTIVITY:
         object_name = context_value(task, "objectName")
-        return method in _methods(operation) and any(object_name == o for o, _ in targets)
+        if not any(object_name == o for o, _ in targets):
+            return False
+
+        recorded = context_value(task, "operation").strip().lower()
+        if operation.operation and recorded:
+            return recorded == operation.operation.lower()
+        return method in _methods(operation)
 
     if method not in _http_methods(operation):
         return False

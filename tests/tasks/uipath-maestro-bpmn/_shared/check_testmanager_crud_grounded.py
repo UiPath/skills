@@ -66,7 +66,7 @@ OPERATIONS = [
     ConnectorOperation("create a test case", "TestCase", {"post"},
                        "/v2/{ProjectId}/testcases"),
     ConnectorOperation("get the test case", "TestCase", {"getbyid", "get"},
-                       "/v2/{ProjectId}/testcases/{id}"),
+                       "/v2/{ProjectId}/testcases/{id}", operation="Retrieve"),
 ]
 
 
