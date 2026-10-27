@@ -64,8 +64,10 @@ The initial classification (2026-09-19) parked every `evaluate/` task as "Not
 portable — Flow evaluate capability has no BPMN counterpart." That premise no
 longer holds: `uip maestro bpmn eval` (UiPath/cli#5169) gives BPMN the same
 evaluator / eval-set / simulation / run surface, built on the shared
-`@uipath/eval-sdk`. Five of the six Flow evaluate tasks port; `inline_agent_eval`
-stays Flow-only because BPMN has no inline agent.
+`@uipath/eval-sdk`. Four of the six Flow evaluate tasks port; `inline_agent_eval`
+stays Flow-only because BPMN has no inline agent, and `child_simulation_crud`
+stays Flow-only because `--parent` child tool simulations are not supported for
+BPMN yet (no agent targets — the CLI rejects `--parent`, UiPath/cli#5169).
 
 | Flow task | BPMN port | Notes |
 |---|---|---|
@@ -73,7 +75,7 @@ stays Flow-only because BPMN has no inline agent.
 | `evaluate/no_auto_upload.yaml` | `evaluate/no_auto_upload.yaml` | upload-safety refusal; cites the `evaluate.md` "Never upload" rule |
 | `evaluate/evaluator_type_choice.yaml` | `evaluate/evaluator_type_choice.yaml` | shared evaluator taxonomy; identical type ids |
 | `evaluate/simulation/simulation_crud.yaml` | `evaluate/simulation/simulation_crud.yaml` | Static + Llm sims; **Llm requires explicit `--output-schema`** (BPMN cannot auto-resolve it, unlike Flow) |
-| `evaluate/child_simulation/child_simulation_crud.yaml` | `evaluate/child_simulation/child_simulation_crud.yaml` | `--parent` child tool sims; Llm child also requires explicit `--output-schema` |
+| `evaluate/child_simulation/child_simulation_crud.yaml` | — | not ported: `--parent` child tool simulations are not supported for BPMN yet (no agent targets; CLI rejects `--parent`) |
 | `evaluate/inline_agent_eval/inline_agent_eval.yaml` | — | not ported: inline agents are Flow-only (BPMN agents are published via `Orchestrator.StartAgentJob`) |
 
 Divergences from the Flow tasks, forced by the BPMN eval contract (verified
@@ -228,10 +230,11 @@ The buckets the ports were chosen from. The ledger above supersedes a row once i
 | `multi_node/billing_resolution_writer/billing_resolution_writer.yaml` | inline agent → StartAgentJob substitute |
 | `single_node/file_attachment/file_attachment.yaml` | file-typed process variable: confirm canvas variable contract supports it |
 
-### Not portable (Flow-only surface) (25)
+### Not portable (Flow-only surface) (26)
 
-> The six `evaluate/` rows left this bucket once `uip maestro bpmn eval`
-> (UiPath/cli#5169) landed — five ported, `inline_agent_eval` stays Flow-only.
+> Four of the six `evaluate/` rows left this bucket once `uip maestro bpmn eval`
+> (UiPath/cli#5169) landed. `inline_agent_eval` and `child_simulation_crud` stay
+> Flow-only (no inline agents / no `--parent` child tool simulations in BPMN).
 > See the **Evaluate** section above.
 
 | Flow task | BPMN target / note |
@@ -245,7 +248,8 @@ The buckets the ports were chosen from. The ledger above supersedes a row once i
 | `context-grounding/batch_transform/batch_transform.yaml` | Flow pattern node (batch transform) is Flow-only |
 | `context-grounding/summarize/summarize.yaml` | Flow pattern node (deep-rag) is Flow-only |
 | `conversational/conversational_chat_loop.yaml` | conversational agent loop is Flow-only |
-| `evaluate/inline_agent_eval/inline_agent_eval.yaml` | inline agents are Flow-only (BPMN agents are published via `Orchestrator.StartAgentJob`); the other five `evaluate/` tasks are now ported — see the **Evaluate** section above |
+| `evaluate/inline_agent_eval/inline_agent_eval.yaml` | inline agents are Flow-only (BPMN agents are published via `Orchestrator.StartAgentJob`); see the **Evaluate** section above |
+| `evaluate/child_simulation/child_simulation_crud.yaml` | `--parent` child tool simulations are not supported for BPMN yet (no agent targets; CLI rejects `--parent`, UiPath/cli#5169); the other four `evaluate/` tasks are ported — see the **Evaluate** section above |
 | `interactive/ixp_invoice_extraction_simulated/ixp_invoice_extraction_simulated.yaml` | IXP node is Flow-only |
 | `ixp/e2e_01_invoice_extraction_greenfield.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |
 | `ixp/e2e_02_project_selection.yaml` | IXP plugin is Flow-only; BPMN registry has no IXP node |

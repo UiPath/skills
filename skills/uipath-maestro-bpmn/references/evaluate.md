@@ -99,9 +99,7 @@ A simulation stands in for a component during a run, keyed by component id: the
 element id from the `.bpmn`, or the tool name for an agent's tool. A simulation
 is scoped to one **data point inside one set**, so all three commands require
 `--set` and `--data-point`. `add` also requires `--strategy` and
-`--component-type` (`connector`, `agent`, `subprocess`), unless `--parent
-<agent-id>` adds a child tool simulation, which defaults `--component-type` to
-`Node`.
+`--component-type` (`connector`, `agent`, `subprocess`).
 
 ```bash
 # Static — returns --mock-value verbatim
@@ -133,13 +131,11 @@ always supplied, BPMN never consults the process to resolve it, so an `Llm`
 simulation does **not** require the simulated (or parent agent) node to already
 exist in the `.bpmn` the way Flow's does.
 
-To simulate one tool inside an agent, pass `--parent <agent-node-id>`; the
-child's `<component-id>` is the tool's runtime name. A `Static` child tool
-simulation needs only `--mock-value`; since BPMN can't resolve the tool's schema
-to check the mock keys, the CLI writes it with a `Mock value key validation was
-skipped` warning in `Data.Warning`. An `Llm` child tool simulation still
-requires `--output-schema`. Adding `--parent` and `list`/`remove` with
-`--parent` act on the agent node's child simulations.
+Child tool simulations on an agent node (`--parent`) are **not supported for
+Maestro BPMN yet** — BPMN has no agent targets, so the CLI rejects `--parent`
+with "not supported for Maestro BPMN yet". Simulate the agent node itself with a
+plain `--component-type agent` simulation instead. (Flow supports `--parent`;
+this is a BPMN divergence.)
 
 Simulate every side-effecting component before running a set more than once. An
 unsimulated connector step really sends — once per data point, every run.
