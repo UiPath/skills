@@ -44,10 +44,9 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # UiPath/cli is private. CLI_READ_TOKEN is a read-only token on that
-      # repo (contents: read), never the repo-write GH_PAT. Not persisted:
-      # nothing fetches from .cli after this, and the token would otherwise
-      # sit in .cli/.git/config through the step that holds GH_PAT.
+      # UiPath/cli is private; GH_PAT must have read access to it. Not
+      # persisted: nothing fetches from .cli after this, and the token would
+      # otherwise sit in .cli/.git/config for the rest of the job.
       - name: Check out the CLI's browser surface
         if: steps.check.outputs.exists != 'true'
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
@@ -55,7 +54,7 @@ jobs:
           repository: UiPath/cli
           ref: main
           path: .cli
-          token: ${{ secrets.CLI_READ_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
