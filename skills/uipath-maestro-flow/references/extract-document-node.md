@@ -37,6 +37,8 @@ A created node arrives complete apart from the file it reads. `fileRef` is the o
 
 ## The loop
 
+0. **Find the flow.** Everything here edits a `.flow` on disk. When the user describes a flow they are already building and none exists locally, they may be referring to one
+that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 1. **Establish whether the tenant has the node.** The CLI cannot tell you — ask the user, under [Checking availability](#checking-availability). Where the answer is no, go to [When Extract document is not available](#when-extract-document-is-not-available) and do not add it.
 2. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This is what makes `$vars.start.output.invoice` resolve, so it comes before the node that reads it.
 3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`.

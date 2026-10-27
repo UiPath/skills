@@ -15,6 +15,59 @@ Because they edit the `.flow`, they do not survive a project that generates it f
 
 For the node itself — checking the tenant has it, adding it, wiring `fileRef`, choosing it over a published IXP model — see [extract-document-node.md](extract-document-node.md). This guide assumes the node already exists.
 
+## Starting from a flow in Studio Web
+
+Users can start off with a flow in Studio Web, and ask you to continue working on it. You should then work on a local copy: pull it down, edit it, push it back.
+
+Pulling it down requires the flow's solution id, and where that comes from depends on what the user has already said.
+
+The user may provide either the URL of the flow in Studio Web - which contains the `solutionId` query parameter, or the solution id on its own. Either is enough to identify the solution to download.
+
+If the user has not provided either of these and they are referring to a flow in Studio Web, ask them for either the URL or the solution id before proceeding.
+
+If the user has not mentioned Studio Web at all, but no local `.flow` turns up, clarify with the user whether the flow lives in Studio Web.
+
+**When in doubt, ask, rather than working it out.** Nothing enumerates what is in Studio Web: `uip solution` downloads, uploads and deletes by id, and the ids it prints come from solutions already to hand. So there is no listing to find, and the places that look like a way around it — the platform's search endpoint, the CLI's stored credentials — are not paths to take. Ask for a link or an id, say that either works, and carry on once it arrives.
+
+Then pull it down:
+
+```bash
+uip login status --output json
+uip solution download <solution-id>
+```
+
+The download writes a directory named after the id, with the flow project inside it, and every command in this guide runs against the `.flow` in that project. Where login has expired, say so and ask the user log in with: `uip login`.
+
+Push the finished taxonomy back with `uip solution upload` from the downloaded solution's root, so the flow they opened in Studio Web is updated with the changes, and tell them where to find it.
+
+### The documents uploaded to the node
+
+Sample documents a user uploaded through Studio Web come down with the solution, under the flow project:
+
+```
+<Project>/evals/<dataset-id>/eval-files/
+```
+
+The dataset directory is a GUID, so list `evals/` rather than guessing it. These are the documents to design the taxonomy from, and reading them needs one step first.
+
+**They are not the files their names claim.** Each keeps its original extension but holds text in a wrapper:
+
+```
+BINARY_FILE:application/pdf:2073
+---BASE64---
+JVBERi0xLjMKJe…
+```
+
+A header line gives the media type and the byte count, then a separator, then the payload. Reading one directly returns that text instead of a document, and decoding the whole file fails because of the first two lines. Drop them, then decode:
+
+```bash
+for f in <Project>/evals/*/eval-files/*; do
+  tail -n +3 "$f" | base64 -d > "decoded/$(basename "$f")"
+done
+```
+
+Read the decoded copies.
+
 ## At a glance
 
 Read the user's sample documents, design the taxonomy from what is on the page, write it, and fix whatever the write rejects.
@@ -29,8 +82,8 @@ uip maestro flow validate Flow/Flow.flow --output json
 
 ## The loop
 
-1. **Collect the samples.** Ask which documents are representative if the user has not said. Prefer variety over volume — a handful covering the layouts that differ tells you more than twenty of the same one.
-2. **Read them.** One full `Read` per document returns text and image for both digital and scanned files, so no PDF tooling is needed.
+1. **Collect the samples.** "The files uploaded to the node" are the ones that come down with the solution, under `<Project>/evals/<dataset-id>/eval-files/`, and they need decoding first — pull the flow down if it is not already local ([Starting from a flow in Studio Web](#starting-from-a-flow-in-studio-web)). Otherwise ask which documents are representative if the user has not said. Prefer variety over volume — a handful covering the layouts that differ tells you more than twenty of the same one.
+2. **Read them.** One full `Read` per document returns text and image for both digital and scanned files, so no PDF tooling is needed — provided the file really is one. A document that came down with a solution is wrapped and reads as text until it is decoded.
 3. **Design the taxonomy** against the rules below and write it to a JSON file.
 4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --file <path> --output json`.
 5. **Fix what it rejects.** Exit 3 means the document is a schema but breaks a rule; `Data.Issues` lists each problem with the path it is at. Correct those and run the same command again.
