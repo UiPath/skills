@@ -18,24 +18,31 @@ BINDING = (
     f'resourceKey="{CONNECTION_ID}" propertyAttribute="ConnectionId" />'
 )
 V2_CONNECTION = '<uipath:input name="connection" type="string" value="=bindings.bConn" />'
+V1 = "v1"
+V2 = "v2"
 V1_CONNECTION = '<uipath:input name="connectionId" type="string" value="=bindings.bConn" />'
 
 
 # Trimmed from skill-bpmn-outlook-trigger-inbox 2026-10-23.
-def _bpmn(connection: str, binding: str = BINDING) -> str:
+def _bpmn(connection: str, binding: str = BINDING, version: str = V2) -> str:
+    v2_config = '<uipath:intsvcActivityConfig version="v2" />' if version == V2 else ""
+    v2_flag = (
+        '<uipath:input name="activityConfigurationVersion" type="string" value="v2" />'
+        if version == V2
+        else ""
+    )
     return (
         '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" '
         'xmlns:uipath="http://uipath.org/schema/bpmn"><bpmn:process id="Process_1">'
         f'<bpmn:extensionElements><uipath:bindings version="v1">{binding}</uipath:bindings>'
-        '<uipath:intsvcActivityConfig version="v2" /></bpmn:extensionElements>'
+        f"{v2_config}</bpmn:extensionElements>"
         '<bpmn:startEvent id="Event_start"><bpmn:extensionElements><uipath:event version="v1">'
         '<uipath:type value="Intsvc.EventTrigger" version="v1" /><uipath:context>'
         '<uipath:input name="connectorKey" type="string" value="uipath-microsoft-outlook365" />'
         f"{connection}"
         '<uipath:input name="objectName" type="string" value="Message" />'
         '<uipath:input name="operation" type="string" value="EMAIL_RECEIVED" />'
-        '<uipath:input name="activityConfigurationVersion" type="string" value="v2" />'
-        "</uipath:context>"
+        f"{v2_flag}</uipath:context>"
         '<uipath:input name="body" type="json" target="body"><![CDATA['
         f'{{"queryParams":{{"parentFolderId":"{FOLDER_ID}"}}}}]]></uipath:input>'
         "</uipath:event></bpmn:extensionElements><bpmn:messageEventDefinition />"
@@ -67,16 +74,16 @@ def project(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "connection",
+    ["connection", "version"],
     [
-        V2_CONNECTION,
-        V1_CONNECTION,
-        '<uipath:input name="connection" type="string" value=" " />' + V1_CONNECTION,
+        (V2_CONNECTION, V2),
+        (V1_CONNECTION, V1),
+        ('<uipath:input name="connection" type="string" value=" " />' + V1_CONNECTION, V1),
     ],
     ids=["v2-connection", "v1-connectionId", "blank-connection-falls-back"],
 )
-def test_checks_the_bound_connection(project, connection, capsys) -> None:
-    queried = project(_bpmn(connection))
+def test_checks_the_bound_connection(project, connection, version, capsys) -> None:
+    queried = project(_bpmn(connection, version=version))
 
     grader.check_folder_binding()
     grader.check_folder_id_fresh()
