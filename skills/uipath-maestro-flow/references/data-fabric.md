@@ -263,7 +263,7 @@ The `99999999-…` folder is a placeholder the platform replaces: `flow debug`
 provisions the entity into a `Debug_<project>` folder, and `solution deploy` into
 the deployment's own folder, and binds the node there. Use the entity's own
 casing for `entity`. Creating and modelling the entity belongs to
-`/uipath:uipath-platform` (local entities).
+[/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
 
 `flow validate`, `flow pack` and `uip solution pack` refuse a node that names a
 local entity without these keys (`INLINE_ENTITY_UNBOUND`). The message suggests
