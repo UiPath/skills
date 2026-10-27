@@ -214,8 +214,9 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    faults with `key:FolderKey`; without a run, report the node unverified. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
 19. **Fill every `{placeholder}` in an HTTP request's `url` before `registry
-   get`; never edit the url in the element, run `registry get` again; never
-   invent one** ([how](references/v2-connector-nodes.md#http-requests)).
+   get`, with a discovered or given value or a `=js:` expression; never invent
+   one.** To change the url, run `registry get` again, never edit it in the
+   element ([how](references/v2-connector-nodes.md#http-requests)).
 
 ## The model
 
