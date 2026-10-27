@@ -44,6 +44,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Business events an outside system sends to a running case | `businessEvent`, `rule('api-event', { businessEvent })` (SDK 6.47.0+) | [CaseBuilder, Rules](#api-index) | — |
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Business rules (decision tables) | `businessRule` (SDK 6.34.0+) | [TaskBuilder](#api-index) | `examples/CreditDecision.case.ts` |
+| Deployed Coded Functions | `function` (SDK 6.47.1+) | [TaskBuilder](#api-index) | — |
 | Resolving SDD resources against the tenant | `uip maestro case registry pull`, `uip maestro case sdd resolve` | [Registry resolution](references/registry-resolution.md) | — |
 | Human work | `action` | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
@@ -117,7 +118,7 @@ nothing about the connector. To use another library, set
 both resolve against the same one.
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
-API workflow, or sub-case; never fabricate a name or folder. A destination's
+API workflow, Coded Function, or sub-case; never fabricate a name or folder. A destination's
 `selected-stage-completed` entry does not imply a source `exitToStage` hand-off.
 
 ## Evidence boundary
