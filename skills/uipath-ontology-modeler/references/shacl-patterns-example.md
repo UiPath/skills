@@ -1,6 +1,6 @@
 # SHACL Patterns — Worked Example
 
-Read this only if a gate/consistency check fails and you need a concrete reference, or you judge [`shacl-patterns-guide.md`](shacl-patterns-guide.md) alone isn't enough for this request. It is a full worked example, not a template to copy verbatim — the class names, shape names, and rules below are specific to the Clinic domain.
+Read this only if `uip ont validate --local` reports a constraints problem and you need a concrete reference, or you judge [`shacl-patterns-guide.md`](shacl-patterns-guide.md) alone isn't enough for this request. It is a full worked example, not a template to copy verbatim — the class names, shape names, and rules below are specific to the Clinic domain.
 
 ## Full Example — clinic-constraints.ttl
 
@@ -39,5 +39,16 @@ shape:doctorMustBeLicensed
     sh:property     [ sh:path     ont:Doctor.licenseNo ;
                       sh:datatype xsd:string ;
                       sh:minCount 1
+                    ] .
+
+shape:prescriptionMustHaveDoctor
+    a               sh:NodeShape ;
+    rdfs:label      "Prescription must have a doctor" ;
+    sh:message      "A prescription must be prescribed by exactly one doctor" ;
+    sh:targetClass  ont:Prescription ;
+    sh:property     [ sh:path     ont:prescribedBy ;
+                      sh:class    ont:Doctor ;
+                      sh:minCount 1 ;
+                      sh:maxCount 1
                     ] .
 ```

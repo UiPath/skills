@@ -1,6 +1,8 @@
 # YARRRML Mapping — Worked Example
 
-Read this only if a gate/consistency check fails and you need a concrete reference, or you judge [`mapping-yarrrml-guide.md`](mapping-yarrrml-guide.md) alone isn't enough for this request. It is a full worked example, not a template to copy verbatim — the class names, entity names, and column names below are specific to the Clinic domain.
+Read this only if `uip ont validate --local` reports a mapping problem and you need a concrete reference, or you judge [`mapping-yarrrml-guide.md`](mapping-yarrrml-guide.md) alone isn't enough for this request. It is a full worked example, not a template to copy verbatim — the class names, entity names, and column names below are specific to the Clinic domain.
+
+The three local entities are `Doctor`, `Patient` and `Prescription`. Keys are plain fields: `Patient.primaryDoctorId`, `Prescription.doctorId` and `Prescription.patientId` are `STRING` fields joined to the target's `Id`. Every `$(column)` below is a field of the entity named in that block's `table:`, or the system field `Id`.
 
 ## Full example — Clinic
 
@@ -14,44 +16,34 @@ mappings:
       - access: datafabric
         table: Doctor
         referenceFormulation: rr:SQL2008
-    s: ont:Doctor/$(doctorId)
+    s: ont:Doctor/$(Id)
     po:
       - - a
         - ont:Doctor
       - - ont:Doctor.active
         - $(active)
       - - ont:Doctor.licenseNo
-        - $(licenseno)
+        - $(licenseNo)
       - - ont:Doctor.name
-        - $(fullname)
+        - $(fullName)
       - - ont:Doctor.specialty
         - $(specialty)
-      - p: ont:prescribes
-        o:
-          mapping: Prescription
-          condition:
-            function: equal
-            parameters:
-              - - str1
-                - $(doctorId)
-              - - str2
-                - $(doctorid)
 
   Patient:
     sources:
       - access: datafabric
         table: Patient
         referenceFormulation: rr:SQL2008
-    s: ont:Patient/$(patientId)
+    s: ont:Patient/$(Id)
     po:
       - - a
         - ont:Patient
       - - ont:Patient.birthDate
-        - $(birthdate)
+        - $(birthDate)
       - - ont:Patient.bloodGroup
-        - $(bloodgroup)
+        - $(bloodGroup)
       - - ont:Patient.name
-        - $(fullname)
+        - $(fullName)
       - p: ont:primaryDoctor
         o:
           mapping: Doctor
@@ -59,31 +51,19 @@ mappings:
             function: equal
             parameters:
               - - str1
-                - $(primarydoctorid)
+                - $(primaryDoctorId)
               - - str2
-                - $(doctorId)
-      - p: ont:treatingDoctor
-        o:
-          mapping: Doctor
-          condition:
-            function: equal
-            parameters:
-              - - str1
-                - $(primarydoctorid)
-              - - str2
-                - $(doctorId)
+                - $(Id)
 
   Prescription:
     sources:
       - access: datafabric
         table: Prescription
         referenceFormulation: rr:SQL2008
-    s: ont:Prescription/$(prescriptionId)
+    s: ont:Prescription/$(Id)
     po:
       - - a
         - ont:Prescription
-      - - ont:Prescription.id
-        - $(prescriptionId)
       - - ont:Prescription.medication
         - $(medication)
       - - ont:Prescription.status
@@ -95,9 +75,9 @@ mappings:
             function: equal
             parameters:
               - - str1
-                - $(doctorid)
-              - - str2
                 - $(doctorId)
+              - - str2
+                - $(Id)
       - p: ont:prescriptionFor
         o:
           mapping: Patient
@@ -105,7 +85,7 @@ mappings:
             function: equal
             parameters:
               - - str1
-                - $(patientid)
-              - - str2
                 - $(patientId)
+              - - str2
+                - $(Id)
 ```

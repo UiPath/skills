@@ -1,6 +1,8 @@
 # SHACL Patterns Reference — Constraints Artifact
 
-Media-type: `text/turtle` | `--file-type constraints`
+Artifact type: `constraints` | Media type: `text/turtle` | File: `{name}-constraints.ttl` (or `{name}-constraints-{area}.ttl` when split by area; at least one file)
+
+Check each file with `uip ont artifacts check`, attach it with `uip ont files add`, and let `uip ont validate --local` confirm it against the schema and mapping. Every `sh:targetClass`, `sh:path` and `sh:class` must name a term declared in `{name}.ofn`, and every class needs a shape.
 
 ---
 
@@ -36,6 +38,7 @@ shape:{ClassMustHaveRule}
 - `rdfs:label`: human-readable description of the rule
 - `sh:message`: the violation message displayed to users — write it as a complete sentence
 - Property path uses `{ClassName}.{propName}` — **never** just the prop name
+- Constraints cover business rules about data (required, range, pattern, value list, relationship class). They are not functions or actions; do not write those.
 
 ---
 
@@ -76,6 +79,16 @@ sh:property [
     sh:class    ont:{TargetClass} ;
     sh:minCount 1 ;
     sh:maxCount 1
+] ;
+```
+
+### Value list (a STRING field with fixed values)
+```turtle
+sh:property [
+    sh:path     ont:{ClassName}.{statusProp} ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:in       ( "Pending" "Shipped" "Delivered" )
 ] ;
 ```
 
@@ -129,4 +142,4 @@ Use `sh:minCount 1 ; sh:maxCount 1` on both sides — a junction record that is 
 
 ## Full worked example
 
-A complete worked `{name}-constraints.ttl` is in [`shacl-patterns-example.md`](shacl-patterns-example.md). Read it only if a gate/consistency check fails and you need a concrete reference to self-correct, or you judge the patterns above aren't enough to proceed confidently for this request.
+A complete worked `{name}-constraints.ttl` is in [`shacl-patterns-example.md`](shacl-patterns-example.md). Read it only if `uip ont validate --local` reports a constraints problem and you need a concrete reference to self-correct, or you judge the patterns above aren't enough to proceed confidently for this request.

@@ -2,7 +2,7 @@
 
 IRI convention used throughout: `https://ontology.uipath.com/{name}#`
 
-**`{name}` is the exact ontology name slug (the Ontology resource name in the local solution) — verbatim, no transformation. Derive it once before generating any files and use the same value in every artifact file (schema, constraints, mapping, functions, actions). A mismatch across files disconnects ontology terms.**
+**`{name}` is the exact ontology name slug (the Ontology resource name in the local solution) — verbatim, no transformation. Derive it once before generating any files and use the same value in every artifact file (schema, constraints, mapping, summary, context). A mismatch across files disconnects ontology terms.**
 
 ---
 
@@ -31,21 +31,21 @@ Ontology(<https://ontology.uipath.com/{name}>
 
 ## rdfs:label and rdfs:comment — required on every class and every property
 
-`rdfs:label` and `rdfs:comment` are mandatory on every declared class, data property, and object property. They are not optional metadata — without them, the AI agent that reads this ontology cannot answer questions about value domains, grain, cardinality, or FK provenance.
+`rdfs:label` and `rdfs:comment` are mandatory on every declared class, data property, and object property. They are not optional metadata — without them, the AI agent that reads this ontology cannot answer questions about value domains, grain, cardinality, or join columns.
 
 | Element | rdfs:label | rdfs:comment |
 |---|---|---|
 | Every `Declaration(Class(:X))` | Required — human name of the class | Required — grain statement first: `"ONE row per {business thing}…"` |
 | Every `Declaration(DataProperty(:X))` | Required — human name of the property | Required — pick the matching fact type form (see Data Property Block below) |
-| Every `Declaration(ObjectProperty(:X))` | Required — human verb phrase | Required — business sentence + FK provenance + cardinality note if "exactly one" |
+| Every `Declaration(ObjectProperty(:X))` | Required — human verb phrase | Required — business sentence + join columns + cardinality note if "exactly one" |
 
-Missing `rdfs:comment` means the AI agent reading this ontology cannot answer questions about value domains, grain, cardinality, or FK provenance.
+Missing `rdfs:comment` means the AI agent reading this ontology cannot answer questions about value domains, grain, cardinality, or join columns.
 
 ---
 
 ## OWL 2 QL profile — what is and isn't legal
 
-A syntax check alone does not catch these — forbidden constructs parse cleanly but fail any QL reasoner. The preflight QL gate (`OWL_2_QL`) scans for them; fix every violation before building the solution.
+A syntax check alone does not catch these — forbidden constructs parse cleanly but fail any QL reasoner. `uip ont validate --local` (rule `XF-005`) rejects them; fix every violation before packing.
 
 **QL-legal object property axioms — confirmed by example artifacts, use freely:**
 - `InverseObjectProperties(:a :b)` — marks two properties as semantic inverses
@@ -114,14 +114,14 @@ Declaration(DataProperty(:Prescription.status))
 # Object Property: <https://ontology.uipath.com/{name}#{verbPhrase}> ({Human Label})
 
 AnnotationAssertion(rdfs:label :{verbPhrase} "{verb phrase}")
-AnnotationAssertion(rdfs:comment :{verbPhrase} "Each {FromClass} {verb phrase} {ToClass}. FK: {FromClass}.{FKField} -> {ToClass}.Id.")
+AnnotationAssertion(rdfs:comment :{verbPhrase} "Each {FromClass} {verb phrase} {ToClass}. Join: {FromClass}.{keyColumn} = {ToClass}.Id.")
 ObjectPropertyDomain(:{verbPhrase} :{FromClass})
 ObjectPropertyRange(:{verbPhrase} :{ToClass})
 ```
 
 When the relationship is "exactly one", append the cardinality note to the comment:
 ```
-AnnotationAssertion(rdfs:comment :prescribedBy "Each Prescription is prescribed by one Doctor. FK: Prescription.DoctorId -> Doctor.Id. 'Exactly one' is QL-inexpressible; recorded here.")
+AnnotationAssertion(rdfs:comment :prescribedBy "Each Prescription is prescribed by one Doctor. Join: Prescription.doctorId = Doctor.Id. 'Exactly one' is QL-inexpressible; recorded here.")
 ```
 
 **Inverse pair** — when two properties are semantic inverses of each other:
@@ -143,7 +143,7 @@ ObjectPropertyRange(:primaryDoctor :Doctor)
 ```
 
 - Name with a verb: `orderedBy`, `belongsToCategory`, `prescribedBy`, `prescriptionFor`
-- Standard `rdfs:comment` form: business sentence + FK provenance + cardinality note if "exactly one"
+- Standard `rdfs:comment` form: business sentence + join columns + cardinality note if "exactly one"
 - Inverse `rdfs:comment` form: `"Inverse of :{primaryProp}. {One-line meaning.}"`
 - Sub-property `rdfs:comment` form: `"Specialisation of :{parentProp}. {One-line meaning.}"`
 
@@ -199,9 +199,9 @@ AnnotationAssertion(rdfs:comment :Score.value "Stored 0–1 fraction; multiply b
 AnnotationAssertion(rdfs:comment :Score.rank "NULL for ~600 rows. NULLs sort last in DESC — highest-score queries need no IS NOT NULL filter; add it only when ranking ascending.")
 ```
 
-**Choice set** (Data Fabric CHOICE_SET field — stored as integer NumberId):
+**Value list** — a fixed set of values is a `STRING` field; list them in the comment (and enforce with `sh:in` in the constraints file):
 ```
-AnnotationAssertion(rdfs:comment :Order.stage "NumberId. 1=Pending, 2=Shipped, 3=Delivered. Compare integers, not labels.")
+AnnotationAssertion(rdfs:comment :Order.stage "Values: 'Pending' | 'Shipped' | 'Delivered' (case-sensitive; copy exactly).")
 ```
 
 **Boolean**:
@@ -209,10 +209,21 @@ AnnotationAssertion(rdfs:comment :Order.stage "NumberId. 1=Pending, 2=Shipped, 3
 AnnotationAssertion(rdfs:comment :Order.isPaid "Compare true/false, never 1/0.")
 ```
 
-### XSD type mapping
+### Choosing the XSD range
 
 | User says | XSD type |
 |---|---|
+| text, name, description, code, ID (string) | `xsd:string` |
+| price, amount, cost, rate, percentage | `xsd:decimal` |
+| count, quantity, number of | `xsd:integer` |
+| date, timestamp, created at | `xsd:dateTime` |
+| date only (no time) | `xsd:date` |
+| true/false, flag, enabled | `xsd:boolean` |
+| URL, link, URI | `xsd:anyURI` |
+
+Each range maps to one of the nine local entity types; see [`entity-format-guide.md`](entity-format-guide.md) for the mapping (for example `xsd:integer` is `DECIMAL` with `decimalPrecision: 0`, `xsd:dateTime` is `DATETIME_WITH_TZ`).
+
+---|---|
 | text, name, description, code, ID (string) | `xsd:string` |
 | price, amount, cost, rate, percentage | `xsd:decimal` |
 | count, quantity, number of | `xsd:integer` |
@@ -247,7 +258,7 @@ AnnotationAssertion(skos:altLabel :{ClassName} "{synonym1}")
 
 Standard (one row per entity):
 ```
-AnnotationAssertion(rdfs:comment :{ClassName} "ONE row per {business thing}, keyed by Id. Maps Data Fabric entity '{EntityName}'.")
+AnnotationAssertion(rdfs:comment :{ClassName} "ONE row per {business thing}, keyed by Id. Maps local entity '{EntityName}'.")
 ```
 
 Time series (multiple rows per business parent — highest-impact annotation):
@@ -259,9 +270,9 @@ AnnotationAssertion(rdfs:comment :{ClassName} "TIME SERIES: ~{N} dated rows per 
 
 ## Every class must be backed by data — no annotation-only classes
 
-Every `Declaration(Class(...))` must be (a) the domain of ≥1 `DataPropertyDomain`/`ObjectPropertyDomain`, and (b) instantiated in `{name}-mapping.yarrrml.yml`. A class that fails either — typically a "role"/"actor" concept (approving manager, external system name, job title) with zero properties and no Data Fabric entity — parses as valid OWL and passes syntax checks, but makes the whole ontology fail to install at deploy. If the concept is narrative-only, fold it into the relevant property's `rdfs:comment` instead (e.g. `Payment.approvedBy`'s comment) rather than declaring a class. The preflight `CLASS_DEPLOYABILITY` gate catches this.
+Every `Declaration(Class(...))` must be (a) the domain of ≥1 `DataPropertyDomain`/`ObjectPropertyDomain`, and (b) instantiated in `{name}-mapping.yarrrml.yml` over a local entity. A class that fails either — typically a "role"/"actor" concept (approving manager, external system name, job title) with zero properties and no entity — parses as valid OWL but fails `uip ont validate --local` (`XF-009`, every class needs a backing entity). If the concept is narrative-only, fold it into the relevant property's `rdfs:comment` instead (e.g. `Payment.approvedBy`'s comment) rather than declaring a class.
 
-**Real properties don't mean relationships are modeled.** A `DataProperty` whose value equals another class's PK (e.g. `SupplierInvoice.poReference` matching `PurchaseOrder.poId`) is two matching columns, not a relationship, until it's an `ObjectProperty` (with `ObjectPropertyDomain`/`ObjectPropertyRange`) wired into the mapping as a join (see `mapping-yarrrml-guide.md`'s Object property pattern). Every FK-shaped `DataProperty` needs either a real `ObjectProperty` or an exemption line `# RELATIONSHIP_EXEMPT: ont:{property}` in the mapping (the only legitimate case: a multi-valued FK packed into one comma-separated column). The preflight `RELATIONSHIP` gate enforces this.
+**Real properties don't mean relationships are modeled.** A `DataProperty` whose value equals another class's key (e.g. `SupplierInvoice.poReference` matching `PurchaseOrder.Id`) is two matching columns, not a relationship, until it's an `ObjectProperty` (with `ObjectPropertyDomain`/`ObjectPropertyRange`) wired into the mapping as a join on plain columns. Every object property between two mapped classes needs that join (`XF-015`), and every join needs a declared object property (`XF-014`). See [`relationships-guide.md`](relationships-guide.md).
 
 ---
 
@@ -293,25 +304,25 @@ Declaration(ObjectProperty(:enrolledPatient))
 AnnotationAssertion(rdfs:label :PatientInsurance "Patient insurance enrolment")
 AnnotationAssertion(rdfs:comment :PatientInsurance "ONE row per (patient, plan) enrolment. Junction between Patient and InsurancePlan. Keyed by enrolmentId.")
 AnnotationAssertion(rdfs:label :coveredUnder "Covered under")
-AnnotationAssertion(rdfs:comment :coveredUnder "Links an enrolment record to its insurance plan. FK: PatientInsurance.planId -> InsurancePlan.Id.")
+AnnotationAssertion(rdfs:comment :coveredUnder "Links an enrolment record to its insurance plan. Join: PatientInsurance.planId = InsurancePlan.Id.")
 AnnotationAssertion(rdfs:label :enrolledPatient "Enrolled patient")
-AnnotationAssertion(rdfs:comment :enrolledPatient "Links an enrolment record to the patient. FK: PatientInsurance.patientId -> Patient.Id.")
+AnnotationAssertion(rdfs:comment :enrolledPatient "Links an enrolment record to the patient. Join: PatientInsurance.patientId = Patient.Id.")
 ObjectPropertyDomain(:coveredUnder :PatientInsurance)
 ObjectPropertyRange(:coveredUnder :InsurancePlan)
 ObjectPropertyDomain(:enrolledPatient :PatientInsurance)
 ObjectPropertyRange(:enrolledPatient :Patient)
 ```
 
-The junction class maps to a real Data Fabric entity (the join/association table). Both FK columns are in that entity.
+The junction class maps to its own local entity (the association table). Both key columns are plain fields of that entity.
 
 **When to introduce a junction class:**
 - User says "X can have many Y AND Y can be shared across many X"
-- There is a real association table in Data Fabric with its own primary key
+- There is a real association entity with its own `Id`
 - The association itself carries extra fields (enrolment date, coverage tier, etc.)
 
 **Do not use a junction class when:**
 - One side is strictly "many owned by one" (use a plain ObjectProperty with FK on the many-side entity)
-- There is no real association table in Data Fabric
+- There is no association entity
 
 ---
 
