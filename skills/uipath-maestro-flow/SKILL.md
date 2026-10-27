@@ -25,7 +25,6 @@ UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/maes
 
 <!--skill-flavor:sdk-project-layout:start-->
 `@uipath/maestro-builder-sdk` is installed globally (`npm install -g`); `examples/` contains authored examples, and `references/` contains the details routed from this guide.
-The examples write scripts as functions, which needs SDK 6.57.0 or later ([`references/script.md`](references/script.md#writing-the-script-as-a-function)).
 A Flow is authored as `.flow-sdk/<Name>.flow.ts` inside its project folder `<Solution>/<Name>/`, and it imports the package directly.
 
 **Authoring files live in `.flow-sdk/`; the compiled artifact does not.**
@@ -185,7 +184,7 @@ The table is the authoritative router; read a node's `Reference` before writing 
 | Voice trigger | `core.trigger.voice` | `voiceTrigger(...)` | [voice.md](references/voice.md) | `examples/HarbourRadioLine.flow.ts` |
 | Standalone HTTP | `core.action.http` | `http({ managed: false, ... })` | [http.md](references/http.md) | `examples/LighthouseSignal.flow.ts` |
 | Managed HTTP | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) | `examples/ObservatorySeeing.flow.ts` |
-| Script | `core.action.script` | `script(...)` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
+| Script | `core.action.script` | `script(fn)`, SDK ≥ 6.57.0; `script({ code })` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
 | Transform | `core.action.transform` | `transform(...)` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
