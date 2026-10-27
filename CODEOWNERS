@@ -65,8 +65,6 @@
 /skills/uipath-ontology-authoring/ @diwakar-jha3110
 /skills/uipath-ontology-modeler/ @diwakar-jha3110
 /tests/tasks/uipath-ontology-modeler/ @diwakar-jha3110
-/tests/scripts/test_ontology_entities.py @diwakar-jha3110
-/tests/scripts/test_ontology_preflight.py @diwakar-jha3110
 /tests/scripts/test_ontology_skill_structure.py @diwakar-jha3110
 /tests/scripts/test_ontology_solution_golden.py @diwakar-jha3110
 

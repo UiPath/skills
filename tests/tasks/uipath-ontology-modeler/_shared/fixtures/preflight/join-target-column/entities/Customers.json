@@ -1,1 +1,0 @@
-{ "Name": "Customers", "DisplayName": "Customers", "Fields": [ { "Name": "code", "DisplayName": "code", "SqlType": { "Name": "NVARCHAR", "LengthLimit": 200 }, "IsRequired": false } ] }

@@ -1,6 +1,0 @@
-@prefix shape: <https://ontology.uipath.com/shapes#> .
-@prefix sh: <http://www.w3.org/ns/shacl#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix ont: <https://ontology.uipath.com/demo#> .
-shape:OrderBusinessRule a sh:NodeShape ; sh:targetClass ont:Order ;
-  rdfs:comment "An order must carry a status." .

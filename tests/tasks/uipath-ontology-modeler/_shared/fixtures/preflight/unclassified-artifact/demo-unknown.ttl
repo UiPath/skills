@@ -1,2 +1,0 @@
-@prefix ont: <https://ontology.uipath.com/demo#> .
-ont:justSomeTriples ont:note "not an artifact contract" .
