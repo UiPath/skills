@@ -5,7 +5,9 @@
 Always author `http({ managed: true, ... })`; non-2xx responses take the error
 path. `managed: false` (`core.action.http`) no longer runs: the tenant answers 500
 `No handler registered for extension type 'Intsvc.HttpExecution'`, even though
-`check` only warns (`HTTP_V1_RETIRED`).
+`check` only warns (`HTTP_V1_RETIRED`). An existing `managed: false` step in a
+flow you edit gets the same switch, and every read of its `statusCode` becomes an
+`.onError()` handler ([error-handling.md](error-handling.md)).
 
 Signature:
 `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
@@ -116,8 +118,9 @@ proxied request reuses that connector's authentication:
 response — each becomes a `branch-<name>` source port routed with
 `.stepToList('branch-<name>', …)`, while the main path continues from the
 default port. Conditions are expressions (e.g.
-``js`$vars.fetch.output.statusCode === 429` ``), typically reading the step's
-own declared `returns`. Names must be unique and constant conditions are
+``js`$vars.fetch.output.body.limit > 100` ``), typically reading the step's
+own declared `returns`. A non-2xx never reaches a branch; handle it with
+`.onError()`. Names must be unique and constant conditions are
 rejected by `check`.
 
 ## Evidence
@@ -126,6 +129,6 @@ An offline replay proves the graph and chosen response shape. A live request is
 the evidence for endpoint reachability, response media type, authentication,
 and the service's actual status/body behavior.
 
-Both HTTP types default to `timeout: 'PT15M'` and `retryCount: 0` when omitted.
-The managed node deserializes the response body, so read `out('fetch', 'body.items')`
+The node defaults to `timeout: 'PT15M'` and `retryCount: 0` when omitted.
+It deserializes the response body, so read `out('fetch', 'body.items')`
 and let `returns` declare the body's top-level fields.
