@@ -1,6 +1,0 @@
-@prefix shape: <https://ontology.uipath.com/shapes#> .
-@prefix sh: <http://www.w3.org/ns/shacl#> .
-@prefix ont: <https://ontology.uipath.com/sales#> .
-shape:OrderShape a sh:NodeShape ; sh:targetClass ont:Order ;
-  sh:property [ sh:path ont:Order.orderNumber ; sh:minCount 1 ] .
-shape:CustomerShape a sh:NodeShape ; sh:targetClass ont:Customer .

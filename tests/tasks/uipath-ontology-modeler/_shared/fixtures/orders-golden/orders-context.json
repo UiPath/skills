@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "@base": "https://ontology.uipath.com/orders#",
+    "ont": "https://ontology.uipath.com/orders#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "orderNumber": { "@id": "ont:Order.orderNumber", "@type": "xsd:string" },
+    "customerName": { "@id": "ont:Customer.customerName", "@type": "xsd:string" },
+    "placedBy": { "@id": "ont:placedBy", "@type": "@id" }
+  }
+}

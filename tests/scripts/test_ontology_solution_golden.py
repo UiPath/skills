@@ -1,34 +1,67 @@
 #!/usr/bin/env python3
-"""Golden path: handoff + artifacts -> entities -> preflight -> local solution -> pack.
+"""Golden path: the uipath-ontology-modeler flow, CLI only, for an Order/Customer ontology.
 
-Follows the uipath-ontology-modeler skill's paths and command order exactly.
+Mirrors skills/uipath-ontology-modeler/SKILL.md: solution init, local entities, artifacts check,
+ont create, files add, validate, pack, files list --package. Needs a `uip` build that has the
+`ont` local commands (the feat/ontologies-tool branch of ~/code/cli). Set UIP_CLI to that build:
+either an executable or a JS entry point (run with node):
 
-Build the CLI first (in ~/code/cli, so packages/cli/dist/index.js exists), then run:
+    UIP_CLI=~/code/cli/packages/cli/dist/index.js python3 -m unittest tests/scripts/test_ontology_solution_golden.py -v
 
-    UIP_CLI=~/code/cli/packages/cli/dist/index.js \\
-    UIP_SOLUTION_METADATA_OVERLAY=~/code/cli/packages/solution-tool/tests/fixtures/ontology/ontology.metadata.json \\
-    python3 -m unittest tests/scripts/test_ontology_solution_golden.py -v
+The test skips when UIP_CLI is unset or the build lacks `ont create`. It validates with
+`--offline` because it must not need a login; the skill itself never validates offline.
 """
 
 import json
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import unittest
-import zipfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS = ROOT / "skills" / "uipath-ontology-modeler" / "scripts"
-FIXTURE = ROOT / "tests" / "tasks" / "uipath-ontology-modeler" / "_shared" / "fixtures" / "solution-golden"
+FIXTURE = ROOT / "tests" / "tasks" / "uipath-ontology-modeler" / "_shared" / "fixtures" / "orders-golden"
 UIP_CLI = os.environ.get("UIP_CLI")
-OVERLAY = os.environ.get("UIP_SOLUTION_METADATA_OVERLAY")
+
+NAME = "orders"
+ONTOLOGY = "Orders"
+ENTITIES = ("Order", "Customer")
+# file name -> (media type, artifact type)
+ARTIFACTS = {
+    "orders.ofn": ("text/owl-functional", "schema"),
+    "orders-constraints.ttl": ("text/turtle", "constraints"),
+    "orders-mapping.yarrrml.yml": ("application/yaml", "mapping"),
+    "orders-summary.json": ("application/json", "summary"),
+    "orders-context.json": ("application/json", "context"),
+}
 
 
-@unittest.skipUnless(UIP_CLI and OVERLAY, "set UIP_CLI and UIP_SOLUTION_METADATA_OVERLAY to run")
+def cli_command() -> list[str]:
+    if not UIP_CLI:
+        return []
+    path = os.path.expanduser(UIP_CLI)
+    return ["node", path] if path.endswith((".js", ".mjs", ".cjs")) else [path]
+
+
+def cli_skip_reason() -> str | None:
+    if not UIP_CLI:
+        return "UIP_CLI is not set: point it at a uip build that has the local `ont` commands"
+    try:
+        probe = subprocess.run([*cli_command(), "ont", "create", "--help"], text=True, capture_output=True,
+                               timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return f"UIP_CLI cannot run: {error}"
+    if probe.returncode != 0:
+        return f"`$UIP_CLI ont create --help` failed (exit {probe.returncode}): this uip build has no `ont create`"
+    return None
+
+
+SKIP_REASON = cli_skip_reason()
+
+
+@unittest.skipIf(SKIP_REASON, SKIP_REASON or "")
 class OntologySolutionGoldenTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -40,15 +73,14 @@ class OntologySolutionGoldenTest(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.base, ignore_errors=True)
 
     def cli_env(self) -> dict:
-        # A throwaway HOME keeps the CLI logged out, so the Data Fabric inline-entity flag
-        # check reports "unknown" (a warning) instead of querying a real tenant.
+        # A throwaway HOME keeps the CLI logged out; the offline validation needs no tenant.
         home = str(self.cli_home)
         return {**os.environ, "HOME": home, "USERPROFILE": home,
                 "UIPATH_CLI_ENABLE_ENV_AUTH": "false", "UIPATH_CLI_ENFORCE_ROBOT_AUTH": "false"}
 
-    def run_cli(self, *args: str, cwd: Path, stdin: str | None = None) -> dict:
-        result = subprocess.run(["node", UIP_CLI, *args, "--output", "json"], text=True, capture_output=True,
-                                input=stdin, cwd=cwd, env=self.cli_env())
+    def run_cli(self, *args: str, cwd: Path) -> dict:
+        result = subprocess.run([*cli_command(), *args, "--output", "json"], text=True, capture_output=True,
+                                cwd=cwd, env=self.cli_env())
         detail = f"uip {' '.join(args)}\nexit={result.returncode}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         try:
             payload = json.loads(result.stdout)
@@ -57,77 +89,65 @@ class OntologySolutionGoldenTest(unittest.TestCase):
         self.assertEqual(payload.get("Result"), "Success", detail)
         return payload
 
-    def run_tool(self, tool: str, *args: str) -> dict:
-        result = subprocess.run([sys.executable, str(SCRIPTS / tool), *args], text=True, capture_output=True)
-        payload = json.loads(result.stdout)
-        self.assertEqual(result.returncode, 0, payload)
-        return payload
-
-    def test_handoff_to_packed_solution(self):
-        workdir = self.base / "sales"
+    def test_order_customer_flow_to_packed_solution(self):
+        workdir = self.base / NAME
         shutil.copytree(FIXTURE, workdir)
-        entities = workdir / "entities"
-        solution = self.base / "SalesModel"
+        solution = self.base / "OrdersModel"
 
-        # Step 3: entity definitions.
-        self.run_tool("ontology_entities.py", "--workdir", str(workdir))
-
-        # Step 4: preflight gates, including WORKDIR/SOLUTION_DIR path validation.
-        report = self.run_tool("ontology_preflight.py", "--workdir", str(workdir), "--ontology-name", "sales",
-                               "--mapping-mode", "auto", "--solution-dir", str(solution))
-        self.assertEqual(report["status"], "PASS", report["errors"])
-        self.assertEqual(report["paths"]["solution_state"], "new")
-
-        # Step 5.1: init from dirname(SOLUTION_DIR) with basename(SOLUTION_DIR).
-        self.run_cli("solution", "init", solution.name, cwd=solution.parent)
+        # Step 4.1: solution from its parent folder.
+        self.run_cli("solution", "init", solution.name, cwd=self.base)
         self.assertTrue(any(solution.glob("*.uipx")))
+
+        # Step 4.2: local entities, run from the solution folder (no --solution-folder flag).
+        for entity in ENTITIES:
+            body = (workdir / "input" / "entities" / f"{entity}.json").read_text()
+            self.run_cli("df", "entities", "create", entity, "--local", cwd=solution)
+            self.run_cli("df", "entities", "update", entity, "--local", "--body", body, cwd=solution)
+        self.assertIn("customerId", (workdir / "input" / "entities" / "Order.json").read_text())
+
+        # Step 3: offline convention check of every artifact.
+        for file_name, (media_type, artifact_type) in ARTIFACTS.items():
+            self.run_cli("ont", "artifacts", "check", file_name, "--content-type", media_type, "--type",
+                         artifact_type, "--file", str(workdir / file_name), cwd=self.base)
+
+        # Step 5: ontology resource, then its files.
         folder = ("--solution-folder", str(solution))
+        entity_flags = [flag for entity in ENTITIES for flag in ("--entity", entity)]
+        self.run_cli("ont", "create", ONTOLOGY, "--local", *entity_flags, *folder, cwd=self.base)
+        self.run_cli("ont", "files", "add", ONTOLOGY, *(str(workdir / name) for name in ARTIFACTS),
+                     "--local", *folder, cwd=self.base)
 
-        # Step 5.2: entities; keys come from Data.Key.
-        entity_keys = {}
-        for patch in sorted(entities.glob("*.patch.json")):
-            name = patch.name[: -len(".patch.json")]
-            entity_keys[name] = self.run_cli("solution", "resources", "add", "--source", "local", "--kind", "Entity",
-                                             "--name", name, *folder, cwd=self.base)["Data"]["Key"]
-            self.run_cli("solution", "resources", "edit", entity_keys[name], "--patch", "-", *folder,
-                         cwd=self.base, stdin=patch.read_text())
-        self.assertEqual(set(entity_keys), {"Order", "Customer"})
+        # Step 6, test only: offline validation (the skill validates with the service).
+        self.run_cli("ont", "validate", "--local", "--offline", *folder, cwd=self.base)
 
-        # Steps 5.3 and 5.4: add the ontology, then link the entities before any file is attached.
-        ontology = self.run_cli("solution", "resources", "add", "--source", "local", "--kind", "Ontology",
-                                "--name", "sales", *folder, cwd=self.base)["Data"]["Key"]
-        links = [arg for name in sorted(entity_keys) for arg in ("--add-entity", name)]
-        self.run_cli("solution", "resources", "edit", ontology, *links, *folder, cwd=self.base)
-
-        # Step 5.5: attach every file in artifact_inventory with its type.
-        attached = 0
-        for kind, names in report["artifact_inventory"].items():
-            for name in names:
-                self.run_cli("solution", "resources", "files", "add", ontology, "--file", str(workdir / name),
-                             "--file-type", kind, *folder, cwd=self.base)
-                attached += 1
-        self.assertEqual(attached, 3)
-
-        # Step 5.6: files list is clean.
-        listed = self.run_cli("solution", "resources", "files", "list", ontology, *folder, cwd=self.base)
-        self.assertEqual(listed["Data"]["Warnings"], [])
-
-        # Step 6: pack into {SOLUTION_DIR}/out.
+        # Step 7: dry run, then pack.
         out = solution / "out"
+        self.run_cli("solution", "pack", str(solution), str(out), "--dry-run", cwd=self.base)
         self.run_cli("solution", "pack", str(solution), str(out), cwd=self.base)
-        package = next(out.glob("*.zip"))
-        with zipfile.ZipFile(package) as archive:
-            names = archive.namelist()
-            inner = [n for n in names if n.startswith("files/") and n.endswith(f"{ontology}.zip")]
-            self.assertEqual(len(inner), 1, names)
-            self.assertTrue(any(n.endswith("/entity/Order.json") for n in names), names)
-            ontology_json = json.loads(archive.read(next(n for n in names if n.endswith("/ontology/sales.json"))))
-            deps = {(d["kind"].lower(), d["name"]) for d in ontology_json["resource"]["dependencies"]}
-            self.assertTrue({("entity", "Order"), ("entity", "Customer")} <= deps, deps)
-            with zipfile.ZipFile(archive.open(inner[0])) as bundle:
-                mapping = bundle.read("sales-mapping.yarrrml.yml").decode()
-                self.assertIn("table: Order", mapping)
-                self.assertNotIn("entityId", mapping)
+        packages = list(out.glob("*.zip"))
+        self.assertEqual(len(packages), 1, list(out.iterdir()) if out.exists() else "no out dir")
+
+        # The packed listing holds the fixture's artifacts with their types, plus ontology.json.
+        listed = self.run_cli("ont", "files", "list", ONTOLOGY, "--package", str(packages[0]), cwd=self.base)
+        entries = self.listing_entries(listed["Data"])
+        by_name = {self.entry_name(entry): entry for entry in entries}
+        self.assertIn("ontology.json", by_name, sorted(by_name))
+        for file_name, (_, artifact_type) in ARTIFACTS.items():
+            self.assertIn(file_name, by_name, sorted(by_name))
+            self.assertIn(artifact_type, json.dumps(by_name[file_name]).lower(), by_name[file_name])
+
+    @staticmethod
+    def listing_entries(data) -> list:
+        if isinstance(data, dict):
+            data = next((v for v in data.values() if isinstance(v, list) and v and isinstance(v[0], dict)), [])
+        return [entry for entry in data if isinstance(entry, dict)]
+
+    @staticmethod
+    def entry_name(entry: dict) -> str:
+        for key in ("Name", "name", "FileName", "fileName", "Path", "path"):
+            if isinstance(entry.get(key), str):
+                return entry[key].rsplit("/", 1)[-1]
+        return ""
 
 
 if __name__ == "__main__":

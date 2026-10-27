@@ -1,0 +1,11 @@
+{
+  "name": "orders",
+  "description": "Customers and the orders they place.",
+  "classes": [
+    { "name": "Customer", "grain": "ONE row per customer." },
+    { "name": "Order", "grain": "ONE row per order." }
+  ],
+  "relationships": [
+    "Order placedBy Customer (Order.customerId = Customer.Id)"
+  ]
+}

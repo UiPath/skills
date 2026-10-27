@@ -1,0 +1,20 @@
+@prefix ont:   <https://ontology.uipath.com/orders#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix shape: <https://ontology.uipath.com/shapes#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+shape:OrderMustHaveNumberAndCustomer
+    a               sh:NodeShape ;
+    rdfs:label      "An order has a number and a customer" ;
+    sh:message      "Every order must have an order number and be placed by a customer." ;
+    sh:targetClass  ont:Order ;
+    sh:property     [ sh:path ont:Order.orderNumber ; sh:datatype xsd:string ; sh:minCount 1 ] ;
+    sh:property     [ sh:path ont:placedBy ; sh:class ont:Customer ; sh:minCount 1 ] .
+
+shape:CustomerMayHaveName
+    a               sh:NodeShape ;
+    rdfs:label      "A customer may have a name" ;
+    sh:message      "A customer has at most one name." ;
+    sh:targetClass  ont:Customer ;
+    sh:property     [ sh:path ont:Customer.customerName ; sh:datatype xsd:string ; sh:maxCount 1 ] .

@@ -1,0 +1,1 @@
+{"displayName": "Order", "description": "ONE row per customer order.", "addFields": [{"name": "orderNumber", "type": "STRING", "lengthLimit": 64, "isRequired": true}, {"name": "customerId", "type": "STRING", "lengthLimit": 64, "isRequired": true}]}
