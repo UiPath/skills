@@ -39,6 +39,8 @@ WORKDIR        <BASE_DIR>/<ONTOLOGY_NAME>/        artifacts at top level, plus i
 SOLUTION_DIR   <SOLUTION_PARENT>/<SOLUTION_NAME>/ absent (new) or containing exactly one .uipx (existing)
 ```
 
+The resource name `<Name>` and the file prefix and IRI slug `<name>` are the same `ONTOLOGY_NAME`, written verbatim (same case).
+
 `WORKDIR` and `SOLUTION_DIR` are absolute and separate (neither inside the other). Write artifacts only inside `WORKDIR`; change `SOLUTION_DIR` only through `uip` commands. Quote every path.
 
 | File in `WORKDIR` | `--type` | Media type | Count |

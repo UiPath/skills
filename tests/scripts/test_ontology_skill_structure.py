@@ -41,6 +41,15 @@ STAGE_COMMANDS = (
     "uip ont validate --local", "uip df entities validate --local", "uip solution pack",
     "uip ont files list",
 )
+RETIRED_RULE_IDS = re.compile(
+    r"\b(OFN-00[3678]|SHC-00[15]|MAP-00[1378]|FNO-\d+|BRU-\d+)\b|\b(FNO|BRU)-\*")
+FORBIDDEN_REST = re.compile(r"ontology_/api|datafabric_/api/ontology|OntologyService|bulk-upload|upsertArtifact|uploadArtifacts")
+ID_TERMS = re.compile(r"entityId|folderId")
+OUT_OF_SCOPE = re.compile(r"(?i:business[- ]rules)\b|(?i:\bfunctions?\b)(?!:)|\bactions?\b")
+NEGATION = re.compile(
+    r"\b(never|not|no|don't|do not|without|leave out|drop|remove|reject|refuse|stop)\b|\bnon-action\b|\bnot in M1", re.I)
+LOCAL_FIELD_TYPES = ("STRING", "DECIMAL", "BOOLEAN", "DATE", "DATETIME_WITH_TZ", "MULTILINE_TEXT",
+                     "MULTILINE_MAX", "AUTO_NUMBER", "FILE")
 REFERENCE_GUIDES = ("entity-format-guide.md", "relationships-guide.md", "summary-context-guide.md")
 # Things the old flow taught that the CLI replaces.
 BANNED_IN_MODELER = (
@@ -51,6 +60,22 @@ BANNED_IN_MODELER = (
      re.compile(r"uip\s+solution\s+resources\b[^\n]*--kind\s+Ontology")),
     ("files add under uip solution", re.compile(r"uip\s+solution\s+resources\s+files\s+add|uip\s+solution\s+files\s+add")),
 )
+
+
+def guidance_files():
+    return [*MODELER_DIR.rglob("*.md"), *AUTHORING_DIR.rglob("*.md")]
+
+
+def unnegated_lines(path, pattern):
+    """Lines matching pattern that are not negated, on the line or by a 'Do not' heading."""
+    hits = []
+    negated_section = False
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if line.startswith("#"):
+            negated_section = bool(re.search(r"do not|don't|never|avoid", line, re.I))
+        if pattern.search(line) and not negated_section and not NEGATION.search(line):
+            hits.append(f"{path.relative_to(ROOT)}:{number}: {line.strip()}")
+    return hits
 
 
 def contract_block(text: str) -> str:
@@ -105,6 +130,27 @@ class OntologySkillContractTests(unittest.TestCase):
     def test_modeler_drops_the_old_flow(self):
         for label, pattern in BANNED_IN_MODELER:
             self.assertIsNone(pattern.search(MODELER), label)
+
+    def test_no_rest_or_sdk_patterns_in_any_guide(self):
+        for path in guidance_files():
+            self.assertIsNone(FORBIDDEN_REST.search(path.read_text(encoding="utf-8")), str(path))
+
+    def test_no_entity_or_folder_id_guidance(self):
+        hits = [hit for path in guidance_files() for hit in unnegated_lines(path, ID_TERMS)]
+        self.assertEqual(hits, [])
+
+    def test_no_business_rules_functions_or_actions_in_any_guide(self):
+        hits = [hit for path in guidance_files() for hit in unnegated_lines(path, OUT_OF_SCOPE)]
+        self.assertEqual(hits, [])
+
+    def test_entity_guide_lists_exactly_the_nine_local_field_types(self):
+        guide = (MODELER_DIR / "references" / "entity-format-guide.md").read_text(encoding="utf-8")
+        line = next(l for l in guide.splitlines() if "`STRING`" in l and "`AUTO_NUMBER`" in l)
+        self.assertEqual(tuple(re.findall(r"`([A-Z_]+)`", line)), LOCAL_FIELD_TYPES)
+
+    def test_no_retired_rule_ids_anywhere(self):
+        for path in guidance_files():
+            self.assertIsNone(RETIRED_RULE_IDS.search(path.read_text(encoding="utf-8")), str(path))
 
     def test_reference_guides_exist(self):
         for guide in REFERENCE_GUIDES:

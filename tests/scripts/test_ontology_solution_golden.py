@@ -26,7 +26,7 @@ FIXTURE = ROOT / "tests" / "tasks" / "uipath-ontology-modeler" / "_shared" / "fi
 UIP_CLI = os.environ.get("UIP_CLI")
 
 NAME = "orders"
-ONTOLOGY = "Orders"
+ONTOLOGY = NAME
 ENTITIES = ("Order", "Customer")
 # file name -> (media type, artifact type)
 ARTIFACTS = {
