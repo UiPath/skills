@@ -139,8 +139,10 @@ def mutate(sandbox: Path, *changes) -> None:
 
 
 def test_fixture_http_is_managed_v2() -> None:
-    flow = json.loads((FIXTURE / "BellevueWeather.flow").read_text())
-    assert node(flow, "getWeather")["type"] == "core.action.http.v2"
+    text = (FIXTURE / "BellevueWeather.flow").read_text()
+    weather = node(json.loads(text), "getWeather")
+    assert (weather["type"], weather["typeVersion"]) == ("core.action.http.v2", "2.3")
+    assert "Intsvc.HttpExecution" not in text
 
 
 @pytest.mark.parametrize("task", TASKS)
