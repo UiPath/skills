@@ -14,7 +14,7 @@ An existing Flow JSON can also be decompiled back into TypeScript for editing.
 
 ## Critical Rules
 
-1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It holds the critical rules this guide only summarizes, the scope gate, and the completion report the final response must follow.
+1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It holds the separately numbered critical rules this list only summarizes, the scope gate, and the completion report the final response must follow.
 2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types): the signature, a worked example and the node's hazards live there, not here.
 3. Choose each node from a registry search, never a brand name.
 4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), map it to the most defensible stated value and list it under Open questions as **[REQUIRED]**.
@@ -22,7 +22,7 @@ An existing Flow JSON can also be decompiled back into TypeScript for editing.
 6. Handle an error only when the request says what should happen.
 7. Never re-run `flow debug` to look again at a failed run.
 8. Simulate every side-effecting component before running an eval set, and never `solution upload` as part of an eval workflow without asking.
-9. The final pass must use the loop chosen in [Lifecycle](#lifecycle) and run after the last edit.
+9. The final pass must use the [Lifecycle](#lifecycle) loop and run after the last edit.
 
 ## Project layout
 
@@ -153,7 +153,7 @@ If the source must stay inside the Flow project (for example, to preserve relati
 
 ## Supported node types
 
-The table is the authoritative router; read a node's `Reference` before writing it (Critical Rule 2). `Example` names the one complete flow to copy from; paths under `examples/` resolve inside this skill folder.
+The table is the authoritative router; read a node's `Reference` before writing it ([Critical Rule 2](#critical-rules)). `Example` names the one complete flow to copy from; paths under `examples/` resolve inside this skill folder.
 
 | Node or surface | Emitted node type | Builder | Reference | Example |
 |---|---|---|---|---|
@@ -234,7 +234,7 @@ The quick start above shows the shape — `flow(id)`, declarations, nodes, `.ret
 
 ## Authoring a flow
 
-Critical Rules 3–6 govern node choice, open decisions, outputs and errors. The rest is in
+[Critical Rules](#critical-rules) 3–6 govern node choice, open decisions, outputs and errors. The rest is in
 **[`references/author.md`](references/author.md)**.
 A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
