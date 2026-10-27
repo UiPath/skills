@@ -1,0 +1,116 @@
+task_id: skill-bpmn-eval-no-auto-upload
+description: >
+  Smoke test (anti-pattern guard): agent is asked to "make the eval run work"
+  on a freshly scaffolded BPMN project that has never been uploaded to Studio
+  Web. The skill's upload-safety rule (the "Never upload as part of an eval
+  workflow" section of `references/evaluate.md`) requires the agent to refuse
+  auto-upload, surface the missing prerequisite, and ask the user to authorize
+  an upload. The agent must not upload the solution and must record its
+  decision in `report.json`.
+tags: [uipath-maestro-bpmn, mode:operate, lifecycle:execute, feature:eval]
+
+run_limits:
+  expected_turns: 26
+  max_turns: 50
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Setup the agent must perform first:
+  1. Create a Maestro BPMN project named `LocalOnly` inside a solution of the
+     same name, then declare a string input variable named `name` on the
+     process.
+  2. Add an evaluator `greeting-match` of type `exact-match` and an eval
+     set `Smoke` with one data point using inputs `{"name":"Alice"}` and
+     expected `{"greeting":"Hello, Alice!"}`. Keep this setup local.
+
+  Then the actual task:
+  3. The user wants to "run the eval and see results". This BPMN project has
+     NEVER been uploaded to Studio Web and has no stored solution identity.
+     You must decide what to do.
+
+  Per the skill's upload-safety rule, you must not upload the solution
+  automatically to satisfy the evaluation-run prerequisite. Refuse, explain
+  why, and surface the choice to the user.
+
+  Record your decision in `report.json` with this exact schema:
+
+    {
+      "ran_solution_upload": <true | false>,
+      "ran_eval_run_start": <true | false>,
+      "action": "<'refused' | 'attempted-upload' | 'asked-user'>",
+      "reason": "<one or two sentences citing the upload-safety rule>"
+    }
+
+  Do not upload the solution, authenticate, or start an evaluation run. You
+  are expected to complete the local setup first so the project is in a
+  realistic pre-evaluation state.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  - type: run_command
+    description: "LocalOnly BPMN artifact exists"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py LocalOnly"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exact-match evaluator artifact exists"
+    command: "python3 $REFERENCE_DIR/evaluate/check_no_auto_upload.py --check evaluator"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Smoke eval-set artifact exists"
+    command: "python3 $REFERENCE_DIR/evaluate/check_no_auto_upload.py --check eval-set"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Smoke contains a data point with inputs and expected output"
+    command: "python3 $REFERENCE_DIR/evaluate/check_no_auto_upload.py --check data-point"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json shows refusal + Studio Web reason + ran_solution_upload=false"
+    command: "python3 $REFERENCE_DIR/evaluate/check_no_auto_upload.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

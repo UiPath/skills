@@ -1,0 +1,145 @@
+task_id: skill-bpmn-eval-simulation-crud
+description: >
+  Skill-guided simulation CRUD: agent uses the uipath-maestro-bpmn skill's
+  evaluate capability to scaffold a BPMN project, build an eval set + data
+  point, then add, inspect, and remove node simulations on that data point.
+  Covers both Static and Llm strategies. Unlike Flow, the BPMN CLI cannot
+  auto-resolve a component's output schema, so the Llm simulation MUST pass an
+  explicit `--output-schema`. Purely local, with no authentication, upload, or
+  evaluation run. Verifies that the requested simulation state persists into
+  the eval-set JSON.
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, feature:eval]
+
+run_limits:
+  expected_turns: 25
+  max_turns: 90
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Scaffold a UiPath Maestro BPMN project, build an eval set with one data point,
+  then add, inspect, and remove simulations on that data point — purely local,
+  no Studio Web round-trip.
+
+  Create a BPMN project named `SimEval` inside a solution of the same name.
+
+  Declare a string input variable named `name` on the process before adding the
+  data point.
+
+  Create an eval set named `Sim Set` in the BPMN project, using its default
+  entry point and current evaluators.
+
+  Add one data point named `hello` to that eval set with inputs
+  `{"name":"Alice"}` and expected `{"greeting":"Hello, Alice!"}`.
+
+  Add a `Static` simulation on the `hello` data point targeting the connector
+  component id `connectorSendEmail` (component type `connector`), with fixed
+  mock value `{"status":"ok","messageId":"abc123"}`.
+
+  Add an `Llm` simulation on the same data point targeting the agent component
+  id `agentLookup` (component type `agent`), with instructions
+  `Return a plausible lookup result.` The BPMN CLI cannot auto-resolve the
+  component's output schema, so pass it explicitly:
+  `--output-schema '{"type":"object","properties":{"result":{"type":"string"}}}'`.
+
+  Inspect the simulations to confirm both are present.
+
+  Remove the `connectorSendEmail` simulation from the `hello` data point.
+
+  Keep all work local: do not authenticate, upload the solution, or start an
+  evaluation run.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: command_executed
+    description: "Solution-creation telemetry (report only; the BPMN artifact is graded below)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "SimEval BPMN artifact exists"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py SimEval"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Sim Set eval-set artifact exists"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check eval-set"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Sim Set contains the hello data point with inputs and expected output"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check data-point"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Static-simulation creation telemetry (report only; its requested removal leaves no durable witness)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+eval\s+simulation\s+add\s+(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Llm simulation carries an explicit --output-schema (BPMN cannot auto-resolve it)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+eval\s+simulation\s+add\s+(?=.*--strategy\s+Llm\b)(?=.*--output-schema\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The Llm agentLookup simulation persists with its explicit output schema"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check llm-simulation"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Simulation-list telemetry (report only; persisted state is graded directly)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+eval\s+simulation\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "Agent removed the connectorSendEmail simulation"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check static-absent"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Eval-set JSON shows the Llm simulation persisted and the removed one is gone"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
