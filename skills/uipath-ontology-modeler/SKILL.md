@@ -226,7 +226,7 @@ uip solution pack "<SOLUTION_DIR>" "<SOLUTION_DIR>/out" --output json
 uip ont files list <Name> --package "<PACKAGE_PATH>" --output json
 ```
 
-The listing must contain exactly the validated artifacts plus `ontology.json`. A mismatch means an artifact changed after validation: go back to Step 5.
+The listing (`Data.artifacts`, with `fileName` and `type`) must contain exactly the validated artifacts; it never lists `ontology.json`. A mismatch means an artifact changed after validation: go back to Step 5.
 
 Stop after pack. Report `SOLUTION_DIR`, `PACKAGE_PATH`, `PACKED_FILES` and `VALIDATION`.
 

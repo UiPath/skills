@@ -2,7 +2,7 @@
 """Golden path: the uipath-ontology-modeler flow, CLI only, for an Order/Customer ontology.
 
 Mirrors skills/uipath-ontology-modeler/SKILL.md: solution init, local entities, artifacts check,
-ont create, files add, validate, pack, files list --package. Needs a `uip` build that has the
+entities, artifacts check, ont create, files add, validate, pack, files list --package. Needs a `uip` build that has the
 `ont` local commands (the feat/ontologies-tool branch of ~/code/cli). Set UIP_CLI to that build:
 either an executable or a JS entry point (run with node):
 
@@ -94,11 +94,11 @@ class OntologySolutionGoldenTest(unittest.TestCase):
         shutil.copytree(FIXTURE, workdir)
         solution = self.base / "OrdersModel"
 
-        # Step 4.1: solution from its parent folder.
+        # Step 4: solution from its parent folder.
         self.run_cli("solution", "init", solution.name, cwd=self.base)
         self.assertTrue(any(solution.glob("*.uipx")))
 
-        # Step 4.2: local entities, run from the solution folder (no --solution-folder flag).
+        # Step 4: local entities, run from the solution folder (no --solution-folder flag).
         for entity in ENTITIES:
             body = (workdir / "input" / "entities" / f"{entity}.json").read_text()
             self.run_cli("df", "entities", "create", entity, "--local", cwd=solution)
@@ -110,15 +110,20 @@ class OntologySolutionGoldenTest(unittest.TestCase):
             self.run_cli("ont", "artifacts", "check", file_name, "--content-type", media_type, "--type",
                          artifact_type, "--file", str(workdir / file_name), cwd=self.base)
 
-        # Step 5: ontology resource, then its files.
+        # Step 5: ontology resource, then its files; every file is reported as Added.
         folder = ("--solution-folder", str(solution))
         entity_flags = [flag for entity in ENTITIES for flag in ("--entity", entity)]
         self.run_cli("ont", "create", ONTOLOGY, "--local", *entity_flags, *folder, cwd=self.base)
-        self.run_cli("ont", "files", "add", ONTOLOGY, *(str(workdir / name) for name in ARTIFACTS),
-                     "--local", *folder, cwd=self.base)
+        added = self.run_cli("ont", "files", "add", ONTOLOGY, *(str(workdir / name) for name in ARTIFACTS),
+                             "--local", *folder, cwd=self.base)
+        self.assertEqual({entry["fileName"]: entry["status"] for entry in added["Data"]["files"]},
+                         {name: "Added" for name in ARTIFACTS})
 
         # Step 6, test only: offline validation (the skill validates with the service).
-        self.run_cli("ont", "validate", "--local", "--offline", *folder, cwd=self.base)
+        validated = self.run_cli("ont", "validate", "--local", "--offline", *folder, cwd=self.base)
+        self.assertEqual(len(validated["Data"]), 1, validated["Data"])
+        self.assertIs(validated["Data"][0]["valid"], True, validated["Data"])
+        self.assertEqual(validated["Data"][0]["ServiceValidation"], "Skipped")
 
         # Step 7: dry run, then pack.
         out = solution / "out"
@@ -127,27 +132,10 @@ class OntologySolutionGoldenTest(unittest.TestCase):
         packages = list(out.glob("*.zip"))
         self.assertEqual(len(packages), 1, list(out.iterdir()) if out.exists() else "no out dir")
 
-        # The packed listing holds the fixture's artifacts with their types, plus ontology.json.
+        # The packed listing is exactly the fixture's artifacts, with their types (never ontology.json).
         listed = self.run_cli("ont", "files", "list", ONTOLOGY, "--package", str(packages[0]), cwd=self.base)
-        entries = self.listing_entries(listed["Data"])
-        by_name = {self.entry_name(entry): entry for entry in entries}
-        self.assertIn("ontology.json", by_name, sorted(by_name))
-        for file_name, (_, artifact_type) in ARTIFACTS.items():
-            self.assertIn(file_name, by_name, sorted(by_name))
-            self.assertIn(artifact_type, json.dumps(by_name[file_name]).lower(), by_name[file_name])
-
-    @staticmethod
-    def listing_entries(data) -> list:
-        if isinstance(data, dict):
-            data = next((v for v in data.values() if isinstance(v, list) and v and isinstance(v[0], dict)), [])
-        return [entry for entry in data if isinstance(entry, dict)]
-
-    @staticmethod
-    def entry_name(entry: dict) -> str:
-        for key in ("Name", "name", "FileName", "fileName", "Path", "path"):
-            if isinstance(entry.get(key), str):
-                return entry[key].rsplit("/", 1)[-1]
-        return ""
+        packed = {entry["fileName"]: entry["type"] for entry in listed["Data"]["artifacts"]}
+        self.assertEqual(packed, {name: artifact_type for name, (_, artifact_type) in ARTIFACTS.items()})
 
 
 if __name__ == "__main__":
