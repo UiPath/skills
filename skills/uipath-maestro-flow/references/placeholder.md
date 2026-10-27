@@ -21,11 +21,15 @@ writing it"](../SKILL.md) says, and use the node it finds; for extraction, an
 agent, or a process, run the search exactly as the family reference gives it
 ([`ixp.md`](ixp.md), [`agent.md`](agent.md)). Use a placeholder only when that
 search comes back empty; it makes the missing capability visible. Do not use it
-merely to disable a step or as the only work in a finished Flow.
+merely to disable a step or as the only work in a finished Flow. A draft-mode
+skeleton is all `mock()` boxes by design: [`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md).
 
 When `check` reports `MOCK_HAS_NO_OUTPUT` because a later step reads the mock,
 keep the mock and feed that step from a separate step, as in the example above;
-never replace the mock with a script that fakes its output.
+never replace the mock with a script that fakes its output. In a draft
+skeleton, declare the value as an input or `.var()` and route on it instead
+([`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md) rule 5); no feeding
+step.
 
 ## At a glance
 

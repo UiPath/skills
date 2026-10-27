@@ -1,0 +1,60 @@
+task_id: skill-flow-smoke-draft-skeleton
+description: >
+  Draft-mode smoke eval: the user asks to see the shape first, so the agent
+  builds a phase 2 skeleton (labelled mock() boxes, a real outcome-labelled
+  branch) with no registry call, validates it, and stops at the approval
+  question instead of wiring real nodes. Upload is forbidden.
+tags: [uipath-maestro-flow, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Create a UiPath Flow named "InvoiceIntakeSketch" for this process:
+  - Manual start with an `amount` (number) input.
+  - Record the invoice.
+  - Invoices with `amount >= 1000` go to manager review; every other
+    invoice is approved automatically.
+  - Both paths then notify the finance team.
+
+  Show me the shape first; I want to approve it before you wire anything up.
+  Do not upload, publish, or deploy anything.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent made no registry or library calls before the shape was approved"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+(flow\s+)?registry\s+(pull|list|search|get|prepare)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload or run anything, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+upload|maestro\s+flow\s+debug)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Skeleton has labelled mock boxes, a real outcome-labelled decision, a layout, no real nodes, and validates"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py InvoiceIntakeSketch"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

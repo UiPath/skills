@@ -65,6 +65,12 @@ WINDOWS = {
     "Lifecycle": POINTER_WINDOW,
     "Editing an existing flow": POINTER_WINDOW,
     "Builder frame": POINTER_WINDOW,
+    # Below the router: the authoring, operate and diagnose pointers carry
+    # rules a first read must see ("flow debug is a REAL run", refresh before
+    # upload). Guarded since the Phases section was inserted above them.
+    "Authoring a flow": POINTER_WINDOW,
+    "Operating a deployed flow": POINTER_WINDOW,
+    "Diagnosing a failed run": POINTER_WINDOW,
 }
 
 # Skill folder -> sections that must exist. Every other skill (Case and BPMN

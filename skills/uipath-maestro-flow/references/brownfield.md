@@ -17,6 +17,11 @@ for the request, and doing what the note lists. A note item the builder cannot
 do (such as attaching a tool to a voice agent) goes under Open questions. Keep
 every other step, port and name the pattern inserted.
 
+A `mock()` whose label ends in `[<Type>]` is a kept draft box
+([`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md)), not a canvas
+pattern: edit the shape and leave the boxes unless the request says to build
+them.
+
 ## The safe project loop
 
 Keep authored source beside the canonical Flow so relative sidecars still
