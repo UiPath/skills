@@ -62,7 +62,18 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   channels are `'Slack' | 'teams' | 'Email' | 'ActionCenter'` (Teams really is
   the lowercase `'teams'`); assignee types are `user`, `group`, `staticEmail`,
   `staticGroupName`, `workload`, `roundRobin`, `custom`. Omit the whole object
-  for the platform default (Email + Action Center, assigned to a group).
+  for the default: assigned to a group, delivered by Email + Action Center on
+  the inline forms and by Action Center alone on `'action-app'` and
+  `'document-validation'`.
+  `user` and `staticEmail` name ONE person, so they need a `value`; without one
+  the task is assigned to a single user naming nobody, and `check` warns
+  (`HITL_RECIPIENT_NO_USER`). A decompiled action-app or document-validation
+  task from the designer often carries exactly that shape
+  (`assignee: { type: 'user' }`, the canvas's own placeholder): add the user's
+  `value`, or change the type to `group`.
+  Needs a `@uipath/maestro-builder-sdk` release later than 6.57.1; an older SDK
+  copies that placeholder onto an action-app or document-validation task that
+  omits `recipient`, so give `recipient` explicitly there.
 - `labels` is one comma-separated string, shown in Action Center.
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
