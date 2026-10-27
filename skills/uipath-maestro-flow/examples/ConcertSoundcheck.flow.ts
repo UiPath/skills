@@ -42,7 +42,7 @@ export default flow('concert-soundcheck')
   ])
 
   // Runs after the join, so all three arms' outputs are readable here.
-  .step('verdict', script(verdictScript))
+  .step('verdict', script(verdict))
 
   .return({ verdict: out('verdict') })
 
@@ -64,6 +64,6 @@ function lightingLine($vars: FlowVars) {
   return "lighting: " + ($vars.lightingCues > 0 ? $vars.lightingCues + " cues loaded" : "no cues");
 }
 
-function verdictScript($vars: FlowVars) {
+function verdict($vars: FlowVars) {
   return [$vars.micLine.output, $vars.monitorLine.output, $vars.lightingLine.output].join("; ");
 }

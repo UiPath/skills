@@ -8,7 +8,7 @@
  * queue. This demonstrates the timer and queue surfaces without mirroring an
  * eval task's business process.
  */
-import { flow, scheduled, queueItem, script, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
+import { flow, scheduled, queueItem, script, out, types } from '@uipath/maestro-builder-sdk';
 
 const CATALOG_QUEUE = 'HerbariumCatalog';
 const CATALOG_FOLDER = 'Shared';
@@ -31,6 +31,6 @@ export default flow('herbarium-dispatch')
   .return({ receipt: out('recordDispatch') })
   .build();
 
-function recordDispatch($vars: FlowVars) {
+function recordDispatch() {
   return "catalogued specimen HERB-204";
 }
