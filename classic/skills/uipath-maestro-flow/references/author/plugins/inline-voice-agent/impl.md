@@ -7,34 +7,34 @@ Node type: `uipath.agent.voice`, bound to a local subdirectory via `inputs.sourc
 ## Prerequisite — Scaffold the Voice Agent
 
 ```bash
-uip agent init "<FlowProjectDir>" --inline-in-flow --conversational --output json
+uip agent init "<FlowProjectDir>" --inline-in-flow --voice --output json
 ```
 
 Same layout as any inline agent (`<FlowProjectDir>/<projectId-uuid>/` with `agent.json`, `flow-layout.json`, `evals/`, `features/`, `resources/`). **Record the returned `ProjectId`** — the voice node's `inputs.source` must match it exactly.
 
-The scaffold is a conversational agent but has **no `settings.voice` block** — adding it is mandatory (next section).
+`--voice` writes a conversational agent with Studio Web's default `settings.voice` (next section) already in place. On a CLI that rejects `--voice` as an unknown option, scaffold with `--conversational` instead: that agent has **no `settings.voice` block**, and adding it is mandatory.
 
 ## Configure `agent.json`
 
-`--conversational` already writes everything a conversational agent needs except the voice block (full `agent.json` shape and per-field rules: the `uipath-agents` skill's [`agent-definition.md`](../../../../../uipath-agents/references/lowcode/agent-definition.md)). **`Edit` one key into the existing `settings` object — never `Write` the file.** The fragment below is the key you add, not a document:
+`--voice` writes the block below; `--conversational` writes everything a conversational agent needs except it (full `agent.json` shape and per-field rules: the `uipath-agents` skill's [`agent-definition.md`](../../../../../uipath-agents/references/lowcode/agent-definition.md)). To add or change it, **`Edit` the `voice` key inside the existing `settings` object — never `Write` the file.** The fragment below is that key, not a document:
 
 ```json
 "voice": {
-  "model": "gemini-3.1-flash-live-preview",
-  "maxTokens": 65536,
-  "temperature": 0,
-  "persona": "Aoede"
+  "model": "gpt-realtime-2.1",
+  "maxTokens": 32000,
+  "temperature": 1,
+  "persona": "marin"
 }
 ```
 
 A full-file `Write` of that fragment drops `settings.model`, `settings.engine`, and `metadata.isConversational`. Two of those losses are silent: `flow validate` never reads `settings.engine` (rule 2 below), so the flow validates clean and every call fails.
 
-Those are the current Studio Web defaults. **Nothing validates `model` or `persona`** — `flow validate` only applies the node manifest's bounds to the numbers (`temperature` 0-1, `maxTokens` >= 0), so a made-up model name or a persona that belongs to a different model passes validate and then fails when the call tries to connect. No CLI command lists the accepted values; the voice-settings dropdowns in Studio Web are the only place they are enumerated. `persona` is per-model — the personas offered for one realtime model are not accepted by another.
+Those are the current Studio Web defaults. Studio Web also offers `gpt-realtime-2.1-mini`, `gemini-3.8-live` and `gemini-3.1-flash-live-preview`, minus whatever the tenant's AI Trust Layer policy blocks. Personas follow the vendor: `gpt-*` models take `marin`, `cedar`, `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer` or `verse`, and Gemini models take `Aoede`, `Charon`, `Fenrir`, `Kore`, `Leda`, `Orus`, `Puck` or `Zephyr`. Gemini models default to `maxTokens: 65536`. Studio Web keeps `temperature` between 0.5 and 1, because Gemini 3.x Live voices go silent below 0.5; OpenAI realtime models ignore it. **Nothing validates `model` or `persona`** — `flow validate` only applies the voice node definition's bounds to the numbers (`temperature` 0.5-1 on voice node v1.4 and later, 0-1 on older definitions; `maxTokens` >= 0), so a made-up model name or a persona that belongs to a different model passes validate and then fails when the call tries to connect. No CLI command lists the accepted values; the voice-settings dropdowns in Studio Web are the only place they are enumerated. `persona` is per-model — the personas offered for one realtime model are not accepted by another.
 
 Field rules:
 
 1. **`settings.voice` is required** — the realtime speech model, its token budget, and the spoken `persona`. This is a *second* model, separate from `settings.model`: `settings.model` is the conversational engine's LLM (reasoning, tool calls); `settings.voice.model` is the realtime audio model.
-2. **Leave `settings.engine: "conversational-v1"` and `metadata.isConversational: true` exactly as scaffolded** — both are required at runtime. `flow validate` checks `metadata.isConversational` and errors with `is not a conversational agent` when it is off; a wrong `settings.engine` is *not* caught by validate and surfaces only as a failed call, so do not rely on validation to catch it. Never hand-flip `metadata.isConversational` to repair it; re-scaffold with `uip agent init --inline-in-flow --conversational` (`uipath-agents` critical rule 23).
+2. **Leave `settings.engine: "conversational-v1"` and `metadata.isConversational: true` exactly as scaffolded** — both are required at runtime. `flow validate` checks `metadata.isConversational` and errors with `is not a conversational agent` when it is off; a wrong `settings.engine` is *not* caught by validate and surfaces only as a failed call, so do not rely on validation to catch it. Never hand-flip `metadata.isConversational` to repair it; re-scaffold with `uip agent init --inline-in-flow --voice` (`uipath-agents` critical rule 23).
 3. **`outputSchema` is optional** — the scaffold leaves it empty (`{ "type": "object", "properties": {} }`) and a voice agent works that way, because the node already emits three fixed outputs on its own (`uipath__agent_response_messages`, `uipath__voice_call_context`, `uipath__voice_session`). Declare properties only when the flow needs typed data out of the call. Custom fields **merge with** the fixed three rather than replacing them — unlike an autonomous agent, whose typed schema replaces its manifest output. Both kinds land flat at `$vars.<nodeId>.output.<field>`. Keep the node's `inputs.agentOutputVariables[]` in sync (see step 4's sibling contract): Studio Web projects `outputSchema` properties into that array and flushes the array back on save, so a schema authored without it renders an empty Outputs list in the properties panel.
 4. Author the system prompt in `messages[0].content` (empty is valid — voice agents have no required prompt field — but a real persona/goal prompt is what makes the call useful). Prompt inputs follow the inline-agent contract unchanged — all five pieces, including the node-side delivery binding:
 
@@ -46,6 +46,19 @@ Field rules:
 
    Omit the Delivery binding and `flow debug` still works (it back-fills from `inputSchema`) while `flow pack` ships empty `JobArguments` — the published call gets no inputs. Full contract: [inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
 5. `settings.model`, `maxTokens`, `temperature`, `maxIterations` tune the engine LLM as for any conversational agent (`uip agent model list` for the tenant's models).
+6. **Turn settings are optional and default-free.** Omit them to keep the provider's own timing, which differs between OpenAI and Gemini. Add them to `settings.voice` only when the scenario needs them:
+
+   ```json
+   "turnDetection": { "sensitivity": "low", "silenceDurationMs": 800 },
+   "agentSpeaksFirst": false
+   ```
+
+   - `turnDetection.sensitivity` — `"low"` or `"high"`: how readily the agent detects the caller starting and stopping speech. `"low"` ignores more background noise.
+   - `turnDetection.silenceDurationMs` — integer, 0 to 5000: how long the caller must pause before the agent replies. Raise it when the agent cuts callers off mid-thought.
+   - `agentSpeaksFirst` — `false` makes the agent wait for the other party to speak first, for calls answered by an IVR or another agent. Omitted means the agent greets as soon as the call connects.
+   - Do not add `turnDetection.prefixPaddingMs`: it meant different things on OpenAI and Gemini, so Studio Web dropped it and no longer writes it.
+
+   `flow validate` rejects values outside these ranges, and pack carries both keys into the deployed agent unchanged.
 
 ## Registry Validation
 
@@ -158,6 +171,17 @@ The trigger's source port is `output`; every other voice edge leaves `success`; 
 
 Outbound inserts the call node between trigger and agent: `manualTrigger1 (output) → createOutgoingCall1 (input)`, then `createOutgoingCall1 (success) → voiceAgent1 (input)`. Inbound wires straight through: `incomingCall1 (output) → voiceAgent1 (input)`. Tool/context/escalation resource nodes wire to the voice agent's artifact ports exactly as in [inline-agent/impl.md § Adding Resource Nodes](../inline-agent/impl.md#adding-resource-nodes).
 
+### Voice agent inside a subflow
+
+The voice agent node can sit in a `core.subflow` body. The node that starts the call stays in the parent flow, and the call context goes into the subflow as an input, because parent `$vars` are not visible inside a subflow ([subflow/impl.md § Subflow Rules](../subflow/impl.md#subflow-rules)):
+
+1. In `subflows.<subflowNodeId>.variables.globals`, declare `{ "id": "callContext", "type": "object", "direction": "in", "triggerNodeId": "<subflowStartId>" }`.
+2. On the parent's `core.subflow` node, set `inputs.callContext` to the origin binding — the same `jsExpression` object the voice agent takes at the top level (`$vars.incomingCall1.output.callContext` or `$vars.createOutgoingCall1.output.callContext`, `fieldType: "object"`).
+3. Inside the body, bind the voice agent's `inputs.callContext` to the subflow's start node: `$vars.<subflowStartId>.output.callContext`, `fieldType: "object"`.
+4. Keep the end-call node in the parent, bound to the origin node as in the top-level shapes.
+
+Wire the parent as `origin → subflow → end-call` and build the body by the subflow rules. The voice node's `definitions[]` entry still goes in the flow's single top-level `definitions[]`. `flow validate` runs the same voice checks on a nested agent (issue paths start with `subflows[<subflowNodeId>].`), and pack embeds its `agentDefinition` inside the subflow's `bpmn:subProcess`. An older CLI refuses this layout — see § Debug.
+
 ## Accessing Output
 
 ```javascript
@@ -179,7 +203,7 @@ uip maestro flow format <FlowName>.flow --output json
 uip maestro flow validate <FlowName>.flow --output json
 ```
 
-Voice flows get extra validation on top of the standard checks: the agent directory must exist with a conversational `agent.json` carrying `settings.voice`, both `callContext` bindings must be present, and no voice agent node may sit inside a subflow. Failure modes and fixes are in § Debug.
+Voice flows get extra validation on top of the standard checks: the agent directory must exist with a conversational `agent.json` carrying `settings.voice`, both `callContext` bindings must be present. A voice agent inside a subflow gets the same checks. Failure modes and fixes are in § Debug.
 
 Packing (`uip maestro flow pack`, or `uip solution pack` — see the operate capability) serializes the voice agent to an `Orchestrator.StartInlineAgentJob` serviceTask that **embeds the complete built agent definition** (`agentDefinition` in the BPMN context: agent.json + resources + features), and sets `runtimeOptions.isConversational: true` in the packed `operate.json`. That embedding is why pack and debug fail early when the agent directory is missing. Pack also re-checks the written BPMN and fails if the embedded definition is absent — a package without it deploys and then drops every call, so this never ships silently.
 
@@ -235,13 +259,13 @@ Outbound needs no binding step — `inputs.from` names the trunk directly, so th
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `flow validate`: `agent.json not found at <path>` | `inputs.source` UUID doesn't match any subdirectory, or the agent directory was never created | Run `uip agent init "<FlowProjectDir>" --inline-in-flow --conversational`, set `inputs.source` to the returned `ProjectId` |
-| `flow validate`: `` has no `settings.voice` `` | Scaffolded agent.json was not hand-edited | Add the `settings.voice` block (§ Configure `agent.json`) |
-| `flow validate`: `is not a conversational agent` | `metadata.isConversational` is not `true` — usually the agent was scaffolded without `--conversational` | Re-scaffold with `uip agent init --inline-in-flow --conversational` and repoint `inputs.source` — do not hand-flip `metadata.isConversational` (`uipath-agents` critical rule 23) |
+| `flow validate`: `agent.json not found at <path>` | `inputs.source` UUID doesn't match any subdirectory, or the agent directory was never created | Run `uip agent init "<FlowProjectDir>" --inline-in-flow --voice`, set `inputs.source` to the returned `ProjectId` |
+| `flow validate`: `` has no `settings.voice` `` | Agent scaffolded with `--conversational` and never given a voice block | Add the `settings.voice` block (§ Configure `agent.json`), or re-scaffold with `--voice` and repoint `inputs.source` |
+| `flow validate`: `is not a conversational agent` | `metadata.isConversational` is not `true` — usually the agent was scaffolded without `--voice` or `--conversational` | Re-scaffold with `uip agent init --inline-in-flow --voice` and repoint `inputs.source` — do not hand-flip `metadata.isConversational` (`uipath-agents` critical rule 23) |
 | `flow validate`: `[CONVERSATIONAL_VOICE_CALL_CONTEXT_REQUIRED]` (rule `conversational-voice-call-context`) | Voice agent node lacks the `inputs.callContext` binding | Bind `$vars.<originNodeId>.output.callContext` as a `jsExpression` object with `fieldType: "object"` |
 | `flow validate` flags the end-call node's call context (rule `conversational-voice-end-call-context`) | End-call node lacks `inputs.callContext` | Same expression as the voice agent, `fieldType: "string"` |
 | `flow validate`: `requires a source UUID at inputs.source` | Voice agent node has no `inputs.source` | Set it to the agent directory's UUID |
-| `flow validate` / `flow pack`: `voice agent nodes are not supported inside subflows` | The voice agent node was placed in a `core.subflow`. Only top-level voice nodes get an embedded definition, so pack raises the same thing validate does | Move the node to the top-level flow. There is no flag for this and no partial support — a subflow voice agent would ship a serviceTask with no `agentDefinition` |
+| `flow validate` / `flow pack`: `voice agent nodes are not supported inside subflows` | The installed CLI predates subflow voice support: it scanned only top-level nodes, so it refused a voice agent in a `core.subflow` | `uip tools update` and re-run. If the CLI still refuses it, move the voice agent to the top-level flow — do not work around the check, an older pack would ship a serviceTask with no `agentDefinition` |
 | `flow debug`: `Inbound voice flows cannot be debugged from the CLI.` | The flow starts from `core.trigger.voice`, which only a real call raises | Not a bug and not fixable locally — publish, bind a number, dial it (§ Bind an Inbound Phone Number). Do not swap in a manual trigger to force a run |
 | `flow pack` / `flow debug`: `Missing agent definition for voice agent node …` | Agent directory deleted or moved after validate | Restore `<FlowProjectDir>/<projectId>/agent.json` or fix `inputs.source`; the BPMN is never written without the embedded definition |
 | `flow pack` / `flow debug`: `Converted BPMN carries no agentDefinition for voice agent node(s) …` | Different failure from the row above — the agent directory is fine, but the CLI's bundled `@uipath/flow-converter` does not forward `voiceAgentDefinitions` to the BPMN serializer. Pack catches it rather than shipping a package that deploys and drops every call | `uip tools update` to a CLI whose converter supports voice, then re-pack. Nothing in the project can work around an old converter |
@@ -263,7 +287,7 @@ Outbound needs no binding step — `inputs.from` names the trunk directly, so th
 - **Do not collapse `settings.voice.model` into `settings.model`** — they are two different models (realtime speech vs engine LLM) and both are read.
 - **Do not `Write` a whole `agent.json` to add `settings.voice`** — `Edit` the key into the scaffolded file. A full-file write drops `settings.model`, `settings.engine`, and `metadata.isConversational`, and validate catches only the last of the three.
 - **Do not leave the scaffolded `core.trigger.manual` in an inbound flow** — `core.trigger.voice` replaces it. Two triggers is not a topology; delete `start` and its edges (§ Wire edges with Edit / Write).
-- **Do not put a voice agent node inside a subflow** — only top-level voice nodes get their agent definition embedded at pack time, so both `flow validate` and pack reject one in a `core.subflow`. Keep the whole call — trigger/dial, agent, end-call — in the top-level flow.
+- **Do not bind a voice agent inside a subflow straight to the parent's `$vars.<originNodeId>`** — a subflow body sees only its own scope. Pass `callContext` in as a subflow input (§ Voice agent inside a subflow).
 - **Do not run `uip maestro flow eval` on a voice flow** — the platform blocks voice agents from eval runs; the CLI rejects it with a clear error.
 - **Do not try to `flow debug` an inbound flow, or rewrite it as outbound to get a local run** — the CLI rejects an incoming-call trigger by design (§ Debug covers outbound only). Inbound is tested by publishing, binding a number, and dialing it.
 - **Do not hand-write `definitions[]` entries** — copy verbatim from `uip maestro flow registry get <node-type>`.
