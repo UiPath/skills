@@ -44,6 +44,8 @@ and therefore exact for this scheme.
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
 | `run_package_ci_smoke` | its own throwaway project | the `EVFX-RUNPKG-*` namespace | Same hooks as `project_settings_smoke`: `pre_run` creates one `EVFX-RUNPKG-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it, which also removes the execution and hidden test set `tm run --type package` creates. Runs the package `TestCase_CrossPlatform_VB_Tests`, uploading it when the folder feed lacks it; exits TENANT NOT READY on a tenant that cannot run it (see [Run-package fixtures](#run-package-fixtures)) |
 | `run_package_failing_smoke` | its own throwaway project | the `EVFX-RUNPKGFAIL-*` namespace | Same hooks as `run_package_ci_smoke`, in its own namespace so the two never sweep each other's projects. Runs the package `FailingTestCase_CrossPlatform_VB_Tests` |
+| `project_default_testcases_smoke` | the tenant's default project | the `EVFX-DPTC-*` namespace | `pre_run` writes a per-run `EVFX-DPTC-<YYYYMMDD-HHMMSS>-<hex>` feature id to feature.md and `.run-tag`, records the visible default, and sweeps `EVFX-DPTC-*` test cases in it stamped more than 6 hours ago; `post_run` deletes the run's test cases. See [Default-project tasks](#default-project-tasks) |
+| `project_default_discover_smoke` | the tenant's default project | no EVFX- name | Read-only: records the visible default before the run and fails if it changed. See [Default-project tasks](#default-project-tasks) |
 | `testcase_parameters_bulk_add_smoke` | its own throwaway project | the `EVFX-PARAM-*` namespace | `pre_run` creates one `EVFX-PARAM-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) holding `EVFX-PARAM-Login` (no parameters) and `EVFX-PARAM-Transfer` (`Username=keepme`), sweeps orphans older than 6 hours, and `post_run` deletes it. Per-run because the agent mutates the cases and concurrent gate runs would corrupt a shared one |
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
 | `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
@@ -63,6 +65,7 @@ and therefore exact for this scheme.
 | `testcase_clone_smoke` | HEALTH | `EVFX-TCCLONE-Login` (label `EVFX-TCCLONE`, two steps) | Seeded once, never changed. Each run's copy is `EVFX-TCCLONE-<uuid8> Login copy` from its `seed.json`; `post_run` deletes it, `pre_run` sweeps copies older than 6 hours |
 | `testcase_bulk_create_integration` | HEALTH | none shared; `EVFX-TCBULK-<uuid8> <title>` per run | `pre_run` writes `cases.json` and creates the first case; `post_run` deletes the run's cases, `pre_run` sweeps ones older than 6 hours |
 | `testcase_lookup_integration` | HEALTH | `EVFX-TCLOOK-TC{1,2}` (label `EVFX-TCLOOK-Checkout`), `EVFX-TCLOOK-TC3` (label `EVFX-TCLOOK-Other`), `EVFX-TCLOOK-Set{A,B,C}` holding TC1, TC2, TC3 | Seeded once, read-only. `pre_run` deletes duplicates a concurrent first seed leaves (lowest key wins) and fails if the shape drifted |
+| `testcase_inventory_lookup_smoke` | its own throwaway project | the `EVFX-TCINV-*` namespace | `pre_run` creates one `EVFX-TCINV-<YYYYMMDD-HHMMSS>-<hex>` project per run (key `EVTI<4 hex>` in `project-key.txt`) holding `EVFX-TCINV-Login` (a precondition, `Username=alice`, one uploaded attachment whose id is in `attachment-id.txt`, local copy removed) covered by `EVFX-TCINV-REQ-Login`, beside an uncovering `EVFX-TCINV-REQ-Other`; sweeps orphans older than 6 hours; `post_run` deletes the project. The agent only reads |
 | `testcase_lifecycle_e2e` | HEALTH | none shared; `EVFX-TCLIFE-<uuid8> Login`/`Logout`/`Login copy` per run | The agent deletes its copy; `post_run` deletes the rest, `pre_run` sweeps ones older than 6 hours |
 | `testcases_export_smoke` | HEALTH | `EVFX-FXEXP-Login` | Seeded once, read-only. The file goes to the run's own `exports/` |
 | `export_job_download_integration` | HEALTH | `EVFX-FXJOB-Checkout` | Seeded once, read-only. `pre_run` starts a no-wait export and writes its job id to the run's `seed.json` |
@@ -72,6 +75,12 @@ and therefore exact for this scheme.
 | `project_export_smoke` | its own project `EVMXEXP` (`EVFX-MXEXP-Project`) | test cases `MX Alpha`, `MX Beta` | Seeded once, never changed; `pre_run` removes duplicates a concurrent first seed leaves and fails if the shape drifted. The package goes to the run's own `backup/` |
 | `project_import_ask_integration` | its own project `EVMXASK` (`EVFX-MXASK-Project`) | test cases `MX Alpha`, `MX Beta` | Same as `EVMXEXP`; `package.tmh` comes from its latest completed export (one export if none) |
 | `project_migration_e2e` | source `EVMXLIF` (`EVFX-MXLIFE-Project`); a new project per run, key `EVMX<4 hex>`, name `EVFX-MXLIFE-<uuid8>` from the run's `seed.json` | test cases `MX Alpha`, `MX Beta` in the source | `post_run` deletes the run's project; `pre_run` sweeps `EVFX-MXLIFE-<uuid8>` projects older than 6 hours |
+| `perf_scenario_cleanup_smoke` | CLAIM | the `EVFX-PERF-*` namespace | `pre_run` creates two per-run scenarios, `EVFX-PERF-<YYYYMMDD-HHMMSS>-<hex>-OLD` (the agent deletes it; name in `old-scenario.txt`) and `-KEEP` (must survive; name in `keep-scenario.txt`), and sweeps `EVFX-PERF-` scenarios stamped more than 6 hours ago; `post_run` deletes whatever this run left |
+| `perf_scenario_setup_integration` | its own project per run (`EVFX-PERFSET-*`, key `EVPL<4 hex>`) | `EVFX-PERFSET-TC1` + a per-run scenario | `pre_run` runs `_setup/run_package_fixture.py seed` (see [Run-package fixtures](#run-package-fixtures)), then creates `EVFX-PERFSET-TC1` in the project, links it to `TestCase_CrossPlatform_VB_Tests` in `uipath-test-folder-feed` and writes the scenario name to `scenario-name.txt`; `post_run` deletes the project |
+| `perf_scenario_dryrun_e2e` | its own project per run (`EVFX-PERFDRY-*`, key `EVPD<4 hex>`) | `EVFX-PERFDRY-TC1` + a per-run scenario | As `perf_scenario_setup_integration`; the agent also dry-runs the scenario on the folder's serverless robot, and `post_run` stops a dry run still in flight before deleting the project. **Skipped** until a cross-platform package built with `UiPath.Testing.Activities` >= 25.10.0 exists: perf dry runs refuse older ones |
+| `prompts_create_smoke` | its own throwaway project | the `EVFX-PROMPT-*` namespace | `pre_run` creates one `EVFX-PROMPT-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it. Per-run because the CLI has no prompt delete: only a project delete removes the prompt the agent creates |
+| `prompts_library_setup_integration` | its own throwaway project | the `EVFX-PROMPTSET-*` namespace | Same hooks as `prompts_create_smoke` (`EVFX-PROMPTSET-<YYYYMMDD-HHMMSS>-<hex>`, key in `project-key.txt`); `pre_run` also seeds the user-defined prompt `Checkout edge cases` (GenerateTestsFromRequirement) and writes `release-audit.md` |
+| `perf_scenario_history_integration` | its own project per run (`EVFX-PERFHIST-*`, key `EVPH<4 hex>`) | `EVFX-PERFHIST-TC1` + a per-run scenario | As `perf_scenario_setup_integration`, but `pre_run` also creates the scenario (name in `scenario-name.txt`) with one load group for `EVFX-PERFHIST-TC1`. The legacy `link-automation` link leaves no `AutomationId`, so `list-dry-run-reports` cannot resolve the scenario. Nothing is executed and no licence units are spent; the agent only reads. `post_run` deletes the project |
 
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names
@@ -321,6 +330,9 @@ so packages uploaded to it stay out of the tenant feed.
 | `release_signoff_wait_report_e2e` | folder key, in `pre_run` | `Testcases.with.parameters` |
 | `run_package_ci_smoke` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
 | `run_package_failing_smoke` | folder name, in `pre_run` and the prompt | `FailingTestCase_CrossPlatform_VB_Tests` |
+| `perf_scenario_setup_integration` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
+| `perf_scenario_dryrun_e2e` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
+| `perf_scenario_history_integration` | folder name, in `pre_run` | `TestCase_CrossPlatform_VB_Tests` |
 
 `Testcases.with.parameters` is a Windows package. The folder's serverless
 robot runs cross-platform packages only, so runs of it start but never finish
@@ -359,3 +371,23 @@ The alpha `codereval` / `DefaultTenant` eval tenant is set up this way: the
 `Default Serverless` machine has one Unattended runtime and the robot account
 `tm-eval-robot` is in the folder. With one runtime, parallel runs queue for it;
 a run takes one to three minutes, well inside the prompts' 10-minute budget.
+
+## Default-project tasks
+
+`project_default_discover_smoke` and `project_default_testcases_smoke` use the
+tenant's default project (one per tenant, for work with no project named).
+Each `pre_run` records the default this login sees in `.default-before.json`,
+and each task fails if the default afterwards is a different project.
+
+The discover task never creates a default. The test-case task lets the agent
+run `uip tm project get-default`, which **creates** `Default Project` (key
+`TMDP`) when the tenant has none: a lasting change, owned by the org admins and
+open to the tenant's Everyone group as Test Managers. The alpha `codereval` /
+`DefaultTenant` eval tenant already has it (created by this task's first run),
+so runs there only read it. On a tenant without one, the first run creates it,
+and a discover task running at that moment can see the default appear and fail
+its unchanged check; re-run it.
+
+The default project is shared by every run, so it is never deleted; the
+test-case task deletes the test cases it adds.
+

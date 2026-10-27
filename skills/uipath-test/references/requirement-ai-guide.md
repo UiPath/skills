@@ -4,9 +4,11 @@ Test Manager's AI reads a requirement's description (and any attachments passed 
 
 Every job has an `ActivityId`. The same verb with `--activity-id <ACTIVITY_ID>` reads that job, waits for it (`--wait`), or acts on it. **Each start spends the tenant's AI units and takes 1–5 min; reading a job by id is free.** The commands need a user login: if `uip login status --output json` shows `"IdentityType": "Application"`, stop and ask the user to run `uip login`.
 
+Every command below names the requirement by `--requirement-id <ID>`, its UUID. Resolve a name first: `uip tm requirements list --project-key <KEY> --filter <NAME> --output json`, read `Id`. `--requirement-key` is the `ObjKey` (`<PROJECT_KEY>:<N>`, like `DEMO:1`), never the requirement's name: a name passed as the key fails with `not_found` (`Requirement does not exist`) on `get`, `evaluate`, `generate-testcases` and `find-obsolete-testcases` alike, and no job starts. Do not retry it with another verb; resolve the name and use the `Id`.
+
 ## Scenario 1 — "Write test cases for this requirement"
 
-1. Resolve the requirement: `uip tm requirements list --project-key <KEY> --filter <NAME> --output json` (`Id`).
+1. Resolve the requirement to its `Id` (above).
 2. Start and wait once: `generate-testcases --project-key <KEY> --requirement-id <ID> --wait --timeout 540 --output json`. Pass the user's focus as `--instructions "<TEXT>"`.
 3. Show the numbered `Data.TestCases` (titles and steps) and ask which to keep, unless the user already said ("the first two", "all of them").
 4. Create from **the same job**: `generate-testcases --project-key <KEY> --activity-id <ACTIVITY_ID> --create [--select <N> ...] --output json`. They are linked to the requirement and labelled `autopilot-generated`.
@@ -15,7 +17,7 @@ Every job has an `ActivityId`. The same verb with `--activity-id <ACTIVITY_ID>` 
 
 1. `evaluate --project-key <KEY> --requirement-id <ID> --wait --timeout 540 --output json` → `Data.Suggestions`. For each: `SuggestiveDescription` says what is missing, `ActionableDescription` is the text to add.
 2. "More suggestions" re-runs **the same job**: `evaluate --project-key <KEY> --activity-id <ACTIVITY_ID> --more-suggestions --wait --timeout 540 --output json`. New ones are appended; `Data.Added` counts them.
-3. `evaluate` changes nothing. To apply a suggestion, read the description with `requirements get`, then write the whole new text with `requirements update --requirement-id <ID> --description "<CURRENT_TEXT_PLUS_CHANGE>"`: `--description` replaces, it does not append.
+3. `evaluate` changes nothing. To apply a suggestion, read the current text with `requirements get --project-key <KEY> --requirement-id <ID> --output json` (`Data.Description`), then write the whole new text with `requirements update --project-key <KEY> --requirement-id <ID> --description "<CURRENT_TEXT_PLUS_CHANGE>" --output json`: `--description` replaces, it does not append.
 
 ## Scenario 3 — "Clean up test cases that no longer match"
 

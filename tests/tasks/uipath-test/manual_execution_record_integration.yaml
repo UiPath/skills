@@ -292,8 +292,8 @@ success_criteria:
       st = candidates[0]
 
       # Count from the testcaselogs, the authoritative per-case record, like
-      # every sibling task - 'executions list' rows carry no Passed/Failed
-      # aggregate (that is 'executions get-stats').
+      # every sibling task - the per-run totals on 'executions list' rows and
+      # 'executions get-stats' cannot say WHICH case failed (checked below).
       logs = (uip('tm','executions','testcaselogs','list',
                   '--execution-id',st['Id'],'--project-key','CLAIM').get('Data') or [])
       results = [r.get('Result') for r in logs]

@@ -52,6 +52,7 @@ OWNERS = {
     "PSET": "project_settings_smoke.yaml",
     "RUNPKG": "run_package_ci_smoke.yaml",
     "RUNPKGFAIL": "run_package_failing_smoke.yaml",
+    "DPTC": "project_default_testcases_smoke.yaml",
     "PARAM": "testcase_parameters_bulk_add_smoke.yaml",
     "PARAMEDIT": "testcase_parameters_edit_integration.yaml",
     "PARAMLIFE": "testcase_parameters_lifecycle_e2e.yaml",
@@ -71,6 +72,7 @@ OWNERS = {
     "TCCLONE": "testcase_clone_smoke.yaml",
     "TCBULK": "testcase_bulk_create_integration.yaml",
     "TCLOOK": "testcase_lookup_integration.yaml",
+    "TCINV": "testcase_inventory_lookup_smoke.yaml",
     "TCLIFE": "testcase_lifecycle_e2e.yaml",
     "FXEXP": "testcases_export_smoke.yaml",
     "FXJOB": "export_job_download_integration.yaml",
@@ -80,6 +82,12 @@ OWNERS = {
     "MXEXP": "project_export_smoke.yaml",
     "MXASK": "project_import_ask_integration.yaml",
     "MXLIFE": "project_migration_e2e.yaml",
+    "PERF": "perf_scenario_cleanup_smoke.yaml",
+    "PERFSET": "perf_scenario_setup_integration.yaml",
+    "PERFDRY": "perf_scenario_dryrun_e2e.yaml",
+    "PROMPT": "prompts_create_smoke.yaml",
+    "PROMPTSET": "prompts_library_setup_integration.yaml",
+    "PERFHIST": "perf_scenario_history_integration.yaml",
 }
 
 
