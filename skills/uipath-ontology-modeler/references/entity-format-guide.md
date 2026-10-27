@@ -6,13 +6,19 @@ An ontology class is backed by a **local Data Fabric entity** in the same soluti
 
 ## The entity body
 
-`uip df entities create <Entity> --local --file <body.json>` takes this shape. Save each body as `input/entities/{EntityName}.json`.
+`uip df entities create <Entity> --local` takes no body: it creates an empty entity. Its fields come from a following `uip df entities update <Entity> --local --body '<json>'`, whose body uses `addFields` (not `fields`). Run both from the solution folder. Save each new entity's update body as `input/entities/{EntityName}.json`:
+
+```bash
+cd "<SOLUTION_DIR>"
+uip df entities create Order --local --output json
+uip df entities update Order --local --body "$(cat "<WORKDIR>/input/entities/Order.json")" --output json
+```
 
 ```json
 {
   "displayName": "Order",
   "description": "ONE row per customer order.",
-  "fields": [
+  "addFields": [
     { "name": "customerId", "type": "STRING", "displayName": "Customer Id", "isRequired": true, "lengthLimit": 64 },
     { "name": "orderDate", "type": "DATETIME_WITH_TZ", "displayName": "Order date" },
     { "name": "totalAmount", "type": "DECIMAL", "decimalPrecision": 2, "minValue": 0, "defaultValue": "0" },
@@ -21,6 +27,8 @@ An ontology class is backed by a **local Data Fabric entity** in the same soluti
   ]
 }
 ```
+
+A supplied definition that lists its fields under `fields` (the stored shape) is not an update body: move the same field objects, unchanged, under `addFields`.
 
 Field keys you may use: `name`, `type`, `displayName`, `description`, `isRequired`, `isUnique`, `lengthLimit`, `decimalPrecision`, `minValue`, `maxValue`, `defaultValue`. Any other key is not authorable locally.
 
@@ -61,7 +69,7 @@ The data property's `DataPropertyRange` stays the xsd type (an integer column is
 
 ## Updating an entity
 
-`uip df entities update <Name> --local --body '<json>'` takes `addFields`, `updateFields` and `removeFields`, plus `displayName` and `description`. `--body` is the key (not `--file`); each field in `addFields` uses the same keys as above.
+`uip df entities update <Name> --local --body '<json>'` takes `addFields`, `updateFields` and `removeFields`, plus `displayName` and `description`. `--body` is the key (not `--file`); each field in `addFields` uses the same keys as above. To change an existing entity:
 
 ```bash
 uip df entities update Order --local --body '{

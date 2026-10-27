@@ -49,7 +49,7 @@ SOLUTION_DIR   <SOLUTION_PARENT>/<SOLUTION_NAME>/ absent (new) or containing exa
 | `{name}-summary.json` | `summary` | `application/json` | 0 or 1 |
 | `{name}-context.json` — JSON-LD `@context` | `context` | `application/json` | 0 or 1 |
 | `input/handoff.json` — the confirmed model (not packed) | — | — | 1 |
-| `input/entities/{EntityName}.json` — the local entity body | — | — | 1 per class |
+| `input/entities/{EntityName}.json` — the entity's update body (`addFields`) | — | — | 1 per class |
 
 `{name}` is `ONTOLOGY_NAME`. Summary and context are covered in [summary-context-guide.md](references/summary-context-guide.md).
 
@@ -86,8 +86,6 @@ PACKED_FILES: the files list --package listing
 VALIDATION: last entities validate and ontology validate results (service validation ran)
 UNRESOLVED_AMBIGUITIES: none | numbered list with the missing decision
 ```
-
-The return no longer carries `ONTOLOGY_KEY`, `ENTITY_KEYS`, `ARTIFACT_INVENTORY` or `GATES`: every command addresses resources by name, and `PACKED_FILES` and `VALIDATION` replace the inventory and the gates.
 
 ## Design rules
 
@@ -142,11 +140,11 @@ Record `ENTITY_SOURCE` per entity, following [entity-format-guide.md](references
 | `described` | The user described fields in words | Keep every stated name, type and required flag. Fill gaps (display names, lengths) and show them |
 | `generated` | You proposed the entity from the domain | Generate it, show it, and get one confirmation |
 
-The schema and mapping follow the entity and field names exactly (case-sensitive), not the other way round. Wait for confirmation, then write `<WORKDIR>/input/handoff.json` (the confirmed `CLASS_MAP`, `ENTITY_SOURCE`, `RELATIONSHIPS` with join columns) and one `<WORKDIR>/input/entities/<Entity>.json` body per entity.
+The schema and mapping follow the entity and field names exactly (case-sensitive), not the other way round. Wait for confirmation, then write `<WORKDIR>/input/handoff.json` (the confirmed `CLASS_MAP`, `ENTITY_SOURCE`, `RELATIONSHIPS` with join columns) and one `<WORKDIR>/input/entities/<Entity>.json` update body per entity: `displayName`, `description` and `addFields` (see [entity-format-guide.md](references/entity-format-guide.md); a supplied `fields` list moves unchanged under `addFields`).
 
 ## Step 3 — Write each artifact, then check it
 
-In delegated mode, first apply Step 1's path checks to the handoff's `WORKDIR` and `SOLUTION_DIR`, run `mkdir -p "<WORKDIR>/input/entities"`, and write `ENTITY_DEFINITIONS` to `input/entities/` (supplied bodies verbatim).
+In delegated mode, first apply Step 1's path checks to the handoff's `WORKDIR` and `SOLUTION_DIR`, run `mkdir -p "<WORKDIR>/input/entities"`, and write `ENTITY_DEFINITIONS` to `input/entities/` as update bodies (supplied fields verbatim, under `addFields`).
 
 Read only the references needed:
 
@@ -171,7 +169,7 @@ Fix every ERROR before moving on (see the recovery table). Show WARNINGs to the 
 
 ## Step 4 — Solution and local entities
 
-Every authoring command below also takes `--solution-folder "<SOLUTION_DIR>"` and `--output json`; check `Result: Success`.
+Every command takes `--output json`; check `Result: Success`. The `uip df entities` commands have no `--solution-folder` flag: run them from the solution folder. The `uip ont` commands take `--solution-folder "<SOLUTION_DIR>"`.
 
 <!--skill-flavor:solution-create:start-->
 1. When `SOLUTION_DIR` does not exist yet, create the solution from its parent folder:
@@ -179,11 +177,17 @@ Every authoring command below also takes `--solution-folder "<SOLUTION_DIR>"` an
    cd "<SOLUTION_PARENT>" && uip solution init "<SOLUTION_NAME>" --output json
    ```
 <!--skill-flavor:solution-create:end-->
-2. Create each entity from its body, or update one that already exists in the solution (never re-create it):
+2. From the solution folder, create each new entity (`create` takes no body), then add its fields with `update --body`:
    ```bash
-   uip df entities create <Entity> --local --body "$(cat "<WORKDIR>/input/entities/<Entity>.json")" --solution-folder "<SOLUTION_DIR>" --output json
-   uip df entities update <Entity> --local --body '{"addFields": […], "updateFields": […]}' --solution-folder "<SOLUTION_DIR>" --output json
+   cd "<SOLUTION_DIR>"
+   uip df entities create <Entity> --local --output json
+   uip df entities update <Entity> --local --body "$(cat "<WORKDIR>/input/entities/<Entity>.json")" --output json
    ```
+   The body for a new entity uses `addFields`, for example:
+   ```json
+   {"displayName": "Order", "description": "ONE row per customer order.", "addFields": [{"name": "customerId", "type": "STRING", "lengthLimit": 64, "isRequired": true}, {"name": "orderDate", "type": "DATETIME_WITH_TZ"}]}
+   ```
+   For an entity that already exists in the solution, never re-create it: run only `update` with `addFields`, `updateFields` or `removeFields`.
    At deploy an entity merges into a same-name entity in the folder and a changed field type is rejected; warn the user when they change a field type.
 
 ## Step 5 — Ontology resource and its files
@@ -207,7 +211,7 @@ If not logged in, ask the user to run `uip login` and wait. Then loop on both un
 
 ```bash
 uip ont validate --local --solution-folder "<SOLUTION_DIR>" --output json
-uip df entities validate --local --solution-folder "<SOLUTION_DIR>" --output json
+(cd "<SOLUTION_DIR>" && uip df entities validate --local --output json)
 ```
 
 Read `Data` of the ontology result. It is clean when there is no ERROR from either `source` (`local` or `service`) and `ServiceValidation` is `"Done"` (never `"Skipped"`). After each repair: edit the file in `WORKDIR`, rerun `artifacts check`, re-add it with `files add`, then validate again. Entity changes go through `uip df entities update --local`. A `SVC-002` warning does not block: tell the user a rename at deploy will be needed, and carry on.
@@ -246,7 +250,7 @@ uip df entities list --folder-key <key> --output json
 
 ## Updating an existing solution
 
-1. `uip df entities update <Entity> --local --body …` per changed entity; `uip df entities create <Entity> --local --body …` for new ones.
+1. From the solution folder: `uip df entities update <Entity> --local --body …` per changed entity; for a new one, `uip df entities create <Entity> --local`, then `update --body` with `addFields`.
 2. Link or unlink entities: `uip ont update <Name> --local --add-entity <E> --remove-entity <E>`. Report (do not delete) entities that are no longer linked.
 3. `uip ont files add` for new or changed files (same file name replaces); `uip ont files remove <Name> <file> --local` for dropped files.
 4. Run the Step 6 validate loop, then Step 7.
@@ -290,7 +294,7 @@ The skill acts on each violation's `rule`, `file` and `suggestion`; it never re-
 | `OntologyNotFound` | C1 | Create the resource first (Step 5), or fix the name from `uip ont list --local` |
 | `OntologyNameTaken` | C1 | The name is already used in the solution: ask for another name, or update the existing resource |
 | `InvalidOntologyName` | C1 | Pick a name matching the `ONTOLOGY_NAME` pattern |
-| `EntityNotFound` | C1 | Create the entity with `uip df entities create --local`, or fix the name from the list in `Instructions` |
+| `EntityNotFound` | C1 | Create the entity with `uip df entities create --local` and `update --local --body` (Step 4), or fix the name from the list in `Instructions` |
 | `LocalFlagRequired` | C1 | Add `--local` to the authoring command |
 | `ConfirmationRequired` | C1 | `uip ont delete` needs `--yes`; ask the user before deleting |
 | `ResourceFileMissing`, `InvalidResourceArchive` | C1 | Rebuild the zip with `uip ont files add` for every artifact |

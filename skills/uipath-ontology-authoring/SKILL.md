@@ -43,7 +43,7 @@ DOMAIN_MODEL: confirmed classes, properties, relationships, constraints
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
 ```
 
-The modeler writes the artifacts and the entity bodies, runs the CLI flow (local entities, the ontology resource and its files, validation with the ontology service, pack), and returns `SOLUTION_DIR`, `PACKAGE_PATH`, `ONTOLOGY_NAME`, `ENTITIES` (with `ENTITY_SOURCE`), `PACKED_FILES`, `VALIDATION`, and `UNRESOLVED_AMBIGUITIES`. It no longer returns `ONTOLOGY_KEY`, `ENTITY_KEYS`, `ARTIFACT_INVENTORY` or gate results: resources are addressed by name. If a class, field, join column, or identifier cannot be inferred uniquely, require a user decision and stop as `BLOCKED_AMBIGUITY`.
+The modeler writes the artifacts and the entity bodies, runs the CLI flow (local entities, the ontology resource and its files, validation with the ontology service, pack), and returns `SOLUTION_DIR`, `PACKAGE_PATH`, `ONTOLOGY_NAME`, `ENTITIES` (with `ENTITY_SOURCE`), `PACKED_FILES`, `VALIDATION`, and `UNRESOLVED_AMBIGUITIES`. If a class, field, join column, or identifier cannot be inferred uniquely, require a user decision and stop as `BLOCKED_AMBIGUITY`.
 
 ---
 

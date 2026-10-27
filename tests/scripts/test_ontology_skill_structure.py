@@ -127,11 +127,23 @@ class OntologySkillContractTests(unittest.TestCase):
 
     def test_handoff_contract_is_identical_in_both_skills(self):
         self.assertEqual(contract_block(MODELER), contract_block(AUTHORING))
-        for field in ("SOLUTION_DIR", "PACKAGE_PATH", "ONTOLOGY_KEY", "ENTITY_KEYS", "ARTIFACT_INVENTORY",
-                      "UNRESOLVED_AMBIGUITIES", "ENTITY_SOURCE", "ENTITY_DEFINITIONS", "RELATIONSHIPS",
-                      "DISPLAY_NAME", "DESCRIPTION", "PACKED_FILES", "VALIDATION"):
+        for field in ("SOLUTION_DIR", "PACKAGE_PATH", "UNRESOLVED_AMBIGUITIES", "ENTITY_SOURCE",
+                      "ENTITY_DEFINITIONS", "RELATIONSHIPS", "DISPLAY_NAME", "DESCRIPTION",
+                      "PACKED_FILES", "VALIDATION"):
             self.assertIn(field, MODELER)
             self.assertIn(field, AUTHORING)
+
+    def test_handoff_drops_the_script_era_fields(self):
+        dropped = ("ONTOLOGY_KEY", "ENTITY_KEYS", "ARTIFACT_INVENTORY", "GATES", "ONTOLOGY_ARCHIVE",
+                   "PREFLIGHT_HANDOFF_JSON", "OPERATIONS")
+        for text in (MODELER, AUTHORING):
+            blocks = [contract_block(text)]
+            ret = text.find("SOLUTION_DIR: absolute path\n")
+            if ret != -1:
+                blocks.append(text[ret:text.index("```", ret)])
+            for block in blocks:
+                for field in dropped:
+                    self.assertNotRegex(block, rf"\b{field}\b", field)
 
     def test_authoring_delegates_and_stops_after_pack(self):
         for marker in ("Phase 3 — Define business concepts", "Phase 4 — Define properties and relationships",
