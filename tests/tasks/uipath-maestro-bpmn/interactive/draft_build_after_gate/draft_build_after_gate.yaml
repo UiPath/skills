@@ -6,10 +6,11 @@ description: >
   agent then wires the process, validates and uploads it, and ends that turn
   with the 4g report, asking nothing more about structure or resources.
 
-  The replies are graded as the user reads them (the last message of each
-  turn, from the Claude Code session transcript; see
-  smoke/check_draft_reply.py): both follow their templates and carry the
-  DesignerUrl the upload returned. Every step is a computation, so the build
+  The replies are graded as the user reads them, by an itemized llm_judge
+  over the agent-neutral dialog: both follow their templates and carry the
+  Studio Web link. Registry discovery before approval is graded only by the
+  smokes: phase 4 pulls here, and coder_eval cannot scope a command check
+  to one turn. Every step is a computation, so the build
   needs no tenant resource and the dialog measures the gate, not discovery.
   Validate-only by design: the dialog is under test, not the runtime, and a
   run needs consent (Rule 10) the user never gives. Uploads land in the eval tenant's Studio Web; post_run deletes each
@@ -20,7 +21,7 @@ run_limits:
   max_turns: 120
   # Turn 1 is the skeleton plus one upload; turn 2 is the wiring, validate,
   # refresh and a second upload. Grading needs at most 180 (validate) plus
-  # 6 x 30s transcript reads.
+  # two judge calls.
   turn_timeout: 1500
   task_timeout: 3600
 
@@ -62,35 +63,68 @@ simulation:
   n_trials: 1
 
 success_criteria:
+  # The two replies are graded through coder_eval's agent-neutral dialog
+  # (every turn's user message and agent output), so the same criteria grade
+  # claude, codex and antigravity. Each judge holds an itemized checklist and
+  # returns a binary verdict, which keeps it close to deterministic.
+
   # --- Turn 1: the 3c gate ---------------------------------------------------
-  # --no-bpmn: by grading time phase 4 has replaced the skeleton, so the box
-  # lines are held to the line cap rather than matched to the boxes.
-  - type: run_command
-    description: "Turn 1 ends with the 3c reply in its template: the outline-ready line saying uploaded, the DesignerUrl, one line per box, the fixed question and three options, and nothing else"
-    command: "python3 $REFERENCE_DIR/smoke/check_draft_reply.py gate ShippingQuote --turn 1 --uploaded --no-bpmn"
-    timeout: 30
-    expected_exit_code: 0
+  - type: llm_judge
+    description: "Turn 1 ends with the 3c reply in its template: the outline-ready line saying uploaded, the Studio Web link, one line per box, the fixed question and three options, and nothing else"
+    include_reference: false
+    include_dialog: true
+    max_file_chars: 60000
+    max_dialog_chars: 200000
     weight: 3.0
     pass_threshold: 1.0
+    prompt: |
+      You check one chat message against a fixed template. Grade the format
+      only, never the process design. Grade the AGENT side of Turn 1 only.
+
+      WHICH TEXT TO GRADE. The Turn 1 agent text holds every message the agent
+      sent in that turn. If it contains a `[RESULT - ...]` marker, grade the
+      text after the LAST such marker: that is the final message, whole.
+      Otherwise the messages are joined, possibly with no separator: grade the
+      text from the LAST occurrence of `ShippingQuote: outline ready`
+      (markdown emphasis around the name allowed) to the end, and ignore what
+      comes before it. If the phrase does not occur at all, item 1 fails.
+
+      Ignore blank lines and markdown emphasis (`**`, `*`, backticks). Check
+      every item:
+
+      1. The first line starts with `ShippingQuote: outline ready, uploaded
+         (draft mode).` After that, the same line may hold at most one more
+         sentence, about a lookup that failed or changes kept.
+      2. The second line is an `https://` link to the uploaded solution in
+         Studio Web (bare or as a markdown link), and nothing else. A local
+         file path here fails.
+      3. Next come between one and eight box lines, each starting with `- `,
+         each naming one step of the process (with or without a bracketed
+         kind) in one short clause under about 200 characters. There is no
+         line for a start event, timer, gateway, branch, or end event.
+      4. Next is exactly the line `Is this the process you want?`.
+      5. Then exactly three numbered options, in this order: `1.` Build it,
+         `2.` Change it, `3.` Keep it, each with any short description.
+         Nothing follows the third option.
+      6. No other line exists anywhere in the graded text: no status or
+         progress sentence (for example "Valid, zero errors", "Uploaded",
+         "Here is the outline"), no `---` separator, no heading, no code block
+         or drawn diagram, no `Flow:` or `The shape:` prose, no line explaining
+         a gateway, a condition, or a variable, no table.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list
+      each failed item by number and quote the offending line.
 
   # An open question tool keeps the turn running, and Studio Web locks the
-  # canvas while a turn runs. Nothing in this dialog needs one: the gate is a
-  # plain final message, and Build it settles every structure and resource
-  # question.
+  # canvas while a turn runs. AskUserQuestion is Claude Code's tool; codex and
+  # antigravity have none of that name, so this passes vacuously there.
+  # coder_eval cannot scope a criterion to one agent type, so it is advisory.
   - type: command_not_executed
-    description: "Agent never asked with a question tool"
+    description: "Claude only (vacuous on other agents): never asked with AskUserQuestion"
     tool_name: "AskUserQuestion"
     command_pattern: '.*'
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "No registry pull, search, or get before the user approved the shape (the preflight kind list is allowed)"
-    command: 'python3 $REFERENCE_DIR/smoke/check_draft_reply.py commands --turn 1 --forbid "registry\s+(pull|search|get)\b"'
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_not_executed
     description: "Every resource lookup is filtered with --search"
@@ -99,30 +133,60 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # One upload shows the skeleton at the gate, one shows the built process.
+  - type: command_executed
+    description: "The shape and the built process were both uploaded"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload\b'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
   # --- Turn 2: Build it ------------------------------------------------------
-  - type: run_command
-    description: "The turn answering Build it ends with the 4g report and asks the user nothing"
-    command: "python3 $REFERENCE_DIR/smoke/check_draft_reply.py after-approval --gate-turn 1"
-    timeout: 30
-    expected_exit_code: 0
+  - type: llm_judge
+    description: "The turn answering Build it ends with the 4g report in its template and asks the user nothing"
+    include_reference: false
+    include_dialog: true
+    max_file_chars: 60000
+    max_dialog_chars: 200000
     weight: 3.0
     pass_threshold: 1.0
+    prompt: |
+      You check the dialog after the user approved an outline. Grade format
+      and conduct only, never the process design.
 
-  - type: run_command
-    description: "The 4g report follows its template: built, validated, uploaded (draft mode), the DesignerUrl, at most five change lines, Assumed/Unverified, and nothing else"
-    command: "python3 $REFERENCE_DIR/smoke/check_draft_reply.py final ShippingQuote --turn 2 --uploaded --mode draft"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
+      First, Turn 2's USER message must pick the first option (`1` or "Build
+      it"). If it does not, score 0.0 and say the simulated user did not
+      approve.
 
-  - type: run_command
-    description: "Both turn-ending replies carry the DesignerUrl their upload returned"
-    command: "python3 $REFERENCE_DIR/smoke/check_draft_reply.py designer-url --turns 1,2"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+      WHICH TEXT TO GRADE. The Turn 2 agent text holds every message the agent
+      sent in that turn. If it contains a `[RESULT - ...]` marker, grade the
+      text after the LAST such marker. Otherwise the messages are joined,
+      possibly with no separator: grade the text from the LAST occurrence of
+      `ShippingQuote: built, validated` (markdown emphasis around the name
+      allowed) to the end, and ignore what comes before it. If the phrase does
+      not occur in Turn 2, item 1 fails.
+
+      Ignore blank lines and markdown emphasis. Check every item:
+
+      1. Turn 2 ends with the report: its first line starts with
+         `ShippingQuote: built, validated, uploaded` and contains
+         `(draft mode).`; `, run` may follow `uploaded`. After that, the same
+         line may hold at most one more sentence, about changes kept.
+      2. The second line is an `https://` link to the solution in Studio Web
+         (bare or as a markdown link), and nothing else.
+      3. Then at most five lines starting with `- `, each one change.
+      4. Then optionally `Assumed:` and `Unverified:` lines (on one line or
+         two), and nothing after them.
+      5. No other line exists in the graded text: no status sentence, no
+         heading, no table, no numbered list, no suggested next steps, and no
+         question to the user (no line ending in `?`).
+      6. The agent asked the user nothing between their approval and this
+         report: Turn 2 is the last turn, or every later turn's agent text
+         asks nothing and the report was already complete in Turn 2.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list
+      each failed item by number and quote the offending line.
 
   # The report says "built, validated": hold it to that.
   - type: run_command
