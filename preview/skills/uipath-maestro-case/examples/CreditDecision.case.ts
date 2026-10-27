@@ -15,8 +15,8 @@
  * An extract's `source` reads from the rule's result object directly:
  * `=RiskDecision.riskBand`, never `=result.RiskDecision.riskBand` or
  * `=output.RiskDecision.riskBand` (`uip maestro case check` rejects both).
- * `resultSchema` is the rule's result shape; take it from the rule's own
- * definition, not from guesswork.
+ * `resultSchema` is the `_jsonSchema` on the `output` row that
+ * `uip maestro case tasks describe --type business-rule` returns.
  */
 import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 
