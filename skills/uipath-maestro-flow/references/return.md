@@ -49,8 +49,8 @@ incoming edges, as the canvas draws it. Needs `@uipath/maestro-builder-sdk`
 upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 
 ```ts
-.step('fetch', http({ url, managed: false, branches: [{ name: 'missing', condition: js`$vars.fetch.output.statusCode === 404` }] }))
-.stepToList('branch-missing', (b) => b.step('reportMissing', script({ code })).stepToRef('done'))
+.step('fetch', http({ url, managed: true }))
+.onError((h) => h.step('reportMissing', script({ code })).stepToRef('done'))
 .step('useResult', script({ code }))
 .return({}, { name: 'done' })   // reportMissing -> done, useResult -> done
 ```

@@ -21,9 +21,9 @@ advances:
 
 ```ts
 .loop('eachRepo', input('repos'), (body) => body
-  .step('fetch', http({ managed: false, url: 'https://example.test',
+  .step('fetch', http({ managed: true, url: 'https://example.test',
     returns: { name: 'string' } }))
-  .branch('found', js`$vars.fetch.output.statusCode !== 404`,
+  .branch('found', js`$vars.fetch.output.body.name !== ''`,
     (yes) => yes.step('notify', script({
       code: 'return $vars.fetch.output.body.name;' }))))
 ```
@@ -133,7 +133,7 @@ Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
 .var('page', types.number, 1)
 .doWhile('paginate', js`$vars.fetch.output.body.hasNextPage === true`, (body) => body
   .step('fetch', http({ url: tmpl`https://api.example.test/items?page=${v('page')}`,
-    method: 'GET', managed: false, returns: { hasNextPage: 'boolean' } }),
+    method: 'GET', managed: true, returns: { hasNextPage: 'boolean' } }),
     { updates: { page: js`$vars.page + 1` } }),
   { limit: 50 })
 ```

@@ -2,12 +2,10 @@
 
 *Exact signatures, fields, and defaults: `http()`.*
 
-The one factory selects two distinct product nodes:
-
-- standalone: `http({ managed: false, ... })`, non-2xx responses stay on the
-  success output with `statusCode`;
-- managed: `http({ managed: true, ... })`, non-2xx responses take the error
-  path.
+Always author `http({ managed: true, ... })`; non-2xx responses take the error
+path. `managed: false` (`core.action.http`) no longer runs: the tenant answers 500
+`No handler registered for extension type 'Intsvc.HttpExecution'`, even though
+`check` only warns (`HTTP_V1_RETIRED`).
 
 Signature:
 `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
@@ -21,30 +19,28 @@ Signature:
 
 ## At a glance
 
-Standalone HTTP keeps non-2xx responses on its success output. Managed HTTP routes
-them through its error port. Both expose JSON response bodies as parsed values.
+Managed HTTP routes non-2xx responses through its error port and exposes a JSON
+response body as a parsed value. A status check is an `.onError()` handler reading
+`err(step, 'status')`, not a `branches` condition on `statusCode`.
 
 Signature: `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
 
 ```ts
 .step('getPolicy', http({ method: 'GET', url: policyUrl,
-  managed: true, returns: { limit: 'number' },
-  branches: [{ name: 'throttled', condition: js`$vars.getPolicy.output.statusCode === 429` }] }))
-.stepToList('branch-throttled', (b) => b.return({}))
+  managed: true, returns: { limit: 'number' } }))
+.onError((h) => h.return({ status: err('getPolicy', 'status') }))
 .step('limit', script({ code: 'return $vars.getPolicy.output.body.limit;' }))
 ```
 
-Match `managed` to the scenario's node; connector auth needs both `connection` and `folder` from `.flow-sdk/bindings.json`.
-A `branch-<name>` side exit uses `.stepToList`; omit both bindings for manual/implicit mode.
+Connector auth needs both `connection` and `folder` from `.flow-sdk/bindings.json`; omit both bindings for manual/implicit mode.
+A `branch-<name>` side exit uses `.stepToList`.
 
 ## Choosing the node
 
-Match the product node named by the scenario. “Managed HTTP Request,” “HTTP
-Request node,” and `core.action.http.v2` select managed; “standalone” and
-`core.action.http` select standalone. Authentication needs or the desire for an
-error handler are not substitutes for that intent.
+Use managed for every request. A scenario that says “standalone” or
+`core.action.http` still gets `managed: true`.
 
-Live product evidence shows that both nodes expose an `application/json` body as
+Live product evidence shows that the node exposes an `application/json` body as
 a parsed value. Declare its top-level fields with `returns` and read them
 directly; do not apply `JSON.parse` to a body declared by `returns`. A non-JSON
 body remains opaque unless its live media type establishes a scalar contract. An
@@ -57,13 +53,12 @@ them only when the scenario calls for different operational behavior.
 ## Managed authentication
 
 Managed HTTP has two authentication modes. Omit `connection` and `folder` for
-manual/implicit mode. For a URL that needs no connection, prefer standalone
-(`managed: false`) unless the scenario names the managed node: implicit managed
-HTTP goes out through Integration Service's shared egress, which public APIs
-often rate-limit. Standalone draws an `HTTP_V1_RETIRED` warning from `check`;
-that is expected. CLI builds before cli#5384 also refuse implicit managed HTTP
-in `uip maestro flow debug` (`Connection ImplicitConnection not found in
-Resource Catalog`).
+manual/implicit mode, which a URL that needs no connection uses. Implicit managed
+HTTP goes out through Integration Service's shared egress, which public APIs may
+rate-limit (429 `Daily API request limit exceeded`); that is infrastructure, not
+a reason to switch to `managed: false`. CLI builds before cli#5384 also refuse
+implicit managed HTTP in `uip maestro flow debug` (`Connection ImplicitConnection
+not found in Resource Catalog`).
 
 To reuse an Integration Service HTTP connection, provide both symbolic names
 from `bindings.json`; the compiler resolves them into the
@@ -113,7 +108,7 @@ proxied request reuses that connector's authentication:
 }))
 ```
 
-`targetConnector` requires both bindings and is not valid on standalone HTTP.
+`targetConnector` requires both bindings.
 
 ## Response branches
 

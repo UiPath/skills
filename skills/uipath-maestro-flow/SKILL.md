@@ -165,8 +165,7 @@ The table is the authoritative router. Before writing a node, read its `Referenc
 | Form trigger | `core.trigger.form` | `formTrigger(...)` | [form-trigger.md](references/form-trigger.md) | `examples/BakeOffEntryForm.flow.ts` |
 | Conversation trigger | `core.trigger.conversation` | `conversationTrigger(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
 | Voice trigger | `core.trigger.voice` | `voiceTrigger(...)` | [voice.md](references/voice.md) | `examples/HarbourRadioLine.flow.ts` |
-| Standalone HTTP | `core.action.http` | `http({ managed: false, ... })` | [http.md](references/http.md) | `examples/LighthouseSignal.flow.ts` |
-| Managed HTTP | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) | `examples/ObservatorySeeing.flow.ts` |
+| HTTP (`managed: false` no longer runs) | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) | `examples/ObservatorySeeing.flow.ts` |
 | Script | `core.action.script` | `script(...)` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
 | Transform | `core.action.transform` | `transform(...)` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
