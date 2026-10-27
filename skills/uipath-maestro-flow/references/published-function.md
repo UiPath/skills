@@ -7,7 +7,9 @@ as its own resource. `publishedFunction()` invokes one as a single step
 (`uipath.core.function.<key>`, dispatched as
 `Orchestrator.ExecuteFunctionAsync`).
 
-Signature: `publishedFunction({ key, name, folderPath, inputs?, returns? })`.
+Signature: `publishedFunction({ key, name, folderPath, inputs?, returns? })`, or
+`publishedFunction({ key, name, location: 'in-solution', projectId, inputs?, returns? })`
+for a coded function in the same solution (see [In the same solution](#in-the-same-solution)).
 
 ```ts
 .step('echo', publishedFunction({
@@ -51,6 +53,39 @@ Three fields, none of them derivable:
 
 Two steps on the same function share ONE binding pair, exactly as the other
 published families do.
+
+## In the same solution
+
+A coded function that is a sibling project of the Flow, in the same solution,
+is not published yet, so it has no folder. Write it with
+`location: 'in-solution'` and `projectId` instead of `folderPath`:
+
+```ts
+.step('math', publishedFunction({
+  key: '247b5eeb-ae51-4ab5-a5b2-c9ca64db3971',       // resource.key
+  name: 'InvoiceMath',
+  location: 'in-solution',
+  projectId: '21c9a46f-dfd1-4a17-89e3-e86d315ea0fe', // resource.projectKey
+  inputs: { invoice_amount: input('invoice_amount') },
+  returns: { variance_pct: 'number', summary: 'string' },
+}))
+```
+
+- **`key`** and **`projectId`** both come from the sibling's resource file,
+  `resources/solution_folder/process/function/<project>.json`: `key` is
+  `resource.key`, `projectId` is `resource.projectKey`. The same key is the
+  suffix `uip maestro flow registry list --local` shows.
+- **`returns`** is read from the same file's `spec.entryPoints` → `output`
+  properties; the read rule above still applies.
+- `check` refuses an in-solution step with no `projectId`
+  (`FUNCTION_LOCAL_NO_PROJECT_ID`), a `projectId` that is not a GUID
+  (`FUNCTION_LOCAL_PROJECT_ID_NOT_GUID`), and a `folderPath` beside
+  `location: 'in-solution'` (`FUNCTION_LOCAL_HAS_FOLDER`): the in-solution
+  binding's folder is `''`, filled in at deploy.
+
+Needs a `@uipath/maestro-builder-sdk` release later than 6.57.1; an older SDK
+has no `location` on `publishedFunction()` and refuses the step as having no
+`folderPath` (`FUNCTION_NO_FOLDER`).
 
 ## Declaring what it returns
 
