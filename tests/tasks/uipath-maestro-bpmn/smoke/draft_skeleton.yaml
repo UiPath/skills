@@ -5,7 +5,7 @@ description: >
   generated DI) without any registry call, validates it, and stops at the
   approval gate instead of wiring real nodes. The request forbids upload, so
   the agent must show the shape locally.
-tags: [uipath-maestro-bpmn, smoke, "mode:build"]
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:approval-gate"]
 
 run_limits:
   expected_turns: 20
@@ -46,4 +46,91 @@ success_criteria:
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  # The 3c gate is graded on the reply the user reads, through coder_eval's
+  # agent-neutral agent output, so it grades claude, codex and antigravity
+  # alike. The checklist is itemized and the verdict binary, which keeps the
+  # judge close to deterministic. The skeleton is attached so the box lines
+  # can be matched to its tasks.
+  - type: llm_judge
+    description: "The 3c reply follows its template: the outline-ready line, the local .bpmn path, one line per task box, the fixed question and its three options, and nothing else"
+    include_reference: false
+    include_agent_output: true
+    max_file_chars: 60000
+    files:
+      - InvoiceIntakeSketch/InvoiceIntakeSketch.bpmn
+    weight: 2.0
+    pass_threshold: 1.0
+    prompt: |
+      You check one chat message against a fixed template. Grade the format
+      only, never the process design.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in
+      this turn. If it contains a `[RESULT - ...]` marker, grade the text
+      after the LAST such marker: that is the final message, whole. Otherwise
+      the messages are joined, possibly with no separator: grade the text from
+      the LAST occurrence of `InvoiceIntakeSketch: outline ready` (markdown emphasis around
+      the name allowed) to the end, and ignore what comes before it. If the
+      phrase does not occur at all, the message fails item 1.
+
+      Ignore blank lines and markdown emphasis (`**`, `*`, backticks). In the
+      graded text, check every item:
+
+      1. The first line starts with `InvoiceIntakeSketch: outline ready (draft mode).` and
+         does not say `uploaded`. After that, the same line may hold at most
+         one more sentence, about a lookup that failed or changes kept.
+      2. The second line is the path of the local `.bpmn` file (ends in
+         `.bpmn`), and nothing else.
+      3. Next come the box lines, each starting with `- `. The attached
+         `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
+         box has exactly one line, and every line names one task box (its
+         action words, with or without the bracketed kind). There is no line
+         for a start event, timer, gateway, branch, or end event. Each line is
+         one short clause, under about 200 characters.
+      4. Next is exactly the line `Is this the process you want?`.
+      5. Then exactly three numbered options, in this order: `1.` Build it,
+         `2.` Change it, `3.` Keep it, each with any short description. Nothing
+         follows the third option.
+      6. No other line exists anywhere in the graded text: no status or
+         progress sentence (for example "Valid, zero errors", "Lookups
+         complete", "Here is the outline"), no `---` separator, no heading, no
+         code block or drawn diagram, no `Flow:` or `The shape:` prose, no line
+         explaining a gateway, a condition, or a variable, no table.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list
+      each failed item by number and quote the offending line. If the
+      attached file is `<file not found>`, judge item 3 on the box lines
+      alone and say so.
+
+  # An open question tool keeps the turn running, and Studio Web locks the
+  # canvas while a turn runs: the gate must be a plain final message.
+  # AskUserQuestion is Claude Code's tool; codex and antigravity have no tool
+  # of that name, so this passes vacuously there. coder_eval cannot scope a
+  # criterion to one agent type, so it is advisory (pass_threshold 0): it
+  # reports a Claude pick list without failing other agents' runs.
+  - type: command_not_executed
+    description: "Claude only (vacuous on other agents): the gate question is asked in the final message, not with AskUserQuestion"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    weight: 1.5
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Every box is labeled with a toolbox kind (the skill's table, else the type's `registry list` Label), never an invented or case-only one"
+    command: "python3 $REFERENCE_DIR/check_skeleton_kinds.py InvoiceIntakeSketch"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Tenants hold thousands of processes: a 3c lookup without --search lists
+  # them all. The lookahead stays inside one shell command; a line
+  # continuation (raw `\<newline>`, or ` <newline>` once coder_eval
+  # normalizes the command) does not end it.
+  - type: command_not_executed
+    description: "Every 3c resource lookup is filtered with --search"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+list\b(?!(?:[^;&|\n]|\\\n|(?<= )\n)*--search)'
+    weight: 1.0
     pass_threshold: 1.0

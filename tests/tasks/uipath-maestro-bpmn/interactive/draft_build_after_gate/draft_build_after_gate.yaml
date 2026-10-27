@@ -1,0 +1,202 @@
+task_id: skill-bpmn-draft-build-after-gate
+description: >
+  Draft-mode e2e over the whole dialog a Studio Web user has: the user asks
+  to see the outline first, so the agent builds and uploads a skeleton and
+  ends its turn with the 3c gate reply; a simulated user picks Build it; the
+  agent then wires the process, validates and uploads it, and ends that turn
+  with the 4g report, asking nothing more about structure or resources.
+
+  The replies are graded as the user reads them, by an itemized llm_judge
+  over the agent-neutral dialog: both follow their templates and carry the
+  Studio Web link. Registry discovery before approval is graded only by the
+  smokes: phase 4 pulls here, and coder_eval cannot scope a command check
+  to one turn. Every step is a computation, so the build
+  needs no tenant resource and the dialog measures the gate, not discovery.
+  Validate-only by design: the dialog is under test, not the runtime, and a
+  run needs consent (Rule 10) the user never gives. Uploads land in the eval tenant's Studio Web; post_run deletes each
+  solution this run uploaded.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "feature:approval-gate"]
+
+run_limits:
+  max_turns: 120
+  # Turn 1 is the skeleton plus one upload; turn 2 is the wiring, validate,
+  # refresh and a second upload. Grading needs at most 180 (validate) plus
+  # two judge calls.
+  turn_timeout: 1500
+  task_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  I need a BPMN process called "ShippingQuote" that works out a shipping
+  quote for an order. It takes the order's weight in kg and whether the order
+  ships abroad, works out the base price from the weight, and adds a 15%
+  surcharge for international orders; domestic orders keep the base price.
+  The quote comes back as the process result.
+
+  Can you show me the outline before you build it?
+
+simulation:
+  enabled: true
+  persona: |
+    You run operations for a small online shop. You know what the quote
+    should do but you do not build processes yourself, and you keep your
+    replies short.
+  goal: |
+    See the outline of the ShippingQuote process, approve it, and get it
+    built.
+  constraints:
+    - "When the agent shows you the outline and asks whether this is the process you want, reply with exactly: 1"
+    - "If the agent asks you anything else, at any point, reply only: Your call, build it the way I described."
+    - "The moment the agent reports the process is built, reply with exactly <<<END>>> on its own line. Do not ask for changes, re-checks, or a run."
+  max_turns: 4
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  # The two replies are graded through coder_eval's agent-neutral dialog
+  # (every turn's user message and agent output), so the same criteria grade
+  # claude, codex and antigravity. Each judge holds an itemized checklist and
+  # returns a binary verdict, which keeps it close to deterministic.
+
+  # --- Turn 1: the 3c gate ---------------------------------------------------
+  - type: llm_judge
+    description: "Turn 1 ends with the 3c reply in its template: the outline-ready line saying uploaded, the Studio Web link, one line per box, the fixed question and three options, and nothing else"
+    include_reference: false
+    include_dialog: true
+    max_file_chars: 60000
+    max_dialog_chars: 200000
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      You check one chat message against a fixed template. Grade the format
+      only, never the process design. Grade the AGENT side of Turn 1 only.
+
+      WHICH TEXT TO GRADE. The Turn 1 agent text holds every message the agent
+      sent in that turn. If it contains a `[RESULT - ...]` marker, grade the
+      text after the LAST such marker: that is the final message, whole.
+      Otherwise the messages are joined, possibly with no separator: grade the
+      text from the LAST occurrence of `ShippingQuote: outline ready`
+      (markdown emphasis around the name allowed) to the end, and ignore what
+      comes before it. If the phrase does not occur at all, item 1 fails.
+
+      Ignore blank lines and markdown emphasis (`**`, `*`, backticks). Check
+      every item:
+
+      1. The first line starts with `ShippingQuote: outline ready, uploaded
+         (draft mode).` After that, the same line may hold at most one more
+         sentence, about a lookup that failed or changes kept.
+      2. The second line is an `https://` link to the uploaded solution in
+         Studio Web (bare or as a markdown link), and nothing else. A local
+         file path here fails.
+      3. Next come between one and eight box lines, each starting with `- `,
+         each naming one step of the process (with or without a bracketed
+         kind) in one short clause under about 200 characters. There is no
+         line for a start event, timer, gateway, branch, or end event.
+      4. Next is exactly the line `Is this the process you want?`.
+      5. Then exactly three numbered options, in this order: `1.` Build it,
+         `2.` Change it, `3.` Keep it, each with any short description.
+         Nothing follows the third option.
+      6. No other line exists anywhere in the graded text: no status or
+         progress sentence (for example "Valid, zero errors", "Uploaded",
+         "Here is the outline"), no `---` separator, no heading, no code block
+         or drawn diagram, no `Flow:` or `The shape:` prose, no line explaining
+         a gateway, a condition, or a variable, no table.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list
+      each failed item by number and quote the offending line.
+
+  # An open question tool keeps the turn running, and Studio Web locks the
+  # canvas while a turn runs. AskUserQuestion is Claude Code's tool; codex and
+  # antigravity have none of that name, so this passes vacuously there.
+  # coder_eval cannot scope a criterion to one agent type, so it is advisory.
+  - type: command_not_executed
+    description: "Claude only (vacuous on other agents): never asked with AskUserQuestion"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Every resource lookup is filtered with --search"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+list\b(?!(?:[^;&|\n]|\\\n|(?<= )\n)*--search)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # One upload shows the skeleton at the gate, one shows the built process.
+  - type: command_executed
+    description: "The shape and the built process were both uploaded"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload\b'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # --- Turn 2: Build it ------------------------------------------------------
+  - type: llm_judge
+    description: "The turn answering Build it ends with the 4g report in its template and asks the user nothing"
+    include_reference: false
+    include_dialog: true
+    max_file_chars: 60000
+    max_dialog_chars: 200000
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      You check the dialog after the user approved an outline. Grade format
+      and conduct only, never the process design.
+
+      First, Turn 2's USER message must pick the first option (`1` or "Build
+      it"). If it does not, score 0.0 and say the simulated user did not
+      approve.
+
+      WHICH TEXT TO GRADE. The Turn 2 agent text holds every message the agent
+      sent in that turn. If it contains a `[RESULT - ...]` marker, grade the
+      text after the LAST such marker. Otherwise the messages are joined,
+      possibly with no separator: grade the text from the LAST occurrence of
+      `ShippingQuote: built, validated` (markdown emphasis around the name
+      allowed) to the end, and ignore what comes before it. If the phrase does
+      not occur in Turn 2, item 1 fails.
+
+      Ignore blank lines and markdown emphasis. Check every item:
+
+      1. Turn 2 ends with the report: its first line starts with
+         `ShippingQuote: built, validated, uploaded` and contains
+         `(draft mode).`; `, run` may follow `uploaded`. After that, the same
+         line may hold at most one more sentence, about changes kept.
+      2. The second line is an `https://` link to the solution in Studio Web
+         (bare or as a markdown link), and nothing else.
+      3. Then at most five lines starting with `- `, each one change.
+      4. Then optionally `Assumed:` and `Unverified:` lines (on one line or
+         two), and nothing after them.
+      5. No other line exists in the graded text: no status sentence, no
+         heading, no table, no numbered list, no suggested next steps, and no
+         question to the user (no line ending in `?`).
+      6. The agent asked the user nothing between their approval and this
+         report: Turn 2 is the last turn, or every later turn's agent text
+         asks nothing and the report was already complete in Turn 2.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list
+      each failed item by number and quote the offending line.
+
+  # The report says "built, validated": hold it to that.
+  - type: run_command
+    description: "The built process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120
