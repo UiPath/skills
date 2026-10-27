@@ -349,6 +349,30 @@ to an already-deployed app. For an app task, resolve the app key, name, folder,
 and argument names from the same tenant resource, and give its schema as
 `app.actionSchema` ([Action App inputs and answers](#action-app-inputs-and-answers)).
 
+A coded action app in the SAME solution as the Flow is not deployed to a folder
+yet. Write it with `location: 'in-solution'` and no `folderPath`:
+
+```ts
+.step('review', hitl({
+  variant: 'action-app',
+  app: { name: 'InvoiceReview', key: 'ab1f6f14-d2e1-4c63-8338-0c5d29a0dbff', location: 'in-solution' },
+  outcomes: ['Approve', 'Reject'],
+}))
+```
+
+- `key` is the app's `resource.key` in
+  `resources/solution_folder/app/codedAction/<App>.json`; `name` is its
+  `resource.name`.
+- Do not give it a `folderPath`. A literal `'solution_folder'` reaches the
+  engine as-is and the task is refused; `check` refuses a non-empty
+  `folderPath` beside `location: 'in-solution'` (`HITL_APP_LOCAL_HAS_FOLDER`).
+  A decompiled in-solution task (folder `''` or `'solution_folder'`) comes back
+  as `location: 'in-solution'`.
+- Needs a `@uipath/maestro-builder-sdk` release later than 6.57.1, and a `uip`
+  CLI later than 1.204.0 to run it: the 1.204.0 serializer drops the empty
+  folder from the task, which fails at run time with `170004 Invalid input for
+  the HITL task`.
+
 ## Evidence boundary
 
 Offline execution scripts the selected action and output fields. It proves
