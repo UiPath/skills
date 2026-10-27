@@ -1,6 +1,6 @@
 ---
 name: uipath-ontology-modeler
-description: "UiPath Ontology modeler (.ofn, SHACL .ttl, .yarrrml.yml, functions/actions .ttl). Models a domain and builds the ontology as a local UiPath solution: Ontology resource + local Entity resources via `uip solution`, validated by local preflight, then packed. Input: plain-language domain, existing artifact files to clone or rebuild, or an authoring handoff. No direct ontology-service calls; deploy only through the solution. For SDD/PDD/design documents→uipath-ontology-authoring. For publish/deploy of the packed solution→uipath-solution."
+description: "UiPath Ontology modeler (.ofn, SHACL .ttl, .yarrrml.yml, optional summary/context .json). Models a domain and builds the ontology and its local entities as a UiPath solution with the local (`--local`) `uip ont` and `uip df entities` commands, validates with the ontology service, then packs. Input: plain-language domain, existing artifact files to clone or rebuild, or an authoring handoff. For SDD/PDD/design documents→uipath-ontology-authoring. For publish/deploy/activate of the packed solution→uipath-solution."
 when_to_use: "User describes classes, fields, and relationships and wants an ontology; supplies .ofn/.ttl/.yarrrml.yml files to clone or turn into a solution; or uipath-ontology-authoring delegates a confirmed handoff."
 allowed-tools: Bash, Read, Write, Edit
 user-invocable: true
@@ -8,9 +8,7 @@ user-invocable: true
 
 # UiPath Ontology Modeler
 
-Builds an ontology as a **local UiPath solution**: one `Ontology` resource holding the artifact files, plus one local `Entity` resource per class, linked as its dependencies. Nothing is created in a tenant. At deploy (via the solution), the entity service installs the entities, then the ontology service installs the ontology and resolves each mapping `table:` by entity name.
-
-`<SKILL_DIR>` is the folder containing this SKILL.md.
+Builds an ontology as a **local UiPath solution**: one ontology resource, plus one local Data Fabric entity per class, linked by name. The CLI keeps one zip per ontology (`ontology.json` and the artifacts at its root, with an empty `operations/` folder). The skill never builds, reads or edits that zip. Nothing is created in a tenant before deploy.
 
 <!--skill-flavor:host-support-extra:start-->
 <!--skill-flavor:host-support-extra:end-->
@@ -23,88 +21,93 @@ Builds an ontology as a **local UiPath solution**: one `Ontology` resource holdi
 
 ## Critical Rules
 
-1. **Never call the ontology service directly.** No ontology CLI service commands, REST calls, or SDK writes. The only deployment path is `uip solution pack` → publish → deploy, owned by `uipath-solution`.
-2. **Validate paths before writing anything.** `WORKDIR` and `SOLUTION_DIR` are absolute, separate folders (neither inside the other). Write artifacts only inside `WORKDIR`; write to `SOLUTION_DIR` only through `uip solution` commands. Quote every path in shell commands.
-3. **Run preflight with `--solution-dir` before the first `uip solution` command** and stop on any failed gate. Use its `paths.solution_state` (`new` | `existing`) to choose between Step 5 and "Updating an existing solution".
-4. **Entities are always local and referenced by name.** Never put `entityId` or `folderId` in the mapping or handoff. Never switch to `--source remote`.
-5. **Link entities before attaching files.** `files add` of the mapping fails with `UnresolvedEntityReference` until every mapping `table:` is linked.
-6. **Never return success without a successful pack.** If a step fails, report which resources and files exist; never leave a partial solution silently.
-7. **Stop after pack.** Deploy only when the user asks, by handing off to `uipath-solution`.
+1. **Every step runs through the `uip` CLI with `--output json`.** No scripts, no REST, no SDK calls, no hand-made zip. Never write into `ResourceFiles/` or the `.uipx` by hand.
+2. **Always validate with the ontology service.** Be logged in. Never skip service validation or validate offline. If the service can't be reached, stop and tell the user.
+3. **Entities are local and referenced by name.** Author them as local Data Fabric entities (Step 4). Never read the tenant for entities. Never write `entityId` or `folderId`.
+4. **What the user gives is authoritative.** Use a supplied entity body as is. Ask before changing anything the user stated.
+5. **Field types are only the nine local types** (see [entity-format-guide.md](references/entity-format-guide.md)). No relationship or choice-set fields in M1.
+6. **Produce only the five artifact types:** schema, constraints, mapping, and optionally summary (JSON) and context. No business rules, functions or actions; business constraints go to SHACL.
+7. **The ontology name must be unique in the tenant.** Tell the user. The CLI can't check it offline. Service validation warns with `SVC-002` when the name is taken, and at deploy `uipath-solution` resolves a conflict by renaming (`RenameInSolution`).
+8. **Stop after pack.** Publish, deploy and activate belong to `uipath-solution`. Then confirm the result in the deployment folder.
 
 ## Paths and artifacts
 
 ```text
-ONTOLOGY_NAME  ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$   (IRI slug and file prefix; immutable)
+ONTOLOGY_NAME  ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$   (IRI slug and file prefix; unique in the tenant)
 ONTOLOGY_IRI   https://ontology.uipath.com/<ONTOLOGY_NAME>#
-WORKDIR        <BASE_DIR>/<ONTOLOGY_NAME>/        artifacts at top level, plus input/ and entities/ only
+WORKDIR        <BASE_DIR>/<ONTOLOGY_NAME>/        artifacts at top level, plus input/
 SOLUTION_DIR   <SOLUTION_PARENT>/<SOLUTION_NAME>/ absent (new) or containing exactly one .uipx (existing)
 ```
 
-| File in `WORKDIR` | `--file-type` | Count |
-|---|---|---|
-| `{name}.ofn` — OWL 2 QL schema | `schema` | exactly 1 |
-| `{name}-constraints[-{area}].ttl` — SHACL | `constraints` | 1 or more |
-| `{name}-mapping.yarrrml.yml` — YARRRML, `table:` = entity name | `mapping` | exactly 1 |
-| `{name}-functions[-{ClassName}].ttl` — SPARQL reads | `functions` | 0 or more |
-| `{name}-{actionName}.ttl` — SQL writes, one per action | `actions` | 0 or more |
-| `{name}-business-rules[-{area}].ttl` | `business-rules` | 0 or more |
-| `{name}-summary.txt` | `summary` | 0 or 1 |
-| `{name}-context.json` | `context` | 0 or 1 |
-| `input/handoff.json` — machine-readable handoff | — | 1 |
-| `entities/{EntityName}.json` + `.patch.json` — written by the entities script | — | 1 per class |
+`WORKDIR` and `SOLUTION_DIR` are absolute and separate (neither inside the other). Write artifacts only inside `WORKDIR`; change `SOLUTION_DIR` only through `uip` commands. Quote every path.
 
-`{name}` is `ONTOLOGY_NAME`. Preflight rejects any other file, extension, or folder in `WORKDIR`.
+| File in `WORKDIR` | `--type` | Media type | Count |
+|---|---|---|---|
+| `{name}.ofn` — OWL 2 QL schema | `schema` | `text/owl-functional` | exactly 1 |
+| `{name}-constraints[-{area}].ttl` — SHACL | `constraints` | `text/turtle` | 1 or more |
+| `{name}-mapping.yarrrml.yml` — YARRRML, `table:` = entity name | `mapping` | `application/yaml` | exactly 1 |
+| `{name}-summary.json` | `summary` | `application/json` | 0 or 1 |
+| `{name}-context.json` — JSON-LD `@context` | `context` | `application/json` | 0 or 1 |
+| `input/handoff.json` — the confirmed model (not packed) | — | — | 1 |
+| `input/entities/{EntityName}.json` — the local entity body | — | — | 1 per class |
+
+`{name}` is `ONTOLOGY_NAME`. Summary and context are covered in [summary-context-guide.md](references/summary-context-guide.md).
 
 ## Delegated handoff contract
 
 When called by ontology authoring, require one complete handoff. Do not rediscover or mutate its setup:
 
 ```text
-ONTOLOGY_NAME: exact slug
+ONTOLOGY_NAME: exact slug (unique in the tenant; a conflict is resolved by renaming at deploy)
 ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
+DISPLAY_NAME: optional; defaults to ONTOLOGY_NAME
+DESCRIPTION: optional
 WORKDIR: absolute path of the dedicated {name}/ artifact folder
 SOLUTION_DIR: absolute path of the solution folder to create or update
-CLASS_MAP: class -> entityName (and optional displayName); no IDs
+CLASS_MAP: class -> entityName; no IDs
+ENTITY_SOURCE: entityName -> described | supplied | generated
+ENTITY_DEFINITIONS: entityName -> local entity body (local types only); supplied bodies verbatim
+RELATIONSHIPS: [{ property, from, to, fromColumn, toColumn }] ([] when none)
 MAPPING_STATUS: supplied | generate
-DOMAIN_MODEL: confirmed classes, properties, relationships, rules
+DOMAIN_MODEL: confirmed classes, properties, relationships, constraints
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
-OPERATIONS: grouped query operations and structured write actions, if any
-PREFLIGHT_HANDOFF_JSON: machine-readable JSON with CLASS_MAP, FIELD_METADATA (type, required, displayName, exactly one identifier per class), and explicit RELATIONSHIPS ([] when none)
 ```
 
-Reject an incomplete handoff before writing files. `MAPPING_STATUS: supplied` means validate the provided mapping; `generate` means generate it from handoff metadata and is invalid when a class-to-entity, field, relationship, or identifier choice is ambiguous.
+Reject an incomplete handoff before writing files. `MAPPING_STATUS: supplied` means check and use the provided mapping; `generate` means write it from the handoff, and is invalid when a class-to-entity, field, join column or identifier choice is ambiguous.
 
 Return:
 
 ```text
 SOLUTION_DIR: absolute path
 PACKAGE_PATH: absolute path of the packed .zip
-ONTOLOGY_KEY: resource key
-ENTITY_KEYS: entityName -> resource key
-ARTIFACT_INVENTORY: exact preflight artifact_inventory
-GATES: preflight gate results
+ONTOLOGY_NAME: the ontology resource name (the deployed name can differ after RenameInSolution)
+ENTITIES: entity names in the solution, with ENTITY_SOURCE
+PACKED_FILES: the files list --package listing
+VALIDATION: last entities validate and ontology validate results (service validation ran)
 UNRESOLVED_AMBIGUITIES: none | numbered list with the missing decision
 ```
+
+The return no longer carries `ONTOLOGY_KEY`, `ENTITY_KEYS`, `ARTIFACT_INVENTORY` or `GATES`: every command addresses resources by name, and `PACKED_FILES` and `VALIDATION` replace the inventory and the gates.
 
 ## Design rules
 
 | Information | Artifact |
 |---|---|
-| Domain facts, grain, value meaning, FK provenance | OFN `rdfs:comment` |
-| Business constraints | SHACL |
-| Query/join/output policy | Mapping or function USAGE POLICY |
-| Entity and column bindings | Mapping (`table:` = entity name) |
-| Entity structure (fields, types, relationships) | `entities/{EntityName}.json` |
-| Query implementation | Function `ont:statement` |
-| SQL write implementation | Action `ont:statements` |
+| Domain facts, grain, value meaning, join provenance | OFN `rdfs:comment` |
+| Business constraints, value lists (`sh:in`) | SHACL |
+| Query, join and output policy | Mapping USAGE POLICY |
+| Entity and column bindings, joins on plain columns | Mapping (`table:` = entity name) |
+| Entity structure (fields and local types only) | `input/entities/{EntityName}.json` |
 
-Do not model system fields (`Id`, `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`) as domain properties; use `$(Id)` as the subject key. Turn FK-shaped fields into object properties and list them in `RELATIONSHIPS`.
+Do not model system fields (`Id`, `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`) as domain properties; use `$(Id)` as the subject key.
 
-If a class must read from an external (federated) system, stop and tell the user: a federated entity needs an Integration Service connection and cannot be authored in a solution.
+**Relationships are owned by the ontology.** Model a foreign key as a plain local field (for example `Order.customerId`, `STRING`), plus an object property in the schema, joined in the mapping on plain columns (`Order.customerId = Customer.Id`). See [relationships-guide.md](references/relationships-guide.md).
+
+If a class must read from an external (federated) system, stop and tell the user: a federated entity needs an Integration Service connection and is not authorable locally. If the user asks for functions, actions or business rules, say they are not in M1; constraints go to SHACL.
 
 ## Step 1 — Gather inputs
 
-Collect only missing values: domain (classes, fields, relationships, rules, query and write operations) or source files; `ONTOLOGY_NAME`; new solution name or existing solution folder; base directory (default: current directory). Resolve every path to an absolute path, then show for confirmation:
+Collect only missing values: domain (classes, fields, relationships, constraints) or source files; any entity definitions the user already has; `ONTOLOGY_NAME`, optional display name and description; new solution name or existing solution folder; base directory (default: current directory). Resolve every path to an absolute path, then show for confirmation:
 
 ```text
 ONTOLOGY_IRI = https://ontology.uipath.com/<ONTOLOGY_NAME>#
@@ -112,121 +115,188 @@ WORKDIR      = <BASE_DIR>/<ONTOLOGY_NAME>/
 SOLUTION_DIR = <SOLUTION_PARENT>/<SOLUTION_NAME>/
 ```
 
-Reject before creating anything: a name that fails the `ONTOLOGY_NAME` pattern, `WORKDIR` equal to or nested with `SOLUTION_DIR` (for example a solution named like the ontology in the same base directory), or an existing `WORKDIR` that holds files you did not generate. Then run `mkdir -p "<WORKDIR>/input"`.
+Tell the user the name must be unique in the tenant; a conflict is resolved by renaming at deploy. Reject before creating anything: a name that fails the `ONTOLOGY_NAME` pattern, `WORKDIR` equal to or nested with `SOLUTION_DIR`, or an existing `WORKDIR` that holds files you did not generate. Then run `mkdir -p "<WORKDIR>/input/entities"`.
 
 ### Files mode — clone or rebuild from existing artifacts
 
-1. Copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.txt`, `.json`) from the source folder into `WORKDIR`; never copy symlinks or subfolders.
-2. When cloning, rename `{oldName}` → `{name}` in file names and in every IRI, `PREFIX ont:` line, and statement body.
+1. Copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`) from the source folder into `WORKDIR`; never copy symlinks or subfolders. Leave out business rules, functions and actions files (not in M1). A plain-text summary is not accepted: rewrite it as `{name}-summary.json`.
+2. When cloning, rename `{oldName}` → `{name}` in file names and in every IRI and `PREFIX ont:` line.
 3. Remove any `entityId` or `folderId` keys from the mapping; each source keeps only `access`, `table: {EntityName}`, and `referenceFormulation`.
-4. Build `input/handoff.json` from the schema and mapping (one entity per mapped `table:`, fields from mapped columns, types from schema ranges) and confirm it with the user.
+4. Build the entity bodies: use any the user supplies (`supplied`); otherwise derive them from the mapped columns and schema ranges (`generated`) and confirm them.
 5. Continue at Step 3 with `MAPPING_STATUS: supplied` (or `generate` when no mapping file exists).
 
 ## Step 2 — Model the domain
 
-Produce a reviewable summary:
+Produce one reviewable summary:
 
-- classes with one-row grain, business meaning, and entity name (default: the class name; must match `^[a-zA-Z][a-zA-Z0-9]{2,99}$`);
-- data properties with camelCase names, XSD types (`xsd:string`, `xsd:decimal`, `xsd:integer`, `xsd:long`, `xsd:dateTime`, `xsd:date`, `xsd:boolean`, `xsd:anyURI`), and required flags;
-- object properties with direction, cardinality notes, and the FK field that carries them;
-- subclass axioms; business rules mapped to SHACL; query operations; write actions.
+- classes with one-row grain, business meaning, and entity name (default: the class name; must match `^[a-zA-Z][a-zA-Z0-9_]{2,99}$`);
+- data properties with camelCase names, XSD types, the local field type each maps to, and required flags;
+- object properties with direction, cardinality notes, and **join columns** (for example `Order.customerId = Customer.Id`). Use a named FK field as is; otherwise propose `{targetClass}Id` joined to the target's `Id` and ask;
+- subclass axioms and business constraints mapped to SHACL.
 
-Wait for confirmation, then write `<WORKDIR>/input/handoff.json`:
+Record `ENTITY_SOURCE` per entity, following [entity-format-guide.md](references/entity-format-guide.md):
 
-```json
-{
-  "CLASS_MAP": {"Order": {"entityName": "Order"}},
-  "FIELD_METADATA": {"Order": {"Id": {"identifier": true}, "orderNumber": {"type": "xsd:string", "required": true, "displayName": "Order Number"}, "customer": {"displayName": "Customer"}}},
-  "RELATIONSHIPS": [{"from": "Order", "field": "customer", "to": "Customer"}]
-}
-```
+| `ENTITY_SOURCE` | Meaning | What to do |
+|---|---|---|
+| `supplied` | The user gave an entity definition (JSON body, table, or a local entity already in the solution) | Use it as the body as is. If a type isn't one of the nine local types, ask which local type to use; never substitute silently |
+| `described` | The user described fields in words | Keep every stated name, type and required flag. Fill gaps (display names, lengths) and show them |
+| `generated` | You proposed the entity from the domain | Generate it, show it, and get one confirmation |
 
-## Step 3 — Generate artifacts and entities
+The schema and mapping follow the entity and field names exactly (case-sensitive), not the other way round. Wait for confirmation, then write `<WORKDIR>/input/handoff.json` (the confirmed `CLASS_MAP`, `ENTITY_SOURCE`, `RELATIONSHIPS` with join columns) and one `<WORKDIR>/input/entities/<Entity>.json` body per entity.
 
-In delegated mode, first apply Step 1's path checks to the handoff's `WORKDIR` and `SOLUTION_DIR`, run `mkdir -p "<WORKDIR>/input"`, and write `PREFLIGHT_HANDOFF_JSON` to `<WORKDIR>/input/handoff.json`.
+## Step 3 — Write each artifact, then check it
+
+In delegated mode, first apply Step 1's path checks to the handoff's `WORKDIR` and `SOLUTION_DIR`, run `mkdir -p "<WORKDIR>/input/entities"`, and write `ENTITY_DEFINITIONS` to `input/entities/` (supplied bodies verbatim).
 
 Read only the references needed:
 
 - [OWL patterns](references/owl-patterns-guide.md)
 - [SHACL patterns](references/shacl-patterns-guide.md)
 - [YARRRML mapping](references/mapping-yarrrml-guide.md)
-- [Functions and actions](references/functions-patterns-guide.md)
-- [Action contract](references/action-table-contract-guide.md)
+- [Relationships](references/relationships-guide.md)
+- [Summary and context](references/summary-context-guide.md)
 
-Present one combined draft summary and obtain one batch confirmation before writing. In the mapping, each source is `access: datafabric`, `table: {EntityName}`, `referenceFormulation: rr:SQL2008`. Every `$(column)` is a field name from the entity definition, exactly as written (case-sensitive), or `Id`.
+Present one combined draft summary and obtain one batch confirmation before writing. In the mapping, each source is `access: datafabric`, `table: {EntityName}`, `referenceFormulation: rr:SQL2008`. Every `$(column)` is a field of that entity, exactly as written, or `Id`. Every object property between mapped classes has a join on plain columns.
 
-Write the entity definitions (reads `input/handoff.json`, rewrites `entities/`, removes stale entity files):
-
-```bash
-python3 "<SKILL_DIR>/scripts/ontology_entities.py" --workdir "<WORKDIR>"
-```
-
-Require `"status": "PASS"`; on `FAIL`, fix the model or handoff and rerun.
-
-## Step 4 — Preflight gates
+Check every file you write (offline UiPath-convention check):
 
 ```bash
-python3 "<SKILL_DIR>/scripts/ontology_preflight.py" --workdir "<WORKDIR>" --ontology-name "<ONTOLOGY_NAME>" --solution-dir "<SOLUTION_DIR>" --mapping-mode auto
+uip ont artifacts check <name>.ofn --content-type text/owl-functional --type schema --file "<WORKDIR>/<name>.ofn" --output json
+uip ont artifacts check <name>-constraints.ttl --content-type text/turtle --type constraints --file "<WORKDIR>/<name>-constraints.ttl" --output json
+uip ont artifacts check <name>-mapping.yarrrml.yml --content-type application/yaml --type mapping --file "<WORKDIR>/<name>-mapping.yarrrml.yml" --output json
+uip ont artifacts check <name>-summary.json --content-type application/json --type summary --file "<WORKDIR>/<name>-summary.json" --output json
 ```
 
-Read `status`, `gate_results`, `mapping_status`, `artifact_inventory`, `paths`, `errors`, `warnings`. Repair every failed gate and rerun; reporting a failure without repairing it is not completion. If `mapping_status` is `GENERATE_MAPPING`, generate the mapping from `input/handoff.json` and rerun. Stop with `BLOCKED_AMBIGUITY` when the metadata cannot determine a safe mapping.
+Fix every ERROR before moving on (see the recovery table). Show WARNINGs to the user and fix them when the fix is mechanical.
 
-Gates: `PATHS` (WORKDIR/SOLUTION_DIR layout), `ARTIFACT_INVENTORY` (file names, extensions, counts), `IRI_CONSISTENCY`, `OWL_2_QL`, `DATA_PROPERTY_NAMING`, `CLASS_ANNOTATIONS`, `MAPPING_TERMS`, `LOCAL_ENTITIES` (every `table:` is a local entity, every entity is used, every column is a field, no IDs), `CROSS_FILE_TERMS`, `CLASS_DEPLOYABILITY`, `RELATIONSHIP`, `ACTION_CONTRACT`, `SEMANTIC_CONSISTENCY`, `NAMESPACE`.
+## Step 4 — Solution and local entities
 
-## Step 5 — Build the local solution
-
-Run each command with `--output json` and check `Result: Success`. Read each resource key from `Data.Key` of its `resources add` output: entity keys for `ENTITY_KEYS`, the ontology key for `ONTOLOGY_KEY`.
+Every authoring command below also takes `--solution-folder "<SOLUTION_DIR>"` and `--output json`; check `Result: Success`.
 
 <!--skill-flavor:solution-create:start-->
-1. When `paths.solution_state` is `new`, create the solution from its parent folder:
+1. When `SOLUTION_DIR` does not exist yet, create the solution from its parent folder:
    ```bash
    cd "<SOLUTION_PARENT>" && uip solution init "<SOLUTION_NAME>" --output json
    ```
 <!--skill-flavor:solution-create:end-->
-2. For each `entities/<ENTITY_NAME>.json`, add the entity and patch it with its `.patch.json`:
+2. Create each entity from its body, or update one that already exists in the solution (never re-create it):
    ```bash
-   uip solution resources add --source local --kind Entity --name "<ENTITY_NAME>" --solution-folder "<SOLUTION_DIR>" --output json
-   uip solution resources edit "<ENTITY_KEY>" --patch - --solution-folder "<SOLUTION_DIR>" --output json < "<WORKDIR>/entities/<ENTITY_NAME>.patch.json"
+   uip df entities create <Entity> --local --body "$(cat "<WORKDIR>/input/entities/<Entity>.json")" --solution-folder "<SOLUTION_DIR>" --output json
+   uip df entities update <Entity> --local --body '{"addFields": […], "updateFields": […]}' --solution-folder "<SOLUTION_DIR>" --output json
    ```
-   `resources add` is idempotent: an existing entity with the same name returns its key, and the patch updates it.
-3. Add the ontology:
-   ```bash
-   uip solution resources add --source local --kind Ontology --name "<ONTOLOGY_NAME>" --solution-folder "<SOLUTION_DIR>" --output json
-   ```
-4. Link every entity:
-   ```bash
-   uip solution resources edit "<ONTOLOGY_KEY>" --add-entity <ENTITY_NAME> <ENTITY_NAME_2> --solution-folder "<SOLUTION_DIR>" --output json
-   ```
-5. Attach every file in `artifact_inventory`, always passing `--file-type` (several types share `.ttl`):
-   ```bash
-   uip solution resources files add "<ONTOLOGY_KEY>" --file "<WORKDIR>/<FILE>" --file-type <TYPE> --solution-folder "<SOLUTION_DIR>" --output json
-   ```
-6. Check `uip solution resources files list "<ONTOLOGY_KEY>" --solution-folder "<SOLUTION_DIR>" --output json` returns `Warnings: []`.
+   At deploy an entity merges into a same-name entity in the folder and a changed field type is rejected; warn the user when they change a field type.
 
-### Updating an existing solution
-
-Re-patch every entity and add entity resources for new classes. Then, in order:
-
-1. Link new entities with `--add-entity`.
-2. Add or replace files with `files add` (same file name replaces).
-3. Remove files no longer in `artifact_inventory`: `uip solution resources files remove "<ONTOLOGY_KEY>" --file-name "<FILE>" --solution-folder "<SOLUTION_DIR>" --output json`.
-4. Unlink dropped classes with `--remove-entity`; report (do not delete) entity resources that are no longer linked.
-5. Check `files list` returns `Warnings: []`.
-
-## Step 6 — Pack
+## Step 5 — Ontology resource and its files
 
 ```bash
-uip solution pack "<SOLUTION_DIR>" "<SOLUTION_DIR>/out" --output json
+uip ont create <Name> --local --entity <E1> --entity <E2> [--display-name "<d>"] [--description "<d>"] --solution-folder "<SOLUTION_DIR>" --output json
+uip ont files add <Name> "<WORKDIR>/<name>.ofn" "<WORKDIR>/<name>-constraints.ttl" "<WORKDIR>/<name>-mapping.yarrrml.yml" --local --solution-folder "<SOLUTION_DIR>" --output json
 ```
 
-Report `SOLUTION_DIR` and `PACKAGE_PATH`. Stop. Deploy only when the user asks, by handing off to `uipath-solution` (publish, then `deploy run`).
+Add the optional summary and context files the same way. `files add` runs the per-file check again and rebuilds the zip; if any file has an ERROR, nothing is attached. Pass `--type` only when the type is ambiguous (`ArtifactTypeUnresolved`). Never pass `--folder operations` (not in M1). Re-adding the same file name replaces it.
 
-## Common errors
+## Step 6 — Validate until clean
 
-| Error | Cause | Fix |
+First make sure the user is logged in:
+
+```bash
+uip login status --output json
+```
+
+If not logged in, ask the user to run `uip login` and wait. Then loop on both until clean:
+
+```bash
+uip ont validate --local --solution-folder "<SOLUTION_DIR>" --output json
+uip df entities validate --local --solution-folder "<SOLUTION_DIR>" --output json
+```
+
+Read `Data` of the ontology result. It is clean when there is no ERROR from either `source` (`local` or `service`) and `ServiceValidation` is `"Done"` (never `"Skipped"`). After each repair: edit the file in `WORKDIR`, rerun `artifacts check`, re-add it with `files add`, then validate again. Entity changes go through `uip df entities update --local`. A `SVC-002` warning does not block: tell the user a rename at deploy will be needed, and carry on.
+
+If the service is unavailable (`ServiceValidationUnavailable`, `ServiceValidationFailed`), stop and tell the user. Never fall back to offline validation and never pack as validated.
+
+## Step 7 — Pack and confirm the packed contents
+
+```bash
+uip solution pack "<SOLUTION_DIR>" "<SOLUTION_DIR>/out" --dry-run --output json
+uip solution pack "<SOLUTION_DIR>" "<SOLUTION_DIR>/out" --output json
+uip ont files list <Name> --package "<PACKAGE_PATH>" --output json
+```
+
+The listing must contain exactly the validated artifacts plus `ontology.json`. A mismatch means an artifact changed after validation: go back to Step 5.
+
+Stop after pack. Report `SOLUTION_DIR`, `PACKAGE_PATH`, `PACKED_FILES` and `VALIDATION`.
+
+## Step 8 — Hand off publish, deploy and activate to `uipath-solution`
+
+Only when the user asks to deploy, load `uipath-solution` and let it publish `PACKAGE_PATH` as is, then deploy (which activates by default). The modeler runs none of these commands. Add two facts to the handoff:
+
+- The ontology name must be free in the tenant, or already live in the same target folder. Otherwise deploy reports a name conflict whose only allowed action is `RenameInSolution`. `uipath-solution` asks the user for a new name and sets `conflictFixingAction` `RenameInSolution` and the new `name` for this resource in the deploy config (per resource, never with `--all`).
+- The deployment folder becomes the ontology's data-query folder.
+
+## Step 9 — Confirm in the deployment folder
+
+After `uipath-solution` reports the deployment active, confirm with live, read-only reads:
+
+```bash
+uip ont get <Name> --folder-key <key> --output json
+uip df entities list --folder-key <key> --output json
+```
+
+`<Name>` is the deployed name: the new one if the deploy used `RenameInSolution`.
+
+## Updating an existing solution
+
+1. `uip df entities update <Entity> --local --body …` per changed entity; `uip df entities create <Entity> --local --body …` for new ones.
+2. Link or unlink entities: `uip ont update <Name> --local --add-entity <E> --remove-entity <E>`. Report (do not delete) entities that are no longer linked.
+3. `uip ont files add` for new or changed files (same file name replaces); `uip ont files remove <Name> <file> --local` for dropped files.
+4. Run the Step 6 validate loop, then Step 7.
+
+## Errors
+
+The skill acts on each violation's `rule`, `file` and `suggestion`; it never re-implements a check. C0 violations come from `artifacts check`, `files add` and `validate`; C1 error codes come in the `Code` of a failure envelope.
+
+### Recovery table
+
+| Signal | Source | Action |
 |---|---|---|
-| Preflight `PATHS` fails | Wrong folder name, extra folder, overlapping `WORKDIR`/`SOLUTION_DIR`, folder that is not a solution, or missing `entities/` | Fix the path or layout named in the diagnostic; rerun preflight |
-| Preflight `ARTIFACT_INVENTORY` name, extension, or `Unclassified artifact file` error | A non-artifact file in `WORKDIR`, a mapping not ending `.yarrrml.yml`, or a file without the `{name}` prefix | Rename or move the file (the handoff lives in `input/`) |
-| `Resource metadata not found for Kind: ontology` on `resources add --kind Ontology` | The CLI or tenant does not expose the Ontology resource kind yet | Stop and report; internal preview builds can set `UIP_SOLUTION_METADATA_OVERLAY` to an ontology metadata overlay file |
-| `UnresolvedEntityReference` on `files add` | The mapping names an entity not yet linked | `uip solution resources edit "<ONTOLOGY_KEY>" --add-entity <ENTITY_NAME> ...`, then re-add the file |
-| `InlineEntityCreationDisabled` on `resources add --kind Entity` or `resources edit --patch` | The CLI is logged in to a tenant whose Data Fabric disallows inline entity creation; deploying there would fail too | Ask a Data Fabric admin to enable inline entity creation (`solution-inline-entity-creation`), or build logged out knowing deploy depends on that flag |
+| `OFN-001`, `OFN-002`, `OFN-004`, `OFN-005`, `OFN-009` | local | Fix `{name}.ofn` per [owl-patterns-guide.md](references/owl-patterns-guide.md) (IRI on `ontology.uipath.com`, `ClassName.fieldName` names, labels, no `has{Prop}` names); `artifacts check`; `files add`; validate |
+| `SHC-002`, `SHC-003`, `SHC-004`, `SHC-006`, `SHC-007`, `SHC-008`, `SHC-009`, `SHC-010` | local | Fix the named constraints file per [shacl-patterns-guide.md](references/shacl-patterns-guide.md) (one `sh:NodeShape` with one `sh:targetClass`, labels, counts, `sh:class` on relationship paths); same loop |
+| `MAP-002`, `MAP-004`, `MAP-005`, `MAP-006` | local | Fix the mapping per [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md) (`access: datafabric`, `table: <Entity>`, no IDs, subject template, `a <Class>`, joins instead of inline IRIs); same loop |
+| `CTX-001`, `CTX-002`, `CTX-003`, `CTX-005`, `CTX-006`, `CTX-007` | local | Rewrite `{name}-context.json` per [summary-context-guide.md](references/summary-context-guide.md), or drop it with `uip ont files remove` |
+| `SUM-001`, `SUM-002` | local | Rewrite `{name}-summary.json` as a JSON object, or drop it with `uip ont files remove` |
+| `XF-001` (missing required file or wrong count) | local | Write or remove files so there is exactly one schema, at least one constraints file, one mapping, at most one summary and one context; `files add` / `files remove` |
+| `XF-002` (`ontology.json` differs from the resource) | local | WARNING: re-run `uip ont files add` with any artifact to rebuild the zip. ERROR: the zip was not written by the CLI; rebuild it with `files add` for every artifact |
+| `XF-003`, `XF-004` (IRI, `shape:` namespace) | local | Use `https://ontology.uipath.com/<name>#` everywhere and `https://ontology.uipath.com/shapes#` for `shape:` |
+| `XF-005` (OWL 2 QL) | local | Remove the forbidden construct from the schema; record the rule in `rdfs:comment` or SHACL instead |
+| `XF-006`, `XF-008` (undeclared terms) | local | Declare the term in the schema, or fix the name used in the mapping or constraints |
+| `XF-007` (missing label or comment) | local | Add `rdfs:label` and `rdfs:comment` to every class and property |
+| `XF-009` (class not deployable) | local | Give the class a property and a mapping block backed by an entity, or fold it into a property's `rdfs:comment` |
+| `XF-010` (property unmapped, class without shape) | local | Map every schema property; give every class a `sh:targetClass` shape |
+| `XF-011` (`entityId` or `folderId` in the mapping) | local | Remove them; keep `table: <Entity>` only |
+| `XF-012`, `XF-013` (`table:` not a current linked entity, or a column that is not a field) | local | If the entity is `supplied`, fix the mapping to its names. Otherwise ask, then fix the mapping or `uip df entities update --local`. Link with `uip ont update <Name> --local --add-entity <E>` |
+| `XF-014`, `XF-015` (join on an undeclared object property, or an object property with no join) | local | Declare the object property or add the join per [relationships-guide.md](references/relationships-guide.md); add the key field to the entity if missing (ask if `supplied`) |
+| `SVC-001` (any `source: "service"` violation) | service | W3C syntax problem in the named file. Fix the syntax; same loop |
+| `SVC-002` WARNING (name already used in the tenant, folder by id) | service | Tell the user: if the target folder is that folder, deploy upgrades in place; otherwise a rename at deploy will be needed (`uipath-solution`, `RenameInSolution`). Carry on; not a blocker for pack |
+| `ServiceValidationUnavailable` (not logged in) | C1 | Ask the user to run `uip login`, then rerun. Ignore the hint's offline option |
+| `ServiceValidationFailed` (network, server, permission) | C1 | Stop and tell the user. Do not pack as validated |
+| `ValidationFailed` | C1 | ERRORs are in `Data`; fix each per the rows above and validate again |
+| `ArtifactCheckFailed` | C1 | ERRORs are in `Data.violations`; nothing was attached. Fix them, then `files add` again |
+| `ArtifactTypeUnresolved` | C1 | Pass `--type`, or rename the file to the `{name}-summary.json` / `{name}-context.json` form |
+| `ArtifactTypeAlreadyPresent` | C1 | Re-add under the existing file name to replace it, or `files remove` the old one first |
+| `InvalidArtifactFileName` | C1 | Rename the file to the `{name}-…` convention; never name a file `ontology.json` |
+| `ArtifactTypeNotSupported`, `FolderNotSupported` | C1 | Not in M1. Drop the functions, actions or business rules file; never pass `--folder operations` |
+| `ArtifactNotFound` | C1 | The file is not in the zip; check `uip ont files list <Name> --local` and use the listed name |
+| `NoParentSolution` | C1 | `--solution-folder` holds no `.uipx`; fix `SOLUTION_DIR` or create the solution (Step 4) |
+| `OntologyNotFound` | C1 | Create the resource first (Step 5), or fix the name from `uip ont list --local` |
+| `OntologyNameTaken` | C1 | The name is already used in the solution: ask for another name, or update the existing resource |
+| `InvalidOntologyName` | C1 | Pick a name matching the `ONTOLOGY_NAME` pattern |
+| `EntityNotFound` | C1 | Create the entity with `uip df entities create --local`, or fix the name from the list in `Instructions` |
+| `LocalFlagRequired` | C1 | Add `--local` to the authoring command |
+| `ConfirmationRequired` | C1 | `uip ont delete` needs `--yes`; ask the user before deleting |
+| `ResourceFileMissing`, `InvalidResourceArchive` | C1 | Rebuild the zip with `uip ont files add` for every artifact |
+| `InvalidAttachedFile`, `FileAttachNotSupported`, `ResourceNotFound` | C1 (SDK) | The attach was refused; read `Instructions`, fix the solution state (for example a missing resource), and re-run `files add` |
+| `PackageNotFound`, `OntologyNotInPackage` | C1 | Pass the `PACKAGE_PATH` that pack reported; if the ontology is missing, pack again after Step 6 |
+| `uip df entities validate --local` problem | Data Fabric CLI | Fix with `uip df entities update --local`; for an unsupported type, pick a local type with the user |
+| `InlineEntityCreationDisabled` | Data Fabric CLI | The tenant lacks inline entity creation (`solution-inline-entity-creation`). Stop and ask a Data Fabric admin; deploy would fail too |
+| Packed listing differs from the validated set | `files list --package` | Re-add the changed file, validate, pack again |
+| `BLOCKED_AMBIGUITY` | skill | A class-to-entity, join column or identifier has no unique answer: stop and ask for the decision |
