@@ -18,7 +18,7 @@ Consult this reference when planning or implementing any of:
 2. `uip maestro case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uip/case-resources/`.
 3. A healthy Integration Service connection for the connector. If `Connections` is empty after `get-connection`, offer to create one (Step 2) rather than failing — see [§ Creating a Connection](#creating-a-connection).
 
-Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
+Connection creation, ping verification and the `--refresh` retry: [§ Creating a Connection](#creating-a-connection). BYOA webhook connections and other connection management →uipath-platform.
 
 ## Resolution Pipeline
 
@@ -135,7 +135,7 @@ Each `inputs.*` entry with a `reference` carries a pre-built `discoverCommand`:
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing `registry-resolved.json` / minting the spec. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing `registry-resolved.json` / minting the spec. Never reuse an ID resolved against a different connection — silent runtime fault.
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -163,7 +163,7 @@ For connector tasks `uip maestro case splice` resolves the `{{CONN_BINDING_ID}}`
 
 Filters for both activities (CEQL) and triggers (JMESPath) are authored as **structured FilterTree JSON**, not flat string expressions. The CLI compiles the tree to the appropriate target language and persists both the tree (for round-tripping in Studio Web) and the compiled expression (for runtime evaluation).
 
-Tree shape, operator table, anti-patterns, "How to build" guide, worked examples: [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs.
+Tree shape, operators, `WorkflowValue`, worked examples: [case-spec-input-details.md § FilterTree shape](case-spec-input-details.md#filtertree-shape). Same shape applies to triggers — only the compiler output differs.
 
 > **Do NOT pass a raw filter string** under `--input-details.queryParameters.where` (or the connector-specific filter param name). The CLI rejects this; even if it didn't, Studio Web would render the filter widget as `undefined` when the activity is reopened.
 

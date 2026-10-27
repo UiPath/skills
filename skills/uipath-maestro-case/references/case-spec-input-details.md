@@ -231,6 +231,8 @@ In              NotIn              Like            NotLike
 IsNull          IsNotNull
 ```
 
+Operators are case-sensitive (`Equals`, not `equals`). By value type: `LessThan` / `LessThanOrEqual` / `GreaterThan` / `GreaterThanOrEqual` for numbers and date-times; `Contains` / `NotContains` / `StartsWith` / `NotStartsWith` / `EndsWith` / `NotEndsWith` / `Like` / `NotLike` for strings; `Is` / `IsNot` for booleans; `In` / `NotIn` with an array `value`; `IsNull` / `IsNotNull` with no `value`.
+
 This is every value the builder knows, not what a field accepts. When `case spec` lists `filter.fields[].operators[]` (or `filter.freeformOperators[]`), pick the row's `operator` from there. A field with `operators: []` takes no row.
 
 ### `WorkflowValue`

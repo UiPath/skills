@@ -42,7 +42,7 @@ Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, 
 
 Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response (or from the create output). `Entry` and `Config` are verbatim subtrees — read them at `.Data.Config.connectorKey`, `.Data.Config.objectName`, `.Data.Entry.eventOperation`. `Connections` is not, so its entries read `.Data.Connections[].Name` / `.Id`.
 
-Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
+Connection creation, ping verification and the `--refresh` retry: [connector-integration.md § Creating a Connection](connector-integration.md#creating-a-connection). BYOA webhook connections and other connection management →uipath-platform.
 
 > **Entity-typed Curated triggers** (e.g. UiPath Data Service `Record Created (Preview)`) carry a placeholder `objectName` in the typecache (`{tenantEntityName|folderEntityName}`). Pick a real entity via `uip is triggers objects <connector-key> <eventOperation>` and pass it as `--object-name` on the `case spec` call in Step 3.
 
@@ -92,7 +92,7 @@ Check `inputs.eventParameters[]` for entries with a `reference` object. Each car
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing the resolved entry. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing the resolved entry. Never reuse an ID resolved against a different connection — silent runtime fault.
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -128,9 +128,9 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 
 A field listed under `inputs.queryParameters` / `inputs.pathParameters` (Step 3) goes in `queryParameters` / `pathParameters` instead. Scope selectors and resource pickers often sit there.
 
-**filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values, and each row's `operator` is one of that field's `operators[]` (with `freeformOperators`, one of those). A field with no `operators[]` (older CLI, or a field the builder doesn't list): pick from the operator table by its type. `operators: []`: write no row on it.
+**filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operators, worked examples (single / multi-AND / nested AND-OR): [case-spec-input-details.md § FilterTree shape](case-spec-input-details.md#filtertree-shape). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values, and each row's `operator` is one of that field's `operators[]` (with `freeformOperators`, one of those). A field with no `operators[]` (older CLI, or a field the builder doesn't list): pick by its type per [`FilterOperator`](case-spec-input-details.md#filteroperator-string-enum). `operators: []`: write no row on it.
 
-`groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the platform examples use string.
+`groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the [examples](case-spec-input-details.md#filter-examples) use string.
 
 The filter tree goes into `registry-resolved.json` under `filter` as a literal JSON object — Phase 3 passes it to `case spec --input-details.filter`. The CLI compiles it into all three trigger filter sinks (see § Trigger filter sinks below).
 

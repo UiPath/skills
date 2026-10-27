@@ -57,7 +57,7 @@ Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, 
 
 Record `connection-id`, `connector-key`, `object-name` from the response (or from the create output).
 
-Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
+Connection creation, ping verification and the `--refresh` retry: [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection). BYOA webhook connections and other connection management →uipath-platform.
 
 ### 3. Discover the operation contract via `case spec`
 
@@ -103,7 +103,7 @@ Check `inputs.{bodyFields, pathParameters, queryParameters}` for entries with a 
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing the resolved entry. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing the resolved entry. Never reuse an ID resolved against a different connection — silent runtime fault.
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -143,7 +143,7 @@ Values can be:
 
 If `spec.filter` exists, author a FilterTree. Otherwise map an SDD filter only to a declared plain field, copying its exact native value into the matching `input-values.queryParameters` or `input-values.bodyParameters` sink (e.g. Outlook `ListEmails` → `queryParameters.filter`). If no field matches, halt and ask; non-interactive runs report a blocker. Never translate or drop the filter, or invent downstream filtering.
 
-Filter tree shape, operator table, anti-patterns, worked examples: [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers (compiler differs — JMESPath instead of CEQL).
+Filter tree shape, operators, worked examples: [case-spec-input-details.md § FilterTree shape](../../../case-spec-input-details.md#filtertree-shape). Same shape applies to triggers (compiler differs — JMESPath instead of CEQL).
 
 The filter tree goes into `registry-resolved.json` under `filter` as a literal JSON object — Phase 3 passes it to `case spec --input-details`. Do NOT pass a raw CEQL string under `queryParameters.where` (or whichever connector-specific name) when authoring a filter — case-tool rejects this at configure time, and the round-trip from Studio Web breaks.
 
