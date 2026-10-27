@@ -18,6 +18,7 @@ An existing Flow JSON can also be decompiled back into TypeScript for editing.
 
 <!--skill-flavor:sdk-project-layout:start-->
 `@uipath/maestro-builder-sdk` is installed globally (`npm install -g`); `examples/` contains authored examples, and `references/` contains the details routed from this guide.
+The examples write scripts as functions, which needs SDK 6.57.0 or later ([`references/script.md`](references/script.md#writing-the-script-as-a-function)).
 A Flow is authored as `.flow-sdk/<Name>.flow.ts` inside its project folder `<Solution>/<Name>/`, and it imports the package directly.
 
 **Authoring files live in `.flow-sdk/`; the compiled artifact does not.**

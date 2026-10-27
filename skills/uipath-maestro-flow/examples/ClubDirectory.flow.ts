@@ -33,7 +33,7 @@ export default flow('club-directory')
   ))
 
   // An ELEMENT's field and the collection's LENGTH, in one expression site.
-  .step('headline', script(headlineScript))
+  .step('headline', script(headline))
 
   // Iterate the collection — `currentItem` is typed from what it holds, so the
   // body's field reads are CHECKED. A loop runs for effect: its results are not
@@ -48,7 +48,7 @@ export default flow('club-directory')
   })
   .build();
 
-function headlineScript($vars: FlowVars) {
+function headline($vars: FlowVars) {
   return { text: $vars.groups.output.length + ' clubs; first up: '
                + $vars.groups.output[0].displayName };
 }

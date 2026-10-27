@@ -9,7 +9,7 @@
  * Generic scenario (a dojo belt rank → what its next grading needs) so it reads
  * as "here is the switch shape", not as any task's expected output.
  */
-import { flow, script, input, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
+import { flow, script, input, out, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('belt-progression')
   .name('BeltProgression')
@@ -52,18 +52,18 @@ export default flow('belt-progression')
 
   .build();
 
-function whiteNext($vars: FlowVars) {
+function whiteNext() {
   return "yellow: 8 basic forms";
 }
 
-function yellowNext($vars: FlowVars) {
+function yellowNext() {
   return "green: 12 forms plus one spar";
 }
 
-function greenNext($vars: FlowVars) {
+function greenNext() {
   return "brown: 20 forms plus board break";
 }
 
-function unknownRank($vars: FlowVars) {
+function unknownRank() {
   return "see the head instructor";
 }
