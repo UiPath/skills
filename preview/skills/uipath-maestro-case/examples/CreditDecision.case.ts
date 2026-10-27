@@ -8,6 +8,9 @@
  * name + folderPath binding pair keyed `Shared.CreditRisk`, and adds the task's
  * own `output` (`=result`) and `Error` (`=Error`) rows ahead of your extracts.
  * Do not use `.process()` for a business rule and do not hand-write those rows.
+ * For a rule built in the same solution as the case, pass
+ * `folder: 'solution_folder'` (the folder `registry search --local` reports):
+ * the binding is keyed `solution_folder.CreditRisk` and its folderPath is empty.
  *
  * An extract's `source` reads from the rule's result object directly:
  * `=RiskDecision.riskBand`, never `=result.RiskDecision.riskBand` or
