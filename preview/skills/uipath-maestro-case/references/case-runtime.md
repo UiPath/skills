@@ -9,13 +9,18 @@ make from syntax alone. Exact signatures remain in the generated API.
 - A connector event without a subscription is a placeholder. A resolved event
   needs a generated descriptor or connector key/event plus symbolic connection
   and folder bindings. For an unresolved placeholder, put the watched object
-  in `object` (it emits the same `context[objectName]` row `sdd convert`
-  writes) and keep the source system and event verbatim in the name or
-  description. Do not fabricate a connector descriptor or node type. For
-  example, `eventTrigger({ name: 'T02', object: 'aged_invoice_cases',
-  description: 'record created' })` keeps the source object while remaining a
-  valid placeholder. `object` and `subscription` are mutually exclusive. Only
-  a live subscription proves the payload shape.
+  in `object` (`@uipath/maestro-builder-sdk` 6.32.6 or later; it emits the
+  same `context[objectName]` row `sdd convert` writes) and keep the source
+  system and event verbatim in the name or description. Do not fabricate a
+  connector descriptor or node type. This example keeps the source object
+  while remaining a valid placeholder:
+
+  ```ts
+  eventTrigger({ name: 'T02', object: 'aged_invoice_cases', description: 'record created' })
+  ```
+
+  `object` and `subscription` are mutually exclusive. Only a live
+  subscription proves the payload shape.
 
 ## Human and on-demand work
 
