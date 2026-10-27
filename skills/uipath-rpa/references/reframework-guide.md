@@ -2,6 +2,15 @@
 
 Patterns for building and customizing Robotic Enterprise Framework projects on Windows, Portable, or Legacy targets. State-machine internals are in [legacy/activity-docs/_REFRAMEWORK.md](legacy/activity-docs/_REFRAMEWORK.md) — that guide's architecture sections are mode-agnostic.
 
+## Template Configuration File
+
+The configuration file depends on the template the project was created from. Check which file `Data/` holds before following any configuration step below.
+
+| Template | File | Holds |
+|---|---|---|
+| Windows and Portable, template 26.10 | `Data/Config.json` | Objects `Settings` and `Constants`. Values keep their JSON type (number, `true`/`false`, text). No assets and no queue name: the queue is selected on *Get Transaction Item* |
+| Windows - Legacy, and earlier templates (template 25.10 ships it for Windows too) | `Data/Config.xlsx` | Sheets `Settings`, `Constants` (`Name`/`Value` rows) and `Assets` (Orchestrator asset names `InitAllSettings.xaml` reads at start). `Settings` holds `OrchestratorQueueName` |
+
 ## When to Use REFramework
 
 Use:
@@ -18,7 +27,7 @@ Don't use:
 
 | State | Role |
 |-------|------|
-| `Init` | `InitAllSettings.xaml` reads `Config.xlsx` → `Config` dictionary; `KillAllProcesses.xaml`; `InitAllApplications.xaml` opens/authenticates apps. |
+| `Init` | `InitAllSettings.xaml` reads the configuration file → `Config` dictionary; `KillAllProcesses.xaml`; `InitAllApplications.xaml` opens/authenticates apps. |
 | `Get Transaction Data` | `GetTransactionData.xaml` returns the next item or `Nothing`. `Nothing` → End Process. |
 | `Process Transaction` | `Process.xaml` (your business logic) → `SetTransactionStatus.xaml` (Success / BusinessRuleException / System Exception). |
 | `End Process` | `CloseAllApplications.xaml` runs on every exit (success or abort). |
@@ -31,7 +40,9 @@ The default and most common mode. Dispatcher project populates an Orchestrator q
 
 **Wiring — keep the template as-is.** The shipped REFramework is built for this mode end-to-end.
 
-1. `Config.xlsx` Settings sheet: set `OrchestratorQueueName` (case-sensitive, must match the queue in Orchestrator) and optionally `OrchestratorQueueFolder`.
+1. Select the queue.
+   - `Config.json` template: select the queue on *Get Transaction Item* in `Framework\GetTransactionData.xaml`; leave its folder empty to use the process's folder. The activity ships empty, and validation fails with `Value for a required activity argument 'Queue name' was not supplied` until a queue is selected. Studio records the queue as a resource of the project.
+   - `Config.xlsx` template: set `OrchestratorQueueName` in the Settings sheet (case-sensitive, must match the queue in Orchestrator) and optionally `OrchestratorQueueFolder`.
 2. `Framework\GetTransactionData.xaml`: uses the `Get Transaction Item` activity. Returns a `QueueItem` or `Nothing` (queue empty → End Process).
 3. `Framework\Process.xaml`: implement business logic. Access fields via:
    ```vb
@@ -52,7 +63,7 @@ Single robot, no Orchestrator queue. Source data is an Excel/CSV/DataTable. The 
 
 **Wiring — customize these surfaces.**
 
-1. `Config.xlsx` Settings sheet: blank or remove `OrchestratorQueueName`; add `DataSourcePath` and `DataSourceSheet`.
+1. Configuration: add `DataSourcePath` and `DataSourceSheet` to `Settings`. `Config.xlsx` template: also blank or remove `OrchestratorQueueName`.
 2. `Framework\InitAllSettings.xaml` (or a custom init step): Read Range → `io_dt_TransactionData`. **Read the source once**, not per transaction — repeated reads cause file locks and waste cycles.
 3. `Framework\GetTransactionData.xaml`:
    ```vb
@@ -62,7 +73,7 @@ Single robot, no Orchestrator queue. Source data is an Excel/CSV/DataTable. The 
      out_TransactionItem = io_dt_TransactionData.Rows(in_TransactionNumber - 1)
    End If
    ```
-   Assumes `TransactionNumber` is 1-indexed (Config.xlsx default `TransactionNumber = 1`, incremented by `SetTransactionStatus.xaml`). If your template starts at 0, use `>=` and drop the `- 1`.
+   Assumes `TransactionNumber` is 1-indexed (`Main.xaml` starts it at 1; `SetTransactionStatus.xaml` increments it). If your template starts at 0, use `>=` and drop the `- 1`.
 4. `Framework\Process.xaml`: access fields via `in_TransactionItem("ColumnName").ToString()`.
 5. `Framework\SetTransactionStatus.xaml`: **delete the three Set Transaction Status activities.** They target Orchestrator queues and have no purpose here. Replace with a status-column write-back to the source DataTable, an output Excel/CSV, or `Log Message` calls keyed by row index.
 
@@ -74,7 +85,7 @@ One execution, no transaction loop. Useful for scheduled jobs that just need REF
 
 **Wiring.**
 
-1. `Config.xlsx`: blank `OrchestratorQueueName`.
+1. `Config.xlsx` template: blank `OrchestratorQueueName`. `Config.json` template: no configuration change; the item fetch below replaces *Get Transaction Item*.
 2. `Framework\GetTransactionData.xaml`: return a sentinel on call 1, `Nothing` on call 2:
    ```vb
    If in_TransactionNumber = 1 Then
@@ -109,10 +120,12 @@ Counter semantics — `MaxRetryNumber` (per transaction, resets per item) vs `Ma
 
 ## Configuration Management
 
-- Store all configurable values in `Config.xlsx` — three sheets: `Settings` (key-value, edited per environment), `Constants` (rarely change), `Assets` (Orchestrator asset names, fetched at runtime).
-- Sensitive values (credentials, API keys, tokens) → **Orchestrator Assets**, never `Config.xlsx` cell values.
-- Asset names on the Assets sheet must match Orchestrator exactly (case-sensitive).
-- Config values come back as `String` — convert explicitly: `CInt(in_Config("MaxRetryNumber"))`, `CDate(in_Config("Deadline"))`.
+- Store all configurable values in the configuration file ([§ Template Configuration File](#template-configuration-file)): `Settings` for values edited per environment, `Constants` for values that rarely change.
+- Sensitive values (credentials, API keys, tokens) → **Orchestrator Assets**, never values in the configuration file: it ships in the package in clear text.
+- Assets:
+  - `Config.xlsx` template: list them on the Assets sheet; `InitAllSettings.xaml` loads each into `Config` at start. Asset names must match Orchestrator exactly (case-sensitive).
+  - `Config.json` template: the file has no assets section. Read each asset with *Get Asset* or *Get Credential* in the workflow that uses it (credentials typically in `InitAllApplications.xaml`).
+- Convert every value explicitly, as the template does: `Convert.ToInt32(in_Config("MaxRetryNumber"))`, `Convert.ToBoolean(in_Config("ShouldMarkJobAsFaulted"))`, `CDate(in_Config("Deadline"))`. `Config.xlsx` values arrive as `String`; `Config.json` values arrive as `Int64`, `Boolean` or `String`, so a C# unboxing cast such as `(int)in_Config["MaxRetryNumber"]` throws `InvalidCastException`.
 - Guard missing keys: check `in_Config.ContainsKey(<name>)` or set defaults before first read.
 - Never hardcode paths, URLs, credentials, or environment-specific settings in workflows. Always indirect through `in_Config(<name>)`.
 
@@ -146,7 +159,7 @@ Performer workflows must be safe to retry. The framework re-executes `Process.xa
 
 ### `Config.xlsx OrchestratorQueueName="ProcessABCQueue"` template leftover
 
-The shipped template ships with the sample value `OrchestratorQueueName = "ProcessABCQueue"`. Tabular and single-shot users rarely overwrite it. A Config-string check (e.g., `Not String.IsNullOrEmpty(in_Config("OrchestratorQueueName").ToString())`) is therefore insufficient on its own — the leftover sample value passes. **Blank or remove the row** in non-queue projects.
+The `Config.xlsx` template ships with the sample value `OrchestratorQueueName = "ProcessABCQueue"`. Tabular and single-shot users rarely overwrite it. A Config-string check (e.g., `Not String.IsNullOrEmpty(in_Config("OrchestratorQueueName").ToString())`) is therefore insufficient on its own — the leftover sample value passes. **Blank or remove the row** in non-queue projects.
 
 ### Type migration cascade
 
@@ -191,7 +204,7 @@ TypeOf in_TransactionItem Is UiPath.Core.QueueItem AndAlso DirectCast(in_Transac
 Before first run:
 
 - [ ] **Pick execution mode** — queue-driven / tabular / single-shot.
-- [ ] **Set or blank `OrchestratorQueueName`** in `Config.xlsx` per mode. Sample value `ProcessABCQueue` must not survive into non-queue projects.
+- [ ] **Queue per mode.** Queue-driven: select the queue on *Get Transaction Item* (`Config.json` template) or set `OrchestratorQueueName` (`Config.xlsx` template). Tabular and single-shot, `Config.xlsx` template: blank `OrchestratorQueueName`; the sample value `ProcessABCQueue` must not survive into non-queue projects.
 - [ ] **Configure `GetTransactionData.xaml`** for the chosen mode. Never return `New QueueItem()` as a sentinel in non-queue modes — return `Nothing` (terminating) or a non-`QueueItem` value.
 - [ ] **For tabular / single-shot:** delete the three Set Transaction Status activities from `SetTransactionStatus.xaml`. Replace with status-column write-back or log-only.
 - [ ] **For tabular / single-shot:** migrate every `TransactionItem` argument type (see [Gotchas § type migration](#type-migration-cascade)).
