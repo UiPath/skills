@@ -18,7 +18,7 @@ Consult this reference when planning or implementing any of:
 2. `uip maestro case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uip/case-resources/`.
 3. A healthy Integration Service connection for the connector. If `Connections` is empty after `get-connection`, offer to create one (Step 2) rather than failing — see [§ Creating a Connection](#creating-a-connection).
 
-Connection creation, ping verification and the `--refresh` retry: [§ Creating a Connection](#creating-a-connection). BYOA webhook connections and other connection management →uipath-platform.
+Connection selection, health check and creation: [§ Step 2](#step-2--resolve-the-connection). BYOA webhook connections and other connection management →uipath-platform.
 
 ## Resolution Pipeline
 
@@ -59,6 +59,8 @@ Output: `{ Entry, Config, Connections }` where:
    - **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
 3. **Create chosen** → create the connection, then continue to Step 3 with the returned `ConnectionId`. Procedure — background `is connections create`, capture `ConnectionId`, headless fallback: [§ Creating a Connection](#creating-a-connection).
 4. **Skip / create declined or failed / non-interactive run** → mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks/registry-resolved.json` and omit its `input-values` key. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Note it in the completion report. See [placeholder-tasks.md](placeholder-tasks.md). A failed `is connections create` MUST route here after surfacing the error (§ Creating a Connection step 4) — **planning continues to a placeholder, it never stalls.**
+
+**Health-check an existing connection once chosen** (rules 1–2): `uip is connections ping "<id>" --output json`. On `Result: "Failure"`, re-authenticate with `uip is connections edit "<id>" --output json` (browser OAuth, run it in the background like create), then ping again.
 
 #### Creating a Connection
 

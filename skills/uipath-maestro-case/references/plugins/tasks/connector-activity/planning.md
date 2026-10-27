@@ -57,7 +57,7 @@ Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, 
 
 Record `connection-id`, `connector-key`, `object-name` from the response (or from the create output).
 
-Connection creation, ping verification and the `--refresh` retry: [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection). BYOA webhook connections and other connection management →uipath-platform.
+Connection selection, health check and creation: [connector-integration.md § Step 2](../../../connector-integration.md#step-2--resolve-the-connection). BYOA webhook connections and other connection management →uipath-platform.
 
 ### 3. Discover the operation contract via `case spec`
 

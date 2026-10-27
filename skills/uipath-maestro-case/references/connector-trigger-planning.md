@@ -42,7 +42,7 @@ Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, 
 
 Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response (or from the create output). `Entry` and `Config` are verbatim subtrees — read them at `.Data.Config.connectorKey`, `.Data.Config.objectName`, `.Data.Entry.eventOperation`. `Connections` is not, so its entries read `.Data.Connections[].Name` / `.Id`.
 
-Connection creation, ping verification and the `--refresh` retry: [connector-integration.md § Creating a Connection](connector-integration.md#creating-a-connection). BYOA webhook connections and other connection management →uipath-platform.
+Connection selection, health check and creation: [connector-integration.md § Step 2](connector-integration.md#step-2--resolve-the-connection). BYOA webhook connections and other connection management →uipath-platform.
 
 > **Entity-typed Curated triggers** (e.g. UiPath Data Service `Record Created (Preview)`) carry a placeholder `objectName` in the typecache (`{tenantEntityName|folderEntityName}`). Pick a real entity via `uip is triggers objects <connector-key> <eventOperation>` and pass it as `--object-name` on the `case spec` call in Step 3.
 
