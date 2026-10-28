@@ -79,7 +79,10 @@ SECTION_BUDGETS = {
 # The whole-file caps hold.
 # Lifecycle +150 in skills#4226 (3,284 bytes, +~125 / ~49 tok): the round trip
 # runs `check --baseline` before compile, since compile no longer lints.
-STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_600, "Lifecycle": 3_350}
+# +100 more in the #4277 review (3,430 bytes, ~39 tok): a pointer for a
+# refused `--baseline` (Studio Web owns its SDK copy, so the agent cannot
+# upgrade its way out and would otherwise stop at step 2 on every edit turn).
+STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_600, "Lifecycle": 3_450}
 
 BYTES_PER_TOKEN = 2.56
 

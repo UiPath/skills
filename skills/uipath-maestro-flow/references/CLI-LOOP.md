@@ -71,8 +71,10 @@ source it reports every connector-input and binding refusal `compile` would
 raise), compile to emit, then run the product's static check on the artifact.
 There is no compiled-artifact `check`; `validate` is that rung. `compile` does
 not run `check` (it writes any flow it can serialize), so a clean `check` is
-the gate: never go on to `compile` with a `check` error left. In a brownfield
-edit, add `--baseline <original.flow>`
+the gate: never go on to `compile` with a `check` error left. The one
+exception is an error whose own message says when to ignore it, in a case
+that applies (for example `INLINE_AGENT_PROMPT_JSON_TEXT` on a prompt that
+mentions JSON only as data). In a brownfield edit, add `--baseline <original.flow>`
 ([brownfield.md](brownfield.md#check-only-what-you-changed-check---baseline)).
 
 The full sequence, in order — `registry prepare` appears only where `check`

@@ -94,8 +94,9 @@ cp <Name>.flow .flow-sdk/original/<Name>.flow
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o .flow-sdk/baseline/<Name>.flow
 # 2. Edit .flow-sdk/<Name>.flow.ts narrowly (no .layout() for added steps: merge places them), then check until clean
+#    (--baseline refused, or step 1 stopped: references/brownfield.md#check-only-what-you-changed-check---baseline)
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline .flow-sdk/original/<Name>.flow
-# 3. Compile the edit (compile runs no check: step 2 is the gate), then merge only the delta into the target
+# 3. Compile the edit (it runs no check: step 2 is the gate), then merge the delta into the target
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o .flow-sdk/edited/<Name>.flow
 uip maestro flow merge .flow-sdk/edited/<Name>.flow --original <Name>.flow --baseline .flow-sdk/baseline/<Name>.flow -o <Name>.flow
 # 4. The product's own static check on the file the canvas shows

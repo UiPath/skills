@@ -32,7 +32,10 @@ so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:check-baseline-lowering:end-->
 
 <!--skill-flavor:check-baseline-sdk-upgrade:start-->
-so tell the user: Studio Web owns the SDK copy.
+and Studio Web owns the SDK copy, so tell the user. Until it is upgraded, run
+`check --source` without `--baseline` and fix only the errors on nodes you
+changed. If a compile then stops on a node you did not change, stop: name the
+node and its code to the user.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
 
 <!--skill-flavor:install-agent-files:start-->

@@ -48,6 +48,9 @@ cannot make: which node, which topology, what an output means, and what to ask.
    source, and again after the last edit. `compile` does not run `check`, so a
    clean `check` comes before every `compile` (in a brownfield edit, with
    `--baseline <original.flow>`: [`brownfield.md`](brownfield.md#check-only-what-you-changed-check---baseline)).
+   The exception is an error whose message says when to ignore it, in a case
+   that applies (a false positive such as `INLINE_AGENT_PROMPT_JSON_TEXT` on a
+   prompt that mentions JSON only as data).
    Emit-only mode is the exception: there `check` refuses and `validate` is
    the gate. Treat every `validate` warning as a
    failure unless the loop reference names it as reviewed.
