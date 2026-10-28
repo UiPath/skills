@@ -5,8 +5,8 @@ name: skill-lint
 # and as one PR comment, updated on every push. New errors fail the check; new warnings do not block. To make a
 # warning rule blocking, raise it to `error` in .skill-lint.yaml (a reviewed change in this repo).
 #
-# Access: the repository's existing GH_PAT reads the internal linter, the way run-coder-eval.yml reads
-# coder_eval_uipath. GitHub gives no secrets to fork PRs, so those are skipped, as in claude-pr-review.yml and
+# Access: PAT_LINTER, a fine-grained token with read-only Contents on UiPath/skill-linter and nothing else, reads
+# the internal linter. GitHub gives no secrets to fork PRs, so those are skipped, as in claude-pr-review.yml and
 # smoke-skills.yml; a skipped check counts as passing. The linter config always comes from the base branch, so a
 # PR's edits to it take effect only once merged. The PR is checked out as plain files in ./pr and nothing from it
 # is executed: the linter only reads them.
@@ -61,13 +61,13 @@ jobs:
             echo "{}" > "$RUNNER_TEMP/skill-lint.yaml"
           fi
 
-      # The internal linter, with the token that already reads UiPath's internal repositories. The only step that
-      # sees GH_PAT; persist-credentials: false keeps it out of the checkout.
+      # The internal linter, read with PAT_LINTER (read-only, this one repository). The only step that
+      # sees PAT_LINTER; persist-credentials: false keeps it out of the checkout.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           repository: UiPath/skill-linter
           ref: 2cf53170501973c65b5787fbdc4ee47725500c02  # skill-linter#4, pinned; bump on purpose after reading its CHANGELOG
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.PAT_LINTER }}
           path: linter
           persist-credentials: false
 
@@ -97,7 +97,7 @@ jobs:
       comment: ${{ steps.comment.outputs.body }}
 
   # Posts the result on the PR, or updates the comment it posted before. The only job that can write to the PR;
-  # it never sees GH_PAT or the PR's files.
+  # it never sees PAT_LINTER or the PR's files.
   comment:
     name: Post the skill-lint result on the PR
     needs: skill-lint
