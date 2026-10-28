@@ -181,7 +181,7 @@ uip or queue-items get <item-unique-key> --folder-path "Finance" --output json
 
 > `queue-items list` is a filtered `GET /odata/QueueItems`, which Orchestrator rate-limits per tenant. Do not poll it in a tight loop. Keep `--limit` at 100 or below (the CLI refuses a larger one with `invalid_argument` before any call), and keep `SpecificContent` under 256,000 characters. See [api-limits.md](api-limits.md).
 
-Every `queue-items` command that takes an item key wants the item's **`UniqueKey`** (a GUID), not the numeric `Id` that `--all-fields` also prints. A numeric Id, or any key that is not a GUID, fails with `invalid_argument` before any call and names the `UniqueKey` field.
+`get`, `update`, `delete`, `delete-bulk`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-history` and `has-video` want the item's **`UniqueKey`** (a GUID), not the numeric `Id` that `--all-fields` also prints. A numeric Id, or any key that is not a GUID, fails with `invalid_argument` before any call and names the `UniqueKey` field. `get-last-retry` is the exception: it takes the item `Key` (see [Get History and Retry Info](#get-history-and-retry-info)).
 
 Filter with `--queue-name` (exact match), `--queue-definition-key` (GUID), or `--status` (New, InProgress, Failed, Successful, Abandoned, Retried, Deleted).
 
