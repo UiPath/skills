@@ -55,7 +55,8 @@ step.
 `flow debug` executes the flow for real: it sends the emails, posts the
 messages, calls the APIs. It is not a validation step — `validate` is. When a
 user can answer and did not ask for the run, ask before each run, even when the
-request is for a flow that works. With nobody to ask, run it when the request is
+request is for a flow that works: a run that timed out keeps going in the host,
+so a re-run can overlap it. With nobody to ask, run it when the request is
 for a flow that works; otherwise report the flow as unverified rather than
 letting a passing `validate` stand as the result. The reply is plain text:
 [CLI-LOOP.md — Reading the reply](CLI-LOOP.md#reading-the-reply).

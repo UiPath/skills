@@ -37,8 +37,8 @@ cannot make: which node, which topology, what an output means, and what to ask.
    question. `resources.md` covers reference-field lookups; finish its
    pagination loop before reporting "not found".
 4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit
-   with `compile -o` for a new flow; a `.flow` that existed before this turn is
-   re-emitted by decompile and merge, never `compile -o` onto it
+   with `compile -o` for a new flow; a non-empty `.flow` that existed before this
+   turn is re-emitted by decompile and merge, never `compile -o` onto it
    ([`brownfield.md`](brownfield.md)). Never hand-edit the emitted `.flow`, `content/*.bpmn`,
    `bindings_v2.json`, `entry-points.json`, `operate.json` or
    `package-descriptor.json` — the CLI regenerates them, and the next compile
@@ -210,8 +210,14 @@ When authoring is done, report:
 3. **Loop status** — the last `check`, `compile` and `validate` results,
    including any warning you judged acceptable and why.
 4. **Placeholders** — each `mock()` and the capability it stands for.
-5. **Connections** — per connector, the connection and folder `prepare` bound
-   (it can pick one silently), or what is missing or still to prepare.
+5. **Connections** — per connector, the connection and folder `prepare` bound,
+   or what is missing or still to prepare. `prepare` prints
+   `connection: <Name> (<id>)`: it binds one from your own folder,
+   `--connection-folder` or the solution's record, and says which. When it
+   refuses with several candidates, ask a user who can answer. Headless, pass
+   `--connection-folder` for the folder the request names, else the first
+   candidate line's `--connection-id`, and list that choice under Open
+   questions as **[REQUIRED]**.
 6. **Open questions** — every decision the request left open, each marked
    **[REQUIRED]** or **[OPTIONAL]**.
 <!--skill-flavor:completion-next:start-->

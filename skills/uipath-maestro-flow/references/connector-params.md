@@ -535,10 +535,9 @@ connection, so that is reported for you to choose.
 message names the connection it read and, once every candidate has been tried,
 the one command that shows what the collection holds. Tenant discovery is still
 not a phase of this loop. When the candidates share a name or several resolve,
-ask a user who can answer which one to use, else pick one, and pass the
-`--connection-id <id>` its candidate line prints; `bindings.json` is written on
-that route too. Report what it bound as
-[completion output](author.md#completion-output) item 5 says. The entries are named after the `connection:` and
+choose as [completion output](author.md#completion-output) item 5 says, and pass
+the `--connection-id <id>` its candidate line prints; `bindings.json` is written
+on that route too. The entries are named after the `connection:` and
 `folder:` labels your source already uses for this connector, which
 [must differ](bindings.md#where-both-values-come-from); a source
 that uses none gets `<connector's last segment>`

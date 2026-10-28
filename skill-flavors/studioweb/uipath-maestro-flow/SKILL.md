@@ -62,7 +62,7 @@ Integrations with non-UiPath systems use connectors. **Choose the node before wr
 Run each command from the project folder `/solution/<Project>`. `prepare` writes `.flow-sdk/connectors-local/<key>.ts` and `.flow-sdk/bindings.json` there.
 
 1. **Describe the operation:** `uip maestro registry describe <node-type> --output plain`. The page gives the inputs, outputs, lookup fields and the code to write.
-2. **Choose the connection:** `uip is connections list <connector-key> --all-folders --output json`. When more than one connection is `Enabled`, ask the user which one to use. Then pass `--connection-id <id>` to `prepare`, and name the connection and its folder in your final response. `prepare` refuses a connection in state `Failed`.
+2. **Choose the connection:** `uip is connections list <connector-key> --all-folders --output json`. When more than one connection is `Enabled`, ask the user which one to use. Then pass `--connection-id <id>` to `prepare`, and report it ([completion output](references/author.md#completion-output) item 5). `prepare` refuses a connection in state `Failed`.
 3. **Prepare the action:** `uip maestro registry prepare <connector-key> --action <action>`. For each lookup field, add `--resolve <field>:<key|name>=<value>`. Then run it again with `-f <field>=<value>` for all of those fields. The hints of `prepare` give the exact next command: run it.
 4. **Author with the prepared descriptor**, as the `next:` lines of `prepare` show. The import path is relative to the draft in `.flow-sdk/`:
 
