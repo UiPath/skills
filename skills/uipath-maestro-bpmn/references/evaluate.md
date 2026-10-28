@@ -160,11 +160,15 @@ against a solution already provisioned in Studio Web — that skips the package 
 upload (see below); `--folder-key` to run outside the personal workspace; and
 `--entry-point` to override the set's pinned start event for one run.
 
-`--wait` polls to a terminal state (default 600s) and then prints results. A
-terminal `Failed` or `WorkloadFailed` set-run prints the per-data-point results,
-then a failure envelope and a **non-zero exit** — so `--wait` in CI does not
-read a failed workload as success. `WorkloadFailed` means the process itself
-failed to execute; triage it as a runtime fault via
+`--wait` polls to a terminal state (default 600s) and then prints a **single**
+JSON envelope on stdout (`Code: BpmnEvalRunCompleted`) — the run summary with the
+per-data-point rows folded into `Data.Results`, so the result is directly
+`JSON.parse`-able in CI. (This differs from `uip maestro flow eval`, which emits
+separate Started/Completed/Results envelopes.) A terminal `Failed` or
+`WorkloadFailed` set-run emits one failure envelope of the same shape (results
+still in `Data.Results`) and a **non-zero exit** — so `--wait` in CI does not read
+a failed workload as success. `WorkloadFailed` means the process itself failed to
+execute; triage it as a runtime fault via
 [diagnose/CAPABILITY.md](diagnose/CAPABILITY.md), not an evaluator problem. A
 completed run whose evaluators merely scored low is still a success: the eval
 ran. `run results` takes `--only-failed`, `--verbose` (judge justifications),
