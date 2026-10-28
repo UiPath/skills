@@ -11,7 +11,7 @@ Accept anything from one sentence to several pages. Do not ask the user to elabo
 - **One sentence:** infer what you can, then ask one focused round of follow-ups for the largest gaps.
 - **Several paragraphs:** extract methodically; follow-ups often unnecessary.
 - **Contradictions:** name the specific conflict in the follow-up round. Do not guess which requirement wins.
-- **Existing documents (SOP, PDD, process map, transcript, TO-BE):** treat the document as the description. A PDD is read with [pdd-analysis-guide.md](pdd-analysis-guide.md); it is input only — the planner never writes a PDD.
+- **Existing documents (SOP, PDD, process map, transcript, TO-BE):** treat the document as the description. A PDD is read with the [pdd-analysis-guide.md](pdd-analysis-guide.md) sections `SKILL.md` § Read Plans names; it is input only — the planner never writes a PDD.
 - **An agreed SDD** (`## Planner Handoff` with `Status: ready`): the SDD is the design — Step 1b.
 - **A goal, not a process** (a self-paced workshop, a demo, trying a product or an application): propose scenarios first (Step 1a); the picked scenario is the description.
 

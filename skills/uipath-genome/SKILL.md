@@ -1,7 +1,7 @@
 ---
 name: uipath-genome
-description: "UiPath automation genome builder (`*-genome.md`): always invoke to build, execute or implement a genome file, before any skill it names. EXECUTE a component or process genome — the coding-agent spec uipath-planner writes — through the owning skills: configuration questions, build, a verdict per acceptance criterion, open items and cutover. A genome extracted from a UiPath project or another framework's export builds as a refactor or migration: UI targets and test data migrated, characterization tests, run modes, comparison. Triggers: 'build/execute/implement this genome', 'build from the blueprint', 'run the migration from this genome', 'execute the refactor'. Write, extract, document or edit a genome, or design from an idea/SOP/PDD/SDD→uipath-planner. Build without a genome→that artifact's skill. Legacy activity upgrade→uipath-activity-migrator. Quality review→uipath-review."
-when_to_use: "User points at a *-genome.md file (or one whose first line is `<!-- UIPATH-AUTOMATION-GENOME`) and asks to build, execute, implement or follow it. uipath-planner hands over a genome it authored or extracted for a build, a migration or a refactor."
+description: "UiPath genome builder: EXECUTE an existing automation genome (`*-genome.md`) — build, implement, or run the migration or refactor it describes. Write, draft, author, edit, extract or document a genome, or turn an idea/SOP/PDD/SDD into one→uipath-planner (it writes every genome; never write or change one here). Builds a component or process genome — the coding-agent spec uipath-planner writes — through the owning skills, invoked before any skill it names: configuration questions, build, a verdict per acceptance criterion, open items and cutover. A genome extracted from a UiPath project or another framework's export builds as a refactor or migration: UI targets and test data migrated, characterization tests, run modes, comparison. Triggers: 'build/execute/implement this genome', 'build from the blueprint', 'run the migration from this genome', 'execute the refactor'. Build without a genome→that artifact's skill. Legacy activity upgrade→uipath-activity-migrator. Quality review→uipath-review."
+when_to_use: "User points at an existing *-genome.md file (or one whose first line is `<!-- UIPATH-AUTOMATION-GENOME`) and asks to build, execute, implement or follow it, or uipath-planner hands over a genome it wrote for a build, a migration or a refactor. Not for writing, drafting or editing a genome — that is uipath-planner."
 ---
 
 # UiPath Genome — build automations from their genome
@@ -18,9 +18,11 @@ Genome: markdown specification an AI agent consumes to build or rebuild an autom
 
 ## Mode Detection
 
-1. **`*-genome.md` path plus build intent** ("build", "execute", "implement", "follow") → **Execute**. Read [execution-guide.md](references/execution-guide.md). Executing a genome extracted from a UiPath source is a refactor, and so is executing one from another framework when the request asks for a refactor ([refactor-guide.md](references/refactor-guide.md)).
-2. **Everything that writes or changes a genome is `uipath-planner`'s**: authoring one from an idea, a description, an SOP, a PDD, a TO-BE or an SDD; proposing scenarios for a goal; extracting one from a UiPath project or solution or another framework's export (documentation, estate assessment, the first step of a refactor or migration); editing one, partial re-extraction included. Hand the request to `uipath-planner`; once it has written the genome, Execute here. When `uipath-planner` is not installed, say that writing the genome needs it and stop.
-3. **A request to refactor or migrate an automation with no genome yet** → `uipath-planner` extracts first (row 2), then Execute here. An upgrade of a Windows-Legacy project's activities in place stays `uipath-activity-migrator`'s.
+Rows are checked in order; the first that matches decides.
+
+1. **A request that writes or changes a genome → invoke `uipath-planner` with the request, then stop.** Writing or changing a genome is `uipath-planner`'s, never this skill's: authoring one from an idea, a description, an SOP, a PDD, a TO-BE or an SDD; proposing scenarios for a goal; extracting one from a UiPath project or solution or another framework's export (documentation, estate assessment, the first step of a refactor or migration); editing one, partial re-extraction included. This holds even when the request asks for the file to be edited directly or names the exact change: make no change to the genome file here, and read no guide of this skill for it. Once `uipath-planner` has written the genome, a build of it is row 2. When `uipath-planner` is not installed, say that writing the genome needs it and stop.
+2. **`*-genome.md` path plus build intent** ("build", "execute", "implement", "follow") → **Execute**. Read [execution-guide.md](references/execution-guide.md). Executing a genome extracted from a UiPath source is a refactor, and so is executing one from another framework when the request asks for a refactor ([refactor-guide.md](references/refactor-guide.md)).
+3. **A request to refactor or migrate an automation with no genome yet** → `uipath-planner` extracts first (row 1), then Execute here. An upgrade of a Windows-Legacy project's activities in place stays `uipath-activity-migrator`'s.
 
 A request to design a solution and derive tasks, or any input this list assigns to another skill, is that skill's job. Say so and stop.
 
@@ -87,5 +89,5 @@ Each rule names its subject and the one guide that states it in full; the guide'
 
 ## Anti-patterns
 
-1. **Writing, extracting or editing a genome here.** That is `uipath-planner`'s Author, Extract and Edit lanes (§ Mode Detection); an in-place activity upgrade of a Legacy project is `uipath-activity-migrator`'s.
+1. **Writing, extracting or editing a genome here — including a direct edit the user names.** That is `uipath-planner`'s Author, Extract and Edit lanes (§ Mode Detection row 1); an in-place activity upgrade of a Legacy project is `uipath-activity-migrator`'s.
 2. **Editing the genome to make a build pass.** The genome is read-only at execution; the gap goes into the report and back to `uipath-planner` (Critical Rule 1).
