@@ -9,3 +9,7 @@
 <!--skill-flavor:field-settings-sdk-upgrade:start-->
   so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:field-settings-sdk-upgrade:end-->
+
+<!--skill-flavor:action-schema-sdk-upgrade:start-->
+so tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:action-schema-sdk-upgrade:end-->

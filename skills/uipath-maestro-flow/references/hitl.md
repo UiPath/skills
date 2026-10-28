@@ -269,11 +269,20 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
 ## Action App inputs and answers
 
 On `variant: 'action-app'`, give the app's action schema as `app.actionSchema`.
-For a coded action app, copy the contents of its `action-schema.json`;
-otherwise copy the platform's action schema (the solution resource's
-`spec.actionSchema`, or what the Apps API returns). That one is stored as a
-JSON string: parse it and pass the object, or `check` refuses it
-(`HITL_APP_SCHEMA_INVALID`). Both spellings are accepted once they are objects.
+Two spellings are accepted; pass either one as it is and do not convert
+between them:
+
+- a coded action app's `action-schema.json`: each section (`inputs`,
+  `outputs`, `inOuts`, `outcomes`) is `{ type: 'object', properties: { <name>:
+  { type, required? } } }`;
+- the platform's action schema, the solution resource's `spec.actionSchema`
+  (`resources/solution_folder/app/codedAction/<App>.json`): each section is an
+  array of `{ name, type: 'System.String', required, isList }`. It is stored as
+  a JSON string: parse it and pass the object, or `check` refuses it
+  (`HITL_APP_SCHEMA_INVALID`).
+
+If neither file is available, ask the user for the schema; never write one by
+hand.
 
 ```ts
 .step('review', hitl({
@@ -317,15 +326,20 @@ JSON string: parse it and pass the object, or `check` refuses it
   `app.inputSchema`. Keep that as it is; give `actionSchema` or `inputSchema`,
   not both.
 
-Needs `@uipath/maestro-builder-sdk` 6.59.1 or later; an older SDK
-has no `actionSchema` on `app`.
+Needs `@uipath/maestro-builder-sdk` 6.59.1 or later; an older SDK has no
+`actionSchema` on `app`, so TypeScript rejects the key (check that
+`dist/api-index.md` lists `PlatformActionSchema`),
+<!--skill-flavor:action-schema-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:action-schema-sdk-upgrade:end-->
 
 ## Variant judgment
 
 Use the node variant explicitly named by the scenario. The default and
 quick-form variants own their fields in the Flow; action-app delegates the form
 to an already-deployed app. For an app task, resolve the app key, name, folder,
-and argument names from the same tenant resource.
+and argument names from the same tenant resource, and give its schema as
+`app.actionSchema` ([Action App inputs and answers](#action-app-inputs-and-answers)).
 
 ## Evidence boundary
 
