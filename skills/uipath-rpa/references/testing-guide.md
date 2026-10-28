@@ -397,9 +397,7 @@ MyProject/
 2. **Templates do not execute independently** — they only run when associated with a test case
 3. **One template per execution** — a test case runs with one execution template at a time; select it in Test Explorer before running
 4. **Template arguments override test case defaults** — use this to inject environment-specific values (URLs, credentials, timeouts)
-5. **The case's identity at run time** — Get Current Job Info's `WorkflowName` is the case's file name, without folder or extension (verified under `uip rpa run`). Take its folder from the `project.json` `fileInfoCollection` entry that has a `testCaseId`: a packed project names the case under `.generated\`, and the package also holds the case's own `.xaml` at its project path
-6. **The Placeholder may sit in a loop** — a Do While around the setup hook and the Placeholder runs both again from the start, for a restart after a failure; the case is still merged once. The project's Global Exception Handler runs before the template's Catch for a fault in the case ([error-handling-guide.md § 8](error-handling-guide.md#8-global-exception-handler-geh))
-7. **Mind the path length** — `pack` writes every bound case again under `.generated\`, eleven characters deeper; keep the deepest case path, with that prefix, under the 260-character Windows limit
+5. **Mind the path length** — `pack` writes every bound case again under `.generated\`, eleven characters deeper; keep the deepest case path, with that prefix, under the 260-character Windows limit
 
 ### What NOT to Do with Execution Templates
 

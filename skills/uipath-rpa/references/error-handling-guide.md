@@ -187,7 +187,7 @@ Register in `project.json` under `runtimeOptions`:
 | `Continue` | **Re-throw**; normal propagation/local Catch handles it. It does not mean skip. |
 | `Ignore` | Suppress error and continue from the next activity. |
 | `Retry` | Re-execute the failed activity. |
-| `Abort` | Stop the job after the handler. |
+| `Abort` | Stop the job after the handler; the remaining Catch and Finally blocks do not run. |
 
 ### Verdict logic — avoid the runaway loop
 
@@ -196,18 +196,12 @@ GEH re-enters at every call-stack level. Unconditional `Retry` can retry an alwa
 1. Business data does not self-correct: `[TypeOf errorInfo.Exception Is BusinessRuleException]` → `result = ErrorAction.Abort`.
 2. Do not retry scaffolding: `[New HashSet(Of String)({"Throw","Rethrow","TryCatch","RetryScope","Sequence"}).Contains(errorInfo.ActivityInfo.TypeName)]` → `Continue` (re-throw).
 3. `[errorInfo.RetryCount < 2]` → `Retry`; otherwise `Abort`.
-4. Decide each failure once: store the handled `errorInfo.Exception` in a global variable, and return `Continue` when the same instance (`ReferenceEquals`) arrives for an enclosing activity. Do not store it on `Retry`: the retried activity's next fault is a new exception.
-5. Shield faults the workflow catches as normal flow (a lookup whose not-found is an answer): raise a global counter in that Try, lower it in its Finally, and return `Continue` while it is above 0. Raise it around the handler's own body too, so a fault in a workflow the handler runs is not handled again.
 
 ### Interplay and limits
 
-- GEH runs first-chance: before any local Catch — a Try/Catch around the faulted activity in the same workflow included — then again for every enclosing activity while the exception propagates (`errorInfo.ActivityInfo` names that call's activity). A fault the workflow catches itself therefore reaches the GEH first (rule 5). Verified under `uip rpa run`; see [UiPath Global Exception Handler docs](https://docs.uipath.com/studio/latest/user-guide/global-exception-handler).
+- GEH runs first-chance: before any local Catch — a Try/Catch around the faulted activity in the same workflow included — then again for every enclosing activity while the exception propagates. A local Try/Catch does not shield it, so a fault the workflow catches as normal flow still reaches the GEH first. Verified under `uip rpa run`; see [UiPath Global Exception Handler docs](https://docs.uipath.com/studio/latest/user-guide/global-exception-handler).
 - Fully unhandled: GEH fires and verdict applies; verified under `uip rpa run`.
-- `Retry` re-runs only the faulted activity; returned on the call for an enclosing `Sequence`, it re-runs that whole Sequence. `RetryCount` counts the retries of one failure: a retried activity that fails again arrives with `RetryCount` 1.
-- `Abort` stops the job without the remaining Catch and Finally blocks: an execution template's teardown does not run.
 - Activities with `ContinueOnError=True` never reach the GEH.
-- The handler reads and writes global variables: keep its state there (rules 4–5).
-- The handler runs other workflows with Invoke Workflow File, a fixed path or a path expression; a fault inside one re-enters the GEH. A coded workflow invoked from the handler cannot run workflows: its `RunWorkflow`, and the typed `workflows.X` accessor built on it, never returns. Dispatch from XAML.
 - GEH retries activities, not workflows; retry a whole workflow with your own loop / Retry Scope.
 - Do not combine GEH with REFramework: their Try/Catch/retry strategies can fight and loop on business exceptions; choose one.
 - During debugging, Studio pauses/highlights the activity and shows exception in Locals/Call Stack; ribbon offers Continue / Retry / Ignore / Abort. Debug **Retry** does not invoke GEH; only Continue does.
