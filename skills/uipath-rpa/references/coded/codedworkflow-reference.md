@@ -115,6 +115,8 @@ var result = RunWorkflow(workflowPath, new Dictionary<string, object>
 > - **InOut arguments** — when a parameter name appears in both the input parameters and the return tuple, it is an InOut argument. Example: `public (string a, string b) Execute(string b, int c)` — `a` is Out, `b` is InOut (same name in input and output), `c` is In. The input and output types of an InOut argument must be identical — a mismatch fails analyzer rule ST-REL-001 (Error) at `analyze`/`build`/`pack`.
 >
 > For same-project workflows, prefer the type-safe `workflows.MyWorkflow()` property — it returns the declared return type directly and avoids this dictionary lookup.
+>
+> Exception: when the invoked workflow has an argument typed with a type the project's own coded source files define (verified with an enum), call it with `RunWorkflow`. `build` generates the typed accessor with that argument, but the design-time generator behind `validate` and the Studio editor drops it: `validate` reports `CS1501` (no overload takes N arguments) and `CS0815` while `build` passes. Neither call returns inside a coded workflow the Global Exception Handler invokes ([../error-handling-guide.md § 8](../error-handling-guide.md#8-global-exception-handler-geh)).
 
 ## Service Properties (injected based on installed packages)
 
