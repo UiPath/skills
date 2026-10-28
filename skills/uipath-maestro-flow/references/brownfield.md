@@ -88,12 +88,14 @@ not leave an earlier `*.merged.flow` there: the project validator treats every
 ### Check only what you changed: `check --baseline`
 
 `compile` does not run `check`: it writes any flow it can serialize. So run
-`check` before every `compile`, and treat its errors as the gate. In a
-brownfield edit, pass the original `.flow` (not a compiled baseline) as
-`--baseline`, and each finding says whether your edit caused it:
+`check` after each edit, before the edited `compile`, and treat its errors as
+the gate (the baseline compile of the untouched decompile needs none). Pass
+the original `.flow` (not a compiled baseline) as `--baseline`, and each
+finding says whether your edit caused it. In emit-only mode `check` refuses:
+skip it there, `validate` is the gate.
 
 ```
-$ uip maestro flow check "$PROJECT/Deployed.flow.ts" --source --baseline "$CANONICAL"
+$ uip maestro flow check <Name>.flow.ts --source --baseline <original>.flow
 ✗ [UNKNOWN_REF] Reference to undeclared variable/step "lookup" in "report". (edited)
 ⚠ [HTTP_READ_WITHOUT_RETURNS] ... (pre-existing, not counted)
 ⚠ [CONNECTOR_INPUT] Connector step "notify": ... unknown input "designerOnly". ... (pre-existing)
