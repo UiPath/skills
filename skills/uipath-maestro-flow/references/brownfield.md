@@ -1,6 +1,8 @@
 # True-brownfield decompile, edit, and merge
 
-Use this procedure when a task supplies a deployed `.flow` and no `.flow.ts`.
+Use this procedure to edit a `.flow` that already exists, unless the task
+supplied its `.flow.ts`. A `.flow.ts` an earlier turn left is not supplied: the
+canvas may have changed the `.flow` since.
 Do not hand-transcribe the graph: decompile it to builder source, edit that
 source, and merge only the delta back into the original.
 

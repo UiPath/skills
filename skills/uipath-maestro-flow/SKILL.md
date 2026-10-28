@@ -40,7 +40,7 @@ So the stub is the seed rather than litter: the first `compile -o` overwrites it
 **Maestro Automate is `--automate` on the same `flow init`:** when the request names **Maestro Automate** as the product, run `( cd "<Solution>" && uip maestro flow init <Name> --automate --sdk-source )`; the bare verb ("automate invoice intake") asks for a plain Flow.
 Nothing after `init` changes; the flag writes `runtimeOptions.profile` into `operate.json` plus a `.maestro_automate` marker, and `compile -o` rewrites only the `.flow`, so both survive.
 
-An existing project needs no `init`: skip the first two commands and seed from the `.flow` that is already there with `( cd "<Solution>/<Name>" && uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline )` (`--no-pipeline` skips the brownfield helper, [`references/brownfield.md`](references/brownfield.md)); skip the decompile when the source already exists.
+An existing project needs no `init`; edit its `<Name>.flow` through [Editing an existing flow](#editing-an-existing-flow), never by compiling an earlier turn's `.flow-sdk/` source over it: the canvas may have changed the `.flow`.
 The three names stay aligned: `.flow-sdk/<Name>.flow.ts`, the `<Name>` project directory, and `<Name>.flow` inside it.
 Exactly one emitted `<Name>.flow` may exist, at `<Solution>/<Name>/<Name>.flow`, and never a second copy at the workspace root.
 Emitting to the root is correct only for the packaged-SDK local gates, which never scaffold a project; pick the loop first ([Lifecycle](#lifecycle)) and do not mix the two.
@@ -62,6 +62,7 @@ Write the connector step from the task's own words — the fields you intend, `l
 Check names every prepare you owe, with the exact command:
 `OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> --action <action>` — `--object`, `--resolve` and `-f` compose in a single invocation, it finds the connection itself, writes `.flow-sdk/bindings.json`, and repoints your import at the generated `./connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
 Where two flows import the same connector it names them instead of guessing, and asks for `--source`.
+If `prepare` lists several connections, ask a user who can answer; in the final response, name each connection and folder it bound.
 `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED` and `CONNECTOR_OBJECT_NOT_GENERIC` are source fixes, not prepares: [connector-params.md](references/connector-params.md#author-first--check-names-every-prepare-you-owe).
 
 Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`) need the prepare `check` names with every required `-f`, and a post-compile cache check: [`references/connector-params.md`](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop).
@@ -96,7 +97,7 @@ The `uip maestro flow` commands delegate their semantics to the installed `@uipa
 uip maestro flow validate "<Solution>/<Name>/<Name>.flow" --output json
 # Greenfield only (never a merged or .layout() file), before upload/debug/a designer:
 uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
-# Only for a stated runtime-behavior claim:
+# Only for a stated runtime-behavior claim (ask first):
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
 ( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
@@ -109,7 +110,7 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 ## Editing an existing flow
 
 <!--skill-flavor:sdk-editing:start-->
-In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. If only emitted `.flow` JSON exists, decompile it, compile the pristine baseline, edit narrowly, and merge the delta back into the original.
+In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless the task supplied source, decompile the `.flow` fresh, compile the baseline, edit narrowly, and merge the delta into the original.
 These are before/after judgments; no final-artifact checker can prove them.
 
 For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which runs the loop in two invocations and gets the baseline ordering right. It keeps its baseline, edited and merged `.flow` files in `.flow-sdk/` too:
