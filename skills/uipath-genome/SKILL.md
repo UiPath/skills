@@ -8,7 +8,7 @@ when_to_use: "User points at an existing *-genome.md file (or one whose first li
 
 Genome: markdown specification an AI agent consumes to build or rebuild an automation — what it does, business rules, data moving between parts, platform resources, its transactional shape, verification, and which UiPath skill builds each part. **`uipath-planner` writes every genome** (Author, Extract, Edit); this skill **builds** from it (Execute), verifies it and hands it off. Genomes stay thin: build skills carry UiPath know-how; a genome describes *what*, skills know *how*.
 
-> **Read by the read plan (§ Read Plans), never from memory.** This file routes; guides carry the rules, each subject in exactly one guide. A file the plan reads whole is read whole — not grepped or skimmed; a pointer that names a section (`guide.md § Section`) is a section read, that section in full; a guide no condition of the plan has reached stays closed, and the `CLAUDE.md` beside this file, which governs editing the skill, is not read in a run. A framework selectors guide's per-technology tables are a **catalog**, read by section: list its headings, then read the sections for the technologies the source recorded; the rules around them are read whole.
+> **Execute reads by plan, never from memory.** Its first read is [read-plan-guide.md](references/read-plan-guide.md), whole: it names every other guide, the phase and condition that open it, and how each is read. This file only routes.
 
 ## When to Use This Skill
 
@@ -21,53 +21,10 @@ Genome: markdown specification an AI agent consumes to build or rebuild an autom
 Rows are checked in order; the first that matches decides.
 
 1. **A request that writes or changes a genome → invoke `uipath-planner` with the request, then stop.** Writing or changing a genome is `uipath-planner`'s, never this skill's: authoring one from an idea, a description, an SOP, a PDD, a TO-BE or an SDD; proposing scenarios for a goal; extracting one from a UiPath project or solution or another framework's export (documentation, estate assessment, the first step of a refactor or migration); editing one, partial re-extraction included. This holds even when the request asks for the file to be edited directly or names the exact change: make no change to the genome file here, and read no guide of this skill for it. Once `uipath-planner` has written the genome, a build of it is row 2. When `uipath-planner` is not installed, say that writing the genome needs it and stop.
-2. **`*-genome.md` path plus build intent** ("build", "execute", "implement", "follow") → **Execute**. Read [execution-guide.md](references/execution-guide.md). Executing a genome extracted from a UiPath source is a refactor, and so is executing one from another framework when the request asks for a refactor ([refactor-guide.md](references/refactor-guide.md)).
+2. **`*-genome.md` path plus build intent** ("build", "execute", "implement", "follow") → **Execute**. Read [read-plan-guide.md](references/read-plan-guide.md) whole, then the start reads it names. Executing a genome extracted from a UiPath source is a refactor, and so is executing one from another framework when the request asks for a refactor.
 3. **A request to refactor or migrate an automation with no genome yet** → `uipath-planner` extracts first (row 1), then Execute here. An upgrade of a Windows-Legacy project's activities in place stays `uipath-activity-migrator`'s.
 
 A request to design a solution and derive tasks, or any input this list assigns to another skill, is that skill's job. Say so and stop.
-
-## Read Plans
-
-Every turn resends the whole context: a reference read early is paid again on every later turn, and one a later answer rules out is paid for nothing. Execute reads, at each phase, only what this table names for the conditions that hold:
-
-| Phase | Condition | Read |
-|---|---|---|
-| start, before any question | — | [execution-guide.md](references/execution-guide.md); [genome-reading-guide.md](references/genome-reading-guide.md) by section — § Levels and Files, § Design Links and § Sections, and § Transactional Shape when it is not the stub; each skill named in Build With / Components, invoked once for preflight discovery and the scaffolding options — its SKILL.md only, its mandatory reads wait for the build; [transactional-execution-guide.md](references/transactional-execution-guide.md) when the Transactional Shape is not the stub, before the split questions |
-| start, before any question | a refactor: the Source Map names a UiPath source, or the request asks for a refactor | [refactor-guide.md](references/refactor-guide.md) whole and genome-reading-guide.md § Build Skills; the SKILL.md of every product § Choosing the target there offers a component, invoked once for its capability check — its mandatory reads wait for the build |
-| build, once the configuration answers exist | — | the owning skill's mandatory reads, through its own journey |
-| build | the genome has a Source Map | genome-reading-guide.md § Source Map |
-| build | an export was resolved | the migration reads of § Source Frameworks |
-| build | a group builds UI activities, extracted genome or not | [ui-verification-guide.md](references/ui-verification-guide.md) |
-| build | the genome has test components, extracted or not | [test-execution-guide.md](references/test-execution-guide.md) |
-| build | a group is planned in parts, runs through subagents or forks, or resumes after a pause or a compaction | [execution-parts-guide.md](references/execution-parts-guide.md) whole |
-| build | no application is reachable | [offline-definition-workarounds-guide.md](references/offline-definition-workarounds-guide.md) |
-| build | a group uses a doc or a tool [package-doc-errata-guide.md](references/package-doc-errata-guide.md) corrects | that doc's row, read with the doc, and the § Tools rows for the tools a group builds with |
-| build | a Build With row names a retired skill or one the host lacks | genome-reading-guide.md § Build Skills |
-| build | an execution guide points into a section | that section of genome-reading-guide.md |
-| build | a UiPath source's UI targets, test data or deployed state are read | genome-reading-guide.md § UiPath Source |
-| end | the target environment needs setup | [open-items-guide.md](references/open-items-guide.md) |
-
-Each phase's reads go out in at most three turns, never file by file as each file names the next:
-
-1. **Turn 1**, one message: every file the phase reads whole, and the heading list (a search for `^#` lines) of every file it reads by section.
-2. **Turn 2**, one message: the sections chosen from those lists, and the owning skill's discovery for the activity kinds in play.
-3. **Turn 3**, only what turn 2 routed to.
-
-A plan never narrows an owning skill's contract: a read that skill mandates is performed even when no plan names it, a read that misses (a wrong path) is retried the next turn, and neither is dropped to stay within three turns.
-
-## Source Frameworks
-
-A UiPath source (`.uipx`, `project.json`, `project.uiproj`, `.xaml`/`.cs`, `.flow`, `.bpmn`, `caseplan.case`, `caseplan.json`, `agent.json`, `Workflow.json`, `uipath.json`) is read at execution with [genome-reading-guide.md](references/genome-reading-guide.md) § UiPath Source, with [source-migration-guide.md](references/source-migration-guide.md) § Migration preflight step 4, [ui-target-migration-guide.md](references/ui-target-migration-guide.md) § UI targets and [ui-verification-guide.md](references/ui-verification-guide.md): its UI targets are carried over, not translated. Every other framework is read through the **framework migration pack**, which holds per framework a **source guide**, a **selectors guide** and an **inventory script**. Resolve it once per run:
-
-1. **Ask for its location.** Ask "Where is the framework migration guide?" unless the request, or the execution scaffolding answer ([execution-guide.md § 1.3](references/execution-guide.md)), already gave it. Accept a folder path (`<PACK_DIR>`); a git URL is cloned into a scratch folder first. Never search the disk for it, never work from memory of its contents, never copy its files into this skill or beside a genome.
-2. **Select the framework row** in `<PACK_DIR>/README.md` § Frameworks: the framework the Source Map names. An extracted genome names its framework in the Source Map; that name selects the row and makes the execution a **migration**.
-3. **Run, then read.** Read [source-migration-guide.md](references/source-migration-guide.md) whole and derive the catalogs with the row's script (its § Migration preflight). A build with UI activities also reads [ui-target-migration-guide.md](references/ui-target-migration-guide.md), the source guide's § Composite actions and `<PACK_DIR>/<framework>/selectors-guide.md` by technology section together with [selector-translation-guide.md](references/selector-translation-guide.md) and its guide for each technology the target catalog holds — [web](references/selector-translation-web-guide.md), [SAP GUI](references/selector-translation-sap-guide.md), [desktop](references/selector-translation-desktop-guide.md); a build with test components reads [test-execution-guide.md](references/test-execution-guide.md).
-
-No row matches → say which framework the Source Map names and that the pack has no guide for it. Pack not available → Execute continues without the migration part — live capture or placeholders, stated in the report ([source-migration-guide.md § Migration preflight](references/source-migration-guide.md) step 1).
-
-## The Genome and the Checker
-
-`uipath-planner` writes every genome with its format guides, which this skill does not hold: what a build needs from a genome is restated in [genome-reading-guide.md](references/genome-reading-guide.md), read by section. The one file both skills hold is `scripts/check-genome.py`, byte-identical, canonical in `uipath-planner`; execution runs it before anything is asked ([execution-guide.md § 1.1](references/execution-guide.md)). CI fails when the copies differ ([CLAUDE.md](CLAUDE.md)).
 
 ## Critical Rules
 
