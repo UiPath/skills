@@ -76,7 +76,7 @@ uip or folders list --all --output json
 # Filter: only standard top-level folders
 uip or folders list --all --type standard --top-level --output json
 
-# Get details for a specific folder
+# Get details for a specific folder (a Personal Workspace too, by key or path)
 uip or folders get "Finance" --output json
 uip or folders get <folder-key-guid> --output json
 
@@ -256,8 +256,10 @@ Key details:
 Machines define execution hosts and their license slot allocations. They are tenant-scoped and must be assigned to folders separately.
 
 ```bash
-uip or machines create --name "finance-runner-01" --output json
+uip or machines create "finance-runner-01" --output json
 ```
+
+The machine name is the argument, as in `folders create` and `queues create`. `-n, --name` still works as a deprecated alias and prints a warning; giving the name both ways, or not at all, fails with `invalid_argument`.
 
 Key options:
 
@@ -280,6 +282,8 @@ uip or machines assign <key1> <key2> <key3> --folder-path "Finance" --output jso
 ```
 
 Verify: `uip or machines list --folder-path "Finance" --output json`.
+
+> **A folder takes only one serverless machine.** Assigning a second one fails with `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.` and the CLI adds which key was not assigned. Run `uip or machines list --folder-path "Finance" --output json` to see the serverless machine already there, then either use it, give it the slots you need with `machines update`, or free the folder with `uip or machines unassign <machine-key> --folder-path "Finance"` and assign the new one. The CLI does not look up which machine is already in the folder.
 
 ### Step 7b: Inspect / Edit / Unassign / Delete Machines
 
@@ -362,7 +366,7 @@ uip or users assign \
   --output json
 
 # 6. Create a machine
-uip or machines create --name "finance-runner-01" \
+uip or machines create "finance-runner-01" \
   --unattended-slots 2 -d "Finance department runner" --output json
 # Response: { "Data": { "Key": "m1m2m3m4-..." } }
 

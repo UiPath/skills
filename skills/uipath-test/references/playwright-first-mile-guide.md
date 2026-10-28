@@ -79,7 +79,7 @@ Run `folders list` **without `--all`**: it lists only folders where you are a me
 The folder needs one Cloud Robots – Serverless machine and a folder member who can run unattended. Check/create/assign one machine (one serverless machine per folder):
 ```bash
 uip or machines list --folder-key <FOLDER_KEY> --output json
-uip or machines create -n <name> --serverless --testing-slots 2 --output json
+uip or machines create <name> --serverless --testing-slots 2 --output json
 uip or machines assign <MACHINE_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 Capture `Data.Key`; `assign` takes machine KEYS (GUIDs), not names. Without the machine, job creation returns 500 and execution is instantly `Cancelled`.
