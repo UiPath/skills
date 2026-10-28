@@ -13,6 +13,9 @@ run_limits:
   expected_turns: 10
   turn_timeout: 600
 
+reference:
+  directory: ../../../skills/uipath-coded-apps/scripts
+
 initial_prompt: |
   A teammate handed me a draft `action-schema.json` for a UiPath Coded
   Action App. The form is supposed to review a leave request: read the
@@ -87,7 +90,7 @@ success_criteria:
 
   - type: run_command
     description: "Final action-schema.json passes the validator (exit 0)"
-    command: "node $SKILLS_REPO_PATH/skills/uipath-coded-apps/scripts/validate-action-schema.js action-schema.json"
+    command: "node $REFERENCE_DIR/validate-action-schema.js action-schema.json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

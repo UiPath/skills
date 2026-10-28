@@ -1,0 +1,114 @@
+# Needs `uip tm run --type package` (UiPath/cli#4845, in `@uipath/cli@dev` and
+# every release after it) and a tenant set up as in fixtures/README.md
+# (Run-package fixtures); on any other tenant pre_run exits TENANT NOT READY.
+task_id: skill-test-run-package-failing-smoke
+description: >
+  Smoke test: agent runs every test in an uploaded package with
+  `uip tm run --type package` and the run reports a failing test. The package
+  is the cross-platform `FailingTestCase_CrossPlatform_VB_Tests` (one test
+  that always fails), run by the folder's serverless robot. The skill teaches
+  (Rule 10(d)) that exit 1 with `RunPackageTestsFailed` is a test result to
+  report, not a CLI error to retry. pre_run checks the tenant can run it
+  (TENANT NOT READY otherwise), uploads the package when missing, seeds a throwaway `EVFX-RUNPKGFAIL-*` project per run, and post_run deletes
+  it. Graded on the JUnit report on disk and on the tenant: the report's
+  execution id must be a Finished execution in the seeded project, the report
+  must record the failed test (as `<failure>` or `<error>`), and the project must hold exactly one execution,
+  so an agent that re-runs the command after exit 1 fails.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25
+  turn_timeout: 900
+  task_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+# The script checks the tenant can run the package (folder, runtime) and exits
+# TENANT NOT READY when it cannot, uploads the package from _setup/packages/
+# when the folder feed lacks it, and seeds the throwaway project.
+pre_run:
+  - command: >-
+      python3 _setup/run_package_fixture.py seed --folder uipath-test-folder-feed
+      --package FailingTestCase_CrossPlatform_VB_Tests --nupkg FailingTestCase_CrossPlatform_VB_Tests.1.0.0.nupkg
+      --prefix EVFX-RUNPKGFAIL- --key-prefix EVRF
+    timeout: 240
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  CI just uploaded the test package "FailingTestCase_CrossPlatform_VB_Tests"
+  to the Orchestrator folder "uipath-test-folder-feed". Run all of its tests
+  in my Test Manager project (its key is in project-key.txt in this folder)
+  and write the JUnit report to results/junit.xml. This CI step is killed
+  after 10 minutes. Tell me how the run went.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "One complete `tm run --type package` command: package, folder, project, a --timeout within the 10-minute budget"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+tm\s+run\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--type[\s=]+package\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--package-name[\s=]+["\x27]?FailingTestCase_CrossPlatform_VB_Tests\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--package-version[\s=]+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-(?:path[\s=]+["\x27]?uipath-test-folder-feed|key[\s=]+\S))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(?:key|id)[\s=]+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--timeout[\s=]+["\x27]?(?:[1-9]\d?|[1-5]\d\d|600)\b)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "A JUnit report with a <testsuite> is at results/junit.xml"
+    path: "results/junit.xml"
+    includes:
+      - "<testsuite "
+      - "<testcase "
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The report's execution id is a Finished execution in the seeded project, it records the failed test, and the agent did not re-run after exit 1 (exactly one execution)"
+    command: |
+      python3 - <<'PYEOF'
+      import json, re, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      xml = open("results/junit.xml").read()
+      m = re.search(r'<testsuite\b[^>]*\bid="([0-9a-fA-F-]{36})"', xml)
+      if not m:
+          print("no <testsuite id> in results/junit.xml"); sys.exit(1)
+      r = subprocess.run(["uip", "tm", "executions", "list", "--project-key", key,
+                          "--output", "json"], capture_output=True, text=True)
+      rows = json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      hit = [e for e in rows if (e.get("Id") or "").lower() == m.group(1).lower()]
+      status = hit[0].get("Status") if hit else "not in project"
+      cases = re.findall(r'<testcase\b(.*?)(?=<testcase\b|</testsuite>)', xml, re.S)
+      failed = [c for c in cases if re.search(r'<(failure|error)\b', c)]
+      skipped = [c for c in cases if re.search(r'<skipped\b', c)]
+      # Exactly one execution: re-running after exit 1 would add another.
+      print("report execution:", m.group(1), "->", status, "| executions in project:",
+            len(rows), "| testcases:", len(cases), "failed:", len(failed), "skipped:", len(skipped))
+      ok = status == "Finished" and len(rows) == 1 and failed and not skipped
+      sys.exit(0 if ok else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not hand-build the run with testsets create / testcases link-package"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+(testsets\s+create|testcases\s+link-package)'
+    weight: 1.5
+    pass_threshold: 1.0

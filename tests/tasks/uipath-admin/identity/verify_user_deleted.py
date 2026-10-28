@@ -13,7 +13,7 @@ import sys
 import tempfile
 import time
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_setup'))
 from admin_helpers import run_cli, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="verify_user_deleted: %(message)s")

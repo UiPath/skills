@@ -11,8 +11,8 @@ These tests pin down the contract that:
 - Structural requirements (>=5 nodes, exactly one decision with >=2
   branches, >=2 scripts, Slack reference, non-trigger Outlook/Graph
   reference) are still enforced.
-- The verdict is independent of the enclosing SOLUTION directory's name,
-  which the prompt never specifies (see `test_any_solution_name_passes`).
+- The verdict is independent of the authoring layout: any solution directory
+  name or one root-level SDK emit is accepted.
 """
 
 from __future__ import annotations
@@ -42,8 +42,7 @@ def _flow_dir(tmp_path: Path, solution: str = "CustomerEscalationSolution") -> P
     against a layout the CLI cannot emit, which is why the checker's
     path-coupling survived to fail a real run.
 
-    `project.uiproj` is required: `find_project_dir` selects the project whose
-    manifest declares `ProjectType: "Flow"`.
+    `project.uiproj` makes this the live-v1 solution-layout fixture.
     """
     d = tmp_path / solution / "CustomerEscalation"
     d.mkdir(parents=True)
@@ -151,6 +150,16 @@ def test_any_solution_name_passes(tmp_path: Path, solution: str) -> None:
     nodes, edges = _outlook_connector_shape()
     _write_flow(tmp_path, nodes, edges, solution=solution)
     result = _run(tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_root_level_sdk_emit_passes(tmp_path: Path) -> None:
+    nodes, edges = _outlook_connector_shape()
+    payload = {"version": "1.0.0", "nodes": nodes, "edges": edges}
+    (tmp_path / "CustomerEscalation.flow").write_text(json.dumps(payload))
+
+    result = _run(tmp_path)
+
     assert result.returncode == 0, result.stdout + result.stderr
 
 

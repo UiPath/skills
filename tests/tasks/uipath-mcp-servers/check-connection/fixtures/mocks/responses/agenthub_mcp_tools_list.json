@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsList",
+  "Data": {
+    "Items": [
+      {
+        "Id": "tool-mock-connected-01",
+        "Type": 0,
+        "Name": "search_issues",
+        "McpName": "search_issues",
+        "Description": "Search issues in the mock tracker.",
+        "ServerId": "mcp-mock-connected-01",
+        "InputSchema": "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}}}"
+      },
+      {
+        "Id": "tool-mock-connected-02",
+        "Type": 0,
+        "Name": "get_issue",
+        "McpName": "get_issue",
+        "Description": "Get one issue by key.",
+        "ServerId": "mcp-mock-connected-01",
+        "InputSchema": "{\"type\":\"object\",\"properties\":{\"key\":{\"type\":\"string\"}}}"
+      }
+    ],
+    "Total": 2,
+    "Count": 2
+  }
+}

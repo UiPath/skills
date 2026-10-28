@@ -12,6 +12,9 @@ run_limits:
   expected_turns: 17
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "DevAssistantAgent" that can manage Orchestrator
   jobs — start, list, inspect, stop, restart — through our UiPath Orchestrator
@@ -81,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "MCP server resource shape ($resourceType=mcp, id, name, slug, folderPath, availableTools, solutionProperties.resourceKey)"
-    command: "python3 $TASK_DIR/check_mcp_server_tool.py"
+    command: "python3 $REFERENCE_DIR/check_mcp_server_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

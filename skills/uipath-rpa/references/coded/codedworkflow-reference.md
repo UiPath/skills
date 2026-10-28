@@ -2,6 +2,64 @@
 
 All workflow and test case files inherit from `CodedWorkflow`, which provides built-in methods and service access. The `CodedWorkflow` class is a **partial class** — you can extend it in a Coded Source File (see "Extending CodedWorkflow with Before/After Hooks" below).
 
+## Critical Rules — Coded (Rules 13–19)
+
+Mandatory for every coded workflow, test case, and source file. Cited as "Rule N" across this skill; Common Rules 1–12 are in SKILL.md.
+
+13. **[Coded] ALWAYS inherit from `CodedWorkflow`** base class for workflow and test case classes (NOT for Coded Source Files).
+14. **[Coded] ALWAYS use `[Workflow]` or `[TestCase]` attribute** on the `Execute` method.
+15. **[Coded] Update `project.json` → `entryPoints`** when adding/removing workflow files in **Process** projects. **Tests and Library projects do NOT use `entryPoints`** — skip this step for those project types. For `fileInfoCollection` (required for every test case in every project type — XAML and coded alike), see Common Rule 10 (SKILL.md).
+16. **[Coded] One workflow/test case class per file**, class name must match file name.
+17. **[Coded] Namespace = sanitized project name** from `project.json` → `name`, **not the folder name**. Sanitize: remove spaces (`find all tabs` → `findalltabs`), replace hyphens with `_`, ensure valid C# identifier. **A `.` survives as a namespace separator, and the digit-leading segment it creates takes an `_` prefix** — `TokenOptim_Calc_V3.4_Coded` → `TokenOptim_Calc_V3._4_Coded`, *not* `TokenOptim_Calc_V3_4_Coded`. Dotted or digit-adjacent names: **confirm, don't derive** — read the `namespace` line of the generated `.local/.codedworkflows/ObjectRepository.cs`. A wrong namespace makes the file's own `Descriptors.*` references unresolvable.
+18. **[Coded] Entry method is always named `Execute`**.
+19. **[Coded] Use Coded Source Files** for reusable code — plain `.cs` files without `CodedWorkflow` inheritance, no entry point.
+
+## Coded Quick Reference
+
+Coded workflows use standard C# development: create file → write code → validate → run. Activity discovery (`activities find`, `activities get-default-xaml`) is XAML-specific — for coded mode, check `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` first for service API docs, then fall back to `packages inspect`, then to the bundled per-package coded docs at `../activity-docs/<PackageId>/<closest-version>/coded/`. See [§ Inspect NuGet Package Tool](#inspect-nuget-package-tool-on-demand-api-discovery).
+
+### Three Types of .cs Files
+
+| Type | Base Class | Attribute | Entry Point | Purpose |
+|------|-----------|-----------|-------------|---------|
+| **Coded Workflow** | `CodedWorkflow` | `[Workflow]` | Process only | Executable automation logic |
+| **Coded Test Case** | `CodedWorkflow` | `[TestCase]` | Process only | Automated test with assertions |
+| **Coded Source File** | None (plain C#) | None | No | Reusable models, helpers, utilities, hooks |
+
+### Service-to-Package Mapping
+
+Each service on `CodedWorkflow` requires its NuGet package in `project.json`. Without it: `CS0103`.
+
+| Service Property | Required Package |
+|-----------------|------------------|
+| `system` | `UiPath.System.Activities` |
+| `testing` | `UiPath.Testing.Activities` |
+| `uiAutomation` | `UiPath.UIAutomation.Activities` |
+| `excel` | `UiPath.Excel.Activities` |
+| `word` | `UiPath.Word.Activities` |
+| `powerpoint` | `UiPath.Presentations.Activities` |
+| `mail` | `UiPath.Mail.Activities` |
+| `office365` | `UiPath.MicrosoftOffice365.Activities` |
+| `google` | `UiPath.GSuite.Activities` |
+
+For infrastructure/cloud packages (azure, gcp, aws, azureAD, citrix, hyperv, etc.), see [§ Service Properties](#service-properties-injected-based-on-installed-packages) and the sections below. For IS connectors from coded workflows via `ConnectorConnection.ExecuteAsync`: `UiPath.IntegrationService.Activities` — see [integration-service-guide.md](integration-service-guide.md).
+
+### Templates
+
+- [codedworkflow-template.md](../../assets/codedworkflow-template.md) — Workflow, test case, helper-class, and Before/After-hooks boilerplate (all coded templates)
+- [json-template.md](../../assets/json-template.md) — `entryPoints` and `fileInfoCollection` snippets
+
+### Task Navigation — Coded
+
+| I need to... | Read |
+|-------------|------|
+| **Add/edit a coded workflow** | [operations-guide.md](operations-guide.md) — a per-operation catalog, do NOT read end-to-end: Grep `^## ` for its sections, Read the §§ for the operations in the plan; § Coding Guidelines ALWAYS |
+| **Add a coded test case** | [operations-guide.md](operations-guide.md) — same per-operation lookup; remember: register in `fileInfoCollection` (Common Rule 10) |
+| **Call an IS connector (coded)** | [integration-service-guide.md](integration-service-guide.md) |
+| **Add a NuGet package** | [operations-guide.md § Add Dependency](operations-guide.md) → [§ Third-Party NuGet Packages](#third-party-nuget-packages) |
+| **Discover activity APIs** | [§ Inspect NuGet Package Tool](#inspect-nuget-package-tool-on-demand-api-discovery) |
+| **Troubleshoot coded errors** | [operations-guide.md § Common Issues and Fixes](operations-guide.md#common-issues-and-fixes) |
+
 ## Built-in Methods (available in any workflow/test case via `this`)
 
 | Method | Description |
@@ -60,7 +118,7 @@ var result = RunWorkflow(workflowPath, new Dictionary<string, object>
 
 ## Service Properties (injected based on installed packages)
 
-Services are accessed as properties on `this`: `system.GetAsset(...)`, `excel.ReadRange(...)`, `testing.VerifyExpression(...)`, etc. See the Service-to-Package mapping in SKILL.md.
+Services are accessed as properties on `this`: `system.GetAsset(...)`, `excel.ReadRange(...)`, `testing.VerifyExpression(...)`, etc. See [§ Service-to-Package Mapping](#service-to-package-mapping) above.
 
 ## Integration Service Connections
 
@@ -224,7 +282,7 @@ using UiPath.CodedWorkflows;
 
 namespace MyProject
 {
-    public partial class CodedWorkflow : IBeforeAfterRun
+    public partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun
     {
         public void Before(BeforeRunContext context) { Log("Starting " + context.RelativeFilePath); }
         public void After(AfterRunContext context) { Log("Finished " + context.RelativeFilePath); }
@@ -234,7 +292,9 @@ namespace MyProject
 
 ## Extending CodedWorkflow with Partial Classes
 
-The auto-generated `CodedWorkflow` is a `partial class`. You can extend it to add shared methods, properties, or constants available to all workflows and test cases — with or without hooks:
+The auto-generated `CodedWorkflow` is a `partial class`. You can extend it to add shared methods, properties, or constants available to all workflows and test cases — with or without hooks.
+
+Every part you write names `CodedWorkflowBase` as its base (`: CodedWorkflowBase`, `: CodedWorkflowBase, IBeforeAfterRun` for hooks). `build` compiles the class from a part it generates plus the project's parts, and a project part without the base leaves the class with none: `CS0103: The name 'Log' does not exist`, `CS0103` on `serviceContainer` in `.generated/CodedWorkflow.g.cs`, and `CS1503: cannot convert from '<Workflow>' to 'UiPath.CodedWorkflows.CodedWorkflowBase'` — in process and library projects alike, while `validate` passes.
 
 ```csharp
 // CodedWorkflowExtensions.cs — Coded Source File (no entry point)
@@ -242,7 +302,7 @@ using UiPath.CodedWorkflows;
 
 namespace MyProject
 {
-    public partial class CodedWorkflow
+    public partial class CodedWorkflow : CodedWorkflowBase
     {
         protected string GetEnvironmentUrl()
         {
@@ -257,7 +317,7 @@ namespace MyProject
 
 - **`IBeforeAfterRun`** is an interface — any `CodedWorkflow`-derived class can implement it
 - **`partial class CodedWorkflow`** is a C# feature — extends the auto-generated class for all files in the project
-- **They combine:** use `partial class CodedWorkflow : IBeforeAfterRun` when you want hooks on every file
+- **They combine:** use `partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun` when you want hooks on every file
 - **Use `IBeforeAfterRun` on individual files** when only specific workflows/test cases need setup/teardown
 - **Use `partial class CodedWorkflow`** (without hooks) to add shared methods, properties, or constants
 - **Context objects** (`BeforeRunContext`, `AfterRunContext`) provide `RelativeFilePath`, `WorkflowFilePath`, etc.
@@ -268,8 +328,8 @@ namespace MyProject
 | Scenario | Pattern |
 |----------|---------|
 | One test case needs its own setup/teardown | `IBeforeAfterRun` on the class |
-| All test cases share the same setup/teardown | `partial class CodedWorkflow : IBeforeAfterRun` |
-| Shared helper methods for all workflows | `partial class CodedWorkflow` (no hooks) |
+| All test cases share the same setup/teardown | `partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun` |
+| Shared helper methods for all workflows | `partial class CodedWorkflow : CodedWorkflowBase` (no hooks) |
 | All of the above | Combine patterns in one or more partial files |
 
 Code templates: [assets/codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md#beforeafter-hooks-templates)

@@ -56,3 +56,36 @@ success_criteria:
     path: "<expected/output/path>"
     weight: 1.5
     pass_threshold: 1.0
+
+# Optional — uncomment when the task needs pre_run/post_run tooling (seed,
+# cleanup, scaffold) and/or a run_command grading script. Task sandboxes have
+# no host repo checkout: setup tooling is staged via sandbox.template_sources
+# into an agent-visible _setup/ (never put grading logic there), and grading
+# scripts are reached via $REFERENCE_DIR (mirrors reference.directory on disk,
+# invisible to the agent).
+#
+# sandbox:
+#   template_sources:
+#     - type: template_dir
+#       path: _setup
+#       mount_point: _setup
+#
+# reference:
+#   directory: .   # or ".." / "../.." to also cover a _shared/ dir the check script imports
+#
+# pre_run:
+#   - command: "python3 _setup/seed.py"
+#     timeout: 60
+#
+# post_run:
+#   - command: "python3 _setup/cleanup.py"
+#     timeout: 60
+#
+# success_criteria:
+#   - type: run_command
+#     description: "Tenant/output state matches expectations"
+#     command: "python3 $REFERENCE_DIR/check_<name>.py"
+#     timeout: 60
+#     expected_exit_code: 0
+#     weight: 5.0
+#     pass_threshold: 1.0

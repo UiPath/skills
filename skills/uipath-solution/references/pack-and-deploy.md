@@ -63,10 +63,13 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<solutionPath>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
-| `<output-path>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'output-path'`) | -- |
+| `<output-path>` | Directory where the .zip will be written (required unless `--dry-run`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
 | `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
+| `--author <author>` | Set the package author | `UiPath` |
+| `--description <text>` | Set the package description | `Created by UiPath` |
+| `--dry-run` | Run the full pack pipeline against a temporary directory and discard the output — proves the solution packs without producing a package | off |
 
 The output is a `.zip` file named `<name>_<version>.zip` — **underscore between name and version, not a dot** — written under `<output-path>/` (e.g., `MySolution_2.0.0.zip`). Don't guess the filename: read it from the command's `Data.Packages` field, or list `<output-path>/`. Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
@@ -85,6 +88,58 @@ uip solution publish ./output/MySolution_2.0.0.zip --tenant "Production" --outpu
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
 
+<!--skill-flavor:publish-feed-discovery:start-->
+### Publishing to a non-tenant feed
+
+By default everything targets the **tenant** feed. A package can instead go to your
+Personal Workspace or to a specific **folder feed**. Start by listing what you can
+actually target — a raw folder key is not necessarily a publishable feed:
+
+```bash
+uip solution feeds list --output json
+```
+
+`Data` is a list of `{ Name, Key, Type, IsMyPersonalWorkspace }` where `Type` is
+`Tenant`, `PersonalWorkspace`, or `Folder`. Only feeds in this list can be
+targeted; passing anything else fails with *"is not an available publish
+location"*. Personal Workspaces belonging to other users are filtered out even
+when you can browse them.
+
+Then target a feed with `--feed <name-or-key>` (accepts either the feed's name or
+its folder key) or `--personal-workspace`:
+
+```bash
+# Publish into a folder feed
+uip solution publish ./output/MySolution_2.0.0.zip --feed "Finance" --output json
+
+# Publish into your own Personal Workspace
+uip solution publish ./output/MySolution_2.0.0.zip --personal-workspace --output json
+```
+<!--skill-flavor:publish-feed-discovery:end-->
+
+The same two flags scope the rest of the lifecycle, and they are **mutually
+exclusive** everywhere:
+
+| Command | What the flag scopes |
+|---|---|
+<!--skill-flavor:publish-feed-scope-row:start-->
+| `uip solution publish --feed / --personal-workspace` | Which feed the package is uploaded to |
+<!--skill-flavor:publish-feed-scope-row:end-->
+| `uip solution deploy run --feed / --personal-workspace` | Which feed the package is deployed **from** |
+| `uip solution deploy list --feed / --personal-workspace` | Which feed's deployments are listed |
+| `uip solution packages list --feed / --personal-workspace` | Which feed's packages are listed |
+| `uip solution packages delete --feed / --personal-workspace` | Which feed the version is deleted from |
+
+**Deploy from the feed you published to.** A package published to a folder feed or
+Personal Workspace is not in the tenant feed, so a plain `deploy run` cannot see
+it — pass the same `--feed` / `--personal-workspace` there too. Likewise, omitting
+the flag on `packages list` shows only tenant packages, which is the usual reason
+a freshly published feed package looks missing.
+
+`deploy run --feed` also accepts `--parent-folder-path` / `--parent-folder-key` to
+pick **where inside** the feed's folder the deployment lands; without them it goes
+to the feed folder itself.
+
 ## Step 3 (Alternative): Upload to Studio Web
 
 If the goal is browser-based editing rather than deployment, use `upload` instead of `publish`:
@@ -93,9 +148,11 @@ If the goal is browser-based editing rather than deployment, use `upload` instea
 uip solution upload ./MySolution --output json
 ```
 
-This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` refuses unless `--force` is passed (forcing replaces the cloud project in place and wipes its Studio Web version history).
+This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` overwrites that solution in place; otherwise it imports as new — see [develop-solution.md § `upload` decides import or overwrite from what the cloud holds](develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds) for the decision rules and snapshot recording.
 
+<!--skill-flavor:upload-tabs:start-->
 `upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution init` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
+<!--skill-flavor:upload-tabs:end-->
 
 ## Step 4: Deploy to Orchestrator
 
@@ -107,7 +164,21 @@ uip solution deploy run -n "InvoiceAutomation-v2" \
   --folder-name "MySolutionFolder" --output json
 ```
 
-A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`. If the package requires configuration before it can activate, deploy still succeeds but activation surfaces an explicit error pointing at `deploy activate <name>` — fix the config and retry the activate.
+A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`, along with `DeploymentKey`, `PipelineDeploymentId` and `InstanceId`. When a resource needs "Setup activation" in Orchestrator before the deployment can be activated — an Integration Service connection that must be authenticated, typically — the run is still `Result: Success`: the install landed, `ActivationStatus: NeedsSetupToActivate`, `PendingResources` names each resource with its `Reason` (`[CNS1072] You will need to authenticate this connection before proceeding further`) and its Orchestrator folders (`FolderPaths`, `null` when the server does not report them), and `NextSteps` gives the Orchestrator step. When the server already reports that state after the install, `deploy run` does not attempt the activation. Do **not** run the deploy again: the deployment exists. On such a run the pipeline itself can end at `ValidationFailed` **after** the install landed (the deployment record reports `SuccessfulInstall`); the CLI still reports the deployment, keeps the pipeline's word in `Status`, and opens `NextSteps` with the pipeline's errors, which come from the activation validation the pipeline runs after the install. `ReadyToActivate` means the install landed and the activation did not run: `uip solution deploy activate <name>`. Any other refused activation is a failure with `Retry activation with: uip solution deploy activate <name>`.
+
+This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes through the same Pipelines install as a tenant one, so it validates the package against the target before installing and waits for the run to reach a terminal state — it does not return early. A configuration the target rejects fails the command (exit `1`, `ErrorCode: invalid_argument`, `ValidationFailed` in `Message`) with the per-resource errors in `Instructions`, and nothing is provisioned — that is a `ValidationFailed` before the install; the one whose record reports `SuccessfulInstall` is the landed case above, and a success. (`--wait` is still accepted and does nothing; older CLI versions needed it on those feeds.)
+
+The rejected attempt stays behind as a **pending draft** under that `--name`, and its key is in `Instructions` — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) for how to finish or drop it.
+
+<!--skill-flavor:tests-upload:start-->
+A Tests project rides in the solution package but gets no solution resource, so `deploy run` does not install it. Upload its package to the deployment folder's feed yourself — the `<SOLUTION>.Tests.<PROJECT>.<VERSION>.nupkg` under `files/` in the packed `.zip`. The upload is refused (`A testing project should contain at least one entry point.`) unless at least one of its test cases has `editingStatus` `Publishable` in `project.json`:
+
+```bash
+uip or packages upload "<TESTS_NUPKG_PATH>" --folder-path "<FOLDER_PATH>" --output json
+```
+
+`<FOLDER_PATH>` is the `Data.FolderPath` that `deploy run` returned. Orchestrator creates the testing process from the upload, so skip `uip or processes create`: it is refused (`A testing process already exists for this package`).
+<!--skill-flavor:tests-upload:end-->
 
 To skip auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`):
 
@@ -127,10 +198,68 @@ Key options:
 | `--parent-folder-key <key>` | Parent folder key (GUID, alternative to `--parent-folder-path`) | -- |
 | `--config-file <path>` | Configuration file from `deploy config get` | -- |
 | `--skip-activate` | Skip the post-deploy activation; leaves the deployment in `Inactive (Ready to activate)` | (off — auto-activate) |
+| `--acknowledge-permanent-deletion` | Confirm that installed resources this deploy replaces with a link are deleted with their data; newer CLI builds only — see [Replacing an installed resource with a link](#replacing-an-installed-resource-with-a-link) | (off — the deploy stops and lists them) |
 | `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
 | `--poll-interval <ms>` | Polling interval used during both phases | 5000 |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI proactively refreshes it before the deploy starts. Useful for long deploys close to token expiry. | 10 |
 | `-t, --tenant <name>` | Tenant override | Current tenant |
+
+### A deploy that stops in `Draft`
+
+`Draft` is where the server parks a deployment whose install never completed — nearly always because deploy-time validation rejected something (a virtual resource with no `value`, a resource conflict, a folder that no longer exists). Nothing advances it on its own, and it **cannot be activated**: `deploy activate` on it fails.
+
+One narrow exception: a deployment that was *just* requested sits in `Draft` for a moment before the pipeline promotes it to `InProgress`, so a `Draft` read seconds after firing the command says nothing yet. What is never normal is a `Draft` that is still there after the command returned, or after a wait has ended.
+
+`deploy run` waits for its run on every feed — tenant, `--personal-workspace` and `--feed` alike — so the failure itself carries the server's own reasons. `Message` is only `Deployment failed with status: …`; the detail is in **`Instructions`**, as `Validation: …`, `Conflicts: …`, `Schedule: …`, `Deployment: …` — read that field, it names the resource and the property — together with the draft's key. To look at the deployment afterwards, run `uip solution deploy list` **carrying the same feed flag** — `deploy list` is tenant-scoped when none is passed and does not show a Personal Workspace or folder-feed deployment at all, so a missing row there is not an answer:
+
+```bash
+uip solution deploy list --personal-workspace --output json
+uip solution deploy list --feed "<name-or-key>" --output json
+```
+
+The fix is the deploy config, not a retry — rerunning the same command with the same config reproduces the same `Draft`. (One exception, a refusal that asks for consent rather than a fix: [Replacing an installed resource with a link](#replacing-an-installed-resource-with-a-link).)
+
+```bash
+uip solution deploy config get "MySolution" -d config.json --output json
+
+# fix what the validation named — set the missing value, or link to an existing resource
+uip solution deploy config set config.json MyQueue maxNumberOfRetries 5
+uip solution deploy config link config.json MyBucket --name "ExistingBucket" --folder-path "Shared"
+
+uip solution deploy run -n "MyDeployment" \
+  --package-name "MySolution" --package-version "2.0.0" \
+  --folder-name "MySolutionFolder" --config-file config.json --output json
+```
+
+Rerun it with the **same** `--name` and `--package-version` as the attempt that failed — the server re-validates the draft with the new file. That holds for a draft left by an install and by an update of a live deployment alike, and the CLI's "already deployed" guard deliberately lets it through, because rerunning is the fix. Settings and resource links the file does not name keep the values the draft was rejected with, so name every one you mean to change.
+
+While the draft exists it owns the deployment, as in the Orchestrator UI, which offers only "continue editing" and "delete draft". `deploy run` refuses any *other* version for that name before sending anything (`ErrorCode: invalid_argument`, naming the draft) — including the version already live, which the server would otherwise answer by installing the draft's version instead — and `deploy upgrade` refuses the deployment outright. To drop the attempt instead, discard the draft first: in Orchestrator (Delete draft), with `uip solution deploy delete <deployment-name> --yes` (see [Then Delete the Deployment Record](activate-and-manage.md#then-delete-the-deployment-record)), or, for an update of an existing deployment, `uip solution deploy upgrade <draft-key> --discard-draft --version <live-version>` (see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place)). Under an external app that `deploy run` check only warns and the deploy goes ahead — the server then runs the draft and installs the draft's version — so from CI/CD ask only for the draft's version, or discard the draft first.
+
+#### Replacing an installed resource with a link
+
+When the `--config-file` links a resource (`deploy config link`, `linkToResource`) that the deployment has already **installed** — an in-place update under an existing `--name` — the server replaces the installed copy with the link and deletes the copy, **with its data**. Newer servers ask for that to be confirmed first (schedule error `4026`), and newer CLI builds stop there instead of deploying:
+
+```json
+{
+  "Result": "Failure",
+  "Message": "Deploying '<DEPLOYMENT_NAME>' will permanently delete 1 installed resource(s) replaced by links: bucket '<BUCKET_NAME>', along with their data.",
+  "Instructions": "Nothing was installed; the attempt is kept as a pending draft (<DRAFT_KEY>). To confirm the deletion, re-run the same command with --acknowledge-permanent-deletion. To keep the installed copies instead, remove those links from the --config-file (uip solution deploy config unlink <file> <resource>) and re-run.",
+  "ErrorCode": "invalid_argument",
+  "Retry": "RetryWillNotFix",
+  "Data": {
+    "PipelineDeploymentId": "<PIPELINE_DEPLOYMENT_ID>",
+    "DeploymentKey": "<DRAFT_KEY>",
+    "PermanentDeletionResources": [{ "Key": "<RESOURCE_KEY>", "Kind": "bucket", "Name": "<BUCKET_NAME>" }]
+  }
+}
+```
+
+`Message` names each resource as `kind 'name'`, `Data.PermanentDeletionResources` lists them with their keys, and nothing was installed — the live version keeps running and the attempt stays as a pending draft. The config is not wrong, so there is nothing to fix in it; the question is whether the user wants those copies and their data gone. Ask, then take one of two ways out:
+
+- **Confirm:** re-run the **same** command with `--acknowledge-permanent-deletion`. Same `--name`, same `--package-version`, same `--config-file`, so the server reuses the draft. The CLI acknowledges each listed resource, runs the identical install once more within the same `--timeout`, and the success output names what was deleted in `PermanentlyDeletedResources`. It never acknowledges a list it could not read, and if the server still asks after that one retry the command stops rather than loop (`The server still requires confirmation for '<name>' after acknowledging …`). An acknowledgement the server refuses fails (`Acknowledging the permanent deletion of <kind> '<name>' (<key>) failed: …`) before the second install. A `404` there means the server does not offer the acknowledge route yet, so confirm in Orchestrator instead.
+- **Keep the installed copies:** remove those links (`uip solution deploy config unlink <file> <resource>`) and re-run the same command without the flag.
+
+`-y, --yes` is not this consent: it only skips the already-deployed check. Nothing prompts. The same stop applies to `deploy upgrade` when the new version replaces an installed resource with a link, and there the confirming re-run must not add `--discard-draft` — see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place). The flag only exists on newer CLI builds; on an older one the option is unknown (check `uip solution deploy run --help`). Against a server that predates the confirmation, such a deploy never reaches a terminal status, and the CLI reports its usual timeout ("may still be in progress").
 
 ## Step 5: Check Deployment Status
 
@@ -139,6 +268,8 @@ The `deploy run` command returns a pipeline deployment ID. Use it to check progr
 ```bash
 uip solution deploy status <pipeline-deployment-id> --output json
 ```
+
+`deploy status` also accepts a **deployment name** or **key** (the `DeploymentKey` in the `deploy run` output, or a key from `deploy list`): it then reports the record's `OperationStatus`, `DeploymentStatus`, `ActivationStatus`, `Actions`, whether the key is `Superseded`, and, when the deployment is not live, `PendingResources` (each with its `Reason` and `FolderPaths`) and `NextSteps` — see [Check Deployment Status](activate-and-manage.md#step-2-check-deployment-status).
 
 The CLI also falls back to the persistent `searchSearchDeployments22` record if the pipeline service has already recycled the in-flight tracking ID — so a deployment that finishes while the CLI is between polls is still surfaced as `DeploymentSucceeded` rather than a polling failure.
 
@@ -221,7 +352,13 @@ uip solution deploy config link config.json MyQueue \
   --name ProductionQueue --folder-path "Shared/Production"
 ```
 
-Effect on the file: appends `linkToResource: { name, folderPath }` to the matched resource entry. The `--name` / `--folder-path` arguments must point to a real Orchestrator/Apps resource — the deployment fails if it doesn't exist.
+Effect on the file: appends `linkToResource: { name, folderPath }` to the matched resource entry. The `--name` / `--folder-path` arguments must point to a real Orchestrator/Apps resource — the deployment fails if it doesn't exist. An `Entity` resource cannot be linked: the deploy refuses it (`Resource kind 'entity' does not support linking.`), so every deployment provisions a new, empty entity in its folder. Load its records after the deploy:
+
+```bash
+uip df records import "<ENTITY_ID>" --file "<CSV_PATH>" --folder-key "<FOLDER_KEY>" --output json
+```
+
+`<FOLDER_KEY>` is the deployment's `FolderKey` in `uip solution deploy list --output json`; `uip df entities list --folder-key "<FOLDER_KEY>" --output json` gives the entity's `Id`, and the CSV's header row names each field by its `DisplayName` from that listing — a field's `Name` is refused as `Invalid column header`.
 
 When the same resource name appears multiple times in the config (different kinds), pass `resourceKey` instead of `name` to disambiguate. The CLI surfaces the available keys in the error message.
 
@@ -251,6 +388,8 @@ uip solution deploy run -n "InvoiceAutomation-Prod" \
 ```
 
 Without `--config-file`, the deployment uses package defaults. With `--config-file`, every resource is provisioned exactly as the file describes — fresh-install for any entry without `linkToResource`, bound for any entry with one.
+
+Re-running under an existing `--name` updates that deployment in place. A link there to a resource the deployment already installed deletes the installed copy, so the deploy stops for consent (`--acknowledge-permanent-deletion`) — see [Replacing an installed resource with a link](#replacing-an-installed-resource-with-a-link).
 
 ---
 
@@ -342,7 +481,7 @@ Two ways around it:
 # A. Let deploy create the folder FIRST, then provision into it.
 uip solution deploy run --name my-deployment --package-name my-package \
   --package-version 1.0.0 --folder-name MySolution --output json
-# → read Data.FolderPath / Data.FolderKey from the response, then create the
+# → read Data.FolderPath from the response, then create the
 #   assets, folder-deploy IXP, and assign the robot into THAT folder.
 
 # B. Skip solution deploy and bind each piece into the existing folder.
@@ -359,7 +498,7 @@ On `deploy run`, `--parent-folder-path` is the **parent** folder, not the deploy
 
 ### Config `link` Connects to Existing Resources
 
-`config link` does not copy or move a resource. It writes a `linkToResource` directive that points the deployment at an existing Orchestrator/Apps resource instead of creating a new one. The linked resource must already exist in the specified folder when `deploy run` executes.
+`config link` does not copy or move a resource. It writes a `linkToResource` directive that points the deployment at an existing Orchestrator/Apps resource instead of creating a new one. The linked resource must already exist in the specified folder when `deploy run` executes. Linking a resource the deployment has already installed replaces that copy and deletes it with its data, and the deploy stops until that is confirmed — see [Replacing an installed resource with a link](#replacing-an-installed-resource-with-a-link).
 
 ### Cross-Resource References Don't Auto-Update
 

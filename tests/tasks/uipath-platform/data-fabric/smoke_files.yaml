@@ -3,6 +3,11 @@ description: >
   Smoke test: agent uploads, downloads, and removes an attachment on an
   isolated Data Fabric test record.
 tags: [uipath-platform, data-fabric, smoke, files, mode:build, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 10
   max_turns: 30
@@ -20,7 +25,6 @@ initial_prompt: |
     - Attach it to that row's Attachment slot.
     - Pull it back down, saving it as `downloaded.txt`.
     - Then remove the attachment.
-
 success_criteria:
   - type: file_exists
     description: "test_upload.txt was created locally"
@@ -69,12 +73,12 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeDocuments"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_SmokeDocuments"
     timeout: 120
     fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_SmokeDocuments --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_documents.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_documents.records.json"
+  - command: "python3 _setup/seed_entity.py --entity-name CE_SmokeDocuments --schema-file _setup/seeds/smoke_documents.schema.json --records-file _setup/seeds/smoke_documents.records.json"
     timeout: 240
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeDocuments"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_SmokeDocuments"
     timeout: 120

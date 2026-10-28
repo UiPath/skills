@@ -471,6 +471,7 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
       "references/expressions-and-context.md",
       "references/operating-published-workflows.md",
       "references/task-types.md",
+      "references/trigger-authoring-guide.md",
       "references/troubleshooting.md",
       "references/workflow-file-format.md",
     ].map((relativePath) => [
@@ -504,13 +505,18 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
   assert.match(builtContract, /RunProject/);
   assert.match(builtContract, /explicit (?:user )?consent[\s\S]*RunProject/);
   assert.match(builtContract, /actual (?:host )?tool result as execution evidence/);
-  assert.match(builtContract, /uip solution publish --help/);
+  assert.doesNotMatch(builtContract, /uip solution publish --help/);
   assert.match(builtContract, /explicit user publish request or approval/);
   assert.match(builtContract, /active Studio Web solution is implicit/);
   assert.match(
     builtContract,
-    /uip solution publish \[--description <text>\].*\[--release-notes <text>\].*\[--version <version>\].*\[--location <value>\].*\[--location-name <value>\].*\[--personal-workspace\]/,
+    /ask the user which destination to use \(personal workspace vs shared location\)/,
   );
+  assert.match(
+    builtContract,
+    /uip solution publish --location "<key or name>" \[--description <text>\] \[--release-notes <text>\] \[--version <version>\]/,
+  );
+  assert.match(builtContract, /--personal-workspace/);
   assert.match(builtContract, /request was accepted[\s\S]*Publish history/);
   assert.doesNotMatch(builtContract, /--input-arguments/);
   assert.doesNotMatch(builtContract, /uip is resources run/);
@@ -566,6 +572,42 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
   );
 });
 
+test("Studio Web replaces the solution lifecycle with the destination-choice publish flow", () => {
+  const canonicalPath = join(REPO_ROOT, "skills", "uipath-solution", "SKILL.md");
+  const overridePath = join(
+    REPO_ROOT,
+    "skill-flavors",
+    "studioweb",
+    "uipath-solution",
+    "SKILL.md",
+  );
+  const canonical = readFileSync(canonicalPath, "utf8");
+  const override = readFileSync(overridePath, "utf8");
+  const findings = [];
+  const composed = stripMarkerBoundaries(
+    composeText(
+      canonical,
+      parseMarkerBlocks(canonicalPath, canonical, findings),
+      parseMarkerBlocks(overridePath, override, findings),
+    ),
+  );
+
+  assert.deepEqual(findings, []);
+  assert.ok(!containsFlavorMarker(composed));
+  assert.match(canonical, /4\. pack\s+→ Produce deployable \.zip package/);
+  assert.doesNotMatch(composed, /pack\s+→ Produce deployable \.zip package/);
+  assert.doesNotMatch(composed, /`restore` is an optimization/);
+  assert.match(
+    composed,
+    /3\. publish\s+→ uip solution publish \(packaging and auth handled by Studio Web\)/,
+  );
+  assert.match(composed, /\*\*Publish destination — the user's choice\.\*\*/);
+  assert.match(composed, /ask the user in chat which destination to use/);
+  assert.match(composed, /--location "<key or name>"/);
+  assert.match(composed, /`--personal-workspace`/);
+  assert.match(composed, /verify the terminal state in Studio Web's Publish history/i);
+});
+
 test("new canonical skills are automatically included in existing flavors", (t) => {
   const repo = fixtureRepo(t);
   addSkill(repo, "uipath-first", block("host", "Default host guidance."));
@@ -581,6 +623,87 @@ test("new canonical skills are automatically included in existing flavors", (t) 
     "uipath-first",
     "uipath-new-skill",
   ]);
+});
+
+function addClassicSkill(repo, name, body = "Classic guidance.\n") {
+  const skill = join(repo, "classic", "skills", name);
+  mkdirSync(skill, { recursive: true });
+  writeFileSync(join(skill, "SKILL.md"), entrypoint(name, body));
+  return skill;
+}
+
+function pin(repo, flavor, skill, value = "classic\n") {
+  const target = join(flavorRoot(repo, flavor), skill, ".canonical");
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, value);
+}
+
+test("a .canonical pin composes that skill from classic/skills for its flavor only", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-flow", "Current generation.\n");
+  addSkill(repo, "uipath-other", block("host", "Default host guidance."));
+  const classic = addClassicSkill(repo, "uipath-flow", block("host", "Classic default."));
+  mkdirSync(join(classic, "references"));
+  writeFileSync(join(classic, "references", "old.md"), "Classic-only reference.\n");
+  pin(repo, "studioweb", "uipath-flow");
+  writeOverride(repo, "studioweb", "uipath-flow/SKILL.md", block("host", "Studio Web on classic."));
+  const studio = writeOverride(
+    repo,
+    "studioweb",
+    "uipath-other/SKILL.md",
+    block("host", "Studio Web guidance."),
+  );
+
+  const plan = createCompositionPlan(repo, studio);
+  assert.deepEqual(plan.pinnedSkills, ["uipath-flow"]);
+  const output = join(repo, "out");
+  materializeComposition(plan, output);
+  const flow = readFileSync(join(output, "uipath-flow", "SKILL.md"), "utf8");
+  assert.match(flow, /Studio Web on classic\./);
+  assert.doesNotMatch(flow, /Current generation/);
+  assert.ok(existsSync(join(output, "uipath-flow", "references", "old.md")));
+  assert.match(readFileSync(join(output, "uipath-other", "SKILL.md"), "utf8"), /Studio Web guidance/);
+
+  const defaults = createDefaultPlan(repo);
+  assert.ok(defaults.files.every(({ sourcePath }) => !sourcePath.includes(join("classic", "skills"))));
+  assert.doesNotThrow(() => createAllVariants(repo));
+});
+
+test("a flavor may consist of a canonical pin alone", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-flow", "Current generation.\n");
+  addClassicSkill(repo, "uipath-flow", "Classic generation.\n");
+  pin(repo, "studioweb", "uipath-flow");
+  const studio = join(repo, "skill-flavors", "studioweb");
+  const plan = createCompositionPlan(repo, studio);
+  assert.deepEqual(plan.pinnedSkills, ["uipath-flow"]);
+  assert.equal(plan.replacementCount, 0);
+  const output = join(repo, "out");
+  materializeComposition(plan, output);
+  assert.match(readFileSync(join(output, "uipath-flow", "SKILL.md"), "utf8"), /Classic generation/);
+  assert.doesNotThrow(() => createAllVariants(repo));
+});
+
+test("invalid pins and unpinned classic trees are rejected", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-flow", block("host", "Default."));
+  const studio = writeOverride(repo, "studioweb", "uipath-flow/SKILL.md", block("host", "SW."));
+
+  pin(repo, "studioweb", "uipath-flow");
+  expectFlavorError(() => createCompositionPlan(repo, studio), /pinned tree does not exist: classic\/skills\/uipath-flow/);
+
+  addClassicSkill(repo, "uipath-flow", block("host", "Classic."));
+  pin(repo, "studioweb", "uipath-flow", "classic-v2\n");
+  expectFlavorError(() => createCompositionPlan(repo, studio), /must contain exactly "classic"/);
+
+  pin(repo, "studioweb", "uipath-flow");
+  pin(repo, "studioweb", "uipath-ghost");
+  expectFlavorError(() => createCompositionPlan(repo, studio), /pins unknown canonical skill "uipath-ghost"/);
+  rmSync(join(studio, "uipath-ghost"), { recursive: true });
+  assert.doesNotThrow(() => createCompositionPlan(repo, studio));
+
+  rmSync(join(studio, "uipath-flow", ".canonical"));
+  expectFlavorError(() => createAllVariants(repo), /no flavor pins this retained tree/);
 });
 
 test("default plan includes every canonical skill and strips CRLF marker boundaries", (t) => {
@@ -1147,7 +1270,7 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   );
   const customPublishDryRun = invokeNpm(
     repo,
-    ["publish", selectedStudioWeb, "--dry-run"],
+    ["publish", selectedStudioWeb, "--dry-run", "--tag", "preview"],
     { npm_config_userconfig: forcedPublicUserConfig },
   );
   assert.equal(
@@ -1448,7 +1571,16 @@ test("root npm publish dry-run keeps the old default-only behavior and restores 
   addPackageManifest(repo);
   const canonicalBefore = treeFileBytes(join(repo, "skills"));
 
-  const result = runNpm(repo, "publish", "--dry-run", "--json", "--access", "public");
+  const result = runNpm(
+    repo,
+    "publish",
+    "--dry-run",
+    "--json",
+    "--access",
+    "public",
+    "--tag",
+    "test",
+  );
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(`${result.stdout}\n${result.stderr}`, /@uipath\/skills|"name"\s*:\s*"@uipath\/skills"/);
   assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /skills-studioweb/);
@@ -1491,12 +1623,17 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
   );
 
   assert.match(publishDev, /^\s*run:\s*npm publish --tag dev\s*$/m);
+  // The root publish packs at the repository root and publishes that file --
+  // signed hooks are overlaid before packing, so the verified bytes are the
+  // published bytes. It must still never reach for the flavor packer's output.
   assert.match(
     publishNpmjs,
-    /^\s*npm publish --access public --provenance --tag \$\{\{ steps\.dist\.outputs\.tag \}\}\s*$/m,
+    /^\s*npm publish "\$\{\{ steps\.pack\.outputs\.tarball \}\}" \\\n\s*--access public --provenance --tag \$\{\{ steps\.dist\.outputs\.tag \}\}\s*$/m,
   );
+  assert.match(publishNpmjs, /^\s*npm pack --pack-destination \.\s*$/m);
+  assert.doesNotMatch(publishDev, /npm run skills:pack|build\/npm|\.tgz/);
+  assert.doesNotMatch(publishNpmjs, /npm run skills:pack|build\/npm/);
   for (const job of [publishDev, publishNpmjs]) {
-    assert.doesNotMatch(job, /npm run skills:pack|build\/npm|\.tgz/);
     assert.doesNotMatch(job, /ENABLE_SKILL_FLAVOR_PUBLISH/);
   }
   assert.doesNotMatch(defaultWorkflow, /npm run skills:pack|build\/npm\/\*\.tgz/);

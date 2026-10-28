@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AgentsEnablementAssistant",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a4e726d4-07a6-4702-b9a7-ba7f56084784",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "AgentsEnablementAssistant"
+    },
+    "locks": [],
+    "key": "4787622f-d208-4c46-af2d-d44b62921b0a",
+    "files": []
+  }
+}

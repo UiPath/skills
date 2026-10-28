@@ -42,6 +42,7 @@ success_criteria:
         grant-type/scope-type mismatch specifically.
       Score 0.0 if it misdiagnoses (blames credentials/expiry/network) or gives
         no root cause.
+    include_reference: false
     weight: 3.0
     pass_threshold: 1.0
 

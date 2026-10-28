@@ -14,8 +14,6 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: ../../_shared/mock_template
     - type: template_dir
       path: fixtures
@@ -41,9 +39,10 @@ initial_prompt: |
   from local (the drifted value on each side).
 
   Reading the local `OrderRouting.bpmn` is expected. Get the deployed asset ONLY
-  via the `uip maestro bpmn instance asset` command; do not read `mocks/`,
-  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,
-  migrate, move a cursor, debug, run, upload, publish, or deploy anything.
+  via the `uip maestro bpmn instance asset` command; do not read `mocks/` or
+  `fixtures/` directly. Capturing a CLI response to your own file and reading it
+  back is fine. Do NOT retry, cancel, migrate, move a cursor, debug, run,
+  upload, publish, or deploy anything.
 
 success_criteria:
   - type: command_executed

@@ -2,6 +2,8 @@
 
 Scaffold a new UiPath Coded Web Application using Vite + React + TypeScript with the `@uipath/uipath-typescript` SDK.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 Order matters: the project is scaffolded and the SDK **installed before scopes are determined**, so the scope decision reads the per-method scope table shipped inside the installed package (version-exact) instead of relying on memorized tables.
 
 ## Pre-flight: Collect Required Information
@@ -25,9 +27,8 @@ Please answer these questions to continue:
 **1. App name** — lowercase kebab-case project folder name (e.g. `my-dashboard`)
 
 **2. Environment** — which UiPath environment?
-   - `cloud` — Production *(most common)*
-   - `staging` — Staging
-   - `alpha` — Alpha
+   - `cloud` — `cloud.uipath.com` *(most common)*
+   - Custom — paste your portal or API URL (Automation Suite, dedicated, or other non-default host)
 
 **3. Org name** — your UiPath organization slug (from `cloud.uipath.com/<orgName>`)
 
@@ -55,17 +56,19 @@ If the user typed their org name, use it. If they said "find from browser", navi
 
 Once you have the answers (app name, environment, org, tenant, styling), execute the steps below in order. All steps after Step 3.2 run from inside the new project directory.
 
-> **Set `timeout: 300000`** (5 minutes) on every Bash call that runs `npm install` or `npm create vite` — these can take several minutes and the default 2-minute timeout is not enough.
+> **Set `timeout: 300000`** (5 minutes) on every Bash call that runs `npm install`, `create-vite`, or `npm run build` — these can take several minutes and the default 2-minute timeout is not enough.
 
 ### 3.1 — Resolve the base URL
 
-Map the `<environment>` answer from Step 1 to a base URL using the table in [SKILL.md](../SKILL.md) (Production → `https://api.uipath.com`, Staging → `https://staging.api.uipath.com`, Alpha → `https://alpha.api.uipath.com`). If the user gave a custom URL, use that verbatim. Store as `<base-url>`.
+Map the `<environment>` answer from Step 1 to a base URL using the table in [SKILL.md](../SKILL.md) (`cloud` → `https://api.uipath.com`; a custom portal URL → its API host per that table). If the user gave a custom API URL, use that verbatim. Store as `<base-url>`.
 
 ### 3.2 — Create the Vite project
 
 ```bash
-npx --yes create-vite@latest <app-name> --template react-ts
+npx --yes create-vite@latest <app-name> --no-interactive --template react-ts && node -e "require('fs').existsSync('<app-name>/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
 ```
+
+Run that as **one** command — `SCAFFOLD_OK` is the only signal that the scaffold is really React (Critical Rule 20). On `SCAFFOLD_NOT_REACT`, or any non-zero exit, re-run the same line with `--overwrite` added immediately after `--no-interactive`; a bare re-run exits `0` and changes nothing. Stop after two failed attempts and report the output to the user rather than continuing past this step.
 
 Then `cd` into `<app-name>`. Every subsequent step runs from this directory.
 
@@ -110,13 +113,13 @@ npm install -D tailwindcss@4 @tailwindcss/postcss postcss autoprefixer
 - **`default styling = yes`** — also overwrites `src/main.tsx` to wrap `<App>` in the theme provider:
 
   ```bash
-  rm vite.config.ts src/App.tsx src/index.css src/main.tsx
+  rm -f vite.config.ts src/App.tsx src/index.css src/main.tsx
   ```
 
 - **`default styling = no`**:
 
   ```bash
-  rm vite.config.ts src/App.tsx src/index.css
+  rm -f vite.config.ts src/App.tsx src/index.css
   ```
 
 ---
@@ -145,7 +148,7 @@ uip admin external-apps create "<app name>" \
   --output json
 ```
 
-Parse `id` from the response — that is the Client ID. If the CLI returns `403` (no admin permission) or can't authenticate, use the [Manual portal fallback](oauth-client-setup.md#manual-portal-fallback).
+Parse `id` from the response — that is the Client ID. If the CLI returns `403` (no admin permission) or can't authenticate, do not retry `create` — follow [When the CLI can't be used](oauth-client-setup.md#when-the-cli-cant-be-used).
 
 **If the user pasted an existing Client ID:** show them `<scopes>` and ask whether the External Application already has all of them. If scopes are missing, offer to add them via the `add-scopes` operation in [oauth-client-setup.md](oauth-client-setup.md), or let the user update the app manually. A missing scope at the External Application means the token request is rejected entirely; a scope granted to the app but missing from `uipath.json` causes silent `401`/`403` on first call.
 
@@ -174,7 +177,7 @@ All file content lives in [../assets/templates/web-app-template.md](../assets/te
 
 ### 5.2 — `.gitignore`
 
-Neither path writes a `.env`, and `uipath.json` is committed (it holds the SDK config — a public OAuth client ID plus org/tenant/base-URL/redirect-URI, no secrets), so no `.gitignore` change is needed for OAuth config. The project `.uipath/` directory created by `codedapp` commands must stay gitignored — it is covered by `npx create-vite`'s default plus `uip codedapp`'s conventions. Verify with `cat .gitignore | grep -i uipath` and add `.uipath/` if missing.
+Neither path writes a `.env`, and `uipath.json` is committed (it holds the SDK config — a public OAuth client ID plus org/tenant/base-URL/redirect-URI, no secrets), so no `.gitignore` change is needed for OAuth config. The project `.uipath/` directory created by `codedapp` commands must stay gitignored. Verify with `grep -i uipath .gitignore` and add `.uipath/` if absent — `create-vite` does not add it.
 
 ### 5.3 — Verify the scaffold
 

@@ -48,18 +48,33 @@ if not uuid8 or not folder_path:
 
 expected_name = f"e2e-trigger-time-{uuid8}"
 
-envelope = uip_json("or", "triggers", "list", "--type", "time", "--folder-path", folder_path)
-if envelope.get("Result") != "Success":
-    sys.exit(f"FAIL: triggers list Result={envelope.get('Result')!r}")
-items = envelope.get("Data")
-if isinstance(items, dict):
-    items = _pick(items, "Value", "Items", "Results") or []
-items = items or []
+def list_time_triggers(*extra: str) -> list:
+    envelope = uip_json("or", "triggers", "list", "--type", "time",
+                        "--folder-path", folder_path, *extra)
+    if envelope.get("Result") != "Success":
+        sys.exit(f"FAIL: triggers list Result={envelope.get('Result')!r}")
+    items = envelope.get("Data")
+    if isinstance(items, dict):
+        items = _pick(items, "Value", "Items", "Results") or []
+    return items or []
+
+
+# Look the trigger up by name server-side (`--name` is an OData
+# `contains(Name, ...)`), NOT by scanning a page — `triggers list` defaults to
+# --limit 50 and an unfiltered scan reports "not found" for a trigger that
+# exists once the folder holds more than that. Same fix as
+# resources/check_trigger_api.py, where this actually bit.
+items = list_time_triggers("--name", expected_name)
 
 match = next((t for t in items if _pick(t, "Name") == expected_name), None)
 if not match:
-    names = [_pick(t, "Name") for t in items]
-    sys.exit(f"FAIL: no trigger named {expected_name!r} in {folder_path!r}; saw {names}")
+    # Diagnostic only, and labelled as such.
+    sample = [_pick(t, "Name") for t in list_time_triggers("--limit", "200")][:20]
+    sys.exit(
+        f"FAIL: no time trigger named {expected_name!r} in {folder_path!r}. "
+        f"Name-filtered lookup returned {len(items)} row(s). "
+        f"First {len(sample)} time trigger name(s) in the folder: {sample}"
+    )
 
 enabled = _pick(match, "Enabled")
 cron = _pick(match, "StartProcessCron", "Cron", "CronExpression")

@@ -1,0 +1,92 @@
+task_id: skill-flow-brownfield-insert-credit-cap
+description: >
+  Brownfield edit of a Flow the product wrote, not the SDK: the DevCon
+  BillingDisputeResolution solution exactly as the classic Flow skill built it
+  on the 2026-09-29 nightly (17 nodes, two inline agents with sidecars, a
+  context index, Data Service connector nodes, an API workflow, a switch whose
+  cases carry their own conditions). The agent inserts one Script node on the
+  auto-resolve route. Graded offline on purpose: validate, the edit itself, that
+  it went through the skill's decompile/merge loop (a hand-edited .flow fails),
+  and that every node, edge, binding, variable, agent sidecar and canvas position
+  the task did not name is unchanged. No flow debug, because what is under test
+  is what the edit did to the file; a debug run would spend IxP, agent and API
+  workflow calls without grading that.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:edit, shape:multi-node]
+
+run_limits:
+  turn_timeout: 2400
+  task_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  BillingDisputeResolution/ is an existing solution with one Flow project of
+  the same name. The flow is in use, so change only what is asked and leave
+  everything else as it is, including the agents, connections and canvas
+  layout.
+
+  On the auto-resolve route, add a Script step "Cap Credit Amount" between
+  "Log Credit Amount" and the FinancialPostingFunction call. It returns
+  { creditAmount }, the Dispute Analyst's creditAmount capped at 500.
+
+  The change is done when `uip maestro flow validate` passes on
+  BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow.
+  The flow does not need a run against the tenant.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the edited flow"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A new Script between logCreditAmount and financialPosting returns min(creditAmount, 500) when run, and the direct edge is gone"
+    command: "python3 $REFERENCE_DIR/brownfield/check_brownfield_edit.py credit-cap --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every original node, edge, binding, variable, definition and agent sidecar is unchanged apart from the replaced edge"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution --removed-edge 'logCreditAmount:success>financialPosting:input'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Original nodes keep their canvas positions and the new node overlaps none of them"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect layout --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile/merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

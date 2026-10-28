@@ -9,38 +9,21 @@ UiPath Agent Skills give AI coding agents the domain knowledge to build, run, te
 
 ## Quick Start
 
-> **Prerequisite:** [Node.js](https://nodejs.org/) (LTS) is required — it includes `npm`.
+Use the official onboarding installer. It installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
 
+**macOS/Linux**
 ```bash
-npm -g install @uipath/cli
-uip skills install
-```
-
-`uip skills install` finds the AI coding agents installed on your machine and installs the skills for all of them, into each agent's directory, ready to use. If it can't find any agent, it asks which one to target. To install for just one agent, pass `--agent <name>` (e.g. `--agent claude`).
-
-<details>
-<summary>Don't have Node.js installed?</summary>
-
-**macOS**
-```bash
-brew install node
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
 ```
 
 **Windows**
-```bash
-winget install OpenJS.NodeJS.LTS
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
 ```
 
-**Linux**
-```bash
-curl -fsSL https://fnm.vercel.app/install | bash
-fnm install --lts
-```
-See [Installing Node.js via package manager](https://nodejs.org/en/download/package-manager) for other methods.
+The installer runs `uip skills install --no-interactive` to wire the skills into detected AI coding agents. To re-run manually or install for one agent, use `uip skills install` or pass `--agent <name>` (e.g. `--agent claude`).
 
-After installing, verify with `node -v` and then run the quick start command above.
-
-</details>
+For CI or a CLI-only machine, skip agent skills and runtime installs with `--skip-skills --skip-runtimes` on macOS/Linux or `-SkipSkills -SkipRuntimes` on Windows.
 
 ### Try a skill without installing anything
 
@@ -76,9 +59,10 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-planner** | Solution planner & designer — turn a Process Design Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
+| **uipath-planner** | Solution planner & designer — turn a Process Definition Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
 | **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
+| **uipath-genome** | Automation blueprints (`*-genome.md`) — extract one from an existing project, solution, or another framework's export; author one from a described idea; execute one to build or migrate the automation through the owning skills. |
 
 ### Platform & Operations
 
@@ -102,32 +86,37 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 <!-- BEGIN GENERATED SKILL STATUS -->
 | Skill | Status |
 |-------|--------|
-| `uipath-admin` | In-development |
-| `uipath-agents` | In-development |
-| `uipath-api-workflow` | In-development |
-| `uipath-automation-discovery` | Preview |
-| `uipath-automationhub` | In-development |
-| `uipath-coded-apps` | Preview |
+| `uipath-activity-migrator` | In-development |
+| `uipath-admin` | Stable |
+| `uipath-agents` | Stable |
+| `uipath-aops` | Preview |
+| `uipath-api-workflow` | Stable |
+| `uipath-automationhub` | Stable |
+| `uipath-coded-apps` | Stable |
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
 | `uipath-functions` | Preview |
-| `uipath-governance` | In-development |
-| `uipath-human-in-the-loop` | In-development |
+| `uipath-genome` | Preview |
+| `uipath-governance` | Preview |
+| `uipath-human-in-the-loop` | Stable |
 | `uipath-insights` | Preview |
-| `uipath-ixp` | In-development |
+| `uipath-ixp` | Stable |
+| `uipath-knowledge-bundles` | Preview |
 | `uipath-maestro-bpmn` | In-development |
-| `uipath-maestro-case` | In-development |
-| `uipath-maestro-flow` | In-development |
-| `uipath-mcp-servers` | In-development |
-| `uipath-planner` | Preview |
+| `uipath-maestro-case` | Preview |
+| `uipath-maestro-flow` | Stable |
+| `uipath-mcp-servers` | Preview |
+| `uipath-planner` | Stable |
 | `uipath-platform` | Stable |
 | `uipath-process-mining` | Preview |
 | `uipath-review` | Preview |
 | `uipath-rpa` | Stable |
-| `uipath-solution` | Preview |
-| `uipath-tasks` | Preview |
-| `uipath-test` | In-development |
+| `uipath-rules` | In-development |
+| `uipath-solution` | Stable |
+| `uipath-tasks` | Stable |
+| `uipath-test` | Preview |
 | `uipath-troubleshoot` | Preview |
+| `uipath-vertical-solutions` | Preview |
 
 **Status legend:**
 - **Stable** — Stable, production-ready surface; safe for production.
@@ -143,7 +132,20 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 
 ## Multi-Tool Support
 
-This repository works with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, and **Cursor IDE**.
+`uip skills install` supports these coding agents. It detects the installed ones automatically; pass `--agent <name>` to target one.
+
+| Agent | `--agent` |
+|-------|-----------|
+| Claude Code | `claude` |
+| Cursor | `cursor` |
+| GitHub Copilot | `copilot` |
+| Codex | `codex` |
+| OpenCode | `opencode` |
+| UiPath Autopilot | `autopilot` |
+| Kiro | `kiro` |
+| Windsurf | `windsurf` |
+| Antigravity CLI | `antigravity` |
+| Devin | `devin` |
 
 ### Claude Code
 
@@ -163,13 +165,9 @@ By default, Claude Code prompts for approval on every `uip` command, and a reali
 
 The command prints the recommended JSON and offers to merge it into your settings (`~/.claude/settings.json` for global, or project-local `.claude/settings.local.json`). You will also see a one-line nudge at session start until an allowlist is installed.
 
-### Google Gemini CLI
-
-Gemini CLI is supported by `uip skills install`. If the Gemini CLI is on your PATH, it's detected automatically and skills are wired up. If no agent is detected, pick **Gemini CLI** when prompted.
-
 ### OpenAI Codex CLI
 
-This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
+`uip skills install --agent codex` is the recommended install. Alternatively, this repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
 
 This repository also includes Codex plugin metadata under `.codex-plugin/`. The Codex plugin manifest exposes the same `skills/` directory and shared session hooks.
 
@@ -180,17 +178,25 @@ codex plugin marketplace add UiPath/skills --ref main
 codex plugin add uipath@uipath-marketplace
 ```
 
-The marketplace entry currently uses a `plugins/uipath` symlink so Codex can load the repository root as the plugin root; remove it once [openai/codex#17066](https://github.com/openai/codex/issues/17066) is resolved.
+> **Codex prerequisite:** Use Codex CLI 0.142.0 or later. This repository uses the repository root as the plugin root, supported since [openai/codex#17066](https://github.com/openai/codex/issues/17066) was resolved.
 
 > **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
 > ```bash
 > git clone -c core.symlinks=true https://github.com/UiPath/skills
 > ```
+>
 > If you've already cloned without symlink support, re-enable and re-checkout:
 > ```bash
 > git config core.symlinks true
 > git checkout -- .
 > ```
+>
+> If you encounter a `Filename too long` or `MAX_PATH` error during
+> checkout, enable Git long-path support:
+> ```bash
+> git config --global core.longpaths true
+> ```
+> Then retry the clone or checkout.
 
 ### Cursor IDE
 
@@ -218,6 +224,10 @@ For questions, ideas, or feedback, please [open an issue](https://github.com/UiP
 ### Running coder-eval on demand
 
 [**Run Coder Eval**](https://github.com/UiPath/skills/actions/workflows/run-coder-eval.yml) — GH-hosted workflow that runs `coder-eval` against the skills task tree (`tests/tasks/...`). Use for ad-hoc single-task verification or a folder-scoped sweep on the same infra as the nightly cron. Trigger from the Actions tab → "Run workflow" → fill in `task_globs`. Definition: [`.github/workflows/run-coder-eval.yml`](.github/workflows/run-coder-eval.yml).
+
+### Optimizing a skill's token use
+
+[**Optimize skill**](https://github.com/UiPath/skills/actions/workflows/optimize-skill.yml) — queues the [skill-trimming optimizer](https://github.com/UiPath/skill-trimming-optimizer), which shortens a skill's description, body and references, gates every cut on the skill's eval tasks, and opens a **draft PR** with the report (no PR if a cut regresses a task or the budget runs out). Trigger from the Actions tab → "Run workflow" **on `main`** → enter the skill folder name. You must be listed as a user in the skill's CODEOWNERS rule; team-only owners ask a listed user or an optimizer maintainer. Runs take several hours (up to a day for skills with `windows`-tagged tasks). Definition: [`.github/workflows/optimize-skill.yml`](.github/workflows/optimize-skill.yml).
 
 ## Resources
 

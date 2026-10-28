@@ -5,19 +5,18 @@ description: >
   schema to confirm the user-facing display names used by CSV headers, creates a correctly
   formatted CSV (no system fields), runs the bulk import, then verifies results
   with a supported records read. Tests the Discover → Act → Verify pattern for bulk data loading.
-tags:
-  [
-    uipath-platform,
-    data-fabric,
-    integration,
-    records,
-    import,
-    mode:build,
-    lifecycle:setup,
-  ]
+tags: [uipath-platform, data-fabric, integration, records, import, mode:build, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 25
   turn_timeout: 600
+
+reference:
+  directory: .
 
 initial_prompt: |
   We have an Inventory UiPath Data Fabric entity called `CE_IntegrationInventory` set up
@@ -34,7 +33,6 @@ initial_prompt: |
   and then pull the entity back to confirm everything came through —
   tell me how many rows got inserted and how many are now in the
   entity.
-
 success_criteria:
   - type: command_executed
     description: "Agent verified login status"
@@ -84,7 +82,7 @@ success_criteria:
 
   - type: run_command
     description: "End state (deterministic): 4 records landed in CE_IntegrationInventory after the CSV import"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationInventory --expected 4"
+    command: "python3 $REFERENCE_DIR/_shared/assert_record_count.py --entity-name CE_IntegrationInventory --expected 4"
     timeout: 240
     expected_exit_code: 0
     weight: 3.0
@@ -111,17 +109,12 @@ pre_run:
   # Schema-only seed: entity is created if missing, no records inserted.
   # The agent's job is to populate records via `records import` (CSV).
   - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
-      --entity-name CE_IntegrationInventory
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_inventory.schema.json
-      --reset
+      python3 _setup/seed_entity.py --entity-name CE_IntegrationInventory --schema-file _setup/seeds/integration_inventory.schema.json --reset
     timeout: 180
     fail_on_error: true
 
 post_run:
   # Schema-only revert: wipes whatever the agent imported. No records to re-insert.
   - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
-      --entity-name CE_IntegrationInventory
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_inventory.schema.json
+      python3 _setup/revert_entity_to_seed.py --entity-name CE_IntegrationInventory --schema-file _setup/seeds/integration_inventory.schema.json
     timeout: 180

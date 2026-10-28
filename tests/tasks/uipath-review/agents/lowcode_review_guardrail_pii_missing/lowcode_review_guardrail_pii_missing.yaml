@@ -23,10 +23,20 @@ run_limits:
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_guardrail_pii_missing/inject_guardrail_pii_missing.py"
+  - command: "python3 _setup/inject_guardrail_pii_missing.py"
     timeout: 30
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
@@ -34,7 +44,7 @@ initial_prompt: |
   including its guardrail configuration. Save the report to
   `./_review_report.md` at the sandbox root.
 
-  This is a read-only review — do not modify anything inside `ReviewSol/`.
+  Do not manually edit files inside `ReviewSol/`.
 
 success_criteria:
   - type: skill_triggered
@@ -66,8 +76,16 @@ success_criteria:
 
   - type: run_command
     description: "Review report identifies the missing PII guardrail (LC_GUARDRAIL_RECOMMENDED or prose)"
-    command: "python3 $TASK_DIR/check_lowcode_review_guardrail_pii_missing.py"
+    command: "python3 $REFERENCE_DIR/agents/lowcode_review_guardrail_pii_missing/check_lowcode_review_guardrail_pii_missing.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Step 6 recorded the final grade in CLI-owned review-history.json"
+    command: 'python3 $REFERENCE_DIR/_shared/check_review_history.py --project ReviewSol/SampleAgent --report _review_report.md'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0

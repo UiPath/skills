@@ -1,0 +1,97 @@
+#!/bin/sh
+# Version-serving `uip` mock for uipath-ixp smoke tasks that must resolve WHICH
+# model version a score belongs to. Overlays the base mock_template (list it
+# SECOND in template_sources so this file wins).
+#
+# The base mock fails every invocation, which makes this scenario unwinnable:
+# the correct path READS `list-models` to learn the live version and carries
+# that version into `get-metrics -m <N>`. A failing read leaves nothing to
+# carry, and an agent that declines to invent a version number correctly stops.
+#
+# Fixture — project my_invoices-f1afa9ef-ixp, modelled on a real project whose
+# live version was pinned long before its latest retrain:
+#
+#   version 30  latest trained, NOT published   ProjectScore 0.91
+#   version  9  published, tagged `live`        ProjectScore 0.98
+#
+# The live version scores HIGHER than the latest. That inversion is the point:
+# it is only reachable by an agent that resolves the version before reading the
+# score. An agent that runs a bare `get-metrics` gets 0.91 — a plausible number
+# that belongs to a version nobody deployed — so the two outcomes are
+# distinguishable in the graded artifact rather than merely differing in
+# command shape.
+#
+# Response shapes follow the skill's cli-reference: {Result, Code, Data}
+# envelope; list-models Data is { Models, Tags, MaxPublished }; get-metrics Data
+# is flat ({ ModelVersion, ValidatedDocuments, ProjectScore, ProjectScoreQuality,
+# FieldGroups, Fields }).
+#
+# Logging matches the base mock exactly — same `uip ` prefix, same newline
+# normalization — so anchored `^uip\s+ixp …` criteria keep matching.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+# Per-version metrics bodies. Field ids are opaque by design; this fixture
+# predates the `Name` field the API now returns next to `FieldId` and omits it
+# — nothing here grades names, this fixture grades version choice.
+METRICS_V9='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":9,"ValidatedDocuments":5,"ProjectScore":0.98,"ProjectScoreQuality":"excellent","FieldGroups":[{"FieldGroup":"Invoice Header","F1":0.978,"Precision":0.978,"Recall":0.978,"ErrorRate":0.022,"Documents":5}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"9a3f5d2c81b7e604","F1":0.978,"Precision":0.978,"Recall":0.978,"ErrorRate":0.022,"Documents":5,"Annotations":5,"Quality":"excellent"}]}}'
+METRICS_V30='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":30,"ValidatedDocuments":5,"ProjectScore":0.91,"ProjectScoreQuality":"excellent","FieldGroups":[{"FieldGroup":"Invoice Header","F1":0.864,"Precision":0.778,"Recall":0.972,"ErrorRate":0.222,"Documents":5}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"9a3f5d2c81b7e604","F1":0.889,"Precision":0.8,"Recall":1,"ErrorRate":0.2,"Documents":5,"Annotations":5,"Quality":"good"}]}}'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsList","Data":{"Projects":[{"Id":"f1afa9ef-1c4d-4b70-9e02-6d3b8a5c7e11","Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","CreatedAt":"2026-06-11T08:42:19Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGet","Data":{"Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","Description":"Supplier invoices","CreatedTime":"2026-06-11T08:42:19Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsListModels","Data":{"Models":[{"Version":30,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-06T10:20:20.407837+00:00","Description":""},{"Version":9,"ModelName":"gemini_ixp","Pinned":true,"TrainedTime":"2026-07-24T09:12:13.533725+00:00","Description":"Invoice extractor - ProjectScore 0.98 after 2 prompt-improvement iterations."}],"Tags":[{"Name":"live","Version":9,"UpdatedAt":"2026-07-24T09:14:08.456568+00:00"}],"MaxPublished":100}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+    # Scan the whole argument list for the version selector: `-m`/`--model-version`
+    # may sit before or after the positional project name, and the skill's own
+    # examples show both orders.
+    version=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        -m|--model-version)
+            version="$2"
+            shift
+            ;;
+        --model-version=*)
+            version="${1#--model-version=}"
+            ;;
+        esac
+        shift
+    done
+    case "$version" in
+    9)
+        printf '%s\n' "$METRICS_V9"
+        ;;
+    ""|latest|30)
+        # No selector, or an explicit latest — the CLI's own default.
+        printf '%s\n' "$METRICS_V30"
+        ;;
+    *)
+        printf '%s\n' '{"Result":"Failure","ErrorCode":"not_found","Message":"Model version not found."}'
+        exit 1
+        ;;
+    esac
+    exit 0
+;;
+esac
+
+# Everything else fails like the base mock: offline, no network call.
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

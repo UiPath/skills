@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OrdersV1",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "34c60ec8-acc4-4c06-8378-709ee02d8883",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "OrdersV1"
+    },
+    "locks": [],
+    "key": "936416aa-c139-44a9-9eac-dce27bae84ad",
+    "files": []
+  }
+}

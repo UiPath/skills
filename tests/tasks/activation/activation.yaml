@@ -9,12 +9,13 @@ tags: [activation, classification]
 
 dataset:
   paths:
+    - uipath-activity-migrator.jsonl
     - uipath-admin.jsonl
     - uipath-agents.jsonl
     - uipath-api-workflow.jsonl
-    - uipath-automation-discovery.jsonl
     - uipath-coded-apps.jsonl
     - uipath-functions.jsonl
+    - uipath-genome.jsonl
     - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
@@ -30,6 +31,7 @@ dataset:
     - uipath-process-mining.jsonl
     - uipath-review.jsonl
     - uipath-rpa.jsonl
+    - uipath-rules.jsonl
     - uipath-solution.jsonl
     - uipath-tasks.jsonl
     - uipath-test.jsonl
@@ -38,10 +40,17 @@ dataset:
 
 initial_prompt: "${row.prompt}"
 
-# 24 skill_triggered criteria — one per skill. Each derives expected internally
+# 27 skill_triggered criteria — one per skill. Each derives expected internally
 # from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~1100 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
+  - type: skill_triggered
+    description: "uipath-activity-migrator activation"
+    skill_name: uipath-activity-migrator
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-admin activation"
     skill_name: uipath-admin
@@ -59,13 +68,6 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-api-workflow activation"
     skill_name: uipath-api-workflow
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-    stop_early:
-      on_pass: stop
-  - type: skill_triggered
-    description: "uipath-automation-discovery activation"
-    skill_name: uipath-automation-discovery
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:
@@ -213,6 +215,20 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-connector-builder activation"
     skill_name: uipath-connector-builder
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-rules activation"
+    skill_name: uipath-rules
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-genome activation"
+    skill_name: uipath-genome
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:

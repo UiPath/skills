@@ -40,7 +40,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Agent did NOT invent a redundant custom data type (Critical Rule 17 — reuse defaults)"
+    description: "Agent did NOT invent a redundant custom data type (Critical Rule 16 — reuse defaults)"
     path: "mocks/calls.log"
     pattern: >-
       (?m)^(?:uip\s+ixp\s+data-types\s+add\b)[^\r\n]*$

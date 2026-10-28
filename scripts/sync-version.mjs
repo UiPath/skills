@@ -9,7 +9,9 @@
  *   - .claude-plugin/plugin.json   .version (== package.json base version)
  *   - .claude-plugin/marketplace.json  .plugins[0].version (== plugin.json)
  *   - .codex-plugin/plugin.json    .version (== plugin.json — Codex channel)
+ *   - .agents/plugins/marketplace.json .plugins[0].version (== plugin.json)
  *   - .cursor-plugin/plugin.json   .version (== plugin.json — Cursor channel)
+ *   - gemini-extension.json        .version (== plugin.json — Gemini CLI channel)
  *
  * `targetCli` is derived as the matching @uipath/cli minor line
  * (`^MAJOR.MINOR.0`). A skills release tracks the CLI minor line it ships
@@ -21,14 +23,14 @@
  * alpha stamp from publish.yml) are NOT propagated: plugin auto-update wants
  * plain versions, and the plugin channel is a git ref, not the npm tarball.
  * `.claude-plugin/plugin.json` is the canonical plugin version; the
- * marketplace, Codex, and Cursor manifests mirror it. Rules enforced here:
+ * marketplace, Codex, Cursor, and Gemini manifests mirror it. Rules enforced here:
  *   - plugin version != package.json base version -> rewrite to the base
  *     version (errors out if package.json's base version is BELOW the plugin
  *     version — plugin auto-update never downgrades, so a lower version
  *     would freeze users)
- *   - marketplace .plugins[0].version, .codex-plugin/plugin.json .version,
- *     and .cursor-plugin/plugin.json .version must always equal
- *     .claude-plugin/plugin.json .version
+ *   - both marketplace manifests' .plugins[0].version, and the .version of
+ *     .codex-plugin/plugin.json, .cursor-plugin/plugin.json and
+ *     gemini-extension.json, must always equal .claude-plugin/plugin.json .version
  * See docs/RELEASE.md.
  *
  * Usage:
@@ -58,7 +60,9 @@ const PATHS = {
   plugin: join(ROOT, ".claude-plugin", "plugin.json"),
   marketplace: join(ROOT, ".claude-plugin", "marketplace.json"),
   codexPlugin: join(ROOT, ".codex-plugin", "plugin.json"),
+  codexMarketplace: join(ROOT, ".agents", "plugins", "marketplace.json"),
   cursorPlugin: join(ROOT, ".cursor-plugin", "plugin.json"),
+  geminiExtension: join(ROOT, "gemini-extension.json"),
 };
 
 // `--list-paths` prints every file this script owns -- the authoritative
@@ -147,39 +151,55 @@ if (plugin.version !== pluginVersion) {
   writes.push(() => writeJson(PATHS.plugin, plugin));
 }
 
+/**
+ * Sync one marketplace manifest's `plugins[0].version` to the canonical plugin
+ * version. Both marketplaces (Claude Code's and Codex's) carry the version
+ * nested in a `plugins[]` array rather than at the top level, so an absent or
+ * empty array is a hard error: there is no version to sync, and treating that
+ * as a no-op is how a manifest silently stops tracking releases.
+ */
+function syncMarketplaceVersion(label, path) {
+  const doc = readJson(path);
+  if (!Array.isArray(doc.plugins) || doc.plugins.length === 0) {
+    console.error(`✗ ${label} has no plugins[] entry to sync.`);
+    process.exit(1);
+  }
+  if (doc.plugins[0].version !== pluginVersion) {
+    drift.push(`${label}: ${doc.plugins[0].version} -> ${pluginVersion}`);
+    doc.plugins[0].version = pluginVersion;
+    writes.push(() => writeJson(path, doc));
+  }
+}
+
+/** Sync a channel manifest's top-level `version` to the canonical plugin version. */
+function syncTopLevelVersion(label, path) {
+  const doc = readJson(path);
+  if (doc.version !== pluginVersion) {
+    drift.push(`${label}: ${doc.version} -> ${pluginVersion}`);
+    doc.version = pluginVersion;
+    writes.push(() => writeJson(path, doc));
+  }
+}
+
 // .claude-plugin/marketplace.json — must equal plugin.json exactly.
-const marketplace = readJson(PATHS.marketplace);
-if (!Array.isArray(marketplace.plugins) || marketplace.plugins.length === 0) {
-  console.error("✗ .claude-plugin/marketplace.json has no plugins[] entry to sync.");
-  process.exit(1);
-}
-if (marketplace.plugins[0].version !== pluginVersion) {
-  drift.push(
-    `.claude-plugin/marketplace.json: ${marketplace.plugins[0].version} -> ${pluginVersion}`,
-  );
-  marketplace.plugins[0].version = pluginVersion;
-  writes.push(() => writeJson(PATHS.marketplace, marketplace));
-}
+syncMarketplaceVersion(".claude-plugin/marketplace.json", PATHS.marketplace);
 
 // .codex-plugin/plugin.json — Codex distribution channel; must equal plugin.json.
-const codexPlugin = readJson(PATHS.codexPlugin);
-if (codexPlugin.version !== pluginVersion) {
-  drift.push(
-    `.codex-plugin/plugin.json: ${codexPlugin.version} -> ${pluginVersion}`,
-  );
-  codexPlugin.version = pluginVersion;
-  writes.push(() => writeJson(PATHS.codexPlugin, codexPlugin));
-}
+syncTopLevelVersion(".codex-plugin/plugin.json", PATHS.codexPlugin);
+
+// .agents/plugins/marketplace.json — the marketplace entry Codex CLI reads via
+// `codex plugin marketplace add UiPath/skills`; must equal plugin.json. This is
+// a separate file from .codex-plugin/plugin.json above: that one is the plugin
+// manifest, this one is the marketplace index that points at it.
+syncMarketplaceVersion(".agents/plugins/marketplace.json", PATHS.codexMarketplace);
 
 // .cursor-plugin/plugin.json — Cursor distribution channel; must equal plugin.json.
-const cursorPlugin = readJson(PATHS.cursorPlugin);
-if (cursorPlugin.version !== pluginVersion) {
-  drift.push(
-    `.cursor-plugin/plugin.json: ${cursorPlugin.version} -> ${pluginVersion}`,
-  );
-  cursorPlugin.version = pluginVersion;
-  writes.push(() => writeJson(PATHS.cursorPlugin, cursorPlugin));
-}
+syncTopLevelVersion(".cursor-plugin/plugin.json", PATHS.cursorPlugin);
+
+// gemini-extension.json — Gemini CLI extension manifest; must equal plugin.json.
+// Gemini detects updates from git commits or GitHub Releases rather than this
+// field, but the gallery and `gemini extensions list` display it.
+syncTopLevelVersion("gemini-extension.json", PATHS.geminiExtension);
 
 if (CHECK) {
   if (drift.length > 0) {

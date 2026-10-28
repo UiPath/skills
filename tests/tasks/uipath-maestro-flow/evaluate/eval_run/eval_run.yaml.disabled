@@ -25,13 +25,22 @@ description: >
   uipath-maestro-flow skill.
 tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute, feature:eval, path-to-ga]
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
 run_limits:
   max_turns: 90
   turn_timeout: 1800
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 90
+
+reference:
+  directory: .
 
 initial_prompt: |
   Build a deterministic UiPath Flow and run a Studio Web evaluation
@@ -211,7 +220,7 @@ success_criteria:
 
   - type: run_command
     description: "The data point completed and scored 1.0 from exact-match evaluator"
-    command: "python3 $TASK_DIR/check_eval_run.py"
+    command: "python3 $REFERENCE_DIR/check_eval_run.py"
     timeout: 30
     expected_exit_code: 0
     weight: 8.0

@@ -16,6 +16,9 @@ run_limits:
   expected_turns: 24
   turn_timeout: 600
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Our automations have felt unreliable over the last week and I need to
   know where we stand. Investigate the last 7 days of job executions:
@@ -93,7 +96,7 @@ success_criteria:
 
   - type: run_command
     description: "Saved envelopes carry Result=Success with the correct Code per subcommand; report is non-trivial and names a failing process the CLI reported; a live CLI read confirms the tenant answers Insights queries; empty window passes structurally"
-    command: "python3 $TASK_DIR/check_job_health_investigation.py"
+    command: "python3 $REFERENCE_DIR/job-health/check_job_health_investigation.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

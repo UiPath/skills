@@ -78,6 +78,7 @@ success_criteria:
       non-UUID resource identifier as the cause and says a valid resource UUID is
       needed. Fail it if it names a specific policy as the blocker, claims a Deny
       rule matched, or asserts the policies must be changed.
+    include_reference: false
     weight: 2.5
     pass_threshold: 1.0
 

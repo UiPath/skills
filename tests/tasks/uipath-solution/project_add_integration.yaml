@@ -71,5 +71,6 @@ success_criteria:
       Score 0.0 if the reply claims zero projects, invents multiple
       fictional projects, dodges the question, or only dumps raw command
       output with no interpretation.
+    include_reference: false
     weight: 1.5
     pass_threshold: 1.0

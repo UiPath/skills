@@ -19,7 +19,7 @@ Checks (domain-agnostic):
   1. Mapping integrity — every ``=vars.<name>`` resolves to a §Case Variables row.
   2. Lineage closure  — every consumed variable is produced before use (In /
      Default / sourceTriggers / task Output ``-> name`` / button ``name = ...``).
-  3. Task-type enum   — every task ``Type`` is one of the 9 legal types.
+  3. Task-type enum   — every task ``Type`` is one of the 11 legal types.
   4. Per-gate rule legality — each Entry / Completion / Exit / Case-exit rule is
      legal **for its gate**, with the correct Marks-Complete pairing.
   5. Conditions present — each stage section has Entry + Exit conditions, and the
@@ -42,9 +42,20 @@ import re
 import sys
 
 TASK_TYPES = {
-    "action", "agent", "rpa", "process", "api-workflow",
-    "execute-connector-activity", "wait-for-connector", "wait-for-timer",
-    "case-management",
+    "action", "agent", "rpa", "process", "api-workflow", "function",
+    "business-rule", "execute-connector-activity", "wait-for-connector",
+    "wait-for-timer", "case-management", "http-request", "flow-process",
+    "external-agent", "external-workflow", "document-extraction",
+}
+# The CLI declaration's other two lists (`uip maestro case task-types list`):
+# real types an SDD cannot declare, and names from other layers that are no task
+# type at all, each with the plan type meant. test_task_types.py holds both to
+# the snapshot, so a spelling is added upstream, never here first.
+STUDIO_WEB_ONLY = {"script"}
+NOT_TASK_TYPES = {
+    "connector-activity": "execute-connector-activity",
+    "connector-trigger": "wait-for-connector",
+    "wait-for-event": "wait-for-connector",
 }
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
@@ -63,6 +74,8 @@ CASE_EXIT = {"selected-stage-completed", "selected-stage-exited",
              "wait-for-connector"}                                       # Marks: No
 EXIT_TYPES = {"exit-only", "wait-for-user", "return-to-origin"}
 RETURN_TO_ORIGIN_COMPLETION = {"required-tasks-completed", "wait-for-connector"}
+for _gate in (STAGE_ENTRY, STAGE_COMPLETION, STAGE_EXIT, TASK_ENTRY, CASE_COMPLETION, CASE_EXIT):
+    _gate.add("api-event")  # a business event: every gate the Designer offers, never a case trigger
 KNOWN_RULES = STAGE_ENTRY | STAGE_COMPLETION | STAGE_EXIT | TASK_ENTRY | CASE_COMPLETION | CASE_EXIT
 SUMMARY_ONLY_HEADINGS = {
     "Source", "Case Objective", "Actors And Systems", "Case Trigger", "Stages",
@@ -78,11 +91,17 @@ TASK_DETAIL_MARKERS = {
     "execute-connector-activity": ("Connector Task Detail", "**Connector:**", "**Resolved Resource:**"),
     "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**", "**Timer:**"),
     "case-management": ("Child Case Task Detail", "**Child Case:**"),
+    "http-request": ("HTTP Request Task Detail", "**Method:**", "**URL:**"),
+    "document-extraction": ("Document Extraction Task Detail", "**IXP Deployment:**", "**Model Name:**"),
     "process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "agent": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "rpa": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "api-workflow": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "function": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "business-rule": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "flow-process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
 }
+TASK_DETAIL_MARKERS |= dict.fromkeys(("external-agent", "external-workflow"), TASK_DETAIL_MARKERS["execute-connector-activity"])
 
 
 def _find_sdd() -> str:
@@ -207,6 +226,25 @@ def _sdd_template_shape_issues(text: str, source: str = "sdd.md") -> list[str]:
     return issues
 
 
+def _name_only(cell: str) -> str:
+    """Strip provenance/qualifier annotations so a NAME check sees only the name.
+
+    SDD table cells carry the template's provenance dialect — e.g.
+    ``LoanOrigination Case SLA _(source: inferred-default:no title stated)_`` —
+    and may carry a trailing parenthetical qualifier. Neither is part of the
+    authored name, but both contain ':' and so tripped the ':' ban: nightly
+    2026-08-31 failed a finalized SDD with "SLA title contains ':'" for a title
+    that was plainly ``LoanOrigination Case SLA``. The stage and task checks
+    below already strip a trailing parenthetical before testing; this applies
+    the same rule to the SLA-title cells. A colon in the name itself still
+    fails, which is the invariant the ban exists to protect.
+    """
+    value = cell.strip()
+    value = re.sub(r"_\([^)]*\)_\s*$", "", value).strip()
+    value = re.sub(r"\s*\([^)]*\)\s*$", "", value).strip()
+    return value
+
+
 def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
     """Mirror the deterministic stage/task/SLA checks performed by PO.Frontend."""
     issues: list[str] = []
@@ -264,7 +302,7 @@ def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
                     f"{source}:{line_no}"
                 )
             if stage_variable_sla:
-                display = cells[3].strip().strip("\"'") if len(cells) >= 4 else ""
+                display = _name_only(cells[3].strip().strip("\"'")) if len(cells) >= 4 else ""
                 if not display or display in {"—", "-"}:
                     issues.append(
                         f"naming: SLA title is missing at {source}:{line_no}"
@@ -300,11 +338,11 @@ def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
             if ":" in label:
                 issues.append(f"naming: task name contains ':' at {source}:{line_no}: {label!r}")
 
-        # SDDs may expose an explicit SLA title, while Phase 1 carries the same
-        # value as tasks.md `display-name` on an SLA escalation T-entry.
+        # SDDs may expose an explicit SLA title; the build carries the same value
+        # onto the caseplan SLA/escalation element.
         sla_title = re.match(r"^\|\s*SLA Title\s*\|\s*([^|]*)\|", line, re.I)
         if sla_title:
-            value = sla_title.group(1).strip()
+            value = _name_only(sla_title.group(1))
             if not value or value in {"—", "-"}:
                 issues.append(f"naming: SLA title is missing at {source}:{line_no}")
             if ":" in value:
@@ -321,81 +359,12 @@ def _colon_issues(text: str, source: str = "sdd.md") -> list[str]:
     return [issue for issue in _sdd_frontend_issues(text, source) if "contains ':'" in issue]
 
 
-def _parse_value(value: str) -> str:
-    value = value.strip().strip('"\'')
-    return "" if value in {"", "—", "-"} else value
-
-
-def _tasks_frontend_issues(text: str, source: str) -> list[str]:
-    """Validate SLA T-entries using the same name/value invariants as FE."""
-    issues: list[str] = []
-    blocks = re.split(r"(?=^##\s+T\d+\b)", text, flags=re.M)
-    rule_names: dict[str, set[str]] = {}
-    escalation_names: dict[str, set[str]] = {}
-    for block in blocks:
-        header = re.match(r"##\s+T\d+[^\n]*", block)
-        if not header:
-            continue
-        header_text = header.group(0)
-        is_escalation = bool(re.search(r"Add escalation rule for", header_text, re.I))
-        is_sla_entry = is_escalation or bool(
-            re.search(r"Set default SLA for|Add conditional SLA rule for", header_text, re.I)
-        )
-        if not is_sla_entry:
-            continue
-        target_match = re.search(r"^\s*-\s*target:\s*[\"']?([^\"'\n]+)", block, re.M | re.I)
-        target = (target_match.group(1).strip() if target_match else "root")
-        display_match = re.search(r"^\s*-\s*display-name:\s*(.*?)\s*$", block, re.M | re.I)
-        display = _parse_value(display_match.group(1)) if display_match else ""
-        names = escalation_names if is_escalation else rule_names
-        names.setdefault(target, set())
-        if not display:
-            issues.append(f"naming: {'escalation' if is_escalation else 'SLA'} title is missing at {source}")
-        elif display in names[target]:
-            issues.append(f"naming: duplicate {'escalation' if is_escalation else 'SLA'} title {display!r} at {source}")
-        else:
-            names[target].add(display)
-        if ":" in display:
-            issues.append(f"naming: {'escalation' if is_escalation else 'SLA'} title contains ':' at {source}")
-
-        count_match = re.search(r"^\s*-\s*count:\s*([0-9]+(?:\.[0-9]+)?)\s*$", block, re.M | re.I)
-        unit_match = re.search(r"^\s*-\s*unit:\s*(\S+)\s*$", block, re.M | re.I)
-        if count_match:
-            count = float(count_match.group(1))
-            unit = unit_match.group(1).strip().lower() if unit_match else ""
-            if count <= 0:
-                issues.append(f"sla: count must be positive at {source}")
-            if unit == "min" and not 15 <= count <= 1000:
-                issues.append(f"sla: minute count must be between 15 and 1000 at {source}")
-
-        if re.search(r"conditional SLA rule", header_text, re.I):
-            condition = re.search(r"^\s*-\s*(?:condition|expression):\s*(.*?)\s*$", block, re.M | re.I)
-            if not condition or not _parse_value(condition.group(1)):
-                issues.append(f"sla: conditional rule requires an expression at {source}")
-
-        if is_escalation:
-            recipients = re.findall(r"^\s*-\s+(?:User|UserGroup):\s*.+$", block, re.M)
-            if not recipients:
-                issues.append(f"sla: escalation requires at least one recipient at {source}")
-            if re.search(r"^\s*-\s*trigger-type:\s*at-risk\s*$", block, re.M | re.I):
-                if not re.search(r"^\s*-\s*at-risk-percentage:\s*\S+", block, re.M | re.I):
-                    issues.append(f"sla: at-risk escalation requires at-risk-percentage at {source}")
-    return issues
-
-
 def main() -> None:
     path = _find_sdd()
     text = open(path, encoding="utf-8").read()
     issues: list[str] = []
     issues.extend(_sdd_template_shape_issues(text, path))
     issues.extend(_sdd_frontend_issues(text, path))
-
-    # When Phase 1 has already generated tasks.md next to the SDD, validate its
-    # SLA and escalation T-entries before JSON emission.
-    tasks_path = glob.glob("**/tasks/tasks.md", recursive=True)
-    for candidate in sorted(tasks_path):
-        tasks_text = open(candidate, encoding="utf-8").read()
-        issues.extend(_tasks_frontend_issues(tasks_text, candidate))
 
     # --- §Case Variables: | name | In/Out/Variable | type | srcTrig | srcFld | default | desc |
     declared: set[str] = set()
@@ -439,13 +408,21 @@ def main() -> None:
     # 3. task-type enum
     # Per-stage **Type:** is always "Stage" post-consolidation; "ExceptionStage"
     # stays whitelisted for back-compat with un-migrated SDDs. Task rows carry the
-    # 9 legal task types. The new **Stage Kind:** field is matched separately below.
+    # 11 legal task types. The new **Stage Kind:** field is matched separately below.
     bad_types = sorted(
         {t for t in re.findall(r"^\*\*Type:\*\*\s*(\S+)", text, re.M)
          if t not in ("Stage", "ExceptionStage") and t not in TASK_TYPES}
     )
-    if bad_types:
-        issues.append(f"task-type: invalid type(s): {', '.join(bad_types)}")
+    # Worded like `sdd convert`'s task-type item, so an author reads one message, and
+    # matched the same way: case, `_` and spaces fold to `-` before every lookup.
+    for t in bad_types:
+        key = re.sub(r"[\s_]+", "-", t.strip().lower())
+        if key in STUDIO_WEB_ONLY:
+            issues.append(f'task-type: declares the type "{t}", a caseplan task type an SDD may not declare. Author this task in Studio Web.')
+            continue
+        meant = NOT_TASK_TYPES.get(key) or (key if key in TASK_TYPES else None)
+        hint = f' (did you mean "{meant}"?)' if meant else ""
+        issues.append(f'task-type: declares the type "{t}"{hint}, which is not one of the {len(TASK_TYPES)} an SDD may use')
 
     # 3b. **Stage Kind:** enum — optional field; when present must be primary|secondary.
     bad_kinds = sorted(

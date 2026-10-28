@@ -153,7 +153,7 @@
     },
     "databricks": {
       "connectorKey": "uipath-databricks-databricks",
-      "docsUrl": "https://docs.databricks.com/api/workspace/servingendpoints/query",
+      "docsUrl": "https://docs.databricks.com/api/model-serving-query/v1/query",
       "dynamic": true,
       "notes": "Workspace-specific host https://<workspace-host>/serving-endpoints/{name}/invocations (POST). Endpoint {name} (agent/model) is workspace-defined -> not knowable from docs. Auth: Bearer PAT/OAuth. Body shape depends on endpoint type: chat/completions/embeddings for foundation/external models (extra_params), dataframe_records/dataframe_split for custom models."
     },

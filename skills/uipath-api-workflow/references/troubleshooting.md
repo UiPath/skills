@@ -60,6 +60,11 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 - **Cause:** Using `$context.outputs` without optional chaining when no outputs exist yet
 - **Fix:** Always use `$context?.outputs` in export patterns
 
+### Loop fails only when it runs zero times
+- **Symptom:** A ForEach (or DoWhile) works for a non-empty collection but the run errors when the collection is empty or the count is `0`. Non-zero inputs pass, so the bug survives casual testing.
+- **Cause:** `output.as` reads `$context.outputs.<Loop_N>` without optional chaining. With zero iterations the body never runs, nothing ever creates `$context.outputs`, and the property access throws. A trailing `?? { results: [] }` does not help — the throw happens before `??` is evaluated.
+- **Fix:** For now, every loop `output.as` needs the optional form: `${$context?.outputs?.For_Each_N}` / `${$context?.outputs?.Do_While_N}`. Apply it even when the loop "obviously" always iterates — the input that makes it zero usually shows up later.
+
 ### ForEach body export missing index reset
 - **Symptom:** Results array grows incorrectly across loop iterations
 - **Cause:** Using the simpler DoWhile accumulation pattern instead of the ForEach index-aware pattern
@@ -243,7 +248,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   }
   ```
 - **Why it works:** Inside the outer `${{ ... }}` you're already in JS expression scope. The body is a JS object literal where unquoted keys are identifiers (`tier:`, `count:`), references like `$context.variables.tier` evaluate directly, string literals use single quotes (`status: 'ok'`), and numbers/booleans are bare (`count: 0`, `flag: true`). The designer recognizes the whole thing as a single expression and leaves it alone — it doesn't try to reinterpret each field.
-- **Either expression-form works:** `"${ { ... } }"` (single-brace expression containing a JS object literal) and `"${{ ... }}"` (double-brace object-literal-expression form) evaluate to the same value. Pick one convention; this skill standardizes on the double-brace form, but you may see single-brace in the wild and they are interchangeable.
+- **Either expression-form works:** `"${ { ... } }"` (single-brace expression containing a JS object literal) and `"${{ ... }}"` (double-brace object-literal-expression form) evaluate to the same value. Pick one convention; this skill standardizes on the double-brace form, but you may see single-brace in the wild and they are interchangeable. Never combine them: `"${{ { ... } }}"` passes `validate` but fails at run time with `Unexpected token '{'`.
 - **Single-value responses are fine as-is:** `"response": "${$context.outputs.Javascript_1}"` or `"response": "${'done'}"` — the designer only mangles object payloads, not single expressions.
 <!--skill-flavor:designer-roundtrip-runtime-check:start-->
 - **On-disk is authoritative — re-validate after every designer save.** Even with the single-expression workaround, every StudioWeb designer save may re-trigger normalization passes that corrupt the Response shape. Treat the file on disk as the source of truth: after any designer roundtrip, re-run `uip api-workflow run --no-auth --output json` and inspect the Response output. If a field has become the literal text of its expression (a long string instead of the evaluated value), the file was re-corrupted — re-apply the single-expression workaround in the file directly, and consider keeping CLI-authored workflows out of designer save cycles until the designer fix ships.
@@ -314,7 +319,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 <!--skill-flavor:connection-remediation:start-->
 - **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. Do NOT conclude "no connection exists" from an empty filtered or unfiltered listing — run `--all-folders` first. Only if the filtered, unfiltered, AND `--all-folders` listings all fail to yield a working UUID should you abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
 <!--skill-flavor:connection-remediation:end-->
-- **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-kind-only) for the full discovery+fallback flow.
+- **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-only) for the full discovery+fallback flow.
 
 ### IntSvc kind activity output read at the root returns `undefined`
 
@@ -357,7 +362,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   // ✗ Wrong — dropped on save
   "bodyParameters": {
     "message": {
-      "toRecipients": "andrei.hodoroaga@uipath.com",
+      "toRecipients": "<RECIPIENT_EMAIL>",
       "subject": "test",
       "body": { "content": "<p>hi</p>", "contentType": "Html" }
     },
@@ -366,36 +371,36 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
   // ✓ Correct — survives roundtrip
   "bodyParameters": {
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "test",
     "message.body.content": "<p>hi</p>",
     "message.body.contentType": "Html",
     "saveToSentItems": true
   }
   ```
-- **Same rule** applies to `queryParameters` and `pathParameters`. The IS proxy unflattens the dotted keys into a nested wire payload before calling the vendor — so the over-the-wire JSON ends up identical, but the on-disk shape must be flat. See [connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys](connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys).
+- **Same rule** applies to `queryParameters` and `pathParameters`. The IS proxy unflattens the dotted keys into a nested wire payload before calling the vendor — so the over-the-wire JSON ends up identical, but the on-disk shape must be flat. See [connector-activity-discovery.md — Rule (a)](connector-activity-discovery.md#rule-a--flat-dotted-keys).
 
 ### Connector `bodyParameters` literal cleared after StudioWeb save (`${'literal'}` read as expression)
 
 <!--skill-flavor:connector-literal-roundtrip-symptom:start-->
-- **Symptom:** Authored connector body with literals wrapped per the Assign rule — `"message.toRecipients": "${'andrei.hodoroaga@uipath.com'}"`. Workflow runs locally. After StudioWeb save, the field becomes empty (or shows a non-literal expression marker in the designer); the email goes out with no recipient.
+- **Symptom:** Authored connector body with literals wrapped per the Assign rule — `"message.toRecipients": "${'<RECIPIENT_EMAIL>'}"`. Workflow runs locally. After StudioWeb save, the field becomes empty (or shows a non-literal expression marker in the designer); the email goes out with no recipient.
 <!--skill-flavor:connector-literal-roundtrip-symptom:end-->
 - **Cause:** SKILL.md rule 5 (literal-wrap as `${'foo'}`) applies to **Assign / Response / If `when`**, NOT to connector params. StudioWeb's connector field detector treats `${...}` as a non-literal expression — it's looking for either a bare literal value or a real reference. `${'foo'}` looks like neither (it's a literal-disguised-as-expression), so the value isn't bound as a field literal and is dropped.
 - **Fix:** Bare literals in connector params:
   ```json
   // ✗ Wrong — cleared on save
   "bodyParameters": {
-    "message.toRecipients": "${'andrei.hodoroaga@uipath.com'}",
+    "message.toRecipients": "${'<RECIPIENT_EMAIL>'}",
     "message.subject": "${'this is a claude skill test'}"
   }
 
   // ✓ Correct — bare literals
   "bodyParameters": {
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "this is a claude skill test"
   }
   ```
-  References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped](connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped).
+  References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md — Rule (b)](connector-activity-discovery.md#rule-b--bare-connector-literals).
 
 ### Connector slot key and export-bucket key can differ — use the stub's values
 
@@ -420,7 +425,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   "when": "${$context.outputs.getNewestEmail_1?.content?.subject?.length > 15}"
   "response": "${{ subject: $context.outputs.getNewestEmail_1.content.subject }}"
   ```
-- **Rule:** Read `Data.SlotKey` and `Data.ExportBucketKey` from `uip api-workflow registry stub` output. Use both verbatim. Never derive either from `objectName` by hand. See [connector-activity-discovery.md — Rule (c)](connector-activity-discovery.md#rule-c--use-dataslotkey-and-dataexportbucketkey-from-the-stub-verbatim).
+- **Rule:** Read `Data.SlotKey` and `Data.ExportBucketKey` from `uip api-workflow registry stub` output. Use both verbatim. Never derive either from `objectName` by hand. See [connector-activity-discovery.md — Rule (c)](connector-activity-discovery.md#rule-c--preserve-both-computed-keys).
 
 ### `400 "Unable to parse multipart body"` from a curated send-email-style endpoint
 
@@ -432,7 +437,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   "with": {
     "endpoint": "/hubs/productivity/send-mail-v2",
     "bodyParameters": {
-      "message.toRecipients": "andrei.hodoroaga@uipath.com",
+      "message.toRecipients": "<RECIPIENT_EMAIL>",
       "message.subject": "...",
       "message.body.content": "...",
       "message.body.contentType": "Text",
@@ -445,7 +450,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     ]
   }
   ```
-- **What the executor does with `multipartParameters`:** `is-utils.js:constructMultipartFormData` walks the array. For `dataType: "string"` parts, it JSON-stringifies the **entire `bodyParameters` object** and stuffs the resulting string into the multipart part with that name. So `bodyParameters` (with its flat-dotted keys) becomes the JSON content of the multipart `body` part. For `dataType: "file"` parts, the part is left empty unless the activity supplies a file reference (rarely needed for the no-attachment case — Outlook accepts an empty `file` part). See [connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration](connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration).
+- **What the executor does with `multipartParameters`:** `is-utils.js:constructMultipartFormData` walks the array. For `dataType: "string"` parts, it JSON-stringifies the **entire `bodyParameters` object** and stuffs the resulting string into the multipart part with that name. So `bodyParameters` (with its flat-dotted keys) becomes the JSON content of the multipart `body` part. For `dataType: "file"` parts, the part is left empty unless the activity supplies a file reference (rarely needed for the no-attachment case — Outlook accepts an empty `file` part). See [connector-activity-discovery.md — Multipart endpoints](connector-activity-discovery.md#multipart-endpoints).
 
 <!--skill-flavor:solution-resource-diagnostics:start-->
 ### Properties panel: "to debug this resource, select a connection for it from the resource definition page"
@@ -499,7 +504,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   ```
   Place it at `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`. Reuse the `solution_folder` name from any existing `Solution/resources/<folder>/package/<workflow>.json` (`folders[0].fullyQualifiedName`); default is `"solution_folder"`. One file per unique connection UUID — if the workflow has two activities reusing one connection, write one file; two distinct connections → two files.
 - **Note on the user-profile debug overwrite.** StudioWeb additionally writes `Solution/userProfile/<guid>/debug_overwrites.json` mapping `solutionResourceKey` to a concrete folder + connection at debug time. That file is per-user state, written by the designer the first time you assign a debug connection. The agent does not author it; if it's missing, debug runs from the StudioWeb UI will prompt for a connection but won't 401.
-- **See also:** [connector-activity-discovery.md — Step 5](connector-activity-discovery.md#step-5--solutions-mode-intsvc-kind-declare-the-connection-as-a-solution-resource) for the full flow, including where each field value comes from.
+- **See also:** [connector-activity-discovery.md — Step 5](connector-activity-discovery.md#step-5--solutions-mode-intsvc-connection-synchronization) for the full flow, including where each field value comes from.
 <!--skill-flavor:solution-resource-diagnostics:end-->
 
 ### Required request field dropped by `registry stub`
@@ -531,7 +536,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 <!--skill-flavor:resource-lookup-runtime:end-->
 - **Heuristic:** when the stub returns empty `queryParameters` / `pathParameters` / `bodyParameters` for a non-trivial vendor operation, treat it as the bug. Real endpoints (CRUD on real objects, list-with-filters operations) almost never have zero required inputs.
 - **Upstream:** the stub IS surfacing the metadata it has — `metadata.configuration` contains the full `inputFields` list — so this is a CLI-side fix where the stub should populate defaults/placeholders from `required: true` fields, not a missing-data issue. Until that ships, the cross-check is mandatory per skill rule 16 step 4.
-- **See also:** [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check--the-stub-drops-required-true-request-fields).
+- **See also:** [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check).
 
 ### `401 — Failed to execute IS call to /<endpoint>: Invalid Organization or User secret, or invalid Element token provided`
 
@@ -541,7 +546,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Cause:** The IS proxy's auth flow for `/elements_/v3/element/instances/{connectionId}/{operationName}` rejected the call. There are two distinct sub-cases — diagnose by looking at the URL the proxy hit:
 
   **Sub-case A — Wrong endpoint on the connection's element.** The endpoint in the proxy URL doesn't exist on the target connection's connector. Most common when an agent uses Http kind (`call: "UiPath.Http"` with `endpoint: "/http-request"`) but `connectionId` points at a vendor connection (Outlook, Gmail, etc.) instead of a `uipath-uipath-http` connection. The Outlook connector has no `/http-request` operation, only its curated ones (`/getNewestEmail`, `/sendEmail`, …) — so the proxy returns 401 as a generic "I can't service this request" rather than "operation not found."
-  - **Fix:** Switch to IntSvc kind (`call: "UiPath.IntSvc"`, `with.connector` = the vendor key, `with.endpoint` = `"/<curated-operation-name>"`). See [connector-activity-discovery.md — IntSvc kind](connector-activity-discovery.md#intsvc-kind--call-uipathintsvc-vendor-curated-activity) — IntSvc kind is for vendor activities, Http kind is only for the `uipath-uipath-http` HTTP Request activity.
+  - **Fix:** Switch to IntSvc kind (`call: "UiPath.IntSvc"`, `with.connector` = the vendor key, `with.endpoint` = `"/<curated-operation-name>"`). See [connector-activity-discovery.md — IntSvc kind](connector-activity-discovery.md#intsvc-kind) — IntSvc kind is for vendor activities, Http kind is only for the `uipath-uipath-http` HTTP Request activity.
 
   **Sub-case B — Connection is in a broken state.** The endpoint is right (e.g. `/getNewestEmail` on an Outlook connection), but the connection's upstream OAuth token is expired, never properly authorized, or the running identity doesn't have access to the connection.
 <!--skill-flavor:connection-auth-diagnostics:start-->
@@ -744,7 +749,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 - **Symptom:** `validate` rejects an activity — `Unknown activityType 'X'. Valid types: ...`
 <!--skill-flavor:allowlist-versioning:start-->
-- **Cause:** The authorable set is closed and mirrors the Studio Web palette. It is also versioned: `CustomLog` was added 2026-08-11, so older CLIs list 13 types and newer ones 14. **Take the list from the error message — never memorise one.**
+- **Cause:** The authorable set is closed and mirrors the Studio Web palette. It is also versioned. **Take the list from the error message — never memorise one.**
 <!--skill-flavor:allowlist-versioning:end-->
 - **Fix:** Stay inside the list. Two task types the executor runs but `validate` refuses — do not author them:
 
@@ -761,7 +766,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   2. **An unexpected field on a KNOWN task** — one stray key makes the whole task unmatchable, and the error text still says `Missing required property 'call'`. `set` on a `Break` is the documented instance: it produced **7797 errors** in this skill's own `nested-control-flow-example.json`, and deleting that one key made it Valid.
 
   So read the avalanche as "the schema cannot match this task", not "the task key is wrong". Diff the task against the shape in [task-types.md](task-types.md) field by field before concluding the type is unsupported.
-- **Logging:** `console.log` / `console.warn` inside a JavaScript activity are captured and emitted as `[Script <TaskName>]: ...`. Whether they reach Orchestrator job logs in cloud is unverified — a probe showed the Orchestrator job-log surface carrying only lifecycle lines — so put anything you must read after a run in the `Response`. `CustomLog` is on the list but no executor ships a handler for it; do not author one yet.
+- **Logging:** use Log Message ([task-types.md](task-types.md#4-log-message-logmessage)), never `console.*` inside a JavaScript activity. Each call becomes a job log entry at its level; `run` prints it as `[Script <TaskName>]: ...`.
 - **Do not** mislabel `metadata.activityType` to slip a type past the check — the validator cross-checks the label against the task's own keys (`has activityType 'DoWhile' but must contain 'for' with 'doWhile'`).
 
 ### Fixing in wrong order
@@ -775,6 +780,62 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 <!--skill-flavor:post-edit-validation:start-->
 - **Fix:** Always read the file before editing. After edit, re-run the workflow.
 <!--skill-flavor:post-edit-validation:end-->
+
+## File & Base64 Pitfalls
+
+<!--skill-flavor:file-base64-cli-pitfalls:start-->
+### Run refused: "This workflow uses the file helpers … cannot run with --no-auth"
+- **Symptom:** the local run in no-auth mode exits 1 before the engine starts, naming File to Base64 / Base64 to File
+- **Cause:** `$helpers.file.*` reads and writes Orchestrator blob storage; there is no local file store
+- **Fix:** run signed in (sign in first, drop `--no-auth`) — still only on the user's explicit "yes" (rule 21). Same for `--input-file` / `--output-dir`.
+<!--skill-flavor:file-base64-cli-pitfalls:end-->
+
+### `$helpers.fileToBase64 is not a function` / validate: "does not call $helpers.file.fileToBase64("
+- **Symptom:** `validate` reports one error at `…/run/script/code`; or a signed-in run fails inside the task
+- **Cause:** the helper was written without the `.file.` namespace (or with another name). The activity is recognised by that exact call
+- **Fix:** `return { output: await $helpers.file.fileToBase64(<ref>) }` / `$helpers.file.base64ToFile({ base64: … })`; keep `metadata.activityType` `FileToBase64` / `Base64ToFile`
+
+### File to Base64 / Base64 to File script lost code after a Studio Web save (validate warned "rebuilds the script … and drops the rest", or did not warn at all)
+- **Symptom:** after a designer roundtrip the task's `run.script.code` is back to the bare `return { output: await $helpers.file.*(…) }` — a preceding `const`, a trailing statement, a second argument (`fileToBase64(ref, { extra: 1 })`) or an extra option key is gone; downstream logic that relied on it now fails or the wrong reference is converted
+- **Cause:** Studio Web parses only the `$helpers.file.*` call and rebuilds the script from the property panel on save. `validate` warns about extra statements but passes an extra argument / option key as `Valid`
+- **Fix:** keep the script to the single `return` expression with exactly one argument (see [files-and-base64.md §2](files-and-base64.md#2-file-activities)); move pre-processing into a JavaScript activity before the conversion and pass its output as the argument
+
+### File to Base64 output used as a string (`.length`, `+`, `JSON.stringify` shows an object)
+- **Symptom:** downstream expression gets `[object Object]`, `undefined`, or an `{ ID, FullName, MimeType }` object where base64 text was expected
+- **Cause:** the activity returns a base64 **file reference**, not the base64 string — bytes never enter `$context`
+- **Fix:** inline the content where it is sent: `"${{ content: $context.outputs.FileToBase64_1.output.serializeData() }}"` in the HTTP body / Response
+
+### `{ "__uipathFileRead": { "ref": … } }` shows up in a variable or the output
+- **Symptom:** a marker object instead of file content
+- **Cause:** `serializeData()` was stored in a variable / returned from a script instead of being called inline in a body or Response field
+- **Fix:** call it only inside the HTTP body or `response` expression
+
+### Decoded file has no extension (`hello` instead of `hello.txt`)
+- **Symptom:** Base64 to File returns `FullName: "hello"`, `MimeType: application/octet-stream`
+- **Cause:** for a *reference* input the engine strips `.base64` and sniffs the MIME type from the bytes; plain text has no signature, and `fileName` / `mimeType` are ignored for references
+- **Fix:** acceptable for opaque payloads; when the name matters, decode a raw base64 **string** with `fileName` / `mimeType` (e.g. `{ base64: $context.variables.payload, fileName: 'notes.txt', mimeType: 'text/plain' }`)
+
+### `The provided value is not a valid base64 string: base64ToFile`
+- **Symptom:** Base64 to File fails on a string input. The suffix is always the literal helper name `base64ToFile` — it does not name the failing task, so with several Base64 to File tasks locate the culprit by the failing task in the run output, not by the message
+- **Cause:** URL-safe alphabet (`-` / `_`), non-base64 characters, bad padding, or an empty string. A `data:…;base64,` prefix and whitespace are NOT the problem — the engine strips both before decoding
+- **Fix:** convert URL-safe base64 to the standard alphabet (`-`→`+`, `_`→`/`) in a JavaScript activity; make sure the field really holds the payload and is not empty
+
+### `Raw bytes cannot be embedded in JSON` / `A bare file reference cannot be embedded in a nested field`
+- **Symptom:** an HTTP Request fails at send time with one of these messages
+- **Cause:** a JSON body field holds `serializeData()` of a *binary* reference (e.g. `$workflow.input.document.serializeData()`), or a bare reference object. Only a base64 reference's marker can be inlined in a nested field
+- **Fix:** run File to Base64 first and inline `$context.outputs.FileToBase64_1.output.serializeData()`; or, to send the raw bytes, make the bare reference the *whole* request body
+
+### File too large
+- **Symptom:** the helper fails with a size error
+- **Cause:** the in-memory conversion path is capped at 50 MB — it applies only to raw base64 strings and to references with a small declared `Metadata.Size`; references above 1 MB or with no declared size stream instead, with no size cap
+- **Fix:** pass the file as a reference (streamed) rather than as an inline string; keep inline strings under the cap
+
+<!--skill-flavor:file-base64-cli-folder:start-->
+### Upload / download 403 or "folder" errors with `--input-file` / `--output-dir`
+- **Symptom:** `Failed to upload input file … 403` or an Attachments API folder error
+- **Cause:** the tenant's Attachments API requires a folder context
+- **Fix:** pass `--folder-key <guid>` (the Orchestrator folder's key, visible in the folder's settings or via the platform CLI's folder listing)
+<!--skill-flavor:file-base64-cli-folder:end-->
 
 ---
 

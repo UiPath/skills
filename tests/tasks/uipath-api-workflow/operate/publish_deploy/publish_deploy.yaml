@@ -49,13 +49,23 @@ tags: [uipath-api-workflow, e2e, mode:operate, lifecycle:setup]
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../uipath-platform/_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: .
 
 pre_run:
   # uuid8 + parent_folder_path, and ensures the parent folder exists on the tenant.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 60
   # The ready-to-ship solution + API workflow project (offline; validates itself).
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/operate/publish_deploy/seed_api_workflow_project.py"
+  - command: "python3 _setup/seed_api_workflow_project.py"
     timeout: 180
 
 post_run:
@@ -63,7 +73,7 @@ post_run:
   # covers the runs that end without a clean tenant (agent never got there, its
   # uninstall failed, max_turns, timeout) and deletes the published package,
   # which the task itself does not ask for.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/operate/publish_deploy/cleanup_deploy.py"
+  - command: "python3 _setup/cleanup_deploy.py"
     timeout: 240
 
 run_limits:
@@ -139,7 +149,7 @@ success_criteria:
 
   - type: run_command
     description: "Tenant: deployment existed, its job succeeded (captured), and its folder is gone"
-    command: "python3 $TASK_DIR/check_publish_deploy_job.py"
+    command: "python3 $REFERENCE_DIR/check_publish_deploy_job.py"
     timeout: 180
     expected_exit_code: 0
     weight: 6.0

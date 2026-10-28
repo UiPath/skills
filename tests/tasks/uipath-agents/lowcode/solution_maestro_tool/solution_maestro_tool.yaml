@@ -14,9 +14,14 @@ run_limits:
   expected_turns: 70
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/solution_maestro_tool/_fixtures/OnboardingSol ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/OnboardingSol
+      mount_point: OnboardingSol
+
+reference:
+  directory: .
 
 initial_prompt: |
   Create a new UiPath low-code agent named "OnboardingAgent" inside the existing
@@ -120,7 +125,7 @@ success_criteria:
 
   - type: run_command
     description: "Solution Maestro tool resource shape (type, location, folderPath)"
-    command: "python3 $TASK_DIR/check_solution_maestro_tool.py"
+    command: "python3 $REFERENCE_DIR/check_solution_maestro_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

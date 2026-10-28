@@ -1,23 +1,23 @@
 # event trigger — Implementation (Direct JSON Write)
 
-Configure the case-level event trigger by writing directly into the trigger node in `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md). Phase 3 calls `uip maestro case spec --type trigger --input-details` once and consumes the populated `caseShape`.
+Configure the case-level event trigger by writing directly into the trigger node in `caseplan.case`. Field discovery and reference resolution are done during [planning](planning.md). Phase 3 calls `uip maestro case spec --type trigger --input-details` once and consumes the populated `caseShape`.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-impl.md](../../../connector-trigger-impl.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **trigger-node-specific** parts.
 
-> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`, `data.inputs`.
+> **Layout-strip (Rule 19).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`, `data.inputs`.
 
 ## Prerequisites from Planning
 
-The `tasks.md` entry provides: `type-id`, `connection-id`, `connector-key`, `object-name`, `event-operation`, `event-mode`, `input-values`, `filter`.
+The SDD row provides: `type-id`, `connection-id`, `connector-key`, `object-name`, `event-operation`, `event-mode`, `input-values`, `filter`.
 
-## Step 1 — Build `--input-details` JSON from tasks.md
+## Step 1 — Build `--input-details` JSON from the resolved entry
 
-Construct the input-details object literally from `tasks.md`:
+Construct the input-details object literally from `registry-resolved.json`:
 
 ```jsonc
 {
     "eventParameters": "<input-values.eventParameters or omit>",
-    "filter": "<filter from tasks.md or omit>"
+    "filter": "<filter from registry-resolved.json or omit>"
 }
 ```
 
@@ -29,10 +29,10 @@ Single CLI call replaces the legacy `get-connection` + `case tasks describe --ty
 
 ## Step 3 — Required-event-param validation (HARD GATE)
 
-This is a hard gate — do NOT proceed to write the trigger node until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="eventParameters"].body`.
+This is a hard gate — do NOT proceed to write the trigger node until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="body"].body.queryParams`.
 
 1. From the lean planning-phase spec (run with `--skip-case-shape` per [common § Planning Pipeline 5](../../../connector-trigger-planning.md#5-validate-required-event-parameters-hard-gate)), collect `inputs.eventParameters[?required]`.
-2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="eventParameters"].body` and verify every required event parameter has a value.
+2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="body"].body.queryParams` and verify every required event parameter has a value.
 3. If any required event parameter is missing, **AskUserQuestion** — list the missing parameters with their `name` and what kind of value is expected.
 4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder per the Placeholder fallback section below if user declines.
 
@@ -55,17 +55,19 @@ For each entry in `caseShape.inputs[]` (these are trigger configuration: `eventP
 
 > **`caseShape.outputs[]` are NOT minted here.** Under B's redesign, all writes to `triggerNode.data.inputs.outputs[]` are owned by the variables plugin (see [`../../variables/global-vars/impl-json.md` § Dispatcher Loop](../../variables/global-vars/impl-json.md)). This plugin captures the un-minted `caseShape.outputs[]` into `tasks/trigger-spec-cache.json` (Step 8) for the variables plugin to consume.
 
-## Step 7 — Build trigger node and write to caseplan.json
+## Step 7 — Build trigger node and write to caseplan.case
 
 ### 7a. Identify or create the trigger node
 
 For a **single-trigger case**, configure the existing `trigger_1` node. For **multi-trigger cases**, create a new node:
 - ID: `trigger_` + 6 alphanumeric chars
-- No node-level layout fields (Rule 18 — `position`, `style`, `measured`, etc. omitted)
+- No node-level layout fields (Rule 19 — `position`, `style`, `measured`, etc. omitted)
 
-Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — incl. the global-vars plugin resolving this event trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or, when this event trigger is the primary trigger T02, an In-arg with blank `sourceTriggers`).
+Set the trigger's display name from the SDD's Case Triggers row. Record `T<N> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — incl. the global-vars plugin resolving this event trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or, when this event trigger is the primary trigger T02, an In-arg with blank `sourceTriggers`).
 
 ### 7b. `data` structure
+
+Copy `context` / `inputs` / `outputs` out of the spec-cache unchanged per [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache) — placeholders and minted ids are the only permitted modifications.
 
 ```json
 {
@@ -73,6 +75,7 @@ Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx`
   "display": { "label": "<display-name>" },
   "inputs": {
     "serviceType": "Intsvc.EventTrigger",
+    "entryPointId": "<entry-points.json uniqueId>",
     "context": "<caseShape.context — placeholders substituted in Step 5>",
     "inputs":  "<caseShape.inputs  — var/id minted in Step 6; NO elementId>",
     "outputs": [],
@@ -108,10 +111,10 @@ Write the un-minted `caseShape` into the shared sidecar artifact for the variabl
 **Sidecar lifecycle:**
 
 - **Persistence.** The sidecar persists across hard stops (Phase 2 publish-for-review, etc.) so Phase 3 re-entry doesn't lose spec data. Do NOT regenerate on re-entry — read the existing file.
-- **Regeneration.** Rule 6 (`Continue with regenerate from scratch`) replaces the sidecar entirely (Write, not append), starting from an empty `{}`. Rule 7 (`Continue without regenerate`) preserves the existing sidecar.
-- **Multi-trigger append.** Trigger plugin runs once per trigger T-entry. Each invocation **merges by T-number** into the existing sidecar JSON: read the file, set or replace the top-level `<T-number>` key, write back. Append order is **T-number ascending** (T02 then T03 then ...). Re-running a single trigger T-entry overwrites only its own key; other triggers' keys are untouched. This makes the sidecar **idempotent** for multi-trigger cases.
-- **Abort cleanup.** On `Abort` (per [`phased-execution.md`](../../../phased-execution.md) abort semantics), the sidecar persists alongside other artifacts — `phased-execution.md` mandates no artifact deletion on abort; user owns partial state. On the next run with regenerate-from-scratch (Rule 6) the sidecar is overwritten; otherwise it is reused.
-- **Edit discipline.** Per Rule 13, edit via Read + Write/Edit only. Do NOT use jq, sed, or any other tool that bypasses the file-state tracker.
+- **Regeneration.** Rule 7 (`Continue with regenerate from scratch`) replaces the sidecar entirely (Write, not append), starting from an empty `{}`. Rule 8 (`Continue without regenerate`) preserves the existing sidecar.
+- **Multi-trigger append.** Trigger plugin runs once per trigger row. Each invocation **merges by T-number** into the existing sidecar JSON: read the file, set or replace the top-level `<T-number>` key, write back. Append order is **T-number ascending** (T02 then T03 then ...). Re-running a single trigger row overwrites only its own key; other triggers' keys are untouched. This makes the sidecar **idempotent** for multi-trigger cases.
+- **Abort cleanup.** On `Abort` (per [`phased-execution.md`](../../../phased-execution.md) abort semantics), the sidecar persists alongside other artifacts — `phased-execution.md` mandates no artifact deletion on abort; user owns partial state. On the next run with regenerate-from-scratch (Rule 7) the sidecar is overwritten; otherwise it is reused.
+- **Edit discipline.** Per Rule 14, edit via Read + Write/Edit only. Do NOT use jq, sed, or any other tool that bypasses the file-state tracker.
 
 The variables plugin consumes this in Phase 3 Step 6.2 — see [`../../variables/global-vars/impl-json.md` § Inputs the plugin reads](../../variables/global-vars/impl-json.md) and § Dispatcher Loop.
 
@@ -125,7 +128,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 ## Placeholder fallback (unresolved connector / connection)
 
-When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `connector-key`, skip Steps 2-10 and write a placeholder node instead. Mirrors the connector-task placeholder pattern in [placeholder-tasks.md](../../../placeholder-tasks.md) — structure preserved, runtime config deferred.
+When the resolved entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `connector-key`, skip Steps 2-10 and write a placeholder node instead. Mirrors the connector-task placeholder pattern in [placeholder-tasks.md](../../../placeholder-tasks.md) — structure preserved, runtime config deferred.
 
 ```json
 {
@@ -136,18 +139,24 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
     "description": "<description from sdd.md>",
     "typeVersion": "1.0.0",
     "display": { "label": "<display-name>" },
-    "inputs": { "serviceType": "Intsvc.EventTrigger" }
+    "inputs": {
+      "serviceType": "Intsvc.EventTrigger",
+      "entryPointId": "<entry-points.json uniqueId>",
+      "context": [
+        { "name": "objectName", "type": "string", "value": "<Source from the sdd.md Case Triggers row>" }
+      ]
+    }
   }
 }
 ```
 
-`data.inputs` carries **only** `serviceType` — no `context[]`, `inputs[]`, `outputs[]`, `bindings[]`, `metadata`. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
+`data.inputs` carries **only** `serviceType`, `entryPointId` and a one-entry `context[]` holding `objectName`. It carries no other `context[]` entries, and no `inputs[]`, `outputs[]`, `bindings[]` or `metadata`. `entryPointId` is the node↔entry pairing, not connector config: keep the value `case init` scaffolded on `trigger_1`, or the `uniqueId` you mint for the `entry-points.json` entry below. See [case-schema.md § Trigger Node](../../../case-schema.md#a-trigger-node--uipathcasetrigger) for the `entryPointId` rule. `objectName` is the SDD's **Source** column, which is document data rather than tenant config. `sdd convert` emits exactly this entry: keep it, and never strip it to match an older bare-`serviceType` shape. Omit `context[]` only when the SDD row has no Source. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
 
-**Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). No trigger-edge is created (Rule 20) — the first stage's `case-entered` entry condition starts the case. No root bindings, no `inputOutputs[]` entries from this trigger.
+**Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). No trigger-edge is created (Rule 21) — the first stage's `case-entered` entry condition starts the case. No root bindings, no `inputOutputs[]` entries from this trigger.
 
 **Log:** `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.`
 
-**Upgrade:** regenerate from scratch (Rule 5) — no in-place mutation path. Trigger config is sibling-file-coupled (`entry-points.json`, root variable bindings); a partial in-place edit leaves siblings stale.
+**Upgrade:** regenerate from scratch (Rule 7) — no in-place mutation path. Trigger config is sibling-file-coupled (`entry-points.json`, root variable bindings); a partial in-place edit leaves siblings stale.
 
 ## Graceful degradation — unified placeholder conditions
 
@@ -155,9 +164,9 @@ Three distinct conditions can trigger placeholder fallback for an event trigger.
 
 | Trigger | What's happening | Placeholder action | Log |
 |---|---|---|---|
-| **Planning-time unresolved** (tasks.md T-entry carries `<UNRESOLVED>` on `type-id` / `connection-id` / `connector-key`) | Registry lookup didn't find the connector or connection at planning time | Skip Steps 2–10 entirely; write the placeholder node directly per § Placeholder fallback | `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.` |
-| **`case spec` failure at Phase 3** (T-entry was resolved at planning, but the CLI call fails at implementation — connection deleted between phases, transient API error) | Spec call itself errored | Catch the exception; fall through to placeholder fallback shape | `[SKIPPED] case spec failed — event trigger downgraded to placeholder` |
-| **Required-event-param gate failure at Phase 3** (spec call succeeded, but `caseShape.inputs[name="eventParameters"].body` is missing required fields after AskUserQuestion either declined or didn't fully resolve) | Required event parameter never collected | If user picked decline or re-prompt failed, fall through to placeholder | `[SKIPPED] required event parameter <name> missing — event trigger downgraded to placeholder` |
+| **Planning-time unresolved** (the resolved entry carries `<UNRESOLVED>` on `type-id` / `connection-id` / `connector-key`) | Registry lookup didn't find the connector or connection at planning time | Skip Steps 2–10 entirely; write the placeholder node directly per § Placeholder fallback | `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.` |
+| **`case spec` failure at Phase 3** (the resource was resolved at planning, but the CLI call fails at implementation — connection deleted between phases, transient API error) | Spec call itself errored | Catch the exception; fall through to placeholder fallback shape | `[SKIPPED] case spec failed — event trigger downgraded to placeholder` |
+| **Required-event-param gate failure at Phase 3** (spec call succeeded, but `caseShape.inputs[name="body"].body.queryParams` is missing required fields after AskUserQuestion either declined or didn't fully resolve) | Required event parameter never collected | If user picked decline or re-prompt failed, fall through to placeholder | `[SKIPPED] required event parameter <name> missing — event trigger downgraded to placeholder` |
 
 **Why full placeholder (not `typeId`/`connectionId` preservation)?** Event triggers are sibling-file-coupled (`entry-points.json` entry, root variable bindings for In args). A partial in-place edit leaves siblings stale. Phase-3 `case spec` failure on event triggers therefore downgrades fully to placeholder — asymmetric with connector-task graceful-degradation, which preserves `data.typeId + data.connectionId` because the in-stage parent node can render without sibling-file coupling (see [`../../tasks/connector-activity/impl-json.md`](../../tasks/connector-activity/impl-json.md) for the connector-task fallback table — it preserves more state because the coupling profile is different).
 
@@ -166,16 +175,16 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 ## Post-Write Verification
 
 1. `data.inputs.serviceType` is `"Intsvc.EventTrigger"` (not `WaitForEvent` or `CuratedTrigger`).
-2. **Fully configured** (all under `data.inputs`): `context[]`, `inputs[]` (CONFIG inputs only — no `elementId`), `outputs[]` (empty array — populated later by variables plugin Step 6.2), and `bindings[] = []` all present per §7b. `data.typeVersion` is `"1.0.0"`; `data.display.label` set.
+2. **Fully configured** (all under `data.inputs`): `context[]`, `inputs[]` (CONFIG inputs only — no `elementId`), `outputs[]` (empty array — populated later by variables plugin Step 6.2), `bindings[] = []` and `entryPointId` all present per §7b. `data.typeVersion` is `"1.0.0"`; `data.display.label` set.
 3. **`tasks/trigger-spec-cache.json` exists** with this trigger's T-number as a top-level key, containing un-minted `context`, `inputs`, `outputs` from `caseShape`.
 4. **`id-map.json`** contains `"T<N>": { "kind": "trigger", "id": "<triggerId>" }` for this trigger.
-5. **Placeholder:** all four `data.inputs` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
+5. **Placeholder:** `data.inputs` holds exactly `serviceType` and `entryPointId` (equal to this trigger's `entry-points.json` `uniqueId`); `context[]` holds exactly the `objectName` entry carrying the SDD Source, and `inputs[]`, `outputs[]` and `bindings[]` are **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
 6. `data.inputs.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
 7. When the trigger has event parameters: `data.inputs.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
-8. `schema.edges` stays `[]` (Rule 20) — no edge from this trigger.
-9. `entry-points.json` has a matching entry referencing the trigger node ID.
+8. `schema.edges` stays `[]` (Rule 21) — no edge from this trigger.
+9. `entry-points.json` has a matching entry referencing the trigger node ID, and its `uniqueId` equals `data.inputs.entryPointId`.
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 for a resolved trigger.
 
-Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
+Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added. A default-profile `Valid` here is a batch check, not completion: the build ends only on `validate --strict --sdd sdd.md` at [Step 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
 
 <!-- END: impl-json.md -->

@@ -2,6 +2,8 @@
 
 The CLI now covers the full resource CRUD: **create** ([Step 9: `solution resources add`](../develop-solution.md#step-9-add-a-resource-atomically)), **delete** ([Step 10: `solution resources remove`](../develop-solution.md#step-10-remove-a-resource)), and **update** ([Step 11: `solution resources edit`](../develop-solution.md#step-11-edit-a-resource)). `edit` patches an existing resource's `spec` through the SDK — it even renames (with duplicate protection), so the old "rename is Studio-Web-only" rule no longer holds.
 
+**If the change you want already exists in the cloud, don't hand-edit at all.** `solution resources edit <key> --source remote --force` pulls the current cloud definition over the local one — see [Step 11a](../develop-solution.md#step-11a-pull-a-changed-cloud-definition-source-remote). That is the right tool for "I added a field to the entity in Data Fabric and the solution still has the old schema", and it beats both hand-editing and the old remove-and-re-add workaround.
+
 **Reach for `solution resources edit` first** for any spec-field change. The SDK validates against kind metadata: it silently skips unknown / reference / read-only properties, and identity fields (`key`, `kind`, `type`, `apiVersion`, `dependencies`, `folders`) live outside `spec` so `edit` can't touch them at all.
 
 This page is now the **last resort** — for the narrow cases `edit` *won't* cover:

@@ -14,9 +14,8 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 | `name` | Task `Resolved Resource` | Concrete intended resource name and registry query |
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` (NOT the sdd.md "Folder") | Binds to `data.folderPath`; Orchestrator starts the agent here at runtime. The sdd.md "Folder" only seeds the lookup and may be a parent/truncated path. See [§ Registry Resolution](#registry-resolution). For an agent **built inline** as an in-solution sibling, the runtime `folder-path` is **empty `""`** (co-located — the case starts the agent in its own deployed folder) while `resourceKey` stays `solution_folder.<name>`; do NOT put the `solution_folder` sentinel in `folder-path` (runtime `folder not exist`). See [§ Creating an Agent inline](#creating-an-agent-inline). |
 | `task-type-id` | Registry resolution (below) | Enables auto-enrichment via `tasks describe` |
-| `element-id` | (optional) | Required only when the agent has multiple element bindings |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
+| `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
 | `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type.  |
 | `isRequired` | sdd.md (default `true`) |  |
 
@@ -25,29 +24,29 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 1. **Primary cache file:** `agent-index.json`.
 2. **Identifier field:** `entityKey`.
 3. **Cross-type fallback.** Agents are occasionally registered in `processOrchestration-index.json` when wrapped in an agentic process — search both if the primary yields no match.
-4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**, see field table) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 5). Do NOT treat a folder difference as no-match or fall through to the Create gate — the gate is only for names **no** registry entry carries at all. A true no-match runs the [§ in-solution check](#no-tenant-index-match--check-in-solution-siblings-before-the-gate) first, then the Rule 17 gate; only a task left unresolved after the gate falls back to the sdd.md folder (step 5).
+4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**, see field table) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 5). Do NOT treat a folder difference as no-match or fall through to the Create gate — the gate is only for names **no** registry entry carries at all. A true no-match runs the [§ in-solution check](#no-tenant-index-match--check-in-solution-siblings-before-the-gate) first, then the Rule 18 gate; only a task left unresolved after the gate falls back to the sdd.md folder (step 5).
 5. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder" — see the field table above). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
-6. **Discover inputs/outputs** via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md). For agents with multiple elements, also pass `--element-id` when invoking describe (see [case-commands.md § uip maestro case tasks](../../../case-commands.md)).
+6. **Discover inputs/outputs** via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
 ### No tenant-index match → check in-solution siblings BEFORE the gate
 
-When steps 1–4 find nothing in the tenant index **and** the CLI supports `registry --local`, check for an existing in-solution sibling before treating the agent as unresolved.
+**Skip this check when `sdd resolve` reported `Data.Scope.siblingsChecked: true`** — resolve already searched the solution's own projects ([registry-discovery.md § Resolve with the CLI first](../../../registry-discovery.md#resolve-with-the-cli-first)). Otherwise — when steps 1–4 find nothing in the tenant index **and** the CLI supports `registry --local` — check for an existing in-solution sibling before treating the agent as unresolved.
 
 ```bash
 uip maestro case registry search "<name>" --type agent --local --output json
 ```
 
-An exact-name match with `Resource.Source == "local"` means the agent **already exists as an in-solution sibling** — built by a prior run, built by the user, or built earlier in this run. **Resolve it directly; do NOT enter the [Rule 17 Create gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback):** bind by name+folder with the `solution_folder` sentinel (`resourceKey="solution_folder.<name>"`), reading I/O from the sibling's raw `entry-points.json` (per [§ Creating an Agent inline](#creating-an-agent-inline)). Only when **both** the tenant index and the local siblings lack the agent does it reach the gate / Create. This makes planning **idempotent** — a re-run (or a pre-existing sibling) resolves here instead of triggering a duplicate build.
+An exact-name match with `Resource.Source == "local"` means the agent **already exists as an in-solution sibling** — built by a prior run, built by the user, or built earlier in this run. **Resolve it directly; do NOT enter the [Rule 18 Create gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback):** bind by name+folder with the `solution_folder` sentinel (`resourceKey="solution_folder.<name>"`), reading I/O from the sibling's raw `entry-points.json` (per [§ Creating an Agent inline](#creating-an-agent-inline)). Only when **both** the tenant index and the local siblings lack the agent does it reach the gate / Create. This makes planning **idempotent** — a re-run (or a pre-existing sibling) resolves here instead of triggering a duplicate build.
 
 ## Unresolved Fallback
 
-> **Build it inline first (creatable kind).** At the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing agent as an in-solution sibling — see [§ Creating an Agent inline](#creating-an-agent-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
+> **Build it inline first (creatable kind).** At the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing agent as an in-solution sibling — see [§ Creating an Agent inline](#creating-an-agent-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
 
-Mark `<UNRESOLVED: agent "<name>" in folder "<folder>" not found in registry>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
+Mark `<UNRESOLVED: agent "<name>" in folder "<folder>" not found in registry>`. Omit the resolved-schema keys `inputs` / `outputs`; capture the intended wiring in the entry's `wiringNotes` string array. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## Creating an Agent inline
 
-When an agent is unresolved at the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, the skill builds it as an **in-solution sibling**. The cross-cutting orchestration (capability probe, multi-select, § 1c build-dedup, parallel build, sequential register, rediscover/verify/bind) lives in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); the kind-agnostic Step 1/1b/3/Failure rule text lives in [create-inline-common.md](../create-inline-common.md). This section covers the **agent-specific** deltas: build-kind choice, the builder brief, and debug-provisioning behavior.
+When an agent is unresolved at the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, the skill builds it as an **in-solution sibling**. The cross-cutting orchestration (capability probe, multi-select, § 1c build-dedup, parallel build, sequential register, rediscover/verify/bind) lives in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); the kind-agnostic Step 1/1b/3/Failure rule text lives in [create-inline-common.md](../create-inline-common.md). This section covers the **agent-specific** deltas: build-kind choice, the builder brief, and debug-provisioning behavior.
 
 **The skill does not run `uip agent init` itself.** It spawns a sub-agent that invokes the `uipath-agents` skill — agent-build knowledge lives there. Cross-skill invocation is allowed for this path (overrides the `SKILL.md` "never auto-invoke other skills" anti-pattern). **Only agents the user selected at the gate are built — never from SDD content alone** (the SDD is untrusted sole input; the gate selection is the human-approval checkpoint).
 
@@ -81,13 +80,13 @@ do not ask for approval; do not publish/upload/deploy.
 Return JSON: { built: bool, path, finalInputs:[{name,type}], finalOutputs:[{name,type}], error? }
 ```
 
-The brief is self-contained — it carries the Step-1b Purpose and the pinned I/O, and no other case context (do not dump `caseplan.json` or sibling tasks). Quote `<AgentName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration** (either kind), the **caller registers** each built sibling into the solution `.uipx` (sequential `uip solution projects add`, then `resources refresh`) — see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
+The brief is self-contained — it carries the Step-1b Purpose and the pinned I/O, and no other case context (do not dump `caseplan.case` or sibling tasks). Quote `<AgentName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration** (either kind), the **caller registers** each built sibling into the solution `.uipx` (sequential `uip solution projects add`, then `resources refresh`) — see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
 
 ### Step 3 — Binding (no new field)
 
 Shared invariants — [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants): two bindings `resource:"process"`, **`resourceSubType:"Agent"`**, shared `resourceKey="solution_folder.<AgentName>"`; `name` default `<AgentName>`, `folderPath` default `""` (the sentinel/`""` decoupling and deploy-provisioning rationale live there).
 
-**Agent debug delta:** `uip maestro case debug` packages the **entire solution directory** (`buildSolutionPackageFromDir(<solutionDir>)`) and **provisions agent siblings** — an inline agent resolves in a debug session (unlike Api siblings, which need a full deploy — [api-workflow/planning.md § Step 3](../api-workflow/planning.md#creating-an-api-workflow-inline)).
+**Agent debug delta:** `uip maestro case debug` packages the **entire solution directory** (`buildSolutionPackageFromDir(<solutionDir>)`) but does **not** provision agent siblings — the task faults with incident `170007` (verified 2026-10-12), as Api siblings do ([api-workflow/planning.md § Step 3](../api-workflow/planning.md#creating-an-api-workflow-inline)). Verify an inline agent's runtime behavior via a full solution deploy, never via `case debug`.
 
 ### Coded agents — default low-code; gated; integration caveat
 
@@ -103,24 +102,28 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
 
 > **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Agent tokens for that procedure: init verb `uip agent init`; kind markers `Category: "agent"` (registered) / `agent.json` on disk (unregistered).
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-```markdown
-## T<n>: Add agent task "<display-name>" to "<stage>"
-- name: "<resource-name>"
-- taskTypeId: <entityKey>
-- folder-path: "<folder>"
-- inputs:
-  - <input_name> <- "<Stage>"."<Task>".<output>
-- outputs:
-  - <SDD output row, copied verbatim>
-- runOnlyOnce: false
-- isRequired: true
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
-- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
-- verify: Confirm Result: Success, capture TaskId
+Ledger entry in `tasks/registry-resolved.json` — Rule 10's keys plus this type's lookup output:
+
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "agent",
+  "cacheFile": "agent-index.json",
+  "searchQuery": "<name the SDD used to seed the lookup>",
+  "matches": [],
+  "selected": {},
+  "name": "<resource-name>",
+  "taskTypeId": "<entityKey>",
+  "folder-path": "<folder>",
+  "rationale": "<why this match was selected>"
+}
 ```
+
+`matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object (or `null` after a genuine empty lookup — see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape)).
+
+Everything else the SDD declares — inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. The ledger holds only what the registry lookup produced; Phase 2 reads the contract straight from the SDD ([planning.md § Step 4](../../../planning.md)).
 
 <!-- END: planning.md -->

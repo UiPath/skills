@@ -35,6 +35,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Build the Case Management project described by sdd.md in this directory. It is the
   sole source of truth — trust it as written.
@@ -43,7 +46,7 @@ initial_prompt: |
   and emit placeholders per the skill's rules. Do NOT query the tenant registry,
   connections, or users.
 
-  Not complete until `uip maestro case validate` passes on the generated caseplan.json.
+  Not complete until `uip maestro case validate` passes on the generated case plan.
   Stop there — do not publish, upload, or run a debug session.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and
@@ -53,7 +56,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "a caseplan.json was generated"
-    command: "find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    command: "find . \\( -name caseplan.json -o -name caseplan.case \\) -not -path '*/.venv/*' | grep -q ."
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -61,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "p=$(find . -name caseplan.json -not -path '*/.venv/*' | head -1); uip maestro case validate \"$p\" --output json"
+    command: "p=$(find . \\( -name caseplan.json -o -name caseplan.case \\) -not -path '*/.venv/*' | sort | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -74,7 +77,7 @@ success_criteria:
       (not a stage-entry rule, which would re-run the stage), an interrupting enter-stage
       lane with return-to-origin, a non-completing case exit, and an adhoc optional task.
       validate accepts both start-task shapes, so validate passing is not evidence.
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/sla_from_sdd/check_sla_from_sdd.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_sla_from_sdd.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -83,7 +86,7 @@ success_criteria:
   - type: command_not_executed
     description: "no mutating case CLI verbs — caseplan.json is authored directly per the skill's invariant"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+case\s+(cases|stages|tasks|[a-z-]*conditions)\s+(add|update|remove)'
+    command_pattern: 'uip\s+maestro\s+case\s+(cases|stages|tasks|[a-z-]*conditions)\s+(add|update|remove)(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
 
   - type: command_not_executed
     description: "no debug run — this case is HITL- and SLA-driven and cannot run headless"

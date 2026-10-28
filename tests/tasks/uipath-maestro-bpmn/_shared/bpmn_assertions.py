@@ -125,6 +125,15 @@ def descriptor_file_names(descriptor: dict) -> set[str]:
 
 
 def assert_package_lifecycle(project_dir: Path, bpmn_name: str, start_id: str) -> None:
+    """Tolerant package check: accepts CLI output OR hand-authored metadata.
+
+    Deliberately NOT replaced by assert_generated_project_scaffold, which
+    requires the CLI-generated shape. `authoring/api_workflow_task.yaml`
+    documents that its assertions accept either shape, so tightening this
+    helper would break a stated task contract. Use the stricter helper for
+    tasks that mandate `uip maestro bpmn refresh`/`init`.
+    """
+
     project = load_json(project_dir / "project.uiproj")
     operate = load_json(project_dir / "operate.json")
     entry_points = load_json(project_dir / "entry-points.json")
@@ -162,3 +171,83 @@ def assert_package_lifecycle(project_dir: Path, bpmn_name: str, start_id: str) -
         ep.get("filePath") == expected_file_path for ep in entry_points.get("entryPoints", [])
     ):
         fail(f"entry-points.json missing filePath {expected_file_path}")
+
+
+def assert_generated_project_scaffold(
+    project_dir: Path,
+    project_name: str,
+    bpmn_name: str,
+    start_id: str,
+    *,
+    entry_point_id: str | None = None,
+    expected_resource_count: int | None = None,
+    expected_entry_points: int = 1,
+) -> None:
+    """Assert the current CLI-owned Process Orchestration metadata contract.
+
+    ``start_id`` names the entry point checked in detail. ``refresh`` emits one
+    entry per root manual start event, so a project with more than one must
+    pass ``expected_entry_points``.
+    """
+
+    project = load_json(project_dir / "project.uiproj")
+    operate = load_json(project_dir / "operate.json")
+    entry_points = load_json(project_dir / "entry-points.json")
+    bindings = load_json(project_dir / "bindings_v2.json")
+    descriptor = load_json(project_dir / "package-descriptor.json")
+
+    if project.get("Name") != project_name:
+        fail(f"project.uiproj Name must be {project_name}")
+    if project.get("ProjectType") != "ProcessOrchestration":
+        fail("project.uiproj ProjectType must be ProcessOrchestration")
+    # The CLI never writes `main` into project.uiproj but it preserves a
+    # hand-authored one (#2774). Tolerate a preserved key that points at the
+    # BPMN file; only a wrong target is a defect.
+    for key in ("main", "Main"):
+        if key in project and project[key] not in (bpmn_name, f"/content/{bpmn_name}"):
+            fail(
+                f"project.uiproj {key} must be absent or reference {bpmn_name}, "
+                f"found {project[key]!r}"
+            )
+
+    expected_main = f"/content/{bpmn_name}#{start_id}"
+    if operate.get("main") != expected_main:
+        fail(f"operate.json main must be {expected_main}")
+    if operate.get("contentType") != "ProcessOrchestration":
+        fail("operate.json contentType must be ProcessOrchestration")
+
+    entries = entry_points.get("entryPoints")
+    if not isinstance(entries, list) or len(entries) != expected_entry_points:
+        found = len(entries) if isinstance(entries, list) else "none"
+        fail(
+            f"entry-points.json must contain {expected_entry_points} manual "
+            f"entry point(s), found {found}"
+        )
+    matching = [e for e in entries if e.get("filePath") == expected_main]
+    if len(matching) != 1:
+        fail(f"entry-points.json must contain exactly one entry for {expected_main}")
+    entry = matching[0]
+    if entry.get("type") != "ProcessOrchestration":
+        fail("entry-points.json type must be ProcessOrchestration")
+    if entry_point_id is not None and entry.get("uniqueId") != entry_point_id:
+        fail("entry-points.json uniqueId must match uipath:entryPointId")
+
+    if bindings.get("version") != "2.0":
+        fail('bindings_v2.json version must be "2.0"')
+    resources = bindings.get("resources")
+    if not isinstance(resources, list):
+        fail("bindings_v2.json resources must be a list")
+    if expected_resource_count is not None and len(resources) != expected_resource_count:
+        fail(
+            "bindings_v2.json must contain "
+            f"{expected_resource_count} resources, found {len(resources)}"
+        )
+
+    expected_files = {
+        "operate.json": "operate.json",
+        "entry-points.json": "entry-points.json",
+        "bindings.json": "bindings_v2.json",
+        bpmn_name: bpmn_name,
+    }
+    if descriptor.get("files") != expected_files:
+        fail("package-descriptor.json must preserve the current CLI root files map")

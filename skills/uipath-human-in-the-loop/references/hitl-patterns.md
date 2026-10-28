@@ -147,8 +147,6 @@ A monetary action above a threshold or of a certain type requires human sign-off
 
 ## Proactive HITL Recommendation
 
-If a business description contains any of the above signals but the user has not asked for a HITL, flag it:
+**Never block on this.** If a business description contains any of the above signals but the user has not asked for a HITL, state it and proceed straight to Step 3 (schema design) — do not wait for a reply:
 
-> "This process includes [signal]. Before the automation [action], a human should review [data]. I recommend inserting a HITL node here — want me to add it?"
-
-Then proceed to Step 3 (schema design) only after the user confirms.
+> "This process includes [signal]. Before the automation [action], a human should review [data]. I'm inserting a HITL node here — remove it if you don't want it."

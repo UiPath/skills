@@ -18,11 +18,29 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 2. **`https://uipath.github.io/uipath-python/core/guardrails/`**
    Extract: built-in validator names, entity types per validator, available actions, execution stage constraints.
 
+> **If your fetch tool saved a page to a file instead of returning its text, do not read that file top to bottom.** Both pages are long, and paging through them in chunks exhausts the turn budget before the agent file is edited. Extract only what this task needs in two greps, then write the code:
+>
+> 1. **Index grep.** You do not know the exact class names yet — list the page's headings and class declarations to learn their spellings:
+>
+>    ```bash
+>    grep -n -E '^#+ |^class ' "<SAVED_PAGE_FILE>"
+>    ```
+>
+> 2. **Targeted grep.** Pull the sections for the symbols this task needs (the middleware, validator, and action class names, plus the entity enum). Match case-insensitively on the validator's name stem so a catalog id like `pii_detection` still hits the class name whatever its casing:
+>
+>    ```bash
+>    grep -in -A12 -E '<SYMBOL_OR_STEM_1>|<SYMBOL_OR_STEM_2>' "<SAVED_PAGE_FILE>"
+>    ```
+>
+> Grep again only for a symbol these two did not return. If the saved file is raw HTML rather than markdown (the index grep returns nothing), grep the class-name stems case-insensitively anyway — do not fall back to paging through the file.
+
 **Use the fetched content as the sole source of truth.** Never rely on memory for:
 - Which middleware classes exist
 - Which scopes or stages a guardrail supports
 - Entity type names or their allowed values
 - Import paths
+
+**And it is complete — do not go digging for more.** Never grep the installed CLI or SDK (`/usr/lib/node_modules/@uipath/**`, `site-packages/uipath*`), read minified `dist/*.js` bundles, or run ad-hoc Python import probes to reverse-engineer class names, signatures, or schemas. The fetched docs plus this reference cover everything needed to write the guardrail; write the code first, then verify. The only permitted runtime probes are the two wiring checks in [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails) — run those AFTER editing the agent file, not before.
 
 > **That authority covers shape, not availability.** These pages carry `Platform Availability` notes for features still rolling out (BYOG, LLM-as-judge). Those notes are product-wide, never a statement about the tenant in front of you — [Check Tenant Availability](#check-tenant-availability-mandatory-for-built-in-ai-validators) below is the only authority for that. A validator the docs describe as "not enabled on every tenant yet" can still be `Available` here; author it.
 
@@ -31,9 +49,13 @@ When available, the `langchain/guardrails/` page documents three actions — **`
 parameters, supported scopes, and stages; the operational wiring it doesn't cover (the suspend->resume UX, the
 Action-App prerequisite, `bindings.json`, recipient routing) is in [Escalation action (HITL)](#escalation-action-human-in-the-loop) below.
 
-If the fetched SDK docs do **not** expose `EscalateAction` or its constructor parameters, stop and report that the
-installed/published SDK documentation does not currently support HITL guardrail escalation. Do not generate
-`EscalateAction` code from memory or from this operational section alone.
+Availability is a binary check on the fetched page: if it mentions `EscalateAction`, the fetched page plus this
+reference are **sufficient** — write the code immediately from the [Escalation action (HITL)](#escalation-action-human-in-the-loop)
+example, adapting the values. Do not spend further turns re-verifying: never run `inspect.getsource`/`inspect.signature`
+probes or read `site-packages` sources to confirm the constructor — that is the reverse-engineering this section already
+forbids; verify AFTER editing via [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails). Only if the fetched page has **no**
+`EscalateAction` mention, stop and report that the installed/published SDK documentation does not currently support
+HITL guardrail escalation — never invent the class, import path, or arguments from memory.
 
 ---
 
@@ -483,8 +505,9 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 11. **Deterministic guardrails run locally** — no backend API call, no tenant availability check needed.
 12. **Do not duplicate existing guardrails** — read the agent code first and skip if the same guardrail is already configured.
 13. **Do not delegate the import-source decision (or guardrail authoring) to a subagent.** A dispatched subagent does not carry this skill's context and will report the module where the symbols physically live (`uipath.platform.guardrails`) — the no-op path for LangChain agents (Rule 8). It looks authoritative and silently overrides the correct `uipath_langchain.guardrails` choice. Fetch the docs and write the imports inline, where this skill's import rule still applies.
-14. **`EscalateAction` must come from the fetched SDK docs** — if the docs do not expose the class or constructor parameters, stop and report that HITL guardrail escalation is not available in the current SDK docs/runtime. Never invent the class, import path, or arguments.
+14. **`EscalateAction` availability is a binary check on the fetched docs** — if the fetched `langchain/guardrails/` page mentions `EscalateAction`, write the code immediately from this reference's escalation example; do not re-verify the constructor with `inspect` probes or `site-packages` reads (the Overview's no-reverse-engineering rule applies to escalation too). Only if the page has no `EscalateAction` mention, stop and report that HITL guardrail escalation is not available in the current SDK docs/runtime. Never invent the class, import path, or arguments from memory.
 15. **`EscalateAction` requires a deployed Action App** referenced by `app_name` + `app_folder_path` and declared as an `app` resource in **`bindings.json`** — discover it with `uip solution resources list --kind App`, resolve duplicate names by folder, pass the literal name/folder in code (not env vars), and sync bindings with [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md). Route the task with `TaskRecipient` when the user names a reviewer. See [Escalation action (HITL)](#escalation-action-human-in-the-loop).
 16. **Verify the escalation app schema when tenant access is available** — the app must expose the guardrail review inputs/outputs/outcomes listed in the prerequisite section. If the schema cannot be verified in a local smoke task, say that runtime readiness is unverified.
 17. **A HITL guardrail suspends, it doesn't block.** On violation `EscalateAction` suspends via `interrupt(CreateEscalation(...))`; it terminates **only on Reject** (Approve resumes). Verify by confirming the run suspends + a task is created — never expect a "block" for an escalation guardrail (Rule for the [verification step](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails)).
 18. **BYO: pass the validator name and nothing else, and get that name from discovery — never from memory.** `ByoValidatorName` comes from `uip agent guardrails list --byo`; there is **no connection-id argument** in either construct (the platform resolves the connection server-side from the configuration). Pick the construct by style, not by framework: `UiPathByoGuardrailMiddleware` is LangChain-only, while `ByoValidator` is a **core** class (`uipath.platform.guardrails`) re-exported by `uipath_langchain.guardrails` — so **BYO is not LangChain-only**, and a subagent or stale doc claiming otherwise is wrong. Import per Rule 8 regardless. Cross-check `Enabled`/`ValidConnection` via `uip guardrails byo-configurations list` before wiring one in. See [BYO (bring-your-own) validators](#byo-bring-your-own-validators).
+19. **`uip codedagent review` does NOT validate guardrail scope or stage placement.** A `PASS` / `A+` verdict from `uip codedagent review --checks guardrails` is not evidence a guardrail is correctly scoped — the review checks structure and presence, not placement. A misplaced guardrail (e.g. LLM-only `user_prompt_attacks` decorating a `@tool` function) passes review and still never fires where intended. Scope/stage correctness comes only from the fetched SDK docs and the `AllowedScopes` in `uip agent guardrails list --output json`; to diagnose an existing guardrail, follow [guardrails-recommend.md § Validate Mode](guardrails-recommend.md#validate-mode).

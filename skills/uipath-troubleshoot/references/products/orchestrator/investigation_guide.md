@@ -98,9 +98,9 @@ For every job under investigation, gather these in order. Follow the generic gui
      --output-filter '[].{State:State,CreationTime:CreationTime,Reason:Reason}' \
      | tee .local/investigations/raw/triage-job-history.json
    ```
-4. **Job traces** — execution traces (activity states, variable snapshots, execution path). Available for all job types.
+4. **Job traces** — LLM execution traces (spans: tool calls, model interactions, agent decisions). Recorded only for Agent-type processes that use Autopilot or Agent capabilities; a standard RPA job has none, so expect this step to come back empty and move on rather than treating it as a finding.
    ```
-   uip or jobs traces <key> --output json \
+   uip traces spans get --job-key <key> --output json \
      > .local/investigations/raw/triage-job-traces.json
    ```
    Traces are dense and unfiltered — redirect with `>` (not `tee`) so the full body stays out of context, then read back only the activity/error entries you need. Filter by activity name or error attribute when re-fetching for hypothesis testing.

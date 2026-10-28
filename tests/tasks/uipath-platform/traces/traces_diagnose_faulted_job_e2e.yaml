@@ -16,15 +16,21 @@ description: >
   agent's turn begins, so the "job is long finished" framing stays true without
   anyone maintaining a static fixture by hand.
 tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, traces]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 18
 
+reference:
+  directory: .
+
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/seed_faulted_incident.py"
+  - command: "python3 _setup/seed_faulted_incident.py"
     timeout: 120
 
 initial_prompt: |
@@ -37,7 +43,6 @@ initial_prompt: |
   `spans.json`, and put the ID of the span that failed in `failing_span.txt`.
 
   Do NOT ask for approval, confirmation, or feedback.
-
 success_criteria:
   - type: command_not_executed
     description: "Agent diagnosed the existing run instead of starting a fresh job"
@@ -70,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "Reported span exists in the real span payload and carries fault evidence"
-    command: "python3 $TASK_DIR/check_traces_diagnose_e2e.py"
+    command: "python3 $REFERENCE_DIR/check_traces_diagnose_e2e.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

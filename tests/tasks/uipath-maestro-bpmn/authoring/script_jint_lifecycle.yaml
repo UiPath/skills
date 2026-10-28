@@ -8,6 +8,9 @@ run_limits:
   expected_turns: 22
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a UiPath Maestro BPMN Process Orchestration project at:
     ScriptNormalizer/ScriptNormalizer
@@ -42,7 +45,7 @@ success_criteria:
 
   - type: run_command
     description: "Script task uses JavaScript/v3 Jint-safe source and package lifecycle files"
-    command: "python3 $TASK_DIR/check_script_jint_lifecycle.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_script_jint_lifecycle.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

@@ -4,16 +4,22 @@ description: >
   subscribes to at least one event type, and is currently disabled (so the
   agent exercises the disable transition).
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 60
 
 run_limits:
@@ -33,11 +39,10 @@ initial_prompt: |
   state at the end.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: run_command
     description: "Tenant state: webhook exists with subscribed events, disabled"
-    command: "python3 $TASK_DIR/check_webhook.py"
+    command: "python3 $REFERENCE_DIR/check_webhook.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

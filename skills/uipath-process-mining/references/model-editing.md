@@ -82,7 +82,7 @@ the footgun below), so `fields set` is the *safe* way to change a kind. Caveat: 
 comparisons in the typed model `data` (calculated fields, metrics); a kind change that conflicts only
 with an opaque dashboard **view** filter/chart is not caught, so publish and re-open to confirm.
 
-## The data-kind footgun (DNA-46960)
+## The data-kind footgun
 
 A customer's app failed to open with exactly the error above. Root cause, from their exported app:
 a metric **`% Tijdigheid`** was `PERCENTAGE( DOORLOOPTIJD[duration] lt 864000000[numeric] )` — a

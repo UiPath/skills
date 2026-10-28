@@ -27,13 +27,23 @@ description: >
   numeric SECRET_ID that `delete-secret <SECRET_ID>` requires, which the skill
   docs never state (see issue #2703).
 tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, identity, external-app]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
 
 pre_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''setup_extapp_maintain.py''))"'
+  - command: 'python3 _setup/setup_extapp_maintain.py'
     timeout: 120
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''cleanup_extapp_maintain.py''))"'
+  - command: 'python3 _setup/cleanup_extapp_maintain.py'
     timeout: 90
 
 run_limits:
@@ -59,7 +69,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant read-back: app renamed in place (same ClientId) with application scopes exactly Folders+Jobs, stale secret revoked leaving exactly one fewer than at seed, retired app id absent"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''verify_extapp_maintained.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_extapp_maintained.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

@@ -6,13 +6,21 @@ description: >
   only come from the tenant, so the check proves a real retrieval rather than
   matching the command string.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, authz, role]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 pre_run:
-  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-get-smoke" AUTHZ_ROLE_PERMISSION="CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW" AUTHZ_ROLE_SCOPE="Tenant" AUTHZ_ROLE_DESCRIPTION="Seeded read-only role for the get-role scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-get-smoke" AUTHZ_ROLE_PERMISSION="CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW" AUTHZ_ROLE_SCOPE="Tenant" AUTHZ_ROLE_DESCRIPTION="Seeded read-only role for the get-role scenario" python3 _setup/setup_authz_role.py'
     timeout: 90
 
 post_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-get-smoke" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-get-smoke" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
 
 run_limits:

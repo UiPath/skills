@@ -12,6 +12,9 @@ run_limits:
   expected_turns: 32
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath solution "MemorySol" with a single low-code agent
   "SupportMemoryAgent". It takes a required `userQuestion` (string) and
@@ -141,7 +144,7 @@ success_criteria:
 
   - type: run_command
     description: "Memory feature shape, dynamic few-shot settings, seeded item, schema sync, and memorySpace binding"
-    command: "python3 $TASK_DIR/check_memory_space.py"
+    command: "python3 $REFERENCE_DIR/check_memory_space.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

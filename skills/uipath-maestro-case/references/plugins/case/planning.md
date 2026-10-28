@@ -1,22 +1,25 @@
 # case (root) — Planning
 
-The root case definition — the top-level container that every other node lives inside. Created exactly once per project. The case plugin **also owns project scaffolding**: T01 writes the 5 boilerplate project files directly — never via `uip maestro case init`, which forks the solution ([SKILL.md](../../../SKILL.md) Rule 23) — see [impl-json.md](impl-json.md).
+<!--skill-flavor:root-planning-intro:start-->
+The root case definition — the top-level container that every other node lives inside. Created exactly once per project. `uip maestro case init`, run from inside the solution directory, creates the project and seeds its scaffold ([SKILL.md](../../../SKILL.md) Rule 24); the case plugin writes whichever of the 5 boilerplate project files it did not seed — see [impl-json.md](impl-json.md).
+<!--skill-flavor:root-planning-intro:end-->
 
 ## When to Use
 
-Always. This plugin is invoked for the very first T-entry (`T01`) in every `tasks.md`. It creates the case file and the implicit Trigger node.
+Always. This plugin is invoked for the very first build step (`T01`). It creates the case file and the implicit Trigger node.
 
 ## Required Fields from sdd.md
 
 | Field | Source | Notes |
 |-------|--------|-------|
 | `name` | sdd.md case title | Human-readable. |
-| `file` | Derived: `<SolutionDir>/<ProjectName>/caseplan.json` | **Literal filename `caseplan.json`** — do not substitute project name. |
+| `file` | Derived: `<SolutionDir>/<ProjectName>/caseplan.case` | **Literal filename `caseplan.case`** — do not substitute project name. |
 | `case-identifier` | sdd.md (optional; defaults to `name`) | The runtime identifier. |
 | `identifier-type` | sdd.md (optional; default `constant`) | `constant` \| `external`. Use `external` when sdd.md says the identifier comes from an upstream system. |
 | `case-app-enabled` | sdd.md (default `false`) | `true` if the sdd.md says the case is exposed via the Case App UI. |
-| `directly-pass-task-outputs` | sdd.md (default `true`) | Passes task outputs through messages instead of shared variables, avoiding parallel-task race conditions. `false` only if sdd.md explicitly requests shared-variable passing. |
 | `description` | sdd.md case description |  |
+
+**Direct Task Outputs is retired.** Task outputs always pass directly through messages (PO.Frontend `15cd541e9`, 2026-06-16), so there is no T01 field for it. If sdd.md's Case Metadata asks to turn it off (`Direct Task Outputs: No`, `false`, or shared-variable passing), build anyway and tell the user in the build summary that the option no longer exists and outputs pass directly. A row that says Yes needs nothing.
 
 ## identifier-type Guidance
 
@@ -29,10 +32,10 @@ When ambiguous, use **AskUserQuestion** with both options + "Something else".
 
 `case-identifier` is carried verbatim from sdd.md — one of two forms (no other engine):
 
-- **Bare var** — `=vars.<varId>`, where `<varId>` is a single variable declared in the §4.2.1 block. It MUST be an **In** argument or a **Variable** — not an **Out** argument (produced at case end).
+- **Bare var** — `=vars.<varId>`, where `<varId>` is a single variable declared in the SDD's Case Variables table. It MUST be an **In** argument or a **Variable** — not an **Out** argument (produced at case end).
 - **`=js:` expression** — for string ops / concatenation, e.g. `` =js:`${metadata.InstanceId}-${vars.region}` ``. May read `vars.<id>` and `metadata.InstanceId` / `metadata.FolderKey` / `metadata.ProcessKey` — never `metadata.ExternalId` (the field being set).
 
-A referenced variable must have its own §4.2.1 T-entry (the completeness cross-check requires it).
+A referenced variable must have its own Case Variables row (the completeness cross-check requires it).
 
 ## Registry Resolution
 
@@ -42,18 +45,19 @@ A referenced variable must have its own §4.2.1 T-entry (the completeness cross-
 
 The case plugin writes a pure skeleton at T01 — no trigger node. The primary trigger is added by the triggers plugin at T02 via the matching [triggers plugin](../triggers/). Every case (single-trigger or multi-trigger) has at least one T02 entry for the primary trigger.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-```markdown
-## T01: Create case file "<name>"
-- file: "<SolutionDir>/<ProjectName>/caseplan.json"
+The case file has no registry lookup, so T01 produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../planning.md)).
+
+```text
+case file "<name>"
+- file: "<SolutionDir>/<ProjectName>/caseplan.case"
 - case-identifier: "<identifier>"
 - identifier-type: constant
 - case-app-enabled: false
-- directly-pass-task-outputs: true
 - description: "<one-sentence description>"
 - order: first
-- verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "27.0.0", nodes == [], edges == []
+- verify: Confirm caseplan.case written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "32.0.3", nodes == [], edges == []
 ```
 
 > **External variant.** Replace the two identifier lines with `identifier-type: external` + `case-identifier: "=vars.<varId>"` (or a `=js:` expression). See § External identifier value.
@@ -63,22 +67,30 @@ The case plugin writes a pure skeleton at T01 — no trigger node. The primary t
 The case file lives inside a solution + project structure. After T01 completes, the layout is:
 
 ```
+<!--skill-flavor:project-tree:start-->
 <directory>/
   <SolutionName>/
     <SolutionName>.uipx            ← created by `uip solution init` (Step 6.0, CLI)
-    <ProjectName>/                 ← created + populated by T01 (case plugin)
+    <ProjectName>/                 ← created + seeded by `uip maestro case init` (Step 6.0a, CLI)
       project.uiproj               ← § Scaffold writes
       operate.json                 ← § Scaffold writes
       entry-points.json            ← § Scaffold writes (empty entryPoints[])
       bindings_v2.json             ← § Scaffold writes
       package-descriptor.json      ← § Scaffold writes
-      caseplan.json                ← § Write caseplan.json writes
+      caseplan.case                ← § Write caseplan.case writes
+<!--skill-flavor:project-tree:end-->
 ```
 
-Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution init` and `uip solution projects add` bookend T01 as Step 6.0 and Step 6.0b.
+<!--skill-flavor:planning-contract:start-->
+Planning-phase contract: `<SolutionDir>/<ProjectName>/` ends with all 5 scaffold files + `caseplan.case`, whether `case init` seeded each file or T01 wrote it. CLI `uip solution init` (Step 6.0) and `uip maestro case init` (Step 6.0a) precede T01; `uip solution projects add` (Step 6.0b) is the registration fallback.
+<!--skill-flavor:planning-contract:end-->
 
+<!--skill-flavor:naming-canonical:start-->
 **Naming (canonical) — the solution identity is derived ONCE and reused by every step that scaffolds or references the solution.** `<SolutionName>` = the case Name (SDD §1 Metadata), sanitized to a valid directory name; `<SolutionDir>` = `<workingRoot>/<SolutionName>` (the working root adjacent to `sdd.md`). **Step 6.0 AND the Rule-17 Create prerequisite ([registry-discovery.md § Create-on-Missing → 0](../../registry-discovery.md#create-on-missing-build-and-rediscovery)) MUST derive `<SolutionName>` + `<SolutionDir>` identically** — so a solution scaffolded early by a Phase-1 Create is the *same* `.uipx` Step 6.0 then finds and skips. A divergent name or location forks the solution: the built agent sibling registers in one `.uipx`, the case project lands in another, and the case cannot resolve its own agent at runtime. (`<ProjectName>` is T01's to choose under `<SolutionDir>/`.)
+<!--skill-flavor:naming-canonical:end-->
 
+<!--skill-flavor:see-implementation-step-six:start-->
 See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence.
+<!--skill-flavor:see-implementation-step-six:end-->
 
 <!-- END: planning.md -->

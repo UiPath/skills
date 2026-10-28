@@ -12,7 +12,9 @@ Consult this reference when planning or implementing any of:
 
 ## Prerequisites
 
+<!--skill-flavor:connector-login-prerequisite:start-->
 1. `uip login` — tenant-scoped connectors are only visible after authentication.
+<!--skill-flavor:connector-login-prerequisite:end-->
 2. `uip maestro case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uip/case-resources/`.
 3. A healthy Integration Service connection for the connector. If `Connections` is empty after `get-connection`, offer to create one (Step 2) rather than failing — see [§ Creating a Connection](#creating-a-connection).
 
@@ -20,13 +22,13 @@ Connection selection mechanics (`--refresh` retry, ping verification, BYOA workf
 
 ## Resolution Pipeline
 
-For every connector task or event trigger, run these CLI metadata fetches in order. Each call feeds the next; the populated `caseShape` from `case spec` is written directly into `caseplan.json` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
+For every connector task or event trigger, run these CLI metadata fetches in order. Each call feeds the next; the populated `caseShape` from `case spec` is written directly into `caseplan.case` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
 
 > **Empty `Connections[]` is not terminal.** When `get-connection` returns no connections, Step 2 offers to create one (`uip is connections create`) before falling back to `<UNRESOLVED>` — see [§ Creating a Connection](#creating-a-connection).
 
 ### Step 1 — Find the activity-type-id
 
-Read the relevant TypeCache index file directly (CLI `registry search` has known gaps — see [registry-discovery.md](registry-discovery.md)).
+Read the relevant TypeCache index file directly, or search it with `uip maestro case registry search` (see [registry-discovery.md](registry-discovery.md)).
 
 | Target | Cache file | Identifier field |
 |--------|-----------|------------------|
@@ -47,7 +49,7 @@ Output: `{ Entry, Config, Connections }` where:
 - `Entry` — the raw TypeCache entry, including `displayName`, `configuration`.
 - `Config.connectorKey` — the Integration Service connector identifier (e.g., `gmail`, `uipath-atlassian-jira`).
 - `Config.objectName` — the specific operation (e.g., `message`, `issue`).
-- `Connections[]` — array of `{ id, name }` objects.
+- `Connections[]` — array of `{ Id, Name }` (not a verbatim subtree, so PascalCase) objects.
 
 **Selection rules (in priority order):**
 
@@ -56,7 +58,7 @@ Output: `{ Entry, Config, Connections }` where:
    - **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option** (an existing connection may not fit the intent).
    - **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
 3. **Create chosen** → create the connection, then continue to Step 3 with the returned `ConnectionId`. Procedure — background `is connections create`, capture `ConnectionId`, headless fallback: [§ Creating a Connection](#creating-a-connection).
-4. **Skip / create declined or failed / non-interactive run** → mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks.md` and omit `input-values:`. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Note it in the completion report. See [placeholder-tasks.md](placeholder-tasks.md). A failed `is connections create` MUST route here after surfacing the error (§ Creating a Connection step 4) — **planning continues to a placeholder, it never stalls.**
+4. **Skip / create declined or failed / non-interactive run** → mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks/registry-resolved.json` and omit its `input-values` key. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Note it in the completion report. See [placeholder-tasks.md](placeholder-tasks.md). A failed `is connections create` MUST route here after surfacing the error (§ Creating a Connection step 4) — **planning continues to a placeholder, it never stalls.**
 
 #### Creating a Connection
 
@@ -75,7 +77,7 @@ uip is connections create "<connector-key>" --output json
 4. **On failure — surface and re-prompt, never stall.** The create failed if the command **exits non-zero**, the JSON `Result` is `"Failure"`, or no `Data.ConnectionId` is returned (e.g. OAuth denied/failed, browser closed, connector misconfigured). On auth failure the command **exits** (verified: exit 1) — it does not hang. Do NOT silently proceed and do NOT leave planning incomplete:
    1. Show the user the failure `Message` (and `Instructions` if present) verbatim — do not invent a cause. Example: `{ "Result": "Failure", "Message": "Authentication failed", "Instructions": "Check credentials and try again." }`.
    2. Re-prompt via **AskUserQuestion**: **Retry create** (re-run `is connections create`) / **Skip (defer)**.
-   3. On **Skip**, or after a repeated failure, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `tasks.md`** so planning completes.
+   3. On **Skip**, or after a repeated failure, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `registry-resolved.json`** so resolution completes.
 
 **Headless / no-browser fallback** (CI, remote sandbox, no display) — the agent cannot complete browser OAuth. Either ask the user to run `! uip is connections create "<connector-key>" --output json` in their own terminal and paste back the `ConnectionId`, or run with `--no-wait` to get the pending authorization URL, surface it, and poll until `State: Enabled`.
 
@@ -111,12 +113,12 @@ Spec output carries the full operation contract:
 | `outputs.pagination` | `null` for non-list; `{ maxPageSize: N }` for list ops |
 | `filter` | Structured FilterBuilder contract (`ceql` activity / `jmes` trigger); `undefined` means no structured authoring. Plain filter fields remain native-syntax query/body inputs |
 | `references[]` | Cross-references with pre-built `discoverCommand` runnable strings |
-| `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.json` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
+| `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.case` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
 | `diagnostics` | Per-endpoint `fetched` / `fallbacks` |
 
 Full input-details contract (the `--input-details` JSON shape): [`case-spec-input-details.md`](case-spec-input-details.md).
 
-> **Generic-typed activities** (`Config.activityType === "Generic"`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord`). The CLI fails fast on `case spec --type activity` without `--object-name`. Discover the available objects via `uip is resources list --connector-key <connector-key>` and `uip is resources describe --connector-key <connector-key> --object-name <name>`, then pass the picked name as `--object-name` on the Phase 3 call.
+> **Generic-typed activities** (`Config.activityType === "Generic"`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord`). The CLI fails fast on `case spec --type activity` without `--object-name`. Discover the available objects via `uip is resources list <connector-key>` and `uip is resources describe <connector-key> <object-name>`, then pass the picked name as `--object-name` on the Phase 3 call.
 
 ### Step 4 — Resolve reference fields
 
@@ -133,7 +135,7 @@ Each `inputs.*` entry with a `reference` carries a pre-built `discoverCommand`:
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md / minting the spec. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing `registry-resolved.json` / minting the spec. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -141,7 +143,7 @@ If a reference cannot be resolved, **AskUserQuestion** with the candidates (drop
 
 ---
 
-## Applying Results to caseplan.json
+## Applying Results to caseplan.case
 
 In Phase 3, the populated `caseShape` from `case spec --input-details` is dropped into the task's `data` after binding-id substitution. Per-class wiring lives in each plugin's `impl-json.md` — the table below is a quick reference.
 
@@ -153,7 +155,7 @@ In Phase 3, the populated `caseShape` from `case spec --input-details` is droppe
 | Filter (activity, CEQL) | `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` → `essentialConfiguration.savedFilterTrees.<filterParamName>` (tree); `data.inputs[name="queryParameters"].body.<filterParamName>` (compiled CEQL string) |
 | Filter (trigger, JMESPath) | `data.context[name="metadata"].body.activityPropertyConfiguration.{configuration → essentialConfiguration.filter, filterExpression}` AND `data.inputs[name="body"].body.filters.expression` |
 
-The skill substitutes `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids before writing.
+For connector tasks `uip maestro case splice` resolves the `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placeholders; for the event-trigger node and connector-bound rules the skill substitutes them in `caseShape.context[*].value` with minted binding ids before writing.
 
 ---
 
@@ -167,20 +169,29 @@ Tree shape, operator table, anti-patterns, "How to build" guide, worked examples
 
 ---
 
-## Output Contract to Tasks.md
+## Output Contract to `registry-resolved.json`
 
-Record the resolved values in `tasks.md` under the task entry:
+Record the resolved values on the task's ledger entry, alongside Rule 10's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
 
-```markdown
-## T25: Add connector-activity task "Create Jira Issue" to "Triage"
-- type-id: 718fdc36-73a8-3607-8604-ddef95bb9967
-- connection-id: 7622a703-5d85-4b55-849b-6c02315b9e6e
-- connector-key: uipath-atlassian-jira
-- object-name: issue
-- input-values: {"bodyParameters":{"fields.project.key":"PROJ","fields.issuetype.id":"10004"}}
-- filter: {"groupOperator":"And","filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Open\"","value":"Open"},"uiId":null}]}
+```json
+{
+  "stage": "Triage",
+  "task": "Create Jira Issue",
+  "taskType": "connector-activity",
+  "type-id": "718fdc36-73a8-3607-8604-ddef95bb9967",
+  "connection-id": "7622a703-5d85-4b55-849b-6c02315b9e6e",
+  "connector-key": "uipath-atlassian-jira",
+  "object-name": "issue",
+  "input-values": { "bodyParameters": { "fields.project.key": "PROJ", "fields.issuetype.id": "10004" } },
+  "filter": {
+    "groupOperator": "And",
+    "filters": [
+      { "id": "Status", "operator": "Equals", "value": { "isLiteral": true, "rawString": "\"Open\"", "value": "Open" }, "uiId": null }
+    ]
+  }
+}
 ```
 
-Also record in `registry-resolved.json`: search query, matched entry, selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.
+`input-values` and `filter` are real JSON objects, not strings — Phase 2 reads them back verbatim into `--input-details` ([connector-activity/impl-json.md § Step 1](plugins/tasks/connector-activity/impl-json.md)). Also record the selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.
 
 <!-- END: connector-integration.md -->

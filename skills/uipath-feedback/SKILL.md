@@ -32,7 +32,7 @@ uip --version 2>&1
 | Result | Action |
 |---|---|
 | Version output | Proceed to Step 2 |
-| `uip: command not found` | Tell user to install UiPath CLI. Stop. |
+| `uip: command not found` | Tell user to run the official installer: `curl -fsSL https://download.uipath.com/uipath-cli/install.sh \| bash` on macOS/Linux, or `irm https://download.uipath.com/uipath-cli/install.ps1 \| iex` in Windows PowerShell. Stop. |
 | Other error | Show the error. Stop. |
 
 ### Step 2 -- Introspect and capture (silent -- no user interaction)
@@ -48,7 +48,7 @@ The **area** (which product) becomes the title tag and a Jira label for filterin
 | `uip rpa …`, or `project.json` + `*.cs`/`*.xaml` | `RPA` |
 | `uip maestro flow …`, or `*.flow` file | `Flow` |
 | `uip maestro bpmn …`, or `*.bpmn` file | `BPMN` |
-| `uip maestro case …`, or `caseplan.json` | `Case` |
+| `uip maestro case …`, or `caseplan.case` / `caseplan.json` | `Case` |
 | `uip <agent…>`, or `pyproject.toml` with `uipath` / `agent.json` | `Agents` |
 | `uip codedapp …`, or `app.config.json` / `action-schema.json` | `CodedApps` |
 | `uip api-workflow …` | `ApiWorkflow` |

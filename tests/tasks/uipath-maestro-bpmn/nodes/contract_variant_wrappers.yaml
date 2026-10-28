@@ -19,6 +19,9 @@ run_limits:
   # single-turn authoring.
   task_timeout: 3600
   turn_timeout: 2700
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a local BPMN project named "ContractVariantsBpmn".
   Use synthetic placeholder resource names only. Do not include tenant URLs,
@@ -61,7 +64,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Contract variant wrappers use the documented BPMN element types"
-    command: "python3 $TASK_DIR/check_contract_variant_wrappers.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_contract_variant_wrappers.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

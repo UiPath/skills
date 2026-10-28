@@ -24,9 +24,8 @@ All operations go through `uip tasks <verb> --output json`.
 When switching is required:
 1. Check current login: `uip login status --output json` — verify `UIPATH_URL`, `Organization`, and `Tenant`
 2. Re-login with `--authority` only if environment differs:
-   - Alpha: `uip login --authority https://alpha.uipath.com --tenant <tenant>`
-   - Staging: `uip login --authority https://staging.uipath.com --tenant <tenant>`
-   - Production: `uip login --tenant <tenant>` (default, no `--authority` needed)
+   - Non-default host (Automation Suite, dedicated, other): `uip login --authority "<AUTHORITY_URL>" --tenant <tenant>`
+   - `cloud.uipath.com`: `uip login --tenant <tenant>` (default, no `--authority` needed)
 3. If already on the right environment but wrong tenant: `uip login tenant set <tenant-name>`
 
 ```bash
@@ -59,6 +58,7 @@ uip login tenant set MyTenant
 - Setting task labels
 - Editing task metadata (title, priority, catalog association)
 - Getting and saving task data
+- Fetching the execution trace for an Agent or Maestro task, and submitting feedback on a trace or span
 
 > **Not in scope:** Orchestrator queues or queue items (use `uip or`), Document Understanding model training, or Action Center app development (use `uip codedapp`).
 
@@ -173,6 +173,8 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 | Edit task metadata | `tasks metadata <task-id> --folder-id <id> [--title --priority --catalog-id]` |
 | Get task data | `tasks data get <task-id> --folder-id <id>` |
 | Save task data | `tasks data save <task-id> --data '{...}' --folder-id <id>` |
+| Get a task's execution trace (Agent/Maestro only) | `tasks get <task-id> --output json` then `traces spans get <trace-id>`; see `references/task-execution-trace.md` |
+| Submit feedback on a trace or span | `traces feedback create --trace-id <id> --folder-key <key> --positive`; see `references/task-execution-trace.md` |
 
 ---
 
@@ -234,4 +236,5 @@ For deeper guidance, read these files only when needed:
 - `references/task-catalogs.md` — Task catalog list/get/create/update and retention policy
 - `references/task-metadata.md` — Editing task metadata, plus task comments and labels
 - `references/task-data.md` — Getting and saving task data, and save type routing
+- `references/task-execution-trace.md` — Execution trace lookup and feedback for Agent/Maestro tasks, ported from Action Center's legacy in-app Autopilot tools
 - `references/action-center-urls.md` — Canonical Action Center URL patterns; **read this before constructing or sharing any task deep-link** (the portal-UI misclassifies tenant-less URLs as "Orchestrator not enabled")

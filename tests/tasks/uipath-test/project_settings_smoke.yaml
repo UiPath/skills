@@ -1,0 +1,145 @@
+task_id: skill-test-project-settings-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to change a Test Manager
+  project's settings from a plain-language request. The user names a city,
+  not a time zone, and describes the execution name format in words, so the
+  agent has to turn them into an IANA name and a placeholder template itself.
+  The user also asks to raise the max number of test steps, which no command
+  can do; the agent must not invent a flag for it on any `tm project` command. Graded on the project's live settings record after
+  the run, not on the agent's reply. pre_run seeds a throwaway
+  `EVFX-PSET-*` project per run and post_run deletes it.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-PSET-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      # Orphan sweep: a run that died before post_run strands its project.
+      # Only delete projects stamped more than 6 hours ago, so a concurrent
+      # run (including one started just before UTC midnight) keeps its own.
+      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          name = p.get("Name") or ""
+          key = p.get("ProjectKey")
+          if not key or not name.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(name[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "project", "delete", "--project-key", key, "--yes")
+
+      tag = secrets.token_hex(3)
+      key = "EVPS" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{tag}"
+      out = call("tm", "project", "create", "--name", name, "--project-key", key)
+      if out.get("Result") != "Success":
+          print(f"SEED FAILED: could not create {name} ({key}): {out}")
+          sys.exit(1)
+      with open("project-key.txt", "w") as f:
+          f.write(key + "\n")
+      print(f"SEEDED project {name} with key {key}")
+      PYEOF
+    timeout: 180
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  The key of my Test Manager project is in project-key.txt in this folder.
+
+  Our team works out of Bucharest, so set the project's time zone to match.
+  Then change how its test executions get named: the test set's name, then
+  " - ", then the date the run started as yyyyMMdd. Nothing else in the name.
+
+  While you're in there, raise the max number of test steps per test case to
+  500.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent changed the settings with `uip tm project settings update` (the values are graded on the live record below)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+project\s+settings\s+update\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project time zone is now the IANA name Europe/Bucharest"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      r = subprocess.run(["uip", "tm", "project", "settings", "get",
+                          "--project-key", key, "--output", "json"],
+                         capture_output=True, text=True)
+      data = json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or {}
+      print("TimeZone:", data.get("TimeZone"))
+      sys.exit(0 if data.get("TimeZone") == "Europe/Bucharest" else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Execution name format is exactly `{TestSet.Name} - {Execution.StartTime|yyyyMMdd}`"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      r = subprocess.run(["uip", "tm", "project", "settings", "get",
+                          "--project-key", key, "--output", "json"],
+                         capture_output=True, text=True)
+      data = json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or {}
+      fmt = data.get("ExecutionNameFormat")
+      print("ExecutionNameFormat:", fmt)
+      sys.exit(0 if fmt == "{TestSet.Name} - {Execution.StartTime|yyyyMMdd}" else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not invent a step-cap flag on any `uip tm project` command (MaxNumberOfTestSteps is read-only)"
+    tool_name: "Bash"
+    # Rest of the same command: follows `\` line continuations; stops at a bare
+    # newline, `;`, `&`, a shell pipe (` |`) or the next `uip`. The template's own
+    # `|` ({Execution.StartTime|yyyyMMdd}) has no space before it, so it is not a stop.
+    command_pattern: '(uip|\$UIP)\s+tm\s+project\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--[\w-]*(?:max|step)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not fall back to calling the REST API directly (Critical Rule 10)"
+    tool_name: "Bash"
+    command_pattern: '(?i)\b(curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b[^\n]*projectsettings'
+    weight: 1.0
+    pass_threshold: 1.0

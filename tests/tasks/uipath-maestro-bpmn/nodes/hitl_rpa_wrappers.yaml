@@ -7,6 +7,9 @@ tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:m
 run_limits:
   expected_turns: 14
   max_turns: 80
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a local BPMN project named "EmployeeAccessBpmn" with this flow:
   manual start -> HITL approval -> RPA provisioning job -> end.
@@ -22,15 +25,17 @@ initial_prompt: |
   - Do not upload, publish, deploy, debug, or run the process.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was created"
-    path: "EmployeeAccessBpmn/EmployeeAccessBpmn.bpmn"
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('EmployeeAccessBpmn.bpmn')) else 'EmployeeAccessBpmn.bpmn missing')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "HITL and RPA wrappers use the documented BPMN element types"
-    command: "python3 $TASK_DIR/check_hitl_rpa_wrappers.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_hitl_rpa_wrappers.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

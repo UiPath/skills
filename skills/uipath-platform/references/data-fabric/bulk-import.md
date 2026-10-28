@@ -34,6 +34,7 @@ uip df entities get <entity-id> --output json
 - Use `uip df entities get <entity-id> --output json` to discover exact
   `Fields[].DisplayName` values before importing
 - System fields (`Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`, `RecordOwner`) must NOT appear in the CSV
+- **No line breaks or `""` inside quoted cells.** `records import` refuses such a file and uploads nothing. Load that text with `records insert --file <json>`, which stores it exactly ([`records-query.md` → Insert Records](records-query.md#insert-records)); stripping the characters to pass the check changes the user's data.
 
 ### Example CSV
 

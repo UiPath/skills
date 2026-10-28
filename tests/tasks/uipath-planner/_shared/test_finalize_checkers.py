@@ -21,8 +21,8 @@ import unittest
 from pathlib import Path
 
 PLANNER_ROOT = Path(__file__).resolve().parents[1]
-PICKER_CHECK = PLANNER_ROOT / "case_finalize_draft_picker" / "check_picker_pairing.py"
-REJECT_CHECK = PLANNER_ROOT / "case_finalize_draft_reject" / "check_reject_route.py"
+PICKER_CHECK = PLANNER_ROOT / "case" / "case_finalize_draft_picker" / "check_picker_pairing.py"
+REJECT_CHECK = PLANNER_ROOT / "case" / "case_finalize_draft_reject" / "check_reject_route.py"
 
 
 # --------------------------------------------------------------------------

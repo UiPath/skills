@@ -1,0 +1,63 @@
+name: $(Date:yyMMdd)$(Rev:.r)-gate
+
+# Release gate for @uipath/skills. Triggered over the REST API by the
+# `release-gate` job in .github/workflows/publish.yml; it never runs on its
+# own.
+#
+# It runs FOSSA against the release, the one thing that cannot be done from
+# GitHub Actions: the FOSSA secrets are reachable only through an Azure DevOps
+# service connection.
+#
+# Publishing deliberately stays in GitHub Actions: npm mints provenance
+# attestations only for GitHub Actions and GitLab CI identities, so the tarball
+# must be packed and published there. The npm-level integrity signature is the
+# provenance attestation produced by GitHub.
+#
+# (This gate used to Authenticode-sign `hooks/*.ps1` as well; the hooks are
+# now Node scripts — hooks/*.mjs — which no interpreter verifies signatures
+# on, so there is nothing left to sign. See scripts/run-release-gate.mjs.)
+
+trigger: none
+
+pr: none
+
+parameters:
+  - name: channel
+    displayName: 'Publish channel being gated'
+    type: string
+    values:
+      - preview
+      - latest
+  # Recorded on the run for traceability: it ties this gate run to the exact
+  # commit the publish job is packing, so an audit can pair a published
+  # version with its gate verdict. The FOSSA template checks out the ref the
+  # run was queued against.
+  - name: sourceCommit
+    displayName: 'Commit SHA being published (40 hex chars)'
+    type: string
+  - name: azureServiceConnection
+    displayName: 'Azure connection used for the FOSSA secrets'
+    type: string
+    default: 'InternalProdEAServiceConnection'
+  - name: fossaPoolName
+    displayName: 'FOSSA agent pool'
+    type: string
+    default: 'Security-Linux'
+
+resources:
+  repositories:
+    - repository: fossa
+      type: github
+      name: UiPath/AzurePipelinesTemplates
+      ref: refs/tags/uipath.security.fossa.3.1.1
+      endpoint: github.com_UiPath
+
+stages:
+  # FOSSA blocks stable promotions only. A new transitive-dependency finding
+  # holding up a preview costs a release line; holding up `latest` is the point.
+  # The nightly scan in .pipelines/security.yml is unchanged and still advisory.
+  - template: jobs/ci.security.fossa.yml
+    parameters:
+      azureServiceConnection: ${{ parameters.azureServiceConnection }}
+      poolName: ${{ parameters.fossaPoolName }}
+      blockOnIssue: ${{ eq(parameters.channel, 'latest') }}

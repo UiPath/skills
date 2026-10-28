@@ -19,7 +19,7 @@ For Studio Web Agent Builder → [../../../lowcode/capabilities/built-in-tools/d
 |---|---|---|
 | File source | Determines the first node | Bucket / queue payload / attachment id from upstream |
 | Bucket name + folder path (if downloading) | `sdk.buckets.download_async` arguments | User config or hardcoded constant |
-| Prompt | DeepRAG `prompt` body field — required, non-empty | User input or static default |
+| Prompt | DeepRAG `prompt` body field — required, non-empty. Must say what to answer when the documents hold nothing relevant (e.g., "reply `No relevant information found.`"): an empty response counts as a failure and is retried. Must not specify a citation format (see [impl-python.md](impl-python.md) § Citation Modes) | User input or static default |
 | Target folder for ingestion + DeepRAG | Permission scope | Default to personal workspace key for self-serve |
 | Citation mode | Per `CitationMode` enum in the SDK (currently `SKIP`, `INLINE` — verify at your version) | User preference; default `SKIP` |
 

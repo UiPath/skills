@@ -33,7 +33,7 @@ import os
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_setup'))
 from admin_helpers import run_cli, poll, fail, ok, first_list as _first_list
 
 logging.basicConfig(level=logging.INFO, format="verify_fedcred_maintained: %(message)s")

@@ -4,12 +4,22 @@ description: >
   a direction input, using a Switch node to pick the conversion. Exercises
   switch branching, multi-case wiring, and branch convergence on End.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:switch]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 23
   turn_timeout: 1200
+  task_timeout: 2700  # 1380s grading + a turn; inherited 1200 could not fit grading
+
+reference:
+  directory: ../..
 
 initial_prompt: |
+  Build the flow inside a solution of the same name.
+
   Create a UiPath Flow project named "FeetInches" that takes `value` (number)
   and `direction` (string: "f2i", "i2f", or "y2f") as inputs, converts feet
   to inches (× 12), inches to feet (÷ 12), or yards to feet (× 3) accordingly,
@@ -19,14 +29,23 @@ initial_prompt: |
   ("f2i", "i2f", "y2f"); each branch applies the corresponding conversion
   (in a Script node) and converges on a single End node that returns the result.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
-
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -34,20 +53,20 @@ success_criteria:
   # ── Execution checks — one debug call per direction ───────────────────
   - type: run_command
     description: "Debug with (23, \"f2i\") returns 276 via a Switch node"
-    command: "python3 $TASK_DIR/check_feet_inches_flow.py f2i"
-    timeout: 300
+    command: "python3 $REFERENCE_DIR/_shared/check_feet_inches_flow.py f2i"
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Debug with (276, \"i2f\") returns 23 via a Switch node"
-    command: "python3 $TASK_DIR/check_feet_inches_flow.py i2f"
-    timeout: 300
+    command: "python3 $REFERENCE_DIR/_shared/check_feet_inches_flow.py i2f"
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

@@ -19,6 +19,8 @@ Fetches one process (by id or search) and its documents, and downloads document 
 uip ah automations get $PROCESS_ID --output json
 ```
 
+If the command fails with `Instructions` about AH **not being provisioned** on the tenant, or about the tenant having **no AH record yet**, report the message for the matching case, verbatim, from [`cli-commands.md`](cli-commands.md) → **Automation Hub not available on this tenant**, and stop.
+
 `Data` is the projected record (`Id`, `Name`, `Phase`, `PhaseStatus`, `Tags`, …). Add `--all-fields` only when you need the raw record (e.g. `process_slug` for the deep link). `Failure` with not-found → no such process; auth error → `uip login`.
 
 ## Step 3: Fetch the documents
@@ -36,6 +38,8 @@ Only file-backed documents download, and the command takes the **`FileId`** — 
 ```bash
 uip ah documents download $FILE_ID --destination "<path>" --output json
 ```
+
+> 📁 **Download to the current working directory — never `/tmp`.** Hosted runtimes (e.g. the Delegate) sandbox their file tools to the session workspace: the CLI can write to `/tmp`, but every file-tool access to the download then fails with an access-denied error.
 
 - `Data` reports `Destination` and `Bytes` — confirm the file exists and is non-empty before reporting success.
 - Link-backed documents: present the `EmbedLink` instead. Never invent a download path.

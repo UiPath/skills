@@ -12,6 +12,13 @@ tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate
 
 sandbox:
   node: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+reference:
+  directory: ..
 
 # Cleanup: the dashboard build mints a fresh OAuth external app per run
 # (build/impl.md Phase 3 — `uip admin external-apps create`). The prompt records
@@ -21,7 +28,7 @@ sandbox:
 # (the experiment-default prune's 30s can time out on it). Task post_run runs
 # before experiment defaults.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_external_app.py"
+  - command: "python3 _setup/cleanup_external_app.py"
     timeout: 60
   - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
     timeout: 180
@@ -59,7 +66,7 @@ success_criteria:
   - type: run_command
     description: "Compiler-model structure + uipath.json SDK config (project auto-located under <routingName>/)"
     command: >
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      python3 $REFERENCE_DIR/_shared/check_dashboard.py
       --min-metrics 2 --min-widgets 2 --forbid-substr fnBody --forbid-substr useInsights
     timeout: 30
     expected_exit_code: 0

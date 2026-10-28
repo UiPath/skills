@@ -160,7 +160,7 @@ Selectors are ranked by attribute stability. When reviewing, assess which tier t
 | No environment-specific data in selectors (qa/uat/prod URLs, ports) | Warning | Grep for environment-specific strings |
 | Wildcards used for dynamic attributes | Info | Check selector patterns |
 | Object Repository used instead of hardcoded selectors | Warning | Check for `.objects/` usage |
-| Element Exists / Check App State used before interactions | Info | Check for pre-validation patterns |
+| Element Exists / Check App State used only to branch, not as a guard before an action on the same element or a check whose not-found branch only throws on an element a later activity acts on | Warning | Compare each check's target with the next activity's target and read its not-found branch ([rpa-common-issues.md § Unnecessary Check App State / Element Exists](rpa-common-issues.md)) |
 | Modern UI Descriptors used (Strict + Fuzzy + Image + Anchor) | Info | Grep `.xaml` for `NUnifiedTargetDefinition` |
 | Selector depth minimal (2-3 levels preferred, not deep chains) | Info | Check selector nesting depth in `.xaml` |
 
@@ -346,7 +346,7 @@ Run Workflow Analyzer and verify no Error-level violations. Key rules to check:
 | No debug artifacts or test data included | Info | Check for leftover files |
 | Global Exception Handler configured | Info | Check project settings |
 | Project validates clean | Critical | `uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json` returns 0 errors for every entry point |
-| Project builds clean | Critical | `uip rpa build "<PROJECT_DIR>" --output json` — catches unknown member names and invalid enum values that `validate` misses (SKILL.md Critical Rule 2) |
+| Project builds clean | Critical | `uip rpa build "<PROJECT_DIR>" --output json` — compiles every workflow in the project, including files per-file `validate` never covered (SKILL.md Critical Rule 2) |
 | Recent successful run evidence (job history, test results) | Info | Do NOT run the automation during review — `uip rpa run` executes UI actions and writes. Check existing evidence; runtime verification routes to `uipath-rpa` |
 
 ## 10. Windows-Legacy Compatibility

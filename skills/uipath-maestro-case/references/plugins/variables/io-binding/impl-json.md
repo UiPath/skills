@@ -2,7 +2,7 @@
 
 > **Phase split.** Phase 3 only. Input/output binding at Step 9.8; in-expression `vars.$xref` marker resolution at Step 11.5 (after conditions + SLA). Phase 2 writes task shape (schema with empty `value` fields) but does not bind values. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are created and enriched (Step 9) and after global variable + output wiring is complete.
+Wire task inputs by editing `caseplan.case` directly. Runs after all tasks are created and enriched (Step 9) and after global variable + output wiring is complete.
 
 ## Task Input Shape
 
@@ -30,9 +30,24 @@ Inputs are populated with empty `value` from the `tasks describe` schema when th
 
 Output IDs are name-based camelCase per [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule). `source` reads from the task response — never changes even when `var` is counter-suffixed.
 
+**`originalVar` equals this entry's own `id`, collision suffix included.** On a `->` reassignment the entry keeps its minted `id` and points `var` at the case variable; `originalVar` repeats that `id` verbatim so the front end can filter the entry out of root-mirroring. When the plain camelCase name was already claimed by an earlier task, this entry's `id` carries a counter suffix — and `originalVar` carries the suffixed id too, **not** the pre-collision name. Two tasks each producing `APIOutput1`:
+
+```json
+// first task to claim the name
+{ "name": "APIOutput1", "id": "aPIOutput1",  "var": "aPIOutput1" }
+
+// second task, reassigned: id is suffixed, and originalVar repeats THAT id
+{ "name": "APIOutput1", "id": "aPIOutput12", "var": "renamedResult",
+  "originalVar": "aPIOutput12", "source": "=APIOutput1", "target": "=aPIOutput12" }
+```
+
+**Every `->` reassignment carries `originalVar`, including when the two names match.** `estimatedAge -> estimatedAge` is still a reassignment: the entry keeps its minted `id`, points `var` at the case variable, and repeats that `id` in `originalVar`. Equal-name rows are the ones agents drop it on, and a null `originalVar` there is `CASE_MGMT_OUTPUT_ORIGINAL_VAR_MISSING` exactly as a missing one on a renamed row would be.
+
+`"originalVar": "aPIOutput1"` on that second entry names another task's output and is an error — `CASE_MGMT_OUTPUT_ORIGINAL_VAR_MISSING`. The test is local and needs no lookup: read `originalVar` off the same entry's `id`, never off the schema field name.
+
 ## Output Binding Shapes
 
-Each task plugin emits `data.outputs[]` entries by combining its Step 0 schema (from `tasks describe` for non-connector plugins, `case spec --input-details` `caseShape.outputs[]` for connector plugins) with the SDD's `->` / `=` rows and any bare items added to `tasks.md` by schema discovery. Bare is an internal auto-mint form, never an SDD Outputs operator. Apply these rules during the plugin's task-write step.
+Each task plugin emits `data.outputs[]` entries by combining its Step 0 schema (from `tasks describe` for non-connector plugins, `case spec --input-details` `caseShape.outputs[]` for connector plugins) with the SDD's `->` / `=` rows and any bare items added by schema discovery. Bare is an internal auto-mint form, never an SDD Outputs operator. Apply these rules during the plugin's task-write step.
 
 Resolve the schema descriptor for every SDD field path **before** choosing an output shape:
 
@@ -40,18 +55,74 @@ Resolve the schema descriptor for every SDD field path **before** choosing an ou
 2. With no remaining segments, the resolved descriptor is that top-level output.
 3. With remaining segments, walk them exactly through the top-level output's `Body.Properties` (`body.properties` in normalized case-shape data; `JsonSchema.Properties` is the equivalent CLI mirror). The descriptor after the final segment is the **leaf descriptor**.
 4. For a nested path, set the emitted `name` to the leaf's display name when present, otherwise its exact final path segment. Take `type` plus any type-refining attributes from the leaf descriptor only. Never copy the parent object's `jsonSchema` type or body onto a scalar leaf.
-5. A nested path references its top-level parent. Do not additionally auto-mint that parent unless tasks.md contains a separate schema-discovered bare item for it. If any segment does not resolve, log `ERROR` and skip the binding; never fall back to the last resolved parent.
+5. A nested path references its top-level parent. Do not additionally auto-mint that parent unless the projected output list contains a separate schema-discovered bare item for it. **Connector nodes are exempt:** their `data.outputs[]` is a verbatim splice of `caseShape.outputs[]`, so every spec entry is present regardless of what the SDD references, and a nested row binds into the spliced `response` rather than suppressing it ([connector-trigger-impl.md § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache)). **Business rule tasks are exempt too:** the task always carries `output` (`=result`) and `Error`, and a `<decision>.<column>` extract sits beside them ([business-rule/impl-json.md](../../tasks/business-rule/impl-json.md)). If any segment does not resolve, log `ERROR` and skip the binding; never fall back to the last resolved parent.
 
-For each top-level Step 0 entry, check whether tasks.md references it either as a bare name or as the first segment of an explicit `->` path. Only entries with no such reference fall back to schema-driven auto-minting.
+For each top-level Step 0 entry, check whether the SDD references it either as a bare name or as the first segment of an explicit `->` path. Only entries with no such reference fall back to schema-driven auto-minting. On a connector node this decides an entry's SHAPE, never whether it exists — the entry set is fixed by the splice.
 
-- **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape. Let `baseId = camelCase(leaf segment)` and allocate `id` per the global [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule), including its controlled equal-name alias. Emit `{name: <resolved name>, type: <resolved descriptor's type>, id: <allocated id>, var: "<sdd-name>", originalVar: <allocated id>, value: "<sdd-name>", source: "=<sdd-field-path>", target: "=<allocated id>", elementId: "<stage-task>"}`. `<resolved name>` is the top-level schema display name for a top-level path; for a nested path it is the leaf display name when present, otherwise the exact final path segment. **`source` is the SDD's left-side string with `=` prefix, verbatim.** **`type` is required on every emitted output — FE rejects entries without it.** **`originalVar` is load-bearing and mirrors the allocated `id`** — it records the output slot before reassignment and tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits. Example: if another task already owns `id: "aPIOutput1"`, `APIOutput1 -> renamedResult` emits `id: "aPIOutput12"`, `target: "=aPIOutput12"`, `var: "renamedResult"`, and `originalVar: "aPIOutput12"`.
+A `$xref('Stage','Task','output')` marker is not one of those two reference forms: the output it names is still auto-minted, and the `=` row is an additional row that reads it. Collapsing the two into one leaves the `=` row reading the variable it writes, which nothing produces.
+
+- **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape. Let `baseId = camelCase(leaf segment)` and allocate `id` per the global [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule), including its controlled equal-name alias. Emit `{name: <resolved name>, type: <resolved descriptor's type>, id: <allocated id>, var: "<sdd-name>", originalVar: <allocated id>, value: "<sdd-name>", source: "=<sdd-field-path>", target: "=<allocated id>", elementId: "<stage-task>"}`. `<resolved name>` is the top-level schema display name for a top-level path; for a nested path it is the leaf display name when present, otherwise the exact final path segment. **`source` is the SDD's left-side string with `=` prefix, verbatim.** **`type` is required on every emitted output**, and for a resource task it comes from `uip maestro case splice --described` (see [resource-task-common.md](../../tasks/resource-task-common.md)) — never typed by hand, except a business rule's `<decision>.<column>` extract, which takes the leaf's type ([business-rule/impl-json.md](../../tasks/business-rule/impl-json.md)). The parser keeps an output only when `name`, `type`, `source` and `var` are all present, so a row without one is dropped before anything evaluates it and the variable it names is never written. Packaging does not object: an undefined `type` simply omits the attribute. **`originalVar` is load-bearing and mirrors the allocated `id`** — it records the output slot before reassignment and tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits. See **Reassign collision** below for the shape a name clash produces.
 - **Bare `<name>`** (no operator) → auto-mint shape: `{name, type: <Step 0 entry's type>, id: <camelCase(name)>, var: <id>, value: <id>, source: <Step 0 entry's source verbatim>, target: "=<id>", elementId}`. No `originalVar`. Used for top-level Step 0 entries the SDD doesn't alias.
-- **`<sdd-name> = <expression>`** (set / compute / copy) → Scenario E shape: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <case var's type>, elementId: "root"}`. **No `id`**, no `originalVar`. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it. Canonicalize `=metadata.X` to `=js:metadata.X` in both `value` and `source`; retain the SDD-natural form in `tasks.md`. For a quoted string literal, treat the quotes as SDD delimiters: `status = "InReview"` emits JSON `"value": "InReview", "source": "InReview"` — never embed the delimiters as payload (`"value": "\"InReview\""`).
+- **`<sdd-name> = <expression>`** (set / compute / copy) → Scenario E shape: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <SDD row Type>, elementId: "root"}`. `type` is the SDD Outputs row's `Type` cell — the task's output-schema type (`number` for an API workflow number) — never the root case variable's type (`sdd convert` writes an SDD `number` root variable as `double`) and never the converter's placeholder `string`. **No `id`**, no `originalVar`. **On this shape only, `target` and `body` are present-but-blank: emit `"target": ""` and `"body": ""` literally rather than dropping the keys.** An omitted key is not the same as a blank one — the FE reads a missing `target` as unset rather than deliberately-empty. Blank values belong to Scenario E and nowhere else:
+
+| shape | `target` | `value` | `body` |
+|---|---|---|---|
+| Scenario E (`=` custom) | `""` | the expression | `""` |
+| reassign (`->`) | `"=<allocated id>"` | the SDD name | absent |
+| bare auto-mint | `"=<id>"` | the `id` | absent |
+
+Never blank a `target` or `value` on a reassign or auto-mint row to satisfy the rule above — those carry real values, and emptying them is a different defect. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it. Canonicalize `=metadata.X` to `=js:metadata.X` in both `value` and `source`; retain the SDD-natural form in the projected item. For a quoted string literal, treat the quotes as SDD delimiters: `status = "InReview"` emits JSON `"value": "InReview", "source": "InReview"` — never embed the delimiters as payload (`"value": "\"InReview\""`).
 - **Schema fields with no SDD reference** → fall back to auto-mint shape (`var` = camelCased schema name). Connector plugins additionally apply the [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule) dedup-suffix on collision (e.g., `response` → `response2`).
+
+**Emission order is not the SDD's row order. A row whose expression reads another output's `var` on the same task goes AFTER that output.** The engine evaluates `data.outputs` in array order and writes each result into the variable scope before evaluating the next, so a row placed before the one it reads gets the case variable's default on every run of the case while `validate` reports `Valid`. The common shape is exactly the one the dispatch above produces backwards: the SDD declares the `=` row and says nothing about the schema entry it reads through `$xref`, so that entry is auto-minted and lands after it. Emit the auto-mint first and the `=` row last, whatever order the SDD's table used. `--strict` reports the violation as `STRICT_OUTPUT_FORWARD_READ`.
+
+```json
+[
+  {
+    "name": "Action",
+    "type": "string",
+    "id": "action4",
+    "var": "action4",
+    "value": "action4",
+    "source": "=Action",
+    "target": "=action4",
+    "elementId": "Stage_review-tBuyer01"
+  },
+  {
+    "name": "buyerDecision",
+    "type": "string",
+    "custom": true,
+    "var": "buyerDecision",
+    "value": "=js:vars.action4",
+    "source": "=js:vars.action4",
+    "target": "",
+    "body": "",
+    "elementId": "root"
+  }
+]
+```
+
+**Reassign collision.** The allocated `id` is derived from the field name, never the `v` + 8 form task inputs and formal slots use, so `id` is the field that can clash and the field that takes the suffix. `target` and `originalVar` follow it; `var` and `value` keep pointing at the case variable. Given another task already owns `id: "aPIOutput1"`, the row `APIOutput1 -> renamedResult` emits:
+
+```json
+{
+  "name": "APIOutput1",
+  "type": "string",
+  "id": "aPIOutput12",
+  "var": "renamedResult",
+  "originalVar": "aPIOutput12",
+  "value": "renamedResult",
+  "source": "=APIOutput1",
+  "target": "=aPIOutput12",
+  "elementId": "Stage_verify-tCallApi01"
+}
+```
+
+Eight tasks extracting the same field into one case variable produce this eight times: eight distinct `id` values, one shared `var`. Minting `id` randomly leaves nothing that can clash, the suffix lands on `var` instead, and seven of the eight then name a case variable that was never declared.
 
 **Equal-name extract dispatch.** Dispatch by the explicit operator before comparing names; equal operands select the reassign shape, never the bare auto-mint branch. Apply the global [controlled-alias rule](../global-vars/impl-json.md#uniqueness-rule). With no unrelated collision, `greeting -> greeting` emits `id`, `var`, `originalVar`, and `value` as `"greeting"`, with `source: "=greeting"` and `target: "=greeting"`. `originalVar` distinguishes reassignment from a bare output and keeps the predeclared root companion intact during frontend synchronization; the linked allocator owns any required suffixing.
 
-**Nested extract example.** Given a top-level `Error` output with `type: "jsonSchema"` and `Body.Properties.Message.Type: "string"`, the SDD row `Error.Message -> errorMessage` emits only this reassigned leaf unless schema discovery separately adds a bare `Error` item to `tasks.md`:
+**Nested extract example.** Given a top-level `Error` output with `type: "jsonSchema"` and `Body.Properties.Message.Type: "string"`, the SDD row `Error.Message -> errorMessage` emits only this reassigned leaf unless schema discovery separately adds a bare `Error` item:
 
 ```json
 {
@@ -113,9 +184,9 @@ resolve_output_reference_id(caseplan, src_output):
 
 Normal, bare, and reassigned outputs use their own `.id`. This is load-bearing when reassignment collision handling produces `id: "estimatedAge2"` with `var: "estimatedAge"`: downstream references must use `=vars.estimatedAge2`. Only a custom `=` output intentionally lacks `.id`; its `.var` points to an existing Case-variable companion, so resolve through that companion's verified `.id`. Never use a reassigned output's `.var` as its source reference ID.
 
-For each task input in `tasks.md`:
+For each task input row in the SDD's Inputs table:
 
-**Literals/expressions** — write the value string directly to `input.value`. Values shown are POST-rewrite — impl translates `=metadata.X` from `tasks.md` to `=js:metadata.X` per the [canonical-form table](../../../bindings-and-expressions.md#canonical-form-per-sink) (plain `=metadata.X` is not resolved by the lookup-path evaluator). **A quoted string literal's quotes are SDD delimiters, never payload** — same rule as the `=` output side above: `tasks.md`'s `APIInput1 = "literal-seed"` emits `"value": "literal-seed"`, NOT `"value": "\"literal-seed\""`. `tasks.md` keeps the SDD cell's own quotes ([planning.md § code spans](planning.md)); `caseplan.json` strips them. Embedded delimiters pass `validate` and ship the quote characters to the resource as payload:
+**Literals/expressions** — write the value string directly to `input.value`. Values shown are POST-rewrite — impl translates the SDD's `=metadata.X` to `=js:metadata.X` per the [canonical-form table](../../../bindings-and-expressions.md#canonical-form-per-sink) (plain `=metadata.X` is not resolved by the lookup-path evaluator). **A quoted string literal's quotes are SDD delimiters, never payload** — same rule as the `=` output side above: the SDD's `APIInput1 = "literal-seed"` emits `"value": "literal-seed"`, NOT `"value": "\"literal-seed\""`. The projected item keeps the SDD cell's own quotes ([planning.md § code spans](planning.md)); `caseplan.case` strips them. Embedded delimiters pass `validate` and ship the quote characters to the resource as payload:
 ```
 "=vars.amount"  |  "=js:metadata.ExternalId"  |  "literal-seed"  |  "50"  |  "=js:new Date()"
 ```
@@ -136,7 +207,7 @@ target_input["value"] = f"=vars.{output_reference_id}"
 
 ## In-Expression Marker Resolution (Step 11.5)
 
-Whole-value `<-` (above) only resolves an input whose value IS the reference. To reference an upstream output from **inside** a `=js:` expression (composite payload, `conditionExpression`, SLA `expression`, computed `=` output, connector body field), the SDD embeds a `vars.$xref('Stage','Task','output')` marker — see [bindings-and-expressions.md § In-expression references](../../../bindings-and-expressions.md#in-expression-references-varsxref). Resolve all markers in **one pass over the whole `caseplan.json`** at **Step 11.5** — after conditions (Step 10) and SLA (Step 11) are written, and every task/trigger/rule output is minted and deduped (so the marker resolves to the final output reference ID). This is the LAST mutation of Phase 3 before the validator; running it earlier (e.g. right after Step 9.8 input binding) misses markers in conditions / SLA and reads pre-dedup IDs.
+Whole-value `<-` (above) only resolves an input whose value IS the reference. To reference an upstream output from **inside** a `=js:` expression (composite payload, `conditionExpression`, SLA `expression`, computed `=` output, connector body field), the SDD embeds a `vars.$xref('Stage','Task','output')` marker — see [bindings-and-expressions.md § In-expression references](../../../bindings-and-expressions.md#in-expression-references-varsxref). Resolve all markers in **one pass over the whole `caseplan.case`** at **Step 11.5** — after conditions (Step 10) and SLA (Step 11) are written, and every task/trigger/rule output is minted and deduped (so the marker resolves to the final output reference ID). This is the LAST mutation of Phase 3 before the validator; running it earlier (e.g. right after Step 9.8 input binding) misses markers in conditions / SLA and reads pre-dedup IDs.
 
 This single sink-blind pass replaces per-sink resolution: it walks every string value regardless of which sink holds it, so conditions, SLA, inputs, and connector bodies are all covered in one place.
 
@@ -144,7 +215,7 @@ This single sink-blind pass replaces per-sink resolution: it walks every string 
 # pseudocode — not executed. Realize via Read → reason → Write/Edit.
 TOKEN = /vars\.\$xref\('([^']+)','([^']+)','([^']+)'\)/   # global, all matches
 
-for each string value V anywhere in caseplan.json:
+for each string value V anywhere in caseplan.case:
     for each match (stageLabel, taskName, outputName) of TOKEN in V:
         src_stage  = find_node_by_label(nodes, stageLabel)        # data.label
         src_task   = find_task_by_name(src_stage, taskName)       # displayName
@@ -199,8 +270,8 @@ If none of these exist → **pure orphan**, prompt the author.
 | Producer status | Validate time action |
 |---|---|
 | Companion has non-empty `default` | OK — Out-arg always has a value. |
-| At least one producer (extraction, assignment, or bare-name) exists in tasks.md AND its task is resolved (not Rule 17 placeholder) | OK — producer wires the slot when its task fires. |
-| Producer declared but its task is a Rule 17 placeholder (declared-but-unwirable) | **Silent WARN.** Log to `tasks/build-issues.md` under `## Open Items for User`. Rule 17 already prompted the author for this task. |
+| At least one producer (extraction, assignment, or bare-name) exists in the SDD AND its task is resolved (not Rule 18 placeholder) | OK — producer wires the slot when its task fires. |
+| Producer declared but its task is a Rule 18 placeholder (declared-but-unwirable) | **Silent WARN.** Log to `tasks/build-issues.md` under `## Open Items for User`. Rule 18 already prompted the author for this task. |
 | NO producer anywhere AND companion default empty | **AskUserQuestion** — pure orphan. 4 options below. |
 
 Pseudocode:
@@ -211,19 +282,19 @@ for entry in root.outputs[]:
   case_var_row = tasks_md_row_for_out_arg(name=entry.name)
   has_companion_default = (case_var_row.default not empty)
 
-  # Producer scan — three patterns. All operate on tasks.md `outputs:` lines:
-  has_extraction_producer  = exists in tasks.md any task's T-entry with an `outputs:` line containing `<field> -> <var>` (where var matches the Out-arg's var)
-  has_assignment_producer  = exists in tasks.md any task's T-entry with an `outputs:` line containing `<var> = <expression>` (where var matches the Out-arg's var)
-  has_bare_name_producer   = exists in tasks.md any task's T-entry with an `outputs:` line `- <name>` (bare, no operator) where camelCase(name) == var
+  # Producer scan — three patterns. All operate on the SDD Outputs rows projected per planning.md:
+  has_extraction_producer  = exists in the SDD any task with an Outputs row projecting to `<field> -> <var>` (where var matches the Out-arg's var)
+  has_assignment_producer  = exists in the SDD any task with an Outputs row projecting to `<var> = <expression>` (where var matches the Out-arg's var)
+  has_bare_name_producer   = exists a schema-discovered bare output `<name>` (no operator) where camelCase(name) == var
   has_any_producer         = has_extraction_producer || has_assignment_producer || has_bare_name_producer
 
-  producer_task_unresolved = the tasks.md-declared producer task is a Rule 17 placeholder (look up the task in caseplan.json by displayName; check `node.data.inputs` is empty `{}`)
+  producer_task_unresolved = the SDD-declared producer task is a Rule 18 placeholder (look up the task in caseplan.case by displayName; check `node.data.inputs` is empty `{}`)
 
   if has_companion_default:
       # Companion default guarantees a value; producer is optional bonus
       OK
   elif has_any_producer and producer_task_unresolved:
-      # Declared producer but task is unresolvable — Rule 17 already prompted; just log
+      # Declared producer but task is unresolvable — Rule 18 already prompted; just log
       LOG_OPEN_ITEM("Out-arg with declared but unresolvable producer — runtime returns empty until producer is wired")
   elif not has_any_producer:
       # Pure orphan — author never declared a producer AND no Default. Ask.
@@ -236,10 +307,10 @@ for entry in root.outputs[]:
 Out-argument "<name>" (id v<random8>, var <var>) has no value source:
   SDD row Default: <"" (empty)>
   Companion root.inputOutputs[].id="<var>": exists, default=""
-  Producing task in tasks.md (extraction or assignment): none found
+  Producing task in the SDD (extraction or assignment): none found
 
 Pick one:
-  (a) Add producer task output — supply the producer task's **display name** as shown in tasks.md (e.g., `Send Slack Message`). If the named task doesn't exist, re-prompt. Skill appends `<field> -> <var>` to that task's Outputs.
+  (a) Add producer task output — supply the producer task's **display name** as shown in the SDD (e.g., `Send Slack Message`). If the named task doesn't exist, re-prompt. Skill appends `<field> -> <var>` to that task's Outputs.
   (b) Add a Default value to the SDD Case Variables row — supply value inline (literal string).
   (c) Recategorize as Variable (case-internal state) or remove the variable.
   (d) Continue with best-effort emit (case builds; runtime returns empty string for this Out-arg; entry logged under "Open Items for User" in build-issues.md).
@@ -247,14 +318,14 @@ Pick one:
 
 **Skill response per user pick:**
 
-- **(a)** Edit `tasks.md`: append `<field> -> <var-name>` as a new `outputs:` list item on the named task's T-entry (use the spec-derived field name if available, else an `<UNKNOWN>` placeholder). Re-run the Phase 1 dispatcher from the modified tasks.md, then retry Step 12.
-- **(b)** Edit `tasks.md`: set `default: "<value>"` on the Out-arg's T-entry. Re-run Phase 1 dispatcher, then retry Step 12.
-- **(c)** Prompt the user inline: `Recategorize as "Variable" or "Remove" the variable?` On `Variable`: edit `tasks.md` Case Variables row Category → Variable, re-run Phase 1 dispatcher, retry Step 12. On `Remove`: delete the row from `tasks.md`, re-run Phase 1 dispatcher, retry Step 12.
+- **(a)** Edit `sdd.md`: append a `<field> -> <var-name>` row to the named task's Outputs table (use the spec-derived field name if available, else an `<UNKNOWN>` placeholder). Re-run Phase 1 from the modified `sdd.md`, then retry Step 12.
+- **(b)** Edit `sdd.md`: set the Out-arg's `Default` cell in the Case Variables table. Re-run Phase 1, then retry Step 12.
+- **(c)** Prompt the user inline: `Recategorize as "Variable" or "Remove" the variable?` On `Variable`: edit the SDD's Case Variables row Category → Variable, re-run Phase 1 dispatcher, retry Step 12. On `Remove`: delete the row from `sdd.md`, re-run Phase 1, retry Step 12.
 - **(d)** Append the build-issues entry (template below) and continue to Phase 4. No re-run.
 
 Option (d) is the build-with-best escape for cases where the author intends to wire the producer later but wants to keep iterating now — equivalent to the silent-WARN treatment that declared-but-unresolvable producers (T20-style) get automatically.
 
-**Rationale for the split:** real-world authoring is iterative. When an author has already gone through a Rule 17 prompt for the producer task (T20-style), the skill should not pile a second prompt on top — that's the path the author already chose by picking "Skip". But when the author authored a *pure orphan* with no producer declared at all (T14-style — wait-for-timer with no aliasing wire AND no Default), there's no prior signal of intent; the AskUserQuestion is the right surface to ask "did you mean to forget this, or wire it now?" Option (d) preserves the build-with-best escape.
+**Rationale for the split:** real-world authoring is iterative. When an author has already gone through a Rule 18 prompt for the producer task (T20-style), the skill should not pile a second prompt on top — that's the path the author already chose by picking "Skip". But when the author authored a *pure orphan* with no producer declared at all (T14-style — wait-for-timer with no aliasing wire AND no Default), there's no prior signal of intent; the AskUserQuestion is the right surface to ask "did you mean to forget this, or wire it now?" Option (d) preserves the build-with-best escape.
 
 **Build-issues entry template** (both branches log to this, only the AskUserQuestion branch ALSO prompts):
 
@@ -274,11 +345,11 @@ See [implementation.md § Step 12 — End-of-Phase-3 validator pass](../../../im
 
 **Input consumers.** Where a `=vars.X` reference resolves to a declaration with a different `type` than the consuming input expects, log WARNING. Proceed (string coercion is common and runtime-tolerant).
 
-**Extract outputs.** For every `->` row, re-resolve its full source path against the Step 0 schema using the algorithm above. Require the emitted output's `name` and `type` to equal the resolved name and leaf type. For a nested path, also require that the top-level parent was not separately auto-minted unless tasks.md contains a schema-discovered bare item for it. A mismatch is `ERROR`: correct the output from the resolved descriptor and re-run this check before Phase 4. Do not accept a passing `uip maestro case validate` as evidence here; structural validation does not compare a nested binding with its schema leaf.
+**Extract outputs.** For every `->` row, re-resolve its full source path against the Step 0 schema using the algorithm above. Require the emitted output's `name` and `type` to equal the resolved name and leaf type. For a nested path, also require that the top-level parent was not separately auto-minted unless there is a schema-discovered bare item for it; connector and business rule tasks are exempt (rule 5). A mismatch is `ERROR`: correct the output from the resolved descriptor and re-run this check before Phase 4. Do not accept a passing `uip maestro case validate` as evidence here; structural validation does not compare a nested binding with its schema leaf.
 
 ### Check 4 — No surviving `$xref` markers
 
-Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple or output reference ID failed to resolve. This is the same class of failure as a Check 1 unresolved `=vars.X` — so it gets the **same interactive remediation**, NOT a silent ERROR. Never ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
+Scan every string value in `caseplan.case` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple or output reference ID failed to resolve. This is the same class of failure as a Check 1 unresolved `=vars.X` — so it gets the **same interactive remediation**, NOT a silent ERROR. Never ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
 
 **On AskUserQuestion** (present the outputs that DO exist on the named task as candidates — same diagnostic shape as a failed whole-value `<-`):
 
@@ -298,7 +369,7 @@ Pick one:
 
 **Skill response per pick:**
 
-- **(a)** Rewrite the marker's triple in place in `caseplan.json` with the corrected name(s), re-run the [Step 11.5](#in-expression-marker-resolution-step-115) resolution for that token, then re-scan. If it still fails, re-prompt.
+- **(a)** Rewrite the marker's triple in place in `caseplan.case` with the corrected name(s), re-run the [Step 11.5](#in-expression-marker-resolution-step-115) resolution for that token, then re-scan. If it still fails, re-prompt.
 - **(b)** Edit the SDD expression as directed, re-run the Phase 1 dispatcher from the modified SDD, then retry Step 11.5 + this check.
 - **(c)** Leave the token unsubstituted, append the build-issues entry (template below), continue to Phase 4. No re-run.
 
@@ -314,11 +385,11 @@ Pick one:
 
 Verifies each resolved task's binding contract **covers** its resource's declared I/O — the build-side re-check of the design-side Resolved-resource I/O completeness rule (case SDD content contract, `uipath-planner`) (Approve-gate item 9 / Finalization step 19). Where Checks 1–4 verify that references which *exist* resolve, Check 5 verifies the *right set of references exists*: required inputs are not silently missing, and extract outputs name real fields.
 
-Read each resolved task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** any task with no persisted contract (Rule 17 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
+Read each resolved task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** any task with no persisted contract (Rule 18 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
 
 ```text
 # pseudocode — not executed. Realize via Read → reason → Write/Edit.
-for task in caseplan.json tasks where contract = registry_resolved[task].contract is present:
+for task in caseplan.case tasks where contract = registry_resolved[task].contract is present:
     bound_inputs = { inp.name : inp.value for inp in task.data.inputs[] }
     # (a) required-input coverage
     for decl in contract.inputs where decl.required:
@@ -363,8 +434,8 @@ Pick one:
 
 **Skill response per pick:**
 
-- Unbound (a) — write the Inputs row to `tasks.md` + `caseplan.json`, run the Step 9.8 binding for that input, retry Check 5. (b) — set the input `value` to a placeholder and append a `high` review item (`rev_unbound_input_<task>_<field>`), continue. (c) — append the build-issues entry, continue. No re-run.
-- Phantom (a) — rewrite the output `source`/`Field` in `caseplan.json`, retry Check 5. (b) — delete the output row (and any now-orphaned `=vars.<caseVar>` consumer falls to Check 1). (c) — append the build-issues entry, continue.
+- Unbound (a) — write the Inputs row to `sdd.md` + `caseplan.case`, run the Step 9.8 binding for that input, retry Check 5. (b) — set the input `value` to a placeholder and append a `high` review item (`rev_unbound_input_<task>_<field>`), continue. (c) — append the build-issues entry, continue. No re-run.
+- Phantom (a) — rewrite the output `source`/`Field` in `caseplan.case`, retry Check 5. (b) — delete the output row (and any now-orphaned `=vars.<caseVar>` consumer falls to Check 1). (c) — append the build-issues entry, continue.
 
 Check 5 honors the same **build-with-best** policy as Checks 1, 2, 4: option (c) appends a `## Open Items for User` entry and proceeds to Phase 4. Phase 4 `validate` stays green (a missing input / phantom extract is structurally valid); the runtime concern is surfaced for pre-publish review.
 
@@ -379,7 +450,7 @@ Check 5 honors the same **build-with-best** policy as Checks 1, 2, 4: option (c)
 
 ## Connector Tasks
 
-Connector task input values are written during Step 9.7 (connector detail), not during this I/O binding step. Resolve cross-task output reference IDs with the authoritative algorithm above before constructing the `input-values` body from `tasks.md`, then apply the canonical wrap per sink:
+Connector task input values are written during Step 9.7 (connector detail), not during this I/O binding step. Resolve cross-task output reference IDs with the authoritative algorithm above before constructing the `input-values` body from the resolved entry, then apply the canonical wrap per sink:
 
 ```json
 { "body": { "email": "=js:(vars.employeeEmail)", "caseRef": "=js:(metadata.ExternalId)" } }
@@ -425,7 +496,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Resolved task has no persisted contract (placeholder / `<UNRESOLVED>`) | `SKIPPED` | Skip Check 5 for that task |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 | Extract output `name` / `type` differs from its resolved schema descriptor (Check 3) | `ERROR` | Correct from the exact resolved leaf; re-run Check 3 |
-| Nested extract also auto-mints its top-level parent without a separate schema-discovered bare item (Check 3) | `ERROR` | Remove the undeclared parent auto-mint; re-run Check 3 |
+| Nested extract also auto-mints its top-level parent without a separate schema-discovered bare item, on a task that is not a connector or business rule (Check 3) | `ERROR` | Remove the undeclared parent auto-mint; re-run Check 3 |
 
 Example log entry (pseudocode — record in-reasoning, not via subprocess):
 

@@ -1,27 +1,41 @@
 # Structural BPMN (what the registry does not emit)
 
 The registry's `xmlTemplate`s give you the `uipath:*` payload for each node
-(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
-structural BPMN that holds those nodes together. This file is the ground truth
-for everything you author by hand around the templates.
+(see [registry-workflow.md](registry-workflow.md)). Author everything holding
+those nodes together from this file. Sections marked **REGISTRY GAP** have no
+template at all; there the Studio Web canvas serializer is the contract.
 
-Two sources define the contract:
+Read the one section you need, not the file:
 
-- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
-  event definitions exist, via its `bpmnElements` section;
-- the Studio Web canvas serializer
-  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
-  shaped to import and round-trip.
+- [The document scaffold](#the-document-scaffold-registry-gap) — namespaces, `bpmn:definitions`/`bpmn:process` shell, the `uipath:type` child rule
+- [A complete minimal file](#a-complete-minimal-file-author-from-this-not-from-examples) — the skeleton to author every new file from
+- [Variables](#variables) — declaring them, `elementId`, reserved names, public input/output types, `entryPointId`
+- [Script tasks](#script-tasks--jint-authoring-contract) — `bpmn:scriptTask`, the Jint helpers, `args`, `scriptVersion`, return shape
+- [Sequence flows](#sequence-flows-conditions-and-gateway-defaults-registry-gap) — `bpmn:sequenceFlow`, `conditionExpression`, gateway `default`
+- [Gateways](#gateways) — which gateway type, and the rule each must satisfy
+- [Events](#events-and-the-event-definition-matrix) — which event definition each event element may carry; timer, message, error payloads
+- [Boundary events](#boundary-events-registry-gap-for-attachedtoref--cancelactivity) — `attachedToRef`, `cancelActivity`
+- [Retry and error mapping](#retry-and-error-mapping-registry-gap) — `uipath:retry`, `uipath:errorMapping`
+- [Choosing an error-handling construct](#choosing-an-error-handling-construct) — retry vs boundary event vs event subprocess
+- [Subprocess, call activity, event subprocess](#subprocess-call-activity-event-subprocess-registry-gap-for-structure)
+- [Multi-instance](#multi-instance--loop-characteristics-registry-gap--canvas-supports-it) — `multiInstanceLoopCharacteristics`, `inputCollection`, `inputElement`
+- [Do not generate for new authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only) — preserve-only structures and payloads
+- [Diagram interchange](#diagram-interchange--bpmndi-registry-gap--always-generated) — `bpmndi` shapes, edges, waypoints
+- [Editing operations](#editing-operations) — add, delete, or re-scope nodes on an existing file
+- [Validation](#validation) — the XML parse gate, `validate`, and the manual checklist
 
-Where the registry stops, the canvas serializer is authoritative. Each
-gap below is labelled **REGISTRY GAP** — the registry exposes no template for
-it, so author it from this reference.
+Not in this file, do not grep for it here — connector (`Intsvc.*`) inputs,
+`target="body"` and required `Parameters` are in
+[registry-workflow.md](registry-workflow.md#3-connector-intsvc-enrichment),
+trigger payloads in
+[registry-workflow.md](registry-workflow.md#integration-service-triggers), and
+expression syntax with the `vars.` / `iterator.` / `bindings.` namespaces in
+[expression-authoring.md](expression-authoring.md).
 
-BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
-names the serializer emits, such as `<bpmn:startEvent>`,
-`<bpmn:intermediateCatchEvent>`, `<bpmn:scriptTask>`, and `<bpmn:endEvent>`.
-Do not use PascalCase variants like `<bpmn:IntermediateCatchEvent>`; XML accepts
-them syntactically, but BPMN tools do not treat them as the same elements.
+BPMN XML element names are case-sensitive. Use the exact lower-camel tag names
+the serializer emits: `<bpmn:startEvent>`, `<bpmn:intermediateCatchEvent>`,
+`<bpmn:scriptTask>`, `<bpmn:endEvent>`. Never PascalCase
+(`<bpmn:IntermediateCatchEvent>`).
 
 ## The document scaffold (REGISTRY GAP)
 
@@ -41,8 +55,8 @@ namespace, at least one `<bpmn:process>`, and (to render) a
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:uipath="http://uipath.org/schema/bpmn"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
-    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
-  <bpmn:process id="Process_1" isExecutable="true">
+    exporter="UiPath Maestro (https://uipath.com)">
+  <bpmn:process id="Process_1">
     <!-- variables, flow nodes, sequence flows -->
   </bpmn:process>
   <bpmndi:BPMNDiagram id="Diagram_1">
@@ -58,9 +72,9 @@ The `uipath:` namespace URI is exactly `http://uipath.org/schema/bpmn`. All
 (`uipath:activity`, `uipath:variables`, `uipath:loopCharacteristics`, …).
 
 Every `uipath:activity` / `uipath:event` / `uipath:mapping` carries its node
-type as a **child** element — `<uipath:type value="<Type>" version="v1" />` —
-never as a `type=` attribute on the wrapper. This holds both for templated nodes
-and for any shell you author or preserve by hand.
+type as a **child** element — `<uipath:type value="<Type>" version="<version>" />`
+(SKILL.md rule 6) — never as a `type=` attribute on the wrapper. This holds
+both for templated nodes and for any shell you author or preserve by hand.
 
 XML comments must not contain `--` (double-hyphen): it is invalid XML and the
 file will fail to parse. Never paste CLI commands or flags
@@ -68,12 +82,16 @@ file will fail to parse. Never paste CLI commands or flags
 
 ## A complete minimal file (author from this, not from examples)
 
-This is the whole shape — variables, an entry point, one node, a branch, and
-the diagram — in one valid file. Author from this skeleton plus the registry
-templates for your nodes. **Do not reverse-engineer the pattern from full
-example BPMN files** — it is the main reason authoring runs out of time. Swap
-the `scriptTask` payload for the registry `xmlTemplate` of whatever node you
-need.
+This is a minimal CLI-compatible authoring scaffold with a runnable entry-point
+contract: one public input, mutable process variables, one registry-derived
+`BPMN.Variables` task, one public output, and complete diagram interchange.
+Preserve the initializer's `isExecutable` shape — omitted, or `"false"` if
+already present. Never force `"true"`. `init` and `format` write
+`exporterVersion`; leave it to them rather than pinning a release into hand-
+authored source. Author structural nodes from this skeleton and replace the
+middle task with retrieved templates for the nodes the process needs. **Do not
+reverse-engineer the pattern from full example BPMN files** — it is the main
+reason authoring runs out of time.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -83,75 +101,174 @@ need.
     xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
     xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
     xmlns:uipath="http://uipath.org/schema/bpmn"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
-    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
-  <bpmn:process id="Process_1" isExecutable="true">
+    exporter="UiPath Maestro (https://uipath.com)">
+  <bpmn:process id="Process_1">
     <bpmn:extensionElements>
-      <uipath:migrationVersion version="11.5" />
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
-        <uipath:inputOutput id="Var_Tier" name="Tier" type="string" />
+        <uipath:input id="input_Var_Amount" name="Amount" type="number" elementId="Start_1" />
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="double" elementId="Process_1" />
+        <uipath:output id="output_Var_Echo" name="Echo" type="number" elementId="End_1" />
+        <uipath:inputOutput id="Var_Echo" name="Echo" type="double" elementId="Process_1" />
       </uipath:variables>
+      <uipath:bindings version="v1" />
     </bpmn:extensionElements>
-    <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_1</bpmn:outgoing></bpmn:startEvent>
-    <bpmn:scriptTask id="Task_Tier" name="Classify" scriptFormat="JavaScript">
+    <bpmn:startEvent id="Start_1" name="Start">
       <bpmn:extensionElements>
-        <uipath:scriptVersion value="v3" />
+        <uipath:entryPointId value="00000000-0000-4000-8000-000000000001" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
-          <uipath:output name="tier" type="string" var="Var_Tier" source="=result.response" />
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="Amount" type="double" var="Var_Amount" source="=vars.input_Var_Amount" />
         </uipath:mapping>
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1</bpmn:incoming><bpmn:outgoing>Flow_2</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: amount > 1000 ? "high" : "low" };]]></bpmn:script>
-    </bpmn:scriptTask>
-    <bpmn:exclusiveGateway id="Gw_1" name="Tier?" default="Flow_Low">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_Copy" name="Copy amount">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="Echo" type="double" var="Var_Echo" source="=vars.Var_Amount" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_1" name="Complete">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="Echo" type="double" var="output_Var_Echo" source="=vars.Var_Echo" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_2</bpmn:incoming>
-      <bpmn:outgoing>Flow_High</bpmn:outgoing><bpmn:outgoing>Flow_Low</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:endEvent id="End_High" name="High"><bpmn:incoming>Flow_High</bpmn:incoming></bpmn:endEvent>
-    <bpmn:endEvent id="End_Low" name="Low"><bpmn:incoming>Flow_Low</bpmn:incoming></bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_Tier" />
-    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Tier" targetRef="Gw_1" />
-    <bpmn:sequenceFlow id="Flow_High" sourceRef="Gw_1" targetRef="End_High">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=vars.Var_Tier == "high"</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_Low" sourceRef="Gw_1" targetRef="End_Low" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_Copy" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Copy" targetRef="End_1" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="Diagram_1">
     <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
       <bpmndi:BPMNShape id="S_Start" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="S_Task" bpmnElement="Task_Tier"><dc:Bounds x="250" y="78" width="100" height="80" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="S_Gw" bpmnElement="Gw_1"><dc:Bounds x="410" y="93" width="50" height="50" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="S_High" bpmnElement="End_High"><dc:Bounds x="520" y="40" width="36" height="36" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="S_Low" bpmnElement="End_Low"><dc:Bounds x="520" y="160" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task" bpmnElement="Task_Copy"><dc:Bounds x="250" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End" bpmnElement="End_1"><dc:Bounds x="430" y="100" width="36" height="36" /></bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="E_1" bpmnElement="Flow_1"><di:waypoint x="196" y="118" /><di:waypoint x="250" y="118" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="E_2" bpmnElement="Flow_2"><di:waypoint x="350" y="118" /><di:waypoint x="410" y="118" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="E_High" bpmnElement="Flow_High"><di:waypoint x="435" y="93" /><di:waypoint x="435" y="58" /><di:waypoint x="520" y="58" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="E_Low" bpmnElement="Flow_Low"><di:waypoint x="435" y="143" /><di:waypoint x="435" y="178" /><di:waypoint x="520" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_2" bpmnElement="Flow_2"><di:waypoint x="350" y="118" /><di:waypoint x="430" y="118" /></bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
 ```
 
-## Variables (`BPMN.Variables`)
+## Variables
+
+A `bpmn:task` carrying a `BPMN.Variables` mapping is the assignment node: it
+writes the variables that mapping's `uipath:output` elements declare, and does
+nothing else. With an empty mapping it performs no work at all. A step that
+fetches, calls a system, scores, settles, aggregates, or notifies is the typed
+task for that work — `bpmn:serviceTask`, `bpmn:sendTask`, `bpmn:userTask`,
+`bpmn:businessRuleTask`, `bpmn:scriptTask` — carrying its registry payload.
+No rule catches a bare task. `validate` warns `read but never assigned` only
+where a later expression reads a variable nothing wrote, so a task whose result
+nothing reads is silent and a clean warning list is not proof. Read back each
+node's element and mapping.
+
+Declare variables in the process's own `<uipath:variables>` block. Every
+declaration needs a stable, unique `id`, a non-empty user-facing `name`, and its
+documented `type`; do not use the name as a substitute for the id. Expressions
+reference the id as `vars.<id>`. Variable schema bodies are JSON text or CDATA.
+
+The canvas rejects these `name`s on a `uipath:input` or `uipath:inputOutput`,
+matched trimmed and case-insensitive (`RESERVED_VARIABLE_NAME`), so ` Result `
+is rejected too: `vars`, `iterator`, `metadata`,
+`bindings`, `datafabric`, `instanceglobals`, `orchestrator`, `outputs`,
+`result`, `runtime`, `senderinfo`, `this`. A public `uipath:output` may still
+be named `result`; bridge it from a mutable variable with another name.
+
+Every declaration also carries an `elementId` naming the element that owns it:
+the `<bpmn:process>` id for a process-level variable, the start event id for a
+caller-supplied input, the end event id for a published output, the owning node's
+id for a node-scoped variable. A subprocess-level variable is keyed inside its
+own subprocess: the subprocess id, or the node in it that writes the value —
+both import cleanly. Without an `elementId` the declaration does not exist to
+the canvas, and every `vars.<id>` reference to it fails on import.
+
+A root `uipath:input`/`uipath:output` accepts only `string`, `boolean`,
+`integer`, `number`, `array`, `object`, or `json` (or an inline JSON schema).
+The canvas float types `double` and `float` are NOT usable on a public
+declaration: `validate` reports `Valid`, then `refresh` fails with
+`Unsupported process input/output type`. Use `number`. The restriction is
+specific to public declarations — `double` on a node-scoped `uipath:inputOutput`
+never reaches schema derivation and is fine.
 
 Declare root variables with the `BPMN.Variables` registry template attached to
 the process via `extensionElements`, or use the canvas `<uipath:variables>`
-block directly. Variable bodies are CDATA. Reference variables in expressions as
-`vars.<id>` — see [expression-authoring.md](expression-authoring.md).
+block directly.
+
+```xml
+<uipath:variables version="v1">
+  <uipath:input id="input_ExpenseId" name="expenseId" type="string" elementId="Start_1" />
+  <uipath:inputOutput id="Var_Decision" name="decision" type="string" elementId="Process_1" />
+  <uipath:output id="output_Decision" name="decision" type="string" elementId="End_1" />
+</uipath:variables>
+```
+
+The migration marker is optional and `uip maestro bpmn init` omits it, so new
+source needs one only when asked for it. Where it appears, the attribute is
+`version`, not `value`, and its value is an **integer** migration number:
+`<uipath:migrationVersion version="20" />` — illustrative, not a number to
+keep current. Preserve an existing value byte-for-byte when editing rather than
+normalising or bumping it.
+
+Give every root-level **manual** `bpmn:startEvent` exactly one stable GUID in
+`<uipath:entryPointId value="..." />` (generate a fresh one; never the example
+UUID), declared as a **direct child** of that start event's own
+`<bpmn:extensionElements>`. Direct-child placement is not a style preference:
+`validate` finds the element at any depth
+(`project-validator.ts` searches descendants), while entry-point derivation
+reads only direct children of `extensionElements`. An id nested inside
+`uipath:activity` therefore passes `validate` and is invisible to `refresh`.
+Subprocess start events do not carry an entry-point id.
+
+A root start becomes an `entry-points.json` entry when it is **manual**, or
+when it is an `Intsvc.EventTrigger` connector start carrying a
+`uipath:entryPointId` (a V2 element from `registry get --input-details`
+always does — see [v2-connector-nodes.md](v2-connector-nodes.md)). Entries
+follow the order the start events appear in the `.bpmn` file, not their canvas position. A timer start is never one (an `entryPointId` on it is
+inert); a V1 connector start from the registry template has no
+`entryPointId`, so it is not one either. With
+neither kind of root start `refresh` throws `BPMN file must contain a root
+manual start event or connector trigger start event with a
+uipath:entryPointId`. A trigger that replaces the manual start keeps the id
+`Event_start` (SKILL.md step 3), so the scaffolded `entry-points.json` stays
+valid; under any other id it goes stale, failing `validate` and `pack`.
+
+Public entry-point variables have a two-layer runtime contract:
+
+- Declare each public `uipath:input` with `elementId` bound to its intended
+  StartEvent and a mutable internal `uipath:inputOutput` scoped to the process
+  (`elementId="<process id>"`) with the stable id used by process expressions.
+  Map `=vars.<public-input-id>` to the internal id on that StartEvent.
+- Declare a mutable internal `uipath:inputOutput` scoped to the process
+  (`elementId="<process id>"`), plus a public
+  `uipath:output` bound with `elementId` to the root EndEvent that returns it.
+  Map the internal value to the public output id on that EndEvent. If one
+  public result must be returned on several normal routes, converge those
+  routes on that completion event. Converge routes only when they return the
+  same result.
+
+Do not route directly on a public input declaration or assume an internal
+variable automatically becomes an entry-point output.
+
+See [expression-authoring.md](expression-authoring.md) for expression rules.
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
-For a value produced only by a task output, prefer root
-`<uipath:output id="..." name="..." type="..." />`; preserve the exact id and
-target that same id from `uipath:output var="..."`.
 
-## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract
+## Script tasks — Jint authoring contract
 
-`bpmn:scriptTask scriptFormat="JavaScript"` runs under **Jint**, not Node.js or
+`bpmn:scriptTask scriptFormat="JavaScript"` (exact casing — the serializer is
+case-sensitive) runs under **Jint**, not Node.js or
 a browser. The mapping payload comes from the `BPMN.ScriptTask` registry
-template, but the runtime contract is fixed:
+template, but the runtime contract is fixed — including one correction to that
+template, in the first rule below (see the registry lookup and compatibility
+fallback contract further down for the discovery workflow):
 
 - Only these helpers exist: `uipath.aggregate`, `uipath._aggregate`,
   `uipath._pipe`, and a no-op `console`. No npm packages, filesystem, network,
@@ -159,51 +276,96 @@ template, but the runtime contract is fixed:
   / 30 s.
 - Set `uipath:scriptVersion value="v3"` for new scripts; preserve an imported
   `value="v2"`. For v2+ the script returns JSON under `response`.
-- Mapped `args` fields are read as **top-level identifiers** in the script body
-  (`amount`, not `args.amount`); the input mapping itself stays `name="args"`
-  with `type="json"` and `target="bodyField"`, and maps each field by variable
-  id (`=vars.Var_Amount`). Include `<uipath:input name="args" type="json"
-  target="bodyField"><![CDATA[{}]]></uipath:input>` even when there are no
-  inputs; this is part of the `BPMN.ScriptTask` registry template. This rule
+- The `args` input is fixed, not per-field: `<uipath:input name="args"
+  type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>`,
+  paired with a fixed `uipath:context/uipath:inputSchema` declaring `vars` and
+  `metadata` as objects. It is not a per-field body keyed by variable name,
+  and sibling `uipath:input` elements are not supported.
+  Read process data in the script as `vars.<id>` (dot access into the
+  injected `vars` object), never as a bare top-level identifier. This rule
   applies to nodes you author and to mappings an edit explicitly targets;
   never retrofit these attributes onto an untouched node's mapping — a
   pre-existing `<uipath:input name="args">` outside the edit's target stays
   byte-identical.
-- Map the returned object's property back through `source="=result.response"`
-  (the conventional scalar property) or `source="=result.response.<field>"`
-  (another object field); `var` points at a declared variable id (do not put the
-  target id in `name`).
-- When the output mapping uses `source="=result.response"`, return an object
-  with a `response` property, such as `return { response: 6 * 7 };`. Do not
-  return the bare primitive `42` for that mapping shape; there is no
-  `response` property to bind, so the runtime variable stays empty.
-- Do not use `source="=result"` with a bare scalar return in live debug/runtime
-  BPMN. Studio Web can report `FinalStatus: Completed` while the target root
-  variable still reads back as `{}` or `null` from
-  `debug-instance variables-all`.
-- For live debug/runtime runs, never use `source="=this.result"` or
-  `<uipath:type value="BPMN.Variables" ...>` on a script task output mapping.
-  That older structural-test shape can pass local validation but leaves root
-  variables `null` or faults in Studio Web. Use the `BPMN.ScriptTask` mapping
-  with `source="=result.response"`.
+- **The mapping's type child is `<uipath:type value="BPMN.Variables"
+  version="v1" />`, not `BPMN.ScriptTask`.** The registry's `BPMN.ScriptTask`
+  `xmlTemplate` emits the latter, and this is the first of two corrections that
+  template needs: any `uipath:type` other than `BPMN.Variables` overwrites the parser's
+  `Scp.Script` extension type, so the runtime never dispatches the script. The
+  element still completes, the output mapping resolves against an empty result,
+  and the target variable reads back `null`.
+- Map the return through `source="=result.response"` for a scalar, or
+  `source="=result.response.<field>"` for a field of a returned object; `var`
+  points at a declared variable id (do not put the target id in `name`).
+- Type `scriptResponse` from the script's return: `jsonSchema` for an object
+  or array, `double` for a number, otherwise the primitive's own name. The
+  canvas retypes it on every script edit (`ScriptTaskProperties.tsx:347`);
+  `jsonSchema` is only the pre-edit default.
+  Downstream nodes and the completion EndEvent can read the declared
+  `scriptResponse` variable directly. Only when a distinct business variable
+  is needed, add a custom output that reads `=vars.<script-response-id>` and
+  writes that variable, marked `custom="true"`.
+- Studio maps JavaScript/JSON Schema `number` to BPMN primitive `type="double"`
+  and JSON Schema `integer` to BPMN primitive `type="integer"`. Keep the JSON
+  Schema names inside schema bodies; on node-scoped `uipath:variables` and
+  mapping attributes use `double` or `integer` respectively, not `number` or
+  `long`. This is the inverse of the public declaration rule elsewhere in this
+  file: a root `uipath:input`/`uipath:output` must use `number`, because only
+  public declarations reach entry-point schema derivation.
+- **The template ships no `<uipath:scriptVersion>`, and that is the second
+  correction.** A missing element parses as `v1`
+  (`UiPath.PO.BpmnParser/Extensions/Xml/ScriptReader.cs`), and at v1 the runtime
+  demands an object return and throws `ScriptTaskInvocationResultError`
+  otherwise. Add `<uipath:scriptVersion value="v3" />` as a sibling of
+  `uipath:mapping`.
+- Return the value directly — `return 6 * 7;`. At v2+ the runtime wraps the
+  return under `response` itself, so an extra `{ response: ... }` wrapper
+  yields `result.response.response`; under v1 the runtime spreads the returned
+  object's keys instead, so there the wrapper is required. The marker is
+  matched as `/^v(\d+)$/` — case-sensitive, no trimming: `V3`, `3`, `v3.1` and
+  `" v3 "` all fall back to v1 silently, flipping this rule. Do not use
+  `source="=result"` or `source="=this.result"`, which read the wrapper object
+  rather than the value.
 - Do not mutate `Globals.*`, `vars.*`, or process variables inside the script
   body. The supported path is: return a value from the script, then use a
   `uipath:output` mapping to write it to the declared variable. Direct mutation
   is not applied to the runtime, so the variable reads empty afterward.
+- Keep the script deterministic: no `Math.random`, `Date.now`, `new Date`, or
+  `crypto.*`. Jint provides them, so nothing fails locally — but the same
+  inputs must produce the same outputs for a run to be reproducible or
+  replayable. Take any timestamp or identifier the process needs from a
+  process variable supplied by the caller.
 
 ```xml
+<!-- in bpmn:process/bpmn:extensionElements -->
+<uipath:variables version="v1">
+<uipath:inputOutput id="Var_ScriptResponse" name="scriptResponse"
+  type="double" elementId="Task_RiskScore" />
+<uipath:inputOutput id="Var_ScriptError" name="Error"
+  type="jsonSchema" elementId="Task_RiskScore"><![CDATA[
+{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"},"element":{"type":"string"}}}
+]]></uipath:inputOutput>
+<uipath:inputOutput id="Var_RiskScore" name="riskScore"
+  type="double" elementId="Task_RiskScore" />
+</uipath:variables>
+
 <bpmn:scriptTask id="Task_RiskScore" name="Risk Score" scriptFormat="JavaScript">
   <bpmn:extensionElements>
-    <uipath:scriptVersion value="v3" />
     <uipath:mapping version="v1">
-      <uipath:type value="BPMN.ScriptTask" version="v1" />
-      <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
-      <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
+      <uipath:type value="BPMN.Variables" version="v1" />
+      <uipath:context>
+        <uipath:inputSchema type="jsonSchema"><![CDATA[{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}},"required":[]}]]></uipath:inputSchema>
+      </uipath:context>
+      <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>
+      <uipath:output name="scriptResponse" type="double" var="Var_ScriptResponse" source="=result.response" />
+      <uipath:output name="Error" type="jsonSchema" var="Var_ScriptError" source="=Error" />
+      <uipath:output name="riskScore" type="double" var="Var_RiskScore" source="=vars.Var_ScriptResponse" custom="true" />
     </uipath:mapping>
+    <uipath:scriptVersion value="v3" />
   </bpmn:extensionElements>
   <bpmn:script><![CDATA[
-var score = amount * 0.01 + daysOverdue * 2;
-return { response: score };
+var score = vars.Var_Amount * 0.01 + vars.Var_DaysOverdue * 2;
+return score;
 ]]></bpmn:script>
 </bpmn:scriptTask>
 ```
@@ -219,14 +381,18 @@ The registry never emits `<bpmn:sequenceFlow>`, conditions, or the gateway
   for exactly these).
 - Conditional flow body: `<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_X == "approved"</bpmn:conditionExpression>`.
   The canvas normalizes the body to start with `=` — always lead with `=`.
+- `xsi:type` needs `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` on
+  `bpmn:definitions`. The `init` scaffold does not declare it, and `validate`,
+  `format` and `refresh` accept the unbound prefix, so only a real XML parser
+  catches it: run the `ET.parse` check in [Validation](#validation).
 - Gateway default flow: set `default="Flow_else"` on the gateway element, and
   give that flow no condition.
 
 ## Gateways
 
-Author these gateway types for new BPMN: `bpmn:ExclusiveGateway`,
-`bpmn:ParallelGateway`, `bpmn:InclusiveGateway`, `bpmn:EventBasedGateway`.
-`bpmn:ComplexGateway` round-trips structurally but is **preserve-only** — do not
+Author these gateway types for new BPMN: `bpmn:exclusiveGateway`,
+`bpmn:parallelGateway`, `bpmn:inclusiveGateway`, `bpmn:eventBasedGateway`.
+`bpmn:complexGateway` round-trips structurally but is **preserve-only** — do not
 generate it for new authoring (see [Do not generate for new
 authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).
 
@@ -240,21 +406,20 @@ authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).
   to fire; its outgoing flows target intermediate catch events or receive tasks.
 - A gateway with exactly one incoming and one outgoing flow is rejected
   (`SUPERFLUOUS_GATEWAY`). Activities/events must not have more than one
-  incoming flow — join with a gateway, not a "fake join" (`FAKE_JOIN`).
+  incoming flow — join with a gateway, not a "fake join" (`FAKE_JOIN`). A
+  join gateway is two or more in, one out; it needs no `conditionExpression`
+  and no `default`, and it does not trip `SUPERFLUOUS_GATEWAY`. **`validate`
+  does not report `FAKE_JOIN`** (CLI 1.204.0), so a clean run is not evidence
+  that a multi-inbound activity is legal. Author the join gateway anyway.
+  When a CLI starts reporting the rule, delete this caveat and the one in
+  validation checklist item 5.
 
 ## Events and the event-definition matrix
 
-`bpmn-spec.json` `bpmnElements.events` enumerates which event definitions each
-event element can carry on **round-trip**. For **new authoring**, only the
-**none**, **Message**, **Timer**, **Error** (on end + boundary), and
-**Terminate** (on end events only) definitions are generated. Conditional,
-Signal, Escalation, Compensate, Cancel, Link, multiple, and parallel-multiple
-definitions are **preserve-only** — keep them when imported, but do not generate
-them for new BPMN (see [Do not generate for new
+Author only the definitions in the Authorable column. Keep a **preserve-only**
+one when it arrives in an imported file; never generate it (see [Do not
+generate for new
 authoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).
-
-The matrix below is the round-trip acceptance per element; **preserve-only**
-marks definitions that the skill keeps but does not author for new files.
 
 | Event element | Authorable | Preserve-only (round-trip) |
 | --- | --- | --- |
@@ -264,23 +429,31 @@ marks definitions that the skill keeps but does not author for new files.
 | `bpmn:EndEvent` | none, Message, Error, Terminate | Escalation, Compensate, Signal |
 | `bpmn:BoundaryEvent` | Message, Timer, Error | Escalation, Conditional, Signal, Compensate |
 
+Those rows name the spec's model types, as `bpmn-spec.json` keys them. Write the
+lower-camel tag: `<bpmn:startEvent>`, `<bpmn:boundaryEvent>`, and so on.
+
 Payload shapes the canvas serializes:
 
 - **Timer**: `<bpmn:timerEventDefinition><bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30M</bpmn:timeDuration></bpmn:timerEventDefinition>`
   (or `timeDate` / `timeCycle`). Static durations must be valid ISO-8601;
   week designators (`PnW`) are unsupported. Expression-mode is allowed and
-  accepts either prefix — `=…` or `@…`.
+  accepts either prefix — `=…` or `@…`. A recurring schedule is a
+  `timeCycle` with an `R/` repeat, not the `timeDuration` the
+  `Intsvc.TimerTrigger` template ships: `R/P1D` daily, `R/PT1H` hourly;
+  `validate` accepts either. No time-of-day form is supported.
 - **Message**: `<bpmn:messageEventDefinition messageRef="Message_1" />` with a
   `<bpmn:message id="Message_1" name="…"/>` declared at definitions level. The
   Maestro internal-message events (`Maestro.ReceiveMessageEvent` /
   `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare
   `<bpmn:messageEventDefinition />` (see their registry templates).
-  A mid-flow wait for an inbound message is a
+  A mid-process `Maestro.ReceiveMessageEvent` wait is a
   `<bpmn:intermediateCatchEvent>` with incoming and outgoing sequence flows,
-  the registry-provided `Maestro.ReceiveMessageEvent` payload under
-  `bpmn:extensionElements`, and a sibling `<bpmn:messageEventDefinition />`.
-  Do not model a mid-flow receive as `bpmn:receiveTask`, `bpmn:serviceTask`, a
-  start event, or the PascalCase `bpmn:IntermediateCatchEvent`.
+  the registry-provided payload under `bpmn:extensionElements`, and a sibling
+  `<bpmn:messageEventDefinition />`. Do not model it as `bpmn:receiveTask`,
+  `bpmn:serviceTask`, a start event, or the PascalCase
+  `bpmn:IntermediateCatchEvent`. A connector event wait is
+  `Intsvc.WaitForEvent`; hosts in
+  [registry-workflow.md](registry-workflow.md#ootb-extension-types-29-login-free).
 - **Error**: `<bpmn:errorEventDefinition errorRef="Error_1" />` with a
   `<bpmn:error id="Error_1" name="…" errorCode="…"/>` at definitions level. An
   error end event with no `errorRef` fails to parse at runtime
@@ -337,30 +510,53 @@ UiPath-specific retry and error-mapping metadata live inside an activity's
 </uipath:retry>
 <uipath:errorMapping version="v1">
   <uipath:error id="Mapped_ServiceUnavailable" errorRef="Error_ServiceUnavailable"
-                priority="1" condition="=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;"
+                priority="1" condition="=vars.Error.code == &quot;SERVICE_UNAVAILABLE&quot;"
                 detail="Service unavailable" retryable="true" />
 </uipath:errorMapping>
 ```
 
 - `uipath:retry` attributes: `maxRetryCount`, `retryBackoff`, `retryBackoffType`,
   `maxDuration`, `exponentialBase`, `retryAllErrors`. Do not use stale aliases
-  (`maxAttempts`, `interval`).
+  (`maxAttempts`, `interval`). `retryAllErrors="false"` with no
+  `uipath:errorDefinition` children retries nothing at all.
 - `uipath:error` (mapping) fields: `id`, `errorRef`, `priority`, `condition`,
   `detail`, `retryable` (`true`/`false`). Conditions read the runtime error via
-  `vars.error` and contain no assignments. Do not put `code=` on `uipath:error`;
+  `vars.Error` (capital `E`, lowercase fields — see
+  [expression-authoring.md](expression-authoring.md#stored-expression-shape))
+  and contain no assignments. Do not put `code=` on `uipath:error`;
   model the code on `bpmn:error errorCode` and reference via `errorRef`.
+
+### Choosing an error-handling construct
+
+Three constructs catch failures at different scopes. A failure tries them in
+order, so pick by intent:
+
+- **`uipath:retry` on the activity** — transient failures, resolved in place.
+- **Error boundary event on the activity** — recover and continue. The token
+  leaves the failed step onto a branch that rejoins the main path.
+- **Error event subprocess in the container** — escalate and terminate.
+  Code-specific nets match before a catch-all.
+
+Unhandled failures propagate outward container by container, so one net at
+process level covers every nested subprocess. Do not author a net per
+container — except inside a multi-instance iteration or a queue performer,
+where per-item failures need per-item handling. There the process-level net
+would end the whole instance on the first bad item, so the iteration gets its
+own net, placed directly in it. An error boundary event is not a substitute:
+it resumes the main path rather than ending that item. See
+[composing-guide.md](patterns/composing-guide.md#scoping-the-failure-net).
 
 ## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)
 
-- **SubProcess** (`bpmn:SubProcess`): a container with its own nested
+- **SubProcess** (`bpmn:subProcess`): a container with its own nested
   `flowElements` (start event, nodes, end event) and its own scoped
   `<uipath:variables>`. Variants: `collapsed`, `expanded`, `eventSubprocess`.
   The shape carries `isExpanded` for the collapsed/expanded distinction.
-- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent="true"`. It
+- **Event subprocess**: a `bpmn:subProcess` with `triggeredByEvent="true"`. It
   must have **exactly one** start event, and that start event **must carry an
   event definition** (with `isInterrupting`) — a blank start event is invalid for
   an event subprocess.
-- **Call activity** (`bpmn:CallActivity`): invokes a *separate* Maestro
+- **Call activity** (`bpmn:callActivity`): invokes a *separate* Maestro
   instance. The registry provides the `uipath:activity` payload for the
   Orchestrator agentic/case-management call-activity types
   (`Orchestrator.StartAgenticProcess[Async]`, `…CaseMgmtProcess[Async]`). A
@@ -403,10 +599,6 @@ serialize them (`elements/nodes.ts`), so author them from the canvas contract:
   [expression-authoring.md](expression-authoring.md).
 - `bpmn:standardLoopCharacteristics` is also recognized (no uipath extension).
 
-Because the registry exposes no template for this, treat it as a documented
-authoring path backed by the canvas serializer, and tell the user it is a
-registry gap if they ask why no `registry get` covers it.
-
 ## Do not generate for new authoring (preserve on round-trip only)
 
 These structures are **not** authored for new Maestro BPMN. If they appear in an
@@ -429,9 +621,9 @@ unsupported for generation until current tooling confirms them.
   a file legitimately needs one, reproduce the shape (with synthetic, public-safe
   contents) rather than inventing a new one.
   - **Typed activity/event shells always use the lowercase `<uipath:activity>` /
-    `<uipath:event>` wrapper with a `<uipath:type value="<Type>" version="v1" />`
-    child** — including types not served by the live registry (e.g.
-    `Maestro.CasePlanScheduler`, `Maestro.CaseManagerGuardrails`,
+    `<uipath:event>` wrapper with a `<uipath:type value="<Type>" version="<version>" />`
+    child** (SKILL.md rule 6; `v1` for types the live registry does not serve,
+    e.g. `Maestro.CasePlanScheduler`, `Maestro.CaseManagerGuardrails`,
     `Maestro.CaseRulesEvaluator`). Do **not** substitute the capital-`A`
     `<uipath:Activity>` element for a typed shell.
   - The capital-`A` `<uipath:Activity>` element is a **separate** generic
@@ -449,8 +641,8 @@ unsupported for generation until current tooling confirms them.
     actual lowercase `uipath:caseManagement` element with synthetic content. A
     typed `Orchestrator.StartCaseMgmtProcess*` activity shell is not the same
     payload and does not satisfy that preserve-only case-management shape.
-  - `<uipath:scriptVersion value="v2" />` is legacy: author `v3` for new scripts,
-    preserve `v2` where it already exists.
+  - Preserve existing `uipath:scriptVersion` markers. For a new ScriptTask, use
+    the marker supplied by the selected live or compatibility template.
 
 ## Diagram interchange — `bpmndi` (REGISTRY GAP — always generated)
 
@@ -495,11 +687,19 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
   diagram: `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: re-waypoint
   manually (gateway shape + all edges).
 - **Move logic into a subprocess**: move only elements that share a valid scope,
-  re-scope their variables, recreate legal subprocess flow boundaries, and add a
-  second diagram plane for the subprocess so nested content renders.
-- **Add an entry point**: use a root-level start event, add a stable unique
-  `uipath:entryPointId`, and declare input/output variables whose `elementId`
-  matches that start event.
+  re-scope their variables, and recreate legal subprocess flow boundaries. Then
+  regenerate the diagram: `uip maestro bpmn format <file.bpmn>` — it emits one
+  shape per nested node in the single root plane. Do not hand-author a second
+  plane; the next `format` run replaces it.
+- **Add an entry point**: use a root-level start event and generate a stable,
+  unique UUID for its serializer-owned `uipath:entryPointId`. Do not copy the
+  example UUID; this scaffold field is not a registry-owned node payload. Also
+  declare the public variables it needs: each `uipath:input`'s `elementId` must
+  match that start event, and each `uipath:output`'s must match a root end
+  event. The two mismatches fail differently: an unmatched input is dropped
+  silently, leaving an empty `input` schema, while an unmatched output fails
+  the project with `Process output "<name>" must target a root end event.`
+  Bridge both sides as [Variables](#variables) prescribes.
 
 Do not patch generated JSON to fix source behavior — change the `.bpmn` and
 regenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.
@@ -525,28 +725,55 @@ deploy-readiness checks:
 uip maestro bpmn validate <file.bpmn> --output json
 ```
 
-Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
-each with its rule code (gateway/condition, fake-join, superfluous-gateway,
+Exit 0 means the document passes every rule the CLI enforces, which is not
+the same as every rule in the contract: `FAKE_JOIN` is registered but never
+reported (see [Gateways](#gateways)), so a clean exit is not proof of the
+hand-checked invariant in item 5 below. Exit 1 lists the blocking errors,
+each with its rule code (gateway/condition, superfluous-gateway,
 error end/boundary event, timer-duration/required-field, single-blank-start,
 single-conditional-outgoing-flow, variable-reference, method-parentheses,
 input-type, event-object, and IS-connector checks). Warnings are reported but do
-not block. If `validate` is unknown or runs only deploy-readiness checks, update
+not block. Triage them by code: on pass they are in `Data.Warnings` (one
+string), on failure in `Instructions` with the errors.
+
+- **`VARIABLE_DOES_NOT_EXIST`** — a reference with no matching declaration.
+  Always a defect; fix it.
+- **`VARIABLE_NOT_SET`** on the node reading a caller-supplied input —
+  **expected by construction, not a defect**, whenever that input is correctly
+  scoped to the start event (see [Variables](#variables)). Canvas availability
+  recognizes only process-scoped variables and upstream nodes'
+  `uipath:output` mappings; a start-event input is neither, so any process
+  whose node consumes a caller value carries this warning. Scoping the input
+  to the process instead silences the warning by emptying the published input
+  contract (`entry-points.json`'s `input` becomes `[]`) — nothing can then
+  invoke the process with that value, and a `debug --inputs` run still
+  succeeds, which is exactly what hides the break. Judge correctness by the
+  published contract (`entry-points.json` declares the input and every
+  output), not by whether the warning is gone.
+
+If `validate` is unknown or runs only deploy-readiness checks, update
 the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
-If the CLI is unavailable, fall back to a well-formed-XML parse plus the
-structural checklist below — it mirrors the same blocking rules:
+Run the well-formed-XML parse before `validate` every time; the validator's
+tokenizer does not report an unbound namespace prefix:
 
 ```bash
-python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"
+python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])" <file.bpmn>
 ```
 
-Then walk the structural checklist:
+If the CLI is unavailable, also walk the structural checklist below; it mirrors
+the same blocking rules:
 
 1. Root is `<…:definitions>` with the BPMN + `uipath` namespaces.
 2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.
 3. Every `sourceRef`/`targetRef`/`attachedToRef`/`*Ref` resolves to a declared id.
 4. Each XOR gateway: non-default flows have conditions; exactly one default.
-5. No activity/event has more than one incoming flow.
+5. No activity/event has more than one incoming flow. The CLI never reports
+   this one (see [Gateways](#gateways)), so check it by hand whether or not
+   `validate` is available. One open exception: an end event that converges
+   the normal routes returning one shared public result, which
+   [Variables](#variables) prescribes. Leave those as prescribed rather than
+   rebuilding them behind a gateway.
 6. Each event subprocess has exactly one start event, and it carries an event
    definition (with `isInterrupting`).
 7. Every `vars.<id>` reference resolves to a declared variable.

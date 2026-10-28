@@ -1,7 +1,8 @@
 # --- Tenant fixtures (LIVE registry) --------------------------------------------------
 # This task resolves against the real tenant registry, so it is only valid when the
 # tenant CONTAINS:
-#   * api-workflow  "FinancialPostingFunction"
+#   * api-workflow  "FinancialPostingFunction" (two folders hold one; the simulated user
+#     picks Shared/BillingDisputeResolution, so the run never stalls on the ambiguity)
 #   * agent         "EmailDrafter"
 # (Same fixtures as registry_handoff_sdd_only.) If either is renamed or removed, the
 # checker aborts with "test precondition failed: no live registry match ..." — that is an
@@ -42,25 +43,24 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  # `..`, not `.`: the grader imports the shared ledger adapter from `_shared/`,
+  # which a task-only staging leaves out (ModuleNotFoundError at grade time).
+  directory: ..
+
 initial_prompt: |
   This approved `sdd.md` is authoritative. Its staged `tasks/registry-resolved.json` came
   from an earlier SDD revision that named the runnable resources differently, so it is
-  stale. Run Phase 1 planning only: re-resolve the api-workflow and agent tasks from the
-  concrete `Resolved Resource` names in the CURRENT SDD, replacing the mismatched cached
-  entries. Produce `tasks/tasks.md` and a fresh `tasks/registry-resolved.json`, then stop
-  at the Phase 1 plan-approval gate. Do not create a solution or caseplan.
+  stale. Run Phase 1 resolution only: re-resolve the api-workflow and agent tasks from
+  the concrete `Resolved Resource` names in the CURRENT SDD, replacing the mismatched
+  cached entries. Write a fresh `tasks/registry-resolved.json`, then stop at the end of
+  Phase 1. Do not create a solution or caseplan.
 
   The `uip` CLI is already available and authenticated. Use the approved SDD as written:
   do not redo Phase 0, re-interview me, or trust the stale cached names. Before starting,
   load the uipath-maestro-case skill and follow its workflow.
 
 success_criteria:
-  - type: file_exists
-    description: "Phase 1 produced tasks.md from the authoritative SDD"
-    path: "tasks/tasks.md"
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "Phase 1 rewrote the registry cache"
     path: "tasks/registry-resolved.json"
@@ -77,23 +77,15 @@ success_criteria:
 
   - type: run_command
     description: "Stale runnable entries were discarded and re-resolved to the live api/agent registry entries"
-    command: "python3 $TASK_DIR/check_registry_handoff.py"
+    command: "python3 $REFERENCE_DIR/registry_handoff_stale_runnable/check_registry_handoff.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md binds the current resource names"
-    command: "grep -Fq 'FinancialPostingFunction' tasks/tasks.md && grep -Fq 'EmailDrafter' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
     description: "The run stopped after Phase 1 and did not create a caseplan"
-    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    command: "! find . \\( -name caseplan.json -o -name caseplan.case \\) -not -path '*/.venv/*' | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -104,15 +96,16 @@ simulation:
   persona: |
     You are a solution designer testing a handoff whose registry audit was generated
     before the approved SDD's runnable resources were renamed. You only need Phase 1
-    planning regenerated from the authoritative SDD.
+    resolution regenerated from the authoritative SDD.
   goal: |
-    Produce tasks/tasks.md and a corrected registry audit from the staged sdd.md,
-    replacing the stale api-workflow and agent selections and stopping before Phase 2.
+    Produce a corrected registry audit from the staged sdd.md, replacing the stale
+    api-workflow and agent selections and stopping before Phase 2.
   constraints:
     - "Do not change the SDD or provide alternate resource names."
     - "Do not trust the stale cached names (LegacyPostingFunction / PreviousEmailDrafter); the SDD's Resolved Resource names are authoritative."
-    - "If asked to choose among exact-name registry matches, choose the match whose name exactly matches the SDD Resolved Resource and use its exact folder."
-    - "When shown tasks.md for approval, say the plan is sufficient and ask the agent to stop before Phase 2."
+    - "If asked which FinancialPostingFunction to use, choose the one in Shared/BillingDisputeResolution; the tenant holds a second copy in another folder."
+    - "For any other choice among exact-name registry matches, choose the match whose name exactly matches the SDD Resolved Resource and use its exact folder."
+    - "When shown the resolution summary, say it is sufficient and ask the agent to stop before Phase 2."
     - "Do not request Phase 0 or any design changes."
     - "Keep replies short — one sentence or a single option pick."
   max_turns: 12

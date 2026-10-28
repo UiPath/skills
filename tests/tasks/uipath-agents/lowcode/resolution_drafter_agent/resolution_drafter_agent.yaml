@@ -14,6 +14,9 @@ run_limits:
   expected_turns: 21
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "ResolutionDrafterAgent" that composes a
   professional customer-facing resolution email after a billing dispute
@@ -106,7 +109,7 @@ success_criteria:
 
   - type: run_command
     description: "Schema sync, input/output field presence, and contentTokens for all 4 inputs"
-    command: "python3 $TASK_DIR/check_resolution_drafter_agent.py"
+    command: "python3 $REFERENCE_DIR/check_resolution_drafter_agent.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
@@ -117,6 +120,7 @@ success_criteria:
     files: ["ResolutionSol/ResolutionDrafterAgent/agent.json"]
     weight: 1.0
     pass_threshold: 0.8
+    include_reference: false
     prompt: |
       You are grading the `messages[]` entry with `role == "system"` inside
       `ResolutionSol/ResolutionDrafterAgent/agent.json`. Ignore every other

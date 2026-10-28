@@ -24,7 +24,7 @@ Primary configuration file for autonomous agent. Edit directly.
 
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "settings": {
     "model": "<MODEL_IDENTIFIER>",
     "maxTokens": 128000,
@@ -85,12 +85,13 @@ Primary configuration file for conversational agent. Edit directly.
 
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "settings": {
     "model": "<MODEL_IDENTIFIER>",
     "maxTokens": 64000,
     "temperature": 0,
     "engine": "conversational-v1",
+    "maxIterations": 8,
     "mode": "standard"
   },
   "inputSchema": {
@@ -142,7 +143,7 @@ Primary configuration file for conversational agent. Edit directly.
 | `maxTokens` | Max output tokens. Must not exceed the chosen model's `MaxTokens` cap (from `uip agent model list`). |
 | `temperature` | 0 = deterministic, higher = creative |
 | `engine` | Keep `"basic-v2"` for autonomous, `"conversational-v1"` for conversational |
-| `maxIterations` | Max autonomous agent loop iterations. Default 25. Keep as omitted for conversational. |
+| `maxIterations` | Max autonomous agent loop iterations. Default 25. Default 8 for conversational. |
 | `mode` | Use `"standard"` |
 
 > Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
@@ -200,15 +201,15 @@ To accept or return a file, declare the field as `$ref: "#/definitions/job-attac
 
 `{{input.<file-field>}}` in a message template renders **metadata only** (ID, FullName, MimeType, Metadata). The agent does not see file contents from this token. To read contents, configure a file-handling built-in tool (e.g. `analyze-attachments`) — see [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md).
 
-Output side: declare an output field the same way; the agent emits a `job-attachment` describing a file it produced.
+Output side: declare an output field the same way; the agent emits a `job-attachment` describing a file it produced (the Create File built-in tool writes it — see [capabilities/built-in-tools/create-file.md](capabilities/built-in-tools/create-file.md)).
 
-Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web or via Orchestrator job invocation.
+Guardrails inspect these files independently of the prompt: a built-in validator with `detectionScope: "Files"` or `"Both"` evaluates attached input files (Agent · Pre) and produced output files (Agent · Post). See [capabilities/guardrails/files-guide.md](capabilities/guardrails/files-guide.md).
 
 ### Top-level fields (do not modify)
 
 | Field | Value |
 |-------|-------|
-| `version` | `"1.1.0"` — always scaffolded at this version |
+| `version` | `"1.2.0"` — always scaffolded at this version |
 | `type` | `"lowCode"` |
 | `projectId` | Auto-generated UUID — do not edit |
 
@@ -219,7 +220,7 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 | `storageVersion` | Managed by `uip agent refresh` — do not edit |
 | `isConversational` | `false` for autonomous agents, `true` for conversational agents. Do not edit. |
 | `showProjectCreationExperience` | `false` |
-| `targetRuntime` | `"pythonAgent"` for autonomous. **`null` for conversational** — conversational agents are not yet in PROD, so the field is intentionally left null until the runtime value is finalized. |
+| `targetRuntime` | `"pythonAgent"` for standalone agents, autonomous and conversational alike. **Absent for `--inline-in-flow` scaffolds** of either flavor — see [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md). |
 
 ### Input Schema
 
@@ -234,7 +235,7 @@ For **conversational agents**, each agent run handles one conversational exchang
 
 For **autonomous agents**, the `outputSchema` defines the output properties of the agent.
 
-For **conversational agents**, the `outputSchema` should not be modified, and thus always left empty. See [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 1.
+For **conversational agents**, the `outputSchema` should not be modified, and thus always left empty. The exception is a conversational agent scaffolded inline in a Maestro Flow, which does support structured outputs and is authored under the `uipath-maestro-flow` skill. See [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 1.
 
 
 ## Messages
@@ -300,7 +301,7 @@ Three token types: `simpleText`, `variable`, `expression`.
 3. Text inside `@{ }` → `{ "type": "expression", "rawString": "<expr>" }` (strip delimiters; Studio expression referencing an agent resource or output — see families below)
 4. Every segment including whitespace gets its own entry
 
-`@{ }` (`expression`) references an agent resource or output by family + name — `tools.<Name>`, `contexts.<Name>`, `escalations.<Name>`, or `output.<path>` — with the inner text verbatim as `rawString` (e.g. `@{contexts.Knowledge}` → `rawString: "contexts.Knowledge"`). `{{ }}` (`variable`) is for `inputSchema` fields only; `@{ }` targets are runtime-resolved and must never be declared under `inputSchema.properties`.
+`@{ }` (`expression`) references an agent resource or output by family + name — `@{tools.<Name>}`, `@{contexts.<Name>}`, `@{escalations.<Name>}`, or `@{output.<path>}` — with the inner text verbatim as `rawString` (e.g. `@{contexts.Knowledge}` → `rawString: "contexts.Knowledge"`). `{{ }}` (`variable`) is for `inputSchema` fields only; `@{ }` targets are runtime-resolved and must never be declared under `inputSchema.properties`.
 
 **Example — adjacent variables:**
 

@@ -5,21 +5,21 @@ description: >
   Agent must: (1) list tenants via uip login tenant list, (2) run state coverage
   per tenant, (3) call state enable tenant for each tenant with gaps.
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `inactive`: ISO 42001 never applied on any of the 4 tenants.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: mock_template}
 
-# CI passes live tenant auth into every smoke sandbox, so `state enable` here
-# REALLY enables the pack on the login tenant. Clean up compliance-pack debris before and after.
 pre_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
-    timeout: 120
-
-post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
-    timeout: 120
+  - command: 'printf inactive > mocks/scenario'
+    timeout: 10
 
 initial_prompt: |
   Apply ISO 42001 recommended settings organization-wide to all tenants.
@@ -28,7 +28,7 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI not connected - auth errors expected. Run each command once and move on.
+  - Run each command once and move on.
   - Always pass --output json. Do NOT prompt for confirmation.
 
 success_criteria:
@@ -54,16 +54,24 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    description: "Agent called state enable at tenant scope (advisory — codex stops after auth errors)"
+    description: "Agent called state enable at tenant scope"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable[\s\S]*tenant'
     min_count: 1
     weight: 2.0
-    pass_threshold: 0
+    pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent did NOT use organization scope for state enable (backend not implemented)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable[\s\S]*organization'
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The pack was enabled on every tenant in the org, one tenant at a time (shim state)"
+    command: 'python3 mocks/check_state.py enabled-everywhere'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_exists

@@ -5,15 +5,25 @@ description: >
   pre_run and its service-assigned id recorded, so reading that same id back with
   the new network proves a real update landed rather than a delete-and-recreate.
 tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, apms, ip-ranges]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
 
 pre_run:
-  - command: 'APMS_CLEANUP_MARKER="ce-apms-renumber-office" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-renumber-office" python3 _setup/cleanup_apms_marker.py'
     timeout: 90
-  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-renumber-office" APMS_RANGE_COUNT="2" APMS_RANGE_CLAIM="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''setup_apms_ip_range.py''))"'
+  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-renumber-office" APMS_RANGE_COUNT="2" APMS_RANGE_CLAIM="1" python3 _setup/setup_apms_ip_range.py'
     timeout: 90
 
 post_run:
-  - command: 'APMS_CLEANUP_MARKER="ce-apms-renumber-office" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-renumber-office" python3 _setup/cleanup_apms_marker.py'
     timeout: 90
 
 run_limits:
@@ -30,7 +40,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The seeded entry now allows the new network, under the same id and name"
-    command: 'APMS_CHECK="updated" APMS_SEED_KEY="range" APMS_EXPECT_CIDR_INDEX="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''verify_apms_ip_range.py''))"'
+    command: 'APMS_CHECK="updated" APMS_SEED_KEY="range" APMS_EXPECT_CIDR_INDEX="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''apms'',''verify_apms_ip_range.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

@@ -22,6 +22,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath RPA project exists at `LoggingBot` in the current directory.
   Review it for quality and security issues, focusing on logging and data
@@ -71,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "Report flags PII in logs (and/or Write Line vs Log Message)"
-    command: "python3 $TASK_DIR/check_logging_pii.py"
+    command: "python3 $REFERENCE_DIR/logging-pii/check_logging_pii.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

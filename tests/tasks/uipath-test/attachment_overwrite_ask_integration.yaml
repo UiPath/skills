@@ -1,0 +1,143 @@
+task_id: skill-test-attachment-overwrite-ask-integration
+description: >
+  Integration test: the user asks to download an attachment into a folder
+  where a file with the same name already exists. A download never replaces a
+  file unless --overwrite is passed, and the skill says to stop and ask rather
+  than overwrite. The run is non-interactive, so the right outcome is that the
+  local file is untouched and --overwrite was never used. pre_run makes sure
+  the owned EVFX-ATTASK-Login test case exists in HEALTH with report.txt
+  attached and writes a different local report.txt; post_run clears its
+  attachments.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def ensure_case(name):
+          projects = call("tm", "project", "list", "--filter", "HEALTH").get("Data") or []
+          if not any(p.get("ProjectKey") == "HEALTH" for p in projects):
+              need(call("tm", "project", "create", "--name", "HEALTH", "--project-key", "HEALTH"), "create HEALTH")
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(
+              call("tm", "testcases", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+
+      def clear(case):
+          rows = call("tm", "attachment", "list", "--project-key", "HEALTH", "--test-case-keys", case["TestCaseKey"]).get("Data") or []
+          for att in [a for r in rows for a in (r.get("AttachmentIds") or [])]:
+              need(call("tm", "attachment", "delete", "--project-key", "HEALTH", "--attachment-id", att,
+                        "--object-type", "testCase", "--yes"), f"clear {att}")
+
+      def upload(case, fname, body):
+          with open(fname, "w") as f:
+              f.write(body)
+          need(call("tm", "attachment", "upload", "--project-key", "HEALTH", "--object-id", case["Id"],
+                    "--object-type", "testCase", "--file", fname), f"upload {fname}")
+          os.remove(fname)  # only Test Manager holds it now
+
+      case = ensure_case("EVFX-ATTASK-Login")
+      clear(case)
+      upload(case, "report.txt", "SERVER COPY of the report\n")
+      with open("report.txt", "w") as f:
+          f.write("EVFX-ATTASK LOCAL COPY - keep me\n")
+      print("SEEDED EVFX-ATTASK-Login with report.txt; a different local report.txt written")
+      PYEOF
+    timeout: 240
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def ensure_case(name):
+          projects = call("tm", "project", "list", "--filter", "HEALTH").get("Data") or []
+          if not any(p.get("ProjectKey") == "HEALTH" for p in projects):
+              need(call("tm", "project", "create", "--name", "HEALTH", "--project-key", "HEALTH"), "create HEALTH")
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(
+              call("tm", "testcases", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+
+      def clear(case):
+          rows = call("tm", "attachment", "list", "--project-key", "HEALTH", "--test-case-keys", case["TestCaseKey"]).get("Data") or []
+          for att in [a for r in rows for a in (r.get("AttachmentIds") or [])]:
+              need(call("tm", "attachment", "delete", "--project-key", "HEALTH", "--attachment-id", att,
+                        "--object-type", "testCase", "--yes"), f"clear {att}")
+
+      def upload(case, fname, body):
+          with open(fname, "w") as f:
+              f.write(body)
+          need(call("tm", "attachment", "upload", "--project-key", "HEALTH", "--object-id", case["Id"],
+                    "--object-type", "testCase", "--file", fname), f"upload {fname}")
+          os.remove(fname)  # only Test Manager holds it now
+
+      clear(ensure_case("EVFX-ATTASK-Login"))
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  can you download report.txt from my EVFX-ATTASK-Login test case in Test
+  Manager (HEALTH project) into this folder?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "The local report.txt was not replaced"
+    command: "grep -qx 'EVFX-ATTASK LOCAL COPY - keep me' report.txt"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never passed --overwrite (the user did not ask to replace the file)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+attachment\s+download\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--overwrite\b'
+    weight: 2.0
+    pass_threshold: 1.0

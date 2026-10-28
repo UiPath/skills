@@ -12,6 +12,9 @@ sandbox:
     - type: template_dir
       path: _fixtures/MathSolution
 
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 8
   turn_timeout: 1200
@@ -51,5 +54,5 @@ success_criteria:
 # `uip agent debug` uploads the solution to Studio Web; delete it afterward
 # (best-effort, never affects pass/fail). Set AGENT_E2E_CLEANUP=never to keep it.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

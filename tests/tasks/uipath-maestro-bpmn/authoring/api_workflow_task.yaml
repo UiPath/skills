@@ -12,6 +12,9 @@ run_limits:
   expected_turns: 32
   turn_timeout: 1200
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a UiPath Maestro BPMN Process Orchestration project at:
     ApiWorkflowDispatch/ApiWorkflowDispatch
@@ -46,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "API workflow uses bpmn:serviceTask with Orchestrator.ExecuteApiWorkflowAsync"
-    command: "python3 $TASK_DIR/check_api_workflow_task.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_api_workflow_task.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

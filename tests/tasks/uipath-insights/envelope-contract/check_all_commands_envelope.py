@@ -16,10 +16,12 @@ invokes run_command criteria with cwd set to the sandbox root).
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+_shared = Path(__file__).resolve().parent.parent / "_shared"
+sys.path.insert(0, str(_shared))
 from envelope_check import CODES, check_envelope, load_envelope, probe_live_cli
 
 

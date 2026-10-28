@@ -11,6 +11,9 @@ run_limits:
   expected_turns: 35
   max_turns: 60
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Build a UiPath Coded Function named `attachment-agent` that accepts a file
   attachment as input and outputs its name and content.
@@ -38,7 +41,7 @@ success_criteria:
 
   - type: run_command
     description: "Attachment import, Input model, lazy-init, JobAttachment schema"
-    command: "python3 $TASK_DIR/check_file_attachment_input.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_file_attachment_input.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

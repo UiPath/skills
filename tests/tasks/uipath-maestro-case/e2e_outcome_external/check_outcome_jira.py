@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "_setup"))
 from outcome_probe import (  # noqa: E402
     JIRA_PROJECT,
     ensure_debug_ran,

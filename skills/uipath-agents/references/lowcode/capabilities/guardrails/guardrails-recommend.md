@@ -39,6 +39,8 @@ Inspect the saved JSON. **Only stop for the specific, structured signal that the
 
 The cache file is `.guardrails-catalog-cache.json` in the current working directory. Add it to `.gitignore` if one exists.
 
+> **Parsing the cached JSON:** entries are at `Data.Guardrails[]` — the CLI re-cases every key under `Data` to PascalCase, so the snake_case catalog fields named in this file appear re-cased in the output: `validator_id` → `ValidatorId`, `when_to_use` → `WhenToUse`, `when_not_to_use` → `WhenNotToUse`, `use_cases` → `UseCases`, `security_risk_addressed` → `SecurityRiskAddressed`, `security_category` → `SecurityCategory`, `status` → `Status`, `examples[].config` → `Examples[].Config` (with `ActionType`, `ValidatorParameters`). Values keep their authored form (`"adversarial_input"`, `"Available"`). Keys named `Data.guardrails` or `when_to_use` match nothing — if a parse returns empty, read the raw file (`head -40 .guardrails-catalog-cache.json`) instead of guessing key names.
+
 ### Guardrails List (NEVER cached — tenant-specific)
 
 This returns only guardrails available to the current tenant (filtered by entitlements and feature flags). Run it fresh every time:
@@ -67,6 +69,7 @@ From `agent.json`, extract:
 - **Output schema** — property names and types — what data does the agent produce?
 - **Tool resource names and descriptions** — from `resources/` — what external systems or operations does the agent invoke?
 - **Existing guardrails array** — what is already configured? (to avoid duplicating)
+- **File surfaces** — `inputSchema` / `outputSchema` properties declared as `$ref: "#/definitions/job-attachment"` (or carrying `x-uipath-resource-kind: "JobAttachment"`), and file tools under `resources/` (`properties.toolType: "analyze-attachments"` or `"create-file"`). Record which inputs are attached files, which outputs are produced files, and which tools read or write files — they drive the `detectionScope` decision in Step 6.
 
 Also read `resources/` to list all tool names (needed for Tool-scope recommendations).
 
@@ -157,6 +160,7 @@ When a validator supports **more than one scope** (e.g. `pii_detection` allows A
 | **Input protection** (block bad/sensitive input: PII, jailbreak, injection) | broadest **PRE** scope allowed → **Agent** > Llm > Tool | Agent · PRE fires once, before the agent reaches the LLM or any tool. Catching PII or an attack at Agent · PRE blocks the whole run immediately instead of after the model has already been called. |
 | **Output protection** (block bad output the caller sees: harmful content, IP) | **Agent · POST** when allowed | Agent · POST inspects the agent's final answer — the thing the user actually receives. |
 | **Tool I/O protection** (a specific tool's input/output) | **Tool** scope on that tool | Only narrow to Tool when the concern is genuinely that one tool, or the user scoped it there. |
+| **File protection** (contents of attached input files / produced output files) | **Agent** scope with `detectionScope: "Files"` — PRE covers attached inputs, POST covers produced files | Agent · PRE sees every job attachment before the model runs; Agent · POST sees the files the result references. Narrow to Tool scope on Analyze Files only when the concern is that tool's `attachments[]`. See [files-guide.md](files-guide.md). |
 
 Concretely: **PII detection meant to stop the agent handling personal data goes at `selector.scopes: ["Agent"]`, not `["Llm"]`** — both are listed in `AllowedScopes` for `pii_detection`, but Agent · PRE blocks the run earlier (before the LLM call) and covers the whole agent, not just one model invocation. Only drop to a narrower scope when the validator does not support the broader one (`prompt_injection` and `user_prompt_attacks` are Llm-only, so Llm · PRE is the earliest available for them) or when the user explicitly asks for a narrower scope.
 
@@ -188,6 +192,13 @@ For parameters, use the `Parameters` array from the matching guardrails list ent
 Use the action chosen in Step 5.
 
 Generate a fresh UUID for each guardrail `id`.
+
+**`detectionScope` decision** (only when the matched list entry's `Parameters` contains `Id: "detectionScope"`; BYO entries never do):
+1. The agent has a file surface (Step 1) and the threat lives in file contents (PII in uploaded documents, licensed code in a generated file, an injection inside a PDF) → add `{"$parameterType": "enum", "id": "detectionScope", "value": "Files"}`; use `"Both"` only when the text payload is also a threat surface the same guardrail must cover.
+2. No file surface → omit the parameter (the default is `Text`).
+3. The list entry lacks `detectionScope` → omit it and tell the user file inspection is not enabled for that validator on this tenant.
+
+Semantics and recipes: [guardrails.md § Files and attachments](guardrails.md#files-and-attachments-detectionscope) → [files-guide.md](files-guide.md).
 
 ### Step 7 — Apply and Validate
 
@@ -235,6 +246,7 @@ Run `uip agent guardrails list --output json` (from Step 0) and find the matchin
 | `KeySource` | For `map-enum`: keys must **exactly** match the values of the `Options`-sourced parameter named by `KeySource` — no extra, no missing keys |
 | `Min` / `Max` | For `number` and `map-enum`: values must fall within this range |
 | `Step` | For `number` and `map-enum`: values must be multiples of Step (e.g. Step=2, Min=0, Max=6 → valid values are 0, 2, 4, 6) |
+| `Id: "detectionScope"` presence | If the guardrail JSON carries `detectionScope` but the matched entry's `Parameters` has no such `Id` (custom guardrails, BYO entries, and non-file validators never carry it) → remove it. If present, `value` must be one of `Options` (`Text`, `Files`, `Both` — exact case). |
 
 Check that every parameter object has a `$parameterType` discriminator. Missing discriminators cause schema validation failures.
 
@@ -250,6 +262,8 @@ Check that every parameter object has a `$parameterType` discriminator. Missing 
 1. Read the catalog entry's `when_not_to_use` (from the catalog cache).
 2. Compare against the agent's current context (system prompt, schemas, tools).
 3. If the agent matches a `when_not_to_use` condition, flag the guardrail as potentially misapplied and explain why.
+4. **File coverage gap** — the agent has a `job-attachment` input or output the guardrail is meant to protect, the matched list entry offers `detectionScope`, and the guardrail omits it or sets `"Text"` → flag it: the file contents are never inspected; fix with `detectionScope: "Files"` (or `"Both"` when the text must stay covered).
+5. **Misapplied file scope** — `detectionScope: "Files"` on an agent with no `job-attachment` field and no file tool → nothing to evaluate; fix: remove the parameter or add the file input.
 
 ### Report and Fix
 
@@ -257,7 +271,7 @@ Report per guardrail:
 - **OK** — no issues found
 - **Correctness issue** — describe the problem (e.g., "entityThresholds has key 'Sexual' but 'Sexual' is not in entities list — KeySource says keys must match the entities parameter's values") and the fix
 - **Actionability issue** — describe the problem (e.g., "'Agent' is in selector.scopes but AllowedScopes for this validator is ['Llm', 'Tool'] — 'Agent' is not allowed; change scope to 'Llm' or 'Tool'") and the fix
-- **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead
+- **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead (e.g., "`inputSchema.properties.contract` is a job-attachment but `pii_detection` has no `detectionScope` — the uploaded contract is never inspected; set `detectionScope: "Files"`")
 
 If the user asks to fix identified issues: apply corrections to `agent.json`, run `uip agent refresh` to regenerate `entry-points.json` and `bindings_v2.json`, then `uip agent validate` to confirm the fix passes checks.
 
@@ -280,3 +294,4 @@ If the user asks to fix identified issues: apply corrections to `agent.json`, ru
 13. **Read [guardrails.md](guardrails.md) before writing any JSON** — discriminator fields, PascalCase constraints, and parameter shapes are specified there and cannot be safely inferred.
 14. **Do NOT use TaskCreate, TaskUpdate, or other task-tracking tools for guardrail edits.** Edit `agent.json` directly — task management tools add bookkeeping turns without benefit and push runs over their turn budget.
 15. **`Validator` is not unique — disambiguate built-in vs. BYO by `IsByo` before matching on name.** A tenant can have both a built-in and one or more BYOG entries sharing the same `Validator` name. Key any lookup on `(Validator, IsByo)`, and when an existing guardrail carries `byoValidatorName`, match it against `ByoValidatorName` — not `Validator` alone — before reading `Parameters`/`AllowedScopes` for correctness or recommendation. Default recommendations to the built-in entry unless the user asks for BYO. See [guardrails.md § BYO (bring-your-own) guardrails](guardrails.md#byo-bring-your-own-guardrails).
+16. **`detectionScope` is list-driven.** Set it only when the matched list entry's `Parameters` contains `Id: "detectionScope"`; never on custom guardrails or BYO-pinned guardrails (BYO has no file support). Attached input files → Agent scope + `"Files"`; produced output files → a Post validator at Agent scope + `"Files"`. A `Text` (or omitted) `detectionScope` on a guardrail meant to protect a `job-attachment` field is a coverage gap — report it. See [files-guide.md](files-guide.md).

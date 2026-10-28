@@ -5,7 +5,7 @@ description: >
   file containing the runtime codes with quantities, and (2) the agent calls
   `uip platform tenants licenses set <key> --input <path> --output json`.
   CLI auth failure is expected; this validates command shape only.
-tags: [uipath-platform, smoke, licensing, tenants]
+tags: [uipath-platform, smoke, licensing, tenants, mode:operate, lifecycle:setup]
 
 run_limits:
   expected_turns: 6

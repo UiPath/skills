@@ -1,4 +1,8 @@
 [project]
 name = "billing-agent"
 version = "0.1.0"
+description = "Billing agent"
 requires-python = ">=3.11"
+dependencies = [
+    "uipath>=2.10.58",
+]

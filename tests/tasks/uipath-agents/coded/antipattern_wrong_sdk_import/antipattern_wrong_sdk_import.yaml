@@ -10,9 +10,14 @@ run_limits:
   expected_turns: 14
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/antipattern_wrong_sdk_import/_fixtures/bad-import ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/bad-import
+      mount_point: bad-import
+
+reference:
+  directory: .
 
 initial_prompt: |
   I've got a UiPath coded agent at `bad-import/` that won't run - it
@@ -39,7 +44,7 @@ success_criteria:
 
   - type: run_command
     description: "main.py imports UiPath from uipath.platform; no `from uipath import UiPath`"
-    command: "python3 $TASK_DIR/check_antipattern_wrong_sdk_import.py"
+    command: "python3 $REFERENCE_DIR/check_antipattern_wrong_sdk_import.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

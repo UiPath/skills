@@ -2,7 +2,10 @@ name: Smoke RPA Skill Tests (Windows)
 
 concurrency:
   group: smoke-rpa-skills-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only `synchronize` moves the head SHA; `opened` and `reopened` can fire on a
+  # commit a run is already in flight for, and a cancelled run reports the
+  # required context as `cancelled`. See docs/REQUIRED-CHECKS.md Rule 3a.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 on:
   # No `paths:` filter on purpose. This workflow is a required status
@@ -85,6 +88,27 @@ jobs:
             echo "Will test: $GLOBS"
           fi
 
+      # The Windows smoke job installs coder-eval on the host (tempdir driver,
+      # no Docker), so it can't read the agent image itself. Freeze the pinned
+      # image's deps here on Linux and hand them over as an artifact.
+      - name: Freeze coder-eval-agent deps as install constraints
+        if: steps.detect.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          img="ghcr.io/uipath/coder-eval-agent:$(tr -d '[:space:]' < tests/.coder-eval-version)"
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$img"
+          docker run --rm --entrypoint pip "$img" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
+          docker logout ghcr.io
+
+      - name: Upload coder-eval constraints
+        if: steps.detect.outputs.skip != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: ce-constraints
+          path: ${{ runner.temp }}/ce-constraints.txt
+          retention-days: 1
+
   smoke:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
@@ -127,27 +151,41 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
       #
-      # claude-agent-sdk 0.2.144 shipped without a win_amd64 wheel, so uv falls
-      # back to the sdist and nothing bundles claude.exe — every task here then
-      # dies at agent_crash ("Claude Code not found"). coder-eval asks for
-      # >=0.2.124 with no upper bound, so exclude that single release instead of
-      # capping: a later version that restores the wheel resolves normally.
+      # claude-agent-sdk releases sometimes ship without a win_amd64 wheel
+      # (0.2.144, 0.2.157, 0.2.160). uv then builds the sdist, which bundles no
+      # claude.exe, and every task dies at agent_crash ("Claude Code not
+      # found"). --only-binary makes the resolver skip any release lacking a
+      # wheel for this platform and take the newest one that has it — no
+      # per-release denylist, no upper cap. The check below fails fast if a
+      # wheel ever arrives without the bundled binary.
+      #
+      # Constrained to the pinned agent image's frozen deps (frozen by the
+      # detect job). claude-agent-sdk is dropped from them so --only-binary
+      # keeps picking a release that ships a win_amd64 wheel.
+      - name: Download coder-eval constraints
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: ce-constraints
+          path: ${{ runner.temp }}
+
       - name: Install coder-eval
         shell: bash
+        env:
+          VERSION: ${{ steps.ceref.outputs.version }}
         run: |
-          uv pip install --system \
-            "coder-eval==${{ steps.ceref.outputs.version }}" \
-            "claude-agent-sdk!=0.2.144"
+          set -euo pipefail
+          grep -v '^claude-agent-sdk' "$RUNNER_TEMP/ce-constraints.txt" > "$RUNNER_TEMP/ce-constraints-win.txt"
+          uv pip install --system --only-binary claude-agent-sdk \
+            -c "$RUNNER_TEMP/ce-constraints-win.txt" "coder-eval==$VERSION"
+          python3 -c "import pathlib, sys, claude_agent_sdk as s; exe = pathlib.Path(s.__file__).parent / '_bundled' / 'claude.exe'; print(f'claude-agent-sdk {s.__version__}: {exe}'); sys.exit(0 if exe.is_file() else f'::error::claude-agent-sdk {s.__version__} has no bundled claude.exe')"
 
+      # The feed allows anonymous reads, so it is added without credentials.
       - name: Configure NuGet feed for Helm packages
         shell: bash
         run: |
           dotnet nuget add source \
             "https://uipath.pkgs.visualstudio.com/Public.Feeds/_packaging/UiPath-Internal/nuget/v3/index.json" \
-            --name UiPath-Internal \
-            --username az \
-            --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
-            --store-password-in-clear-text
+            --name UiPath-Internal
 
       # Install from GitHub Packages `@dev` — the live prerelease train
       # published on every push to `cli/main`. Public npm mirrors the same
@@ -243,8 +281,8 @@ jobs:
           AUTHORITY: https://alpha.uipath.com
           EMAIL:    ${{ secrets.UIPATH_EMAIL }}
           PASSWORD: ${{ secrets.UIPATH_PASSWORD }}
-          TENANT:   ${{ secrets.UIPATH_TENANT }}
-          ORG:      ${{ secrets.UIPATH_ORG }}
+          TENANT:   ${{ vars.UIPATH_TENANT }}
+          ORG:      ${{ vars.UIPATH_ORG }}
           # Drop screenshots + DOM dumps here so we can upload them as an
           # artifact for post-mortem on auth failures.
           AUTH_DEBUG_DIR: ${{ github.workspace }}/auth-debug
@@ -304,18 +342,10 @@ jobs:
           # Route the agent through AWS Bedrock. The Anthropic workspace
           # hit its API usage limit (resets 2026-05-01), so DirectRoute
           # is blocked. Bedrock has a separate quota.
-          #
-          # ANTHROPIC_API_KEY stays set for the LLM reviewer (lightweight
-          # token spend — coder_eval's reviewer only supports Anthropic
-          # direct or UiPath LLM Gateway, not Bedrock). If the shared
-          # workspace quota is still drained when the reviewer fires,
-          # orchestrator._run_final_llm_review swallows the error and
-          # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
           # The gate's agent model, passed on the command line rather than pinned in
           # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal
           # fallback: an unset variable fails the guard step above rather than gating a

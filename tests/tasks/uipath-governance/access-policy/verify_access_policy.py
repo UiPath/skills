@@ -29,7 +29,7 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_setup'))
 from gov_helpers import ap_by_name, ap_get, fail, ok, poll, seed_entry
 
 logging.basicConfig(level=logging.INFO, format="verify_access_policy: %(message)s")

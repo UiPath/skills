@@ -29,6 +29,15 @@ exist on disk (and any grouping left empty as a result). It deliberately does
 NOT place newly added skills — which section a skill belongs to is an editorial
 judgement, not something a script should guess.
 
+--baseline-ref scopes the exit code to drift THIS change introduces. The check
+reads the whole tree, so drift already on the base branch otherwise fails every
+unrelated PR that touches any skills/*/SKILL.md. That is not hypothetical: when
+uipath-process-mining landed ungrouped on 2026-08-04 (#2252), the next 48 hours
+produced 65 failures across ~20 unrelated branches until an unrelated PR (#2498)
+happened to add the entry. With --baseline-ref, findings that also reproduce at
+the baseline are reported as warnings and do not fail the run; only new findings
+exit 1. Whole-tree visibility is kept — the blast radius is not.
+
 Outputs:
   - Default: one finding per line, human-readable; exit 1 if any.
   - --json : newline-delimited JSON for downstream tooling.
@@ -37,10 +46,13 @@ Usage:
     python3 scripts/check-skills-sh.py
     python3 scripts/check-skills-sh.py --json
     python3 scripts/check-skills-sh.py --fix
+    python3 scripts/check-skills-sh.py --baseline-ref origin/main
 """
 
 import argparse
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -75,6 +87,17 @@ def skills_on_disk():
     return {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
 
 
+def finding(kind, key, subject, error):
+    """One finding.
+
+    `key` and `error` are for display. `kind` and `subject` are the identity
+    used to decide whether the same drift exists at the baseline, so neither
+    may embed anything that unrelated edits can change — no list indices, and
+    no grouping titles for findings that are really about a skill name.
+    """
+    return {"kind": kind, "key": key, "subject": subject, "error": error}
+
+
 def check_schema(manifest):
     """Structural findings. Returns (findings, groupings, usable) — `groupings`
     is the subset safe to reason about downstream, and `usable` is False when
@@ -83,62 +106,79 @@ def check_schema(manifest):
     findings = []
 
     if not isinstance(manifest, dict):
-        return ([{"key": MANIFEST_PATH.name, "error": "top level must be a JSON object"}], [], False)
+        return ([finding("top-level-type", MANIFEST_PATH.name, MANIFEST_PATH.name,
+                         "top level must be a JSON object")], [], False)
 
     for key in sorted(set(manifest) - TOP_LEVEL_KEYS):
-        findings.append({"key": key,
-                         "error": f"unknown top-level key — expected one of {sorted(TOP_LEVEL_KEYS)}"})
+        findings.append(finding("unknown-top-level-key", key, key,
+                                f"unknown top-level key — expected one of "
+                                f"{sorted(TOP_LEVEL_KEYS)}"))
 
     schema = manifest.get("$schema")
     if schema is not None and schema != SCHEMA_URL:
-        findings.append({"key": "$schema", "error": f"expected {SCHEMA_URL!r}, got {schema!r}"})
+        findings.append(finding("schema-url", "$schema", "$schema",
+                                f"expected {SCHEMA_URL!r}, got {schema!r}"))
 
     not_grouped = manifest.get("notGrouped")
     if not_grouped is not None and not_grouped not in NOT_GROUPED_VALUES:
-        findings.append({"key": "notGrouped",
-                         "error": f"must be one of {sorted(NOT_GROUPED_VALUES)}, got {not_grouped!r}"})
+        findings.append(finding("not-grouped-value", "notGrouped", "notGrouped",
+                                f"must be one of {sorted(NOT_GROUPED_VALUES)}, "
+                                f"got {not_grouped!r}"))
 
     groupings = manifest.get("groupings")
     if not isinstance(groupings, list) or not groupings:
-        findings.append({"key": "groupings", "error": "required, and must be a non-empty list"})
+        findings.append(finding("groupings-missing", "groupings", "groupings",
+                                "required, and must be a non-empty list"))
         return (findings, [], False)
     if len(groupings) > MAX_GROUPINGS:
-        findings.append({"key": "groupings",
-                         "error": f"at most {MAX_GROUPINGS} groupings, got {len(groupings)}"})
+        findings.append(finding("groupings-count", "groupings", "groupings",
+                                f"at most {MAX_GROUPINGS} groupings, got {len(groupings)}"))
 
     valid = []
     for index, group in enumerate(groupings):
+        # `key` is for display and carries the index so a reader can find the
+        # entry. `subject` is the identity used for baseline comparison and
+        # must NOT carry the index — inserting a grouping at the top shifts
+        # every index and would re-attribute untouched drift as new.
         where = f"groupings[{index}]"
         if not isinstance(group, dict):
-            findings.append({"key": where, "error": "must be an object"})
+            findings.append(finding("group-type", where, where, "must be an object"))
             continue
 
         title = group.get("title")
-        if not isinstance(title, str) or not 1 <= len(title) <= MAX_TITLE:
-            findings.append({"key": where,
-                             "error": f"`title` is required and must be 1-{MAX_TITLE} characters"})
+        titled = isinstance(title, str) and 1 <= len(title) <= MAX_TITLE
+        # An invalid title leaves nothing stabler than the index to key on;
+        # that finding is by definition about the entry the author just touched.
+        subject = title if titled else where
+        if not titled:
+            findings.append(finding("group-title", where, subject,
+                                    f"`title` is required and must be 1-{MAX_TITLE} characters"))
         else:
             where = f"groupings[{index}] {title!r}"
 
         description = group.get("description")
         if description is not None and (not isinstance(description, str)
                                         or len(description) > MAX_DESCRIPTION):
-            findings.append({"key": where,
-                             "error": f"`description` must be a string of at most "
-                                      f"{MAX_DESCRIPTION} characters"})
+            findings.append(finding("group-description", where, subject,
+                                    f"`description` must be a string of at most "
+                                    f"{MAX_DESCRIPTION} characters"))
 
         skills = group.get("skills")
         if not isinstance(skills, list) or not skills:
-            findings.append({"key": where, "error": "`skills` is required and must be non-empty"})
+            findings.append(finding("group-skills-missing", where, subject,
+                                    "`skills` is required and must be non-empty"))
             continue
         if len(skills) > MAX_SKILLS_PER_GROUP:
-            findings.append({"key": where,
-                             "error": f"at most {MAX_SKILLS_PER_GROUP} skills, got {len(skills)}"})
+            findings.append(finding("group-skills-count", where, subject,
+                                    f"at most {MAX_SKILLS_PER_GROUP} skills, "
+                                    f"got {len(skills)}"))
         for name in skills:
             if not isinstance(name, str) or not 1 <= len(name) <= MAX_SKILL_NAME:
-                findings.append({"key": where,
-                                 "error": f"skill entry {name!r} must be a string of "
-                                          f"1-{MAX_SKILL_NAME} characters"})
+                # Keyed on the offending entry, not the grouping: moving a bad
+                # entry between groupings is the same pre-existing drift.
+                findings.append(finding("skill-entry", where, repr(name),
+                                        f"skill entry {name!r} must be a string of "
+                                        f"1-{MAX_SKILL_NAME} characters"))
         valid.append(group)
 
     return (findings, valid, True)
@@ -155,22 +195,25 @@ def check_coverage(groupings, on_disk):
             if not isinstance(name, str):
                 continue
             if name in seen:
-                findings.append({"key": name,
-                                 "error": f"listed in more than one grouping "
-                                          f"({seen[name]!r} and {title!r})"})
+                # The message names both groupings for the reader, but identity
+                # is the skill alone: retitling a grouping, or moving the
+                # duplicate elsewhere, is not new drift.
+                findings.append(finding("duplicate-grouping", name, name,
+                                        f"listed in more than one grouping "
+                                        f"({seen[name]!r} and {title!r})"))
             else:
                 seen[name] = title
 
     for name in sorted(set(seen) - on_disk):
-        findings.append({"key": name,
-                         "error": "grouped but no skills/<name>/SKILL.md exists — the skill was "
-                                  "renamed or removed. Run --fix to drop it."})
+        findings.append(finding("grouped-not-on-disk", name, name,
+                                "grouped but no skills/<name>/SKILL.md exists — the skill was "
+                                "renamed or removed. Run --fix to drop it."))
 
     for name in sorted(on_disk - set(seen)):
-        findings.append({"key": name,
-                         "error": "exists on disk but is in no grouping — it would render "
-                                  "ungrouped on skills.sh. Add it to the right section by hand "
-                                  "(placement is an editorial call, so --fix will not guess)."})
+        findings.append(finding("ungrouped", name, name,
+                                "exists on disk but is in no grouping — it would render "
+                                "ungrouped on skills.sh. Add it to the right section by hand "
+                                "(placement is an editorial call, so --fix will not guess)."))
 
     return findings
 
@@ -182,6 +225,64 @@ def validate(manifest, on_disk):
         # ungrouped would bury the one finding that matters.
         return schema_findings
     return schema_findings + check_coverage(groupings, on_disk)
+
+
+# --- baseline comparison ----------------------------------------------------
+
+
+def _git(*args):
+    """Run git in the repo. Returns stdout, or None if the command failed."""
+    try:
+        result = subprocess.run(("git", "-C", str(REPO_ROOT)) + args,
+                                capture_output=True, text=True, check=False)
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
+def baseline_state(ref):
+    """The manifest and skill set as of `ref`. Returns (manifest, on_disk) or
+    None when the ref is unreadable — a shallow clone, a missing base, or a
+    branch that predates skills.sh.json. Callers fall back to strict
+    whole-tree validation rather than silently passing."""
+    raw = _git("show", f"{ref}:{MANIFEST_PATH.name}")
+    if raw is None:
+        return None
+    try:
+        manifest = json.loads(raw)
+    except json.JSONDecodeError:
+        # A baseline that does not even parse cannot establish "pre-existing".
+        return None
+
+    listing = _git("ls-tree", "-r", "--name-only", ref, "--", SKILLS_DIR.name)
+    if listing is None:
+        return None
+    on_disk = {parts[1] for parts in
+               (line.split("/") for line in listing.splitlines())
+               if len(parts) == 3 and parts[0] == SKILLS_DIR.name and parts[2] == "SKILL.md"}
+    return (manifest, on_disk)
+
+
+def identity(item):
+    """What makes two findings 'the same drift' across two commits.
+
+    Deliberately NOT the formatted message: it embeds grouping titles and list
+    indices, so a retitle or an insertion would re-attribute untouched drift to
+    the PR and block it.
+    """
+    return (item["kind"], item["subject"])
+
+
+def split_by_baseline(findings, baseline):
+    """Partition findings into (new, preexisting) using the baseline state."""
+    baseline_manifest, baseline_on_disk = baseline
+    already = {identity(f) for f in validate(baseline_manifest, baseline_on_disk)}
+    new, preexisting = [], []
+    for item in findings:
+        (preexisting if identity(item) in already else new).append(item)
+    return (new, preexisting)
 
 
 def fix(manifest, on_disk):
@@ -238,6 +339,10 @@ def main():
                         help="Emit newline-delimited JSON instead of text")
     parser.add_argument("--fix", action="store_true",
                         help="Remove grouped names that no longer exist on disk")
+    parser.add_argument("--baseline-ref", metavar="REF",
+                        help="Git ref to treat as the baseline (e.g. origin/main). Findings "
+                             "that also reproduce at REF are warnings, not failures, so "
+                             "drift already on the base branch does not fail this change.")
     args = parser.parse_args()
 
     manifest = load_manifest()
@@ -247,20 +352,47 @@ def main():
         return fix(manifest, on_disk)
 
     findings = validate(manifest, on_disk)
+    preexisting = []
+
+    if args.baseline_ref:
+        baseline = baseline_state(args.baseline_ref)
+        if baseline is None:
+            # Fail closed: without a readable baseline every finding stays
+            # blocking, which is the pre---baseline-ref behaviour.
+            print(f"Warning: cannot read baseline {args.baseline_ref!r} — treating every "
+                  f"finding as new.", file=sys.stderr)
+        else:
+            findings, preexisting = split_by_baseline(findings, baseline)
 
     if args.json:
-        for finding in findings:
-            print(json.dumps(finding))
+        for item in findings:
+            print(json.dumps({**item, "preexisting": False}))
+        for item in preexisting:
+            print(json.dumps({**item, "preexisting": True}))
         return 1 if findings else 0
+
+    annotate = os.environ.get("GITHUB_ACTIONS") == "true"
+
+    if preexisting:
+        print(f"{len(preexisting)} pre-existing finding(s) — already present at "
+              f"{args.baseline_ref}, not caused by this change:\n")
+        for item in preexisting:
+            prefix = "::warning::" if annotate else "  "
+            print(f"{prefix}{item['key']}: {item['error']}")
+        print()
 
     if not findings:
         sections = len(manifest.get("groupings", []))
         print(f"OK — {len(on_disk)} skills grouped across {sections} section(s).")
+        if preexisting:
+            print("Pre-existing drift above still needs a fix — see CONTRIBUTING.md "
+                  "§ Register the skills.sh Grouping.")
         return 0
 
     print(f"{len(findings)} finding(s):\n")
-    for finding in findings:
-        print(f"  {finding['key']}: {finding['error']}")
+    for item in findings:
+        prefix = "::error::" if annotate else "  "
+        print(f"{prefix}{item['key']}: {item['error']}")
     return 1
 
 

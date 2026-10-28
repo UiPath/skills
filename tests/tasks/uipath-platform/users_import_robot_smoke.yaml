@@ -22,13 +22,13 @@ initial_prompt: |
   Use `--output json` on all uip commands.
 
   Important:
-  - This is a CLI-shape smoke test. Run the `uip or users import` command once
-    with the supplied id, `--type DirectoryRobot`, `--domain autogen`, and
-    `--output json`.
-  - Auth, Forbidden, and 404 errors are acceptable in this environment. After
-    the import command returns, stop and summarize the result. Do NOT retry,
-    log in, refresh tokens, inspect environment variables, decode tokens, call
-    REST APIs with curl, or run alternate commands.
+  - Auth, Forbidden and 404 errors are expected here and count as done —
+    whether the tenant accepts the import is not what this checks. If the CLI
+    itself rejects the command as malformed, that is different: fix the
+    command and run it again.
+  - Do NOT log in, refresh tokens, inspect environment variables, decode
+    tokens, or call REST APIs with curl. Once the import command reaches the
+    server, stop and summarize the result.
 
 success_criteria:
   - type: command_executed
@@ -64,7 +64,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did NOT omit --type (would default to DirectoryUser → silent corruption)"
+    # The rationale this used to carry — "omitting --type defaults to
+    # DirectoryUser, silently corrupting the import" — no longer holds:
+    # --type is a requiredOption, so the CLI answers `required option
+    # '--type <type>' not specified` and never reaches the server. Kept as a
+    # shape guard, not a corruption guard. Note it is strict on EVERY import
+    # call, so an agent that probes without --type before correcting trips it;
+    # if that shows up in practice, drop this criterion — criterion 2 already
+    # pins the successful call, and the CLI enforces the rest.
+    description: "Agent never issued an import without --type (CLI rejects it; shape guard)"
     tool_name: "Bash"
     command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import(?!\s+--help)(?![\s\S]*--type)'
     weight: 2.0

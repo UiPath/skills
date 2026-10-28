@@ -1,0 +1,179 @@
+task_id: skill-insights-smoke-dashboard-copy
+description: >
+  Smoke test: agent uses the uipath-insights skill to give one Maestro
+  process the monitoring dashboard another one has. Given the two process
+  keys, the agent should run one copy with --from-process-key and
+  --to-process-key, keep the definition it sent through --output-file,
+  say which SourceState was copied and that the two dashboards are
+  independent from here (writes guide Rule 18), and change nothing on the
+  source. The CLI is authenticated.
+
+  Both keys belong to no Maestro process. The destination is a fresh
+  GUID per run, written to seed.json in pre_run and cleared in post_run.
+  The source key is the one no task ever writes to, so its slot always serves the template and the
+  copy is a SourceState Template copy with a derived name, which is the
+  branch the guide documents in the most detail. The fresh destination
+  is free by construction, because copy refuses an occupied slot, and the live
+  read-back at the end proves the destination now holds a saved
+  dashboard. The output file is graded as the CLI's own artifact: a
+  camelCase definition whose dataModel is AO (Rule 7).
+tags: [uipath-insights, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 10
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+pre_run:
+  # Copy refuses an occupied destination, so every run gets a fresh
+  # destination key whose slot is free by construction. A fixed key
+  # collided when two gate runs overlapped (skills runs 35721927455 and
+  # 35721932318), which is why the key is per run.
+  - command: "python3 _setup/slot.py new"
+    timeout: 30
+    fail_on_error: false
+
+post_run:
+  # The copy this run made goes away with it. The source is never written.
+  - command: "python3 _setup/slot.py clear"
+    timeout: 120
+
+initial_prompt: |
+  Give the Maestro process whose key is the process_key in ./seed.json
+  the same Insights monitoring dashboard that the process
+  00000000-0000-0000-0000-00000000000a has. Keep a copy of exactly what
+  was sent at ./copied.json. Do not change anything on the source
+  process, and do not author a dashboard by hand. Send the copy once.
+  Tell me which kind of source was copied, whether the copy's name was
+  derived, and whether the two dashboards are linked from here.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Every wildcard in this file is bounded with
+  # (?:(?!uip\s)(?:[^&;|\n]|\\\n))*; update_smoke.yaml's first comment
+  # explains why each part of that class is load-bearing.
+  #
+  # The copy, addressed by both keys. Matched in one pattern each, so a
+  # run that misses one names the one it missed.
+  - type: command_executed
+    description: "Agent named the source with --from-process-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+copy\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--from-process-key[\s=]+"?00000000-0000-0000-0000-00000000000a\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent named the destination with --to-process-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+copy\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--to-process-key[\s=]+"?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The definition as sent goes through --output-file, the one channel
+  # that carries the camelCase body; redirected stdout is the PascalCase
+  # envelope (Rule 1).
+  # Tied to the path the prompt names, so the json_check below reads the
+  # file this flag wrote. A read the agent sent to the same path first is
+  # fine: the copy runs after it and overwrites the file with the
+  # definition as sent.
+  - type: command_executed
+    description: "Agent kept the sent definition through --output-file at the named path"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+copy\b(?!\s+(?:--help|-h)\b)(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output-file[\s=]+"?\.?/?copied\.json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 18: one write, never a blind repeat. Bounded command_executed
+  # rather than command_not_executed for the reason update_smoke.yaml
+  # gives: the loader rewrites command_not_executed to max_count 0.
+  - type: command_executed
+    description: "Agent did not send the copy more than once"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+copy\b(?!\s+(?:--help|-h)\b)'
+    min_count: 0
+    max_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Copy is the whole job. A create is the by-hand path the prompt rules
+  # out, an update or delete on either key is a change the user did not
+  # ask for, and a delete on the destination is the "start over" Rule 18
+  # forbids after an occupied-destination refusal.
+  - type: command_not_executed
+    description: "Agent did not create, update, or delete a dashboard"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+(create|update|delete)\b(?!\s+(?:--help|-h)\b)'
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids command substitution and shell
+  # variables inside a uip invocation; the flag list is the superset every
+  # dashboard task carries, so a neighbour's `jq --arg $KEY` cannot
+  # satisfy it.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a uip insights dashboard command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+dashboards\s+\S+(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(process-key|case|source-type|localization|output-file|file|backup-file|expected-version|from-process-key|to-process-key|limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_{])|uip\s+insights\s+dashboards\s+(get|update|delete)\s+"?(\$\(|`|\$[A-Za-z_{])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string. --help is the reality
+  # gate: exit 0 only when the CLI registers the command, exit 3 otherwise.
+  - type: run_command
+    description: "CLI path is real: dashboards copy is registered in the installed CLI"
+    command: "uip insights dashboards copy --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The output file is the CLI's artifact, not the agent's prose: a
+  # camelCase definition with dataModel AO (Rule 7). The file name is the
+  # prompt's ground-truth anchor, so the agent has to know it.
+  - type: json_check
+    description: "copied.json is the camelCase definition the CLI sent"
+    path: "copied.json"
+    assertions:
+      - expression: "dataModel"
+        operator: equals
+        expected: "AO"
+      - expression: "charts"
+        operator: type
+        expected: "array"
+      - expression: "tables"
+        operator: type
+        expected: "array"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The copy landed. The destination's slot read after the run says it
+  # holds a saved dashboard, which no command string can fake. The source
+  # is read too: it must still serve the template, which is the "changed
+  # nothing on the source" half of the prompt.
+  - type: run_command
+    description: "Live: the destination holds a saved dashboard and the source is untouched"
+    command: >-
+      K=$(python3 -c 'import json; print(json.load(open("seed.json"))["process_key"])');
+      uip insights dashboards get --process-key "$K" --output json
+      | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["Data"]["Saved"] is True else 1)'
+      && uip insights dashboards get --process-key 00000000-0000-0000-0000-00000000000a --output json
+      | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["Data"]["Saved"] is False else 1)'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -15,7 +15,7 @@ Trigger plugins scaffold ([`plugins/case/impl-json.md`](plugins/case/impl-json.m
 
 In/Out formal args (`variables.inputs[]` / `outputs[]`) are final at 6.2 — Phase 3 never adds or renames them (the uniqueness rule suffixes `var`/`id`, never `name`, and this step keys on `name`). Running at 6.3 keeps the Phase-2 publish-for-review artifact correct.
 
-Re-run on regenerate-from-scratch (Rule 6). Idempotent — full recompute, never append.
+Re-run on regenerate-from-scratch (Rule 7). Idempotent — full recompute, never append.
 
 **Check 6** (end of Phase 3, [`implementation.md` § Step 12](implementation.md)) re-verifies parity as cheap insurance.
 
@@ -32,7 +32,7 @@ NOT projected: `variables.inputOutputs[]` root state and trigger-payload `Variab
 
 ## Procedure
 
-1. Read `caseplan.json` (`variables.inputs[]`, `variables.outputs[]`, `variables.inputOutputs[]`) and `entry-points.json`.
+1. Read `caseplan.case` (`variables.inputs[]`, `variables.outputs[]`, `variables.inputOutputs[]`) and `entry-points.json`.
 2. For each entry in `entryPoints[]`:
    - `triggerId` = `filePath` substring after the last `#`.
    - `entry.input`  = projectSchema(`inputs[]` where `elementId === triggerId`).
@@ -70,6 +70,7 @@ Keyed by `var.name`. Branch on `var.type`:
 |---|---|---|---|
 | `string` | `{ "type": "string" }` | yes | yes |
 | `integer` | `{ "type": "integer" }` | yes | yes |
+| `number` | `{ "type": "number" }` | yes | yes |
 | `boolean` | `{ "type": "boolean" }` | yes | yes |
 | `float` | `{ "type": "number", "format": "float" }` | yes | yes |
 | `double` | `{ "type": "number", "format": "double" }` | yes | yes |
@@ -89,7 +90,7 @@ Keyed by `var.name`. Branch on `var.type`:
   3. else `getTypeAndFormatForType(var.subType)` if `subType` is a primitive,
   4. else `{}`.
 
-> The current case-variable type enum ([`global-vars/planning.md` § Types](plugins/variables/global-vars/planning.md)) is `string | integer | float | double | boolean | datetime | date | jsonSchema | file` — no `array` or `time`. Those two rows are ported from the FE for fidelity/future-proofing; today array-shaped data arrives as `jsonSchema` with an array body (handled by the jsonSchema branch).
+> The current case-variable type enum ([`global-vars/planning.md` § Types](plugins/variables/global-vars/planning.md)) is `string | number | integer | float | double | boolean | datetime | date | jsonSchema | file` — no `array` or `time`. Those two rows are ported from the FE for fidelity/future-proofing; today array-shaped data arrives as `jsonSchema` with an array body (handled by the jsonSchema branch).
 
 ### `rewriteJobAttachmentRefs` (nested JobAttachment rewrite)
 
@@ -123,6 +124,8 @@ Emit verbatim. Note the inner quotes in `MimeType.description` — reproduce exa
 ```
 
 Fixed constant — NOT sourced from the file var's `body` (the FE emits it even when the var carries no `body`).
+
+The decoded `MimeType.description` is `The MIME type of the content, such as "application/json" or "image/png` — plain quotes, the last one unclosed. In the file's JSON text that is exactly three `\"` and no other backslash. Write the block above with Write/Edit as JSON text; never build it through a shell or code string, which adds a second layer of escaping (`\\\"`). After writing, the parsed value must contain no `\`.
 
 ## FE branch coverage (audit)
 
@@ -165,7 +168,7 @@ On a (1)/(2) mismatch → re-run the Procedure (deterministic recompute), re-che
 
 `variables.inputs[]` (all `elementId: trigger_1`): `test_date` (datetime, default `"2029-10-12"`, `required:true`), `test_arrary` (jsonSchema, body `{"$schema":…,"type":"array","items":{"type":"string"}}`), `test_default` (float, default `"12.0"`), `test_date_time` (datetime, default `""`), `test_file` (file, `required:true`), `test_json` (jsonSchema, body `{"$schema":…,"type":"object","properties":{…},"required":[]}`, `required:true`). `variables.outputs[]`: `test_out` (double); its `inputOutputs[]` companion default `"1.3"`.
 
-Entry `/content/caseplan.json.bpmn#trigger_1`:
+Entry `/content/caseplan.case.bpmn#trigger_1`:
 
 ```json
 "input": {
@@ -201,6 +204,6 @@ A `test_in_out` re-saved with two triggers — `trigger_1` (primary) and `StartE
 | `trigger_1` | trigger_1's In-args (`test_date` … `test_intput_t1_bool`) | `test_out`, `test_out_t2` |
 | `StartEvent_Trigger_OkGfLw` | **only `test_t2_in_var`** | `test_out`, `test_out_t2` |
 
-Each entry's `input` carries only the In-args whose `elementId` is that trigger; **every** entry carries **all** Out-args. An In-arg bound to a trigger with no entry — e.g. one still pointing at a `preview-node-id` ghost node (an uncommitted canvas preview that leaked into `caseplan.json`) — matches no entry and is silently dropped from the contract; the `elementId` filter skips it (Check 6's orphan guard catches it).
+Each entry's `input` carries only the In-args whose `elementId` is that trigger; **every** entry carries **all** Out-args. An In-arg bound to a trigger with no entry — e.g. one still pointing at a `preview-node-id` ghost node (an uncommitted canvas preview that leaked into `caseplan.case`) — matches no entry and is silently dropped from the contract; the `elementId` filter skips it (Check 6's orphan guard catches it).
 
 <!-- END: entry-points-sync.md -->

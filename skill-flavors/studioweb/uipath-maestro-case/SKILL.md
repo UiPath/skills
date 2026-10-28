@@ -1,0 +1,27 @@
+<!--skill-flavor:project-scaffold-rule:start-->
+24. **Create the case project with `uip maestro case init "<ProjectName>"` from `/solution`.** Studio Web creates it inside the open solution (there is only one — never create a solution) and seeds its scaffold. Then follow the T01 direct-JSON recipe in [implementation.md § Step 6](references/implementation.md#step-6--create-the-case-project-structure) for the plan file (Rule 14: the plan `case init` seeded, else `caseplan.case`), writing into `/solution/<ProjectName>/`.
+<!--skill-flavor:project-scaffold-rule:end-->
+
+<!--skill-flavor:phase-two-step-six:start-->
+1. Step 6: `uip maestro case init "<ProjectName>"` from `/solution`, then the root case (T01 direct-JSON recipe in [plugins/case/impl-json.md](references/plugins/case/impl-json.md)); the open Studio Web solution is the only solution.
+<!--skill-flavor:phase-two-step-six:end-->
+
+<!--skill-flavor:design-handoff-next-step:start-->
+Phase 1 (the open Studio Web solution already exists; project creation happens at Step 6.0),
+<!--skill-flavor:design-handoff-next-step:end-->
+
+<!--skill-flavor:design-handoff-rule-next-step:start-->
+Phase 1 (the open Studio Web solution already exists; project creation happens at Step 6.0)
+<!--skill-flavor:design-handoff-rule-next-step:end-->
+
+<!--skill-flavor:phase-seven-publish:start-->
+Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publish, run `uip solution publish --output json` from `/solution` — Studio Web packages and publishes the open solution; `resources refresh`, `case pack`, and `solution pack` are Node-CLI-only and are not run here. With several destinations the command lists them without publishing: ask the user which to use, then rerun with `--location "<key or name>"` or `--personal-workspace`. `Done` exits.
+<!--skill-flavor:phase-seven-publish:end-->
+
+<!--skill-flavor:phase-six-debug-gate:start-->
+Hard-stop AskUserQuestion (Step 15): `Debug in the Case Designer` / `Continue to publish`. `uip maestro case debug` is not in the Studio Web CLI, so never run it here: on Debug, tell the user to start the run from the Case Designer's Debug control, wait for the outcome they report, and loop until `Continue to publish`. Never start a run yourself.
+<!--skill-flavor:phase-six-debug-gate:end-->
+
+<!--skill-flavor:registry-gate-login:start-->
+Studio Web runs inside an authenticated host, so do not log in or check login state (there is no `uip login` here). Run
+<!--skill-flavor:registry-gate-login:end-->

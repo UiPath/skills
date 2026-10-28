@@ -13,11 +13,14 @@ description: >
   cannot write to) and the checker issues one live read of its own, so an
   unentitled tenant fails with the CLI's own message rather than looking
   like bad artifacts. Data-agnostic: empty Data passes structurally.
-tags: [uipath-insights, e2e, mode:operate, lifecycle:discover]
+tags: [uipath-insights, e2e, mode:diagnose, lifecycle:discover]
 
 run_limits:
   expected_turns: 24
   turn_timeout: 600
+
+reference:
+  directory: ..
 
 initial_prompt: |
   Give me the complete picture of the last 24 hours of job executions,
@@ -115,7 +118,7 @@ success_criteria:
 
   - type: run_command
     description: "All 7 envelope files exist, parse, and carry Result=Success with the exact per-subcommand Code; a live CLI read confirms the tenant answers Insights queries; empty Data passes structurally"
-    command: "python3 $TASK_DIR/check_all_commands_envelope.py"
+    command: "python3 $REFERENCE_DIR/envelope-contract/check_all_commands_envelope.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

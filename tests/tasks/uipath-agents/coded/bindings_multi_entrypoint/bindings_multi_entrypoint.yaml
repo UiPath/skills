@@ -13,9 +13,13 @@ run_limits:
   expected_turns: 13
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/bindings_multi_entrypoint/_fixtures/multi-ep/. ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/multi-ep
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   I have a uipath coded agent in the current directory. Can you sync its
@@ -44,7 +48,7 @@ success_criteria:
 
   - type: run_command
     description: "Two bindings; any EntryPointUniqueId references a real entrypoint"
-    command: "python3 $TASK_DIR/check_bindings_multi_entrypoint.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_bindings_multi_entrypoint.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

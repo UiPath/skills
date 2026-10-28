@@ -91,5 +91,6 @@ success_criteria:
       `uip codedapp publish` → `uip codedapp deploy` (that is the OLD
       contract and is only true for standalone apps with no parent
       `.uipx`).
+    include_reference: false
     weight: 3.0
     pass_threshold: 0.7

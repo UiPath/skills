@@ -33,7 +33,7 @@
 | Case Name | AgedInvoiceResolution |
 | Case Description | Registers an aged invoice case, triages it, captures AP ownership, and closes it, with interrupting SLA-escalation and automation-incident lanes. Compact connector-free proof-of-value variant. |
 | Case Identifier | Type: constant. Prefix: AIR |
-| Case-Level SLA | 90 m |
+| Case-Level SLA | 90 min |
 | SLA Type | time-based |
 | SLA Title | Case Resolution SLA |
 | Case App | Disabled |
@@ -103,7 +103,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 15 | m | 70% | Notify: UserGroup: AP Intake | Notify: UserGroup: AP Intake |
+| 15 | min | 70% | Notify: UserGroup: AP Intake | Notify: UserGroup: AP Intake |
 
 #### Tasks
 
@@ -217,7 +217,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 15 | m | 70% | Notify: UserGroup: AP Clerk | Notify: UserGroup: AP Team Lead |
+| 15 | min | 70% | Notify: UserGroup: AP Clerk | Notify: UserGroup: AP Team Lead |
 
 #### Tasks
 
@@ -302,7 +302,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 15 | m | 70% | Notify: UserGroup: AP Clerk | Notify: UserGroup: AP Team Lead |
+| 15 | min | 70% | Notify: UserGroup: AP Clerk | Notify: UserGroup: AP Team Lead |
 
 #### Tasks
 
@@ -457,7 +457,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 15 | m | 70% | Notify: UserGroup: AP Team Lead | Notify: UserGroup: Finance Operations |
+| 15 | min | 70% | Notify: UserGroup: AP Team Lead | Notify: UserGroup: Finance Operations |
 
 #### Tasks
 
@@ -518,7 +518,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 15 | m | 70% | Notify: UserGroup: Automation Support | Notify: UserGroup: Automation CoE |
+| 15 | min | 70% | Notify: UserGroup: Automation Support | Notify: UserGroup: Automation CoE |
 
 #### Tasks
 

@@ -1,16 +1,16 @@
 # connector-trigger task — Implementation (Direct JSON Write)
 
-> **Node `type` value: `wait-for-connector` (schema-kebab).** NEVER write `connector-trigger` (plugin folder name) into the JSON `type` field. The CLI `--type connector-trigger` flag is a separate concept — used only when calling the legacy `uip maestro case tasks describe` command. The current path uses `uip maestro case spec --type trigger`. See SKILL.md Rule 16 + Plugin Index.
+> **Node `type` value: `wait-for-connector` (schema-kebab).** NEVER write `connector-trigger` (plugin folder name) into the JSON `type` field. The CLI `--type connector-trigger` flag is a separate concept — used only when calling the legacy `uip maestro case tasks describe` command. The current path uses `uip maestro case spec --type trigger`. See SKILL.md Rule 17 + Plugin Index.
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --type trigger --input-details` once, reads the populated `caseShape`, substitutes placeholders, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.json` as a `wait-for-connector` task. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md` and threads them through the spec call.
+Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.case` as a `wait-for-connector` task. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `registry-resolved.json` and threads them through the spec call.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-impl.md](../../../connector-trigger-impl.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **task-specific** parts.
 
 ## Prerequisites from Planning
 
-The `tasks.md` entry provides:
+The SDD row provides:
 
 | Field | Example |
 |---|---|
@@ -27,16 +27,16 @@ The `tasks.md` entry provides:
 
 ## Configuration Workflow
 
-### Step 1 — Build `--input-details` JSON from tasks.md
+### Step 1 — Build `--input-details` JSON from the resolved entry
 
-Construct the input-details object literally from `tasks.md`:
+Construct the input-details object literally from `registry-resolved.json`:
 
 ```jsonc
 {
-    // eventParameters from tasks.md input-values.eventParameters (or omit when absent)
+    // eventParameters from the resolved entry's input-values.eventParameters (or omit when absent)
     "eventParameters": "<input-values.eventParameters or omit>",
-    // filter — FilterTree object from tasks.md (or omit when not authored)
-    "filter": "<filter from tasks.md or omit>"
+    // filter — FilterTree object from registry-resolved.json (or omit when not authored)
+    "filter": "<filter from registry-resolved.json or omit>"
 }
 ```
 
@@ -48,12 +48,12 @@ Single CLI call replaces the legacy `get-connection` + `case tasks describe --ty
 
 ### Step 3 — Required-event-param validation (HARD GATE)
 
-This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="eventParameters"].body`.
+This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="body"].body.queryParams`.
 
 1. From the lean planning-phase spec (run with `--skip-case-shape` per [common § Planning Pipeline 5](../../../connector-trigger-planning.md#5-validate-required-event-parameters-hard-gate)), collect `inputs.eventParameters[?required]`.
-2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="eventParameters"].body` and verify every required event parameter has a value.
+2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="body"].body.queryParams` and verify every required event parameter has a value.
 3. If any required event parameter is missing, **AskUserQuestion** — list the missing parameters with their `name` and what kind of value is expected.
-4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder task per Rule 8 if user declines to provide a value.
+4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder task per Rule 9 if user declines to provide a value.
 
 > **Do NOT guess or skip missing required event parameters.** Trigger registration fails at runtime when a required event parameter is missing.
 
@@ -63,7 +63,7 @@ Per [common § Step 3](../../../connector-trigger-impl.md#step-3--mint-binding-i
 
 ### Step 5 — Substitute placeholders in `caseShape.context`
 
-Per [common § Step 4](../../../connector-trigger-impl.md#step-4--substitute-placeholders-in-caseshapecontext). Three placeholders: `{{CONN_BINDING_ID}}`, `{{FOLDER_BINDING_ID}}` (when present), `{{TRIGGER_REGISTRATION_KEY}}` (when the trigger has event parameters).
+**Write this task with `uip maestro case splice`** — skeleton first, then one call, exactly as [connector-activity/impl-json.md § Step 5](../connector-activity/impl-json.md) (splice sets `serviceType: Intsvc.WaitForEvent` from the task type). The manual substitution below is for the connector-bound condition-rule and event-trigger-node targets only. Per [common § Step 4](../../../connector-trigger-impl.md#step-4--substitute-placeholders-in-caseshapecontext). Three placeholders: `{{CONN_BINDING_ID}}`, `{{FOLDER_BINDING_ID}}` (when present), `{{TRIGGER_REGISTRATION_KEY}}` (when the trigger has event parameters).
 
 ### Step 6 — Mint `var` / `id` / `elementId` on inputs and outputs
 
@@ -74,20 +74,23 @@ For each entry in `caseShape.inputs[]`:
 - `id` = same as `var`
 - `elementId` = the task's elementId
 
-For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers).
+For each entry in `caseShape.outputs[]`: **name-based ids, not `v` + 8** — `id` = `var` = the output's name in camelCase (`response`, `Error` → `error`), `elementId` as above, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers). The Case Designer keeps a name-shaped output id on save and rewrites a `v…` one to a name-derived id without updating the expressions that read it, so a `v…` output id that anything reads breaks on the next Designer save.
 
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 
-### Step 7 — Build task and write to caseplan.json
+### Step 7 — Build task and write to caseplan.case
+
+Copy `context` / `inputs` / `outputs` out of the spec-cache unchanged per [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache) — placeholders and minted ids are the only permitted modifications.
 
 ```json
 {
   "id": "<taskId>",
   "type": "wait-for-connector",
-  "displayName": "<display-name from tasks.md>",
+  "displayName": "<display name from sdd.md>",
   "elementId": "<stageId>-<taskId>",
-  "isRequired": "<from tasks.md, default true>",
-  "shouldRunOnlyOnce": "<from tasks.md runOnlyOnce, default false>",
+  "isRequired": "<from sdd.md Required, default true>",
+  "shouldRunOnlyOnce": "<from sdd.md Run Only Once, default false>",
+  "description": "<the task's **Description:** line from sdd.md, word for word>",
   "data": {
     "serviceType": "Intsvc.WaitForEvent",
     "context": "<caseShape.context — placeholders substituted in Step 5>",
@@ -97,6 +100,8 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
   }
 }
 ```
+
+- `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
 Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
 
@@ -114,8 +119,8 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 | Step failed | What gets populated | Log |
 |---|---|---|
-| `case spec` fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 8 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 8 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
-| Required-event-param gate fails (user declines) | Placeholder per Rule 8 OR re-prompt | `[SKIPPED] required event parameter <name> missing — placeholder task per Rule 8` |
+| `case spec` fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 9 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 9 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
+| Required-event-param gate fails (user declines) | Placeholder per Rule 9 OR re-prompt | `[SKIPPED] required event parameter <name> missing — placeholder task per Rule 9` |
 | All succeed | Full population per Steps 4-9 including bindings_v2 sync | — |
 
 All issues appended to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md).
@@ -126,7 +131,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 2. `data.context[]` populated from `caseShape.context` with placeholders substituted (`=bindings.<connBindingId>`, etc.)
 3. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)
 4. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`)
-5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` is empty `[]`
+5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` holds only the picker rows `splice` wrote (`[]` without a picker)
 6. Each entry in `data.inputs[]` / `data.outputs[]` has `var` / `id` / `elementId` minted; uniqueness rule applied for outputs
 7. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 8. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 across every connector node — a task left in the Graceful-degradation shape while `case spec` succeeded is a Check 12 failure, not an acceptable outcome

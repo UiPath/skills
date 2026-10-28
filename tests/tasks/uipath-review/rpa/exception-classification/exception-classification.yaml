@@ -24,6 +24,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath RPA project exists at `ExceptionBot` in the current directory.
   Review it for quality and best-practice issues, focusing on error and
@@ -73,7 +76,7 @@ success_criteria:
 
   - type: run_command
     description: "Report flags stack-trace loss (rethrow) or ContinueOnError misuse"
-    command: "python3 $TASK_DIR/check_exception_classification.py"
+    command: "python3 $REFERENCE_DIR/exception-classification/check_exception_classification.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

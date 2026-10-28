@@ -1,0 +1,7 @@
+[
+  {"ProductName": "Wireless Keyboard", "Category": "Electronics", "Price": 49.99, "InStock": true},
+  {"ProductName": "Standing Desk", "Category": "Furniture", "Price": 399.00, "InStock": true},
+  {"ProductName": "USB-C Hub", "Category": "Electronics", "Price": 29.95, "InStock": false},
+  {"ProductName": "Ergonomic Chair", "Category": "Furniture", "Price": 549.00, "InStock": true},
+  {"ProductName": "Monitor Light Bar", "Category": "Electronics", "Price": 79.99, "InStock": true}
+]

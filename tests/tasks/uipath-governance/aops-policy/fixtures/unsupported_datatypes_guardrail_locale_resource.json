@@ -1,0 +1,8 @@
+{
+  "textField": { "value": "input-text", "type": "textfield", "label": "Text Field" },
+  "checkbox": { "value": true, "type": "checkbox", "label": "Checkbox" },
+  "uploadedFile": { "value": [], "type": "file", "label": "Uploaded File" },
+  "signature": { "value": "", "type": "signature", "label": "Signature" },
+  "address": { "value": {}, "type": "address", "label": "Address" },
+  "dataMap": { "value": {}, "type": "datamap", "label": "Data Map" }
+}

@@ -4,7 +4,7 @@ A lightweight integration for running OpenAI Agents SDK agents on the UiPath pla
 
 > **Note:** This is a streamlined integration focused on agent execution and streaming. It does **not** support Human-in-the-Loop (HITL), state persistence/checkpointing, or UiPath process invocation from within agents. For workflows that need those features, use the [LangGraph](langgraph-integration.md) or [LlamaIndex](llamaindex-integration.md) integrations instead.
 
-> **STOP — input shape decides framework fit.** OpenAI Agents accept **only** a `messages` conversation input ([Input](#input) § CONSTRAINT). When the requested input is not a conversation, do NOT map it onto `messages` and proceed — STOP before scaffolding, tell the user, and let them choose another framework (e.g. [LangGraph](langgraph-integration.md)).
+> **STOP — input shape decides framework fit.** The OpenAI Agents SDK runner accepts **only** a `messages` conversation input ([Input](#input) § CONSTRAINT) — an SDK constraint, not a UiPath one; UiPath merely surfaces it as the required `messages` field in the generated schema. When the requested input is not a conversation, do NOT map it onto `messages` and proceed — STOP before scaffolding, tell the user, and let them choose another framework (e.g. [LangGraph](langgraph-integration.md)).
 
 ## Scaffolding a New Project
 
@@ -17,7 +17,7 @@ uip codedagent new my-agent
 
 This generates `main.py` (with an Agent + tool template), `openai_agents.json`, `AGENTS.md`, and `pyproject.toml`. Then modify `main.py` to implement your actual agent logic.
 
-> **Prerequisite:** `uipath-openai-agents` must be installed for the OpenAI Agents template to be used.
+> **Prerequisite:** `uipath-openai-agents` must be installed in the active venv before `new` — the installed package selects the OpenAI Agents template. Confirm `openai_agents.json` exists after `new` (see [../lifecycle/setup.md](../lifecycle/setup.md) § Verify the Scaffold).
 
 ## Project Structure
 

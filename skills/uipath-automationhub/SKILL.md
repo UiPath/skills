@@ -1,6 +1,6 @@
 ---
 name: uipath-automationhub
-description: "Publish and read business processes in UiPath Automation Hub via the Open API, using the user's cloud login — no admin OpenAPI token needed. PUBLISH an approved process and its PDD/SDD documents (schema-driven payload, base64 file upload or link) to AH as the system of record — e.g. a process captured/approved by Process Scribe. GET a process back by id or search, list its attached documents, and DOWNLOAD their file bytes (e.g. for dedup / related-idea lookups or retrieving a published PDD). Authenticates with the user's cloud bearer token and NEVER sends the admin `x-ah-openapi-auth` header. CLI-first: when the installed `uip` has the `ah` commands, flows run through them (`references/*-cli-guide.md`); otherwise the raw Open API flows apply. Routes by intent to publish (create/upload) or get (read/fetch/download) references over the shared catalogs. Structured to extend to more Automation Hub operations."
+description: "Publish and read business processes in UiPath Automation Hub via the Open API, using the user's cloud login — no admin OpenAPI token needed. PUBLISH an approved process and its PDD/SDD documents (schema-driven payload, base64 file upload or link) to AH as the system of record — e.g. a process captured/approved by Process Scribe. GET a process back by id or search, list its attached documents, and DOWNLOAD their file bytes (e.g. for dedup / related-idea lookups or retrieving a published PDD). CHANGE an automation's idea flow (convert an idea into a Business Process; fix a wrong-flow publish). READ and POST comments on an idea or Business Process. Authenticates with the user's cloud bearer token and NEVER sends the admin `x-ah-openapi-auth` header. CLI-first: when the installed `uip` has the `ah` commands, flows run through them (`references/*-cli-guide.md`); otherwise the raw Open API flows apply. Routes by intent to publish (create/upload) or get (read/fetch/download) references over the shared catalogs."
 allowed-tools: Bash, Read, AskUserQuestion
 user-invocable: true
 ---
@@ -53,8 +53,12 @@ Classify what the user wants, then follow the matching reference. The **raw-API 
 |---|---|---|
 | **Publish / create / upload** a process (+ its PDD/SDD documents) to AH | [`references/publish-process-cli-guide.md`](references/publish-process-cli-guide.md) | [`references/publish-process.md`](references/publish-process.md) |
 | **Get / read / fetch / download** a process (+ its documents) from AH | [`references/get-process-cli-guide.md`](references/get-process-cli-guide.md) | [`references/get-process.md`](references/get-process.md) |
+| **Change / convert** an automation's idea flow (e.g. idea → Business Process, or a publish that landed in the wrong flow) | [`references/change-idea-flow-cli-guide.md`](references/change-idea-flow-cli-guide.md) | CLI only — tell the user to update `uip`; don't automate the UI |
+| **Read / post comments** on an automation (idea or Business Process), or reply to one | [`references/comments-cli-guide.md`](references/comments-cli-guide.md) | CLI only — tell the user to update `uip`; don't automate the UI |
 | Shared **command / endpoint catalog** | [`references/cli-commands.md`](references/cli-commands.md) | [`references/api-endpoints.md`](references/api-endpoints.md) |
 | _(future AH Open API operation — add a row here)_ <!-- uip-check-skip --> | _add `references/<operation>.md` and route to it_ |
+
+**Out of scope — stop without writing.** Any other change to an automation — moving it to another phase/status *within* its flow, archiving, deleting, editing fields outside the flows above — has no guide or guards here. Don't improvise it with other `uip ah` write commands (e.g. `uip ah phases set`) or raw API calls, even when the CLI has them. Tell the user it isn't covered, and point them to the automation's profile page or name the command for them to run themselves. Read-only lookups are fine.
 
 **Extending this skill** (new AH operation, new field, new integration like the Studio Web link) — keep the shape, and put each kind of change in exactly one home:
 
@@ -68,5 +72,6 @@ Every addition keeps the skill's three invariants: collect inputs before the fir
 ## Notes
 
 - **Cloud token only** — authorization is the user's real AH permissions; you see and can do exactly what their AH role allows.
+- **If Automation Hub isn't available on the tenant, say so plainly and stop** — never let it surface as a generic failure. Two cases with **different remedies**: *not enabled* (only an admin can fix it) and *reachable but never onboarded* (self-service). Signals, and the exact wording to quote verbatim rather than paraphrase, live in one home per transport: [`references/api-endpoints.md`](references/api-endpoints.md) → **Automation Hub not available on this tenant** for the raw-API flows, [`references/cli-commands.md`](references/cli-commands.md) → same heading for the CLI flows.
 - The publish flow fetches the idea-flow schema live, so it adapts automatically if fields change on the tenant.
 - **Open dependency:** in a hosted runtime (e.g. Process Scribe/Delegate) the cloud token is expected via the environment (Authentication, option 1). Confirm the runtime provides `UIPATH_CLI_AUTH_TOKEN` (or an equivalent) before relying on it in production.

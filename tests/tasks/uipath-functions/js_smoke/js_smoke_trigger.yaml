@@ -1,0 +1,58 @@
+task_id: skill-functions-js-smoke-trigger
+description: >
+  Smoke test: agent should trigger the uipath-functions skill when asked to
+  build a JS/TS coded function (defineFunction, schema-first contracts, HTTP
+  endpoint or job-only). Fans out over five direct scaffold/build requests
+  carrying explicit TypeScript/JavaScript signals (a budget of three tool calls
+  each — enough to force an invoke-or-don't decision, not enough for a full
+  build) and grades the trigger RATE (recall.yes) so single-run LLM routing
+  nondeterminism doesn't flake the gate. Verifies the merged skill's
+  description carries the JS/TS signals, not just the Python ones.
+tags: [uipath-functions, smoke, mode:build, lifecycle:discover, feature:js]
+
+run_limits:
+  # Mirrors the uipath-functions smoke rationale: a budget of three tool calls
+  # covers the observed announce-then-read pattern; with stop_early on_pass the
+  # run ends the moment SKILL.md is read, so this cap only bounds a miss.
+  max_turns: 3
+
+dataset:
+  id_field: id
+  rows:
+    - id: ts-transform
+      prompt: |
+        Scaffold a UiPath TypeScript coded function that dedupes order rows
+        from a CSV string and returns the cleaned rows as typed output with
+        defineSchema. Deterministic, no LLM.
+    - id: http-backend
+      prompt: |
+        Scaffold a UiPath coded function in TypeScript that exposes POST /quote
+        for my coded app frontend to call — typed input and output contracts.
+    - id: js-api-auth
+      prompt: |
+        Scaffold a UiPath JavaScript coded function (JSON Schema contracts,
+        no LLM) that calls a third-party REST API with a custom HMAC auth
+        header and returns typed fields.
+    - id: serve-loop
+      prompt: |
+        Create a TypeScript UiPath function and walk me through the local dev
+        loop with uip function serve and curl against port 7070.
+    - id: job-only
+      prompt: |
+        Scaffold a job-only UiPath function in TypeScript — no HTTP route —
+        that computes shipping costs from fixed rate tables. Deterministic,
+        no LLM.
+
+initial_prompt: "${row.prompt}"
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-functions skill on a JS/TS prompt"
+    skill_name: "uipath-functions"
+    expected_skill: "uipath-functions"
+    weight: 3.0
+    # Rate-based gate across the 5 rows: tolerates one unlucky miss. recall.yes
+    # 0.66 → 4/5 (0.8) passes, 3/5 (0.6) fails.
+    suite_thresholds: {recall.yes: 0.66}
+    stop_early:
+      on_pass: stop

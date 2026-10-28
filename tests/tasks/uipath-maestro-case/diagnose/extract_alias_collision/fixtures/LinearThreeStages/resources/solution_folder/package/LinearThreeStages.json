@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LinearThreeStages",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "08b4ee08-6a88-4cc0-96ef-a955406c502d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "LinearThreeStages"
+    },
+    "locks": [],
+    "key": "e2fd673a-ff0d-472f-9b7f-7cadcfb8aa5d",
+    "files": []
+  }
+}

@@ -44,6 +44,7 @@ success_criteria:
       isPaid, and customerUuid. Score 1.0 if the response proposes a Data
       Fabric field type for all five columns, 0.5 if four are covered, and
       0.0 otherwise.
+    include_reference: false
     weight: 2.0
     pass_threshold: 0.5
 
@@ -56,6 +57,7 @@ success_criteria:
       the 0/1 representation of isPaid, and whether customerUuid is plain
       text or a relationship. Score 1.0 if all four are discussed, 0.5 if
       three are discussed, and 0.0 otherwise.
+    include_reference: false
     weight: 2.0
     pass_threshold: 0.5
 
@@ -65,5 +67,6 @@ success_criteria:
     prompt: |
       Score 1.0 if the response clearly asks the user to confirm the proposed
       schema and does not claim the entity was created. Score 0.0 otherwise.
+    include_reference: false
     weight: 2.0
     pass_threshold: 1.0

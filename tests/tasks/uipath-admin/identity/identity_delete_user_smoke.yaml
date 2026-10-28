@@ -7,13 +7,23 @@ description: >
   user-lifecycle e2e, which grades the update tail but exercises delete only as
   teardown — this smoke grades the delete deterministically.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, identity, user-lifecycle, delete]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
 
 pre_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''setup_delete_user.py''))"'
+  - command: 'python3 _setup/setup_delete_user.py'
     timeout: 90
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''cleanup_delete_user.py''))"'
+  - command: 'python3 _setup/cleanup_delete_user.py'
     timeout: 30
 
 run_limits:
@@ -27,7 +37,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The seeded marker user is gone from the tenant after deletion"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''verify_user_deleted.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''verify_user_deleted.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

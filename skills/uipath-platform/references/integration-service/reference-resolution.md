@@ -6,7 +6,9 @@ How to resolve reference fields — fields whose values must be looked up from a
 
 ## Contents
 - Reference IDs Are Connection-Scoped (CRITICAL)
+- When the Lookup Call Fails (CRITICAL)
 - Reference Fields (CRITICAL)
+- 4.0.0 Activities — Script References (`scriptRef`)
 - Scope Filtering (CRITICAL)
 - Search References (filterPattern)
 - Field Dependency Chains
@@ -20,7 +22,7 @@ How to resolve reference fields — fields whose values must be looked up from a
 
 Every reference ID resolves only within the account authenticated by the connection used to resolve it. A `MailFolder` ID from one Outlook mailbox is invalid in another. A Slack channel ID from one workspace is invalid in another. A Jira project ID from one Atlassian site is invalid in another.
 
-**Never carry a reference ID from one flow, one connection, or one session into another.** Always re-run `uip is resources run list` against the `--connection-id` bound to the current flow — even if you believe you already know the ID from a prior task or earlier in the same session.
+**Never carry a reference ID from one flow, one connection, or one session into another.** Always re-run the lookup — `uip is resources run list`, or `uip is resources run script` for a `4.0.0` activity (see [Script References](#400-activities--script-references-scriptref)) — against the `--connection-id` bound to the current flow — even if you believe you already know the ID from a prior task or earlier in the same session.
 
 A reused reference ID:
 - Passes `uip is resources describe` / `node configure` / `flow validate` cleanly (no API call checks the value against the connection).
@@ -28,6 +30,33 @@ A reused reference ID:
 - Surfaces as a silent fault or generic "no matching resource" error — hard to diagnose without tracing back to the authoring step.
 
 **Rule:** resolve every reference ID fresh, against the current connection, every time. Treat any ID from your context or memory as unverified until re-listed.
+
+---
+
+## When the Lookup Call Fails (CRITICAL)
+
+The rules above assume the lookup call (`uip is resources run list`, or `uip is resources run script` for `4.0.0` activities) returns. When the call itself fails — `403`/`401` (expired, revoked, or reauthorization-required grant), a `5xx`, or a connector error — you have **no ID**, and there is no value you may write in its place.
+
+**Never substitute:**
+
+| Substitute | Why it is wrong |
+|---|---|
+| The display name you searched by | `reference.lookupValue` names the field to write; `lookupNames` only names the fields to match *against*. |
+| A vendor "well-known" alias | Accepted by some vendor APIs directly, but the connector stores what you write and the field is typed as an ID. |
+| An ID from context, memory, or another connection | See [Reference IDs Are Connection-Scoped](#reference-ids-are-connection-scoped-critical). |
+| A plausible-looking placeholder | Passes `describe` / `node configure` / `flow validate`; faults at runtime. |
+
+Every one of these produces an artifact that validates clean and fails later, with the original cause no longer visible.
+
+**Do this instead:**
+
+1. Retry per [agent-workflow.md — Error Recovery](agent-workflow.md#error-recovery) (max 2 semantic retries).
+2. On an auth failure, ping the connection (`uip is connections ping <id>`) to confirm the diagnosis.
+3. If it still fails, **stop and report**: name the connection, the object you could not list, and the vendor error. The fix is the user's (reauthorize, widen scopes, wait out an outage), not a value you choose.
+
+Non-interactively (CI/headless), stop and report the blocked step. Do not proceed with a value you could not verify.
+
+Say the resolve failed. Reporting a substituted value as "resolved" hides the fault from the only person who can fix it.
 
 ---
 
@@ -100,6 +129,74 @@ User says: "Send a message to #general"
 **Present options to the user** when multiple matches exist. Always use the resolved `lookupValue` (not display names) in `--body` or `--query`.
 
 **Zero matches:** if the completed lookup (`Data.Pagination.HasMore` is `"false"`) finds no entry matching the user's value, do not execute with it — ask the user, presenting the closest candidates as options. Proceed with the unverified value only if the user confirms it.
+
+---
+
+## 4.0.0 Activities — Script References (`scriptRef`)
+
+Reference fields on `4.0.0` activities (the activity's `configuration` JSON reports `"version":"4.0.0"`) are backed by a **published connector script**, not a listable object. The `reference` block carries `scriptRef` and has **no `objectName` / `path`**:
+
+```json
+{
+  "name": "usergroup",
+  "type": "string",
+  "displayName": "User group",
+  "required": true,
+  "reference": {
+    "scriptRef": "list_usergroups",
+    "lookupValue": "id",
+    "lookupNames": ["id", "name"]
+  }
+}
+```
+
+| Property | Meaning |
+|---|---|
+| **`reference.scriptRef`** | The published script to run (use as `--script-ref`). |
+| **`reference.lookupNames`** | Fields to match the user's input against. May be dotted paths into nested objects (`profile.real_name`, `profile.email`). |
+| **`reference.lookupValue`** | The field to extract as the resolved value (e.g. `id`). |
+
+`run list` cannot resolve these — there is no object to list. Run the script instead:
+
+
+# 1. Describe with --activity-version 4.0.0 AND --operation <verb> — without --operation the
+#    response is an operation summary and carries no requestFields/reference blocks
+```bash
+uip is resources describe "<connector-key>" "<object-name>" \
+  --activity-version 4.0.0 --operation <METHOD> --output json
+```
+# 2. For each reference field, run its script against the bound connection
+```bash
+uip is resources run script --connection-id "<id>" \
+  --connector-key "<connector-key>" --script-ref "<reference.scriptRef>" --output json
+```
+
+# 3. Match the user's input against reference.lookupNames in the returned rows
+#    Extract reference.lookupValue as the resolved ID
+
+# 4. Write the resolved ID (never the display name) into the node / --body
+
+`--connection-id` and `--connector-key` are both required with `--script-ref`. The metadata itself is not connection-scoped, but the **lookup is**: the script runs with the connection's credential, so the same connection-scoping rules apply ([Reference IDs Are Connection-Scoped](#reference-ids-are-connection-scoped-critical)).
+
+### Reading the response
+
+The response is the vendor's own answer, so the envelope differs from `run list`:
+
+- `Data.Status` — the **vendor's** HTTP status. A vendor `4xx`/`5xx` still returns `Result: "Success"`; check `Data.Status`, never assume success from the envelope.
+- `Data.Body` — the vendor's response, parsed. For `list_*` scripts it is an array of records.
+- `--output-filter` reaches into the body as `Body`, not `Data.Body`. The expression is evaluated against `Data`, so a `Data.`-prefixed path resolves to null:
+
+```bash
+uip is resources run script --connection-id "<id>" \
+  --connector-key "uipath-salesforce-slack" --script-ref "list_usergroups" --output json \
+  --output-filter "Body[?name=='<user input>'].id"
+```
+
+Match against every entry in `lookupNames`, resolving dotted paths (`profile.email` → `row.profile.email`). Zero matches, multiple matches, and failed calls follow the same rules as `run list`: ask with candidates, or stop and report — see [When the Lookup Call Fails](#when-the-lookup-call-fails-critical). There is no `Data.Pagination` block; the script returns its complete result set.
+
+### Where `scriptRef` is visible
+
+`uip is resources describe … --activity-version 4.0.0 --operation <METHOD>` exposes it as `Reference.ScriptRef`. Flow `registry get` output (`uip maestro flow registry get`) may show the same field's `reference` with only `lookupValue`/`lookupNames` — an object with **neither `objectName` nor `scriptRef`** on a `4.0.0` node means a script-backed reference: read `scriptRef` from `describe`. Do not fall back to `run list` with a guessed object name.
 
 ---
 

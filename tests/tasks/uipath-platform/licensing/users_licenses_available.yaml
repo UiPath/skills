@@ -7,7 +7,7 @@ description: >
   (2) it fetches the UiPath docs license-codes page to resolve the code, and
   (3) the final reply uses the required friendly-name format. CLI auth failure
   is expected in this offline environment; the friendly-name rule still applies.
-tags: [uipath-platform, smoke, licensing, users]
+tags: [uipath-platform, smoke, licensing, users, mode:operate, lifecycle:discover]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
@@ -79,5 +79,6 @@ success_criteria:
       backticks are equivalent. Score 0.0 if the reply shows only the raw code
       or only the friendly name. Ignore whether the CLI call succeeded — the
       rubric is solely about the reporting format.
+    include_reference: false
     weight: 2.0
     pass_threshold: 1.0

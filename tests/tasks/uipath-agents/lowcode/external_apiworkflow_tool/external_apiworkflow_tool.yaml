@@ -17,6 +17,9 @@ run_limits:
   expected_turns: 22
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "WeatherAgent" that takes a required
   `location` (string) and returns a number `temperature`. WeatherAgent
@@ -112,7 +115,7 @@ success_criteria:
 
   - type: run_command
     description: "External API workflow tool resource shape, deployed folderPath/referenceKey, and bindings sync"
-    command: "python3 $TASK_DIR/check_external_apiworkflow_tool.py"
+    command: "python3 $REFERENCE_DIR/check_external_apiworkflow_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

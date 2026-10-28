@@ -7,7 +7,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "27.0.0",
+  "version": "32.0.3",
   "name": "<case name>",
   "description": "<optional>",
   "metadata": {
@@ -16,7 +16,6 @@ Structural reference for the case definition JSON. Shared across all node types.
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
-    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2",
     "slaRules": [ ... ],
     "caseExitRules": [ ... ]
@@ -29,7 +28,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 }
 ```
 
-### Layout-strip (Rule 18)
+### Layout-strip (Rule 19)
 
 Node-level layout fields move to a top-level `layout` block. The frontend transformer `transformCaseInMemoryJsonToDiskJson.ts` does this stripping when round-tripping through canvas; skill emits clean nodes from the start.
 
@@ -73,7 +72,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "27.0.0",
+  "version": "32.0.3",
   "name": "Loan Approval",
   "description": "case description",
   "metadata": {
@@ -82,7 +81,6 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
-    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2",
     "slaRules": [
       { "id": "slaQ4wZ1xC8", "displayName": "Default", "expression": "=js:true", "count": 5, "unit": "d" }
@@ -95,7 +93,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
-| `version` | string | Schema version — `"27.0.0"`. Emitted by the `case` plugin at T01. |
+| `version` | string | Schema version — `"32.0.3"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
@@ -103,7 +101,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | `metadata.caseAppEnabled` | boolean | Whether the Case App UI is enabled |
 | `metadata.publishVersion` | number? | Publish version — `2` for current schema |
 | `metadata.caseUnifiedSchemaEnabled` | boolean? | Unified-schema flag (`true`) |
-| `metadata.caseDirectlyPassTaskOutputs` | boolean? | Passes task outputs directly through messages instead of shared variables, fixing race conditions on task outputs in cases with parallel tasks. Schema-optional, defaults `true` when absent; skill emits the T01 `directly-pass-task-outputs` value (`true` unless sdd.md requested `false`). |
+| `metadata.caseDirectlyPassTaskOutputs` | boolean? | Retired: since PO.Frontend `15cd541e9` (2026-06-16) task outputs always pass directly through messages, and nothing reads this key. The Case Designer drops it on open. Do not write it; leave it in place in an existing plan, where it is harmless. |
 | `metadata.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
 | `metadata.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Every rule has a non-empty target-unique `displayName` without `:`; default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
 | `metadata.caseExitRules` | CaseExitCondition[]? | Conditions that mark the case as complete |
@@ -145,12 +143,12 @@ Entry point. Written by the triggers plugin at T02. Exactly one per case (single
   "data": {
     "typeVersion": "1.0.0",
     "display": { "label": "Start" },
-    "inputs": { "serviceType": "None" }
+    "inputs": { "serviceType": "None", "entryPointId": "<entry-points.json uniqueId>" }
   }
 }
 ```
 
-No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (Rule 18 layout-strip).
+No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (Rule 19 layout-strip).
 
 **`data` shape (v24 manifest layout).** The label lives under `data.display.label`; all runtime config (`serviceType`, `timerType`, `timeCycle`, `context[]`, `inputs[]`, `outputs[]`, `bindings[]`) lives under `data.inputs`. `data.typeVersion` is the literal `"1.0.0"`.
 
@@ -158,13 +156,14 @@ No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Tri
 |-------|------|-------------|
 | `typeVersion` | string | Manifest type version — literal `"1.0.0"`. |
 | `display` | `{ label?, icon? }` ? | Presentation. `display.label` is the trigger's display name (was `data.label` pre-v24). |
-| `inputs` | object? | Runtime config bag (passthrough). Holds `serviceType` plus per-kind fields. Absent on a manual trigger. |
+| `inputs` | object? | Runtime config bag (passthrough). Holds `serviceType`, `entryPointId` and per-kind fields. Always write it, including on a manual trigger (`serviceType: "None"`). Older schemas may omit it on a manual trigger, so accept that form when reading. |
 | `description` | string? | Free-text description — stays at `data.description` (only `label` moved to `display`). |
+
+> **`data.inputs.entryPointId` (every trigger kind).** Set it to the `uniqueId` of this trigger's `entry-points.json` entry — the Case Designer pairs node and entry through this field; if it is missing, the first open mints a new one and rewrites the entry's `uniqueId`. `validate --strict` reports a missing or mismatched value as `STRICT_TRIGGER_ENTRY_POINT_ID`. `uip maestro case init` scaffolds `trigger_1` with it already set: when you rewrite `trigger_1`'s `data.inputs`, keep the scaffolded value. For a new trigger, mint the `uniqueId` once and write the same GUID to both files.
 
 `data.inputs.serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"timer"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
 
-> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.inputs` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
-
+> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.inputs` carries `serviceType`, `entryPointId` and a one-entry `context[]` holding `objectName` (the SDD Source, which `sdd convert` emits; keep it). It carries no `metadata`, `inputs[]`, `outputs[]` or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
 ### b) Stage Node — `"case-management:Stage"`
 
 Workflow stage. Contains tasks. Covers BOTH primary and secondary stages — discriminated by `data.stageType` (see §2c for the secondary variant). A primary stage omits `stageType`; a secondary stage sets `data.stageType: "secondary"`.
@@ -188,7 +187,7 @@ Workflow stage. Contains tasks. Covers BOTH primary and secondary stages — dis
 }
 ```
 
-No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node level (Rule 18 layout-strip).
+No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node level (Rule 19 layout-strip).
 
 **`StageNodeData` fields:**
 
@@ -207,7 +206,7 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
 
-> **A primary `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a primary stage. They are added later by the condition plugins when entry/exit conditions are written. (A secondary stage — `data.stageType: "secondary"` — initializes both to `[]` at creation; see §2c.) See §3 for the condition shapes. Transitions are driven entirely by these conditions (Rule 20, §4).
+> **A primary `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a primary stage. They are added later by the condition plugins when entry/exit conditions are written. (A secondary stage — `data.stageType: "secondary"` — initializes both to `[]` at creation; see §2c.) See §3 for the condition shapes. Transitions are driven entirely by these conditions (Rule 21, §4).
 
 ### c) Secondary (Exception) Stage — `case-management:Stage` with `data.stageType: "secondary"`
 
@@ -245,22 +244,23 @@ Free-floating annotation node. Ignored at execution time; surfaced only in the a
 
 ```json
 {
-  "id": "<shortId>",
+  "id": "StickyNote_aBcDeF",
   "type": "case-management:StickyNote",
-  "position": { "x": 400, "y": 400 },
   "data": {
-    "label": "Note",
+    "parentElement": { "id": "root", "type": "case-management:root" },
     "color": "yellow",
     "content": "Reminder: confirm SLA with ops before publishing."
   }
 }
 ```
 
+No `position`, `style`, `width`, `height` or `measured` (Rule 19): the Case Designer places and sizes an unpositioned note when it opens the case.
+
 | Field | Type | Description |
 |-------|------|-------------|
-| `data.label` | string? | Display label |
-| `data.color` | string? | Sticky note color |
-| `data.content` | string? | Note body |
+| `data.parentElement` | object | Always the case root, `{ "id": "root", "type": "case-management:root" }` |
+| `data.color` | string? | One of `blue`, `green`, `yellow`, `pink`, `white`; omit for the designer default |
+| `data.content` | string? | Note body; inline markdown renders |
 
 ---
 
@@ -268,12 +268,44 @@ Free-floating annotation node. Ignored at execution time; surfaced only in the a
 
 All conditions share the same shape but attach at different levels. Per-level field tables and `--rule-type` semantics live in the corresponding condition plugin's `impl-json.md`.
 
+<a id="condition-name-uniqueness"></a>
+
+### Condition name uniqueness
+
+Every condition `displayName` must be unique across the **whole case**, with one exemption. One flat pool of literal strings spans all four scopes at once — stage `data.entryConditions[]`, stage `data.exitConditions[]`, task `entryConditions[]`, and `metadata.caseExitRules[]`.
+
+`validate` enforces it as a hard **error**: `Rule name '<displayName>' is not unique`, reported once per node holding the name (`nodes[<stageId>]`, or `nodes[root]` for a case-exit rule).
+
+**The exemption is the frontend's own default names, matched exactly and case-sensitively after trimming.** A repeated default is not an error: the platform renumbers it itself when the plan loads (the V31→V32 migration, `deduplicateCaseManagementRuleIdentities`, which every plan passes through because `sdd convert` writes V30). The full set is every name the frontend generates — 472 templates across its locales — so this table is the handful the skill writes most, **not** the whole list; `validate` holds the whole list and is the authority. Examples that may repeat freely:
+
+| Default name | Where it comes from |
+|---|---|
+| `Entry rule <N>` | stage-entry and task-entry defaults |
+| `Exit rule <N>` | stage-exit default |
+| `Completion rule <N>` | stage-complete default |
+| `Stage complete` | stage-complete default, unnumbered |
+| `Stage exit` | stage-exit default, unnumbered |
+| `Tasks completed rule` | default stage-exit condition |
+| `Previous task completed` | default task-entry condition |
+
+> Copy those spellings exactly. `Entry Rule 1` and `Complete rule 1` are NOT the defaults — a capital `R`, or `Complete` for `Completion`, leaves the exemption and a repeat becomes an error. Measured on 17 grader-passing plans: 26 carry `Entry rule 1` and 20 carry `Completion rule 1`, several of them five times over, and all validate clean.
+
+Any name you write yourself shares one pool and must be unique — two stages cannot both call an exit `Approved`. **Number authored names with a case-wide counter per label kind — the highest number already authored for that kind, plus 1 — never a per-array counter.** A per-array counter restarts at `1` in every stage and on every task, which is the usual cause of a collision. Count only authored names when picking the next number: the exempt defaults above repeat freely, so counting them inflates every counter without preventing a single collision.
+
+**An SDD `Display Name` cell holding a default pattern exactly (`Entry rule 1`, `Completion rule 1`, `Stage complete`) is left alone — never renumbered.** It is exempt, it repeats freely, and `validate` passes: numbering it produces one Edit per repeat and changes nothing. Renumbering applies only to names an author chose (previous paragraph) and re-spelling only to a near-miss of a default (next paragraph).
+
+**Normalize a near-miss of a default to the exact default spelling.** A cell that matches a default pattern case-insensitively — `Entry Rule 1`, `Complete Rule 1`, `EXIT RULE 2` — is the SDD echoing the default with the wrong capitalization, not a name its author chose. Write the exempt spelling from the table above. This is the same move as renumbering and is not a divergence from the SDD: the defaults carry no meaning to diverge from. Left alone, every repeat of a near-miss is a uniqueness error — SDDs written before this spelling was documented repeat `Entry Rule 1` freely, because our own guidance said to.
+
+The boundary is the default patterns and nothing else. A cell that is *not* a near-miss of one — `Approved`, `Order Second Opinion`, `Case complete rule` — is the author's name: it must be unique, and it is never rewritten to fix a collision. Repair those in the SDD and re-emit. Only a **semantic** name repeated across stages is a planning defect — rename it in the SDD and re-emit.
+
+> **Never repair a collision by deleting a condition.** `validate` downgrades a task left with no entry rules to a warning (`CASE_MGMT_STAGE_TASK_ENTRY_CONDITION_MISSING`), so emptying `entryConditions[]` turns the build green while destroying authored behaviour — an `adhoc` task becomes unreachable, a gated task ungated. Always rename; never remove.
+
 ### EntryCondition (stage-level)
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
+| `displayName` | string? | Human-readable label; unique across the **whole case** — see [Condition name uniqueness](#condition-name-uniqueness) |
 | `rules` | Rules | DNF rule set — see §4 |
 | `isInterrupting` | boolean? | Whether the condition interrupts the current stage |
 
@@ -282,7 +314,7 @@ All conditions share the same shape but attach at different levels. Per-level fi
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
+| `displayName` | string? | Human-readable label; unique across the **whole case** — see [Condition name uniqueness](#condition-name-uniqueness) |
 | `rules` | Rules | DNF rule set — see §4 |
 | `type` | string? | `"exit-only"` \| `"wait-for-user"` \| `"return-to-origin"` |
 | `exitToStageId` | string? | Target stage ID when routing to a specific stage |
@@ -293,7 +325,7 @@ All conditions share the same shape but attach at different levels. Per-level fi
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
+| `displayName` | string? | Human-readable label; unique across the **whole case** — see [Condition name uniqueness](#condition-name-uniqueness) |
 | `rules` | Rules | DNF rule set — see §4 |
 
 ### CaseExitCondition (case-level)
@@ -304,7 +336,7 @@ See `metadata.caseExitRules` in §1.
 
 ## 4. edges — retired, always `[]`
 
-**The skill never authors edges (Rule 20).** `schema.edges` stays `[]` — the empty array remains in the schema for frontend compatibility. Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The FE auto-derives canvas connectors from the conditions.
+**The skill never authors edges (Rule 21).** `schema.edges` stays `[]` — the empty array remains in the schema for frontend compatibility. Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The FE auto-derives canvas connectors from the conditions.
 
 A canvas-round-tripped file may contain FE-materialized edge objects. Treat them as read-only — never copy, adapt, or author one; model flow with conditions (§3) instead. Stray-edge removal: [case-editing-operations.md § Delete an edge](case-editing-operations.md#delete-an-edge--defensive-only). Shapes for READING such files: [Appendix — Edge shapes](#appendix--edge-shapes-read-only--never-author).
 
@@ -326,8 +358,8 @@ Rules = Rule[][]
 |--------|-------------------|-------------|
 | `wait-for-connector` | `id?`, `uipath` (connector config — **required**; absent → `connector activity missing`. Unresolved → **stub** placeholder, not bare — see § Placeholder fallback), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
 | `case-entered` | `id?`, `conditionExpression?` | Fires when the case is first entered |
-| `selected-stage-completed` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has completed |
-| `selected-stage-exited` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has been exited |
+| `selected-stage-completed` | `id?`, `selectedStageIds?`, `conditionExpression?` | One or more specific stages have completed |
+| `selected-stage-exited` | `id?`, `selectedStageIds?`, `conditionExpression?` | One or more specific stages have been exited |
 | `selected-tasks-completed` | `id?`, `selectedTasksIds?`, `conditionExpression?` | Specific tasks have all completed |
 | `required-tasks-completed` | `id?`, `conditionExpression?` | All required tasks in the stage have completed |
 | `required-stages-completed` | `id?`, `conditionExpression?` | All required stages have completed |
@@ -343,11 +375,17 @@ Not every rule type is valid at every level — see each condition plugin's `imp
 
 ```json
 { "rule": "case-entered", "id": "<id>" }
-{ "rule": "selected-stage-completed", "id": "<id>", "selectedStageId": "<stageId>" }
+{ "rule": "selected-stage-completed", "id": "<id>", "selectedStageIds": ["<stageId>"] }
 { "rule": "selected-tasks-completed", "id": "<id>", "selectedTasksIds": ["<taskId1>", "<taskId2>"] }
 { "rule": "sla-status-change", "id": "<id>", "slaId": "<slaId>", "escalationId": "<escalationId>" }
 { "rule": "adhoc", "id": "<id>", "conditionExpression": "=js:vars.score > 700" }
 ```
+
+> **A `selected-stage-exited` reference requires a non-completing exit on the stage it names.** The referenced stage must carry at least one `exitConditions[]` entry with `marksStageComplete: false` — a stage whose exits all mark it complete has no "exited but not completed" moment for the reference to match, and the rule reports `CASE_MGMT_ROOT_CASE_EXIT_CONDITION_RULE_SELECTED_STAGE_ID_NOT_FOUND` against the referencing rule rather than against the stage that lacks the exit. Adding further exits that DO mark complete never satisfies it; the flag is what is tested, not the count. `selected-stage-completed` is the opposite half of the pair and reads stages whose exits mark complete. When an SDD asks a stage to be *exited* and gives that stage only completing exits, the document has a modelling gap — resolve it in the SDD rather than by adding an exit the design never described.
+>
+> `exit-only` with `marksStageComplete: true` is itself a legal, common shape; it is only unusable as the target of a `selected-stage-exited` reference.
+
+> **Selected-stage rules are multi-select (schema v30).** `selected-stage-completed` and `selected-stage-exited` carry `selectedStageIds` — an array of stage ids, even for a single stage. The legacy singular `selectedStageId` is rejected: `selectedStageId is deprecated, it should be a stage in selectedStageIds instead`. Applies in all four rule scopes (stage-entry, stage-exit, task-entry, case-exit).
 
 An interrupting secondary-stage `sla-status-change` entry is global to the referenced SLA scope: it can exit whichever covered stage is active. Do not pair it with duplicated per-stage exit rules.
 
@@ -484,12 +522,17 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `agent` | `plugins/tasks/agent/` |
 | `rpa` | `plugins/tasks/rpa/` |
 | `api-workflow` | `plugins/tasks/api-workflow/` |
+| `function` | `plugins/tasks/function/` |
+| `business-rule` | `plugins/tasks/business-rule/` |
 | `case-management` | `plugins/tasks/case-management/` |
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
+| `flow-process` | `plugins/tasks/flow-process/` |
+| `http-request` | `plugins/tasks/http-request/` |
+| `document-extraction` | `plugins/tasks/document-extraction/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
+| `external-agent` | `plugins/tasks/connector-activity/` (External agents and automations) |
+| `external-workflow` | `plugins/tasks/connector-activity/` (External agents and automations) |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
-
-> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.json` (SKILL.md Rule 16).
 
 ---
 
@@ -498,7 +541,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "27.0.0",
+  "version": "32.0.3",
   "name": "Simple Case",
   "metadata": {
     "caseIdentifier": "Simple Case",
@@ -506,7 +549,6 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
-    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2"
   },
   "bindings": [],
@@ -537,7 +579,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 
 ## Appendix — Edge shapes (read-only — never author)
 
-> **Read-only reference (Rule 20 — edges retired).** Documented ONLY so a canvas-round-tripped file (where the FE may have materialized edges) is still readable. Never copy these into a build or write an edge object into `caseplan.json` — see §4.
+> **Read-only reference (Rule 21 — edges retired).** Documented ONLY so a canvas-round-tripped file (where the FE may have materialized edges) is still readable. Never copy these into a build or write an edge object into `caseplan.case` — see §4.
 
 ### a) TriggerEdge — `"case-management:TriggerEdge"`
 

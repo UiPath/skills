@@ -39,13 +39,15 @@ uip gov aops-policy template list --output-dir "$SESSION_DIR/products" --output 
 
 For the full flag reference, see [aops-policy-commands.md — template list](./aops-policy-commands.md#uip-gov-aops-policy-template-list). The command writes three files per product into `$SESSION_DIR/products/<PRODUCT_NAME>/`:
 
-- `form-template.json` — raw form.io DTO returned by the governance API. Its top-level `.product` object carries `{name, label}` and is the authoritative product catalog entry.
-- `form-data.json` — fillable blueprint with defaults for every field. Display-only components (`hidden`, `button`, `submit`, `htmlelement`, `content`) are omitted. Fields without an explicit default get a type-appropriate default: `false` for checkbox, `[]` for editgrid, `{}` for selectboxes, and `null` for text/select.
+- `form-template.json` — raw form.io DTO returned by the governance API. Its top-level `.product` object carries `{name, label}` and is the authoritative product catalog entry. The top-level `.version` object (`{major, minor, hotfix}`) is the authoritative template version.
+- `form-data.json` — fillable blueprint with defaults for every field. Display-only components (`button`, `submit`, `htmlelement`, `content`) are omitted; `hidden` is kept — it carries data. Fields without an explicit default get a type-appropriate default: `false` for checkbox; `null` for text, select, radio, number, currency, time, and datetime; `[]` for editgrid, datagrid, and tags; `{}` for selectboxes, survey, and container.
 - `form-template-locale-resource.json` — locale-resolved reference. Every product-scoped locale key is replaced with its English string; a sibling `<prop>-key` preserves the original key for traceability. `defaultData.data` is a flat per-field map `{value, type, label, description?, tooltip?}`, and select/selectboxes option labels live under `template.components[...].values[].label`.
 
 Per-product fetch failures are collected by the CLI and do not abort the run; the command only exits non-zero if every product fails.
 
 > **Product catalog is implicit.** There is no `products.json` — each `form-template.json`'s top-level `product` object IS the catalog entry. The caller enumerates products via the `Glob` tool on `$SESSION_DIR/products/*/form-template.json` and reads `.product.{name, label}` from each file.
+
+> **Naming the form to the user.** When referring to the loaded form (e.g. "the Robot 25.10.0 template"), build the name from `form-template.json` `.product.label` + `.version` (`<major>.<minor>.<hotfix>`). NEVER use `.template.title` or `.template.name` — those are stale form-builder strings frozen at an old release (e.g. `"Robot 23.4.0"` / `"robot2340"`) and do NOT track the actual template version. The same stale `.template.title` also appears in `form-template-locale-resource.json`; ignore it there too.
 
 After Step 1, the session directory looks like:
 
@@ -94,7 +96,7 @@ Read `$SESSION_DIR/products/$PRODUCT_NAME/form-template.json` for the form.io sc
 **Choose the working `$POLICY_DATA` blueprint based on the flow:**
 
 - **Create flow:** read `$SESSION_DIR/products/$PRODUCT_NAME/form-data.json` as `$POLICY_DATA`. Every field not explicitly changed keeps its product default.
-- **Update flow:** read `$SESSION_DIR/existing-policy-data.json` (extracted by the caller via `jq '.Data.data'` on `policy get`) as `$POLICY_DATA`. Every field not explicitly changed keeps the value from the existing policy — NOT the product default. Using `form-data.json` as the update blueprint would silently wipe every non-default setting the user previously configured. If a key appears in `form-data.json` but not in the existing policy data (schema drift — new field added to the template after the policy was created), fill the gap from `form-data.json` and flag the new field to the user in the final review.
+- **Update flow:** read `$SESSION_DIR/existing-policy-data.json` (extracted by the caller via `jq '.Data.Data // .Data.data'` on `policy get`) as `$POLICY_DATA`. Every field not explicitly changed keeps the value from the existing policy — NOT the product default. Using `form-data.json` as the update blueprint would silently wipe every non-default setting the user previously configured. If a key appears in `form-data.json` but not in the existing policy data (schema drift — new field added to the template after the policy was created), fill the gap from `form-data.json` and flag the new field to the user in the final review.
 
 Read `$SESSION_DIR/products/$PRODUCT_NAME/form-template-locale-resource.json` as your field metadata map. Each entry looks like:
 
@@ -126,15 +128,23 @@ The form.io schema has a root `components[]` array. Components nest recursively.
 | `columns` | `columns[]` — each column has `components[]` | Recurse silently, no header |
 | `fieldset` | `components[]` | Recurse silently, no header |
 | `well` | `components[]` | Recurse silently, no header |
-| `editgrid` | `components[]` (row template) + data is an array | See [editgrid handling](#step-6--editgrid-repeating-rows) below |
+| `table` | `rows[][]` — each cell has `components[]` | Layout only. Recurse into every cell, no header |
+| `container` | `components[]` | **Data nests**: children serialize under the container's own `key` as a sub-object, not at the top level. Recurse, then nest. See [Step 7](#step-7--build-the-output-json) |
+| `editgrid`, `datagrid` | `components[]` (row template) + data is an array | Both store an array of row objects. See [grid handling](#step-6--editgrid--datagrid-repeating-rows) below |
 
-### Display-only types — skip entirely
+### Display-only leaf types — recurse past, never prompt
 
-`htmlelement`, `content`, `button`, `submit`
+`htmlelement`, `content`, `button`, `submit` hold no policy data. Keep walking the tree — do NOT stop the traversal at them — but emit no prompt and write nothing for them. `hidden` also takes no prompt, but it DOES carry data: preserve its existing value in the output and never drop the key.
 
 ### Input types — prompt the user
 
-`checkbox`, `radio`, `select`, `selectboxes`, `textfield`, `textarea`, `number`, `currency`, `email`, `url`, `phoneNumber`, `datetime`
+`checkbox`, `radio`, `select`, `selectboxes`, `textfield`, `textarea`, `number`, `currency`, `email`, `url`, `phoneNumber`, `time`, `datetime`, `tags`, `survey`
+
+### Unsupported / discouraged types — warn and ABORT
+
+`file`, `signature`, `address`, and `datamap` are NOT supported. If the form template contains a component of any of these types, STOP immediately: do not author, serialize, or save policy data, and do not create or update the policy. Surface the message `data type "<type>" not supported` to the user, naming the offending field's `key`. These types carry security risk — file upload and MIME confusion, `data:` URI payloads, and free-form key maps that reach a renderer or store un-sanitized — and MUST NOT be round-tripped through a policy. Abort the whole flow. Do NOT skip the field and continue building the rest of the policy.
+
+**On current CLI versions this is pre-empted at fetch time.** `template get` fails first with exit `1`, `ErrorCode: configuration_error`, and a `Message` naming each offender (`… cannot build form-data for: <type> (key: <key>).`); no form-data file is written. Treat that error as this same abort — surface the CLI `Message` and stop; do NOT retry it as a transient fetch failure. In the create-flow bootstrap (`template list`), only the offending product is marked `Failure` and the others still load — skip that one product, keep the rest. The tree walk above remains the fallback for older CLIs that emit a placeholder instead of aborting.
 
 ---
 
@@ -170,7 +180,7 @@ If the user's original prompt describes how to configure the policy, or names sp
 
 0. **Recipe lookup first.** Before grepping the locale file, check [aops-governance-recipes-guide.md](./aops-governance-recipes-guide.md) for a recipe whose intent keywords match the user's ask. If a recipe matches, apply its product + field mapping directly to `$POLICY_DATA` — the recipes give you the correct `key` and value without locale-string guessing. Only proceed to step 1 below for intents not covered by any recipe, or for recipe-matched intents whose parameter values (e.g. `BlockedEmails`, `AllowedApplications`) still need to be extracted from the user's phrasing.
 1. Use the **`Grep` tool** (Claude's built-in — NOT `Bash(grep …)`, which prompts for permission every call) against `$SESSION_DIR/products/$PRODUCT_NAME/form-template-locale-resource.json` to find `label` / `description` entries matching the user's stated intent. Set `-i: true` (case-insensitive) and `output_mode: "content"`. Use the `Read` tool on the same file if you need surrounding structure to resolve a `key`.
-2. Apply those values directly to `$POLICY_DATA` (skip Step 6 editgrid prompts unless the user's intent referenced a grid). Leave every unmatched field at its default (create) or existing value (update).
+2. Apply those values directly to `$POLICY_DATA` (skip Step 6 grid prompts unless the user's intent referenced a grid). Leave every unmatched field at its default (create) or existing value (update).
 3. **Required-field sweep.** For each field with `validate.required: true`, confirm `$POLICY_DATA` contains a non-empty value. If a required field is unset (create flow, default is empty) or cleared by the user's intent, drop to Mode B for that single field only — do not silently produce invalid data.
 4. **Runtime-rule empty-parameter check.** For runtime analyzer rules (e.g. `RT-UIA-001`, `RT-OUT-001`) and workflow analyzer allow/block-list rules, enabling the rule without populating its parameter array (`AllowedApplications`, `BlockedApplications`, `AllowedURLs`, `BlockedURLs`, `BlockedEmails`, etc.) produces a no-op policy that enforces nothing. If the user's intent names the rule but does not specify the list contents, STOP and ask for the list explicitly rather than saving an empty array. Do not silently write a do-nothing policy.
 5. Jump to **Step 7 — Build the Output JSON**. The remaining steps (Step 8 Save, Step 9 Summary) run in their numbered order.
@@ -262,14 +272,46 @@ Reject non-numeric input and re-prompt.
 
 ```text
 Expiry date [default: none]
-Enter a date (YYYY-MM-DD), or press Enter to keep default:
+Enter a date/time, or press Enter to keep default:
 ```
+
+Serialize as a full **ISO-8601** string (e.g. `2026-12-31T00:00:00Z`), not `YYYY-MM-DD` — form.io `datetime` stores date and time. Honor the component's `enableDate` / `enableTime` flags when prompting, but always write the ISO string the component produced.
+
+### time
+
+```text
+Run window start [default: 12:00:00]
+Enter a time (HH:MM:SS), or press Enter to keep default:
+```
+
+Serialize as the `HH:MM:SS` string form.io `time` stores — distinct from `datetime`.
+
+### email / url / phoneNumber
+
+Prompt as a `textfield` (single value, keep-default on Enter), but validate the format before accepting:
+
+- **email** — reject input without a single `@` and a dotted domain; re-prompt `Enter a valid email address:`.
+- **url** — accept only `http://` or `https://`. **Reject `javascript:`, `data:`, and `vbscript:` schemes outright** — never write them to policy data. Re-prompt `Enter an http(s) URL:`.
+- **phoneNumber** — accept digits, spaces, and `+ ( ) -`; strip nothing, store the string verbatim.
+
+### tags
+
+```text
+Allowed labels [default: e2e, test]
+Enter a comma-separated list, or press Enter to keep default:
+```
+
+Split the reply on commas, trim each token, drop empties. Serialize per the component's `storeas` (`string` → comma-joined string; `array` → array of strings); match the shape already in the default value.
+
+### survey
+
+A `survey` stores an object keyed by question. For each question in the component's `questions[]`, prompt with its label and the allowed answer `values[]` (radio-style). Serialize as `{ "<question-value>": "<answer-value>" }`.
 
 ---
 
-## Step 6 — editgrid (Repeating Rows)
+## Step 6 — editgrid / datagrid (Repeating Rows)
 
-An `editgrid` stores an array of row objects. Each row's shape is defined by the grid's child `components[]`.
+An `editgrid` or `datagrid` stores an array of row objects. Each row's shape is defined by the grid's child `components[]`. The two types differ only in product UX (editgrid edits one row at a time; datagrid edits rows inline as a table) — for data collection and serialization they are identical. The steps below apply to both.
 
 1. **Show existing rows** from `$POLICY_DATA[KEY]` (from defaultData). Number them starting at 1.
 2. **Ask the user** which rows they want to modify (by number), or none.
@@ -307,7 +349,9 @@ Rules:
 - **Update flow:** include every key from `$SESSION_DIR/existing-policy-data.json` so no previously configured value is dropped. For any key present in `form-data.json` but absent from the existing policy data, add it using the form-data default (schema drift — new field added since the policy was created).
 - Do not add keys that are not in the schema (`form-template.json`).
 - Use the component's `key` as the JSON key — not the label.
-- Preserve types: boolean fields must be `true`/`false` (not `"true"`/`"false"`).
+- Preserve types: booleans stay `true`/`false` (never `"true"`/`"false"`); `number` and `currency` stay JSON numbers (never `"42"`); `time` and `datetime` stay strings.
+- **Nested shapes:** a `container` serializes its children under its own `key` as a sub-object (`{"container": {"child-key": ...}}`), NOT flattened to the top level. A `survey` serializes as an object keyed by question. `datagrid` and `editgrid` stay arrays of row objects.
+- **Abort guard:** if the template holds an unsupported type (`file`, `signature`, `address`, `datamap`), you must not have reached this step — stop per [Step 3](#step-3--traverse-the-component-tree).
 - Do NOT wrap the object in `{ "data": {...} }` — the CLI `create --input` / `update --input` wraps it automatically.
 
 ---
@@ -365,11 +409,13 @@ The caller ([aops-policy-manage-guide.md — Create Step 4](./aops-policy-manage
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `template list` bootstrap fails or writes no product folders | Every per-product fetch failed | Stop. Show the CLI error. Verify `uip login status` and network; rerun the bootstrap |
+| `template list` bootstrap fails or writes no product folders | Every per-product fetch failed | Stop. Show the CLI error. Verify `uip login status` and network; rerun the bootstrap. A *single* product returning `ErrorCode: configuration_error` is not a bootstrap failure — its template has an unsupported type; skip that product and continue with the rest (see [Step 3](#step-3--traverse-the-component-tree)) |
 | `template get` returns no `template` field (update flow) | Product fetch failed for this product | Stop. Show the CLI error. Verify the product name matches a catalog entry |
+| `template get` returns `ErrorCode: configuration_error` | Template has an unsupported type (`file`/`signature`/`address`/`datamap`) — CLI won't build form-data | Surface the CLI `Message` (it names each type + key) and abort this policy per [Step 3](#step-3--traverse-the-component-tree); do NOT retry as transient |
 | `template.components` is empty or absent | Product has no configurable fields | Inform the user. Use `defaultData` as-is and skip to Step 8 |
 | User provides invalid type for a field (e.g. text for `number`) | Type mismatch in Mode B answer | Re-prompt: `Invalid input. Expected <TYPE>. Please try again:` |
 | User enters blank for a required field | `validate.required: true` and empty value | Re-prompt: `This field is required. Please enter a value:` |
 | Mode A partial match (some intent phrases unmapped) | Some user keywords found no locale-resource hits | Apply the matched phrases; ask the three-way question (proceed without / pick different product / enter manually) for the unmapped phrases only |
 | `$POLICY_DATA` keys diverge from `form-data.json` | Accidental extra key or missing schema key | Stop. Diff via the `jq keys` check in Step 8. Drop unknown keys; re-fill missing keys from the blueprint |
 | User asks to skip all fields | No intent + no default override | Use the full default data object without changes and proceed to Step 8 |
+| Template contains `file`, `signature`, `address`, or `datamap` | Unsupported / discouraged data type | STOP. Surface `data type "<type>" not supported` (name the field `key`). Do not author, serialize, or save policy data — abort the whole flow per [Step 3](#step-3--traverse-the-component-tree) |

@@ -1,9 +1,9 @@
 task_id: skill-ixp-update-prompts-heredoc-smoke
 description: >
   Smoke: agent improves a per-field instruction with
-  `fields update-prompts --updates`. The skill constructs the JSON via
-  heredoc; the grader verifies both that shell workflow and the complete
-  expanded payload received by the CLI mock.
+  `fields update-prompts --updates-file`. The skill writes the JSON to a
+  payloads/ file in the same command as the call (Critical Rule 5); the
+  grader checks that command and the payload the CLI received.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -13,15 +13,16 @@ run_limits:
   expected_turns: 8
 
 sandbox:
+  python: {}
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
-  The `Invoice Number` field on IXP project `my_invoices-f1afa9ef-ixp` is
-  scoring poorly. Validation shows the model is confusing the Purchase
-  Order (PO) number with the invoice number. Update the field instruction
-  to clarify:
+  The `Invoice Number` field in the `Invoice Header` field group on IXP
+  project `my_invoices-f1afa9ef-ixp` is scoring poorly. Validation shows
+  the model is confusing the Purchase Order (PO) number with the invoice
+  number. Update the field instruction to clarify:
 
     "Extract the unique invoice identifier from the document header.
     Do NOT use the Purchase Order (PO) number, even if it is the most
@@ -35,35 +36,53 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
+  # Only the Bash text shows how the file was written: a heredoc into a
+  # payloads/ file (or a $VAR), then update-prompts passes that SAME target.
+  # \1 ties the two paths; \2 is the heredoc delimiter. `\\?` allows the quote
+  # escaping of `/bin/bash -lc "…"`.
   - type: command_executed
-    description: "Agent wrote the --updates payload under /tmp/ixp/<project>/prompts/ via heredoc"
+    description: "Agent wrote the payload with a heredoc and passed that same file to --updates-file in one command"
     tool_name: "Bash"
-    command_pattern: 'cat\s*>\s*/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/[^\s]+\.json\s*<<\s*[''"]?[A-Z][A-Z0-9_]*[''"]?'
+    command_pattern: >-
+      (?s)(?=.*my_invoices-f1afa9ef-ixp)cat\s*>\s*(?:\\?["'])*(\S*?payloads/[^\s"'\\]+\.json|\$\{?\w+\}?)(?:\\?["'])*\s*<<-?\s*\\?['"]?(\w+)\\?['"]?.*?\n\2\b.*update-prompts\s.*--updates-file\s+(?:\\?["'])*\1(?![\w/.])
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
-  # Quote runs are `(?:\\?["'])*`, not `["']?`: this criterion reads raw Bash
-  # text, and an agent harness that wraps commands in `/bin/bash -lc "…"`
-  # backslash-escapes the inner quotes, so `--updates "$(cat …)"` is recorded as
-  # `--updates \""'$(cat …)"`. Matching one bare optional quote passed under
-  # claude-code and failed under codex for the same correct command.
-  - type: command_executed
-    description: "Agent passed the heredoc file to `fields update-prompts --updates`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+update-prompts\s+(?:\\?["''])*my_invoices-f1afa9ef-ixp(?:\\?["''])*\s+.*--updates\s+(?:\\?["''])*\$\(cat\s+/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/[^\s]+\.json\)'
-    min_count: 1
-    weight: 2.5
-    pass_threshold: 1.0
-
-  # The name must be the field's exact taxonomy name — `update-prompts` matches
-  # by name and reports an unmatched one WITHOUT failing, so a reworded name is
-  # a silent no-op. `Invoice Number` is the name in _shared/fixtures/taxonomy.json
-  # and in the skill's own examples; keep the prompt and this pattern on it.
+  # The rest grade what the CLI received: the mock logs the passed file's
+  # content right after its path, so a stale or missing file fails here.
   - type: file_matches_regex
-    description: "CLI received the structured `Invoice Number` update with the requested instruction"
+    description: "CLI received `fields update-prompts --updates-file` with a payloads/ file"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\s+["']?my_invoices-f1afa9ef-ixp["']?\s+(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*\}\s*\])(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"name"\s*:\s*"Invoice Number")(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"instructions"\s*:\s*"[^"\r\n]*Extract the unique invoice identifier[^"\r\n]*Do NOT use the Purchase Order[^"\r\n]*")(?=[^\r\n]*--output\s+json(?:\s|$))[^\r\n]*)$
+      (?m)^uip\s+ixp\s+fields\s+update-prompts\s+my_invoices-f1afa9ef-ixp\s(?=[^\r\n]*--updates-file\s+\S*payloads/[^\s/]+\.json\s)[^\r\n]*$
     weight: 2.5
+    pass_threshold: 1.0
+
+  # An entry is addressed by `group` + `name`, and `update-prompts` fails when
+  # either combination is not found. Both names are exact from
+  # _setup/fixtures/taxonomy.json (`Invoice Header` > `Invoice Number`); the
+  # mock fails every read, so the prompt supplies them.
+  - type: file_matches_regex
+    description: "The payload addresses the `Invoice Header` group"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^uip\s+ixp\s+fields\s+update-prompts\b(?=[^\r\n]*--updates-file\s+\S+\s[^\r\n]*Invoice Header)[^\r\n]*$
+    weight: 0.84
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The payload addresses the `Invoice Number` field"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^uip\s+ixp\s+fields\s+update-prompts\b(?=[^\r\n]*--updates-file\s+\S+\s[^\r\n]*Invoice Number)[^\r\n]*$
+    weight: 0.83
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The payload carries the requested instruction"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^uip\s+ixp\s+fields\s+update-prompts\b(?=[^\r\n]*--updates-file\s+\S+\s[^\r\n]*Do NOT use the Purchase Order)[^\r\n]*$
+    weight: 0.83
     pass_threshold: 1.0

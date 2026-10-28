@@ -6,16 +6,12 @@ description: >
   Exercises schema management + field/entity-level updates + record CRUD.
   Entity delete is intentionally not exercised (Rule 10 workflow lives
   elsewhere).
-tags:
-  [
-    uipath-platform,
-    data-fabric,
-    integration,
-    entities,
-    records,
-    mode:build,
-    lifecycle:setup,
-  ]
+tags: [uipath-platform, data-fabric, integration, entities, records, mode:build, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 35
   turn_timeout: 600
@@ -47,7 +43,6 @@ initial_prompt: |
     - Pull rows where Active is yes — at least one should come back.
     - Update alpha's score to 99. Read alpha back to confirm.
     - Delete both rows. Leave the entity itself in place.
-
 success_criteria:
   - type: command_executed
     description: "Agent verified login status before any operation"
@@ -199,10 +194,10 @@ pre_run:
   # Ensure the entity is FRESH each run — greenfield pattern. If the entity
   # persists across runs, an already-configured schema causes the agent to
   # skip the modification section (thinking it's already in the target state).
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_LifecycleTest"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_LifecycleTest"
     timeout: 60
     fail_on_error: false
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_LifecycleTest"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_LifecycleTest"
     timeout: 60

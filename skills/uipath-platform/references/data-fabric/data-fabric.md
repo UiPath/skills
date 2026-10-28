@@ -9,13 +9,26 @@ Critical Rules, then load only the topic reference the task needs. For Data
 Fabric nodes inside a `.flow`, use `uipath-maestro-flow`; use this reference
 for CLI operations.
 
+**One flag picks the target.** `uip df entities …` operates on live tenant
+entities over the API. The same verbs with `--local` author an entity into a
+solution on disk, where it becomes a real entity only at deploy — no login, no
+tenant, and `get` / `update` / `delete` take the entity **name** instead of an
+id. Everything in this file is the tenant path unless it says otherwise; the
+local path is [`local-entities.md`](local-entities.md).
+
+**Tenant is the default; `--local` only on an explicit ask.** A local entity is
+part of a solution — it lives in the solution's files and ships with it. Use
+`--local` only when the user explicitly asks for the entity to live in, or ship
+with, a solution. An open `.uipx` or a flow that needs data is not that ask on
+its own; when the request is ambiguous, ask which one they want.
+
 ---
 
 ## Not Supported
 
-Do not change field types, create federated entities, or write federated records. Do not work around rejected names. FILE values require `files upload`; record writes silently ignore them. The rules and topic references below give the supported alternatives.
+Do not change field types or write federated records. Do not work around rejected names. FILE values require `files upload`; record writes silently ignore them. (**Creating** a federated entity from a connector or another entity **is** supported → [`federated-entity-creation.md`](federated-entity-creation.md); only record *writes* to one are not.) The rules and topic references below give the supported alternatives.
 
-**Immediate refusal.** When the request is categorically unsupported (federated write, type-change, reserved-keyword name, cross-scope binding, etc.) **and** the user's prompt already establishes the fact that makes it unsupported (e.g. *"that list is one we pull from Salesforce"* → federated; *"Amount is currently stored as text, change it to a decimal"* → type-change), refuse immediately, cite the rule, and offer the supported alternative. Do **not** re-verify with `entities list`, `entities get`, or other resource discovery — the user has already told you what you need to know.
+**Immediate refusal.** When the request is categorically unsupported (federated *write*, type-change, reserved-keyword name, cross-scope binding, etc.) **and** the user's prompt already establishes the fact that makes it unsupported (e.g. *"write to that list we pull from Salesforce"* → federated write; *"Amount is currently stored as text, change it to a decimal"* → type-change), refuse immediately, cite the rule, and offer the supported alternative. Do **not** re-verify with `entities list`, `entities get`, or other resource discovery — the user has already told you what you need to know. (A request to *create* an entity from a connector is **not** a refusal case → [`federated-entity-creation.md`](federated-entity-creation.md).)
 
 ## Critical Rules
 
@@ -68,7 +81,7 @@ Do not change field types, create federated entities, or write federated records
 
 8. **Never create duplicate entities.** Always `entities list` first; reuse if it already exists. Entity and choice-set `displayName` values must also be unique. If the user does not provide one, derive a collision-resistant display name from the requested `Name`, not a generic label. On `409` / `RetryWillNotFix`, do not repeat the same create or treat an environment ID from the error as a resource ID; surface the conflict and ask for a different name or display name.
 
-9. **Only work with native entities.** Use `entities list --native-only` before any write. Federated entities are read-only.
+9. **Record writes are native-only.** Use `entities list --native-only` before any record write. Federated entities are read-only for records (data lives in the source) — but **creating** and reading them (`records list` / `records query`) is supported → [`federated-entity-creation.md`](federated-entity-creation.md).
 
 10. **Entity delete — dependent discovery.** Gating lives in the Destructive Operations block. Scan for inbound references (`entities list --output json` → `Fields[].ReferenceEntity.Id == <id>`) and choice sets used by the entity's fields (`Fields[].ChoiceSetId`). Ask per dependent: delete, leave, or stop. Full sequence: [`entity-schema.md` → Deleting an Entity](entity-schema.md#deleting-an-entity).
 
@@ -111,7 +124,7 @@ Do not change field types, create federated entities, or write federated records
 
 20. **`records import` supports Basic types only.** `CHOICE_SET_*`, `RELATIONSHIP`, `FILE`, `AUTO_NUMBER` columns are ignored on import — optional columns land as `null`; **`isRequired` columns without a `defaultValue` fail the whole row** (`ErrorFileLink` entry per row). Sequence: (1) `entities get` → list unsupported columns; (2) tell the user which columns will be skipped, and which rows will fail because a required unsupported column has no default; (3) offer `records insert --file <json>` (+ `files upload` for FILE) as the alternative; (4) invoke only after explicit confirmation. See [`bulk-import.md` → Complex Field Types Not Supported](bulk-import.md#complex-field-types-not-supported).
 
-21. **`MULTILINE_MAX` — marker reads, no filter/sort.** `records list` / `records query` return a size marker (`HasValue=true Length=N`) — full value only via `records get`. Never echo the marker back through `records update` — the server accepts it as a normal value and destroys the real content; omit the key instead. No filter/sort support (400). `lengthLimit` is a UTF-16 byte budget (max 131072 ≈ 65,536 chars). Full contract: [`entity-schema.md` → MULTILINE_MAX](entity-schema.md#multiline_max-fields) + [`records-query.md` → MULTILINE_MAX](records-query.md#multiline_max-fields--marker-vs-full-content).
+21. **`MULTILINE_MAX` — preview reads, no filter/sort.** `records list` / `records query` return a preview, either content truncated to 10,000 characters with a `...[Truncated]` suffix or a size marker (`HasValue=true Length=N`), depending on the tenant; full value only via `records get`. Never echo a preview back through `records update` — the server accepts it as a normal value and destroys the real content; omit the key instead. No filter/sort support (400). `lengthLimit` is a UTF-16 byte budget (max 131072 ≈ 65,536 chars). Full contract: [`entity-schema.md` → MULTILINE_MAX](entity-schema.md#multiline_max-fields) + [`records-query.md` → MULTILINE_MAX](records-query.md#multiline_max-fields--preview-vs-full-content).
 
 ---
 
@@ -143,6 +156,8 @@ Entities and choice sets are either tenant-level or folder-scoped. Records and f
 | Explore entities | `entities list` (`--folder-key`, `--include-folders`, or `--native-only` as needed) → `entities get <id>` |
 | Choice sets — full CRUD (sets and values) | [`choice-sets.md`](choice-sets.md) |
 | Create / update / delete entity, add/remove/update fields | [`entity-schema.md`](entity-schema.md) |
+| Create / update a **federated** entity (from a connector or another entity) | [`federated-entity-creation.md`](federated-entity-creation.md) |
+| Author an entity **into a solution** (`entities … --local`) | [`local-entities.md`](local-entities.md) |
 | Read / filter / paginate / sort records | [`records-query.md`](records-query.md) + [`filter-platform-contract.md`](filter-platform-contract.md) |
 | Insert / update / delete records | [`records-query.md`](records-query.md) |
 | Aggregates / group-by | [`records-query.md` → Aggregates](records-query.md#aggregates-server-side) |
@@ -163,5 +178,14 @@ For topic-specific errors, use the relevant reference. Cross-cutting failures:
 | `unknown option '--folder-key'` / `unknown option '--include-folders'` | Installed tool is outdated | `uip tools install @uipath/data-fabric-tool@latest`; if still missing, surface as unsupported |
 | `--folder-key and --include-folders are mutually exclusive` | Both flags passed on `entities list` / `choice-sets list` | Pick one |
 | Entity / choice set created via `--folder-key <X>` doesn't appear in list | Lists default to tenant-only | Re-run with `--folder-key <X>` or `--include-folders` |
+| Record write to a federated entity fails | Federated entities are read-only — data lives in the source | Write at the source; `--native-only` filters writable entities. Creating a federated entity **is** supported → [`federated-entity-creation.md`](federated-entity-creation.md) |
 
 Any error not in this table → Rule 18. Topic-specific error tables live in the topic references.
+
+---
+
+## Packaging into a Solution
+
+To ship a folder-scoped entity or choice set in a deployable solution, use [`uipath-solution`](/uipath:uipath-solution). Import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery: [`develop-solution.md` → Data Fabric kinds](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).
+
+If the entity is a **local entity** — the user explicitly asked for it to be authored inside the solution — skip the import: author it with `uip df entities <verb> --local` per [`local-entities.md`](local-entities.md). It never touches the tenant until the solution deploys.

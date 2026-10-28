@@ -8,6 +8,82 @@ Terminal emulation activities for automating interactions with IBM 3270/5250, VT
 
 - [XAML Activities Reference](activities/) — Per-activity documentation for XAML workflows
 - [Coded Workflow API Reference](coded/coded-api.md) — Service API for coded C# workflows
+- [Machine-readable activity index](activities.json) — JSON listing of every activity's class name, required properties, output properties, and doc path. For code generators and agents that need the activity surface without parsing markdown.
+
+## If you want to ...
+
+Quick task → activity lookup. Each row points at the activity that does the thing with the fewest assumptions.
+
+| Task | Use |
+|------|-----|
+| Open a session and run a few activities | [`TerminalSession`](activities/TerminalSession.md) (start here) |
+| **Synchronize before any read or write** | [`WaitScreenText`](activities/WaitScreenText.md) (most reliable), [`WaitScreenReady`](activities/WaitScreenReady.md) (after a control key), [`WaitTextAtPosition`](activities/WaitTextAtPosition.md), or [`WaitFieldText`](activities/WaitFieldText.md). Reading without a preceding wait returns stale data on real hosts. |
+| Type a literal string into the terminal | [`SendKeys`](activities/SendKeys.md) |
+| Type a password without logging it | [`SendKeysSecure`](activities/SendKeysSecure.md) |
+| Press Enter, Tab, F-keys, or any control key | [`SendControlKey`](activities/SendControlKey.md) (use `Transmit` for 3270 enter, `Return` for VT enter) |
+| Wait for the keyboard to unlock after sending a key | [`WaitScreenReady`](activities/WaitScreenReady.md) |
+| Wait for specific text to appear anywhere | [`WaitScreenText`](activities/WaitScreenText.md) |
+| Wait for specific text at known coordinates | [`WaitTextAtPosition`](activities/WaitTextAtPosition.md) |
+| Wait for a named input field to contain text | [`WaitFieldText`](activities/WaitFieldText.md) |
+| Read the entire visible screen | [`GetText`](activities/GetText.md) |
+| Read a rectangular region | [`GetScreenArea`](activities/GetScreenArea.md) |
+| **Extract tabular data into a `DataTable`** | [`GetScreenArea`](activities/GetScreenArea.md) → `Generate Data Table` (from `UiPath.System.Activities`). See [GetScreenArea.md § Extracting tabular data as a DataTable](activities/GetScreenArea.md#extracting-tabular-data-as-a-datatable) |
+| Read N characters starting at a row/col | [`GetTextAtPosition`](activities/GetTextAtPosition.md) (cross-provider safe) |
+| Read the field at a row/col (provider-agnostic) | [`GetFieldAtPosition`](activities/GetFieldAtPosition.md) |
+| Read a labeled input field (single-provider) | [`GetField`](activities/GetField.md) — see the [provider portability caveat](activities/GetField.md#prefer-position-based-reads-when-portability-matters); prefer position-based reads above if the workflow must run against multiple providers |
+| Write to the field at a row/col (provider-agnostic) | [`SetFieldAtPosition`](activities/SetFieldAtPosition.md) |
+| Write to a labeled input field (single-provider) | [`SetField`](activities/SetField.md) — see the [provider portability caveat](activities/SetField.md#prefer-position-based-writes-when-portability-matters); prefer [`MoveCursor`](activities/MoveCursor.md) + [`SendKeys`](activities/SendKeys.md) or `SetFieldAtPosition` for cross-provider work |
+| Find where a string appears on screen | [`FindText`](activities/FindText.md) (returns Row/Column) |
+| Move the cursor to coordinates | [`MoveCursor`](activities/MoveCursor.md) |
+| Find a string and move the cursor there | [`MoveCursorToText`](activities/MoveCursorToText.md) |
+| Read the current cursor location | [`GetCursorPosition`](activities/GetCursorPosition.md) |
+| Detect a highlighted / error-colored character | [`GetColorAtPosition`](activities/GetColorAtPosition.md) |
+| **Close a session you kept open via `OutputConnection`** | A second [`TerminalSession`](activities/TerminalSession.md#closing-a-saved-connection) with empty body and `CloseConnection="True"` |
+
+## XAML Setup
+
+All terminal activity XAML snippets in this documentation use the `uit:` prefix. The required namespace declaration on the root `<Activity>` element is:
+
+```
+xmlns:uit="http://schemas.uipath.com/workflow/activities/terminal"
+```
+
+Do **not** infer this URL from the package name — `clr-namespace:UiPath.Terminal.Activities;assembly=UiPath.Terminal.Activities` is plausible but incorrect; using it causes silent activity-resolution failures (`validate` passes, `build` fails with unknown element / member errors).
+
+## Known Authoring Pitfalls
+
+These trip both XAML and coded authors regularly. Read once before authoring; they do not surface as friendly error messages.
+
+### `validate` clean ≠ buildable
+
+`uip rpa validate` (and Studio's lightweight Validate button) checks XAML structure, references, expression syntax, and analyzer rules. It does **not** execute the WF activity-constraint runner for this package. Constraints — including the parent-scope check that ensures every child activity sits inside a `TerminalSession` — only run at **pack / build** time (`uip rpa build`, Studio's Pack/Publish). Consequences:
+
+- A file that passes `validate` can still fail `build` with a constraint error.
+- Iterating on `validate` alone is not sufficient verification. After every edit, also run `uip rpa build` (or pack from Studio) and treat that as the truthful check.
+- A `validate` run can inherit the cached state of a prior `build`. If a previous `build` populated `.local/install/`, a subsequent `validate` may *also* surface the constraint runner's verdict — i.e. validate is not always stateless. If you see `validate` flip from clean to red after a build attempt, that is why.
+
+### `String.Format(format, arg1, arg2, …)` in WF expressions can crash the interpreter
+
+On newer .NET SDK toolchains (.NET 8+ Roslyn / BCL), the C# / VB compiler resolves `String.Format` calls with multiple arguments to overloads whose argument set involves `ReadOnlySpan<string>` (introduced in .NET 8). The WF expression *interpreter*, used by the activity-constraint runner at pack time, then tries to construct `Func<…, ReadOnlySpan<string>>` and fails with `TypeLoadException` — `ReadOnlySpan<T>` is a `ref struct` and cannot be a generic type argument. The full stack ends in `System.RuntimeType.MakeGenericType`.
+
+Symptom (during `uip rpa build` or Studio Pack):
+
+```
+Internal constraint exception while running constraint with name 'Constraint<TerminalActivity<String>>'
+  System.ArgumentException: GenericArguments[1], 'System.ReadOnlySpan`1[System.String]',
+  on 'System.Linq.Expressions.Interpreter.FuncCallInstruction`2[T0,TRet]'
+  violates the constraint of type 'TRet'.
+  ---> System.TypeLoadException: …
+```
+
+Mitigations, any one of them:
+
+- **Use `&` (VB) or `+` (C#) concatenation** to compose the string. Overload resolution stays on `String.Concat(string, string, …)`, no span overload involved.
+- **For `ConnectionString` specifically, avoid string composition altogether** — build a typed `ConnectionData` and serialize it (see [authoring-paths.md § Option B](activities/TerminalSession/authoring-paths.md#option-b--xaml-build-a-connectiondata-and-serialize-with-connectionstringhelperserialize)).
+- **Force the legacy `String.Format` overload** by passing an explicit `object[]`: `String.Format(format, New Object() { arg1, arg2, arg3 })`. The compiler binds to `String.Format(String, params Object[])` rather than the span family.
+- **Pre-format outside the expression**: assemble the string in a coded helper or a sequence of `&` concatenations, then pass the result into the activity argument.
+
+Note: this is not specific to Terminal Activities — any package whose constraints use the WF expression interpreter is affected. It surfaces here because most child activities in this package carry a parent-scope constraint that runs at pack time.
 
 ## Activities
 

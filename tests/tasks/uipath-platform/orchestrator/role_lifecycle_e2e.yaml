@@ -5,16 +5,22 @@ description: >
   add-and-remove paths during the run (verified by the agent writing the
   before/after observation to a file).
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 60
 
 run_limits:
@@ -33,11 +39,10 @@ initial_prompt: |
   the one in `permission.txt` is still granted.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: run_command
     description: "Tenant state: role exists with the granted permission listed in permission.txt"
-    command: "python3 $TASK_DIR/check_role_lifecycle.py"
+    command: "python3 $REFERENCE_DIR/check_role_lifecycle.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

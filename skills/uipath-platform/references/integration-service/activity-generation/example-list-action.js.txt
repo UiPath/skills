@@ -1,0 +1,39 @@
+// listUserGroups — lists Slack user groups. Also the design-time lookup for
+// user-group ID fields: run it and filter the output; it does no matching itself.
+//
+// ONE invocation = ONE page — the page the vendor answers with. The runtime
+// carries no page token; never walk the cursor here.
+async function execute(context) {
+  const { include_disabled, team_id } = context.request.body ?? {};
+  const query = { include_disabled, team_id };
+
+  const listed = await intsvc.http({
+    method: 'GET',
+    url: '/usergroups.list',
+    query,
+  });
+
+  // FAILURE CHECK — vendor-specific, and this one is SLACK's: it fails in-band
+  // with HTTP 200 + { ok: false }, which a status check would miss. `intsvc.http`
+  // never throws on a vendor 4xx/5xx either.
+  //
+  // DO NOT copy this line for another vendor — against an API with no `ok` field
+  // it throws on every SUCCESSFUL call. Use `resp.status >= 400` for a
+  // REST-conventional vendor, `resp?.body?.error` for Graph-style, or both.
+  if (!listed?.body?.ok) {
+    throw new Error('Failed to retrieve user groups' + JSON.stringify(listed?.body ?? listed?.raw));
+  }
+
+  // A LIST action returns the RELEVANT RECORDS ARRAY, so the vendor's envelope
+  // (`{ ok, usergroups: [] }`) is unwrapped here; the consumer gets the array and
+  // nothing else, which is why the list activity's metadata declares ONE
+  // element's fields (id, name, …) flat as its outputs — no `usergroups[*]` wrapper.
+  //
+  // Swap the body on the vendor response and return THAT — not a fabricated
+  // `{ status: 200, headers: [], body }`. The vendor's headers travel with it, so
+  // `/execute` sees `content-type: application/json` and hands the caller `body`
+  // as parsed JSON; a fabricated object carries no content-type and the caller
+  // gets the array as a JSON string instead.
+  listed.body = listed.body.usergroups ?? [];
+  return listed;
+}

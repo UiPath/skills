@@ -12,8 +12,8 @@
       <uipath:migrationVersion version="11.5" />
       <uipath:caseManagement version="v1"><![CDATA[{"owner":"logistics","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_Tracking" name="Tracking" type="string" />
-        <uipath:inputOutput id="Var_Weight" name="Weight" type="number" />
+        <uipath:inputOutput id="Var_Tracking" name="Tracking" type="string" elementId="Process_ShipmentReview" />
+        <uipath:inputOutput id="Var_Weight" name="Weight" type="number" elementId="Process_ShipmentReview" />
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_SF</bpmn:outgoing></bpmn:startEvent>
@@ -21,35 +21,35 @@
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"tracking":"=vars.Var_Tracking"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"tracking":"=vars.Var_Tracking"}]]></uipath:input>
           <uipath:output name="weight" type="number" var="Var_Weight" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_SF</bpmn:incoming><bpmn:outgoing>Flow_FE</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: tracking.length };]]></bpmn:script>
+      <bpmn:script><![CDATA[return tracking.length;]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_Enrich" name="Enrich Shipment" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"weight":"=vars.Var_Weight"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"weight":"=vars.Var_Weight"}]]></uipath:input>
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_FE</bpmn:incoming><bpmn:outgoing>Flow_ER</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: weight * 2 };]]></bpmn:script>
+      <bpmn:script><![CDATA[return weight * 2;]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_Route" name="Route Shipment" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"weight":"=vars.Var_Weight"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"weight":"=vars.Var_Weight"}]]></uipath:input>
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ER</bpmn:incoming><bpmn:outgoing>Flow_RE</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: weight > 10 ? "freight" : "parcel" };]]></bpmn:script>
+      <bpmn:script><![CDATA[return weight > 10 ? "freight" : "parcel";]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="End_1" name="Done"><bpmn:incoming>Flow_RE</bpmn:incoming></bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_SF" sourceRef="Start_1" targetRef="Task_Fetch" />

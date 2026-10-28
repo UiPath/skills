@@ -1,57 +1,36 @@
 # Organizations CLI Command Reference
 
-Complete reference for all `uip admin organizations` commands — caller's organization read + update, async-operation polling (for tenant lifecycle ops), region catalog, and org-level service catalog (read-only). Part of the Organization Management Service (OMS).
-
-For tenant commands, see [tenants-commands.md](tenants-commands.md). For workflow-level guidance, see [organization-management.md](organization-management.md).
+Reference for `uip admin organizations`: caller-organization read/update, tenant-lifecycle operation polling, regions, and read-only org-level services. For tenant commands, see [tenants-commands.md](tenants-commands.md). For workflow guidance, see [organization-management.md](organization-management.md).
 
 ## Global Flags
 
-Every command accepts these flags (omitted from per-command tables):
+Every command accepts:
 
 | Flag | Description |
 |------|-------------|
-| `--output <format>` | Output format: `json`, `table`, `yaml`, `plain` (default: json) |
-| `--output-filter <expression>` | JMESPath expression to filter output |
-| `--log-level <level>` | Log level: `debug`, `info`, `warn`, `error` (default: info) |
-| `--log-file <path>` | Write logs to file instead of stderr |
-| `--login-validity <minutes>` | Override token validity — forces refresh if token expires within this window |
+| `--output <format>` | `json`, `table`, `yaml`, `plain` (default: json) |
+| `--output-filter <expression>` | JMESPath output filter |
+| `--log-level <level>` | `debug`, `info`, `warn`, `error` (default: info) |
+| `--log-file <path>` | Write logs instead of stderr |
+| `--login-validity <minutes>` | Force token refresh when expiry is within this window |
 
-Organization is resolved automatically from the active login session — no `--organization` flag.
-
-## Prerequisites
-
-```bash
-uip login status --output json
-```
-
-If not logged in: `uip login`.
+Resolve the organization from the active login; no `--organization` flag exists. Run `uip login status --output json`; if not logged in, run `uip login`.
 
 ## Concepts
 
-### OMS sync vs async — quick reference
-
-| Operation | Sync/Async | Confirm completion |
-|---|---|---|
-| `organizations get`, `update` | **Sync** | Response. No CLI `create` / `delete` — Portal / support flow only. |
-| `tenants create / update / delete / enable / disable` | **Async** — returns `operationId` | Poll `organizations operation get <OP_ID>` (single endpoint for all OMS async ops) |
-| `tenants services add / enable / disable / remove` | **Sync** | Response — except `disable` (Integration Service, Data Fabric, Insights) and `remove` (Orchestrator, Maestro, Integration Service, Data Fabric, Insights, Test Manager), which return Success but no-op. Re-list. |
-| All `*list*`, `get`, `regions list`, `services list-available` | **Sync** | — |
-
-### Notes
-
-- **Org surface is read + update only.** This command tree exposes `get`, `update`, `regions list`, `services list / list-available`, and `operation get`. **There is no `organizations create` or `organizations delete` in the CLI** — those are not exposed; org creation/deletion goes through the UiPath Portal / support flow.
-- **All org verbs are synchronous.** `update`, `get`, `regions list`, and all `services` reads complete in a single round-trip and carry the final state in the response.
-- **Single poll endpoint for the platform.** `operation get` lives here for historical reasons, but it polls async **tenant** lifecycle ops (`tenants create / update / delete / enable / disable`). Use it whenever those return an `operationId`.
-- **No login-tenant default here.** Org commands always operate on the caller's organization (resolved from the active login).
-- **Region is required for tenant create.** Run `regions list` here, then pass `--region` to `tenants create` (see [tenants-commands.md](tenants-commands.md)).
-
----
+- `organizations get` and `update` are synchronous and return final state.
+- `tenants create / update / delete / enable / disable` are asynchronous, return `operationId`, and require polling with `organizations operation get <OP_ID>`.
+- `tenants services add / enable / disable / remove` are synchronous, except `disable` (Integration Service, Data Fabric, Insights) and `remove` (Orchestrator, Maestro, Integration Service, Data Fabric, Insights, Test Manager), which return Success but no-op. Re-list.
+- All `*list*`, `get`, `regions list`, and `services list-available` commands are synchronous.
+- The organization surface is read/update only: `get`, `update`, `regions list`, `services list / list-available`, and `operation get`. There is no CLI `organizations create` or `organizations delete`; use the UiPath Portal / support flow.
+- Organization commands use the caller's organization, not a login-tenant default.
+- Region is required for tenant create. Run `regions list`, then pass `--region` to `tenants create`; see [tenants-commands.md](tenants-commands.md).
 
 ## Organization — `uip admin organizations`
 
 ### `organizations get`
 
-Fetch the caller's organization record.
+Fetch the caller's organization record:
 
 ```bash
 uip admin organizations get --output json
@@ -60,13 +39,13 @@ uip admin organizations get --full --output json
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--full` | No | Return bundle: org + tenants + service catalog in one call |
+| `--full` | No | Return org, tenants, and service catalog in one call |
 
 **Output code:** `OmsOrganizationGet`
 
 ### `organizations update`
 
-Patch editable fields on the caller's organization. **Synchronous** — response carries the final state.
+Patch editable organization fields synchronously; the response contains final state. Pass at least one field flag or `--file`:
 
 ```bash
 uip admin organizations update --name "<NEW_NAME>" --output json
@@ -82,17 +61,13 @@ uip admin organizations update --file ./org-update.json --output json
 | `--language <code>` | No | New language code |
 | `--file <path>` | Alternative | Full `UpdateOrganizationCommand` body |
 
-At least one field flag (or `--file`) is required. **Output code:** `OmsOrganizationUpdated`.
-
-> **No `create` / `delete` here.** The CLI does not expose `organizations create` or `organizations delete`; both return `ValidationError: unknown command`. For org provisioning or removal, use the UiPath Portal or the support flow.
-
----
+**Output code:** `OmsOrganizationUpdated`. Do not use `organizations create` or `organizations delete`; the CLI does not expose them and returns `ValidationError: unknown command`. Use the UiPath Portal or support flow.
 
 ## Async Operations — `uip admin organizations operation`
 
 ### `operation get`
 
-Poll the status of an async OMS operation (tenant lifecycle today; org create/delete are not exposed by the CLI).
+Poll a tenant lifecycle operation returned by `tenants create`, `update`, `delete`, `enable`, or `disable`:
 
 ```bash
 uip admin organizations operation get <OPERATION_ID> --output json
@@ -100,41 +75,35 @@ uip admin organizations operation get <OPERATION_ID> --output json
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `<OPERATION_ID>` | Yes | Operation UUID returned by a `tenants` lifecycle command (`create`, `update`, `delete`, `enable`, `disable`) |
+| `<OPERATION_ID>` | Yes | Operation UUID returned by a tenant lifecycle command |
 
-The response carries a `status` field. Treat `Pending` / `Running` / `InProgress` as in-progress; anything else (`Succeeded`, `Failed`, `Cancelled`) as terminal.
+Treat `Pending`, `Running`, and `InProgress` as in-progress; treat every other status, including `Succeeded`, `Failed`, and `Cancelled`, as terminal. Auto-poll up to 3× at 5-second intervals, surface every intermediate status, never loop silently or indefinitely, then ask the user. Follow [organization-management.md — Polling procedure](organization-management.md#polling-procedure-auto-poll-then-hand-off) for the numbered next-step menu after the 3-poll window.
 
-**Polling cadence — auto-poll up to 3× at 5-second intervals, then ask the user.** Surface each intermediate status; never loop silently and never auto-poll indefinitely. For the full procedure (including the numbered next-step menu the agent presents after the 3-poll auto-window), see [organization-management.md — Polling procedure](organization-management.md#polling-procedure-auto-poll-then-hand-off).
-
-**Output code:** `OmsOperationGet`.
-
----
+**Output code:** `OmsOperationGet`
 
 ## Regions — `uip admin organizations regions`
 
 ### `regions list`
 
-List provisioning regions in which Portal can stand up tenants (and orgs via the Portal). Run before `tenants create` to confirm `--region` accepts the desired value.
+Run this before `tenants create` to validate `--region`, then pass a returned region name directly to `--region`:
 
 ```bash
 uip admin organizations regions list --output json
 ```
 
-Returned region names go directly into `--region` on `tenants create`.
+This lists provisioning regions in which Portal can stand up tenants and orgs.
 
-**Output code:** `OmsRegionsList`.
-
----
+**Output code:** `OmsRegionsList`
 
 ## Org-Level Services — `uip admin organizations services`
 
-> **Read-only at the org surface.** Only `list` and `list-available` exist here — there is no `add` / `enable` / `disable` / `remove` at the org level. To provision / mutate services on a specific tenant, use [`tenants services` →](tenants-commands.md#tenant-level-services--uip-admin-tenants-services).
+This surface is read-only: only `list` and `list-available` exist. Do not use org-level `add`, `enable`, `disable`, or `remove`; mutate services on a tenant with [`tenants services` →](tenants-commands.md#tenant-level-services--uip-admin-tenants-services).
 
-> **`list` vs `list-available` are different sets — never merge them.** `services list` returns the **currently provisioned** org-level instances (each with a `status`: `Enabled` / `Disabled` / `Deleted`). `services list-available` returns the **catalog** of provisionable service types (no status — catalog entries are not provisioned). Always present them as two clearly labeled sections when surfacing results to the user. See [organization-management.md — List Org-Level Services](organization-management.md#workflow-list-org-level-services--provisioned-vs-available).
+Keep result sets separate: `services list` returns currently provisioned org-level instances with status `Enabled`, `Disabled`, or `Deleted`; `services list-available` returns provisionable catalog types with no status. Present them as clearly labeled sections. See [organization-management.md — List Org-Level Services](organization-management.md#list-org-level-services).
 
 ### `services list`
 
-List **currently provisioned** org-level service instances. Each row carries a lifecycle `status` — `Enabled`, `Disabled`, or `Deleted` (soft-deleted). Surface the status field in any presentation; flag `Deleted` entries explicitly.
+List provisioned instances, surface `status`, and explicitly flag `Deleted` entries. All filters run client-side after the API call:
 
 ```bash
 uip admin organizations services list --output json
@@ -145,31 +114,27 @@ uip admin organizations services list --region "<REGION>" --output json
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--service <type>` | No | Filter by service type (client-side) |
-| `--status <state>` | No | Filter by lifecycle status, e.g. `Enabled`, `Disabled` (client-side) |
-| `--region <region>` | No | Filter by region (client-side) |
+| `--service <type>` | No | Client-side service-type filter |
+| `--status <state>` | No | Client-side lifecycle filter, e.g. `Enabled`, `Disabled` |
+| `--region <region>` | No | Client-side region filter |
 
-All filters are client-side after the API call (no server-side filters).
-
-**Output code:** `OmsOrgServicesList`.
+**Output code:** `OmsOrgServicesList`
 
 ### `services list-available`
 
-List the **catalog** of services that can be provisioned at the org level. Catalog only — entries are not provisioned and have no lifecycle status. Do not show a status column when surfacing results.
+List the org-level service catalog. Entries are not provisioned and have no lifecycle status; do not show a status column:
 
 ```bash
 uip admin organizations services list-available --output json
 ```
 
-**Output code:** `OmsOrgServicesAvailable`.
-
----
+**Output code:** `OmsOrgServicesAvailable`
 
 ## Error Handling
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `region not allowed` | `--region` value not in available regions (only relevant via `tenants create`) | Run `regions list` and use a returned value |
-| Operation never completes | Async op stuck or failed | Inspect `Data` from `operation get <OPERATION_ID>`; retry or escalate |
-| Empty service list | Filter mismatch (all filters client-side) | Drop a filter or try a different value |
-| Auth error | Login expired | `uip login status`, then `uip login` |
+| `region not allowed` | `--region` is not available; relevant via `tenants create` | Run `regions list` and use a returned value |
+| Operation never completes | Async operation is stuck or failed | Inspect `Data` from `operation get <OPERATION_ID>`; retry or escalate |
+| Empty service list | Client-side filter mismatch | Drop a filter or try another value |
+| Auth error | Login expired | Run `uip login status`, then run `uip login` |

@@ -1,11 +1,11 @@
 task_id: skill-ixp-taxonomy-edit-chain-smoke
 description: >
   Smoke: agent builds a small taxonomy with `data-types add` then
-  `groups add --fields '[…]'` referencing the new type by name.
+  `groups add --fields-file` referencing the new type by name.
   The new type is a money-kind type the agent SHOULD create — not a
   generic clone of the built-in `Monetary Quantity`, but a reusable
   concept carrying its own extraction instructions (the value-adding
-  branch of Critical Rule 17; the plain-amount
+  branch of Critical Rule 16; the plain-amount
   reuse-the-default branch is covered by reuse_default_type.yaml).
   Anti-pattern: `fields add` only edits fields in an existing
   group, so it can't seed a brand-new one.
@@ -59,8 +59,9 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Step 2: groups add must happen, with --instructions AND a --fields
-  # JSON array. The JSON must reference the data type by its name.
+  # Step 2: groups add must happen, with --instructions AND a --fields-file
+  # JSON array. The JSON must reference the data type by its name; the mock
+  # logs the file's content right after its path.
   - type: file_matches_regex
     description: "Agent created the Invoice Header group via groups add with --instructions and --fields"
     path: "mocks/calls.log"
@@ -70,15 +71,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "groups add --fields JSON referenced the Withholding Tax Amount data type for the Tax Withheld field"
+    description: "groups add --fields-file JSON referenced the Withholding Tax Amount data type for the Tax Withheld field"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+groups\s+add\b(?=.*--fields\s+[^|;&]*Tax Withheld[^|;&]*Withholding Tax Amount).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+groups\s+add\b(?=.*--fields(?:-file\s+\S+)?\s+[^|;&]*Tax Withheld[^|;&]*Withholding Tax Amount).*)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
   # Anti-pattern: don't reach for `fields add` to put a field in a
-  # group that doesn't exist yet. `groups add --fields` is the
+  # group that doesn't exist yet. `groups add --fields-file` is the
   # one-shot path for creating a new group with its fields.
   - type: file_matches_regex
     description: "Agent did NOT use `fields add` to seed a non-existent group"

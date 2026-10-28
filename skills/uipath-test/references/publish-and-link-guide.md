@@ -17,7 +17,6 @@ uip tm wait              → block until terminal
 ## Prerequisites
 
 - Logged in: `uip login status --output json`. If not, `uip login`.
-- CLI surface probed (see [/uipath:uipath-test § Critical Rules #2](../SKILL.md#critical-rules)). Commands below use the post-rename shape; on a pre-rename CLI, translate via the [Pre-rename fallbacks](../SKILL.md#pre-rename-fallbacks) table (`testcases` → `testcase`, `run` → `execute`, etc.) before each call.
 - Project builds clean: `uip rpa build "<PROJECT_DIR>" --output json` returns `Result: "Success"`.
 - Test case exists in Test Manager: `uip tm testcases list --project-key <PROJECT_KEY> --output json`. Capture the `ObjKey` (e.g. `DEMO:1`) — it is the `--test-case-key` value.
 
@@ -57,7 +56,7 @@ A single package can expose multiple test entry points (one per `[TestCase]` met
 uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_UUID> --output json
 ```
 
-Optional filter: `--package-name <PACKAGE_ID>` (case-insensitive substring) when many packages live in the same folder. Pick the row whose `PackageName` matches the `Id` from Step 2 and note its `TestName`.
+Optional filter: `--package-name <PACKAGE_ID>` (case-insensitive substring) when many packages live in the same folder. Pick the row whose `PackageName` matches the `Id` from Step 2 and note its `TestName`. Each row also carries a `PackageEntryPointId` — pass it to `--entry-point-id` in Step 5 to bind by id instead of by name.
 
 ## Step 5 — Link the automation
 
@@ -72,6 +71,19 @@ uip tm testcases link-automation \
 ```
 
 The output should show `Result: "Linked"`. `link-automation` is idempotent on the `(test-case-key, package-name, test-name)` triple — re-running with the same triple replaces the previous link.
+
+**Alternative — link by id.** In addition to the required `--test-name`, pass `--entry-point-id <PackageEntryPointId>` (from Step 4) to bind by id. `--test-name` stays required but is ignored (the label is taken from the entry point) — pass the name shown in `list-automations`.
+
+```bash
+uip tm testcases link-automation \
+  --project-key <PROJECT_KEY> \
+  --test-case-key <TEST_CASE_KEY> \
+  --folder-key <FOLDER_UUID> \
+  --package-name <PACKAGE_ID> \
+  --test-name <TEST_NAME> \
+  --entry-point-id <PACKAGE_ENTRY_POINT_ID> \
+  --output json
+```
 
 ## Step 6 — Run
 
@@ -103,7 +115,7 @@ For result download, attachment download, and report generation: see [/uipath:ui
 
 ## Common pitfalls
 
-- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`) vs `--test-case-keys` (plural, comma-separated).** Use `--test-case-key` for `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`. Use `--test-case-id` for `run`, `list-steps`, `list-result-history`. Use `--test-case-keys` (plural) for the bulk-association verbs `testcases add` / `testcases remove`. They are NOT interchangeable.
+- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`) vs `--test-case-keys` (plural, comma-separated).** Use `--test-case-key` for `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`. Use `--test-case-id` for `run`, `steps list`, `list-result-history`. Use `--test-case-keys` (plural) for the bulk-association verbs `testcases add` / `testcases remove`. They are NOT interchangeable.
 - **Wrong folder identifier.** `link-automation` requires the UUID. A folder name or path passed in `--folder-key` fails silently with "folder not found" or links to the wrong folder.
 - **Re-uploading the same package version.** Orchestrator rejects duplicates. Bump `--package-version` (or `project.json` `projectVersion`) on every change.
 - **Linking before upload.** `link-automation` does not validate the package exists on Orchestrator at link time — it only validates at run time. A stale `--package-name` value silently links to nothing and the next run fails with `package not found`. Always discover via `list-automations` (Step 4) before linking.

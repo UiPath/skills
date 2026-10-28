@@ -38,11 +38,10 @@ def fail(msg: str) -> None:
 
 
 def read_plan(path: str = CASEPLAN) -> dict:
-    """Read the battery's caseplan; falls back to a recursive search if it moved."""
-    if not os.path.isfile(path):
-        from _shared.case_check import find_caseplan
+    """Read the battery's caseplan under any plan name; falls back to a recursive search if it moved."""
+    from _shared.case_check import existing_caseplan, find_caseplan
 
-        path = find_caseplan()
+    path = existing_caseplan(path) or find_caseplan()
     with open(path) as fh:
         return json.load(fh)
 
@@ -238,8 +237,13 @@ def assert_sla_resolves(plan: dict, rule: dict, where: str, *, owner: str | None
 
 
 def assert_interrupting(cond: dict, expected: bool, where: str) -> None:
+    # An omitted key reads as false: the case-to-BPMN converter interrupts only
+    # on a literal true (`entryCondition.isInterrupting === true`), so leaving
+    # out a falsy default is a serialization choice, not a different plan.
     actual = cond.get("isInterrupting")
-    if actual is not expected:
+    if actual is not None and not isinstance(actual, bool):
+        fail(f"{where}: isInterrupting is {actual!r}, expected a boolean or no key.")
+    if (actual is True) is not expected:
         fail(
             f"{where}: isInterrupting is {actual!r}, expected {expected}. Interrupting follows "
             "what the response does to active work, not the SLA's scope."

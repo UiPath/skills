@@ -12,6 +12,9 @@ run_limits:
   expected_turns: 16
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "QueryAgent" that accepts a required
   `userQuery` (string) and returns a `reply` (string). Validate the
@@ -40,7 +43,7 @@ success_criteria:
 
   - type: run_command
     description: "Schema sync, prompt-matching schemas, and user message inlines {{input.userQuery}}"
-    command: "python3 $TASK_DIR/check_schema_update.py"
+    command: "python3 $REFERENCE_DIR/check_schema_update.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

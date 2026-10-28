@@ -97,11 +97,11 @@ uip agent eval run results <eval_set_run_id> \
 ```bash
 # Print only test cases with a specific name
 uip agent eval run results <run_id> --set "Default Evaluation Set" --path ./my-agent \
-  --output json --output-filter 'Data.Results[?TestCase==`greeting-test`]'
+  --output json --output-filter '[?TestCase==`greeting-test`]'
 
 # Print only the score field for each test case
 uip agent eval run results <run_id> --set "Default Evaluation Set" --path ./my-agent \
-  --output json --output-filter 'Data.Results[*].{name: TestCase, score: Score}'
+  --output json --output-filter '[*].{name: TestCase, score: Score}'
 ```
 
 ### Failure detection
@@ -175,7 +175,7 @@ uip agent eval add greeting-test \
 uip agent validate --path ./my-agent --output json
 
 # 3. Upload the agent's solution to Studio Web (required before running evals)
-uip solution upload . --output json   # add --force to replace an existing cloud solution
+uip solution upload . --output json   # imports as new, or overwrites the existing cloud solution in place
 
 # 4. Run and wait
 uip agent eval run start \
@@ -191,7 +191,7 @@ uip agent eval run results <run_id> \
 
 # 6. Make changes, validate, re-upload, re-run, compare
 uip agent validate --path ./my-agent --output json
-uip solution upload . --force --output json   # --force replaces the existing cloud solution in place
+uip solution upload . --output json           # re-upload: overwrites the cloud solution in place
 uip agent eval run start --set "Default Evaluation Set" --path ./my-agent --wait --output json
 uip agent eval run compare <new_run_id> --compare-to <old_run_id> \
   --set "Default Evaluation Set" --path ./my-agent --output json

@@ -12,6 +12,9 @@ prompt_injection in agent.json with correct scope constraints:
   - validatorParameters contains a number parameter with id "threshold"
   - action.$actionType == "block"
   - id is UUID-shaped
+  - inputSchema declares a job-attachment field (the uploaded document)
+  - validatorParameters contains the enum parameter "detectionScope" with
+    value "Both" — the user asked for the text AND the uploaded document
 
 This test specifically validates the most dangerous anti-pattern:
 adding prompt_injection to Agent or Tool scope (which is invalid).
@@ -21,6 +24,9 @@ import json
 import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+from _shared.file_guardrail_assertions import require_detection_scope, require_job_attachment_input
 
 ROOT = Path(os.getcwd()) / "InjGuardSol" / "InjSafeAgent"
 AGENT = ROOT / "agent.json"
@@ -35,8 +41,11 @@ def load(path: Path) -> dict:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
 
 
+
 def main() -> None:
     agent = load(AGENT)
+
+    require_job_attachment_input(agent, "document")
 
     # --- guardrails array exists ---
     guardrails = agent.get("guardrails")
@@ -142,6 +151,8 @@ def main() -> None:
             f"got {val}"
         )
     print(f"OK: threshold parameter = {val} (number, in range)")
+
+    require_detection_scope(params, "Both", "the user asked for both the text and the uploaded document")
 
     print("OK: prompt injection guardrail is valid with Llm-only scope")
 

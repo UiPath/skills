@@ -1,12 +1,12 @@
 ---
 name: uipath-solution
-description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via the `uip solution` CLI: init/restore/pack/publish/deploy/activate/upload, projects add|import|remove, resources refresh|add|remove|edit. Also DIAGNOSE solution-lifecycle failures: pack/publish/deploy/activate errors, stale or missing bindings, unimported/unset/unresolved resources, deploy error codes (e.g. `[1009] Invalid argument 'Value'`), publish name+version/processKey collisions, and `uip solution` 'unknown command' after the new→init rename. Bundles multiple automation projects (RPA/Flow/Case/Agents/API Workflows/AppV2 Coded and Coded Action apps) into one deployable `.uipx`. For PDD→SDD design (sdd.md/pdd.md) & multi-skill task derivation→uipath-planner. For non-solution Orchestrator/IS/resources/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For .bpmn→uipath-maestro-bpmn. For agent.json and .py agents→uipath-agents. For standalone coded-app deploy (no parent .uipx)→uipath-coded-apps."
-when_to_use: "User mentions .uipx / 'uip solution' / 'pack the solution' / 'publish the solution' / 'deploy the solution' / 'activate' / multi-project / Solution scope / Solution Folder. Fires for 'create a new solution', 'add project/resource to solution', 'add a queue/asset/bucket/connection to the solution', 'import a cloud queue/asset', 'edit/remove a resource', 'change a queue/asset field', 'set an asset value in the solution'. Also fires to DIAGNOSE solution problems: 'why did my solution pack/publish/deploy fail', 'pack ships stale/old bindings', 'my resource edit didn't take effect', 'refresh imported 0 bindings', deploy fails '[1009] Invalid argument Value', publish 'name+version / processKey collision', 'uip solution new: unknown command', 'coded app missing from the .uipx / not packed'. (Solution build-time/CLI faults belong here; faulted Orchestrator JOBS at runtime → uipath-troubleshoot.) Load BEFORE editing .uipx or running uip solution commands. For PDD→SDD design→uipath-planner; for an 'architect then deploy' two-phase request, run uipath-planner first, then return here to pack/deploy."
+description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via `uip solution`: init/download/restore/pack/publish/deploy/activate/upgrade/upload, projects add|import|remove, resources refresh|add|remove|edit, feeds list, `--feed` / `--personal-workspace`. DIAGNOSE lifecycle failures: pack/publish/deploy/activate errors, stale/missing bindings, unimported/unresolved resources, deploy error codes, `--acknowledge-permanent-deletion` consent, publish name+version/processKey collisions, redeploy blocked by an existing deployment (`deploy upgrade`), feed 'not an available publish location', package not in `packages list`, 'unknown command' after new→init rename. Bundles RPA/Flow/Case/Agents/API Workflow/AppV2 projects in one `.uipx`. Routing: PDD→SDD design & task derivation→uipath-planner; non-solution Orchestrator/IS/resources/auth/traces→uipath-platform; .xaml/.cs→uipath-rpa; .flow→uipath-maestro-flow; .bpmn→uipath-maestro-bpmn; agent.json/.py agents→uipath-agents; standalone coded-app deploy→uipath-coded-apps."
+when_to_use: "User mentions .uipx / 'uip solution' / 'pack the solution' / 'publish the solution' / 'deploy the solution' / 'activate' / multi-project / Solution scope / Solution Folder. Fires for 'download/export a solution from Studio Web', 'work on an existing solution', 'migrate a solution to another org/tenant', 'create a new solution', 'add project/resource to solution', 'add a queue/asset/bucket/connection to the solution', 'import a cloud queue/asset', 'edit/remove a resource', 'change a queue/asset field', 'set an asset value in the solution', 'upgrade a deployment to another version', 'change the deployed version without losing my configuration', 'publish/deploy to a folder feed or Personal Workspace', 'which feeds can I publish to'. Also fires to DIAGNOSE solution problems: 'why did my solution pack/publish/deploy fail', 'pack ships stale/old bindings', 'my resource edit didn't take effect', 'refresh imported 0 bindings', deploy fails '[1009] Invalid argument Value', publish 'name+version / processKey collision', 'uip solution new: unknown command', 'coded app missing from the .uipx / not packed'. (Solution build-time/CLI faults belong here; faulted Orchestrator JOBS at runtime → uipath-troubleshoot.) Load BEFORE editing .uipx or running uip solution commands. For PDD→SDD design→uipath-planner; for an 'architect then deploy' two-phase request, run uipath-planner first, then return here to pack/deploy."
 ---
 
 # UiPath Solution — `uip solution` lifecycle
 
-Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via the `uip solution` CLI surface. A Solution bundles multiple automation projects (processes, libraries, tests, agent projects, API workflows) into a single deployable unit.
+Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via the `uip solution` CLI surface. A Solution bundles multiple automation projects (processes, tests, agent projects, API workflows) into a single deployable unit. A library is not one of them — it is published on its own and at most declared as a `Library` resource ([Develop a Solution § Step 2](references/develop-solution.md#step-2-add-existing-projects)).
 
 > **Use the CLI. Don't roll your own REST for solution ops.** Hand-rolling HTTP calls misses the `X-UIPATH-OrganizationUnitId` folder header, OData filter shape, pagination envelope, `pipelinesInstall` deploy semantics, retry behavior, and the `Result/Code/Data` output contract. The CLI is the source of truth.
 
@@ -14,11 +14,20 @@ Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via
 
 ## When to Use This Skill
 
+<!--skill-flavor:when-to-use-uipx:start-->
 - User has a `.uipx` solution and wants to pack / publish / deploy / activate / upload
+<!--skill-flavor:when-to-use-uipx:end-->
+<!--skill-flavor:when-to-use-create:start-->
 - User wants to create a new solution (`uip solution init`), add or remove projects, or refresh solution resources
+<!--skill-flavor:when-to-use-create:end-->
+<!--skill-flavor:when-to-use-existing:start-->
+- User wants to work on a solution that already exists in Studio Web, or move one to another org or tenant — start with `uip solution download` ([Start From an Existing Solution](#start-from-an-existing-solution))
+<!--skill-flavor:when-to-use-existing:end-->
 - User asks to set up a CI/CD pipeline that builds, publishes, and deploys a UiPath solution
 - User mentions deploy configs, environment promotion, or activating a deployed solution
+<!--skill-flavor:when-to-use-detected-uipx:start-->
 - A skill or main agent detected a `.uipx` file and redirected the user here
+<!--skill-flavor:when-to-use-detected-uipx:end-->
 
 **Skip this skill** when:
 - The task is PDD → SDD architecture/design (sdd.md / pdd.md) — load `uipath-planner`.
@@ -27,6 +36,7 @@ Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via
 
 ## CLI Surface Probe
 
+<!--skill-flavor:cli-surface-probe:start-->
 Before the first `uip solution …` command in a session, probe the `solution` surface to detect pre- vs post-rename CLI:
 
 ```bash
@@ -35,8 +45,12 @@ uip solution init --help --output json
 
 - Result `Success` → post-rename CLI (default). Use the commands and flags as documented in the references.
 - `unknown command` / non-zero exit → pre-rename CLI. Translate via the table below before each call. Re-probe on any later `unknown command` error.
-- `command not found` / `uip: not found` / `'uip' is not recognized` → CLI not installed. Tell the user to run `npm install -g @uipath/cli`, then `uip login`, and abort the work until those succeed.
+<!--skill-flavor:cli-surface-probe:end-->
+<!--skill-flavor:cli-unavailable:start-->
+- `command not found` / `uip: not found` / `'uip' is not recognized` → CLI not installed. Tell the user to run the official installer (`curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash` on macOS/Linux; `irm https://download.uipath.com/uipath-cli/install.ps1 | iex` in Windows PowerShell), then `uip login`, and abort the work until those succeed.
+<!--skill-flavor:cli-unavailable:end-->
 
+<!--skill-flavor:rename-table:start-->
 | Post-rename (default) | Pre-rename equivalent |
 |---|---|
 | `uip solution init <NAME>` | `uip solution new <NAME>` |
@@ -47,10 +61,13 @@ uip solution init --help --output json
 | `uip solution projects import <PATH>` | `uip solution project import --source <PATH>` |
 
 All other `solution` subcommands (`pack`, `publish`, `deploy activate/status/uninstall`, `upload`, `resources …`, `projects add/remove/list`) are unchanged on both surfaces.
+<!--skill-flavor:rename-table:end-->
 
 ## Critical Rules
 
+<!--skill-flavor:probe-rule:start-->
 1. **Probe the CLI surface before the first `uip solution` command in a session.** Run `uip solution init --help --output json`. `Success` = post-rename CLI (default); `unknown command` = pre-rename CLI — translate via the fallback table above. Re-probe on any later `unknown command` error.
+<!--skill-flavor:probe-rule:end-->
 2. **Always use `--output json`** for `uip solution` commands whose output you parse. JSON is compact and stable; the default for non-interactive runs.
 3. **Use the CLI, never roll your own REST for solution operations.** Hand-rolled HTTP calls miss the `X-UIPATH-OrganizationUnitId` header, OData filter shape, pagination envelope, and `pipelinesInstall` deploy semantics. Only fall through to REST after confirming no `uip solution` command covers the task.
 4. **Never hand-edit `resources/solution_folder/`.** It's auto-generated by `uip solution projects add` / `import` and auto-cleaned by `projects remove`. Manual edits desync from `.uipx` and produce silent failure modes. See [scenarios/manual-edits.md](references/scenarios/manual-edits.md).
@@ -58,12 +75,16 @@ All other `solution` subcommands (`pack`, `publish`, `deploy activate/status/uni
 6. **Run `uip solution resources refresh` before `pack` or `upload`.** Bundled artefact files and `userProfile/<userId>/debug_overwrites.json` must reflect current cloud state. Skipping refresh ships stale bindings.
 7. **AppV2 coded apps register in `.uipx` when authored inside a solution.** `uip codedapp init` is the solution-side scaffolding entry point — run it from **inside a `.uipx` solution**. It writes `project.uiproj` (`ProjectType: "AppV2"`) + `webAppManifest.json`, nests source under `source/dist/`, and auto-registers as `Type: "AppV2"` — emitting `resources/solution_folder/app/{Coded,CodedAction}/`. `uip solution projects add` / `uip solution projects import` cover existing AppV2 folders too — both read `webAppManifest.config.isActionApp` to pick `Coded` / `CodedAction` subType (defaults `Coded` for legacy folders with no manifest). `uip solution pack` bundles them; `uip solution deploy run` provisions them. Standalone coded apps are a **different** lifecycle — scaffold them with `npx create-vite@latest` (not `uip codedapp init`), keep a flat `dist/` at the project root, and deploy via `uip codedapp pack` → `uip codedapp publish` → `uip codedapp deploy`. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
 8. **Verify the artifact after every CLI mutation.** Read `project.json`, `.uipx`, or `uip solution deploy status` output — exit codes lie. Verification is additional; it does not replace requested read-only list commands. If the user asks to show or list registered projects, solution resources, packages, deployments, or statuses, run the matching `uip solution ... list/status --output json` command and then inspect files only as a secondary sanity check.
-9. **For multi-environment promotion, switch tenants with `uip login tenant set <tenant>` and pass a per-environment deploy config via `--config-file <path>`.** The same packed `.uipx` deploys to dev/staging/prod — the environment differs by the target tenant and the config file (generated with `deploy config get`, edited with `config set` / `config link`), not by a different package. There is no `-c <CONFIG_KEY>` flag.
+9. **A deployment in `Draft` is a failed deploy, not a pending one.** Validation rejected a resource and the install never completed; it never advances on its own and cannot be activated. Read the reasons — `Validation:` / `Conflicts:` land in the failure's `Instructions` on every feed, since each deploy waits for its run — fix them with `deploy config set` / `link`, and rerun `deploy run --config-file <file>` with the **same** `--name` and `--package-version`. While the draft exists it owns the deployment: any other version is refused, `deploy upgrade` included, until the draft is finished that way or discarded (`deploy upgrade <draft-key> --discard-draft`, or Delete draft in Orchestrator). To look at it, run `deploy list` **with the same feed flag**, which is tenant-scoped without one and shows no Personal Workspace or folder-feed row at all. See [A deploy that stops in `Draft`](references/pack-and-deploy.md#a-deploy-that-stops-in-draft).
+10. **Replacing an installed resource with a link needs explicit consent.** When a `deploy run` config file (`deploy config link`) or the new version in a `deploy upgrade` links a resource the deployment already installed, the server deletes the installed copy and its data. Newer servers ask first, and newer CLI builds then stop with `Deploying '<name>' will permanently delete … installed resource(s) replaced by links: <kind> '<name>', …` (`Upgrading …` for `deploy upgrade`; `ErrorCode: invalid_argument`, the resources also in `Data.PermanentDeletionResources`). Nothing was installed and the attempt is kept as a pending draft. This is not a config error to fix: confirm only if the user wants those copies and their data gone, then re-run the **same** command with `--acknowledge-permanent-deletion` — on `deploy upgrade` never with `--discard-draft`, which drops the very links being confirmed. To keep the copies instead, `deploy config unlink <file> <resource>` and re-run (`deploy run`), or `deploy upgrade <draft-key> --discard-draft` (`deploy upgrade`). `--yes` is not this consent. See [Replacing an installed resource with a link](references/pack-and-deploy.md#replacing-an-installed-resource-with-a-link).
+11. **Never pass `--force` to `deploy uninstall` on your own.** It sends `forceUninstall: true`, which abandons uncompleted jobs and permanently deletes installed resources that were replaced by links, with their data (it also stands in for `--yes`). When an uninstall fails with `Message` "…this deployment has uncompleted jobs; --force uninstalls anyway" or "…permanently deletes these resources and their data: <kind> '<name>', …" (`Data.JobsNotInFinalState`, `Data.PermanentDeletionResources`, `Retry: RetryWillNotFix`), show the user the cause and add `--force` only when they explicitly accept it. Never add it to get past "…errors that --force cannot get past" (`Retry: RetryLater`): resolve that in Orchestrator and re-run without `--force`. See [When the uninstall is refused](references/activate-and-manage.md#when-the-uninstall-is-refused).
+12. **For multi-environment promotion, switch tenants with `uip login tenant set <tenant>` and pass a per-environment deploy config via `--config-file <path>`.** The same packed `.uipx` deploys to dev/staging/prod — the environment differs by the target tenant and the config file (generated with `deploy config get`, edited with `config set` / `config link`), not by a different package. There is no `-c <CONFIG_KEY>` flag.
 
 ## Workflow
 
 The typical lifecycle for a UiPath Solution:
 
+<!--skill-flavor:solution-lifecycle-steps:start-->
 ```
 1. init / project add  → Create solution, register projects (.uipx + resources/solution_folder/)
 2. resources refresh   → Sync bundled artefacts and debug overwrites with cloud state
@@ -78,6 +99,7 @@ The typical lifecycle for a UiPath Solution:
 > **`restore` is an optimization, not a requirement.** `pack` restores dependencies internally, so a separate `restore` step is only useful when you want deps resolved up front — most often in CI (`login → restore → pack`) to fail fast on a missing feed before the heavier pack runs. `restore` takes a `<solutionPath>` only (solution dir with a `.uipx`, or a `.uis` file), resolves deps in place, and does **not** produce a package. It needs an authenticated session to reach private Orchestrator feeds, so run `uip login` before it.
 
 > **AppV2 coded apps in the solution flow through `uip solution`, not `uip codedapp` directly.** When a coded-app project has `Type: "AppV2"` in `.uipx`, `uip solution pack` bundles its `.nupkg` and `uip solution deploy run` provisions it in the deployment folder — no separate `uip codedapp pack` / `publish` / `deploy` step. Standalone coded apps (scaffolded outside any solution via `npx create-vite`, flat `dist/` at the project root, no `project.uiproj` / `webAppManifest.json`) use the direct `codedapp` path instead. See `uipath-coded-apps` for the standalone lifecycle and for authoring an AppV2 project inside a solution via `uip codedapp init`.
+<!--skill-flavor:solution-lifecycle-steps:end-->
 
 Two distinct distribution paths from the same source:
 - **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.
@@ -87,14 +109,30 @@ Authentication is a prerequisite. Check `uip login status --output json` before 
 
 This skill is the terminal step of an SDD-driven build: after `uipath-planner` produces the SDD and derives the task list, and implementation specialists build the projects, the `.uipx` is packed and shipped here.
 
+<!--skill-flavor:existing-solution:start-->
+## Start From an Existing Solution
+
+When the solution already exists in Studio Web, download its source instead of recreating it:
+
+```bash
+uip solution download <solution-id> --destination <dir> --extract --output json
+```
+
+- `<solution-id>` is the Studio Web solution GUID. Ask the user for it when they have not given it.
+- Work inside `Data.ExtractedTo`. It holds the `.uipx` and the project folders. Read the `AGENTS.md` / `CLAUDE.md` there first; `--extract` adds them when the archive has none. Extract into a new or empty folder: `--extract` writes over existing files, so re-running it on a copy you have edited loses those edits. Confirm with the user first.
+- The extracted `.uipx` keeps the Studio Web `SolutionId`, and `uip solution upload` overwrites the solution that has that id in the org you are logged into, or imports a new one when there is none ([Develop a Solution § upload](references/develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds)). To move the solution to another org or tenant, log in there and `upload` it, or `pack` → `publish` → `deploy run` there.
+<!--skill-flavor:existing-solution:end-->
+
 ## Reference Navigation
 
 | File | Purpose |
 |------|---------|
 | [Solution Overview](references/solution-overview.md) | What a Solution is, `.uipx` manifest, file structure, lifecycle diagram, command tree |
+<!--skill-flavor:develop-solution-row:start-->
 | [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resources refresh / resources add / resources remove / resources edit`; field-tested gotchas |
-| [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run`, deploy configs, CI/CD pipeline patterns |
-| [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / uninstall`, environment management |
+<!--skill-flavor:develop-solution-row:end-->
+| [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run / feeds list`, targeting a non-tenant feed (`--feed` / `--personal-workspace`), deploy configs, CI/CD pipeline patterns |
+| [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / upgrade / uninstall / delete`, in-place version upgrades, environment management |
 | [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions |
 
 ## Anti-patterns

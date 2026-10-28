@@ -9,6 +9,9 @@ tags: [uipath-human-in-the-loop, integration, variable-binding]
 run_limits:
   expected_turns: 28
   max_turns: 75
+reference:
+  directory: ../uipath-maestro-flow
+
 initial_prompt: |
   Build a UiPath Flow named "ContractReview" for legal contract approval:
 
@@ -26,7 +29,9 @@ initial_prompt: |
      variable property name.
   5. End node
 
-  Wire: Trigger → Script → HITL →|completed| Script (log) → End
+  Wire: Trigger → Script → HITL → Script (log) → End, with both outcomes
+  (Approve and Reject) routed to the log Script node — every outcome needs
+  its own wired port.
 
   Validate the flow after building.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
@@ -34,15 +39,15 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "HITL node has approved field with correct id and variable"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"id\": \"approved\"' '\"variable\": \"vars.legalApproval\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '\"id\": \"approved\"' '\"variable\": \"vars.legalApproval\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -50,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node has comments field with id reviewcomments"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"id\": \"reviewcomments\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '\"id\": \"reviewcomments\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -58,7 +63,7 @@ success_criteria:
 
   - type: run_command
     description: "Downstream script references output by field ID .approved"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '.output.approved'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '.output.approved'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -66,7 +71,7 @@ success_criteria:
 
   - type: run_command
     description: "Downstream script references output by field ID .reviewcomments"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '.output.reviewcomments'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '.output.reviewcomments'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -77,7 +82,7 @@ success_criteria:
   # a missing or unreadable flow can never score these points.
   - type: run_command
     description: "Script does NOT reference output by variable name (.output.legalApproval or .output.legalNotes)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview --absent-regex '\\.output\\.(legalApproval|legalNotes)'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --absent-regex '\\.output\\.(legalApproval|legalNotes)'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5

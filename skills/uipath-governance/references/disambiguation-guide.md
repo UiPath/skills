@@ -11,16 +11,24 @@ The two branches:
 
 **Before evaluating Branch A / B signals**, check for compliance standard framing:
 
-If the request contains a **standard name** (`ISO 42001`) **AND** a scope-limiting phrase (`just that area`, `only that part`, `not the whole standard`, `just that control`, `just the traceability`, `only the AI provider controls`, `just that compliance piece`), it is a **partial-apply** request regardless of whether the content words also match a Branch A model-gate signal.
+A **standard name** is any name resolving to a pack in `catalog list` — `ISO 42001` / `ISO/IEC 42001` / `AI Management System`, `ISO 27001` / `ISO/IEC 27001` / `ISMS` / `Information Security Management System`, `GDPR`, `HIPAA`, `SOC 2`, `EU AI Act`, or a bare standard number. Routing here does not mean the standard is usable: some catalog entries are announced with no bundle behind them. Which ones differ by environment, so the compliance flow reads it from `catalog list` and tells the user — never assume from the name. More than one standard is available, so the standard name is a routing signal, never an assumption: resolve which one via [`compliance-pack/catalog/impl.md` § Pack ID lookup](./compliance-pack/catalog/impl.md#pack-id-lookup) before running any pack-scoped command.
+
+If the request contains a **standard name** **AND** a scope-limiting phrase (`just that area`, `only that part`, `not the whole standard`, `just that control`, `just the traceability`, `only the AI provider controls`, `just that compliance piece`), it is a **partial-apply** request regardless of whether the content words also match a Branch A model-gate signal.
+
+The content-word rows below are examples of the shape, not a closed list — the standard name plus a scope phrase is what routes, whatever the subject matter. Clause topics differ per standard (42001 is AI-management-shaped; 27001 is information-security-shaped), so never infer the standard from the content words.
 
 | Request shape | Route |
 |---|---|
-| ISO 42001 + "make AI usage traceable / logged" + "not the full standard" | Compliance standard → partial-apply (AITrustLayer traceability clauses) |
-| ISO 42001 + "lock down AI model providers / approved providers" + "just that control" | Compliance standard → partial-apply (AITrustLayer model-governance clauses) |
-| ISO 42001 + "robot allowlists / URL allowlists / application allowlists" + scoped | Compliance standard → partial-apply (Robot UIAutomation clauses) |
-| ISO 42001 + no scope-limiting phrase | Compliance standard → full-apply or posture check |
+| standard name + "make AI usage traceable / logged" + "not the full standard" | Compliance standard → partial-apply (traceability clauses) |
+| standard name + "lock down AI model providers / approved providers" + "just that control" | Compliance standard → partial-apply (AITrustLayer model-governance clauses) |
+| standard name + "robot allowlists / URL allowlists / application allowlists" + scoped | Compliance standard → partial-apply (Robot UIAutomation clauses) |
+| standard name + "access control / who can sign in / least privilege" + scoped | Compliance standard → partial-apply (access-control clauses) |
+| standard name + "audit logging / retention / evidence trail" + scoped | Compliance standard → partial-apply (logging clauses) |
+| standard name + "encryption / crypto / secrets handling" + scoped | Compliance standard → partial-apply (cryptography clauses) |
+| standard name + no scope-limiting phrase | Compliance standard → full-apply or posture check |
+| Compliance framing with NO standard name ("check my compliance posture", "am I compliant") | Compliance standard → resolve which standard first (ask, listing `catalog list` packs), then route |
 
-Do **not** route ISO 42001 + model/traceability intents to `aops-policy` directly — even though those intents look like Branch A model-gate signals, the standard-framing signals the catalog-based path that understands which clauses apply.
+Do **not** route a standard name + model/traceability/access-control intent to `aops-policy` directly — even though those intents look like Branch A signals, the standard-framing signals the catalog-based path that understands which clauses apply.
 
 ## Strong signals — Branch A (AOps)
 

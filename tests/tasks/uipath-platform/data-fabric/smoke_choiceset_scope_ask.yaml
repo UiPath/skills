@@ -36,5 +36,6 @@ success_criteria:
       1.0 if a same-name choice set was discovered and the response safely
       asks whether to reuse the tenant-level set or create/select a
       folder-scoped set. Score 0.0 if it creates or silently selects a scope.
+    include_reference: false
     weight: 3.0
     pass_threshold: 1.0

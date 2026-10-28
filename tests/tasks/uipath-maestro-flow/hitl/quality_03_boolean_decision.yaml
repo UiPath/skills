@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-hitl-quality-boolean-decision
 description: >
   Quality test: agent correctly wires a boolean HITL output field into a
@@ -9,6 +12,9 @@ tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:gen
 run_limits:
   expected_turns: 33
   max_turns: 110
+reference:
+  directory: ..
+
 initial_prompt: |
   Build a UiPath Flow named "VendorApproval" for vendor onboarding:
 
@@ -22,25 +28,40 @@ initial_prompt: |
        - true  → Script node that logs "Vendor onboarded" → End
        - false → Script node that logs "Vendor rejected" → End
 
-  Wire: Trigger → Script → HITL →|completed| Decision → (two branches) → End
+  Wire: Trigger → Script → HITL → Decision → (two branches) → End, with
+  both HITL outcomes (Approve and Reject) routed to the Decision node —
+  every outcome needs its own wired port. The branch itself is on the
+  `approved` field value, not on which outcome was clicked, so a Decision
+  node is the right choice here.
 
   The Decision node condition MUST use $vars.<nodeId>.output.approved —
   the exact field-level runtime path where <nodeId> is the HITL node's id.
 
   Validate the flow after building.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "HITL node has a boolean output field"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorApproval '\"boolean\"' '\"direction\": \"output\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name VendorApproval '\"boolean\"' '\"direction\": \"output\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -48,7 +69,7 @@ success_criteria:
 
   - type: run_command
     description: "Decision node condition references field-level HITL output"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorApproval '$vars.' '.output.approved'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name VendorApproval '$vars.' '.output.approved'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -56,9 +77,8 @@ success_criteria:
 
   - type: run_command
     description: "Both Decision branches wired (true and false handles)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorApproval '\"true\"' '\"false\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name VendorApproval '\"true\"' '\"false\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-

@@ -9,6 +9,9 @@ tags: [uipath-maestro-bpmn, smoke, "mode:build"]
 sandbox:
   python: {}
 
+reference:
+  directory: .
+
 initial_prompt: |
   I want to author a UiPath Maestro BPMN process that starts an RPA job and
   waits for an internal message. Before authoring anything, load and follow the
@@ -58,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "Raw registry evidence covers the RPA-job and receive-message types"
-    command: "python3 $TASK_DIR/check_registry_discovery.py"
+    command: "python3 $REFERENCE_DIR/check_registry_discovery.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

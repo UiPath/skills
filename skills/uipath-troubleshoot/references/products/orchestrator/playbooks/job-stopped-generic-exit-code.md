@@ -35,7 +35,7 @@ What can cause it:
 1. Get the failing job and read the exact code from `Info`:
    `uip or jobs get <job-key> --output json` — extract the `0x...` code and map it above. Note `RuntimeType`, `HostMachineName`, `StartTime`/`EndTime`.
 2. Recover the **real** error — do not stop at the code. Pull job traces (the executor records the underlying activity/exception even when the job surfaces only the OS code):
-   `uip or jobs traces <job-key> --output json` — look for the last executed activity and any exception detail (e.g. `NullReferenceException`, `KeyNotFoundException`, a COM `HRESULT`). Redirect to a file and read back only the error/activity entries.
+   `uip traces spans get --job-key <job-key> --output json` — look for the last executed activity and any exception detail (e.g. `NullReferenceException`, `KeyNotFoundException`, a COM `HRESULT`). Redirect to a file and read back only the error/activity entries.
 3. Read error logs for a managed stack trace that preceded the exit:
    `uip or jobs logs <job-key> --level Error --output json`.
 4. Confirm the host Robot is on a supported/current version to rule out a known robot-build defect (general hygiene):

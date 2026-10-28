@@ -25,11 +25,6 @@
       "file": "383a6311e5.json"
     },
     {
-      "match": "or jobs traces cbbaaaf6-b416-4025-9a98-c8ee50990f76",
-      "file": "321c404114.json",
-      "_doc": "Four recorded spans: RobotJob (full Microsoft.Graph.ServiceException ErrorItemNotFound stack incl. 'Status Code: NotFound' in Attributes), the Microsoft 365 Scope span, the preceding 'Get newest email (source of a real ID)' GetMail span that SUCCEEDED on the same Inbox, and the faulting 'Get Mail by corrupted ID ...' GetMail span with Private.EmailId=\"staleId\". The two-GetMail sequence and the staleId binding are the core evidence for the stale/deleted-ID diagnosis."
-    },
-    {
       "match": "traces spans get --job-key cbbaaaf6-b416-4025-9a98-c8ee50990f76",
       "file": "321c404114.json",
       "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call falls through to the empty unmocked_default."

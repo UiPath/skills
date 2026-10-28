@@ -28,7 +28,7 @@
 {"id": "uipath-planner-028", "prompt": "Build a Maestro flow plus the RPA processes it needs and publish everything", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-029", "prompt": "Help me automate document processing for legal contracts \u2014 design the whole pipeline", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-030", "prompt": "I want an AI agent that can call our existing UiPath RPA processes \u2014 set the whole thing up", "expected_skill": "uipath-planner"}
-{"id": "uipath-planner-031", "prompt": "Plan the implementation for this PDD: docs/process-design.docx", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-031", "prompt": "Plan the implementation for this PDD: docs/process-definition.docx", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-032", "prompt": "I want to automate IT helpdesk ticket triage in UiPath \u2014 not sure if I need an LLM-powered agent or just an RPA workflow, help me decide and plan it out", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-033", "prompt": "Help me figure out the right architecture for automating our accounts payable process in UiPath", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-034", "prompt": "Build a Citrix-based automation against our legacy ERP and deploy to Orchestrator", "expected_skill": "uipath-planner"}
@@ -40,7 +40,7 @@
 {"id": "uipath-planner-040", "prompt": "I want to migrate this manual process to UiPath \u2014 guide me through the whole thing", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-041", "prompt": "Help me write an automation", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-042", "prompt": "Analyze this PDD and generate an SDD", "expected_skill": "uipath-planner"}
-{"id": "uipath-planner-043", "prompt": "I have a Process Design Document \u2014 turn it into a Solution Design Document", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-043", "prompt": "I have a Process Definition Document \u2014 turn it into a Solution Design Document", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-044", "prompt": "Read the attached PDD.pdf and produce an implementation-ready SDD", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-045", "prompt": "Convert pdd.md into sdd.md so a coding agent can build from it", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-046", "prompt": "Generate a UiPath solution design document from this requirements doc", "expected_skill": "uipath-planner"}
@@ -58,7 +58,7 @@
 {"id": "uipath-planner-058", "prompt": "Write the solution design document for this purchase order processing PDD", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-059", "prompt": "Generate sdd.md from pdd.md using REFramework where appropriate", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-060", "prompt": "I need PDD-to-SDD analysis for a mortgage origination automation", "expected_skill": "uipath-planner"}
-{"id": "uipath-planner-061", "prompt": "Pick scope and produce an SDD for this customer's process design document", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-061", "prompt": "Pick scope and produce an SDD for this customer's process definition document", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-062", "prompt": "Plan a UiPath Solution from scratch given this PDD \u2014 RPA libraries, Flow, the works", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-063", "prompt": "Read the requirements PDF and architect the implementation", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-064", "prompt": "Design an end-to-end UiPath automation from this business requirements doc", "expected_skill": "uipath-planner"}
@@ -89,3 +89,6 @@
 {"id": "uipath-planner-089", "prompt": "Write the architecture doc for this automation before we implement anything", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-090", "prompt": "Given this PDF process design, propose project decomposition and write the SDD", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-091", "prompt": "Prepare a UiPath solution design from the PDD so a coding agent can build the projects next", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-092", "prompt": "Here is our month-end close SOP in ./docs/close-sop.md. Design the UiPath automation for it.", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-093", "prompt": "Use the BPMN model in ./design/claims-intake.bpmn as the design and plan how we build it in UiPath", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-094", "prompt": "We transcribed a walkthrough of the onboarding process in ./notes/onboarding-walkthrough.txt. Plan the UiPath implementation.", "expected_skill": "uipath-planner"}

@@ -1,8 +1,8 @@
 # Connector Trigger — Shared Planning Pipeline
 
-Shared **planning** logic for connector-based triggers: TypeCache lookup, connection pick, `case spec` discovery, reference resolution, the required-param gate, SDD mapping, and input-values + filter authoring. It ends at `tasks.md`.
+Shared **planning** logic for connector-based triggers: TypeCache lookup, connection pick, `case spec` discovery, reference resolution, the required-param gate, SDD mapping, and input-values + filter authoring. It ends at `tasks/registry-resolved.json`.
 
-> **This file is half the contract.** Every JSON shape written to `caseplan.json` — the populated `caseShape` splice, placeholder substitution, binding-ID mint, the connector-bound condition-rule block, the placeholder stub, and root bindings — lives in the companion [connector-trigger-impl.md](connector-trigger-impl.md). Planning alone never produces a runnable connector node.
+> **This file is half the contract.** Every JSON shape written to `caseplan.case` — the populated `caseShape` splice, placeholder substitution, binding-ID mint, the connector-bound condition-rule block, the placeholder stub, and root bindings — lives in the companion [connector-trigger-impl.md](connector-trigger-impl.md). Planning alone never produces a runnable connector node.
 
 Used by three:
 - [connector-trigger task](plugins/tasks/connector-trigger/planning.md) — in-stage `wait-for-connector` task
@@ -19,11 +19,11 @@ All three use the same TypeCache (`typecache-triggers-index.json`), same single-
 
 ### 1. Find the trigger in TypeCache
 
-If `~/.uip/case-resources/typecache-triggers-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 17 gate does not apply). If still absent after pull, the tenant has no connector triggers — mark `<UNRESOLVED>` and fall through to [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
+If `~/.uip/case-resources/typecache-triggers-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 18 gate does not apply). If still absent after pull, the tenant has no connector triggers — mark `<UNRESOLVED>` and fall through to [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
 
 Read `~/.uip/case-resources/typecache-triggers-index.json` directly. Match on `displayName`, `connectorKey`, or `eventOperation` from sdd.md. Record `uiPathActivityTypeId`.
 
-**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Use placeholders for all`) for the lookup batch before any fallback. Only after the user picks `Use placeholders for all`: mark `type-id` **and** `connector-key` `<UNRESOLVED: no typecache trigger for <query>>` and skip § 2 entirely — with no `activity-type-id` there is nothing to pass to `get-connection`. Fall through to [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback) (event trigger → placeholder node; connector-trigger task → `data: {}`; condition rule → stub `uipath`). Continue planning — do not halt ([planning.md § 3.4](planning.md)).
+**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 18 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Use placeholders for all`) for the lookup batch before any fallback. Only after the user picks `Use placeholders for all`: mark `type-id` **and** `connector-key` `<UNRESOLVED: no typecache trigger for <query>>` and skip § 2 entirely — with no `activity-type-id` there is nothing to pass to `get-connection`. Fall through to [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback) (event trigger → placeholder node; connector-trigger task → `data: {}`; condition rule → stub `uipath`). Continue planning — do not halt ([planning.md § 3.4](planning.md)).
 
 ### 2. Resolve the connection
 
@@ -40,13 +40,13 @@ Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, 
 - **Create chosen** → create it (background `is connections create`, capture `ConnectionId`), then continue with the new id. Procedure: [connector-integration.md § Creating a Connection](connector-integration.md#creating-a-connection).
 - **Skip / create fails** → mark `<UNRESOLVED>`. Both plugins emit placeholders at execution time (different shapes per plugin) — see [placeholder-tasks.md](placeholder-tasks.md) for connector-task placeholders and [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) for event-trigger placeholders.
 
-Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response (or from the create output).
+Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response (or from the create output). `Entry` and `Config` are verbatim subtrees — read them at `.Data.Config.connectorKey`, `.Data.Config.objectName`, `.Data.Entry.eventOperation`. `Connections` is not, so its entries read `.Data.Connections[].Name` / `.Id`.
 
 Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
 
 > **Entity-typed Curated triggers** (e.g. UiPath Data Service `Record Created (Preview)`) carry a placeholder `objectName` in the typecache (`{tenantEntityName|folderEntityName}`). Pick a real entity via `uip is triggers objects <connector-key> <eventOperation>` and pass it as `--object-name` on the `case spec` call in Step 3.
 
-> **Generic-typed triggers** (`Config.activityType === "GenericTrigger"` in `typecache-triggers-index.json` — trigger entries use `GenericTrigger` / `CuratedTrigger`, not the activity-typecache's `Generic` / `Curated`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `Record Created`). Discover the available objects via `uip is resources list --connector-key <connector-key>` and `uip is resources describe --connector-key <connector-key> --object-name <name>`, then pass the picked name as `--object-name` on the Step 3 call. Same `--object-name` flag as the entity-typed Curated case above; different reason. Omit it and `case spec --type trigger` fails at fetch time with an opaque `unknown_error` (`Error fetching connector task spec`), cause buried in `Instructions`: `objectName … null or undefined … getInstanceEventObjectMetadata()` — resolve the object and re-run with `--object-name`.
+> **Generic-typed triggers** (`Config.activityType === "GenericTrigger"` in `typecache-triggers-index.json` — trigger entries use `GenericTrigger` / `CuratedTrigger`, not the activity-typecache's `Generic` / `Curated`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `Record Created`). Discover the available objects via `uip is resources list <connector-key>` and `uip is resources describe <connector-key> <object-name>`, then pass the picked name as `--object-name` on the Step 3 call. Same `--object-name` flag as the entity-typed Curated case above; different reason. Omit it and `case spec --type trigger` fails at fetch time with an opaque `unknown_error` (`Error fetching connector task spec`), cause buried in `Instructions`: `objectName … null or undefined … getInstanceEventObjectMetadata()` — resolve the object and re-run with `--object-name`.
 
 ### 3. Discover the trigger contract via `case spec`
 
@@ -70,7 +70,7 @@ The response carries everything the planning phase needs:
 |---|---|
 | `inputs.eventParameters[]` | Trigger event params with `name`, `dataType`, `required`, `description`, optional `defaultValue` / `enum` / `reference`. The `required` flag drives the [Mandatory-filter contract](#mandatory-filter-contract-required-event-params) in Step 7 |
 | `outputs.responseFields[]` | Response shape (incoming event payload). `[?responseCurated]` are FE-broken-out outputs, `[?primaryKey]` are id fields |
-| `operation.eventMode` | `"polling"` or `"webhooks"` — authoritative source for `event-mode` in `tasks.md` |
+| `operation.eventMode` | `"polling"` or `"webhooks"` — authoritative source for `event-mode` in `registry-resolved.json` |
 | `filter` | `undefined` when the trigger does NOT support server-side filtering. Present when it does, with `builder: "jmes"` and `fields[]` listing every searchable field |
 | `references[]` | Cross-references for any event params with lookups. Each entry carries a pre-built `discoverCommand` runnable string |
 | `diagnostics.fetched` / `fallbacks` | Surface fallbacks to the user when meaningful |
@@ -92,7 +92,7 @@ Check `inputs.eventParameters[]` for entries with a `reference` object. Each car
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing the resolved entry. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -100,7 +100,7 @@ If a reference cannot be resolved, **AskUserQuestion** with the candidates (drop
 
 ### 5. Validate required event parameters (HARD GATE)
 
-This is a hard gate — do NOT proceed to writing tasks.md until every required event parameter has a value.
+This is a hard gate — do NOT proceed to writing the resolved entry until every required event parameter has a value.
 
 1. Collect every `inputs.eventParameters[?required]` entry from the spec output.
 2. For each, check whether sdd.md names a value (literal, resolved reference id, or — in `filter:` only — a `=vars.X` runtime reference; impl compiles this to `` =js:`...${vars.X}...` `` template-literal form when writing `body.filters.expression`, see § Dynamic variable limitation).
@@ -117,7 +117,7 @@ SDD input fields don't map 1:1 to the connector's schema. Cross-reference each S
 - **eventParameters** → configure *what* the trigger monitors. Values must be **static** — resolved to IDs at planning time. Go into `input-values`.
 - **filter fields** → narrow *which* events fire the trigger. Values can be **static** literals (filter tree `isLiteral: true`) or **dynamic** `=vars.X` references compiled into `` =js:`...${vars.X}...` `` at impl time (see § Dynamic variable limitation). Go into `filter`.
 
-If an SDD input matches an `eventParameters` field name, it's an event parameter. If it matches a `filter.fields[].name`, it's a filter. If it matches neither, **AskUserQuestion** — the SDD may use different naming than the connector.
+If an SDD input matches an `eventParameters` field name, it's an event parameter. If it matches a `filter.fields[].name`, it's a filter. When `spec.filter.freeformOperators` is present, the trigger's filter takes any field name (`filter.fields[]` may be empty), so an SDD input naming an event-payload field is a filter. If it matches none of these, **AskUserQuestion** — the SDD may use different naming than the connector.
 
 ### 7. Build input-values and filter
 
@@ -126,13 +126,15 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
 ```
 
-**filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values.
+A field listed under `inputs.queryParameters` / `inputs.pathParameters` (Step 3) goes in `queryParameters` / `pathParameters` instead. Scope selectors and resource pickers often sit there.
 
-`groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the platform examples use string.
+**filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values, and each row's `operator` is one of that field's `operators[]` (with `freeformOperators`, one of those). A field with no `operators[]` (older CLI, or a field the builder doesn't list): pick from the operator table by its type. `operators: []`: write no row on it.
 
-The filter tree goes into `tasks.md` under `filter:` as a literal JSON object — Phase 3 passes it to `case spec --input-details.filter`. The CLI compiles it into all three trigger filter sinks (see § Trigger filter sinks below).
+`groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the [examples](case-spec-input-details.md#filter-examples) use string.
 
-No filter (trigger fires on all events): omit `filter` from the tasks.md entry entirely.
+The filter tree goes into `registry-resolved.json` under `filter` as a literal JSON object — Phase 3 passes it to `case spec --input-details.filter`. The CLI compiles it into all three trigger filter sinks (see § Trigger filter sinks below).
+
+No filter (trigger fires on all events): omit `filter` from the resolved entry entirely.
 
 #### Mandatory-filter contract (REQUIRED event params)
 
@@ -144,7 +146,7 @@ The CLI derives a "mandatory-filter expression" from **required** event-param va
 Worked example. Required param `parentFolderId` + a freeform `subject` filter:
 
 ```jsonc
-// tasks.md authored shape
+// registry-resolved.json authored shape
 {
     "input-values": { "eventParameters": { "parentFolderId": "AAMkAD..." } },
     "filter": {
@@ -169,7 +171,7 @@ After the Phase 3 `case spec --input-details` call, both filter sinks contain th
 
 The CLI's filter compiler only accepts `isLiteral: true` clauses in the FilterTree (`case-spec-input-details.md § WorkflowValue`). When a filter requires runtime case variable references, the impl step writes the canonical FE template-literal form into `body.filters.expression` (and `activityPropertyConfiguration.filterExpression`) directly post-CLI, and leaves `essentialConfiguration.filter` as `null`. This is a known SDK limitation shared with flow-tool.
 
-**Planner-side authoring contract.** When translating an SDD filter clause to the `tasks.md` FilterTree, the planner classifies each clause by value shape:
+**Resolution-side authoring contract.** When translating an SDD filter clause to the FilterTree, classify each clause by value shape:
 
 | SDD clause value | Encoded as `WorkflowValue` |
 |---|---|
@@ -189,7 +191,7 @@ Example (SDD with mixed literal + var-bearing clauses):
 filter: subject contains =vars.urgentKeyword AND from contains "VIP"
 ```
 
-Planner emits to `tasks.md`:
+Resolution emits to `registry-resolved.json`:
 
 ```json
 {
@@ -220,7 +222,7 @@ Impl composes (after CLI processes the literal-only subset):
 - Outer wrap: `` =js:`...` `` — JS prefix + template-literal backticks. The template literal evaluates at runtime to a JMESPath string.
 - Sub-clauses each wrapped in parens for operator-precedence grouping.
 - References appear as `${vars.X}` / `${metadata.X}` / `${bindings.X}` template-literal interpolations — NOT as `=vars.X` / `=metadata.X` (plain prefix doesn't get evaluated inside the body sink). All `=js:<ref>` forms get the same transformation via FE's `wrapJsVariablesInTemplateLiteral` (`IntsvcCommonUtils.ts:251-258`).
-- For each `=<prefix>.X` reference in the SDD/tasks.md filter, the impl emits `${<prefix>.X}` inside the appropriate JMESPath clause.
+- For each `=<prefix>.X` reference in the SDD/resolved filter, the impl emits `${<prefix>.X}` inside the appropriate JMESPath clause.
 
 > **String-operand quoting (mandatory).** FE's `wrapJsVariablesInTemplateLiteral` does pure substitution — `=js:vars.X` → `${vars.X}` with NO surrounding quotes added (regex at `IntsvcCommonUtils.ts:257`; behavior confirmed by `IntsvcActivityConfigurationUtils.test.ts:986` → `:996`, which asserts the substituted output is unquoted). For JMESPath string operands (`contains(field, <string>)`, `field == '<string>'`), the impl MUST emit single quotes around the `${vars.X}` substitution. For numeric / boolean / JMESPath-literal-backtick operands, no surrounding quotes. Examples:
 >
@@ -240,7 +242,7 @@ Both `body.filters.expression` and `activityPropertyConfiguration.filterExpressi
 
 > **Mandatory-filter clauses survive the rewrite.** The CLI's mandatory-filter expression (derived from required event-param values, see § Mandatory-filter contract above) is computed at `case spec` time. When impl writes the canonical template-literal form, it preserves the mandatory prefix: `` =js:`(<mandatory>) && (<your-vars-clause>)` ``. Overwriting the whole expression strips the required event-param matching and the trigger fires on a wider event set than intended.
 
-Only use field names that appear in `spec.filter.fields[]`. If a filter cannot be translated unambiguously, **AskUserQuestion**.
+Only use field names that appear in `spec.filter.fields[]`, or any event-payload field when `spec.filter.freeformOperators` is present. If `spec.diagnostics.warnings` says the field name cannot be checked against the spec, **AskUserQuestion** for the payload field name instead of guessing. If a filter cannot be translated unambiguously, **AskUserQuestion**.
 
 Full per-sink rule and FE source-of-truth: [bindings-and-expressions.md § Canonical form per sink](bindings-and-expressions.md#canonical-form-per-sink).
 
@@ -271,27 +273,30 @@ The expression is duplicated in two non-config sinks because both have load-bear
 
 ---
 
-## tasks.md fields (planning)
+## registry-resolved.json fields (resolution)
 
-A connector-bound rule's condition T-entry records these (alongside the scope's normal fields):
+A connector-bound rule's condition element records these on its ledger entry (alongside the scope's normal fields):
 
-```markdown
-- rule-type: wait-for-connector
-- type-id: "<uiPathActivityTypeId>"
-- connection-id: "<connection-id>"
-- connector-key: "<connector-key>"
-- object-name: "<object>"
-- event-operation: "<EVENT_OP>"
-- event-mode: "polling"               # or "webhooks"
-- input-values: { "eventParameters": { ... } }   # resolved IDs; omit when none
-- filter: { ... }                     # optional FilterTree; omit when none
-- condition-expression: "=js:vars.X..."  # optional gate on case state — NOT the event payload
-- outputs:                            # optional — bind rule outputs to case variables
-  - "<schemaField> -> <caseVar>"      # extract — rule's response field to case variable
-  - "<caseVar> = <expression>"        # assign — literal / =js: expression / =vars.X
+```jsonc
+{
+  "rule-type": "wait-for-connector",   // ledger field only; the caseplan rule object is keyed "rule"
+  "type-id": "<uiPathActivityTypeId>",
+  "connection-id": "<connection-id>",
+  "connector-key": "<connector-key>",
+  "object-name": "<object>",
+  "event-operation": "<EVENT_OP>",
+  "event-mode": "polling",                          // or "webhooks"
+  "input-values": { "eventParameters": {} },        // resolved IDs; omit key when none
+  "filter": {},                                     // optional FilterTree object; omit key when none
+  "condition-expression": "=js:vars.X...",          // optional gate on case state — NOT the event payload
+  "outputs": [                                      // optional — bind rule outputs to case variables
+    "<schemaField> -> <caseVar>",                   // extract — rule's response field to case variable
+    "<caseVar> = <expression>"                      // assign — literal / =js: expression / =vars.X
+  ]
+}
 ```
 
-The `outputs:` block (optional) binds the rule's `response` / `Error` to case variables — same `->` / `=` operator semantics as a connector task. Full shapes + dispatcher: [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules).
+`input-values` and `filter` are real JSON objects, not strings. The `outputs` array (optional) binds the rule's `response` / `Error` to case variables — same `->` / `=` operator semantics as a connector task. Full shapes + dispatcher: [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules).
 
 ---
 

@@ -24,7 +24,7 @@ graph LR
     A[packages upload] --> B[processes create]
     B --> C[jobs start]
     C --> D[jobs logs]
-    C --> E[jobs traces]
+    C --> E[traces spans get]
     C --> F[jobs healing-data]
     C --> G[jobs history]
 ```
@@ -39,6 +39,8 @@ uip or packages upload ./MyProcess.1.0.0.nupkg --output json
 # Target a custom feed instead of the tenant default
 uip or packages upload ./MyProcess.1.0.0.nupkg --feed-id <feed-key> --output json
 ```
+
+An upload to a personal workspace's feed also creates a process for the package in that workspace. Look for it with `processes list` before Step 3; `processes create` would add a second process for the same package.
 
 ## Step 2: Inspect Package
 
@@ -90,14 +92,16 @@ Key options:
 | `--auto-update` / `--no-auto-update` | Auto-pick the latest package version on deploy |
 | `--job-priority <Low\|Normal\|High>` | Default execution priority. The CLI sets the matching `SpecificPriorityValue` band (Low=25, Normal=45, High=65) — the API derives the band from that value, so the change actually applies. |
 | `--specific-priority <1-100>` | Numeric priority override (mutually exclusive with `--job-priority`). Use when you need fine-grained ordering inside the same priority bucket. |
-| `--robot-size <Small\|Standard\|Medium\|Large>` | Cloud robot sizing for serverless runtimes |
+| `--robot-size <Small\|Standard\|Medium\|Large>` | Cloud serverless machine size (the label the Orchestrator UI uses). Omit it to leave the process on `Automatic` (stored as no size — Orchestrator then lets the serverless service pick). Also settable on `processes update`. |
 | `--input-arguments <json>` | Default input arguments (merged with per-job inputs) |
 | `--environment-variables <pairs>` | Default environment variables — newline-separated `KEY=VALUE` pairs, **not** JSON (merged with per-job env) |
 | `--tags <list>` | Comma-separated tags for filtering |
 | `--hidden-for-attended` / `--visible-for-attended` | Toggle visibility to attended robot users |
 | `--auto-create-triggers` / `--no-auto-create-triggers` | Auto-create connected triggers on deploy |
-| `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <id>`) | Job retention policy. `--retention-period` must be 1-180 (validated client-side). |
-| `--stale-retention-period <days>` + `--stale-retention-action <Delete\|Archive\|None>` | Stale-job retention policy |
+| `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <bucket-key>`) | Job retention policy. `--retention-period` must be 1-180 (validated client-side). `Archive` requires `--retention-bucket`. |
+| `--stale-retention-period <days>` + `--stale-retention-action <Delete\|Archive\|None>` (+ `--stale-retention-bucket <bucket-key>`) | Stale-job retention policy. `Archive` requires both `--stale-retention-bucket` and an explicit `--stale-retention-period` (Delete/None default to 180 days); a period without an action is rejected. |
+
+> **Archiving jobs.** Buckets are passed by **key (GUID)** — `uip or buckets list --folder-path <folder> --output json` → `Key` (`--retention-bucket` still accepts a legacy numeric id; `--stale-retention-bucket` does not). The bucket must be in, or shared to, the process's folder, or Orchestrator answers `404 Bucket does not exist`. On `processes update`, omitted retention flags keep their stored values: an archiving path keeps its bucket and period, and switching it to Delete/None clears the bucket automatically.
 
 > The runtime kind (Unattended / Headless / NonProduction / AgentService / Serverless) is **not** a process-level setting; it's chosen per-job on `jobs start --runtime-type`. The process binds the package to a folder; runtime selection happens at execution time.
 
@@ -107,8 +111,9 @@ Key options:
 # Get one process by key (cross-folder; resolved through the release lookup)
 uip or processes get <process-key-guid> --output json
 
-# Validation report — what does the runtime see when it tries to start this process?
-# Returns missing tools, missing assets, missing connections, schema mismatches.
+# Validation report — is everything this process needs actually present in its folder?
+# One row per resource the package declares (Queue, Asset, Bucket, Connection, Process,
+# EventTrigger, HttpTrigger, Entity, MCPServer, IXP, ProcessExecutionSettings, ...).
 uip or processes resources <process-key-guid> --output json
 
 # Edit fields after creation. Same flag set as `processes create` minus name/package-key/package-version,
@@ -121,6 +126,11 @@ uip or processes update <process-key-guid> --environment-variables $'API_HOST=ap
 # Pass '' to clear them (Orchestrator reads an empty body as "leave them alone",
 # so the CLI sends a bare newline to make the clear actually happen).
 uip or processes update <process-key-guid> --environment-variables '' --output json
+
+# Resize the serverless machine after deploy. A process created some other way — a
+# solution deploy always lands on Automatic — can be resized here without the UI.
+# Omitting --robot-size keeps the stored size; no value sets it back to Automatic.
+uip or processes update <process-key-guid> --robot-size Large --output json
 
 # Walk the package version history (every package version this release ever pointed at)
 uip or processes version-history <process-key-guid> --output json
@@ -135,7 +145,27 @@ uip or processes rollback <process-key-guid> --output json
 uip or processes delete <process-key-guid> --yes --output json
 ```
 
+> `processes resources` is the pre-flight check before `jobs start`. Read `ValidationResult` per row:
+> `Success` = the resource exists in the folder (`ResourceId` names it), `NotFound` = it is missing and
+> `ValidationError` says which one ("This queue cannot be found in the folder"), `Unknown` = not
+> folder-validated (connections, execution settings). Filter for the broken ones with
+> `--output-filter "[?ValidationResult=='NotFound']"`.
+>
+> `ResourceName`, `FolderPath`, `ResourceId` and `ValidationResult` describe what the **package**
+> declares, and stay on those defaults even when the release rebinds the resource somewhere else.
+> The rebind is reported alongside them: `IsOverwritten` is `true`, and `OverwriteName` /
+> `OverwriteEntityId` / `OverwriteFolderId` name the target Orchestrator resolved, with
+> `OverwriteProperties` holding the raw pairs (`name`, `folderPath`) verbatim — lowercase, as the API
+> names them. So a row can read `FolderPath: Dev/Apps` with `OverwriteProperties.folderPath: Prod/Apps`;
+> the second is what the job will bind to. Find the rebound rows with
+> `--output-filter "[?IsOverwritten]"`.
+>
+> Because validation runs against the package default, a `Success` row does not prove the *overwrite*
+> target exists — check `OverwriteProperties` yourself when a job fails to bind.
+
 `processes update` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.
+
+> **`--robot-size` on a license-slots tenant.** On tenants where serverless runs on license slots, Orchestrator refuses a size *change* on update — HTTP `400`, `'RobotSize' is not editable.` (`ErrorCode 1024`, `FieldNotEditable`) — and the CLI passes that error through; the Orchestrator UI hides the field there. The refusal fires only when the value actually changes to a non-null size, so an unrelated update (e.g. `--description`) that echoes the current size back is unaffected.
 
 ## Step 4: Start Job
 
@@ -155,7 +185,7 @@ Key options:
 
 - `--input-arguments <json>` / `--input-file <path>` — pick one. `--input-arguments` inlines a JSON object (validated client-side — invalid JSON is rejected before the call); `--input-file` uploads a file as the job's `InputFile` argument.
   - **10K character cap on job arguments.** Orchestrator caps serialized input/output arguments at 10,240 characters for classic `StartJob` runs; an oversized output is silently dropped (the consuming workflow receives `null`, the job still reports Successful). `StartAgentJob` (agent runs) is not subject to the same cap in practice. Robot 2025.10.1+ removes the cap entirely ("Support for large input and output arguments"). If you hit it: pass big payloads via a storage bucket / queue item reference, or upgrade the Robot.
-- `--attachment <[name=]path>` — upload one or more files and attach them to the job. Repeat the flag for multiple. Pair with `--attachment-id <guid>` to reuse an attachment that was previously uploaded.
+- `--attachment <[name=]path>` — upload one or more files and attach them to the job. Repeat the flag for multiple. Pair with `--attachment-id <guid>` to reuse an attachment that was previously uploaded. An attachment does not fill a file argument: pass the file argument as an attachment reference in `--input-arguments` — `{"<ARGUMENT>": {"ID": "<ATTACHMENT_ID>", "FullName": "<FILE_NAME>"}}` — with `--attachment-id <ATTACHMENT_ID>`.
 - `--runtime-type <type>` — `Unattended`, `Headless`, `NonProduction`, `AgentService`, or `Serverless`. Picks the runtime kind the scheduler will use.
 - `--strategy <strategy>` — one of `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (use `--user-keys` / `--machine-keys`), or `JobsCount`. Validated client-side. `--jobs-count` must be a whole number greater than 0.
 - `--user-keys <guids>` / `--machine-keys <guids>` — comma-separated GUIDs to pin the job to specific identities. With `--strategy ModernJobsCount` they restrict the candidate pool; with `Specific` they're required.
@@ -185,6 +215,8 @@ uip or jobs list --process-name "MyProcess" --folder-path "Production" --output 
 uip or jobs list --all-folders --state Faulted --output json
 ```
 
+`jobs list` reads the live job records from Orchestrator. For historical metrics over a time window (failure counts, success rate, trends), use the **uipath-insights** skill instead.
+
 `jobs list` requires `--folder-path`, `--folder-key`, or `--all-folders` — a bare `jobs list` is rejected. (Older CLI versions listed tenant-wide by default; pass `--all-folders` for that behavior.)
 
 ## Step 6: Get Logs
@@ -197,24 +229,30 @@ uip or jobs logs <job-key> --export --destination ./logs.csv  # Export to CSV fi
 
 `--export` writes a CSV file instead of terminal output. Combine with `--destination` (or `-d`) to set the file path. Logs are cross-folder -- no `--folder-path` required.
 
+> **`--export` spends a daily quota.** It calls the RobotLogs Export endpoint, which is limited to 100 requests per day per tenant and shared with everyone on the tenant. To read or diagnose logs, use `--output json` (optionally `--level Error`). Export only when the user asks for a CSV file. See [api-limits.md](api-limits.md).
+
 ## Step 7: Get Traces
 
-Retrieve LLM and agentic execution traces for Agent-type processes:
+LLM and agentic execution traces are served by the traces tool, keyed by the job:
 
 ```bash
-uip or jobs traces <job-key> --output json
+uip traces spans get --job-key <job-key> --output json
 ```
 
-Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For a standard Process the result is an empty list, and the response adds an `Instructions` note saying so — that's how you tell "no traces recorded" apart from "this isn't an Agent process". For deeper span-level data, use `uip traces spans get [trace-id]` (or `uip traces spans get --job-key <key>`) — see [traces.md](../traces/traces.md).
+Traces exist only for processes that use UiPath Autopilot or Agent capabilities; a standard Process has none. Pass a trace id positionally instead of `--job-key` when you already have one. See [traces.md](../traces/traces.md).
+
+`uip or jobs traces` was the old entry point. It is removed — it still parses, but only prints a pointer to the command above and exits non-zero, so replace it in any script that still calls it.
 
 Traces are cross-folder -- no `--folder-path` required.
+
+> **Runtime evaluations** — to evaluate a published agent's output quality, trajectory, or tool use against eval sets and evaluators, load [`uipath-agents`](/uipath:uipath-agents). Commands live under `uip eval` (formerly `uip or eval`).
 
 ## Step 8: Get Healing Data
 
 Download Autopilot recovery data (screenshots + UI element data) as a ZIP:
 
 ```bash
-uip or jobs healing-data <job-key> -o ./healing-data.zip
+uip or jobs healing-data <job-key> -d ./healing-data.zip
 ```
 
 The ZIP contains screenshots and UI metadata from Autopilot self-healing attempts.
@@ -264,6 +302,8 @@ uip or processes rollback <process-key> --output json
 uip or processes update <process-key> --output json
 ```
 
+To record what a process saves (manual time per item, volume, employee cost) for Orchestrator's Business ROI page, use `uip or process-roi` — see [business-roi.md](business-roi.md).
+
 ---
 
 ## Complete Example
@@ -283,7 +323,6 @@ uip or jobs start <process-key> --folder-path "Finance" \
   --wait-for-completion --timeout 600 --output json
 
 uip or jobs logs <job-key> --level Error --output json
-uip or jobs logs <job-key> --export --destination ./invoice-logs.csv
 ```
 
 ---
@@ -330,7 +369,6 @@ These commands resolve the folder from the job key -- no `--folder-path` needed:
 
 - `uip or jobs get <key>`
 - `uip or jobs logs <key>`
-- `uip or jobs traces <key>`
 - `uip or jobs history <key>`
 - `uip or jobs healing-data <key>`
 

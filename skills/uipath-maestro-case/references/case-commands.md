@@ -1,24 +1,34 @@
 # uip — Surviving CLI Command Reference
 
-`caseplan.json` mutations are direct file edits, not CLI calls. The commands below are the only `uip` invocations the skill issues — read-only metadata fetches, registry discovery, validation, debug, runtime/instance management, solution scaffold/upload, and the consent-gated Phase 7 pack/publish.
+`caseplan.case` mutations are direct file edits, not CLI calls. The commands below are the only `uip` invocations the skill issues — read-only metadata fetches, registry discovery, validation, debug, runtime/instance management, solution scaffold/upload, and the consent-gated Phase 7 pack/publish.
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
 ## Local vs cloud commands
 
-`caseplan.json` mutations are direct file edits (Read + Write/Edit). CLI is used only for the operations below:
+`caseplan.case` mutations are direct file edits (Read + Write/Edit). CLI is used only for the operations below:
 
 | Commands | What | Auth |
 |----------|------|------|
+<!--skill-flavor:solution-commands-row:start-->
 | `solution init`, `solution projects add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
-| `maestro case pack`, `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — recompile `caseplan.json.bpmn`, pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
+<!--skill-flavor:solution-commands-row:end-->
+<!--skill-flavor:phase-seven-row:start-->
+| `maestro case pack`, `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — recompile `caseplan.case.bpmn`, pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
+<!--skill-flavor:phase-seven-row:end-->
+<!--skill-flavor:resources-row:start-->
 | `solution resources list [--source local]`, `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Inventory read (`list`) + atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
+<!--skill-flavor:resources-row:end-->
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
-| `validate` | Validate `caseplan.json` | No |
+| `validate` | Validate `caseplan.case` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
+
+<!--skill-flavor:auth-column-note:start-->
+<!--skill-flavor:auth-column-note:end-->
 
 ---
 
+<!--skill-flavor:solution-init-section:start-->
 ## uip solution init
 
 Create a new solution directory + `.uipx` file.
@@ -32,32 +42,42 @@ uip solution init <SolutionName>
 | `<SolutionName>` | **(required)** Solution name |
 
 Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's § Scaffold writes the project files separately.
+<!--skill-flavor:solution-init-section:end-->
 
 ---
 
 ## uip maestro case init
 
-Scaffold a basic Case project with the 5 boilerplate files and a starter `caseplan.json`. Use this for a blank case scaffold without an `sdd.md` (the SDD-driven JSON path writes the same files in a single plugin invocation — see [plugins/case/impl-json.md](plugins/case/impl-json.md)).
+> **Run this from inside the solution directory (SKILL.md Rule 24).** `cd <SolutionDir>` first. Run outside any solution and it auto-scaffolds `<ProjectName>Solution/` around the project.
 
+**The standard way to create the project (SKILL.md Rule 24).** Scaffolds a Case project with the 6 boilerplate files, including `project.uiproj`, and registers it in the parent `.uipx`. The T01 direct-JSON path in [plugins/case/impl-json.md](plugins/case/impl-json.md) writes whichever files it did not seed, and the whole scaffold by hand when `case init` is unavailable.
+
+<!--skill-flavor:case-init-command:start-->
 ```bash
 cd <SolutionDir> && uip maestro case init <ProjectName>
 ```
+<!--skill-flavor:case-init-command:end-->
 
 | Flag | Description |
 |------|-------------|
 | `<ProjectName>` | **(required)** Project directory name. Created inside the current directory |
 
+<!--skill-flavor:cd-mandatory-note:start-->
 > **The `cd <SolutionDir>` is mandatory; `&&`-chaining after `uip solution init` does NOT satisfy it.** `solution init` makes `<SolutionDir>` a *child* of cwd, so `uip solution init X && uip maestro case init X` still runs `case init` outside the new solution — with the auto-scaffold consequences described below.
+<!--skill-flavor:cd-mandatory-note:end-->
 
-`case init` always lands the project inside a solution. Run **from inside the solution directory** so the layout is `<SolutionDir>/<ProjectName>/` — it then auto-registers the project with the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Run **outside any solution** and `case init` auto-scaffolds one: it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project at `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project lands at the bare `<ProjectName>/` path with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Use `uip solution projects add ./<ProjectName>` as a fallback only when `Status` is `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error). Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution projects add` step — see `implementation.md` § Step 6.
+<!--skill-flavor:case-init-semantics:start-->
+`case init` always lands the project inside a solution. Run **from inside the solution directory** so the layout is `<SolutionDir>/<ProjectName>/` — it then auto-registers the project with the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Run **outside any solution** and `case init` auto-scaffolds one: it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project at `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project lands at the bare `<ProjectName>/` path with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Use `uip solution projects add ./<ProjectName>` as a fallback only when `Status` is `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error). After `case init` seeds the project, the case plugin (`plugins/case/impl-json.md`) writes only the scaffold files it did not seed — see `implementation.md` § Step 6.
+<!--skill-flavor:case-init-semantics:end-->
 
 ---
 
+<!--skill-flavor:projects-add-section:start-->
 ## uip solution projects add
 
 Register a project with an existing solution. Used in two scenarios in this skill:
 
-1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
+1. **`case init` unavailable** — when the case plugin (T01 in `impl-json.md`) wrote `project.uiproj` by hand, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
 2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered` (the normal outcome both inside a solution and when it auto-scaffolds one outside), this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), both auto-scaffold and registration were skipped intentionally — run this only if you later decide to register.
 
 ```bash
@@ -70,6 +90,7 @@ uip solution projects add <ProjectName> <SolutionName>.uipx
 | `<SolutionName>.uipx` | **(required)** Path to the solution `.uipx` |
 
 Adds the project to `.uipx.Projects[]`. Run after `project.uiproj` exists.
+<!--skill-flavor:projects-add-section:end-->
 
 ---
 
@@ -95,22 +116,22 @@ Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
-uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"
+uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"
 ```
 
 `uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step. Uploads to Studio Web where the user can visualize, inspect, edit, and publish the case from the browser.
 
-> **`--output-filter` is mandatory on upload.** The raw upload response is large enough that the agent truncates it and loses `DesignerUrl`. The JMESPath projection `{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}` (applied to the response envelope's `Data` field) reduces the response to the three fields the skill actually reads, so `DesignerUrl` always survives.
+> **`--output-filter` is mandatory on upload.** The raw upload response is large enough that the agent truncates it and loses `DesignerUrl`. The JMESPath projection `{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}` (applied to the response envelope's `Data` field) reduces the response to the four fields the skill actually reads, so `DesignerUrl` always survives. `Action` is `Imported` or `Overwritten` — say which one when reporting the upload, since an overwrite replaced whatever was on Studio Web.
 
-> **On a missing `DesignerUrl`**, re-run the upload once **without** `--output-filter` and dump the unfiltered response to `tasks/upload-response.json` — the filter hides any error/diagnostic fields that explain why the URL is absent.
+> **On a missing `DesignerUrl`**, re-run the upload once **without** `--output-filter` and dump the unfiltered response to `tasks/upload-response.json` — the filter hides any error/diagnostic fields that explain why the URL is absent. The re-run is itself a second upload (another overwrite, another recorded version) — at most once, within the consent already given for this publish.
 
-> **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. Share the resulting URL with the user.
+> **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. Share the resulting URL with the user.
 
 ---
 
 ## uip maestro case pack
 
-Pack a single Case project directory into a `.nupkg` file — **and, as a side effect, compile `caseplan.json` into `caseplan.json.bpmn` inside the project directory.** That recompile is why Phase 7 runs it. Offline.
+Pack a single Case project directory into a `.nupkg` file — **and, as a side effect, compile `caseplan.case` into `caseplan.case.bpmn` inside the project directory.** That recompile is why Phase 7 runs it. Offline.
 
 ```bash
 uip maestro case pack <project-path> <output-path> --output json
@@ -122,6 +143,8 @@ uip maestro case pack <project-path> <output-path> --output json
 | `<output-path>` | **(required)** Output directory for the `.nupkg` — use `<SolutionDir>/dist`, never a path inside the case project directory |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
+| `--author <author>` | Package author (default: `UiPath`) |
+| `--description <text>` | Package description (default: `Created by UiPath`) |
 
 > **Required before every `uip solution pack`.** Run it on every Phase 7 pass, including runs that skipped Phase 5 / Phase 6, and including runs where a `.bpmn` already exists (it may be stale). See [phased-execution.md § Why `case pack` is mandatory](phased-execution.md#why-case-pack-is-mandatory).
 
@@ -151,9 +174,9 @@ Packs each contained project into a `.nupkg` and bundles them into one `<name>_<
 
 > **Read the produced filename from the response `Data.Packages`** (or list `<output-path>/`) — do not construct it by hand.
 
-> Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 14).
+> Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 15).
 
-> **Does NOT compile the case BPMN.** It bundles `caseplan.json.bpmn` only if that file is already on disk. Run [`uip maestro case pack`](#uip-maestro-case-pack) on the case project immediately before this command — every time — or the package ships with a missing or stale `.bpmn` while pack and publish both report success.
+> **Does NOT compile the case BPMN.** It bundles `caseplan.case.bpmn` only if that file is already on disk. Run [`uip maestro case pack`](#uip-maestro-case-pack) on the case project immediately before this command — every time — or the package ships with a missing or stale `.bpmn` while pack and publish both report success.
 
 ---
 
@@ -185,7 +208,8 @@ uip solution publish <packagePath> --wait --output json
 Validate a case management JSON file against case management rules.
 
 ```bash
-uip maestro case validate <file> --output json
+uip maestro case validate <file> --strict --sdd sdd.md --output json
+uip maestro case validate <file> --strict --output json
 uip maestro case validate <file> --skeleton-v2 --output json
 uip maestro case validate <file> --skeleton --output json
 ```
@@ -193,6 +217,8 @@ uip maestro case validate <file> --skeleton --output json
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
+| `--strict` | Authoritative Phase 3-exit and Phase 4 profile: the default checks plus case-wide completeness rules (empty stage, surviving `$xref(`, hoisted `conditionExpression`, incomplete connector context, empty task `data`, output-shape and input-reference form). Failures carry `STRICT_*` codes in `Data.Issues[]`. Mutually exclusive with `--skeleton` / `--skeleton-v2`. |
+| `--sdd <path>` | Audit completeness against the SDD that specifies the case: every stage, task, task type, condition row, SLA, trigger and case variable the SDD declares must be present. Implies `--strict`; findings are `STRICT_SDD_*`. Use whenever an `sdd.md` exists. |
 | `--skeleton-v2` | Preferred Phase 2 preview profile: structure plus entry/exit rules, SLA, and escalation, while task values and connector schemas are still incomplete. Availability depends on the installed CLI. |
 | `--skeleton` | Legacy structural profile. Skips tasks, SLAs, escalations, and entry/exit rules. Used only as the Phase 2 fallback when `--skeleton-v2` is unavailable. |
 
@@ -205,6 +231,67 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 3. Any genuine v2 validation result, including case validation errors, proves the profile ran. Report those findings; do not mask them with the legacy fallback.
 
 Always name the selected profile in the Phase 2 summary. A legacy `--skeleton` fallback checks structure only, so conditions/SLA remain covered by authoritative full validation in Phase 4.
+
+### Which profile in which phase
+
+Section-end validates in Phases 2–3 use the plain profile — a half-built plan fails strict by design. The Phase 3 exit and every Phase 4 validate carry `--strict --sdd sdd.md --output json`, and no plain-profile result after Phase 3 entry is ever quoted as a close: a `Valid` without `"Profile": "strict"` does not close the build (SKILL.md Rule 7).
+
+**Run the strict validate alone — never chained with another validate in one command.** Two response envelopes on one stdout get read as the first one, so the second result is silently discarded.
+
+### Version guard — `--strict` / `--sdd` require CLI 1.202
+
+Fall back to plain `validate` only when the response is `invalid_argument` naming `--strict` or `--sdd` as an unknown option. Exit 3 alone is insufficient, and a strict *failure* is never a reason to drop the flags. On fallback, record `strict profile unavailable on CLI <version>` in `build-issues.md` and in the completion report, and run [implementation.md § Step 12](implementation.md#step-12--end-of-phase-3-validator-pass) Checks 1–15 by hand.
+
+---
+
+## uip maestro case format
+
+Rewrite `caseplan.case` pretty-printed in place (2-space indentation, one key per line). Run after every write of the plan; it is the only sanctioned reformat (Rule 14).
+
+```bash
+uip maestro case format <file> --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `<file>` | **(required)** Path to the case management JSON file |
+
+Output: `Data.Changed` — `true` when the file was rewritten, `false` when already formatted (idempotent). An unparseable file is refused and left untouched. Key order is preserved; a number re-renders in shortest form and a duplicate key collapses to its last occurrence, which is JSON round-trip behaviour and not corruption. Same verb family as `maestro flow format` and `maestro bpmn format`.
+
+---
+
+## uip maestro case bindings sync
+
+Derive `bindings_v2.json` from the plan's root `bindings[]` and write it next to the plan. Never author or edit the sidecar by hand.
+
+```bash
+uip maestro case bindings sync <caseplan.case> --output json
+```
+
+Output: `Code: CaseBindingsSync` with `Data.BindingsPath`, `Data.ResourceCount`, `Data.ConnectionCount`. `ResourceCount: 0` is still `Result: Success` — an empty sidecar is a faithful derivation of a plan that binds nothing, so the gate is `validate --strict` (`STRICT_BINDINGS_ABSENT`), not the sync result. See [bindings-v2-sync.md](bindings-v2-sync.md).
+
+---
+
+## uip maestro case splice
+
+Write a connector task's `data` and the connection's root bindings from a saved `case spec` envelope. The only sanctioned writer of `data.context` / `data.inputs` / `data.outputs` on `execute-connector-activity`, `wait-for-connector`, `external-agent` and `external-workflow` tasks; never hand-author them.
+
+```bash
+uip maestro case splice <caseplan.case> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json \
+  --connection-id <connection-uuid> [--out <file>] --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--task-id <id>` | **(required unless `--task-name`)** the task's `id` from `nodes[].data.tasks[][].id` |
+| `--task-name <name>` | the task's `displayName`, spelled exactly as the plan has it; pass this or `--task-id`, never both |
+| `--spec <file>` | **(required unless `--described`)** the `case spec` response saved verbatim — must carry `Data.CaseShape` (run spec without `--skip-case-shape`) |
+| `--connection-id <id>` | **(required)** the connection the spec was fetched for; root bindings are keyed on it and reused when the pair already exists |
+| `--folder-key <key>` | Omit it. Splice reads `Data.Connection.FolderKey` from the `--spec` file itself; a value that disagrees with the spec is refused (exit 1, nothing written). Never copy a folder key from another task's spec |
+| `--described <file>` | a `uip maestro case tasks describe` result saved verbatim. Merges `type` / `_jsonSchema` / `options` / `displayName` into the task's existing input and output rows by `name`, preserving `id` / `var` / `elementId` and SDD-authored values. Use for resource tasks. Pass exactly one of `--spec` / `--described`: the CLI refuses both together |
+| `--out <file>` | write elsewhere instead of in place |
+
+Output: `Code: ConnectorShapeSpliced` with `Data.Summary` (`TaskType`, `ServiceType`, `ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and `Data.NextSteps`. Offline. Idempotent: the same arguments twice produce a byte-identical file. A spec fetched for a different connection than `--connection-id` is refused — the message names both ids and no file is written.
 
 ---
 
@@ -231,7 +318,7 @@ uip maestro case debug <project-path> --log-level debug --output json
 
 ## uip maestro case spec
 
-Read-only unified metadata + scaffold endpoint for connector activities and triggers. **The preferred command for connector tasks** — replaces the legacy `case tasks describe` + `is resources describe` two-call dance with a single normalized response (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` ready for `caseplan.json`).
+Read-only unified metadata + scaffold endpoint for connector activities and triggers. **The preferred command for connector tasks** — replaces the legacy `case tasks describe` + `is resources describe` two-call dance with a single normalized response (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` ready for `caseplan.case`).
 
 ```bash
 # Planning phase — lean response (no caseShape payload)
@@ -262,7 +349,7 @@ Returns a `ConnectorTaskSpec` with `identity`, `operation`, `connection`, `input
 
 ## uip maestro case tasks describe
 
-Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
+Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `business-rule`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
 
 ```bash
 uip maestro case tasks describe --type <type> --id <id> --output json
@@ -273,11 +360,11 @@ uip maestro case tasks describe --type connector-trigger --id <typeId> --connect
 
 | Flag | Description |
 |------|-------------|
-| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `connector-activity`, `connector-trigger`. Use `processOrchestration` for `AGENTIC_PROCESS`. |
+| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `business-rule`, `case-management`, `connector-activity`, `connector-trigger`. Use `processOrchestration` for `AGENTIC_PROCESS`. |
 | `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
 | `--connection-id <id>` | Connection UUID (required for `connector-activity` and `connector-trigger` types) |
 
-Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.json`. The `connector-activity` / `connector-trigger` flags still work but `case spec` returns a richer, FE-canonical `caseShape` for connector tasks.
+Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.case`. The `connector-activity` / `connector-trigger` flags still work but `case spec` returns a richer, FE-canonical `caseShape` for connector tasks.
 
 ---
 
@@ -285,7 +372,7 @@ Returns input/output schema with names, types, and IDs. The schema is the source
 
 Manage the local resource cache. Requires `uip login` for tenant-specific resources.
 
-> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 24-hour cache, is network-heavy, and may be slow.
+> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 24-hour cache, is network-heavy, and may be slow. **Exception:** when `uip maestro case sdd resolve` reports a stale cache in `Data.Warnings`, run it once without asking, then resolve again ([SKILL.md Rule 3](../SKILL.md)).
 
 ```bash
 # Refresh cache from all resource types
@@ -309,11 +396,11 @@ uip maestro case registry get <uiPathActivityTypeId> --type typecache-activities
 
 # --local: in-solution (offline) discovery of sibling projects (.uipx in cwd/parent/grandparent), no tenant/login
 uip maestro case registry list --local --output json
-uip maestro case registry search "<Name>" --type <agent|api> --local --output json    # matches by name (keyword); `agent` = agent sibling, `api` = api-workflow sibling
-uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api> --local --output json   # matches by key, NOT name
+uip maestro case registry search "<Name>" --type <agent|api|businessRule> --local --output json    # matches by name (keyword); `agent` = agent sibling, `api` = api-workflow sibling, `businessRule` = business-rule sibling
+uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api|businessRule> --local --output json   # matches by key, NOT name
 ```
 
-Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`.
+Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `businessRule`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`.
 
 Options for `pull`:
 | Flag | Description |
@@ -336,7 +423,7 @@ Options for `get`:
 | `<identifier>` | **(required)** The entityKey (process types), id (action-apps), or uiPathActivityTypeId (typecache) of the resource |
 | `-t, --type <type>` | Limit to a specific resource type |
 | `--connection-id <id>` | Connection UUID for connector-specific IS field metadata. Only applies to `typecache-activities` / `typecache-triggers` results |
-| `--local` | Resolve against in-solution sibling projects (offline; no login). On `list`/`search`/`get`. Local types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`. |
+| `--local` | Resolve against in-solution sibling projects (offline; no login). On `list`/`search`/`get`. Local types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `function`, `businessRule`. |
 
 **`--local` semantics.** Discovers sibling projects from the enclosing solution `.uipx` (walks cwd → parent → grandparent). Keys (`--output json`, PascalCased): `search`/`get` nest each match under `Data.Resources[].Resource.{EntityKey,Name,Category,Folders[].FullyQualifiedName,Inputs,Outputs,Source}`; `list` flattens to `Data.Resources[].{EntityKey,Name,Category,Source}` (no `Resource` wrapper, no I/O). **`get --local` matches the identifier only against `entityKey`/`.uipx` project Id — never the display name; to find a sibling by name use `search "<Name>" --local`.** A freshly-built, unpacked sibling's `EntityKey` equals its `.uipx` project Id. No solution found → `Result:"Failure"`, `Message:"No solution found for --local"`, exit 1.
 
@@ -374,7 +461,7 @@ uip maestro case registry get-connection --type typecache-triggers --activity-ty
 | `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers` |
 | `--activity-type-id <id>` | **(required)** The `uiPathActivityTypeId` to look up |
 
-Output: `{ Entry, Config, Connections }` — use a `Connections[].id` value as the `connectionId` written into a connector task's `data` in `caseplan.json`.
+Output: `{ Entry, Config, Connections }` — use a `Connections[].Id` value as the `connectionId` written into a connector task's `data` in `caseplan.case`.
 
 ---
 

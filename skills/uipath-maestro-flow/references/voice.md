@@ -1,0 +1,105 @@
+# Voice
+
+*Exact signatures, fields, and defaults: `voiceTrigger()`, `createOutgoingCall()`, `endCall()`, `voiceAgent()`.*
+
+A voice call is a conversation with an audio front end. It is identified by a
+`callContext` OBJECT — not a bare conversation id — and that object is what
+every voice step is keyed by.
+
+```ts
+// Inbound: the platform hands you the call.
+export default flow('support-line')
+  .trigger(voiceTrigger())
+  .step('greet', voiceAgent({
+    systemPrompt: 'Greet {{input.customerName}} and find out why they called.',
+    inputs: { customerName: input('customerName') },
+    callContext: out('start', 'callContext'),
+    voice: { model: 'gemini-3.1-flash-live-preview', persona: 'Kore' },
+  }))
+  .step('hangUp', endCall({ callContext: out('start', 'callContext') }))
+  .build();
+
+// Outbound: the flow places the call.
+.step('dial', createOutgoingCall({ from: input('callerNumber'), to: input('customerPhone') }))
+.step('talk', voiceAgent({
+  systemPrompt: 'Remind {{input.customerName}} about {{input.amount}}.',
+  inputs: { customerName: input('customerName'), amount: input('amount') },
+  callContext: out('dial', 'callContext'),
+}))
+```
+
+## At a glance
+
+Talk to someone on a phone call. The call is identified by a `callContext`
+OBJECT — pass the whole thing, never a field inside it.
+
+Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations? })`.
+
+```ts
+.step('dial', createOutgoingCall({ from: input('callerNumber'), to: input('phone') }))
+.step('talk', voiceAgent({ systemPrompt: 'Confirm {{input.customerName}}\'s delivery window.',
+  inputs: { customerName: input('customerName') },
+  callContext: out('dial', 'callContext'),
+  voice: { model: 'gemini-3.1-flash-live-preview', persona: 'Kore' } }))
+.step('bye', endCall({ callContext: out('dial', 'callContext') }))
+```
+
+The incoming-call trigger publishes `out('start', 'callContext')`. A persona belongs to its voice model; `maxIterations` is capped at 8.
+
+## The call context
+
+`out('start', 'callContext')` (inbound) or `out('<dialStep>', 'callContext')`
+(outbound) is the whole object — `{ type, id, conversationId, … }` — and that is
+what to pass. **Reaching inside it is the mistake this family invites**:
+`out('dial', 'callContext.conversationId')` is a string, the node's schema types
+the field as `object`, and a scalar there passes the file's schema and then
+fails at dispatch. `check` catches it (`VOICE_CALL_CONTEXT_NOT_OBJECT`).
+
+Both numbers on `createOutgoingCall` are E.164 — a leading `+`, then country
+code and subscriber number, 7–15 digits in all. `from` must be a number provisioned on the tenant's
+telephony provider; anything else is rejected when the call is placed, not when
+the flow is validated. `endCall` reads `out('<step>', 'ended')`.
+
+## How the agent sounds
+
+`voice` takes a VOICE model (a live/realtime one — not the text models
+`inlineAgent` takes) and one of THAT model's personas; the two travel together:
+
+| Model | Personas |
+| --- | --- |
+| `gemini-3.1-flash-live-preview` (default) | Aoede, Charon, Fenrir, Kore, Leda, Orus, Puck, Zephyr |
+| `gpt-realtime-2` | alloy, ash, ballad, coral, echo, sage, shimmer, verse |
+
+Omit `voice` entirely for the platform default. `maxIterations` is capped at
+**8**, tighter than a text agent's 100, because a caller is waiting on the turn.
+The caller's turn arrives as audio, but the system prompt can use flow context.
+Declare each value under `inputs` and reference it as `{{input.<name>}}`; compile
+emits the runtime bindings and matching sidecar schema. There are no declared
+`returns`: the definition declares what comes back. Compile writes a
+voice-dialect `<source>/agent.json` sidecar (`settings.mode: 'voice'`) beside
+the `.flow`.
+
+## Evidence boundary
+
+`uipath.agent.voice` is served on this tenant; the trigger and the two call
+actions are `AvailableOnTenant: false` and ship bundled from the workbench
+manifests. Nothing local dials a phone: a green ladder proves the node types,
+the call-context threading and the voice settings. A real call, real audio, and
+what the caller heard are platform evidence.
+
+`uip maestro flow debug` rejects a flow that starts from `voiceTrigger()`: only
+a real call raises that trigger, so do not run it. Tell the user the test loop
+instead: pack and publish ([operate.md](operate.md#publish)), deploy with
+`uip solution deploy run` (uipath-solution skill), route an inbound-enabled
+number to the release, then call that number:
+
+```bash
+uip conversational trunks list --direction inbound --output json
+uip conversational trunks assign <PHONE_NUMBER> --process-key <PROCESS_KEY> --folder-key <FOLDER_KEY> --output json
+```
+
+`<PROCESS_KEY>` is `Key` from `uip or processes list`, not `ProcessKey`;
+`<FOLDER_KEY>` is its `FolderKey`. A number is added or inbound-enabled in
+Instance Management under Phone numbers, never from the CLI. Run `assign` only
+when the user asks: it routes live callers to the release. A bound number needs
+`--yes` and loses whatever it served, so get the user's OK for that number first.

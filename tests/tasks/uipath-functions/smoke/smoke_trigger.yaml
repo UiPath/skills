@@ -3,18 +3,25 @@ description: >
   Smoke test: agent should trigger the uipath-functions skill when asked to
   build a deterministic Python coded function with typed I/O that runs as a
   UiPath job. Fans out over five direct "scaffold a coded function" requests
-  (one agent turn each, which forces an invoke-or-don't decision rather than a
-  prose answer) and grades the trigger RATE (recall.yes) so single-run LLM
-  routing nondeterminism doesn't flake the gate. Verifies the skill fires on
-  the Python Functions signal (no LLM reasoning) and is NOT routed elsewhere.
+  (a budget of three tool calls each — enough to force an invoke-or-don't
+  decision, not enough for a full build) and grades the trigger RATE
+  (recall.yes) so single-run LLM routing nondeterminism doesn't flake the gate.
+  Verifies the skill fires on the Python Functions signal (no LLM reasoning)
+  and is NOT routed elsewhere.
 tags: [uipath-functions, smoke, mode:build, lifecycle:discover]
 
 run_limits:
-  # One turn forces invoke-or-don't on the first response — the agent can't
-  # answer in prose and skip the Skill tool, and can't burn turns doing a full
-  # build. Mirrors the activation eval, where direct build prompts trigger
-  # functions reliably.
-  max_turns: 1
+  # For Codex, coder-eval counts max_turns in tool calls (one per resolved tool
+  # call — see EventCollector.visible_turn_count), so this is a budget of three
+  # shell commands: still far short of a build. With stop_early on_pass the run
+  # ends the moment SKILL.md is read, so this cap only bounds a miss. It gives
+  # slack for the habit Codex shows on ~10% of runs — it announces the skill in
+  # prose, spends the first call on a workspace listing (`rg --files`), and only
+  # reads SKILL.md on the second. With max_turns=1 that read never happened and
+  # the row scored a miss even though routing was correct. Observed reads land
+  # on call 1 or 2; 3 is one step of margin. skill_triggered scans every
+  # recorded command, so a later read still counts.
+  max_turns: 3
 
 dataset:
   id_field: id
@@ -57,3 +64,8 @@ success_criteria:
     # 0.66 → 4/5 (0.8) passes, 3/5 (0.6) fails. Rate-grading instead of a single
     # run avoids n=1 routing-nondeterminism flake.
     suite_thresholds: {recall.yes: 0.66}
+    # Pass-stop: end the run the moment SKILL.md is read, so a hit finishes in
+    # one or two tool calls and is reported as a clean stop rather than as the
+    # turn cap running out. Only a miss burns the whole max_turns budget.
+    stop_early:
+      on_pass: stop

@@ -8,8 +8,11 @@ Asserts:
      would indicate Pattern 1, not Pattern 2).
   2. The flow file contains at least one node of type
      `uipath.core.agent.<resourceKey>`.
-  3. That agent node's `model.section` is `"Published"` (the Pattern 2
-     marker per `flow-integration.md`'s Pattern Comparison table).
+  3. The agent node's `definitions[]` entry carries the Pattern 2 marker:
+     either `model.section == "Published"` (legacy registry output) or —
+     per current registry output, which omits `model.section` entirely —
+     `category == "agent.published"`. Matches `flow-integration.md`'s
+     Pattern Comparison table (`"Published"` or absent).
   4. The flow file does NOT contain `"In this solution"` for that node
      (would indicate Pattern 1).
 """
@@ -63,12 +66,37 @@ def assert_pattern_2_not_pattern_1(flow_path: Path) -> dict:
             "The agent must be referenced as a Published resource."
         )
 
-    if '"Published"' not in text:
+    agent_defs = [
+        dfn
+        for dfn in doc.get("definitions", [])
+        if isinstance(dfn, dict)
+        and str(dfn.get("nodeType", "")).startswith("uipath.core.agent.")
+    ]
+    if not agent_defs:
         fail(
-            f"{flow_path} does not contain `section: \"Published\"` for the agent node. "
-            "Pattern 2 requires the agent node's model.section to be 'Published'."
+            f"{flow_path} has no `definitions[]` entry for a "
+            "`uipath.core.agent.<resourceKey>` node — the definition must be "
+            "copied verbatim from `uip maestro flow registry get`"
         )
-    print("OK: agent node carries `section: \"Published\"` (Pattern 2)")
+    for dfn in agent_defs:
+        node_type = dfn.get("nodeType")
+        section = (dfn.get("model") or {}).get("section")
+        category = dfn.get("category")
+        # Pattern 2 marker: legacy registry output set model.section to
+        # "Published"; current registry output omits model.section and sets
+        # category to "agent.published" instead. Accept either.
+        if section == "Published" or (section is None and category == "agent.published"):
+            continue
+        fail(
+            f"{flow_path} definition for `{node_type}` is not Pattern 2 "
+            f"(Published): model.section={section!r}, category={category!r}. "
+            "Expected model.section == 'Published' or (model.section absent "
+            "and category == 'agent.published')."
+        )
+    print(
+        "OK: agent definition carries the Published marker "
+        "(`model.section: \"Published\"` or `category: \"agent.published\"`) (Pattern 2)"
+    )
 
     return doc
 

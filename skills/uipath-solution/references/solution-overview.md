@@ -8,7 +8,7 @@ Create, pack, publish, deploy, and manage UiPath solution packages.
 
 ## What is a Solution?
 
-A UiPath Solution is a container that groups multiple automation projects (processes, libraries, tests) into a single deployable unit. Solutions enable:
+A UiPath Solution is a container that groups multiple automation projects (processes, tests, agents, API workflows, apps) into a single deployable unit — not libraries ([develop-solution.md § Step 2](develop-solution.md#step-2-add-existing-projects)). A deploy does not install a Tests project ([pack-and-deploy.md § Step 4](pack-and-deploy.md#step-4-deploy-to-orchestrator)). Solutions enable:
 
 - **Bundled deployment** -- Deploy multiple projects together as one package
 - **Version management** -- Track and version the entire solution as a single entity
@@ -129,17 +129,25 @@ uip solution
   │     ├── status <id>                   Check deployment status
   │     ├── list                          List deployments
   │     ├── activate <name>               Activate a deployment (only needed after --skip-activate or to retry a failed auto-activation)
-  │     ├── uninstall <name>              Uninstall a deployment
+  │     ├── upgrade <deployment-key>      Move a deployment to another published version in place (newer or older), keeping its existing configuration; or --name <n> --package-name <p>
+  │     ├── uninstall <name>              Uninstall a deployment — removes its resources and folder, leaves the deployment (--yes; --force past uncompleted jobs / permanent deletion, with consent)
+  │     ├── delete <name>                 Delete what uninstall leaves behind, a superseded version, or a failed install (--yes)
   │     └── config
   │           ├── get <package-name>      Fetch default deploy config
   │           ├── set <file> ...          Set a resource property in config
   │           ├── link <file> <resource>  Link to an existing Orchestrator resource
   │           └── unlink <file> <resource> Remove a resource link
+  ├── feeds
+  │     └── list                          List the feeds you can publish or deploy to (tenant, your Personal Workspace, folder feeds)
   └── packages
         ├── list                          List published solution packages
         ├── download <name> [version]      Download a published solution package .zip
         └── delete <name> <version>       Delete a specific package version
 ```
+
+`publish`, `deploy run`, `deploy list`, `packages list` and `packages delete` all take
+`--feed <name-or-key>` or `--personal-workspace` to target a feed other than the
+tenant's. See [Pack and Deploy — Publishing to a non-tenant feed](pack-and-deploy.md#publishing-to-a-non-tenant-feed).
 
 ---
 

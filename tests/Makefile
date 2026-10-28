@@ -5,24 +5,42 @@ VENV := .venv
 CODER_EVAL := SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) $(VENV)/bin/coder-eval
 TASKS := $(shell find tasks -name '*.yaml' -type f)
 TASK_PARALLELISM ?= 1
+# Same pin and agent image CI uses (tests/.coder-eval-version).
+CE_VERSION := $(shell tr -d '[:space:]' < .coder-eval-version)
+CE_IMAGE := ghcr.io/uipath/coder-eval-agent:$(CE_VERSION)
+CE_CONSTRAINTS := $(VENV)/ce-constraints.txt
 
 help:  ## Show available commands
 	@grep -E '^[a-zA-Z0-9_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install:  ## Install coder-eval into local .venv (requires Python 3.13+; UV_INDEX_UIPATH_USERNAME/PASSWORD optional for private ml-packages feed)
+install:  ## Install pinned coder-eval into local .venv, constrained to the agent image's deps (requires Python 3.13+ and Docker; UV_INDEX_UIPATH_USERNAME/PASSWORD optional for private ml-packages feed)
 	uv venv --python 3.13 $(VENV)
+	@# Constrain to the deps frozen into the pinned agent image, as CI does, so
+	@# local runs resolve what smoke/ad-hoc/nightly resolve. No Docker -> an
+	@# empty constraints file (valid, unconstrained) plus a warning. The image is
+	@# amd64-only, hence --platform (emulated on Apple Silicon).
+	@if docker run --rm --platform linux/amd64 --entrypoint pip $(CE_IMAGE) freeze --exclude-editable > $(CE_CONSTRAINTS).raw; then \
+	  grep -vE '^coder-eval| @ ' $(CE_CONSTRAINTS).raw > $(CE_CONSTRAINTS) || true; \
+	  echo "Constraining to $(CE_IMAGE)."; \
+	else \
+	  : > $(CE_CONSTRAINTS); \
+	  echo "WARNING: could not read $(CE_IMAGE) (Docker not running?) — installing without image constraints."; \
+	fi; \
+	rm -f $(CE_CONSTRAINTS).raw
 	@if [ -n "$$UV_INDEX_UIPATH_USERNAME" ] && [ -n "$$UV_INDEX_UIPATH_PASSWORD" ]; then \
 	  echo "Using UiPath private PyPI feed (ml-packages)."; \
-	  UV_EXTRA_INDEX_URL="https://$$UV_INDEX_UIPATH_USERNAME:$$UV_INDEX_UIPATH_PASSWORD@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/" \
-	    uv pip install --python $(VENV)/bin/python "coder-eval @ git+https://github.com/UiPath/coder_eval.git"; \
+	  export UV_EXTRA_INDEX_URL="https://$$UV_INDEX_UIPATH_USERNAME:$$UV_INDEX_UIPATH_PASSWORD@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"; \
 	else \
 	  echo "UV_INDEX_UIPATH_USERNAME/PASSWORD not set — installing without the UiPath private PyPI feed."; \
 	  echo "Set both variables before running 'make install' if you need packages from the ml-packages feed."; \
-	  uv pip install --python $(VENV)/bin/python "coder-eval @ git+https://github.com/UiPath/coder_eval.git"; \
-	fi
+	fi; \
+	uv pip install --python $(VENV)/bin/python --prerelease=allow -c $(CE_CONSTRAINTS) \
+	  "coder-eval[litellm,harbor,codex]==$(CE_VERSION)"
 	@echo ""
 	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
+	@echo "checker_context.api_route defaults llm_judge to litellm -> gpt-5.6-luna (see tests/README.md#checker-context)."
+	@echo "Set CODEX_BASE_URL/CODEX_API_KEY in your env before running tasks locally."
 
 all:  ## Run all tests in a single run (uses the full default budget)
 	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml -j $(TASK_PARALLELISM) -v

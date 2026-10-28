@@ -36,7 +36,7 @@ Fallback discovery paths if the deploy output is unavailable or unparseable, **t
 
 If all paths return empty / 404, the deploy command's stdout JSON is authoritative — re-run the deploy and capture its output rather than chasing post-hoc discovery endpoints.
 
-For the flow node JSON shape, see the uipath-maestro-flow skill agent-plugin reference (Published variant). `model.section` is `"Published"`.
+For the flow node JSON shape, see the uipath-maestro-flow skill agent-plugin reference (Published variant). Registry output marks the published variant with `category: "agent.published"` and omits `model.section`.
 
 ---
 
@@ -75,7 +75,7 @@ Coded agents use `location: "external"`.
 | Node type | `uipath.core.agent.<resourceKey>` (local, from `project add`) | `uipath.core.agent.<resourceKey>` (Orchestrator-assigned) | `uipath.agent.resource.tool.agent` |
 | Lifecycle | `uip solution upload` (single pass) | `uip codedagent deploy` | `uip codedagent deploy` |
 | Runtime lookup | Studio Web projects API | Orchestrator Releases API | Orchestrator (via parent agent) |
-| `model.section` | `"In this solution"` | `"Published"` or absent | n/a |
+| `model.section` | `"In this solution"` | absent (`category: "agent.published"`) | n/a |
 | Cross-flow reuse | No | Yes | Yes |
 
 ---

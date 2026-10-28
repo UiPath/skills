@@ -14,9 +14,14 @@ run_limits:
   expected_turns: 60
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/solution_apiworkflow_tool/_fixtures/ShippingSol ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/ShippingSol
+      mount_point: ShippingSol
+
+reference:
+  directory: .
 
 initial_prompt: |
   Create a new UiPath low-code agent named "ShippingAgent" inside the existing
@@ -115,7 +120,7 @@ success_criteria:
 
   - type: run_command
     description: "Solution API workflow tool resource shape (type, location, folderPath)"
-    command: "python3 $TASK_DIR/check_solution_apiworkflow_tool.py"
+    command: "python3 $REFERENCE_DIR/check_solution_apiworkflow_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

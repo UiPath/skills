@@ -40,6 +40,7 @@ from case_check import (  # noqa: E402
     assert_tasks_nested,
     find_stages,
     get_bindings,
+    selected_stage_ids,
     get_case_exit_conditions,
     get_variables,
     iter_tasks,
@@ -209,12 +210,12 @@ def check_rule_mapping(plan: dict) -> list[str]:
                 )
                 continue
             if rname in ("selected-stage-completed", "selected-stage-exited"):
-                sid = rule.get("selectedStageId")
-                if sid and sid not in stage_ids:
-                    issues.append(
-                        f"[{scope}] {owner}: {rname} selectedStageId={sid!r} "
-                        f"does not match any stage id"
-                    )
+                for sid in selected_stage_ids(rule):
+                    if sid not in stage_ids:
+                        issues.append(
+                            f"[{scope}] {owner}: {rname} selectedStageIds contains {sid!r}, "
+                            f"which does not match any stage id"
+                        )
             if rname == "selected-tasks-completed":
                 for tid in rule.get("selectedTasksIds") or []:
                     if tid not in task_ids:

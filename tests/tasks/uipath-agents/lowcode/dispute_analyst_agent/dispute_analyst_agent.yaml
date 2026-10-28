@@ -14,6 +14,9 @@ run_limits:
   expected_turns: 15
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "DisputeAnalystAgent" that analyzes a billing
   dispute by synthesizing data from four systems and producing a
@@ -112,7 +115,7 @@ success_criteria:
 
   - type: run_command
     description: "Schema sync, input/output field presence, and contentTokens for all 5 inputs"
-    command: "python3 $TASK_DIR/check_dispute_analyst_agent.py"
+    command: "python3 $REFERENCE_DIR/check_dispute_analyst_agent.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
@@ -123,6 +126,7 @@ success_criteria:
     files: ["DisputeSol/DisputeAnalystAgent/agent.json"]
     weight: 1.0
     pass_threshold: 0.8
+    include_reference: false
     prompt: |
       You are grading the `messages[]` entry with `role == "system"` inside
       `DisputeSol/DisputeAnalystAgent/agent.json`. Ignore every other field

@@ -1,13 +1,38 @@
 ---
 name: uipath-insights
-description: "UiPath Insights job monitoring via `uip insights` — query job execution metrics, failure analysis, and process performance. Covers job KPIs, failure reasons, completion trends, process breakdowns. Also filter discovery — folders, processes, queues, and machines with recent activity, for choosing exact scope before alerts or filtered queries. For Orchestrator job start/stop/logs→uipath-platform, root-cause analysis of specific errors→uipath-troubleshoot, RPA workflow authoring→uipath-rpa."
-when_to_use: "User says 'job failures', 'automation health', 'job success rate', 'processing time', 'which processes fail the most', 'failure reasons', 'job trends', 'how many jobs ran', 'insights dashboard', 'job metrics', 'job KPIs', 'job performance', 'uncompleted jobs', 'pending jobs', 'faulted jobs', 'job timeline', 'process details', 'which folders can you see', 'what processes are active', 'find the folder key', 'discover queues', 'which machines reported', 'filter-folders', 'filter-processes'. Also 'uip insights', 'insights jobs'. NOT for starting/stopping jobs (uipath-platform), NOT for root-cause debugging of a specific job error (uipath-troubleshoot), NOT for queue item metrics (queue discovery is supported via filter-queues; metrics are not)."
+description: "UiPath Insights historical monitoring via `uip insights`: job metrics, failure analysis, and process performance; queue totals, SLA risk, timelines, and failure drill-down; machine availability, fault ranking, and runtime minutes; filter discovery of scope; alert definition, history, delivery, and entitlement reads; Insights user, role, and group reads; Maestro process dashboard reads and writes; export destination checks; Looker dashboard lists and embed URLs. For live Orchestrator records or job start/stop/logs→uipath-platform, root-cause analysis→uipath-troubleshoot, workflow authoring→uipath-rpa, org identity→uipath-admin."
+when_to_use: "User says 'job failures', 'automation health', 'job success rate', 'processing time', 'which processes fail the most', 'failure reasons', 'job trends', 'how many jobs ran', 'job metrics or KPIs', 'job timeline', 'process details', 'discover queues', 'which machines reported', 'queue backlog', 'queue SLA', 'why are queue items failing', 'queue retry success', 'machine utilization, availability, or status', 'process dashboard', 'create, update, delete, or copy a dashboard', 'Insights alert', 'which alerts exist', 'alert history or delivery', 'did an alert fire', 'alerting entitlement', 'who has Insights access', 'Insights roles or groups', 'export destination', 'is our export working', 'which Looker dashboards', or 'embed URL'. NOT for listing live jobs or resource CRUD (uipath-platform), alert, RBAC, or export writes, or debugging one job or item (uipath-troubleshoot). Also 'uip insights', 'insights queues'."
 allowed-tools: Bash, Read
 ---
 
+# Reasoning budget
+- Match reasoning to step difficulty and bias toward acting. For a mechanical step, if a command
+  already does the work, run it and read its output instead of re-deriving it.
+- Save deep, extended reasoning for the one judgment no command can make: what the data means for
+  the user, whether a failure rate matters, and what the evidence does not prove.
+- None of this licenses a shorter answer. Finish every step the task asked for; where a budget rule
+  and completeness conflict, completeness wins. These rules cut rework, not required work.
+
+# Working style
+- **Understand first, then decide.** Read this SKILL.md and the subcommand table in Shared Workflow
+  before you act, then plan around what the commands actually do rather than a guess.
+- **Plan the whole path up front.** Outline the full sequence before running anything.
+  Critical Rule 2 forbids chaining `uip insights` subcommands in one shell line, so batch by picking
+  the one command that covers the whole question instead of issuing its parts turn by turn.
+- **Inspect an input ONCE.** Read a guide or a response once and work from what you have. Never
+  re-open a file field by field, and never re-run a command whose output is already in context.
+- **Don't repeat work.** Do not rerun a command when its inputs and the relevant state are
+  unchanged, and do not reread an unchanged guide or SKILL.md already in context.
+- **Write code once and reuse.** Do not paste near-duplicate inline `python3 -c` or `jq` to compute
+  something a subcommand already returns.
+- **Keep outputs small.** Prefer a projected result over a raw envelope. When a large read needs the
+  full body, send it to a file and inspect the file.
+- **Don't do anything unnecessary.** Do not call tools, read guides, or pull results into context
+  unless they are needed right now. This governs what you read, never which commands you run.
+
 # UiPath Insights
 
-Use `uip insights` for job monitoring and monitoring-scope discovery. Read the guide for the task before running commands.
+Use `uip insights` for job, queue, and machine monitoring, monitoring-scope discovery, read-only alert inspection, Insights RBAC reads, and Maestro process dashboard reads, create, update, delete, and copy. Read the guide for the task before running commands.
 
 ## When to Use This Skill
 
@@ -16,20 +41,34 @@ Use `uip insights` for job monitoring and monitoring-scope discovery. Read the g
 - Which processes fail most, and which failure reasons recur
 - Whether jobs are stuck, pending, or still running
 - Finding the exact folder key, process name, queue name, or machine name to scope a query by
+- Queue item throughput, backlog, SLA risk, failure reasons, or how retried items turned out
+- Machine health: runtime split, current status and slots, availability over time, fault ranking, or runtime minutes
+- Which alerts exist, how one is configured, whether an alert fired, or how a triggered alert is delivered
+- Who has Insights access on a tenant, which roles exist and what they permit, and which groups hold them
+- What a Maestro process's Monitoring tab shows: its saved dashboard or the template, the global filters saved on it, or creating, changing, removing, or copying that dashboard
+- Whether Insights can still reach the organization's export destinations, and which export configurations exist
+- Which Looker-era Insights dashboards exist, an embed URL for one, or why an embedded dashboard fails to load
 
 ## Critical Rules
 
-1. **Use `--output json`.** `jobs` commands return `{ Result, Code, Data }`. `filter-*` commands add `Pagination` and `Instructions`; quote those `Instructions` in the explanation. A failure envelope carries `Result`, `Message`, `Instructions`, `ErrorCode`, and `Retry`, with no `Code` and no `Data`. Keys inside `Data` are PascalCase on the wire, so read `FolderKey` and `JobsCount`, not `folderKey` or `jobsCount`.
-2. **One subcommand per invocation, written literally.** Do not chain, loop, or parameterize `uip insights` commands: no `&&` or `;` chains, no `for` loops, and no shell variables holding the subcommand name or flag values. Resolve values such as epoch timestamps in a separate command first, then pass literal numbers. Never write `$(date ...)` or `$VAR` into a flag value.
+1. **Use `--output json`.** `jobs` commands return `{ Result, Code, Data }`. Every `jobs investigate` playbook adds `Instructions`, and so do four of the seven plain `jobs` reads (`top-failures`, `failures-by-reason`, `process-details`, `failure-details`), the `filter-*` commands, the `queues` and `machines` commands, the alert commands, and the dashboard commands, and both `looker-dashboards` commands; `filter-*`, every `queues` command except `summary`, every `machines` command except `runtime-mix`, `alerts list`, `alert-history list`, `dashboard-filters list`, `export-configurations list`, and `looker-dashboards list` also add `Pagination`, while no `dashboards` verb does and neither does `export-configurations verify`; that verb adds `Instructions` alone, because its row set is every configuration the organization owns and cannot page. Quote those `Instructions` in the explanation. A failure envelope carries `Result`, `Message`, `Instructions`, `ErrorCode`, and `Retry`, with no `Code` and no `Data`. An HTTP failure also carries `Context` with `httpStatus`, `endpoint`, and sometimes `requestId` and `retryAfter`; a failure raised before any request is sent carries no `Context`. Keys inside `Data` are PascalCase in the CLI's JSON output, so read `CompletedJobs` and `FolderName`, not `completedJobs` or `folderName`. The `jobs` reads project their response into named columns rather than printing the backend's wide DTO, so a field you remember from the API may have a clearer name or be absent; the jobs guide lists what each read emits. The RBAC reads print a safe projection that withholds identity fields, and the output format has no bearing on that: the full view is a named include flag per family, so `--output json` is correct on them too.
+2. **One subcommand per invocation, written literally.** A shell invocation runs one `uip insights` command and nothing else. Do not chain, loop, or parameterize them: no `&&` or `;` chains, no newline-separated batches, no `for` loops, and no shell variables holding the subcommand name or flag values. Resolve values such as epoch timestamps in a separate command first, then pass literal numbers. Never write `$(date ...)` or `$VAR` into a flag value.
 3. **Use only the flags the guides document.** Identity, organization, and tenant come from the active session. Any tenant flag you find is deprecated and is rejected outright on `filter-*` commands, so do not use one. If a filter is not in the guide's shared-options list, it does not exist.
-4. **Every `jobs` command needs a time range.** Pass `--time-range <minutes>` (60 = 1h, 1440 = 24h, 10080 = 7d, 43200 = 30d), or both `--started-after` and `--started-before`. Omitting both is rejected locally and exits 1. `filter-*` commands take no time flags.
-5. **Start with `summary`, then drill down.** After any scope discovery the task needs, begin a job investigation with `uip insights jobs summary` for the totals, then run the targeted subcommands. The summary supplies the denominator that makes a failure count meaningful.
-6. **Treat empty data as bounded evidence.** Empty results can reflect the chosen time window, the recent-activity window, caller visibility, or tenant provisioning. They do not prove that a resource or event never existed.
-7. **Use the CLI instead of raw Insights APIs.** It owns authentication, tenant routing, validation, and error handling.
+4. **Time ranges are required on the plain reads, and their units differ by family.** On the seven plain `jobs` reads, pass `--time-range <minutes>` (60 = 1h, 1440 = 24h, 10080 = 7d, 43200 = 30d), or both `--started-after` and `--started-before` in epoch milliseconds. `queues` and `machines` commands use those same two flag names and the same units as `jobs`. `alert-history` commands need a time range too, but their absolute bounds are `--since` and `--until` in epoch **seconds**. Omitting a time range is rejected locally: a plain `jobs` read answers `Result: Failure` and exits 1, `queues`, `machines`, and `alert-history` exit 3. On `queues` and `machines` the server also caps the window at 30 days; each family's guide Rule 2 owns when that bites and how the CLI reports it. Every `jobs investigate` playbook has a default window instead, and rejects a window it cannot honor with `Result: ValidationError` and exit 3. `filter-*` commands, the three alert definition reads, the dashboard commands, the `export-configurations` commands, and the `looker-dashboards` commands take no time flags.
+5. **Start with `summary`, then drill down.** After any scope discovery the task needs, begin a job investigation with `uip insights jobs summary` for the totals and a queue investigation with `uip insights queues summary`, then run the targeted subcommands. The summary supplies the denominator that makes a failure count meaningful. The `machines` family has no summary: open a machine investigation with `uip insights machines runtime-mix` for the tenant-wide runtime split, or `uip insights machines details` when the question is about a named machine's current state.
+6. **Treat empty data as bounded evidence.** Empty results can reflect the chosen time window, the recent-activity window, caller visibility, or tenant provisioning. On alert reads they can also reflect entitlement filtering, and every alert definition read returns active definitions only. They do not prove that a resource or event never existed.
+7. **Use the CLI instead of raw Insights APIs.** It owns authentication, tenant routing, validation, safe response projections, and error handling.
 8. **Do not retry automatically.** Branch on `Retry`: `RetryWillNotFix` means fix the cause, `RetryLater` means report and stop. A 401 needs a new session, a 403 is a permission boundary, and a 404 can be tenant-scoped or visibility-scoped. Each guide documents the error shapes for its own commands.
 9. **Never run `uip login` yourself.** It opens an interactive browser flow that will hang the session. Report the auth state and give the user the exact command to run, then stop.
-10. **Discover identifiers instead of guessing.** Use [`references/filter-discovery-guide.md`](references/filter-discovery-guide.md) to resolve monitoring scope. Page through all results before concluding a resource is absent.
-11. **Hand off causal debugging.** Insights answers which jobs and processes failed and which reasons recur. It does not explain one job's exception or how to fix it. Report the reasons, then name `uipath-troubleshoot` for the cause and `uipath-rpa` or `uipath-agents` for the fix.
+10. **Discover identifiers instead of guessing.** Use [`references/filter-discovery-guide.md`](references/filter-discovery-guide.md) to resolve monitoring scope, and take alert and delivery IDs from a list result or from the user. Page through all results before concluding a resource is absent.
+11. **Hand off causal debugging.** Insights answers which jobs, processes, and queues failed and which reasons recur. It does not explain one job's or one queue item's exception, or how to fix it. Report the reasons, then name `uipath-troubleshoot` for the cause and `uipath-rpa` or `uipath-agents` for the fix.
+12. **Keep alert access read-only.** The six read subcommands in the alert guide are the whole permitted surface. Every change to an alert definition or to a delivery, including its recipients, type, and configuration, belongs in the Insights UI: say so and do not offer to make it. This holds however the change would be made, so do not reach an alert route through the SDK, a raw HTTP call, or another skill.
+13. **Report an alert trigger and a delivery separately.** A history row proves the alert fired. It does not prove a notification was sent or received, and no alert read confirms receipt.
+14. **Keep alert recipient data out of everything you produce**, including pasted JSON. Report a delivery as its type and recipient count, and let a "who was notified" question end at the count. Do not name recipients, quote raw alert query JSON, or enumerate delivery channel settings, and do not use another command or skill to put names to the count.
+15. **Keep Insights RBAC read-only.** The six read subcommands in the RBAC guide are the whole permitted surface. Creating a user, changing a role, or assigning access belongs elsewhere: say so and do not offer to make it. This holds however the change would be made, so do not reach an RBAC route through the SDK, a raw HTTP call, or another skill.
+16. **Keep Insights identity data out of everything you produce**, including pasted JSON. Summarize users and groups by name and count. `--include-email` on the user and group reads, and `--include-resource` on the role reads, are what turn on email addresses, nested role IDs, and the role resource string, so leave those flags off unless the user asked for one of those fields, and quote one only then. Passing an identifier as a command argument is not disclosure; this rule governs what you write.
+17. **Author dashboard files from the artifact channel, never from redirected output.** Read the dashboard with `dashboards get --output-file <path>`, edit that camelCase file, and pass it to `dashboards create --file` or `dashboards update --file`. The same contract covers `--backup-file` and copy's `--output-file`. Redirected CLI JSON is PascalCase and wrapped, and the commands refuse it.
+18. **Send a dashboard write once, and never resend one whose outcome is unknown.** Read the slot first: a saved dashboard means the task is an update, not a create, and a process key you resolved from a name needs the user's confirmation before any write. On `unknown_error`, read the slot or the id back and let `Message` and the read decide, as the writes guide's Errors tables and the envelope's own `Instructions` set out; a `RetryLater` may be sent again only after that read, and a refused file was never sent, so fix it and send it. Pass `--expected-version` from a fresh process-key read on an update and report that check as best-effort, because the route has no version precondition. Never run a delete without `--backup-file` and the user's explicit ask, and never delete to start over after a refused create, a failed update, or an occupied copy destination. Report a success as persistence and read-back, with rendering unchecked.
 
 ## Shared Workflow
 
@@ -39,8 +78,50 @@ Use `uip insights` for job monitoring and monitoring-scope discovery. Read the g
    uip login status --output json
    ```
 
-2. Read the guide the Task Navigation table below names for this task.
-3. Run the subcommand and parse `Data` for the result. On `filter-*` commands also read `Pagination` for list completeness.
+2. Read the guide the Task Navigation table below names for this task, and none where it names none.
+3. For a job investigation, run one `uip insights jobs investigate` playbook instead of issuing the
+   chain yourself. Everything needed to call it is in the table below: do not open the playbook
+   guide when the table already answers the question.
+
+   | Question | Playbook | Flags |
+   |---|---|---|
+   | How healthy are the automations, what is the success rate | `health` | window (default 1440, max 43200) |
+   | Which processes are failing, and why | `failing` | window (default 43200, max 43200) |
+   | Why does one named process fail | `process` | `--process-name <name>` (required, one value), window (default 1440, max 43200) |
+   | Are jobs stuck, pending, or still running | `stuck` | window (default 1440, max 43200) |
+   | Is this period better or worse than the one before | `compare` | window (default 10080, max 21600) |
+   | Job health scoped to one folder by name | `folder` | `--folder-name <name>` (required), window (default 1440, max 43200) |
+
+   A playbook takes one window form only: either `--time-range <minutes>`, or both
+   `--started-after` and `--started-before` in epoch milliseconds. It refuses both forms together,
+   a window wider than the maximum above, and an absolute lower bound more than 30 whole days old.
+   Each refusal is local, with `Result: ValidationError` and exit 3, and no request is sent. A plain
+   `jobs` read makes none of these checks: it accepts both forms at once, and forwards a wide or
+   stale bound for the server to clamp without saying so. `compare`'s maximum is half the others
+   because it reads two adjacent windows of that length, and both have to fit inside the server's
+   30-day cap. Each playbook resolves its own window bounds, so never build them with `date`. Every
+   playbook also takes `--timezone-offset <minutes>`, which shifts the bucket timestamps to a
+   client offset.
+
+   Scope filters differ by playbook. `health`, `failing`, `stuck` and `compare` take the repeatable
+   `--folder-key`, `--process-name` and `--machine-name`. `process` takes `--folder-key` and
+   `--machine-name`, plus its own `--process-name`, which holds one value because the answer names
+   one process. `folder` takes `--process-name` and `--machine-name`, and no `--folder-key`,
+   because `--folder-name` resolves to one key. Each returns the same `{ Result, Code, Data }`
+   envelope as every other command, with an `Instructions` string naming the caveats on its
+   numbers: quote those in the explanation.
+
+   If `investigate` reports `unknown command`, the installed CLI predates it. Tell the user to update
+   (`npm i -g @uipath/cli`) and fall back to the numbered chains in
+   [`references/investigation-playbook-guide.md`](references/investigation-playbook-guide.md) for
+   this run.
+4. Otherwise run the subcommand and parse `Data` for the result. On list subcommands also read
+   `Pagination` for list completeness.
+
+   A request that names a subcommand, or asks for every subcommand, means the seven plain `jobs`
+   reads: run those. A playbook answers a question; it is not a substitute for a named read, and it
+   is not what "run every subcommand" asks for. The plain reads are also the way to get an
+   unprojected, uncapped body when the caller wants the raw response.
 
 Default to the active Production session. Change authority, organization, or tenant only when the user explicitly names another environment or scope. Give the user the command to run rather than running it yourself:
 
@@ -53,29 +134,53 @@ uip login tenant set MyTenant                                      # same enviro
 
 | User's task | Read first |
 |---|---|
-| Check job health, success rate, trends, failures, stuck jobs, or compare periods | [`references/investigation-playbook-guide.md`](references/investigation-playbook-guide.md) |
+| Check job health, success rate, trends, failures, stuck jobs, or compare periods | Nothing. Run the `jobs investigate` playbook from Shared Workflow step 3. Read [`references/investigation-playbook-guide.md`](references/investigation-playbook-guide.md) only when no playbook fits the question, or when the CLI lacks the verb |
 | Choose a Jobs subcommand, flag, time range, or interpret its response fields | [`references/jobs-commands-guide.md`](references/jobs-commands-guide.md) |
 | Answer which folders, processes, queues, or machines are visible, or resolve an exact folder key, process name, or machine name to filter by | [`references/filter-discovery-guide.md`](references/filter-discovery-guide.md) |
+| Report on queue item totals, SLA risk, state over time, failures, or retry outcomes | [`references/queue-monitoring-guide.md`](references/queue-monitoring-guide.md) |
+| Report on machine runtime mix, status and slots, availability intervals, fault ranking, or runtime minutes | [`references/machine-monitoring-guide.md`](references/machine-monitoring-guide.md) |
+| Inspect alert definitions, alerting entitlement, trigger history, or delivery metadata | [`references/alerts-reads-guide.md`](references/alerts-reads-guide.md) |
+| Inspect Insights users, roles, or groups | [`references/rbac-reads-guide.md`](references/rbac-reads-guide.md) |
+| Read a Maestro process's monitoring dashboard, its definition, or its stored global filters | [`references/dashboard-reads-guide.md`](references/dashboard-reads-guide.md) |
+| Create, update, delete, or copy a Maestro process's monitoring dashboard | [`references/dashboard-writes-guide.md`](references/dashboard-writes-guide.md) |
+| Report which unified export configurations exist, or whether Insights can still reach their destinations | [`references/export-configurations-guide.md`](references/export-configurations-guide.md) |
+| List the Looker-era Insights dashboards, or mint an embed URL for one | [`references/looker-dashboards-guide.md`](references/looker-dashboards-guide.md) |
 
-Read only the guides the task needs. A job investigation that must first resolve a folder, process, or machine needs the filter guide, then the jobs guide.
+Read only the guides the task needs. A job investigation that must first resolve a folder, process, or machine needs the filter guide, then the jobs guide. A queue question that names a queue needs the filter guide for the exact name, then the queue guide. A machine question that names a machine needs the filter guide for the exact name, then the machine guide. The machine guide also lists the five machine type labels, which `filter-machines list` does not report. An alert question needs the alert guide alone; it owns the full definition, history, and delivery sequence. An Insights access question needs the RBAC guide alone. A dashboard question needs the dashboard reads guide, and any write needs the writes guide after it: the process key comes from the user or from `uip maestro bpmn processes list`, and no `filter-*` command discovers a dashboard.
 
 ## Scope Boundaries
 
-`uip insights` ships two command families: `jobs` and `filter-folders` / `filter-processes` / `filter-queues` / `filter-machines`. If a request needs anything else, say it is not available rather than guessing a subcommand.
+`uip insights` ships eight command families: `jobs`, `queues`, `machines`, the `filter-*` discovery commands, the alert reads (`alerts`, `alert-history`, `alert-deliveries`), the RBAC reads (`users`, `roles`, `groups`), the Maestro dashboard commands (`dashboards`, `dashboard-filters`), the unified export reads (`export-configurations`), and the Looker-era dashboard reads (`looker-dashboards`). The `jobs` family is seven reads plus `jobs investigate`, which runs one whole investigation playbook per call. If a request needs anything else, say it is not available rather than guessing a subcommand.
 
 | Request | Route |
 |---|---|
+| List or get individual jobs and their current state. Insights holds historical aggregates over a time window, not the live job records | `uipath-platform` (`uip or jobs list --state`) |
 | Start, stop, restart, or inspect logs for an individual Orchestrator job | `uipath-platform` |
 | Diagnose the root cause of a specific job error | `uipath-troubleshoot` |
 | Fix the workflow or agent that caused a failure | `uipath-rpa` or `uipath-agents` |
-| Query queue item metrics | Not supported; `filter-queues` discovers queue scope only |
-| Alert definitions, dashboards, or robot utilization | Not in the shipped `uip insights` surface |
+| List, add, retry, or delete individual queue items | `uipath-platform`; `queues` reports on queue items in aggregate and never changes one |
+| Any alert or delivery write (see Critical Rule 12) | Insights UI; not in the shipped `uip insights` surface |
+| Create, edit, or delete a machine, or manage its runtimes | `uipath-platform`; `machines` reports on machines and never changes one |
+| Machine or robot utilization as a percentage of capacity, or an average concurrency or "robot-equivalent" count derived from runtime over the window | Not in the shipped `uip insights` surface; `machines utilization` reports runtime minutes with no capacity denominator, and dividing by the window invents one |
+| Read a Maestro process's monitoring dashboard or its stored global filters | [`references/dashboard-reads-guide.md`](references/dashboard-reads-guide.md) |
+| Create, update, delete, or copy a Maestro process's monitoring dashboard (see Critical Rules 17 and 18) | [`references/dashboard-writes-guide.md`](references/dashboard-writes-guide.md) |
+| Have Insights generate a dashboard from a text prompt (the product's own generate feature) | Insights UI; not in the shipped `uip insights` surface. Authoring a definition from what the user describes is the writes guide |
+| Any Insights RBAC write, such as assigning a role (see Critical Rule 15) | Insights UI; not in the shipped `uip insights` surface |
+| Manage org-level user accounts, groups, or roles outside Insights | `uipath-admin` |
+| Create, edit, or delete a unified export configuration, or set up a new export destination | Insights admin UI; not in the shipped `uip insights` surface |
+| Why did an export stop arriving at its destination | [`references/export-configurations-guide.md`](references/export-configurations-guide.md) first, for whether Insights can still reach the destination; then `uipath-troubleshoot` for the destination side |
+| List the Looker-era Insights dashboards, or get an embed URL for one | [`references/looker-dashboards-guide.md`](references/looker-dashboards-guide.md) |
+| Create, update, delete, export or duplicate a Looker-era dashboard | Insights UI; not in the shipped `uip insights` surface |
 
 ## Anti-patterns
 
-- Do not add `--limit` or `--offset` to a `jobs` command. Only `filter-*` commands page.
-- Do not reuse an identifier from an example. Folder keys, process names, and machine names come from a `filter-*` result or from the user.
+- Do not add `--limit` or `--offset` to a `jobs` command, to any `dashboards` verb, or to `looker-dashboards get-embed-url`, none of which accepts them. Among the dashboard commands only `dashboard-filters list` and `looker-dashboards list` page. Each guide lists which of its commands page.
+- Do not reuse an identifier from an example. Folder keys, process names, machine names, and queue names come from a `filter-*` result or from the user, an exception reason comes from a `failures-by-reason` row, a Maestro process key comes from the user or from `uip maestro bpmn processes list`, and a dashboard id comes from a `dashboards get`, `dashboards create`, or `dashboards copy` result.
+- Do not read an empty or `false` alert result as proof. Report what it rules out and what it leaves open.
+- Do not pass `--include-email` or `--include-resource` to an RBAC read unless the user asked for a field the safe view withholds.
+- Do not pass a connection string, access key or API key to any `export-configurations` command. `verify <id>` uses the credential Insights has stored, and no command takes one.
+- Do not paste a minted Looker embed URL anywhere but the answer. It is a per-user signed credential, not a link.
 
 ## Completion Output
 
-Close with the answer, the window queried, the active organization and tenant, and the filters applied. For `filter-*` results, say whether every page was retrieved. For permission-limited or empty results, state what the result does and does not prove.
+Close with the answer, the window queried, the active organization and tenant, and the filters applied. For list results, say whether every page was retrieved. For permission-limited or empty results, state what the result does and does not prove.

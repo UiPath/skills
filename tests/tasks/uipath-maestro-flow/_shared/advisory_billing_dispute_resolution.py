@@ -7,13 +7,24 @@ that the flow declares at least two `out` variables. This file asserts only the
 three things v1 CANNOT see — each one a contract measured on the product runtime,
 each one a defect this campaign already paid for once.
 
-1. **The connector's CONNECTION bindings carry a real key.** The platform resolves
-   an Integration Service connection through the flow's native `bindings[]` or
-   `resources[]` declarations, by the names the definition declares. A pair
-   that is missing, or that carries a symbolic name instead of the tenant's key,
-   deploys and then faults with `[102010] Integration Services invalid value in
-   input`. That is board row G-19, and it is invisible to every offline rung
-   except this one: no local executor reads `bindings[]`.
+1. **The two ERP/CRM lookups resolve to the tenant they are pointed at**, in
+   whichever of the two entity-read shapes the tenant's flags left available.
+   Both halves are invisible to every offline rung except this one: no local
+   executor reads `bindings[]`.
+
+   On the **connector**, the platform resolves an Integration Service connection
+   through the flow's native `bindings[]` or `resources[]` declarations, by the
+   names the definition declares. A pair that is missing, or that carries a
+   symbolic name instead of the tenant's key, deploys and then faults with
+   `[102010] Integration Services invalid value in input`. That is board row
+   G-19.
+
+   The **native** `core.datafabric.read` node needs no Integration Service
+   connection and no `bindings[]` connection row at all, so demanding one fails
+   the better build: the 2026-09-11 run scored 0.727 on a flow that validated,
+   debugged green, and returned the right answer. What is checkable there is the
+   entity scope — a `_folderKey` without `_resourceKey` and both
+   `resource: "Entity"` rows packages and breaks on deploy.
 
 2. **The IxP node's `fileRef` is a plain `=js:$vars.…` string.** The expression
    ENVELOPE (`{type:'jsExpression', …}`) is the file format's general spelling and
@@ -38,7 +49,10 @@ import json
 import re
 
 from advisory_flow_utils import (
+    NATIVE_READ,
+    assert_read_resolves,
     connection_binding_values,
+    entity_reads,
     fail,
     is_real_uuid,
     load_flow,
@@ -75,27 +89,39 @@ def main():
     _, flow, nodes = load_flow("BillingDisputeResolution.flow")
     agents = {n["id"] for n in nodes if str(n.get("type") or "") == AGENT_TYPE}
 
-    # ── 1. the connection bindings the platform resolves the connector through ──
-    conn = connection_binding_values(flow)
-    if not conn:
+    # ── 1. the ERP/CRM lookups resolve to the tenant they are pointed at ──────
+    shape, reads = entity_reads(nodes)
+    if not reads:
         fail(
-            "the flow declares NO `connection` binding. The two Data Service lookups are Integration "
-            "Service calls, and the platform resolves their connection through the flow's native "
-            "bindings declaration — without the pair it deploys and faults with [102010] Integration Services "
-            "invalid value in input. (Give the connector its connection + folder: either a `bindings.json` "
-            "mapping your symbolic names to the tenant's keys, or the keys inline.)"
+            "the flow has no entity-read node, so nothing performs the ERP/CRM lookups the pipeline "
+            "is built on (neither `uipath.connector.uipath-uipath-dataservice.*` nor "
+            "`core.datafabric.read`)"
         )
-    bad = [(identifier, values) for identifier, values in conn if not values or any(not is_real_uuid(v) for v in values)]
-    if bad:
-        fail(
-            "connection binding(s) "
-            + ", ".join(f"{identifier!r}={json.dumps(values)}" for identifier, values in bad)
-            + " do not carry a real tenant key (a uuid, and not a zero-prefixed stub). The platform "
-            "substitutes these by name into the connector node, so a symbolic name or a placeholder "
-            "reaches Integration Services verbatim -> [102010]. Look the connection up with "
-            "`uip is connections list --all-folders` and use its `Id` / `FolderKey`."
-        )
-    print(f"OK: {len(conn)} connection binding(s), each carrying a real tenant key")
+
+    if shape == NATIVE_READ:
+        scopes = [assert_read_resolves(node, shape, str(node.get("id")), flow) for node in reads]
+        print(f"OK: {len(reads)} native entity read(s), each resolved: {'; '.join(scopes)}")
+    else:
+        conn = connection_binding_values(flow)
+        if not conn:
+            fail(
+                "the flow declares NO `connection` binding. The two Data Service lookups are Integration "
+                "Service calls, and the platform resolves their connection through the flow's native "
+                "bindings declaration — without the pair it deploys and faults with [102010] Integration Services "
+                "invalid value in input. (Give the connector its connection + folder: either a `bindings.json` "
+                "mapping your symbolic names to the tenant's keys, or the keys inline.)"
+            )
+        bad = [(identifier, values) for identifier, values in conn if not values or any(not is_real_uuid(v) for v in values)]
+        if bad:
+            fail(
+                "connection binding(s) "
+                + ", ".join(f"{identifier!r}={json.dumps(values)}" for identifier, values in bad)
+                + " do not carry a real tenant key (a uuid, and not a zero-prefixed stub). The platform "
+                "substitutes these by name into the connector node, so a symbolic name or a placeholder "
+                "reaches Integration Services verbatim -> [102010]. Look the connection up with "
+                "`uip is connections list --all-folders` and use its `Id` / `FolderKey`."
+            )
+        print(f"OK: {len(conn)} connection binding(s), each carrying a real tenant key")
 
     # ── 2. the IxP fileRef spelling `uip maestro flow validate` requires ───────
     ixp = [n for n in nodes if str(n.get("type") or "").startswith("uipath.ixp.")]

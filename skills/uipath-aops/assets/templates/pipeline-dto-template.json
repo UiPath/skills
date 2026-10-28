@@ -1,0 +1,15 @@
+{
+  "name": "<PIPELINE_NAME>",
+  "runMode": "Manually",
+  "description": null,
+  "connectionIdentifier": "<CONNECTION_ID>",
+  "repositoryId": "<REPOSITORY_REMOTE_ID>",
+  "repositoryUrl": "<REPOSITORY_CLONE_URL>",
+  "repositoryName": "<REPOSITORY_NAME>",
+  "repositoryType": "git",
+  "branch": "<DEFAULT_BRANCH>",
+  "projectName": "",
+  "projectPath": "<PROJECT_PATH>",
+  "processIdentifier": "<PROCESS_ID>",
+  "arguments": null
+}

@@ -7,7 +7,7 @@ description: >
   and (3) calls `uip platform groups rules set <group> --input <path>
   --output json`. CLI auth failure is expected; this validates command shape
   only.
-tags: [uipath-platform, smoke, licensing, groups]
+tags: [uipath-platform, smoke, licensing, groups, mode:operate, lifecycle:setup]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

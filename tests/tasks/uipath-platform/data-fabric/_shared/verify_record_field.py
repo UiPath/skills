@@ -25,6 +25,9 @@ Exit codes:
         record, or the value doesn't match
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import re

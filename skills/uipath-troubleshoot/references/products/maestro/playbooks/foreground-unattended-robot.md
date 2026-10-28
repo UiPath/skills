@@ -43,4 +43,4 @@ What to look for:
 
 ## References
 
-- [Forum: Error #1230](https://forum.uipath.com/t/foreground-job-requires-an-unattended-robot-to-be-defined-on-your-user-1230/718082)
+- [Forum: Error #1230](https://forum.uipath.com/t/718082)

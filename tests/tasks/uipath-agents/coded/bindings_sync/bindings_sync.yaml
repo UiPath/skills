@@ -11,9 +11,13 @@ run_limits:
   max_turns: 60
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/_fixtures/bindings_sync/invoice-processor/. ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/bindings_sync/invoice-processor
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   My uipath coded agent's resources don't show up for override when I deploy
@@ -47,7 +51,7 @@ success_criteria:
 
   - type: run_command
     description: "Three deduped bindings with resolved constants, folder paths, and entrypoint links"
-    command: "python3 $TASK_DIR/check_bindings_sync.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_bindings_sync.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

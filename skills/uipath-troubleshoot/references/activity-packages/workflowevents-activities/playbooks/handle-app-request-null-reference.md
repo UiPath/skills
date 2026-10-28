@@ -23,7 +23,7 @@ What to look for:
 ## Investigation
 
 1. **Confirm the signature + activity.** `uip or jobs get <job-key> --output json` → `Info` shows `System.NullReferenceException`; the faulted activity is `HandleAppRequest`.
-2. **Identify the invoked workflow.** From traces (`uip or jobs traces <job-key> --output json`) read the workflow file the App invoked and the input arguments delivered to it.
+2. **Identify the invoked workflow.** From traces (`uip traces spans get --job-key <job-key> --output json`) read the workflow file the App invoked and the input arguments delivered to it.
 3. **Read the faulting frame.** The stack points inside the invoked workflow — find which variable/argument was dereferenced.
 4. **Compare the App's argument bindings to the workflow's `In` arguments** — name and type must match, and every value the workflow dereferences must be supplied non-null.
 
