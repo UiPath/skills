@@ -270,8 +270,9 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
 
 Use the node variant explicitly named by the scenario. The default and
 quick-form variants own their fields in the Flow; action-app delegates the form
-to an already-deployed app. For an app task, resolve the app key, name, folder,
-and argument names from the same tenant resource.
+to an already-deployed app (or an app in this solution, below). For an app
+task, resolve the app key, name, folder, and argument names from the same
+tenant resource.
 
 A coded action app in the SAME solution as the Flow is not deployed to a folder
 yet. Write it with `location: 'in-solution'` and no `folderPath`:
@@ -279,27 +280,42 @@ yet. Write it with `location: 'in-solution'` and no `folderPath`:
 ```ts
 .step('review', hitl({
   variant: 'action-app',
-  app: { name: 'InvoiceReview', key: 'ab1f6f14-d2e1-4c63-8338-0c5d29a0dbff', location: 'in-solution' },
+  app: { name: '<App>', key: '<APP_RESOURCE_KEY>', location: 'in-solution' },
   outcomes: ['Approve', 'Reject'],
 }))
 ```
 
-- `key` is the app's `resource.key` in
-  `resources/solution_folder/app/codedAction/<App>.json`; `name` is its
-  `resource.name`.
+- **Where the key comes from.**
+<!--skill-flavor:app-sibling-register:start-->
+  Register the app project and refresh resources
+  (`uip solution projects add`, then `uip solution resources refresh`). The
+<!--skill-flavor:app-sibling-register:end-->
+  generated `resources/solution_folder/app/codedAction/<App>.json` carries
+  `resource.key` → `key` and `resource.name` → `name`. Never invent the key;
+  the full recipe is in
+  [agent.md](agent.md#task-created-in-solution-coded-agent).
 - Do not give it a `folderPath`. A literal `'solution_folder'` reaches the
   engine as-is and the task is refused; `check` refuses a non-empty
   `folderPath` beside `location: 'in-solution'` (`HITL_APP_LOCAL_HAS_FOLDER`).
   A decompiled in-solution task (folder `''` or `'solution_folder'`) comes back
   as `location: 'in-solution'`.
+  This differs from an agent escalation's app
+  ([agent-resources.md](agent-resources.md#escalation)), which is an agent
+  resource and does carry `'solution_folder'`; do not carry either rule across.
 - Needs the `@uipath/maestro-builder-sdk` release that ships `location` on
-  `app`. It is not released yet; every SDK published so far rejects `location`
-  on `app`.
+  `app`. It is not released yet; every SDK published so far rejects
+  `location` on `app` (a type error, and `check` asks for the missing
+  `folderPath`),
+<!--skill-flavor:inso-app-sdk-upgrade:start-->
+  so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` once it
+  ships.
+<!--skill-flavor:inso-app-sdk-upgrade:end-->
 <!--skill-flavor:inso-app-uip-floor:start-->
-  Check `uip --version` before you deploy: on `uip` 1.204.0 or older an
-  in-solution app task fails at run time with `170004 Invalid input for the
-  HITL task`. Tell the user it needs the next `uip` release, and do not retry
-  the run.
+  No `uip` build checked so far keeps the app's folder when it packs this task
+  (1.204.0 and 1.205.0-preview.269 both drop it), and the task then fails at
+  run time with `170004 Invalid input for the HITL task`. Tell the user an
+  in-solution app task needs a `uip` release that carries the fix, and do not
+  retry the run.
 <!--skill-flavor:inso-app-uip-floor:end-->
 
 ## Evidence boundary

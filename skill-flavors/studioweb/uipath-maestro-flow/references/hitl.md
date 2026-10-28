@@ -15,3 +15,12 @@
   user Studio Web's packager dropped the in-solution app's folder, and do not
   retry the run.
 <!--skill-flavor:inso-app-uip-floor:end-->
+
+<!--skill-flavor:app-sibling-register:start-->
+  The app project must already be in the open solution. Do not run
+  `uip solution resources refresh`: it fails in Studio Web. The
+<!--skill-flavor:app-sibling-register:end-->
+
+<!--skill-flavor:inso-app-sdk-upgrade:start-->
+  so tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:inso-app-sdk-upgrade:end-->
