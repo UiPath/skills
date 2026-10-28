@@ -110,22 +110,22 @@ Field types: `string`, `number`, `integer`, `boolean`, `array`, `object`.
 ## Walkthrough
 
 ```bash
-# 1. Scaffold solution + conversational agent (--conversational is required;
-#    autonomous agents have no client surface). See project-lifecycle.md § Agent Commands.
-uip solution init "<SolutionName>" --output json
-uip agent init "<SolutionName>/<AgentName>" --conversational --output json
+# 1. Scaffold solution + conversational agent per
+#    project-lifecycle.md § End-to-End Example (pass --conversational;
+#    autonomous agents have no client surface).
+#    See ../../project-lifecycle.md#end-to-end-example--new-standalone-agent
 
-# 2. Write <SolutionName>/<AgentName>/resources/<ToolName>/resource.json
+# 2. Write <AgentName>/resources/<ToolName>/resource.json
 #    using the shape above.
 
 # 3. Reference the tool in the system prompt as @{tools.<ToolName>} with a
 #    matching expression contentToken. See ../../prompting/agent-prompting-guide.md.
 
 # 4. Refresh — regenerates entry-points.json and bindings_v2.json.
-uip agent refresh "<SolutionName>/<AgentName>" --output json
+uip agent refresh "<AgentName>" --output json
 
 # 5. Validate — strict, read-only. Confirm Status: "Valid".
-uip agent validate "<SolutionName>/<AgentName>" --output json
+uip agent validate "<AgentName>" --output json
 ```
 
 ## Runtime Sequence
