@@ -18,7 +18,8 @@ container in the same container, or a grown sibling container covers it; a
 container may grow when a child was added or moved. A moved node keeps its
 place in its row, moves at least as far as its predecessor, and lands on no
 other node. An added node sits inside its container and, on a row it shares
-with a neighbour it is wired to, on the side the edge points.
+with a neighbour it is wired to, on the side the edge points. An edge that
+closes a cycle by pointing left (a retry) is exempt from direction and reach.
 
 `--aspect merged` checks that the `.flow` came out of the skill's decompile ->
 compile -> merge loop, not a hand edit.
@@ -225,13 +226,25 @@ def downstream(source: str, edges: list[dict], parent_of: dict[str, str | None])
     frontier = {source}
     while frontier:
         frontier = {
-            e["targetNodeId"] for e in edges
-            if e["sourceNodeId"] in frontier
-            and parent_of.get(e["targetNodeId"]) == parent_of.get(source)
-            and e["targetNodeId"] not in reached | {source}
+            e.get("targetNodeId") for e in edges
+            if e.get("sourceNodeId") in frontier
+            and parent_of.get(e.get("targetNodeId")) == parent_of.get(source)
+            and e.get("targetNodeId") not in reached | {source}
         }
         reached |= frontier
     return reached
+
+
+def back_edges(edges: list[dict], parent_of: dict[str, str | None], after: dict) -> list[dict]:
+    """Edges that close a cycle in their container by pointing left, as a retry `.stepToRef` does."""
+    back = []
+    for e in edges:
+        u, v = e.get("sourceNodeId"), e.get("targetNodeId")
+        if u not in after or v not in after or parent_of.get(u) != parent_of.get(v):
+            continue
+        if box(after[v])[0] <= box(after[u])[0] and (u == v or u in downstream(v, edges, parent_of)):
+            back.append(e)
+    return back
 
 
 def grown_containers(changed: set[str], touched: set[str], before: dict, after: dict, failures: list[str]) -> set[str]:
@@ -292,14 +305,14 @@ def order_changes(
                 failures.append(f"{a!r} and {b!r} changed order in their row")
 
     for e in edges:
-        u, v = e["sourceNodeId"], e["targetNodeId"]
+        u, v = e.get("sourceNodeId"), e.get("targetNodeId")
         if (u in added) == (v in added) or u not in after or v not in after or parent_of.get(u) != parent_of.get(v):
             continue
         if shares_row(after[u], after[v]) and box(after[u])[0] >= box(after[v])[0]:
             failures.append(f"{v!r} sits left of {u!r} in their row, against the edge between them")
 
     for e in edges:
-        u, v = e["sourceNodeId"], e["targetNodeId"]
+        u, v = e.get("sourceNodeId"), e.get("targetNodeId")
         if u not in changed or v not in kept or parent_of.get(u) != parent_of.get(v):
             continue
         if box(before[v])[0] > box(before[u])[0] and offset(before[v], after[v])[0] < offset(before[u], after[u])[0]:
@@ -345,8 +358,14 @@ def check_layout(original: dict, final: dict, removable_nodes: set[str] = frozen
     original_ids = {n["id"] for n in original.get("nodes", [])}
     final_ids = {n["id"] for n in final.get("nodes", [])}
     parent_of = {n["id"]: n.get("parentId") for n in final.get("nodes", [])}
-    edges = final.get("edges", [])
     added = final_ids - original_ids
+
+    edges = []
+    for i, e in enumerate(final.get("edges", [])):
+        if not (isinstance(e, dict) and e.get("sourceNodeId") and e.get("targetNodeId")):
+            failures.append(f"edge {i} ({e.get('id') if isinstance(e, dict) else e!r}) has no sourceNodeId or targetNodeId")
+            continue
+        edges.append(e)
 
     kept: list[str] = []
     for node_id in sorted(original_ids):
@@ -360,6 +379,8 @@ def check_layout(original: dict, final: dict, removable_nodes: set[str] = frozen
     changed = {i for i in kept if after[i] != before[i]}
     touched = {parent_of[i] for i in added | changed if parent_of.get(i) is not None}
     grown = grown_containers(changed, touched, before, after, failures)
+    back = back_edges(edges, parent_of, after)
+    edges = [e for e in edges if not any(e is b for b in back)]
     room = set().union(*(downstream(i, edges, parent_of) for i in added | grown))
 
     failures += moves_without_room(changed, room, grown, before, after, parent_of)

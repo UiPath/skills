@@ -461,3 +461,32 @@ def test_moved_node_landing_on_another_fails(tmp_path: Path) -> None:
     for flow in (original, final):
         flow["edges"] = [e for e in flow["edges"] if "aside" not in (e["sourceNodeId"], e["targetNodeId"])]
     assert layout_of(tmp_path, original, final) == 1
+
+
+def retry_flow(fetch_x: int = 192, done_x: int = 384, retry: bool = False) -> dict:
+    layout_nodes = {"start": at(0, 0), "fetch": at(fetch_x, 0), "done": at(done_x, 0)}
+    edges = [{"sourceNodeId": "start", "targetNodeId": "fetch"}]
+    if retry:
+        layout_nodes["retry"] = at(384, 0)
+        edges += [
+            {"sourceNodeId": "fetch", "targetNodeId": "retry"},
+            {"sourceNodeId": "retry", "targetNodeId": "fetch"},
+            {"sourceNodeId": "retry", "targetNodeId": "done"},
+        ]
+    else:
+        edges.append({"sourceNodeId": "fetch", "targetNodeId": "done"})
+    return {"nodes": [{"id": i} for i in layout_nodes], "edges": edges, "layout": {"nodes": layout_nodes}}
+
+
+def test_added_retry_edge_back_to_an_earlier_node_passes(tmp_path: Path) -> None:
+    assert layout_of(tmp_path, retry_flow(), retry_flow(done_x=576, retry=True)) == 0
+
+
+def test_retry_edge_does_not_let_its_target_move(tmp_path: Path) -> None:
+    assert layout_of(tmp_path, retry_flow(), retry_flow(fetch_x=240, done_x=576, retry=True)) == 1
+
+
+def test_malformed_edge_fails_instead_of_crashing(tmp_path: Path) -> None:
+    final = retry_flow()
+    final["edges"].append({"id": "broken", "sourceNodeId": "fetch"})
+    assert layout_of(tmp_path, retry_flow(), final) == 1
