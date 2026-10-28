@@ -1,4 +1,4 @@
-# uipath-genome — Subject Homes
+# uipath-genome-builder — Subject Homes
 
 Every subject is stated in full in exactly one file; every other mention is a one-line pointer to that file and section. Edit the home; leave the pointers. A change touching more than the home plus its pointers is putting content in the wrong file.
 

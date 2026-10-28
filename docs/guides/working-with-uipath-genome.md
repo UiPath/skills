@@ -1,6 +1,6 @@
-# Working with uipath-genome
+# Working with uipath-genome-builder
 
-uipath-genome turns a project, or an idea, into a genome: a markdown blueprint of the automation. The agent then builds the UiPath automation from it, runs it against the real applications and fixes what fails. You make a few decisions; the agent, with helper agents it starts in parallel, does the rest.
+uipath-planner turns a project, or an idea, into a genome: a markdown blueprint of the automation. uipath-genome-builder then builds the UiPath automation from it, runs it against the real applications and fixes what fails. You make a few decisions; the agent, with helper agents it starts in parallel, does the rest.
 
 Use it to document an automation you run, in words people review and agents act on; to design a new one from an idea, an SOP or a meeting transcript; or to rebuild an existing automation onto the UiPath products that fit it.
 
@@ -45,7 +45,7 @@ Reading and building are checked apart, with you in between:
 
 ## How it compares
 
-| | Convert step by step | One-shot AI rewrite | Spec-first coding tools | uipath-genome |
+| | Convert step by step | One-shot AI rewrite | Spec-first coding tools | uipath-genome-builder |
 | --- | --- | --- | --- | --- |
 | Starts from the automation you have | Yes | Yes | No: specs the next change | Yes, or from an idea |
 | A plain-language spec, reviewed before the build | No | No | Yes | Yes |

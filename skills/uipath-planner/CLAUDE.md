@@ -24,13 +24,13 @@ Governs editing this skill; never read in a run. Every subject is stated in full
 | UiPath source facts: reading order, detection, inventory, signals per artifact type, deployed state, UI target locators, test data, provenance, pitfalls | `references/uipath-source-guide.md` |
 | What `scripts/check-genome.py` checks (its docstring) | the script, canonical here |
 | The Map of Work schema, its records and its changesets | the Cartographer MCP — never encoded in this skill |
-| Building, verifying and handing off a genome | `uipath-genome` — never this skill |
+| Building, verifying and handing off a genome | `uipath-genome-builder` — never this skill |
 
 ## Genome format and the shared checker
 
-`references/genome-format-guide.md`, `references/extracted-genome-guide.md`, `references/transactional-shape-guide.md`, `references/skill-mapping-guide.md`, `references/parts-guide.md` and `references/uipath-source-guide.md` hold the genome format and exist only in this skill. `scripts/check-genome.py` is the one file shared with `uipath-genome`, byte-identical and canonical here.
+`references/genome-format-guide.md`, `references/extracted-genome-guide.md`, `references/transactional-shape-guide.md`, `references/skill-mapping-guide.md`, `references/parts-guide.md` and `references/uipath-source-guide.md` hold the genome format and exist only in this skill. `scripts/check-genome.py` is the one file shared with `uipath-genome-builder`, byte-identical and canonical here.
 
-1. **Edit the checker here**, then run `python3 scripts/check-genome-core.py --fix` from the repository root to copy it to `uipath-genome`; CI fails while the copies differ.
-2. **A change to what a genome section means** is mirrored in `skills/uipath-genome/references/genome-reading-guide.md` in the same PR — the builder's restatement of the parts of the format a build acts on. A writing-only rule (how to word, extract or size a section) needs no mirror.
-3. **The format guides name build-side rules by their subject** ("`uipath-genome`'s split questions"), never by a `uipath-genome` file, so this skill keeps working when `uipath-genome` is absent.
+1. **Edit the checker here**, then run `python3 scripts/check-genome-core.py --fix` from the repository root to copy it to `uipath-genome-builder`; CI fails while the copies differ.
+2. **A change to what a genome section means** is mirrored in `skills/uipath-genome-builder/references/genome-reading-guide.md` in the same PR — the builder's restatement of the parts of the format a build acts on. A writing-only rule (how to word, extract or size a section) needs no mirror.
+3. **The format guides name build-side rules by their subject** ("`uipath-genome-builder`'s split questions"), never by a `uipath-genome-builder` file, so this skill keeps working when `uipath-genome-builder` is absent.
 4. **The genome owners own** the genome lanes, the format guides, the checker and the genome-writing tests; the planner owners own the SDD lanes (`CODEOWNERS`).

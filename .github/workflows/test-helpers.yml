@@ -227,9 +227,9 @@ jobs:
       # passes the strict profile, the skill lists match skills/, and the execute
       # checks count a setting or an open item only where the skill puts it.
       - name: Run pytest
-        run: pytest tests/tasks/uipath-genome/_shared/ -v
+        run: pytest tests/tasks/uipath-genome-builder/_shared/ -v
 
-      # uipath-planner writes genomes and uipath-genome builds them; each ships its own
+      # uipath-planner writes genomes and uipath-genome-builder builds them; each ships its own
       # check-genome.py, canonical in the planner. Fails when the two copies differ.
       - name: Check the genome checker is identical in both skills
         run: python3 scripts/check-genome-core.py

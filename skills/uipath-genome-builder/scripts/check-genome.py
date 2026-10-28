@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks a genome written by the uipath-genome skill, and its Source Map's step tables against the source export.
+"""Checks a genome written by the uipath-genome-builder skill, and its Source Map's step tables against the source export.
 
 Usage:
   check-genome.py component <genome.md> [--profile core|strict] [--expect TOKEN ...] [--source-map TOKEN ...]
@@ -12,7 +12,7 @@ Usage:
 
 The skill runs it with --profile strict after writing or editing a genome. For a genome extracted through the
 framework migration pack it adds the two files the pack's `data` command writes, and execution runs it so at
-migration preflight against the export it resolved. The genome tasks under tests/tasks/uipath-genome/ grade
+migration preflight against the export it resolved. The genome tasks under tests/tasks/uipath-genome-builder/ grade
 with this file.
 
 Profiles:
@@ -221,13 +221,14 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
         r.core("missing blueprint blockquote")
     elif "This is a UiPath automation blueprint" not in text:
         r.strict("blueprint blockquote not written as the template words it")
-    # format guide rule 5: the preamble routes the agent to uipath-genome, not to the Build With skills
+    # format guide rule 5: the preamble routes the agent to uipath-genome-builder, not to the Build With skills;
+    # the substring also accepts a genome written before the skill was renamed from uipath-genome
     comment = re.search(r"<!--\s*UIPATH-AUTOMATION-GENOME.*?-->", text, re.S | re.I)
     if comment and "uipath-genome" not in comment.group(0):
-        r.strict("preamble comment does not name uipath-genome as the skill that builds the genome")
+        r.strict("preamble comment does not name uipath-genome-builder as the skill that builds the genome")
     blockquote = re.search(r"^>.*UiPath automation blueprint.*$", text, re.M | re.I)
     if blockquote and "uipath-genome" not in blockquote.group(0):
-        r.strict("blueprint blockquote does not name uipath-genome as the skill that builds the genome")
+        r.strict("blueprint blockquote does not name uipath-genome-builder as the skill that builds the genome")
     pos = h2_positions(text)
     for s in sections:
         if section_pos(pos, s) is None:
@@ -241,7 +242,7 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
     # Service connector key (`uipath-slack`, `uipath-salesforce-sfdc`), not a skill
     for heading in ("Build With", "Components"):
         for name in sorted(set(re.findall(r"`(uipath-[a-z-]+)`", section_body(text, heading)))):
-            if name not in VALID_SKILLS | OPERATE_SKILLS | {"uipath-genome"}:
+            if name not in VALID_SKILLS | OPERATE_SKILLS | {"uipath-genome-builder"}:
                 r.core(f"unknown skill name '{name}' in {heading}")
     for heading in ("Build With", "Components"):
         for name in sorted(set(re.findall(r"`(uipath-[a-z-]+)`", section_body(text, heading)))):

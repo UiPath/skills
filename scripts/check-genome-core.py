@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Check that the genome checker is byte-identical in uipath-planner and uipath-genome.
+"""Check that the genome checker is byte-identical in uipath-planner and uipath-genome-builder.
 
-uipath-planner writes genomes and uipath-genome builds them. Each skill is installed on its own, so
+uipath-planner writes genomes and uipath-genome-builder builds them. Each skill is installed on its own, so
 each ships its own copy of scripts/check-genome.py: the planner runs it after every genome write,
 the builder before anything is asked. It is the only file the two skills share; the canonical copy
-lives in skills/uipath-planner/ (skills/uipath-genome/CLAUDE.md Rule 18). This script names the
+lives in skills/uipath-planner/ (skills/uipath-genome-builder/CLAUDE.md Rule 18). This script names the
 copy that is missing or differs.
 
 Usage:
   python3 scripts/check-genome-core.py          # check, exit 1 on any difference
-  python3 scripts/check-genome-core.py --fix    # copy the canonical file over uipath-genome's copy
+  python3 scripts/check-genome-core.py --fix    # copy the canonical file over uipath-genome-builder's copy
 
 Exit 0 when the copies are identical, 1 otherwise.
 """
@@ -21,13 +21,13 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 CANONICAL = REPO / "skills" / "uipath-planner"
-COPY = REPO / "skills" / "uipath-genome"
+COPY = REPO / "skills" / "uipath-genome-builder"
 SHARED = ("scripts/check-genome.py",)
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--fix", action="store_true", help="copy the canonical file over uipath-genome's copy")
+    parser.add_argument("--fix", action="store_true", help="copy the canonical file over uipath-genome-builder's copy")
     args = parser.parse_args(argv)
 
     failures = []
@@ -48,7 +48,7 @@ def main(argv=None) -> int:
     if failures:
         print("Edit skills/uipath-planner/scripts/check-genome.py, then run: python3 scripts/check-genome-core.py --fix")
         return 1
-    print(f"OK - {len(SHARED)} shared file identical in uipath-planner and uipath-genome.")
+    print(f"OK - {len(SHARED)} shared file identical in uipath-planner and uipath-genome-builder.")
     return 0
 
 

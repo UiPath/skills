@@ -2,7 +2,7 @@
 the skill's own worked examples pass the strict profile, a format slip fails strict but not core,
 and a broken contract fails core.
 
-Run: pytest tests/tasks/uipath-genome/_shared/ -v
+Run: pytest tests/tasks/uipath-genome-builder/_shared/ -v
 """
 
 import importlib.util
@@ -62,7 +62,7 @@ def test_domain_outcome_row_fails_strict_only(tmp_path):
 
 
 def test_preamble_without_uipath_genome_fails_strict_only(tmp_path):
-    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome", "the build skills")
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome-builder", "the build skills")
     assert run(tmp_path, text, profile="core") == 0
     assert run(tmp_path, text, profile="strict") == 1
 
@@ -184,7 +184,7 @@ def test_unit_is_read_from_the_unit_of_work_line_only(tmp_path):
 def test_skill_lists_cover_the_shipped_skills():
     shipped = {p.name for root in (REPO / "skills", REPO / "preview" / "skills") if root.is_dir()
                for p in root.iterdir() if (p / "SKILL.md").is_file()}
-    listed = genome_check.VALID_SKILLS | genome_check.OPERATE_SKILLS | {"uipath-genome"}
+    listed = genome_check.VALID_SKILLS | genome_check.OPERATE_SKILLS | {"uipath-genome-builder"}
     assert shipped - listed == set(), "add each new skill to VALID_SKILLS or OPERATE_SKILLS"
     assert listed - shipped == set(), "a listed skill no longer ships"
 

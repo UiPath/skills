@@ -1,10 +1,10 @@
 ---
-name: uipath-genome
+name: uipath-genome-builder
 description: "UiPath genome builder: EXECUTE an existing automation genome (`*-genome.md`) — build, implement, or run the migration or refactor it describes. Write, draft, author, edit, extract or document a genome, or turn an idea/SOP/PDD/SDD into one→uipath-planner (it writes every genome; never write or change one here). Builds a component or process genome — the coding-agent spec uipath-planner writes — through the owning skills, invoked before any skill it names: configuration questions, build, a verdict per acceptance criterion, open items and cutover. A genome extracted from a UiPath project or another framework's export builds as a refactor or migration: UI targets and test data migrated, characterization tests, run modes, comparison. Triggers: 'build/execute/implement this genome', 'build from the blueprint', 'run the migration from this genome', 'execute the refactor'. Build without a genome→that artifact's skill. Legacy activity upgrade→uipath-activity-migrator. Quality review→uipath-review."
 when_to_use: "User points at an existing *-genome.md file (or one whose first line is `<!-- UIPATH-AUTOMATION-GENOME`) and asks to build, execute, implement or follow it, or uipath-planner hands over a genome it wrote for a build, a migration or a refactor. Not for writing, drafting or editing a genome — that is uipath-planner."
 ---
 
-# UiPath Genome — build automations from their genome
+# UiPath Genome Builder — build automations from their genome
 
 Genome: markdown specification an AI agent consumes to build or rebuild an automation — what it does, business rules, data moving between parts, platform resources, its transactional shape, verification, and which UiPath skill builds each part. **`uipath-planner` writes every genome** (Author, Extract, Edit); this skill **builds** from it (Execute), verifies it and hands it off. Genomes stay thin: build skills carry UiPath know-how; a genome describes *what*, skills know *how*.
 

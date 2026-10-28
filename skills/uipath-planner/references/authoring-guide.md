@@ -1,8 +1,8 @@
 # Authoring Guide — genome from an idea, a PDD, a TO-BE or an SDD
 
-The planner's **Author** lane writes a genome — the coding-agent spec `uipath-genome` builds from — when no source automation exists. Input: a free-form description, an SOP or transcript, a PDD, a change proposal's TO-BE, an agreed SDD, or a goal the planner proposes scenarios for. User describes or picks; the planner infers, selects the products, fills UiPath specifics, writes. Content rules and templates: [genome-format-guide.md](genome-format-guide.md).
+The planner's **Author** lane writes a genome — the coding-agent spec `uipath-genome-builder` builds from — when no source automation exists. Input: a free-form description, an SOP or transcript, a PDD, a change proposal's TO-BE, an agreed SDD, or a goal the planner proposes scenarios for. User describes or picks; the planner infers, selects the products, fills UiPath specifics, writes. Content rules and templates: [genome-format-guide.md](genome-format-guide.md).
 
-The planner never builds: the written genome goes to `uipath-genome` (Step 9).
+The planner never builds: the written genome goes to `uipath-genome-builder` (Step 9).
 
 ## Step 1 — Receive the input
 
@@ -39,7 +39,7 @@ The SDD decided the architecture; the genome restates it as the coding-agent spe
 
 1. **Read the SDD whole**, with its Planner Handoff, and for a solution SDD every per-project SDD it lists.
 2. **The SDD's products and projects are the genome's.** Its project list sets the level (Step 2) and the Build With / Components rows; Steps 3–5 never re-select a product the SDD placed. Its delivery model holds for every row.
-3. **The SDD's decisions are recorded, not reopened.** The split and queue design, the implementation mode, the package pins and, for a refactor, the refactor answers go into the sections that hold them (Transactional Shape evidence, Deployment, Configuration Questions defaults), so `uipath-genome` reads them as answered.
+3. **The SDD's decisions are recorded, not reopened.** The split and queue design, the implementation mode, the package pins and, for a refactor, the refactor answers go into the sections that hold them (Transactional Shape evidence, Deployment, Configuration Questions defaults), so `uipath-genome-builder` reads them as answered.
 4. **Gaps carry over.** Every `[SME REVIEW]` or `[DEFAULT]` item of the SDD that touches a section is written there with `*[Inferred]*` and the item's wording; Step 6 asks nothing the SDD already left to an SME.
 5. **The SDD is never edited by this lane.** A contradiction between the SDD and what the genome needs is named when edits are offered (Step 8).
 6. **Name the genome after the SDD** (`<PROCESS_NAME_KEBAB>-genome.md` beside the SDD) and record it in the SDD's Planner Handoff as `| **Genome** | <path> |` after `Tasks file`.
@@ -122,4 +122,4 @@ Use `python` on Windows. A process genome takes the checker to every component g
 
 ## Step 9 — Hand the genome to the build
 
-When the request asks for a build ("build", "implement", "create the automation"), hand the written genome path to `uipath-genome` (Execute) on the next turn, once the user's edits are in; an unattended run hands it over straight away. The planner never builds and never writes a workflow file. When `uipath-genome` is not installed, stop after Step 8 and say that the build needs `uipath-genome`.
+When the request asks for a build ("build", "implement", "create the automation"), hand the written genome path to `uipath-genome-builder` (Execute) on the next turn, once the user's edits are in; an unattended run hands it over straight away. The planner never builds and never writes a workflow file. When `uipath-genome-builder` is not installed, stop after Step 8 and say that the build needs `uipath-genome-builder`.
