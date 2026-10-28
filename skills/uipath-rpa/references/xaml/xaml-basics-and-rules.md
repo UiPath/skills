@@ -88,7 +88,7 @@ Check `expressionLanguage` in `project.json`. VB.NET uses `[brackets]`; C# uses 
 - [canvas-layout-guide.md](canvas-layout-guide.md): Flowchart vocabulary/wiring, forbidden nested chain, Flowchart/State Machine/LRW ViewState.
 - [long-running-workflow-guide.md](long-running-workflow-guide.md): LRW dependency, nodes, gateways, suspend/resume.
 - [jit-custom-types-schema.md](jit-custom-types-schema.md): JIT custom types.
-- [../reframework-guide.md](../reframework-guide.md): REFramework modes, SetTransactionStatus queue guard, Config.xlsx trap.
+- [../reframework-guide.md](../reframework-guide.md): REFramework modes, configuration file per template, SetTransactionStatus queue guard.
 - [../data-manipulation-guide.md](../data-manipulation-guide.md): DataTable LINQ, strings, RegEx, DateTime, conversion, collections, JSON; VB/C#.
 - [../error-handling-guide.md](../error-handling-guide.md): exception taxonomy, Try/Catch, Retry Scope, Global Exception Handler, transaction boundaries and retry ownership.
 - [../library-authoring-guide.md](../library-authoring-guide.md): reusable-library contract, layout sidecar, error contract, SemVer, pack/publish.
