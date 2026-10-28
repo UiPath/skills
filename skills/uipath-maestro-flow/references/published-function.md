@@ -75,8 +75,11 @@ is not published yet, so it has no folder. Write it with
   `resources/solution_folder/process/function/<project>.json`: `key` is
   `resource.key`, `projectId` is `resource.projectKey`. The same key is the
   suffix `uip maestro flow registry list --local` shows.
-- **`returns`** is read from the same file's `spec.entryPoints` → `output`
-  properties; the read rule above still applies.
+- **`returns`** comes from the sibling project's own `entry-points.json`:
+  `entryPoints[0].output.properties`, each field's `type` (for example
+  `InvoiceMath/entry-points.json`). The resource file's `spec.entryPoints`
+  holds the same schema as a JSON string. The rule in
+  [Declaring what it returns](#declaring-what-it-returns) still applies.
 - `check` refuses an in-solution step with no `projectId`
   (`FUNCTION_LOCAL_NO_PROJECT_ID`), a `projectId` that is not a GUID
   (`FUNCTION_LOCAL_PROJECT_ID_NOT_GUID`), and a `folderPath` beside
