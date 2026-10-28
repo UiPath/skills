@@ -1,0 +1,128 @@
+name: skill-lint
+
+# A/B lint of every UiPath/skills PR with the internal UiPath/skill-linter: the PR's merge base and the PR are
+# linted with the same config, and only findings the PR adds are reported: as annotations on the changed lines
+# and as one PR comment, updated on every push. New errors fail the check; new warnings do not block. To make a
+# warning rule blocking, raise it to `error` in .skill-lint.yaml (a reviewed change in this repo).
+#
+# Access: the repository's existing GH_PAT reads the internal linter, the way run-coder-eval.yml reads
+# coder_eval_uipath. GitHub gives no secrets to fork PRs, so those are skipped, as in claude-pr-review.yml and
+# smoke-skills.yml; a skipped check counts as passing. The linter config always comes from the base branch, so a
+# PR's edits to it take effect only once merged. The PR is checked out as plain files in ./pr and nothing from it
+# is executed: the linter only reads them.
+#
+# No baseline file: the merge-base run plays its part, so findings already on main never block a PR and a fixed
+# finding that comes back counts as new. Findings a PR silences with its own `skill-lint-disable` comments are
+# listed in the comment for reviewers. Comparing with the merge base misses conflicts with later main commits (a
+# link to a file main deleted since): turn on "Require branches to be up to date before merging".
+on:
+  # No `paths:` filter: a required check must report on every PR, or merging blocks forever.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]  # edited: the target branch may change
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  skill-lint:
+    name: No new skill-lint errors
+    # Same-repo PRs only (fork PRs get no secrets). Every `edited` event (a title or description change too) runs
+    # the full lint: a run skipped by a condition reports success under the same check name, so skipping title edits
+    # would let one turn a failed check green.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: uipath-ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE: origin/${{ github.base_ref }}
+    steps:
+      # The PR's files, as data. fetch-depth 0 also brings the base branch for the merge base and `git show`.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          fetch-depth: 0
+          persist-credentials: false
+
+      # A: the commit the PR branched from, also the reference for change-aware rules. Config: the base
+      # branch's, for both runs.
+      - name: Check out the merge base and the base branch's config
+        id: base
+        working-directory: pr
+        run: |
+          merge_base=$(git merge-base "$BASE" HEAD)
+          git worktree add --detach "$RUNNER_TEMP/base" "$merge_base"
+          echo "sha=$merge_base" >> "$GITHUB_OUTPUT"
+          if ! git show "$BASE:.skill-lint.yaml" > "$RUNNER_TEMP/skill-lint.yaml" 2> /dev/null; then
+            echo "::notice::No .skill-lint.yaml on the base branch yet: using the linter's defaults"
+            echo "{}" > "$RUNNER_TEMP/skill-lint.yaml"
+          fi
+
+      # The internal linter, with the token that already reads UiPath's internal repositories. The only step that
+      # sees GH_PAT; persist-credentials: false keeps it out of the checkout.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          repository: UiPath/skill-linter
+          ref: 2cf53170501973c65b5787fbdc4ee47725500c02  # skill-linter#4, pinned; bump on purpose after reading its CHANGELOG
+          token: ${{ secrets.GH_PAT }}
+          path: linter
+          persist-credentials: false
+
+      # B: the PR, compared with A. Fails on new errors (the default --fail-on error), annotates the changed lines
+      # and writes the PR comment for the next job.
+      - uses: ./linter
+        with:
+          working-directory: pr
+          compare-to: ${{ runner.temp }}/base
+          pr-comment: ${{ runner.temp }}/skill-lint-comment.md
+          args: >-
+            --format github -c ${{ runner.temp }}/skill-lint.yaml
+            --html-link-base https://github.com/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha }}/
+          base-ref: ${{ steps.base.outputs.sha }}
+          fail-on-findings: "false"  # phase 1: annotate only, then remove (a config error or crash still fails)
+
+      # The comment quotes skill text, so it travels as a step output under a random delimiter and is only ever
+      # read through an environment variable, never pasted into a script.
+      - id: comment
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/skill-lint-comment.md" ]; then
+            delimiter="EOF_$(openssl rand -hex 16)"
+            { echo "body<<$delimiter"; cat "$RUNNER_TEMP/skill-lint-comment.md"; echo "$delimiter"; } >> "$GITHUB_OUTPUT"
+          fi
+    outputs:
+      comment: ${{ steps.comment.outputs.body }}
+
+  # Posts the result on the PR, or updates the comment it posted before. The only job that can write to the PR;
+  # it never sees GH_PAT or the PR's files.
+  comment:
+    name: Post the skill-lint result on the PR
+    needs: skill-lint
+    if: ${{ !cancelled() && needs.skill-lint.result != 'skipped' }}
+    runs-on: uipath-ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          BODY: ${{ needs.skill-lint.outputs.comment }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          marker='<!-- skill-lint pr-comment -->'
+          if [ -z "$BODY" ]; then  # a config error or a crash before the report: say so instead of staying silent
+            BODY=$(printf '%s\n### skill-lint could not run\n\nSee the [check log](%s).\n' "$marker" "$RUN_URL")
+          fi
+          id=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" \
+            | tail -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -f body="$BODY" > /dev/null
+          elif ! grep -qx '### skill-lint: no new errors or warnings' <<< "$BODY"; then
+            gh api "repos/$REPO/issues/$PR/comments" -f body="$BODY" > /dev/null  # no comment for a clean first run
+          fi
