@@ -293,10 +293,14 @@ yet. Write it with `location: 'in-solution'` and no `folderPath`:
   A decompiled in-solution task (folder `''` or `'solution_folder'`) comes back
   as `location: 'in-solution'`.
 - Needs the `@uipath/maestro-builder-sdk` release that ships `location` on
-  `app` (not released yet: 6.60.0 and older reject it). Check `uip --version`
-  before you deploy: on `uip` 1.204.0 or older an in-solution app task fails at
-  run time with `170004 Invalid input for the HITL task`. Tell the user it needs
-  the next `uip` release, and do not retry the run.
+  `app`. It is not released yet; every SDK published so far rejects `location`
+  on `app`.
+<!--skill-flavor:inso-app-uip-floor:start-->
+  Check `uip --version` before you deploy: on `uip` 1.204.0 or older an
+  in-solution app task fails at run time with `170004 Invalid input for the
+  HITL task`. Tell the user it needs the next `uip` release, and do not retry
+  the run.
+<!--skill-flavor:inso-app-uip-floor:end-->
 
 ## Evidence boundary
 
