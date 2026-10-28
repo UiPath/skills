@@ -139,6 +139,6 @@ publish or debug, make sure each connection is in the solution; never run
 `uip solution resources refresh` here. Run the flow
 with `uip maestro flow debug "<Project>"`.
 Publish the open solution with `uip solution publish` (the destination is the
-user's choice). `flow debug` is a REAL run, not a validation step. Read
+user's choice). `flow debug` is a REAL run, not a validation step: ask first. Read
 **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:sdk-operate:end-->

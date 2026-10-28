@@ -92,7 +92,9 @@ Several connections often share one name (a team tenant can hold three Slack
 connections all named `is-sandboxes`, in different folders). A name then cannot
 pick one: `prepare … --connection <name>` lists each candidate with its
 `--connection-id <id>` and folder — pass the id of the one in the folder you mean,
-and `prepare` still writes both entries into `bindings.json`.
+and `prepare` still writes both entries into `bindings.json`. When the request
+names no folder, ask a user who can answer, else pick one; name the connection
+and its folder in the final response.
 
 `Folder` is the folder's own name, not its path. A requested
 `Shared/uipath-maestro-flow` is the row whose `Folder` is `uipath-maestro-flow`,
