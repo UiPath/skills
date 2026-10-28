@@ -62,22 +62,36 @@ is not published yet, so it has no folder. Write it with
 
 ```ts
 .step('math', publishedFunction({
-  key: '247b5eeb-ae51-4ab5-a5b2-c9ca64db3971',       // resource.key
-  name: 'InvoiceMath',
+  key: localResourceKey,
+  name: '<FunctionProject>',
   location: 'in-solution',
-  projectId: '21c9a46f-dfd1-4a17-89e3-e86d315ea0fe', // resource.projectKey
+  projectId: localProjectKey,
   inputs: { invoice_amount: input('invoice_amount') },
   returns: { variance_pct: 'number', summary: 'string' },
 }))
 ```
 
-- **`key`** and **`projectId`** both come from the sibling's resource file,
-  `resources/solution_folder/process/function/<project>.json`: `key` is
-  `resource.key`, `projectId` is `resource.projectKey`. The same key is the
-  suffix `uip maestro flow registry list --local` shows.
-- **`returns`** comes from the sibling project's own `entry-points.json`:
-  `entryPoints[0].output.properties`, each field's `type` (for example
-  `InvoiceMath/entry-points.json`). The resource file's `spec.entryPoints`
+- **Where the two ids come from.**
+<!--skill-flavor:function-sibling-register:start-->
+  Register the sibling and refresh resources
+  (`uip solution projects add`, then `uip solution resources refresh`), then
+<!--skill-flavor:function-sibling-register:end-->
+  run `uip maestro flow registry list --local --output json` from the Flow
+  project directory. The generated
+  `resources/solution_folder/process/function/<FunctionProject>.json` carries
+  the same pair: `resource.key` → `key`, `resource.projectKey` → `projectId`.
+  Never invent either; the full recipe is in
+  [agent.md](agent.md#task-created-in-solution-coded-agent).
+- **A coded agent can land under `process/function/` too** (see
+  [agent.md](agent.md#task-created-in-solution-coded-agent)). Check the
+  sibling's own `entry-points.json`: `entryPoints[0].type` is `"function"` for
+  a coded function. If it is `"agent"`, use
+  `agent({ location: 'in-solution', flavour: 'coded', … })`, not
+  `publishedFunction()`: the wrong factory validates and dispatches the wrong
+  service type.
+- **`returns`** comes from the same `entry-points.json`:
+  `entryPoints[0].output.properties`, each field's `type`. The resource file's
+  `spec.entryPoints`
   holds the same schema as a JSON string. The rule in
   [Declaring what it returns](#declaring-what-it-returns) still applies.
 - `check` refuses an in-solution step with no `projectId`
