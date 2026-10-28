@@ -399,11 +399,11 @@ ORIGINAL_BODY = {"classify": at(144), "record": at(336)}
 GROWN_BODY = {"classify": at(144), "dedupe": at(336), "record": at(528)}
 
 
-def layout_of(tmp_path: Path, original: dict, final: dict) -> int:
+def layout_of(tmp_path: Path, original: dict, final: dict, *extra: str) -> int:
     for name, flow in (("Original", original), ("Final", final)):
         (tmp_path / name).mkdir()
         (tmp_path / name / f"{name}.flow").write_text(json.dumps(flow))
-    return preserved.main(["--aspect", "layout", "--original", str(tmp_path / "Original"), "--project", str(tmp_path / "Final")])
+    return preserved.main(["--aspect", "layout", "--original", str(tmp_path / "Original"), "--project", str(tmp_path / "Final"), *extra])
 
 
 def test_container_growing_for_an_added_child_passes(tmp_path: Path) -> None:
@@ -558,3 +558,53 @@ def test_two_inserted_steps_make_room_for_both(tmp_path: Path) -> None:
     original = row_flow({"a": (0, 0), "b": (192, 0)}, [("a", "b")])
     final = row_flow({"a": (0, 0), "n1": (192, 0), "n2": (384, 0), "b": (576, 0)}, [("a", "n1"), ("n1", "n2"), ("n2", "b")])
     assert layout_of(tmp_path, original, final) == 0
+
+
+FORK = {"a": (0, 0), "b": (192, 0), "d": (384, 0), "c": (192, 160), "e": (192, 400), "f": (420, 110)}
+FORK_EDGES = [("a", "b"), ("b", "d"), ("a", "c")]
+
+
+def fork_insert(**moves: tuple[int, int]) -> dict:
+    positions = {**FORK, "n": (192, 0), "b": (384, 0), "d": (576, 0), "c": (384, 160), "f": (612, 110), **moves}
+    return row_flow(positions, [("a", "b"), ("b", "d"), ("a", "n"), ("n", "c")])
+
+
+def test_fork_insert_pushes_the_node_it_lands_on_and_its_downstream(tmp_path: Path) -> None:
+    assert layout_of(tmp_path, row_flow(FORK, FORK_EDGES), fork_insert()) == 0
+
+
+@pytest.mark.parametrize(
+    "moves",
+    [
+        pytest.param({"e": (384, 400)}, id="node-nothing-landed-on"),
+        pytest.param({"a": (48, 0)}, id="node-left-of-the-insertion"),
+    ],
+)
+def test_fork_insert_moves_nothing_it_did_not_push(tmp_path: Path, moves) -> None:
+    assert layout_of(tmp_path, row_flow(FORK, FORK_EDGES), fork_insert(**moves)) == 1
+
+
+def test_replacing_a_removable_node_makes_room_past_it(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "h": (192, 0), "b": (520, 0)}, [("a", "h"), ("h", "b")])
+    final = row_flow({"a": (0, 0), "n": (192, 0), "m": (384, 0), "b": (576, 0)}, [("a", "n"), ("n", "m"), ("m", "b")])
+    assert layout_of(tmp_path, original, final, "--removable-node", "h") == 0
+
+
+@pytest.mark.parametrize(
+    "z, expected",
+    [pytest.param((952, 200), 0, id="pushed"), pytest.param((1060, 330), 1, id="unplaced-node-pushes-nothing")],
+)
+def test_growth_pushes_an_author_node_and_what_it_lands_on(tmp_path: Path, z: tuple[int, int], expected: int) -> None:
+    original = row_flow({"start": (0, 0), "after": (800, 0), "w": (1000, 220)}, [("start", "loop"), ("loop", "after")])
+    original["nodes"] += [{"id": "loop"}, {"id": "classify", "parentId": "loop"}, {"id": "record", "parentId": "loop"}]
+    original["layout"]["nodes"].update(loop={"position": {"x": 192, "y": -112}, "size": {"width": 560, "height": 320}}, classify=at(144), record=at(336))
+    original["edges"] += [{"sourceNodeId": "loop", "targetNodeId": "classify"}, {"sourceNodeId": "classify", "targetNodeId": "record"}]
+    final = copy.deepcopy(original)
+    final["nodes"] += [{"id": "z"}, {"id": "dedupe", "parentId": "loop"}]
+    final["edges"] = [e for e in final["edges"] if e["sourceNodeId"] != "classify"]
+    final["edges"] += [{"sourceNodeId": "classify", "targetNodeId": "dedupe"}, {"sourceNodeId": "dedupe", "targetNodeId": "record"}]
+    final["layout"]["nodes"].update(
+        loop={"position": {"x": 192, "y": -112}, "size": {"width": 752, "height": 320}},
+        record=at(528), dedupe=at(336), after=at(992, 0), w=at(1192, 220), z=at(*z),
+    )
+    assert layout_of(tmp_path, original, final) == expected

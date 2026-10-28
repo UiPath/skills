@@ -12,14 +12,16 @@ with the original catches it.
 
 `--aspect layout` checks the canvas instead: a node the edit added has a layout
 entry inside its container, right of its leftmost predecessor, and on no other
-node; original nodes keep their position and size except where merge made
-room. Merge may move an original node right, past an added node's predecessor
-and downstream of it, by at most the room added nodes need; or right of or
-under a container that grew, by that growth. Reach follows original edges and
-the added nodes threaded through a split one, never an edge the edit invented.
-A container may grow when a child was added or moved. A moved node keeps its
-place in its row, moves at least as far as its predecessor, and lands on no
-other node. Sticky notes are free to sit anywhere.
+node; original nodes keep their position and size except where merge pushed
+them. A node merge placed pushes what its spot hits and its own downstream,
+past its predecessor; a grown container pushes what is right of or under it,
+added nodes included. Each push carries the pushed nodes' downstream and
+whatever they land on, and moves them right (or down, for growth) by at most
+the room the source needs. Reach follows original edges and the added nodes
+threaded through a split one, never an edge the edit invented. A container may
+grow when a child was added or moved. A moved node keeps its place in its row,
+moves at least as far as its predecessor, and lands on no other node. Sticky
+notes are free to sit anywhere.
 
 `--aspect merged` checks that the `.flow` came out of the skill's decompile ->
 compile -> merge loop, not a hand edit.
@@ -218,6 +220,11 @@ def shares_row(a: dict, b: dict) -> bool:
     return ay < by + bh and by < ay + ah
 
 
+def shifted(entry: dict, dx: int, dy: int) -> dict:
+    x, y, _, _ = box(entry)
+    return {**entry, "position": {"x": x + dx, "y": y + dy}}
+
+
 def offset(before: dict, after: dict) -> tuple[int, int]:
     bx, by, _, _ = box(before)
     ax, ay, _, _ = box(after)
@@ -253,9 +260,15 @@ def back_edges(edges: list[dict], parent_of: dict[str, str | None], after: dict)
     return back
 
 
-def merge_edges(original_edges: list[dict], edges: list[dict], added: set[str]) -> list[dict]:
-    """The final edges merge could have made: original ones, and runs of added nodes threaded through a split one."""
+def merge_edges(original_edges: list[dict], edges: list[dict], added: set[str], removed: set[str]) -> list[dict]:
+    """The final edges merge could have made: original ones, and runs of added nodes threaded through a split one.
+
+    An original path through a removed node counts as one edge, so its replacement threads through it too.
+    """
     pairs = {ends(e) for e in original_edges}
+    for _ in removed:
+        pairs |= {(u, w) for u, v in pairs if v in removed for v2, w in pairs if v2 == v}
+    pairs = {(u, v) for u, v in pairs if u not in removed and v not in removed}
     kept = [e for e in edges if ends(e) in pairs]
     threaded: list[dict] = []
     for u, v in pairs:
@@ -308,45 +321,90 @@ def insertion_x(
     return min(xs) if xs else None
 
 
+def pushed_by(
+    seeds: set[str],
+    scope: str | None,
+    can_move,
+    reach: list[dict],
+    pre: dict,
+    after: dict,
+    parent_of: dict[str, str | None],
+) -> set[str]:
+    """What merge's push takes from `seeds`: their downstream and whatever a moved node lands on, transitively.
+
+    `pre` holds each candidate's box before the push.
+    """
+    taken: set[str] = set()
+    frontier = {i for i in seeds if can_move(i)}
+    while frontier:
+        taken |= frontier
+        landed = {
+            o for o in pre
+            if o not in taken and parent_of.get(o) == scope and can_move(o)
+            and any(boxes_overlap(after[t], pre[o], PADDING) for t in taken if t in after)
+        }
+        frontier = landed | {d for t in frontier for d in downstream(t, reach, parent_of) if d not in taken and can_move(d)}
+    return taken
+
+
 def room_for(
     node_id: str,
+    movable: set[str],
     added: set[str],
     grown: set[str],
     reach: list[dict],
+    edges: list[dict],
     before: dict,
     after: dict,
     parent_of: dict[str, str | None],
 ) -> tuple[int, int]:
     """How far right and down merge may move `node_id` to fit the added nodes and grown containers."""
     scope = parent_of.get(node_id)
-    x, y, _, _ = box(before[node_id])
     room_x = room_y = 0
     for a in added:
-        if parent_of.get(a) != scope or a not in after or node_id not in downstream(a, reach, parent_of):
+        if parent_of.get(a) != scope or a not in after:
+            continue
+        # Merge pushes only for a node it places off a predecessor or a container's body entry.
+        if not any(v == a and (parent_of.get(u) == scope or u == scope) for u, v in map(ends, edges)):
             continue
         anchor = insertion_x(a, added, reach, before, parent_of)
-        if anchor is not None and x <= anchor:
+        past = lambda o: o in movable and (anchor is None or box(before[o])[0] > anchor)  # noqa: E731
+        hits = {o for o in movable if parent_of.get(o) == scope and boxes_overlap(after[a], before[o], PADDING)}
+        if node_id not in pushed_by(hits | downstream(a, reach, parent_of), scope, past, reach, before, after, parent_of):
             continue
-        room_x += box(after[a])[2] + SLOT_DX
+        preds = [box(after.get(u) or before.get(u, {}))[2] for u, v in map(ends, edges) if v == a and parent_of.get(u) == scope]
+        room_x += box(after[a])[2] + max(preds, default=96) + 2 * (SLOT_DX - 96)
 
     for c in grown:
         if parent_of.get(c) != scope:
             continue
         cx, cy, ow, oh = box(before[c])
         _, _, nw, nh = box(after[c])
-        covered = boxes_overlap({**before[c], "size": {"width": nw, "height": nh}}, before[node_id], PADDING)
-        if x >= cx + ow and (covered or node_id in downstream(c, reach, parent_of)):
-            room_x += nw - ow
-        if y >= cy + oh and x < cx + ow and covered:
-            room_y += nh - oh
+        grown_box = {**before[c], "size": {"width": nw, "height": nh}}
+        # Growth pushes added nodes in its way too, so they carry the push on.
+        for dx, dy, side in ((nw - ow, 0, "right"), (0, nh - oh, "under")):
+            if dx == dy == 0:
+                continue
+            pre = {**{o: before[o] for o in movable}, **{a: shifted(after[a], -dx, -dy) for a in added if a in after}}
+            pre.pop(c, None)
+            in_way = {
+                o for o, b in pre.items() if parent_of.get(o) == scope
+                and (box(b)[0] >= cx + ow if side == "right" else box(b)[1] >= cy + oh)
+                and (boxes_overlap(grown_box, b, PADDING) or (side == "right" and o in downstream(c, reach, parent_of)))
+            }
+            if node_id in pushed_by(in_way, scope, lambda o: o in pre, reach, pre, after, parent_of):
+                room_x += dx
+                room_y += dy
     return room_x, room_y
 
 
 def moves_without_room(
     changed: set[str],
+    movable: set[str],
     added: set[str],
     grown: set[str],
     reach: list[dict],
+    edges: list[dict],
     before: dict,
     after: dict,
     parent_of: dict[str, str | None],
@@ -362,7 +420,7 @@ def moves_without_room(
         if (dx, dy) == (0, 0):
             continue
 
-        room_x, room_y = room_for(node_id, added, grown, reach, before, after, parent_of)
+        room_x, room_y = room_for(node_id, movable, added, grown, reach, edges, before, after, parent_of)
         if not (0 <= dx <= room_x and 0 <= dy <= room_y):
             failures.append(
                 f"{node_id!r} moved: {before[node_id].get('position')} -> {after[node_id].get('position')}, "
@@ -477,13 +535,14 @@ def check_layout(original: dict, final: dict, removable_nodes: set[str] = frozen
     changed = {i for i in kept if after[i] != before[i]}
     touched = {parent_of[i] for i in added | changed if parent_of.get(i) is not None}
     grown = grown_containers(changed, touched, before, after, failures)
-    reach = merge_edges([e for e in original.get("edges", []) if isinstance(e, dict)], edges, added)
+    removed = (original_ids - final_ids) & removable_nodes
+    reach = merge_edges([e for e in original.get("edges", []) if isinstance(e, dict)], edges, added, removed)
     back = back_edges(edges, parent_of, after)
     forward = [e for e in edges if not any(e is b for b in back)]
     solid = [i for i in kept if i not in sticky]
     solid_added = {i for i in added if i not in sticky}
 
-    failures += moves_without_room(changed, added, grown, reach, before, after, parent_of)
+    failures += moves_without_room(changed, set(solid), solid_added, grown, reach, edges, before, after, parent_of)
     failures += order_changes(solid, solid_added, changed, forward, before, after, parent_of)
     failures += overlaps_after_edit(added, changed, solid + sorted(solid_added), before, after, parent_of)
     return failures
