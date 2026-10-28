@@ -38,8 +38,7 @@ cannot make: which node, which topology, what an output means, and what to ask.
    pagination loop before reporting "not found".
 4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit
    with `compile -o` for a new flow; a non-empty `.flow` that existed before this
-   turn is re-emitted by decompile and merge, never `compile -o` onto it
-   ([`brownfield.md`](brownfield.md)). Never hand-edit the emitted `.flow`, `content/*.bpmn`,
+   turn is re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)). Never hand-edit the emitted `.flow`, `content/*.bpmn`,
    `bindings_v2.json`, `entry-points.json`, `operate.json` or
    `package-descriptor.json` — the CLI regenerates them, and the next compile
    silently undoes a hand edit. Brownfield JSON goes through `decompile`
@@ -210,14 +209,16 @@ When authoring is done, report:
 3. **Loop status** — the last `check`, `compile` and `validate` results,
    including any warning you judged acceptable and why.
 4. **Placeholders** — each `mock()` and the capability it stands for.
-5. **Connections** — per connector, the connection and folder `prepare` bound,
-   or what is missing or still to prepare. `prepare` prints
-   `connection: <Name> (<id>)`: it binds one from your own folder,
+5. **Connections** — per connector, the `connection: <Name> (<id>)` line
+   `prepare` printed and its folder (from the candidate line, or
+   `uip is connections list <connector-key> --output json`), or what is
+   missing or still to prepare. `prepare` binds one from your own folder,
    `--connection-folder` or the solution's record, and says which. When it
    refuses with several candidates, ask a user who can answer. Headless, pass
-   `--connection-folder` for the folder the request names, else the first
-   candidate line's `--connection-id`, and list that choice under Open
-   questions as **[REQUIRED]**.
+   `--connection-folder` for the folder the request names. With no folder
+   named, or when that refuses (no match or several), pass the first
+   candidate line's `--connection-id`, do not debug on that guess, report the
+   flow unverified, and list the pick under Open questions as **[REQUIRED]**.
 6. **Open questions** — every decision the request left open, each marked
    **[REQUIRED]** or **[OPTIONAL]**.
 <!--skill-flavor:completion-next:start-->

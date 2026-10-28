@@ -34,8 +34,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flo
 Look for the faulted element and its message. The node id in the fault maps
 back to the `.step('<id>', …)` that produced it, so the fix is usually a source
 edit rather than a platform question. For a `.flow` that existed before this
-turn, make it through [Editing an existing flow](../SKILL.md#editing-an-existing-flow),
-not `compile -o` onto it.
+turn, make the fix through [Editing an existing flow](../SKILL.md#editing-an-existing-flow).
 
 ## Incidents, variables, and the deployed artifact
 

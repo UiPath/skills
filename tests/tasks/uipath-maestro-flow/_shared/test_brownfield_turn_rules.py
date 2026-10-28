@@ -1,20 +1,18 @@
-"""Editing an existing Flow on a later turn must keep the user's work.
+"""Rules for editing an existing Flow on a later turn, on the shipped text.
 
-- No instruction pairs `init` with `--force` except to forbid it: `--force`
-  resets `<Name>.flow`, `project.uiproj` and `operate.json`.
-- The editing loop removes the generated pipeline's artifacts before its fresh
-  decompile: the pipeline keeps a baseline that exists, and a stale one makes
-  merge drop an edit that matches it. The names are the pipeline's own
-  (`BASELINE`, `EDITED`, `MERGED` in a generated `<Name>.pipeline.mjs`).
-- `flow debug` is a real run: every shipped debug rule says when to ask first.
-- The completion output reports the connection `prepare` bound, and the
-  connector loops point to it.
+- `--force` appears only as `never pass --force`, inside a quoted CLI message,
+  or on `registry pull` / `codedagent setup`.
+- SKILL.md never tells an agent to skip the decompile (except for a supplied
+  source) or `compile -o` over an existing flow.
+- The editing loop removes the generated pipeline's artifacts before decompile.
+- Every shipped debug rule asks first, and none negates the ask.
+- Completion output item 5 holds the connection rule; SKILL.md points to it.
 
-Checked on the shipped text of the default package and the Studio Web flavor.
 Regex, not PyYAML: CI installs only pytest.
 """
 from __future__ import annotations
 
+import glob
 import os
 import re
 import sys
@@ -31,12 +29,15 @@ _STUDIOWEB = os.path.join(_REPO, "skill-flavors", "studioweb", "uipath-maestro-f
 PIPELINE_ARTIFACTS = (".flow-sdk/{n}.baseline", ".flow-sdk/{n}.edited", ".flow-sdk/{n}.merged.flow")
 FLAVORS = ("default", "studioweb")
 COMPLETION_OUTPUT = "author.md#completion-output"
+ALLOWED_FORCE = re.compile(r"never pass `--force`|registry pull --force|codedagent setup --force")
 
 _FENCE = re.compile(r"^```[^\n]*\n(.*?)^```", re.S | re.M)
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
-_QUOTED = re.compile(r'"[^"]*"')
+_QUOTED = re.compile(r'"[^"\n]*"')
 _TRAILING_COMMENT = re.compile(r"\s+#.*$")
 _SUBSHELL = re.compile(r'^\(\s*cd\s+"[^"]*"\s*&&\s*(.*?)\s*\)$')
+_ASK = re.compile(r"\bask\b")
+_NEGATED_ASK = re.compile(r"\b(?:do not|don't|never|no need to)\s+ask\b", re.I)
 
 
 def _read(path: str) -> str:
@@ -53,6 +54,11 @@ def _composed(flavor: str, rel: str) -> str:
     return compose(text, _read(override))
 
 
+def _files() -> list[str]:
+    refs = sorted(glob.glob(os.path.join(_CANONICAL, "references", "**", "*.md"), recursive=True))
+    return ["SKILL.md"] + [os.path.relpath(p, _CANONICAL) for p in refs]
+
+
 def _section(text: str, heading: str) -> str:
     match = re.search(rf"^##+ {re.escape(heading)}\n(.*?)(?=^## |\Z)", text, re.S | re.M)
     assert match, f"missing section: {heading}"
@@ -64,15 +70,14 @@ def _paragraphs(text: str) -> list[str]:
     return [" ".join(line.strip() for line in p.splitlines()) for p in re.split(r"\n\s*\n", prose)]
 
 
-def _sentences(paragraph: str) -> list[str]:
-    return [s for s in _SENTENCE_END.split(_QUOTED.sub('""', paragraph)) if s]
+def _sentences(text: str) -> list[str]:
+    return [s for p in _paragraphs(text) for s in _SENTENCE_END.split(_QUOTED.sub('""', p)) if s]
 
 
 def _commands(text: str) -> list[str]:
     commands = []
     for block in _FENCE.findall(text):
-        joined = re.sub(r"\\\n\s*", " ", block)
-        for line in joined.splitlines():
+        for line in re.sub(r"\\\n\s*", " ", block).splitlines():
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
@@ -83,57 +88,65 @@ def _commands(text: str) -> list[str]:
     return commands
 
 
-def test_init_never_paired_with_force():
+def _positive_ask(text: str) -> bool:
+    return bool(_ASK.search(_NEGATED_ASK.sub("", text))) and not _NEGATED_ASK.search(text)
+
+
+def test_force_only_where_safe():
     offenders = []
     for flavor in FLAVORS:
-        for rel in ("SKILL.md", "references/brownfield.md", "references/author.md", "references/CLI-LOOP.md"):
+        for rel in _files():
             text = _composed(flavor, rel)
-            for paragraph in _paragraphs(text):
-                for sentence in _sentences(paragraph):
-                    pairs = re.search(r"\binit\b", sentence) and "--force" in sentence
-                    if pairs and not re.search(r"\bnever\b[^.]*?--force", sentence):
-                        offenders.append(f"{flavor} {rel}: {sentence}")
+            for unit in _sentences(text) + _commands(text):
+                if "--force" in ALLOWED_FORCE.sub("", unit):
+                    offenders.append(f"{flavor} {rel}: {unit}")
 
-            for command in _commands(text):
-                if re.search(r"\bflow init\b", command) and "--force" in command:
-                    offenders.append(f"{flavor} {rel}: {command}")
+    assert not offenders, "--force outside `never pass --force` (it resets a project):\n" + "\n".join(offenders)
 
-    assert not offenders, "init with --force resets an existing project:\n" + "\n".join(offenders)
+
+def test_existing_flow_is_never_recompiled_over():
+    offenders = []
+    for sentence in _sentences(_composed("default", "SKILL.md")):
+        if re.search(r"\bskip\w*\b[^.]*\bdecompile", sentence) and "supplied" not in sentence:
+            offenders.append(sentence)
+        if re.search(r"\bexist", sentence) and "compile -o" in sentence:
+            offenders.append(sentence)
+
+    assert not offenders, "an existing .flow goes through Editing, not compile -o:\n" + "\n".join(offenders)
 
 
 def test_editing_loop_clears_pipeline_artifacts_first():
-    editing = _section(_composed("default", "SKILL.md"), "Editing an existing flow")
-    commands = _commands(editing)
+    commands = _commands(_section(_composed("default", "SKILL.md"), "Editing an existing flow"))
     decompile = next((i for i, c in enumerate(commands) if "flow decompile" in c), None)
     assert decompile is not None, "## Editing an existing flow has no decompile command"
 
     wanted = [p.format(n="<Name>") for p in PIPELINE_ARTIFACTS]
-    cleaned = any(
-        c.startswith("rm -rf ") and all(path in c.split() for path in wanted)
-        for c in commands[:decompile]
-    )
+    cleaned = any(c.startswith("rm -rf ") and all(p in c.split() for p in wanted) for c in commands[:decompile])
     assert cleaned, f"## Editing an existing flow must run `rm -rf {' '.join(wanted)}` before `decompile`"
 
 
 def test_generated_pipeline_names_the_artifacts():
     pipeline = _section(_composed("default", "references/brownfield.md"), "The generated pipeline")
-    commands = _commands(pipeline) + [p for p in _paragraphs(pipeline) if "rm -rf" in p]
     wanted = [p.format(n="Deployed") for p in PIPELINE_ARTIFACTS]
-    assert any("rm -rf" in c and all(path in c for path in wanted) for c in commands), (
+    units = _commands(pipeline) + _paragraphs(pipeline)
+    assert any("rm -rf" in u and all(p in u for p in wanted) for u in units), (
         f"brownfield.md generated pipeline must remove {wanted} before a later turn's decompile"
     )
 
 
-def test_every_debug_rule_says_when_to_ask():
+def test_every_debug_rule_asks_first():
     missing = []
     for flavor in FLAVORS:
-        lifecycle = _section(_composed(flavor, "SKILL.md"), "Lifecycle")
-        if not re.search(r"\bask\b[^\n]*\bunless\b", lifecycle):
-            missing.append(f"{flavor} SKILL.md ## Lifecycle")
+        skill = _composed(flavor, "SKILL.md")
+        for heading in ("Lifecycle", "Operating a deployed flow"):
+            debug = [u for u in _sentences(_section(skill, heading)) if "debug" in u]
+            debug += [line for line in _section(skill, heading).splitlines() if line.lstrip().startswith("#")]
+            if not any(_positive_ask(u) for u in debug) or any(_NEGATED_ASK.search(u) for u in debug):
+                missing.append(f"{flavor} SKILL.md ## {heading}")
 
         operate = _composed(flavor, "references/operate.md")
-        rule = next((s for s in re.split(r"\n\s*\n", operate) if "`flow debug` executes the flow for real" in s), "")
-        if not re.search(r"\bask (once )?before\b", rule):
+        rule = next((p for p in _paragraphs(operate) if "`flow debug` executes the flow for real" in p), "")
+        if not re.search(r"\bask (?:once )?before\b", rule) or _NEGATED_ASK.search(rule):
             missing.append(f"{flavor} references/operate.md debug rule")
 
     assert not missing, "debug without an ask-first rule:\n" + "\n".join(missing)
@@ -145,11 +158,11 @@ def test_connection_report_has_one_home():
         author = _composed(flavor, "references/author.md")
         item = re.search(r"^5\. \*\*Connections\*\*.*?(?=^\d+\. \*\*)", author, re.S | re.M)
         body = " ".join(item.group(0).split()) if item else ""
-        for needed in ("connection: <Name> (<id>)", "folder", "[REQUIRED]"):
+        for needed in ("connection: <Name> (<id>)", "folder", "do not debug on that guess", "[REQUIRED]"):
             if needed not in body:
                 problems.append(f"{flavor} author.md completion item 5 lacks {needed!r}")
 
         if COMPLETION_OUTPUT not in _composed(flavor, "SKILL.md"):
-            problems.append(f"{flavor} SKILL.md connector loop does not point to {COMPLETION_OUTPUT}")
+            problems.append(f"{flavor} SKILL.md does not point to {COMPLETION_OUTPUT}")
 
     assert not problems, "\n".join(problems)
