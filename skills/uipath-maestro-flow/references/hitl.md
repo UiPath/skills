@@ -319,7 +319,7 @@ as they are.
   `app.inputSchema`. Keep that as it is; give `actionSchema` or `inputSchema`,
   not both.
 
-Needs a `@uipath/maestro-builder-sdk` release later than 6.57.1; an older SDK
+Needs `@uipath/maestro-builder-sdk` 6.59.1 or later; an older SDK
 has no `actionSchema` on `app`.
 
 ## Variant judgment
