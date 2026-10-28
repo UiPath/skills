@@ -224,6 +224,7 @@ success_criteria:
     tool: "uip"
     verb: "explorer-engine suggestions accept"
     positional: ["vendor-master-currency-0d9e4c27"]
+    min_count: 0
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0

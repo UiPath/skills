@@ -122,6 +122,7 @@ success_criteria:
     description: "Did not accept a suggestion it could not apply"
     tool: "uip"
     verb: "explorer-engine suggestions accept"
+    min_count: 0
     max_count: 0
     weight: 3.0
     pass_threshold: 1.0

@@ -173,6 +173,7 @@ success_criteria:
     description: "Reused the completed run instead of starting a new analysis"
     tool: "uip"
     verb: "explorer-engine analyze"
+    min_count: 0
     max_count: 0
     weight: 1.0
     pass_threshold: 1.0
