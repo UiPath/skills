@@ -51,14 +51,14 @@ A success returns `Code: AhCommentsCreate` with `Data: { Id, ParentId, Text, Aut
 
 ## Step 5: Edit or delete a comment the caller posted (a write — confirm first)
 
-Find the comment's `Id` in Step 2 (a reply's `Id` is in its parent's `Replies`), and check its `AuthorEmail` is the caller — anyone else's comment is refused with 403, so don't try.
+Find the comment's `Id` in Step 2 (a reply's `Id` is in its parent's `Replies`), and check its `AuthorEmail` is the caller (or the `--submitter` user, for a token with no associated user) — anyone else's comment is refused with 403, so don't try.
 
 ```bash
-uip ah comments edit <comment-id> --automation <automation-id> --text "<new text>" --output json
+uip ah comments update <comment-id> --automation <automation-id> --text "<new text>" --output json
 uip ah comments delete <comment-id> --automation <automation-id> --yes --output json
 ```
 
-- **Edit** replaces the **whole** text (same rules as Step 3) — send the full new comment, not a diff. Show the user the new text first. It is safe to repeat. Success: `Code: AhCommentsEdit` with the edited comment.
+- **Update** replaces the **whole** text (same rules as Step 3) — send the full new comment, not a diff. Show the user the full new text and get a confirmation before sending, unless they dictated it word for word. If the comment was written in Automation Hub with mentions or formatting (check `--all-fields` → `TextDraftjs`), tell the user the update replaces them with plain text. It is safe to repeat. Success: `Code: AhCommentsUpdate` with the updated comment.
 - **Delete** cannot be undone, and deleting a **top-level** comment also hides its replies. Confirm with the user, naming the comment's text, before passing `--yes`. Success: `Code: AhCommentsDelete` with `Data: { Id, AutomationId, Deleted: true }`. After a timeout, re-read the thread rather than deleting again — a repeat answers 404.
 - **`--submitter <email>`** follows the Step 3 rule, and must be the comment's author.
 
@@ -69,14 +69,14 @@ uip ah comments delete <comment-id> --automation <automation-id> --yes --output 
 | `ValidationError` (exit 3) | Blank text, text over 2000 characters, or a non-numeric `--reply-to` — caught before sending | Fix the input |
 | 400 `Parent comment not found, or it is not a top-level comment…` | `--reply-to` is a reply, or belongs to another automation | Re-read the thread; reply to the top-level parent |
 | 403 | The caller can't view this automation | Say so; don't retry |
-| 403 `Only the user who posted the comment can edit or delete it.` | Edit/delete of someone else's comment | Say only the author can change it; don't retry |
-| 404 `Comment not found on this automation.` | Edit/delete of a comment that doesn't exist on that automation, or is already deleted | Re-read the thread (Step 2); after a delete, it's gone |
+| 403 `Only the user who posted the comment can edit or delete it.` | Update/delete of someone else's comment | Say only the author can change it; don't retry |
+| 404 `Comment not found on this automation.` | Update/delete of a comment that doesn't exist on that automation, or is already deleted | Re-read the thread (Step 2); after a delete, it's gone |
 | 404 `The process with given id/slug was not found` | Unknown automation id | Re-resolve the id (Step 1) |
 | 404 `Route Not found.` | This Automation Hub predates the comments endpoints | See [Not available yet](#not-available-yet) |
 
 ## Not available yet
 
 - **`uip ah comments` is an unknown command** → the installed `uip` is older than the comments commands. Tell the user to update `uip` and stop. Don't fall back to raw API calls or the UI.
-- **Only `comments edit` / `comments delete` are unknown** → this `uip` predates them. Tell the user to update `uip`, or to edit or delete the comment on the automation's profile page.
-- **Edit/delete answers `404 Route Not found.`** → this Automation Hub predates RPANAV-19248. Say editing and deleting aren't available on this tenant yet.
+- **Only `comments update` / `comments delete` are unknown** → this `uip` predates them. Tell the user to update `uip`, or to edit or delete the comment on the automation's profile page.
+- **Update/delete answers `404 Route Not found.`** → this Automation Hub predates RPANAV-19248. Say editing and deleting aren't available on this tenant yet.
 - **The server answers `404 Route Not found.`** → this tenant's Automation Hub doesn't have the comments endpoints yet (UiPath/Automation-Hub#13165, #13166). Say so and stop.
