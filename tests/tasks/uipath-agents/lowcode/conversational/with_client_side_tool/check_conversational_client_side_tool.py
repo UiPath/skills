@@ -111,27 +111,30 @@ def assert_shape(resource: dict) -> None:
         )
 
     # isEnabled — documented in the resource shape; defaults to true.
-    is_enabled = resource.get("isEnabled")
-    if is_enabled is not None and is_enabled is not True:
+    # Check key presence separately: omission is fine, but a present value
+    # (including explicit null) must be true.
+    if "isEnabled" in resource and resource["isEnabled"] is not True:
         sys.exit(
             f"FAIL: client-side tool isEnabled should be true (or omitted), "
-            f"got {is_enabled!r}"
+            f"got {resource['isEnabled']!r}"
         )
 
     # argumentProperties — documented as {}; must be an object if present.
-    arg_props = resource.get("argumentProperties")
-    if arg_props is not None and not isinstance(arg_props, dict):
+    if "argumentProperties" in resource and not isinstance(
+        resource["argumentProperties"], dict
+    ):
         sys.exit(
             f"FAIL: client-side tool argumentProperties must be an object, "
-            f"got {arg_props!r}"
+            f"got {resource['argumentProperties']!r}"
         )
 
     # requireConversationalConfirmation — documented conversational feature.
-    rcc = props.get("requireConversationalConfirmation")
-    if rcc is not None and not isinstance(rcc, bool):
+    if "requireConversationalConfirmation" in props and not isinstance(
+        props["requireConversationalConfirmation"], bool
+    ):
         sys.exit(
             f"FAIL: properties.requireConversationalConfirmation must be a "
-            f"boolean, got {rcc!r}"
+            f"boolean, got {props['requireConversationalConfirmation']!r}"
         )
 
 
