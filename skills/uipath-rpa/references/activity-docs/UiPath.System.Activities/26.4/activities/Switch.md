@@ -1,7 +1,5 @@
 # Switch
 
-> **On the [Common Activity Card](../../../../common-activity-card.md)** — prefer the card for routine authoring.
-
 `System.Activities.Statements.Switch`1`
 
 Evaluates an expression and executes the case whose key matches, or the default branch when no key matches. Generic over the expression type `T`.
