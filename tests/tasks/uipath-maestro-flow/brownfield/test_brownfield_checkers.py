@@ -334,3 +334,130 @@ def test_new_node_on_top_of_another_fails_the_layout_check(project: Path) -> Non
 
     mutate(project, stacked)
     assert layout(project) == 1
+
+
+DOWNSTREAM_OF_CAP = ("financialPosting", "resolutionWriter", "returnResolution")
+
+
+def shift(flow: dict, node_ids, dx: int = 0, dy: int = 0) -> None:
+    for node_id in node_ids:
+        position = flow["layout"]["nodes"][node_id]["position"]
+        position.update(x=position["x"] + dx, y=position["y"] + dy)
+
+
+def make_room(flow: dict) -> None:
+    insert_cap(flow)
+    flow["layout"]["nodes"]["capCreditAmount"]["position"] = {"x": 1728, "y": -32}
+    shift(flow, DOWNSTREAM_OF_CAP, dx=192)
+
+
+def test_merge_making_room_passes_the_layout_check(project: Path) -> None:
+    mutate(project, make_room)
+    assert layout(project) == 0
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param(lambda f: shift(f, ["logCreditAmount"], dx=192), id="upstream-moved"),
+        pytest.param(lambda f: shift(f, ["returnRejection"], dx=192), id="unrelated-moved"),
+        pytest.param(lambda f: shift(f, ["returnResolution"], dx=-400), id="moved-left"),
+        pytest.param(lambda f: shift(f, ["returnResolution"], dy=-200), id="moved-up"),
+        pytest.param(lambda f: shift(f, ["financialPosting"], dx=96), id="gap-closed"),
+        pytest.param(lambda f: shift(f, ["returnResolution"], dx=-150), id="lands-on-another"),
+        pytest.param(lambda f: f["layout"]["nodes"]["financialPosting"].update(collapsed=True), id="entry-rewritten"),
+    ],
+)
+def test_layout_check_rejects_moves_merge_does_not_make(project: Path, change) -> None:
+    def moved(flow: dict) -> None:
+        make_room(flow)
+        change(flow)
+
+    mutate(project, moved)
+    assert layout(project) == 1
+
+
+def container_flow(children: dict[str, dict], loop_size: dict, after_x: int = 800) -> dict:
+    layout_nodes = {
+        "start": {"position": {"x": 0, "y": 0}, "size": {"width": 96, "height": 96}},
+        "loop": {"position": {"x": 192, "y": -112}, "size": loop_size},
+        "after": {"position": {"x": after_x, "y": 0}, "size": {"width": 96, "height": 96}},
+        "below": {"position": {"x": 256, "y": 300}, "size": {"width": 96, "height": 96}},
+    }
+    nodes = [{"id": i} for i in layout_nodes] + [{"id": i, "parentId": "loop"} for i in children]
+    chain = ["loop", *children]
+    edges = [{"sourceNodeId": "start", "targetNodeId": "loop"}, {"sourceNodeId": "loop", "targetNodeId": "after"}]
+    edges += [{"sourceNodeId": a, "targetNodeId": b} for a, b in zip(chain, chain[1:])]
+    return {"nodes": nodes, "edges": edges, "layout": {"nodes": {**layout_nodes, **children}}}
+
+
+def at(x: int, y: int = 112) -> dict:
+    return {"position": {"x": x, "y": y}, "size": {"width": 96, "height": 96}}
+
+
+ORIGINAL_BODY = {"classify": at(144), "record": at(336)}
+GROWN_BODY = {"classify": at(144), "dedupe": at(336), "record": at(528)}
+
+
+def layout_of(tmp_path: Path, original: dict, final: dict) -> int:
+    for name, flow in (("Original", original), ("Final", final)):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / f"{name}.flow").write_text(json.dumps(flow))
+    return preserved.main(["--aspect", "layout", "--original", str(tmp_path / "Original"), "--project", str(tmp_path / "Final")])
+
+
+def test_container_growing_for_an_added_child_passes(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow(GROWN_BODY, {"width": 768, "height": 320}, after_x=1008)
+    final["layout"]["nodes"]["below"]["position"]["y"] = 300
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_sibling_under_a_grown_container_may_move_down(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow({**GROWN_BODY, "dedupe": at(144, 304)}, {"width": 560, "height": 496})
+    final["layout"]["nodes"]["below"]["position"]["y"] = 476
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_container_resizing_without_a_changed_child_fails(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow(ORIGINAL_BODY, {"width": 768, "height": 320})
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_container_shrinking_fails(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow({**ORIGINAL_BODY, "dedupe": at(144, 224)}, {"width": 480, "height": 320})
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_grown_container_downstream_of_an_added_node_may_move(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow(GROWN_BODY, {"width": 768, "height": 320}, after_x=1200)
+    final["nodes"].append({"id": "enrich"})
+    final["edges"] = [e for e in final["edges"] if e["sourceNodeId"] != "start"]
+    final["edges"] += [{"sourceNodeId": "start", "targetNodeId": "enrich"}, {"sourceNodeId": "enrich", "targetNodeId": "loop"}]
+    final["layout"]["nodes"]["enrich"] = at(192, 0)
+    final["layout"]["nodes"]["loop"]["position"]["x"] = 384
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_added_child_outside_its_container_fails(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow({**ORIGINAL_BODY, "dedupe": at(528)}, {"width": 560, "height": 320})
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_added_node_left_of_its_successor_fails(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 768, "height": 320})
+    final = container_flow({"classify": at(144), "dedupe": at(528), "record": at(336)}, {"width": 768, "height": 320})
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_moved_node_landing_on_another_fails(tmp_path: Path) -> None:
+    original = container_flow({**ORIGINAL_BODY, "aside": at(528, 224)}, {"width": 768, "height": 320})
+    final = container_flow({**GROWN_BODY, "record": at(528, 200), "aside": at(528, 224)}, {"width": 768, "height": 320})
+    for flow in (original, final):
+        flow["edges"] = [e for e in flow["edges"] if "aside" not in (e["sourceNodeId"], e["targetNodeId"])]
+    assert layout_of(tmp_path, original, final) == 1
