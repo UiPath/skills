@@ -397,8 +397,6 @@ MyProject/
 2. **Templates do not execute independently** — they only run when associated with a test case
 3. **One template per execution** — a test case runs with one execution template at a time; select it in Test Explorer before running
 4. **Template arguments override test case defaults** — use this to inject environment-specific values (URLs, credentials, timeouts)
-5. **Mind the path length** — `pack` writes every bound case again under `.generated\`, eleven characters deeper; keep the deepest case path, with that prefix, under the 260-character Windows limit
-
 ### What NOT to Do with Execution Templates
 
 - Do NOT put a case's own checks in an execution template — the template's assertion records exceptions only
