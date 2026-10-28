@@ -76,6 +76,10 @@ def assert_shape(resource: dict) -> None:
         if not isinstance(value, str) or not value.strip():
             sys.exit(f"FAIL: client-side tool {field} missing or empty: {value!r}")
 
+    rid = resource.get("id")
+    if not isinstance(rid, str) or "-" not in rid:
+        sys.exit(f"FAIL: client-side tool id missing or malformed: {rid!r}")
+
     if "referenceKey" not in resource or resource.get("referenceKey") is not None:
         sys.exit(
             f"FAIL: client-side tool referenceKey must be present and null, got "
@@ -104,6 +108,30 @@ def assert_shape(resource: dict) -> None:
     ):
         sys.exit(
             f"FAIL: guardrail must carry a policies list (empty is fine), got {guardrail!r}"
+        )
+
+    # isEnabled — documented in the resource shape; defaults to true.
+    is_enabled = resource.get("isEnabled")
+    if is_enabled is not None and is_enabled is not True:
+        sys.exit(
+            f"FAIL: client-side tool isEnabled should be true (or omitted), "
+            f"got {is_enabled!r}"
+        )
+
+    # argumentProperties — documented as {}; must be an object if present.
+    arg_props = resource.get("argumentProperties")
+    if arg_props is not None and not isinstance(arg_props, dict):
+        sys.exit(
+            f"FAIL: client-side tool argumentProperties must be an object, "
+            f"got {arg_props!r}"
+        )
+
+    # requireConversationalConfirmation — documented conversational feature.
+    rcc = props.get("requireConversationalConfirmation")
+    if rcc is not None and not isinstance(rcc, bool):
+        sys.exit(
+            f"FAIL: properties.requireConversationalConfirmation must be a "
+            f"boolean, got {rcc!r}"
         )
 
 

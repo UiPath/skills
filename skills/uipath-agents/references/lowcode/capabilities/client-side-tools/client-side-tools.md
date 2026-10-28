@@ -4,8 +4,6 @@
 
 Tools the agent **calls** but the **client executes**. Per the [product documentation](https://docs.uipath.com/agents/automation-cloud/latest/user-guide/tools-client-side), the runtime pauses, delegates the tool call to the client surface, and resumes once the client returns a result.
 
-For tools that call a runnable process, see [../process/process.md](../process/process.md). For Integration Service connector tools, see [../integration-service/integration-service.md](../integration-service/integration-service.md). For an Action Center hand-off, see [../escalation/escalation.md](../escalation/escalation.md).
-
 ## When to Use
 
 Per the docs, when the agent needs data or capabilities that only exist on the client:
@@ -149,7 +147,4 @@ From the docs:
 ## References
 
 - [Client-side tools](https://docs.uipath.com/agents/automation-cloud/latest/user-guide/tools-client-side) — product documentation, source of truth
-- [../process/process.md](../process/process.md) — process tools (server-side execution)
-- [../integration-service/integration-service.md](../integration-service/integration-service.md) — Integration Service connector tools
-- [../escalation/escalation.md](../escalation/escalation.md) — Action Center hand-off
 - [../../prompting/agent-prompting-guide.md](../../prompting/agent-prompting-guide.md) — writing the Tools slot

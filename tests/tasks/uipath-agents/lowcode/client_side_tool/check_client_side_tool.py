@@ -134,11 +134,36 @@ def assert_client_side_resource(resource: dict) -> None:
             f"list (empty is fine), got {guardrail!r}"
         )
 
+    # isEnabled — documented in the resource shape; defaults to true.
+    is_enabled = resource.get("isEnabled")
+    if is_enabled is not None and is_enabled is not True:
+        sys.exit(
+            f"FAIL: client-side tool isEnabled should be true (or omitted), "
+            f"got {is_enabled!r}"
+        )
+
+    # argumentProperties — documented as {}; must be an object if present.
+    arg_props = resource.get("argumentProperties")
+    if arg_props is not None and not isinstance(arg_props, dict):
+        sys.exit(
+            f"FAIL: client-side tool argumentProperties must be an object, "
+            f"got {arg_props!r}"
+        )
+
+    # requireConversationalConfirmation — documented conversational feature.
+    rcc = props.get("requireConversationalConfirmation")
+    if rcc is not None and not isinstance(rcc, bool):
+        sys.exit(
+            f"FAIL: properties.requireConversationalConfirmation must be a "
+            f"boolean, got {rcc!r}"
+        )
+
     print(
         f'OK: resource.json is $resourceType="tool", type="clientSide", name={name!r}, '
         f"id={rid}, referenceKey=null, location={location!r}, "
         f'folderPath="solution_folder", inputSchema/outputSchema/settings objects, '
-        f"guardrail.policies list present ({len(guardrail['policies'])} policies)"
+        f"guardrail.policies list present ({len(guardrail['policies'])} policies), "
+        f"requireConversationalConfirmation={rcc}"
     )
 
 
