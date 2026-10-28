@@ -48,7 +48,7 @@ Every turn resends the whole context: a reference read early is paid again on ev
 | Execute | start, before any question | a refactor: the Source Map names a UiPath source, or the request asks for a refactor | [refactor-guide.md](references/refactor-guide.md) and skill-mapping-guide.md whole; the SKILL.md of every product § Choosing the target there offers a component, invoked once for its capability check — its mandatory reads wait for the build |
 | Execute | build, once the configuration answers exist | — | the owning skill's mandatory reads, through its own journey |
 | Execute | build | the genome has a Source Map | extracted-genome-guide.md |
-| Execute | build | an export was resolved | the migration reads of § Source Frameworks |
+| Execute | build | an export was resolved | the migration reads of § Source Frameworks; [migration-trace-guide.md](references/migration-trace-guide.md) |
 | Execute | build | a group builds UI activities, extracted genome or not | [ui-verification-guide.md](references/ui-verification-guide.md) |
 | Execute | build | the genome has test components, extracted or not | [test-execution-guide.md](references/test-execution-guide.md) |
 | Execute | build | a group is planned in parts, runs through subagents or forks, or resumes after a pause or a compaction | parts-guide.md and [execution-parts-guide.md](references/execution-parts-guide.md) |
@@ -103,6 +103,7 @@ Each rule names its subject and the one guide that states it in full; the guide'
 21. **Source values are read from the source, not from its rendering**: an empty rendering is "not shown", never "not set", and execution follows the source where it and the genome disagree — [extracted-genome-guide.md § Source values](references/extracted-genome-guide.md).
 22. **A suspected source defect is verified in the full rendering and then in the framework's source before it is written**, and written by its classification — [defect-verification-guide.md](references/defect-verification-guide.md); marker: [extracted-genome-guide.md § Source Defects](references/extracted-genome-guide.md).
 23. **Executing a genome extracted from a UiPath source is a refactor**, and so is a migration whose request asks for one: every component re-authored on the target its shape fits, the genome the contract, every changed output a plan row with its reason, characterization tests before the logic — [refactor-guide.md](references/refactor-guide.md). **A UiPath source's deployed state is source**: the binding a process overrides is the value that runs — [uipath-source-guide.md § Deployed State](references/uipath-source-guide.md).
+24. **Record source-to-target links while migrating or refactoring an extracted source, including unchanged behavior and explicit gaps** — [migration-trace-guide.md](references/migration-trace-guide.md). A valid trace is not a behavior-review verdict.
 
 ## Anti-patterns
 
