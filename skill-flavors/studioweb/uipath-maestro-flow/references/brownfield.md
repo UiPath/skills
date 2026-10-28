@@ -82,3 +82,6 @@ so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:subflow-layout-sdk-upgrade:start-->
 so tell the user, since Studio Web owns the SDK copy).
 <!--skill-flavor:subflow-layout-sdk-upgrade:end-->
+
+<!--skill-flavor:fresh-decompile-cleanup:start-->
+<!--skill-flavor:fresh-decompile-cleanup:end-->

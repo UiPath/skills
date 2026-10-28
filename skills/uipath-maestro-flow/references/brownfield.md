@@ -3,6 +3,12 @@
 Use this procedure to edit a `.flow` that already exists, unless the task
 supplied its `.flow.ts`. A `.flow.ts` an earlier turn left is not supplied: the
 canvas may have changed the `.flow` since.
+
+<!--skill-flavor:fresh-decompile-cleanup:start-->
+Decompile fresh, after removing that turn's pipeline artifacts
+([The generated pipeline](#the-generated-pipeline)).
+<!--skill-flavor:fresh-decompile-cleanup:end-->
+
 Do not hand-transcribe the graph: decompile it to builder source, edit that
 source, and merge only the delta back into the original.
 
@@ -210,7 +216,10 @@ silently: if `grep -q STRICT .flow-sdk/Deployed.pipeline.mjs` fails, use the
 hand loop below with `merge --strict`.
 
 Re-running it after further edits repeats only the compile and merge — the
-baseline is captured once and reused. Pass `--no-pipeline` to `decompile` when
+baseline is captured once and reused. A later turn is not a further edit: before
+its fresh decompile, run `rm -rf .flow-sdk/Deployed.baseline .flow-sdk/Deployed.edited .flow-sdk/Deployed.merged.flow`.
+The pipeline keeps a baseline that exists, so a stale one makes merge drop an
+edit that matches it. Pass `--no-pipeline` to `decompile` when
 you deliberately want the manual sequence instead. The pipeline writes its
 `.flow` artifacts into that `.flow-sdk/` directory (the baseline and the edited
 compile each in a directory of their own, for the agent reason above), and the
