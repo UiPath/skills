@@ -153,7 +153,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
-*A component of a process genome inherits the Source framework, Source export, Inventory, Not covered and Related resources rows from the process genome; a standalone component genome carries them itself.*
+*A component of a process genome inherits the Source framework, Source export, Inventory, Not covered, Unused and Related resources rows from the process genome; a standalone component genome carries them itself.*
 
 ### Steps
 

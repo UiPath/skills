@@ -7,9 +7,10 @@ Genome says *what* to build; build skills know *how*. Execution reads genome, co
 1. Every configuration question is answered — by the user, or by its default in an unattended run — and applied: each setting lives where the Settings store answer puts it (§ 1.3).
 2. Every project validates and builds through its owning skill (§ 2.2).
 3. Every acceptance criterion carries a verdict (§ 3.1).
-4. The completion report is given (§ 3.3).
-5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written beside the solution or project folder (§ 3.4).
-6. A refactor also meets [refactor-guide.md § Done](refactor-guide.md).
+4. The completion report is written as the hand-off's README, and its status is given to the user (§ 3.3).
+5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written in the hand-off folder (§ 3.4).
+6. A migration with UI targets has its live checks written, and, where the Live application answer names a reachable application, its live healing pass done (§ 2.2b).
+7. A refactor also meets [refactor-guide.md § Done](refactor-guide.md).
 
 ## Phase 1 — Parse and configure
 
@@ -61,10 +62,11 @@ Three groups of questions, asked in this order — four in a refactor:
 | Test project template *(test projects)* | Start the test project from the Test Automation Framework template? | The template (Recommended): the configuration loaded, setup and teardown hooks run and a timeout applied around every case, and an exception recorded as a failed assertion with its screenshot (the owning skill's testing guidance), so the cases carry no failure wrapper and no configuration load, and cleanup after a failure, such as closing the application, goes into its teardown; a blank test project — each case carries its own failure capture and cleanup ([test-execution-guide.md § Result parity](test-execution-guide.md) rule 3), and a shared configuration workflow holds the constants |
 <!--skill-flavor:test-project-template-row:end-->
 | Test case status *(test projects)* | Mark the built test cases Publishable, so the package carries them and Test Manager can run them? | Publishable (Recommended when the suite is delivered to run): a test package carries only Publishable cases, and one with none is refused at upload (the owning skill's pack guidance); in progress — the open items mark them before the pack |
-| Comparable instance *(once per run, migrations only)* | Is the target application, or a comparable instance of it, reachable for verifying targets ([ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md))? | Neither — every target `offline-unverified`; a comparable instance — its window or URL and what must never be closed; the target application — the same two details |
+| Live application *(once per run, migrations with UI activities)* | Can the build reach the target application, or a comparable instance of it, to explore how it is driven before the migration is built offline, and for the live healing pass once the workflows are written ([ui-target-migration-guide.md](ui-target-migration-guide.md) rule 4)? | Neither — every target `offline-unverified`, its live checks handed to the engineer; a comparable instance — its window or URL, the sign-in the user does for the build, and what must never be closed; the target application — the same three details |
+| Healing pass *(once per run, when the Live application answer names a reachable application)* | The live healing pass checks every target on that application read-only; may it also run the workflows and tests against it and fix what fails? The runs enter and change data there ([live-application-guide.md § Live healing pass](live-application-guide.md)) | No — the read-only check only, the runs left to the engineer through the live checks (Recommended); yes, on test data or data the user can restore, which the user names with what must not be touched; only the test cases, or the workflows the user names |
 | Framework migration guide (extracted genomes from a framework other than UiPath only) | Where is the framework migration guide ([SKILL.md § Source Frameworks](../SKILL.md))? | Path given in the request; another path or a git URL to clone (free text); not available — same outcome as "no export available", stated in the report |
 | Source fidelity *(once per run, extracted genomes from a framework other than UiPath only, not in a refactor)* | How closely does the rebuild follow the source's steps and folder tree ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md))? | The source's names and shape, each difference a row of the correspondence table (Recommended); the source's names and shape without the table — recommended instead when the source's steps run to thousands, where writing the rows costs more than a reviewer gains from them; the build's own names and grouping |
-| Subagents *(once per run, when the build runs parts through subagents whose model the host lets the orchestrator choose)* | Which model do the parts run on, and how many parts run at once? | The orchestrator's model, as many parts at once as [execution-parts-guide.md](execution-parts-guide.md) lets run in parallel (Recommended); a smaller model, cheaper per token, held to the contract by each part's report and the orchestrator's check of it against the disk ([execution-parts-guide.md](execution-parts-guide.md) item 7); a cap on the parts running at once, the user's number. A part's forks ([execution-parts-guide.md](execution-parts-guide.md) item 1c) are not parts and do not count against the cap |
+| Subagents *(once per run, when the build runs parts through subagents whose model the host lets the orchestrator choose)* | Which model do the parts run on, and how many parts run at once? | The options of [parts-guide.md](parts-guide.md) item 8; how many parts may run in parallel: [execution-parts-guide.md](execution-parts-guide.md) item 1a |
 
 Rules:
 
@@ -73,7 +75,7 @@ Rules:
 2a. A question that touches the source — an extracted genome's Configuration Question, a ruling on a source defect, a refactor question, a question about the export itself — keeps the question alone on its first line and adds, after a blank line, a `Context:` section: a few labelled bullets with the facts the user needs to answer it, the labels chosen for that question, never a fixed set filled in where it does not fit. Source objects go by the names their author wrote, never by an object id or a line. Labels that often fit, to pick from and add to by what the question means: `Source process:` the source's workflow and step and the genome's step (`"Create Requisition" › "Wait for status", step 4, Submit requisition`); `Used for:` what a value does there; `Source value:` what the source runs with or does; `Also used in:` the other steps using a value; `Intent:` what a defective step evidently meant to do; `Extracted from:` and `Given:` when what the user supplied differs from what the genome was read from; `Affects:` what the answer changes in the build. The genome's Workflow and the Source Map's step table give the steps and their source objects.
 2b. Every component, project and step a question or option mentions goes by the name the genome gives it — a component by its Component cell in the Components table, a step by its number and bold name (`step 4, Submit requisition`) — never by its position (`component 2`) or a role several could share (`the processing component`, `the consumer`); a role may follow the name when it helps (`Invoice Extraction, which takes the queue items`).
 3. Present with `AskUserQuestion`, at most four per batch; collect a batch before showing the next. When the questions run past three batches, the first batch also asks how to answer them — batch by batch, the defaults, or the defaults with named overrides; the user's choice is the explicit request the autonomous-run paragraph below requires.
-4. Record answers as a `Configuration Answers` list with a `Scaffolding` group; the project-creation step in 1.4 receives the scaffolding answers, and every later build step receives the answers relevant to it.
+4. Record answers as a `Configuration Answers` list with a `Scaffolding` group, in the hand-off's README as soon as they exist (§ 3.3); the project-creation step in 1.4 receives the scaffolding answers, and every later build step receives the answers relevant to it. A choice the request makes that no question asks — a semantic step on migrated targets ([selector-translation-guide.md](selector-translation-guide.md) rule 12) — is recorded in the same list, as the request words it, so every part and check reads it from there.
 5. A default in the genome, a value found by discovery, a stub section, a "(Recommended)" option or a silent user never licenses skipping the question. Only the user answers it.
 6. Process genomes: ask the process-level genome questions first, then each component's genome questions in Components order, then the scaffolding questions per owning skill, with the per-project differences after them.
 7. The split questions follow their own rules and record their own answer line: [transactional-execution-guide.md § Split questions](transactional-execution-guide.md).
@@ -147,14 +149,14 @@ For each group, in order:
    - **Activity XML comes from the skill's discovery commands and the installed package's per-activity docs, never from memory.** A per-activity doc that [package-doc-errata-guide.md](package-doc-errata-guide.md) corrects is read together with its row there, which decides while the installed text is uncorrected.
    - **The two sources answer different questions, and a build needs both for every activity kind it uses.** The default-XAML command settles the **shape**: the class the designer actually drops, its namespace prefix, which properties are attributes and which are child elements, the version attribute, whether the activity is generic or not. The package's per-activity doc settles the **values**: which property to set when several look alike, and how the value is encoded. A fragment can be shaped correctly and still be inert because a property's value is encoded the way a *different* activity encodes it — two activities that both take keystrokes can require two different encodings of the same key, and the one that is wrong fails at run time, not at `validate`. Neither source substitutes for the other, and a snippet in any skill's card is weaker than both: cards go stale, the installed package does not.
    - **Do this once per activity kind, before the first file using it is written.** A wrong shape repeats in every file using the activity, and each copy validates, builds and packs cleanly. List the activity kinds the group will use, fetch the default XAML and read the per-activity doc for each, and record the list in the group report — an activity kind that appears in the output but not in that list was written from memory.
-   - **Names and texts in a project are written for the developer who maintains it, who has no working folder.** Messages and log texts the source gives keep its wording ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md); a refactor: [refactor-guide.md § The contract](refactor-guide.md)), and so does a step name the source's author wrote where the run keeps the source's names. What the build writes itself — the display names it gives, annotations, verify titles and message formats — says in the business's words what a step does and, where its name does not show it, why. It cites no record of the run — a brief ruling, a finding, a defect-index row, a deviation, plan or part number — and no source object id, line or step number: an engineer reading the workflow cannot follow them. A step that exists because of a ruling, a source defect or a platform limit carries an annotation stating that reason itself (`Stops instead of posting again: the source posted a second time after a timeout and duplicated the invoice.`), never the citation. The links back stay in the working folder (`migration/` in a migration) — the correspondence and parity tables, the checkpoint maps, the ledgers — for an agent that needs them. One text names its source by design: an Object Repository element's description, for whoever heals the target ([ui-target-migration-guide.md](ui-target-migration-guide.md) rule 2), still with no record of the run.
+   - **Names and texts in a project are written for the developer who maintains it, who has no working folder.** Messages and log texts the source gives keep its wording ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md); a refactor: [refactor-guide.md § The contract](refactor-guide.md)), and so does a step name the source's author wrote where the run keeps the source's names. What the build writes itself — the display names it gives, annotations, verify titles and message formats — says in the business's words what a step does and, where its name does not show it, why. It cites no record of the run — a brief ruling, a finding, a defect-index row, a deviation, plan or part number — and no source object id, line or step number: an engineer reading the workflow cannot follow them. A step that exists because of a ruling, a source defect or a platform limit carries an annotation stating that reason itself (`Stops instead of posting again: the source posted a second time after a timeout and duplicated the invoice.`), never the citation. The links back stay outside every project — the correspondence and parity tables and the checkpoint maps in the hand-off folder (§ 3.3), the ledgers in the working folder (`migration/` in a migration) — for whoever needs them. One text names its source by design: an Object Repository element's description, for whoever heals the target ([ui-target-migration-guide.md](ui-target-migration-guide.md) rule 2), still with no record of the run.
    - **UI checks and failure handling — every build, not only migrations:** [ui-verification-guide.md](ui-verification-guide.md).
    - **Credentials.** One credential asset per account the genome names is declared as a solution resource. The build reads each one inside the scope that consumes it — the application card whose sign-in form the value is typed into — as the owning skill's analyzer rules for secrets require, and a local run, which has no Orchestrator folder to read the asset from, gives the read its folder from a configuration value left empty in the published package. Identifiers that are not secrets are Text assets ([genome-format-guide.md § Platform Dependencies](genome-format-guide.md)); in a migration the asset names come from the source's accounts ([source-migration-guide.md § Credentials](source-migration-guide.md)).
    - **Migration groups.** When the run is a migration (an export was resolved in 1.3), the group's UI activities are built without targets and receive Object Repository targets in 2.2b; the placeholder-selector stub pattern applies only when no export and no live application exist. Before authoring, classify every UI step of an extracted genome against [ui-target-migration-guide.md § Composite interactions](ui-target-migration-guide.md) (substep wording plus the per-control `actions` in the derived catalog), build each pattern of several activities once as a shared helper workflow per § Object Repository identity there, read the owning skill's control-interaction guidance for the controls involved as that skill mandates, and list the classified steps, their patterns and the helpers in the group plan. Verification is built per [ui-verification-guide.md](ui-verification-guide.md).
    - **Test components:** [test-execution-guide.md](test-execution-guide.md).
    - **REFramework chosen for a consumer project:** build it on the template's surfaces, and re-derive an alternative unit of work, per [transactional-execution-guide.md § REFramework at build](transactional-execution-guide.md).
-3. **Verify the group:** every file the group needed exists, the owning skill's validate command passed, no unresolved errors remain. When the group produced Object Repository targets, verify them per [ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md) before reporting the group complete — one element per interaction family against the live driver when the application is reachable, the offline read-back and `offline-unverified` label otherwise. A consumer project on the REFramework also reports its customisation checklist and the exits it exercised ([transactional-execution-guide.md § REFramework at build](transactional-execution-guide.md)).
-4. **Report and advance without pausing:**
+3. **Verify the group:** every file the group needed exists, the owning skill's validate command passed, no unresolved errors remain. When the group produced Object Repository targets, read their definitions back and write their live checks per [ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md) before reporting the group complete; the live healing pass follows once all UI groups are linked (§ 2.2b). A consumer project on the REFramework also reports its customisation checklist and the exits it exercised ([transactional-execution-guide.md § REFramework at build](transactional-execution-guide.md)).
+4. **Report and advance without pausing.** The group report goes into the project's report in the hand-off folder (§ 3.3); the message is:
 
 ```
 Group 1/2 complete — uipath-rpa
@@ -171,7 +173,7 @@ A group built in parts, a build run through subagents or forks, and a pause or a
 
 ### 2.2b Migrate UI targets (extracted genomes)
 
-Before the first UI group, run [source-migration-guide.md § Migration preflight](source-migration-guide.md) with the export resolved in 1.3 (catalogs and target spec into the build's working folder, the genome's step tables checked against the export). Each UI group registers and links its files' targets from the target spec with the run's target tool, per [ui-target-migration-guide.md](ui-target-migration-guide.md) § UI targets, § Object Repository identity and § Composite interactions, and verifies them per its § Verifying targets. Report screens, elements, confidence counts, fragile targets (positional indexes, semantic-only) and derived elements as the first healing-pass targets. Placeholder stubs remain only for activities the catalog cannot cover, and the report lists them.
+The UI targets follow the three phases of [ui-target-migration-guide.md](ui-target-migration-guide.md) rule 4. Before the first UI group, run [source-migration-guide.md § Migration preflight](source-migration-guide.md) with the export resolved in 1.3: the catalogs into the build's working folder, the genome's step tables checked against the export, and the target spec, with exploration and the contract probe on a reachable application (its step 3a). The UI groups are the offline migration: each registers and links its files' targets from the target spec with the run's target tool, per [ui-target-migration-guide.md](ui-target-migration-guide.md) § UI targets, § Object Repository identity and § Composite interactions, and writes their live checks per its § Verifying targets. Once every UI group is linked, a reachable application gets the live healing pass ([live-application-guide.md § Live healing pass](live-application-guide.md)). Report screens, elements, confidence counts, labels, fragile targets (positional indexes, tag-only) and the live checks left open. Placeholder stubs remain only for activities the catalog cannot cover, and the report lists them.
 
 ### 2.2c Migrate test data (extracted genomes)
 
@@ -203,7 +205,7 @@ For every criterion (component criteria first, then process criteria), cited by 
 
 A verdict judges the build against the criterion. A criterion that states behaviour (something is created, typed, moved, written) is Met (static) when the code builds it. A criterion that states a confirmed outcome ("is checked", "equals", "shows", "is found") needs an assertion that fails on a mismatch; without one it is Partial, naming the missing assertion. A criterion built as the source does it, which the source's own data or defect fails on a live run, is Met (static), and the completion report lists it among the live failures to expect, with the reason.
 
-Where the owning skill offers a local run (`uip rpa run`, `uip maestro flow debug`, `uip codedagent run`, …) and the criterion is testable locally, run it and record the result instead of a static verdict.
+Where the owning skill offers a local run (`uip rpa run`, `uip maestro flow debug`, `uip codedagent run`, …) and the criterion is testable locally, run it and record the result instead of a static verdict. A run against the application the Live application answer names goes only as far as the Healing pass answer allows ([live-application-guide.md § Runs](live-application-guide.md)); a criterion it leaves unrun keeps its static verdict, with that answer as its blocker.
 
 ### 3.2 Report
 
@@ -218,37 +220,92 @@ Result: 5/8 met, 1 partial, 1 not met, 1 not verifiable
 
 For each Partial or Not Met: state what is missing and the concrete change. Fix them when the user asks, or immediately in autonomous runs, then re-validate the touched files and re-run every local run and test that exercises them: a fix to a shared workflow can break a criterion already Met. A fix that turns a Met criterion into Partial or Not Met is undone before another fix is tried, and the report gives the final build's verdicts.
 
-### 3.3 Completion report
+### 3.3 Completion report — the hand-off
 
-```
-Genome execution complete.
-Genome: <file>   Level: component | process
-Project/Solution: <name> at <path>
-Skills used: … (mandatory reads performed per skill)
-Files created: <count>
-Source export: <path> (<identity>) | none — live capture / placeholders
-UI targets: <screens>/<elements> from the derived catalog (high/medium/low); <created>/<reused>/<parametrised>; <n> placeholders left
-Data Fabric: <entity, …> <created and loaded | created | open items> | none
-Test data: <n> seed records, <variation files> filled from source rows, <n> credential assets declared (values to enter in Orchestrator)
-Split (one line per flow): Flow <N> (<components>) — option <A|B|C> — <materialised projects and their roles, runners per project>; unit <item> (<the genome's | alternative: reason>); store <one queue per unit: <names> | in-process | + kept coordination stores: <names>>; template <REFramework <queue|direct> | plain> per consumer project; coordination folded: <what became what>; exits exercised per consumer project: …; as-is was <one sentence> | not applicable (stub)
-Acceptance criteria: N/total met
-Configuration answers: … (defaults marked)
-Scaffolding: <target framework>, <expression language>, <package@version, …> (pinned | latest) per project; libraries folded: <library → folder of project, …> | none
+Execution ends with a hand-off for the engineer who maintains and deploys the build: one folder, `<slug>-handoff/`, beside the solution or project folder (where the Location answer put it), named with the solution's or project's slug ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)) — never inside a project, whose package would ship it, nor inside the solution folder. The genome, the built solution or project and this folder are what travels; the working folder (`migration/` in a migration) stays with the build. Its files:
+
+| File | Holds | Written |
+|---|---|---|
+| `README.md` | the completion report, below, and the index of the folder | its Configuration answers once they exist (§ 1.3 rule 4), the rest last |
+| `open-items.md`, `open-items/<project-slug>.md` | what the target environment needs before the first run, with the records to load beside them | at the end, when the environment needs setup ([open-items-guide.md](open-items-guide.md)) |
+| `live-checks/<project-slug>.md` | what only the live application can settle, by screen | with each UI target ([ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md)) |
+| `applications/<application-slug>.md` | how each application is driven: windows and titles, input method, structures, selector verdicts | when a reachable application is explored ([live-application-guide.md § Exploring](live-application-guide.md)) |
+| `correspondence/<component>.md` | where the rebuild departs from the source's names and shape, and why | with each component, when the Source fidelity answer keeps it ([source-migration-guide.md § What the executor records](source-migration-guide.md)) |
+| `parity/<TestCase>.md`, `checkpoints/<component>.md` | which assertion stands for each source checkpoint | with each test component ([test-execution-guide.md § Result parity](test-execution-guide.md)) |
+| `refactor-plan.md` | a refactor's decisions, differences from the source, kept outputs and what is not proven until it runs | once the refactor questions are answered ([refactor-guide.md § Refactor plan](refactor-guide.md)) |
+| `reports/<project-slug>.md` | each project's group reports: files, validation and link counts, the activity kinds read, what each step's source defects became | at each group's end (§ 2.2 step 4) |
+
+The README is the completion report. It is written for a reader who has this folder and the build but no working folder: in full sentences, with steps and components by the names the genome gives them (§ 1.3 rule 2b), source objects by the names their author wrote, and each decision with its reason, never by a ruling, part or finding number. It states each fact once: the tables stay in their files, and the README counts and links them. The final message to the user is the README's Status section and its path.
+
+````markdown
+# <Solution or project>: hand-off
+
+<What the automation does, in two sentences from the genome's Overview; what was built, from which genome and, in a migration, from which source export.>
+
+| | |
+|---|---|
+| Genome | `<path to the genome file>` (<component | process>) |
+| Built | `<path to the solution or project folder>`: <projects, each with its type>; <n> files |
+| Source export | `<path>` (<identity>) | none — live capture or placeholders |
+| Built with | <skills, and the mandatory reads each performed> |
+| Run it | `<the owning skill's run command for the entry point>` |
+
+## Status
+- Acceptance criteria: <n>/<total> met (§ Acceptance criteria).
 <!--skill-flavor:report-gate:start-->
-Gate: validate + build per project (errors / warnings), libraries packed to <feed>, solution pack dry run <verdict>; runs performed or "compile only — no reachable application"
+- Gate: validate + build per project (errors / warnings), libraries packed to <feed>, solution pack dry run <verdict>; runs performed or "compile only — no reachable application"
 <!--skill-flavor:report-gate:end-->
-Run: <the owning skill's run command for the entry point>
-Refactor: <the line of refactor-guide.md § Done> | not a refactor
-Open items: <top open-items file> (<n> setup steps for the target environment; open-items-guide.md)
-```
+- UI targets: <screens>/<elements> (<high/medium/low>), <created>/<reused>/<parametrised>; <n> verified, <n> shape-verified on <instance>, <n> offline-unverified; <n> live checks open (`live-checks/`); <n> placeholders.
+- Tests: per test case, `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` (`parity/`).
+- Test data and Data Fabric: <n> seed records, <variation files> filled from source rows, <n> credential assets declared; <entity, …> <created and loaded | created | open items> | none.
+- Refactor: <the line of refactor-guide.md § Done> | not a refactor.
+- Before the first run: <n> setup steps (`open-items.md`).
 
-When a run the build made changed data in a target system or a store, the report lists each change with how to undo it, and nothing is undone unasked.
+## Next steps
+1. Set up the target environment: `open-items.md`, in order.
+2. Check the UI targets on the live application and heal what fails: `live-checks/`, the read-only rows first, then the `run` rows on a test instance.
+3. Expect the failures below on the first live run.
 
-Extracted genomes add the healing-pass note ([ui-target-migration-guide.md § Rules](ui-target-migration-guide.md), rule 2): the targets not yet verified live, listed by window, a target found only by its fallback counted as missed, and the healing pass offered to the user. They also name, as not built, the objects of the Source Map's `Not covered` row: building them is an extraction edit, then re-execution. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([test-execution-guide.md § Result parity](test-execution-guide.md)). The report does not claim results match the source; the tables make that comparison possible for whoever holds a source result.
+## Configuration answers
+| Question | Answer |
+|---|---|
+| <the question in plain words> | <the answer>, "(default)" where no one answered |
+
+## Acceptance criteria
+| # | Criterion | Verdict | Where, or what is missing |
+|---|---|---|---|
+
+## Decisions
+1. <What was decided>: <why>; <what it changed in the build>.
+
+## Differences from the genome
+| Step | Genome says | Build does | Why |
+|---|---|---|---|
+
+## Expected failures on a live run
+- <Step or criterion>: <what fails, and why>.
+
+## Data the build's runs changed
+- <System or store>: <what changed>; <how to undo it>.
+
+## Files
+| File | What it holds |
+|---|---|
+````
+
+What each section holds:
+
+1. **Decisions:** every choice the build made that the genome leaves open — the split per flow (`Flow <N> (<components>) — option <A|B|C> — <materialised projects and their roles, runners per project>; unit <item> (<the genome's | alternative: reason>); store <one queue per unit: <names> | in-process | + kept coordination stores: <names>>; template <REFramework <queue|direct> | plain> per consumer project; coordination folded: <what became what>; exits exercised per consumer project: …; as-is was <one sentence>`), the libraries folded into a project, the orchestrator's rulings, the user's rulings on source defects, the guards on settings (§ 1.3 rule 8) and the analyzer errors accepted. A ruling that changes what the genome says is offered as a genome edit.
+2. **Differences from the genome:** the genome deviations the groups reported, each for an extraction edit, with what the build followed ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4).
+3. **Expected failures on a live run:** the criteria Met (static) that the source's own data or defect fails on a live run (§ 3.1), the placeholder targets, and, as not built, the objects of the Source Map's `Not covered` row — building them is an extraction edit, then re-execution.
+4. **Data the build's runs changed:** each change a run made in a target system or a store, with how to undo it; nothing is undone unasked.
+5. **Files:** every file of the folder with what it holds, and the working folder that stays with the build.
+
+A section with nothing to hold reads "None.". The report does not claim results match the source; the parity tables make that comparison possible for whoever holds a source result.
 
 ### 3.4 Open items for the engineer
 
-Execution ends by writing, beside the solution or project folder, what the target environment needs before the automation runs there — one file per project plus the solution's — whenever it needs at least one setup step: [open-items-guide.md](open-items-guide.md).
+Execution ends by writing, in the hand-off folder (§ 3.3), what the target environment needs before the automation runs there — one file per project plus the solution's — whenever it needs at least one setup step: [open-items-guide.md](open-items-guide.md).
 
 ## Anti-patterns
 
@@ -263,3 +320,4 @@ Execution ends by writing, beside the solution or project folder, what the targe
 9. **Skipping the export question, or deriving nothing because no catalog sat beside the genome**, and so shipping placeholder targets or generated test rows for a reachable export (1.3, 2.2b, 2.2c). Every other migration mistake — naive composite translation, per-step Object Repository entries, Check activities instead of `VerifyOptions`, copied credentials — is prohibited in the anti-patterns of [source-migration-guide.md](source-migration-guide.md), [ui-target-migration-guide.md](ui-target-migration-guide.md), [ui-verification-guide.md](ui-verification-guide.md) and [test-execution-guide.md](test-execution-guide.md).
 10. **Writing to a tenant the user did not ask for** — publishing or deploying a package, creating a queue, asset or trigger, or an entity the Data Fabric answer did not allow. The build is local; what the target environment needs goes into the open-items files (§ 3.4).
 11. **Generating workflows by script.** Every fix goes into the generator and regenerates the project; regeneration after linking drops Object Repository links; template shapes bypass the discovery commands; reviewers must read the generator to judge the build (2.2 step 2).
+12. **Ending with the report in the conversation only, or with the engineer's files spread across the working folder.** The genome and the build then travel without the answers, the decisions and what is left to check on the live application (§ 3.3).
