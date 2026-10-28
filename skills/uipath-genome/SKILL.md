@@ -81,7 +81,7 @@ No row matches → say which framework the files appear to come from and that th
 Each rule names its subject and the one guide that states it in full; the guide's wording is the rule.
 
 1. **Choose the genome level before writing**: one buildable project is a component genome, two or more a process genome with one component genome per project — [genome-format-guide.md § Two Levels](references/genome-format-guide.md).
-2. **Read the source, do not ask about it**; ask only for the resources beside it, then read and link them — [extraction-guide.md](references/extraction-guide.md) Steps 1 and 3.
+2. **Read the source, do not ask about it**; ask only for the resources beside it, which are read and linked, and the plan's two extraction questions, unused parts and subagents — [extraction-guide.md](references/extraction-guide.md) Steps 1, 2b and 3.
 3. **Infer complexity, never ask for it** — [genome-format-guide.md § Complexity](references/genome-format-guide.md).
 4. **Replication-grade detail in behavioural wording**, with no activity names, variable names, file paths or code syntax in the body — [genome-format-guide.md § Workflow](references/genome-format-guide.md) and § Provenance.
 5. **Configuration Questions carry only the values left open** — [genome-format-guide.md § Configuration Questions](references/genome-format-guide.md).
