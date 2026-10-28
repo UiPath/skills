@@ -64,7 +64,10 @@ MAX_SECTION_BYTES = 1300
 SECTION_BUDGETS = {
     "Project layout": 8_100,  # scaffold + node choice + connector loop (7,725)
     "Lifecycle": 2_500,  # loop choice + the emit-only command block (2,374)
-    "Editing an existing flow": 1_600,  # brownfield pointer + pipeline block (1,495)
+    # brownfield pointer + pipeline block (1,495); +~120 bytes (~46 tok) in
+    # skills#4226 for the `check --baseline` line: compile stops linting, so
+    # that line is the brownfield gate and must be in the resident block.
+    "Editing an existing flow": 1_750,
     "Builder frame": 2_050,  # vars, return/terminate, expression table (1,930)
     "Supported node types": 9_400,  # the router: 53 rows (8,956)
 }
@@ -74,7 +77,9 @@ SECTION_BUDGETS = {
 # Project layout, and the in-page round trip in Lifecycle, so those two get
 # their own budgets: the size when it first shipped (9,118 and 3,028) plus ~5%.
 # The whole-file caps hold.
-STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_600, "Lifecycle": 3_200}
+# Lifecycle +150 in skills#4226 (3,284 bytes, +~125 / ~49 tok): the round trip
+# runs `check --baseline` before compile, since compile no longer lints.
+STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_600, "Lifecycle": 3_350}
 
 BYTES_PER_TOKEN = 2.56
 
