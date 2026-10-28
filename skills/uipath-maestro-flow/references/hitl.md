@@ -308,7 +308,16 @@ as they are.
   are the task's typed answer fields, so `out('review', 'reviewerComments')`
   passes `check`. Without the schema such a read fails
   (`HITL_READ_UNKNOWN_FIELD`).
-- A decompiled action-app task keeps its schema as `app.actionSchema`.
+- **Only each input's type reaches the node,** the way Studio Web's app picker
+  writes it. An `object` input becomes `{ type: 'System.Object' }` and a
+  `file` input `{ type: 'UiPath.Platform.ResourceHandling.IResource' }`; a
+  nested object's `properties`, a `description` and a `title` are not carried.
+  The app itself keeps the full schema.
+- **Decompile keeps the schema as written.** It prints `app.actionSchema` when
+  that compiles back to the node's exact `inputSchema`. Otherwise (for example a
+  hand-edited schema with `title`s) it prints the node's schema verbatim as
+  `app.inputSchema`. Keep that as it is; give `actionSchema` or `inputSchema`,
+  not both.
 
 Needs a `@uipath/maestro-builder-sdk` release later than 6.57.1; an older SDK
 has no `actionSchema` on `app`.
