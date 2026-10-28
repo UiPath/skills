@@ -11,15 +11,15 @@ UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/maes
 
 ## Critical Rules
 
-1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It holds the separately numbered critical rules this list only summarizes, the scope gate, and the completion report the final response must follow.
-2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types): the signature, a worked example and the node's hazards live there, not here.
+1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It holds the separately numbered critical rules this list summarizes, the scope gate, and the completion report the final response must follow.
+2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types): the signature, a worked example and the node's hazards live there.
 3. Choose each node from a registry search, never a brand name.
 4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), map it to the most defensible stated value and list it under Open questions as **[REQUIRED]**.
 5. Bind every declared output on every path. `check` misses a missing one, and the run returns `undefined`.
 6. Handle an error only when the request says what should happen.
 7. Never re-run `flow debug` to look again at a failed run.
 8. Simulate every side-effecting component before running an eval set, and never `solution upload` as part of an eval workflow without asking.
-9. The final pass must use the [Lifecycle](#lifecycle) loop and run after the last edit.
+9. Run the final pass with the loop [Lifecycle](#lifecycle) picks for this workspace, after the last edit.
 
 ## Project layout
 
@@ -231,7 +231,7 @@ The table is the authoritative router; read a node's `Reference` before writing 
 
 ## Authoring a flow
 
-[Critical Rules](#critical-rules) 3–6 govern node choice, open decisions, outputs and errors. The rest is in
+[Critical Rules](#critical-rules) govern node choice, open decisions, outputs and errors. The rest is in
 **[`references/author.md`](references/author.md)**.
 A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
