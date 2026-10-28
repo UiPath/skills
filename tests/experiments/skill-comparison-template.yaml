@@ -29,11 +29,17 @@ defaults:
     # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.
     permission_mode: bypassPermissions
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    # Skills read their own references/ and run their scripts/ from the plugin
+    # directory: banning plugin reads makes every variant run without them.
+    # Bar the other worktrees instead, so a variant cannot read the other's skills.
     system_prompt: |
-      You are a coding agent. Work only inside your current working directory.
-      Do NOT read, list, or access any files outside your working directory.
-      In particular, do NOT access the plugin directories — those are loaded by
-      the skill system and you do not need to read them directly.
+      You are a coding agent. Write files only inside your current working directory.
+      You may read and run the files of any skill you load (its base directory is given
+      when it loads). Do not read any other directory outside your working directory.
+    # A Read of a PDF or image over ~1 MB overflows the SDK's default 1 MiB message buffer
+    # and ERRORs the run ("JSON message exceeded maximum buffer size").
+    sdk_options:
+      max_buffer_size: 20971520
 
   # Drop <sandbox>/{node_modules,.npm-prefix} so preserved artifacts stay slim
   # and Node module resolution can't leak across concurrent sandboxes

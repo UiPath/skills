@@ -123,10 +123,11 @@ defaults:
   agent:
     ...
     system_prompt: |
-      You are a coding agent. Work only inside your current working directory.
-      Do NOT read, list, or access any files outside your working directory.
-      In particular, do NOT access the plugin directories — those are loaded by
-      the skill system and you do not need to read them directly.
+      You are a coding agent. Write files only inside your current working directory.
+      You may read and run the files of any skill you load (its base directory is given
+      when it loads). Do not read any other directory outside your working directory.
+    sdk_options:
+      max_buffer_size: 20971520
 
 variants:
   # pinned: main @ a1b2c3d
