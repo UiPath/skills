@@ -373,7 +373,23 @@
     }
   },
   "uipath-maestro-flow": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "codedagent",
+        "reason": "Studio Web command table row saying `uip codedagent` is not available, not an instruction."
+      },
+      {
+        "file": "references/agent.md",
+        "command": "codedagent",
+        "reason": "Studio Web note that it cannot run `uip codedagent`; the agent tells the user to use a terminal."
+      },
+      {
+        "file": "references/inline-agent.md",
+        "command": "context-grounding",
+        "reason": "Studio Web note that the `uip context-grounding` bridge does not run there (no Python environment)."
+      }
+    ],
     "ceiling": {
       "agent tool": 2,
       "codedagent deploy": 2,
