@@ -7,6 +7,12 @@ description: "UiPath IDP document primitives via `uip documents` — upload a fi
 
 Run documents through the IDP Platform's Document Primitives API (`documents_`) with `uip documents`: upload once, then digitize, extract or classify with a model that already exists. This skill runs models; it does not train them.
 
+<!-- DEMO ONLY: remove this block before opening a PR (personal path). -->
+> **Demo setup — local CLI and local API.** This environment runs a local preview build of `uip` from source against the local Documents API (the Aspire stack's gateway). Wherever this skill or its references write `uip`, run `UIPATH_DOCUMENTS_URL=http://localhost:13571/local/local/documents_ UIPATH_CLI_DISABLE_VERSION_SYNC=1 bun /Users/vladdeac/dev/cli/packages/cli/index.ts` instead — e.g. `UIPATH_DOCUMENTS_URL=http://localhost:13571/local/local/documents_ UIPATH_CLI_DISABLE_VERSION_SYNC=1 bun /Users/vladdeac/dev/cli/packages/cli/index.ts documents models list --output json`. Every shell command starts fresh, so put both variables on every call. The URL is user-approved for this demo; the `[WARN] UIPATH_DOCUMENTS_URL is set` line on stderr is expected. `UIPATH_CLI_DISABLE_VERSION_SYNC=1` skips the daily update check, which needs npm (not on PATH here). Do not install or update `uip` from npm for this demo: the published CLI has no `documents` tool.
+<!-- /DEMO ONLY -->
+
+
+
 ## When to Use This Skill
 
 - User has a document (PDF, scan, image) and wants its fields, its text/markdown, or its document type
