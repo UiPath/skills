@@ -397,7 +397,7 @@ When a transform hits these limits, use `Invoke Code` — see [data-manipulation
 XAML expressions (C# or VB) use the types a project's coded source files (`.cs`) define — a DTO as a variable or argument type, a static helper called inside an expression — once the workflow imports the namespace the `.cs` file declares and references the assembly the coded files compile into, `<ProjectName>.Core` (`name` in `project.json`).
 
 - **Import and reference:** add `<x:String><Namespace></x:String>` to `TextExpression.NamespacesForImplementation` and `<AssemblyReference><ProjectName>.Core</AssemblyReference>` to `TextExpression.ReferencesForImplementation`, plus `System.Collections` ([§ Assembly References Studio Requires and the CLI Does Not Check](#assembly-references-studio-requires-and-the-cli-does-not-check)).
-- **Type argument:** a variable or argument of the type also needs a root prefix `xmlns:local="clr-namespace:<Namespace>;assembly=<ProjectName>.Core"`, then `x:TypeArguments="local:<Type>"`. A `Switch` over an enum of the project takes `x:TypeArguments="local:<Enum>"` and each case as `x:Key="<Member>"`.
+- **Type argument:** a variable or argument of the type also needs a root prefix `xmlns:local="clr-namespace:<Namespace>;assembly=<ProjectName>.Core"`, then `x:TypeArguments="local:<Type>"`.
 - **Global variables** cannot take a type the coded source files define; type the global `Dictionary(String, Object)` or `Object` and cast where it is read.
 - **Static `void` method:** an expression must return a value, so a `void` helper is called with Invoke Method — `TargetType` names the class through the same prefix, and one positional `InArgument` child per parameter follows in declaration order:
 
