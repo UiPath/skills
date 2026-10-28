@@ -18,7 +18,8 @@ for an added node, as postconditions:
 3. A node moves only when something took its spot or it follows a node that
    moved or was added there, along an original edge or the edge an insert
    split; and by no more than its container's added nodes' width plus a gap
-   each, one gap more, and its grown containers' growth.
+   each, one gap more, how far each split edge's target sat left of its source
+   plus a gap, and its grown containers' growth.
 4. Nothing lands on another node; sticky notes are free to sit anywhere.
 5. Nodes keep their order in a row, and edges keep pointing right (a retry
    edge back to an earlier node is exempt).
@@ -52,7 +53,7 @@ from pathlib import Path
 DEFAULT_SIZE = {"width": 96, "height": 96}
 STICKY_NOTE_TYPE = "stickyNote"
 # GAP, PADDING and BODY_ORIGIN in builder-sdk typescript/sdk/src/node-placement.ts at
-# 20cbc11b (UiPath/builder-sdk#1501); re-read them there when merge placement changes.
+# c92ecfb3 (UiPath/builder-sdk#1501); re-read them there when merge placement changes.
 GAP = 96
 PADDING = 24
 BODY_PADDING = {"x": 144, "y": 96}
@@ -299,8 +300,39 @@ def container_growth(
     return failures
 
 
+def tucked_under(
+    original_edges: list[dict], edges: list[dict], added: set[str], before: dict, parent_of: dict[str, str | None]
+) -> dict[str | None, int]:
+    """Per container, how far the targets of original edges an added run splits sat left of a forward layout.
+
+    An index under its agent has to clear the agent once a step goes between them.
+    """
+    deficit: dict[str | None, int] = {}
+    for u, v in {ends(e) for e in original_edges}:
+        if u not in before or v not in before or parent_of.get(u) != parent_of.get(v):
+            continue
+
+        run, frontier = set(), {u}
+        while frontier:
+            frontier = {t for s, t in map(ends, edges) if s in frontier and t in added and t not in run}
+            run |= frontier
+        if not any(s in run and t == v for s, t in map(ends, edges)):
+            continue
+
+        ux, _, uw, _ = box(before[u])
+        scope = parent_of.get(v)
+        deficit[scope] = deficit.get(scope, 0) + max(0, ux + uw + GAP - box(before[v])[0])
+    return deficit
+
+
 def moves_without_room(
-    changed: set[str], added: set[str], grown: set[str], before: dict, after: dict, parent_of: dict[str, str | None]
+    changed: set[str],
+    added: set[str],
+    grown: set[str],
+    tucked: dict[str | None, int],
+    before: dict,
+    after: dict,
+    parent_of: dict[str, str | None],
 ) -> list[str]:
     """Invariant 3."""
     failures: list[str] = []
@@ -312,7 +344,7 @@ def moves_without_room(
         scope = parent_of.get(node_id)
         runs = [box(after[a])[2] + GAP for a in added if parent_of.get(a) == scope and a in after]
         grew = [growth(c, before, after) for c in grown if parent_of.get(c) == scope and c != node_id]
-        room_x = (sum(runs) + GAP if runs else 0) + sum(w for w, _ in grew)
+        room_x = (sum(runs) + GAP + tucked.get(scope, 0) if runs else 0) + sum(w for w, _ in grew)
         room_y = sum(h for _, h in grew)
         if dx > room_x or dy > room_y:
             failures.append(
@@ -504,7 +536,8 @@ def check_layout(original: dict, final: dict, removable_nodes: set[str] = frozen
 
     grown = entry_changes(changed, before, after, failures)
     failures += container_growth(grown, touched, solid, before, after, parent_of)
-    failures += moves_without_room(changed, added, grown, before, after, parent_of)
+    tucked = tucked_under(original.get("edges", []), edges, added, before, parent_of)
+    failures += moves_without_room(changed, added, grown, tucked, before, after, parent_of)
     failures += moves_without_cause(changed, added, grown, original.get("edges", []), edges, before, after, parent_of)
     failures += new_overlaps(solid, changed, added, before, after, parent_of)
     failures += order_changes(solid, edges, before, after, parent_of)

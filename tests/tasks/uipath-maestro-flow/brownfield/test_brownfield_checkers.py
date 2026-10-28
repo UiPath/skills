@@ -664,3 +664,24 @@ def test_two_pushed_nodes_swapping_order_in_a_row_fails(tmp_path: Path) -> None:
     original = row_flow({"a": (0, 0), "p": (300, 0), "q": (420, 80)}, [])
     final = row_flow({"a": (0, 0), "n1": (192, 0), "n2": (384, 0), "p": (700, 0), "q": (500, 80)}, [("a", "n1"), ("n1", "n2")])
     assert layout_of(tmp_path, original, final) == 1
+
+
+AGENT_INDEX = {"s": (768, -48), "agent": (960, -160), "index": (1008, 32), "next": (1344, -16)}
+
+
+def agent_flow(positions: dict[str, tuple[int, int]], edges: list[tuple[str, str]]) -> dict:
+    flow = row_flow(positions, edges)
+    flow["layout"]["nodes"]["agent"]["size"]["width"] = 288
+    return flow
+
+
+@pytest.mark.parametrize(
+    "index_x, expected",
+    # 1536 is placeAddedNodes' own output on UiPath/builder-sdk#1501 c92ecfb3.
+    [pytest.param(1536, 0, id="as-merged"), pytest.param(1736, 1, id="pushed-past-the-agent-and-the-slot")],
+)
+def test_insert_before_an_index_tucked_under_its_agent_clears_the_agent(tmp_path: Path, index_x: int, expected: int) -> None:
+    original = agent_flow(AGENT_INDEX, [("s", "agent"), ("agent", "index"), ("agent", "next")])
+    merged = {**AGENT_INDEX, "n": (1344, 32), "index": (index_x, 32), "next": (1872, -16)}
+    final = agent_flow(merged, [("s", "agent"), ("agent", "n"), ("n", "index"), ("agent", "next")])
+    assert layout_of(tmp_path, original, final) == expected
