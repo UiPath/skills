@@ -415,7 +415,7 @@ def test_container_growing_for_an_added_child_passes(tmp_path: Path) -> None:
 
 def test_sibling_under_a_grown_container_may_move_down(tmp_path: Path) -> None:
     original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
-    final = container_flow({**GROWN_BODY, "dedupe": at(336, 304)}, {"width": 560, "height": 496})
+    final = container_flow({"classify": at(144), "dedupe": at(336, 304), "record": at(336)}, {"width": 560, "height": 496})
     final["layout"]["nodes"]["below"]["position"]["y"] = 476
     assert layout_of(tmp_path, original, final) == 0
 
@@ -497,7 +497,8 @@ def test_malformed_edge_fails_instead_of_crashing(tmp_path: Path) -> None:
     [
         pytest.param(lambda f: f["layout"]["nodes"]["returnResolution"]["position"].update(x=5000), id="shift-beyond-room"),
         pytest.param(lambda f: shift(f, ["resolutionWriter", "returnResolution"], dy=3000), id="drop-with-no-growth"),
-        pytest.param(lambda f: f["layout"]["nodes"]["capCreditAmount"].update(position={"x": -500, "y": 600}), id="added-left-of-predecessor"),
+        pytest.param(lambda f: f["layout"]["nodes"]["capCreditAmount"].update(position={"x": 1400, "y": 150}), id="added-left-of-predecessor"),
+        pytest.param(lambda f: f["layout"]["nodes"]["capCreditAmount"].update(position={"x": 1728, "y": 900}), id="added-rows-below-predecessor"),
     ],
 )
 def test_layout_check_caps_room_to_what_merge_needs(project: Path, change) -> None:
@@ -549,7 +550,7 @@ def test_sticky_notes_are_left_out_of_order_and_overlap(project: Path) -> None:
 def test_sibling_within_merge_padding_of_a_grown_container_may_move(tmp_path: Path) -> None:
     original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
     original["layout"]["nodes"]["below"]["position"]["y"] = 400
-    final = container_flow({**GROWN_BODY, "dedupe": at(336, 304)}, {"width": 560, "height": 496})
+    final = container_flow({"classify": at(144), "dedupe": at(336, 304), "record": at(336)}, {"width": 560, "height": 496})
     final["layout"]["nodes"]["below"]["position"]["y"] = 576
     assert layout_of(tmp_path, original, final) == 0
 
@@ -608,3 +609,51 @@ def test_growth_pushes_an_author_node_and_what_it_lands_on(tmp_path: Path, z: tu
         record=at(528), dedupe=at(336), after=at(992, 0), w=at(1192, 220), z=at(*z),
     )
     assert layout_of(tmp_path, original, final) == expected
+
+
+def nested_flow(layout: dict[str, tuple[int, ...]], inserted: bool) -> dict:
+    nodes = [{"id": "s"}, {"id": "B"}, {"id": "A", "parentId": "B"}, {"id": "a1", "parentId": "A"}, {"id": "t"}]
+    edges = [("s", "B"), ("B", "t")]
+    if inserted:
+        nodes.append({"id": "n1", "parentId": "A"})
+        edges.append(("a1", "n1"))
+    boxes = {i: {"position": {"x": v[0], "y": v[1]}, "size": {"width": v[2] if len(v) > 2 else 96, "height": v[3] if len(v) > 2 else 96}} for i, v in layout.items()}
+    return {"nodes": nodes, "edges": [{"sourceNodeId": u, "targetNodeId": v} for u, v in edges], "layout": {"nodes": boxes}}
+
+
+NESTED = {"s": (0, 0), "B": (192, 0, 560, 320), "A": (24, 24, 300, 200), "a1": (24, 24), "t": (900, 0)}
+# placeAddedNodes' own output on UiPath/builder-sdk#1501 da19d881.
+NESTED_MERGED = {**NESTED, "B": (192, 0, 624, 320), "A": (24, 24, 456, 200), "t": (964, 0), "n1": (216, 24)}
+
+
+@pytest.mark.parametrize(
+    "change, expected",
+    [
+        pytest.param({}, 0, id="as-merged"),
+        pytest.param({"t": (1900, 0)}, 1, id="sibling-pushed-past-growth"),
+        pytest.param({"B": (192, 0, 5000, 320)}, 1, id="outer-grows-past-its-body"),
+        pytest.param({"A": (24, 24, 2000, 200)}, 1, id="inner-grows-past-its-body"),
+        pytest.param({"B": (192, 0, 624, 2000)}, 1, id="grows-taller-than-its-body"),
+        pytest.param({"n1": (1000, 24)}, 1, id="added-outside-its-container"),
+    ],
+)
+def test_nested_growth_stays_within_what_the_body_needs(tmp_path: Path, change: dict, expected: int) -> None:
+    final = nested_flow({**NESTED_MERGED, **change}, inserted=True)
+    assert layout_of(tmp_path, nested_flow(NESTED, inserted=False), final) == expected
+
+
+def test_container_shrinking_around_an_added_child_fails(tmp_path: Path) -> None:
+    final = container_flow({"classify": at(144), "dedupe": at(240, 216), "record": at(336)}, {"width": 480, "height": 320})
+    assert layout_of(tmp_path, container_flow(ORIGINAL_BODY, {"width": 560, "height": 320}), final) == 1
+
+
+def test_container_growing_within_its_body_without_a_changed_child_fails(tmp_path: Path) -> None:
+    body = {"classify": at(144), "record": at(528)}
+    original = container_flow(body, {"width": 560, "height": 320}, after_x=1008)
+    assert layout_of(tmp_path, original, container_flow(body, {"width": 700, "height": 320}, after_x=1008)) == 1
+
+
+def test_two_pushed_nodes_swapping_order_in_a_row_fails(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "p": (300, 0), "q": (420, 80)}, [])
+    final = row_flow({"a": (0, 0), "n1": (192, 0), "n2": (384, 0), "p": (700, 0), "q": (500, 80)}, [("a", "n1"), ("n1", "n2")])
+    assert layout_of(tmp_path, original, final) == 1
