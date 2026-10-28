@@ -8,7 +8,7 @@ description: >
   envelope. On pre-built surfaces that schema is what the form is
   generated from. Passes when the agent produces a validatable
   conversational project containing a properly-shaped client-side tool.
-tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, tool, client-side]
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, feature:client-side]
 max_iterations: 1
 
 run_limits:
