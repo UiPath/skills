@@ -76,7 +76,7 @@ Compile the baseline before the edit, never after: merge diffs edited against
 it, so a baseline of the edited source drops your change.
 
 With an edited `.flow.ts` and `--baseline-from`, `merge` runs `check` on the edited source and refuses the write on an error in a node or subflow the edit changed (`N error(s) in nodes merge takes from the edited flow`), and on one it cannot place that the edit introduced.
-An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; an untouched node the SDK cannot compile at all is kept as saved too and prints as `LOWERING_NODE_KEPT` (a probable SDK defect: tell the user; 6.62.0 or later); a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
+An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; an untouched node the SDK cannot compile at all is kept as saved too and prints as `LOWERING_NODE_KEPT` (a probable SDK defect: tell the user; 6.64.0 or later); a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
 Fix a finding when you edit its node.
 Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node,
 <!--skill-flavor:merge-check-sdk-upgrade:start-->
@@ -96,12 +96,13 @@ the original `.flow` (not a compiled baseline) as `--baseline`, and each
 finding says whether your edit caused it. In emit-only mode `check` refuses:
 skip it there, `validate` is the gate.
 
-Needs `@uipath/maestro-builder-sdk` 6.62.0 or later (it compiles without
+Needs `@uipath/maestro-builder-sdk` 6.64.0 or later (it compiles without
 linting and reads `--baseline`). An older SDK shows up in one of three ways:
 the baseline compile of the untouched decompile stops on a `check` code (an
 older `compile` still lints, so a pre-existing `HTTP_READ_WITHOUT_RETURNS`
-stops it); `uip` refuses `--baseline` as below its minimum version; or, with
-an older `uip`, the SDK answers `error: unknown option '--baseline'`. Each
+stops it); `uip` refuses it with `--baseline on flow check needs
+@uipath/maestro-builder-sdk >= 6.64.0; found <version>`; or, with an older
+`uip`, the SDK answers `error: unknown option '--baseline'`. Each
 means the SDK is too old,
 <!--skill-flavor:check-baseline-sdk-upgrade:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
@@ -246,7 +247,7 @@ loop above.
   edit changed is `✗ [<CODE>] "<node>" is changed or new` and nothing is
   written: revert the edit to that node, or fix it. An untouched node that
   fails only because of an edit elsewhere (it reads a step the edit deleted)
-  also stops the write. Needs `@uipath/maestro-builder-sdk` 6.62.0 or later.
+  also stops the write. Needs `@uipath/maestro-builder-sdk` 6.64.0 or later.
 - Pass `--library` / `--bindings` as you would to `compile`; `--strict` works
   here too. Use the SDK's `flow-sdk` bin: `uip maestro flow merge` does not
   forward `--baseline-from` yet (UiPath/cli#5214).
