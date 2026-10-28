@@ -15,7 +15,7 @@ Phase 1 (the open Studio Web solution already exists; project creation happens a
 <!--skill-flavor:design-handoff-rule-next-step:end-->
 
 <!--skill-flavor:phase-seven-publish:start-->
-Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publish, run `uip solution publish --output json` from `/solution` — Studio Web packages and publishes the open solution; `resources refresh`, `case pack`, and `solution pack` are Node-CLI-only and are not run here. With several destinations the command lists them without publishing: ask the user which to use, then rerun with `--location "<key or name>"` or `--personal-workspace`. `Done` exits.
+Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publish, run `uip solution resources refresh --output json`, then `uip solution publish --output json`, both from `/solution` — Studio Web packages and publishes the open solution, so do not run `case pack` or `solution pack` (`solution pack` is not in the Studio Web CLI). With several destinations the command lists them without publishing: ask the user which to use, then rerun with `--location "<key or name>"` or `--personal-workspace`. `Done` exits.
 <!--skill-flavor:phase-seven-publish:end-->
 
 <!--skill-flavor:phase-six-debug-gate:start-->

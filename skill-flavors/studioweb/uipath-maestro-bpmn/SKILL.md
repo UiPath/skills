@@ -23,12 +23,6 @@
    `uipath-solution` for destinations and redeploys.
 <!--skill-flavor:delegated-resource-author-deploy:end-->
 
-<!--skill-flavor:v2-solution-resources-refresh:start-->
-   Studio Web keeps the open solution's resources in sync after
-   `bpmn refresh`: skip the `uip solution resources refresh` step that
-   `Data.V2.Instructions` ends with. It is Node-CLI-only and is not run here.
-<!--skill-flavor:v2-solution-resources-refresh:end-->
-
 <!--skill-flavor:debug-node-output:start-->
    (5) Unless the task forbids
    live runs or asks for a draft or handoff, run the process

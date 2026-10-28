@@ -15,8 +15,9 @@ Add two projects to the open solution, sync resources, and verify:
 <!--skill-flavor:e2e-create-and-add:start-->
 ```bash
 # Projects are created with `uip <family> init <Name>` and registered
-# automatically; resources stay in sync in the host (`resources refresh`
-# is Node-CLI-only). Verify from /solution:
+# automatically. From /solution, sync resource declarations from project
+# bindings, then verify:
+uip solution resources refresh --output json
 <!--skill-flavor:e2e-create-and-add:end-->
 
 <!--skill-flavor:upload-as-new:start-->
