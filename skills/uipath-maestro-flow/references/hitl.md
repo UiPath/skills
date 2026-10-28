@@ -67,7 +67,9 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   An omitted recipient, or any assignee with no `value`, assigns no one: the
   task is created unassigned in its folder until someone picks it up. Give a
   `value` to assign it. `user` and `staticEmail` name one person, so they need
-  a `value`; without one `check` warns (`HITL_RECIPIENT_NO_USER`).
+  a `value`; without one `check` warns (`HITL_RECIPIENT_NO_USER`). The warning
+  needs `@uipath/maestro-builder-sdk` 6.61.1 or later; an older SDK does not
+  warn, so no warning there does not mean the assignee is fine.
 - `labels` is one comma-separated string, shown in Action Center.
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
