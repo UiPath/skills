@@ -1,5 +1,7 @@
 # Client-Side Tool Capability
 
+> **Conversational agents only.** Client-side tools require a surface that implements the UiPath conversation protocol (TypeScript SDK, Instance Management, iFrame embedding). Autonomous agents have no client surface at runtime, so client-side tools cannot execute — do not add them to autonomous agents.
+
 Tools the agent **calls** but the **client executes**. Per the [product documentation](https://docs.uipath.com/agents/automation-cloud/latest/user-guide/tools-client-side), the runtime pauses, delegates the tool call to the client surface, and resumes once the client returns a result.
 
 For tools that call a runnable process, see [../process/process.md](../process/process.md). For Integration Service connector tools, see [../integration-service/integration-service.md](../integration-service/integration-service.md). For an Action Center hand-off, see [../escalation/escalation.md](../escalation/escalation.md).
