@@ -79,7 +79,9 @@ SECTION_BUDGETS = {
 # The whole-file caps hold.
 # Lifecycle re-set for the Extract document round-trip exception (3,411); the
 # round trip also runs `check --baseline` before compile (skills#4226), since
-# compile no longer lints.
+# compile no longer lints, with a pointer for a refused `--baseline` (Studio
+# Web owns its SDK copy, so the agent cannot upgrade its way out and would
+# otherwise stop at step 2 on every edit turn).
 STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_600, "Lifecycle": 3_450}
 
 BYTES_PER_TOKEN = 2.56

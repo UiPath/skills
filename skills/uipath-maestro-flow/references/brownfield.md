@@ -41,6 +41,8 @@ rm -rf "${WORK:?}" && mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
+# If this compile stops, run the check below now, before any edit: it says
+# why (an SDK too old for this loop, or a probable SDK defect).
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
 # Leave added steps out of .layout(...): merge places them (builder-sdk#1320).
 # Check against the original until no (edited) error is left:
@@ -94,6 +96,17 @@ the original `.flow` (not a compiled baseline) as `--baseline`, and each
 finding says whether your edit caused it. In emit-only mode `check` refuses:
 skip it there, `validate` is the gate.
 
+Needs `@uipath/maestro-builder-sdk` 6.62.0 or later (it compiles without
+linting and reads `--baseline`). An older SDK shows up in one of three ways:
+the baseline compile of the untouched decompile stops on a `check` code (an
+older `compile` still lints, so a pre-existing `HTTP_READ_WITHOUT_RETURNS`
+stops it); `uip` refuses `--baseline` as below its minimum version; or, with
+an older `uip`, the SDK answers `error: unknown option '--baseline'`. Each
+means the SDK is too old,
+<!--skill-flavor:check-baseline-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:check-baseline-sdk-upgrade:end-->
+
 ```
 $ uip maestro flow check <Name>.flow.ts --source --baseline <original>.flow
 ✗ [UNKNOWN_REF] Reference to undeclared variable/step "lookup" in "report". (edited)
@@ -124,13 +137,6 @@ $ uip maestro flow check <Name>.flow.ts --source --baseline <original>.flow
 - **`CHECK_INCOMPLETE`**: check stopped at a refusal that covers the whole flow
   (for instance two Ends whose names give one node id), so the rest was not
   judged. Fix that refusal first, even if the canvas had it, then check again.
-
-Needs `@uipath/maestro-builder-sdk` 6.62.0 or later (it compiles without
-linting and reads `--baseline`); with an older SDK, `uip` refuses `--baseline`
-as below its minimum version,
-<!--skill-flavor:check-baseline-sdk-upgrade:start-->
-so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:check-baseline-sdk-upgrade:end-->
 
 ### Why three directories: inline agents
 
