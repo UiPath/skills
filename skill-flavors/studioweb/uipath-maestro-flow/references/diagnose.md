@@ -1,9 +1,10 @@
 <!--skill-flavor:diagnose-step-0:start-->
 `Faulted` on the first line of the `uip maestro flow debug` reply means the
-reply in hand holds the reason. The reply is plain text, with no `Data` fields and no
-instance id ([CLI-LOOP.md — Reading the reply](CLI-LOOP.md#reading-the-reply)).
-Find the faulted element and its message in `Execution trace`. For more detail,
-run `uip traces spans get <Trace ID>`. Do not re-run the flow. When you expect a
+reply in hand holds the reason. The reply is plain text, with no `Data` fields
+and no instance id
+([CLI-LOOP.md — Reading the reply](CLI-LOOP.md#reading-the-reply)). Find the
+faulted element and its message in `Execution trace`. For more detail, run
+`uip traces spans get <Trace ID>`. Do not re-run the flow. When you expect a
 long reply, redirect it to a file as you start the run, then search the file:
 <!--skill-flavor:diagnose-step-0:end-->
 
