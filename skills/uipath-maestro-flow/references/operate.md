@@ -221,12 +221,14 @@ A wrong id exits 3 and lists the valid trigger node ids. `Data.entryPoint` names
 the trigger the run started from.
 <!--skill-flavor:operate-debug-entry-point:end-->
 
+<!--skill-flavor:operate-debug-conversational:start-->
 **A conversational flow cannot be debugged headlessly.** When the start root is
 a `conversationTrigger()` (the default root, or the one `--entry-point` names),
 debug uploads, returns
 `Code: FlowDebugStudioWebHandoff` with `Data.studioWebUrl`, and starts no run;
 `--timeout` does nothing. Chat from Studio Web (`--open-in-browser` opens it) or
 the Maestro VS Code extension.
+<!--skill-flavor:operate-debug-conversational:end-->
 
 **An inbound voice flow cannot be debugged at all.** Do not run debug on a
 `voiceTrigger()` flow; [voice.md](voice.md#evidence-boundary) has the test loop.
