@@ -283,7 +283,13 @@ uip or machines assign <key1> <key2> <key3> --folder-path "Finance" --output jso
 
 Verify: `uip or machines list --folder-path "Finance" --output json`.
 
-> **A folder takes only one serverless machine.** Assigning a second one fails with `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.` and the CLI adds which key was not assigned. Run `uip or machines list --folder-path "Finance" --output json` to see the serverless machine already there, then either use it, give it the slots you need with `machines update`, or free the folder with `uip or machines unassign <machine-key> --folder-path "Finance"` and assign the new one. The CLI does not look up which machine is already in the folder.
+> **A folder takes only one serverless machine.** Assigning a second one fails. The error says the folder already has a serverless machine and a folder takes only one, lists the machine keys that were not assigned, and points to `machines list` and `machines unassign`. A CLI from before that message returns only the service's `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.` The CLI does not look up which machine is already in the folder. To see it and, if you want the new one instead, free the folder:
+>
+> ```bash
+> uip or machines list --folder-path "Finance" --output json
+> uip or machines unassign <machine-key-guid> --folder-path "Finance" --output json
+> uip or machines assign <new-machine-key-guid> --folder-path "Finance" --output json
+> ```
 
 ### Step 7b: Inspect / Edit / Unassign / Delete Machines
 
@@ -311,7 +317,6 @@ Notes:
 - `machines update` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed. `machines update` echoes the new name when you rename.
 - Slot flags (`--unattended-slots`, `--headless-slots`, `--non-production-slots`, `--testing-slots`) must be whole numbers `>= 0` (validated client-side; `0` is allowed).
 - `machines delete` removes the machine **and** any folder assignments it has (the assignments are re-creatable config, so there is no `--force` gate). It does not require unassigning first.
-- Each folder accepts **one** Cloud Robots / Serverless machine. Trying to assign a second serverless to the same folder returns `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.`
 - `machines list` defaults to all machines visible to the user. With `--folder-path`/`--folder-key` it returns only machines assigned to that folder, each with `IsAssignedToFolder`. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.) — note `--all-fields` emits the raw camelCase DTO.
 
 ### Step 8: Configure Licenses
