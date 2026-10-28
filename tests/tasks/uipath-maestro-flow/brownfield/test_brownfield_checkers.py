@@ -415,7 +415,7 @@ def test_container_growing_for_an_added_child_passes(tmp_path: Path) -> None:
 
 def test_sibling_under_a_grown_container_may_move_down(tmp_path: Path) -> None:
     original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
-    final = container_flow({**GROWN_BODY, "dedupe": at(144, 304)}, {"width": 560, "height": 496})
+    final = container_flow({**GROWN_BODY, "dedupe": at(336, 304)}, {"width": 560, "height": 496})
     final["layout"]["nodes"]["below"]["position"]["y"] = 476
     assert layout_of(tmp_path, original, final) == 0
 
@@ -490,3 +490,71 @@ def test_malformed_edge_fails_instead_of_crashing(tmp_path: Path) -> None:
     final = retry_flow()
     final["edges"].append({"id": "broken", "sourceNodeId": "fetch"})
     assert layout_of(tmp_path, retry_flow(), final) == 1
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param(lambda f: f["layout"]["nodes"]["returnResolution"]["position"].update(x=5000), id="shift-beyond-room"),
+        pytest.param(lambda f: shift(f, ["resolutionWriter", "returnResolution"], dy=3000), id="drop-with-no-growth"),
+        pytest.param(lambda f: f["layout"]["nodes"]["capCreditAmount"].update(position={"x": -500, "y": 600}), id="added-left-of-predecessor"),
+    ],
+)
+def test_layout_check_caps_room_to_what_merge_needs(project: Path, change) -> None:
+    def moved(flow: dict) -> None:
+        make_room(flow)
+        change(flow)
+
+    mutate(project, moved)
+    assert layout(project) == 1
+
+
+def test_invented_edge_gives_no_room(project: Path) -> None:
+    def invented(flow: dict) -> None:
+        make_room(flow)
+        flow["edges"].append({"id": "x", "sourceNodeId": "capCreditAmount", "sourcePort": "success", "targetNodeId": "returnManagerRejection", "targetPort": "input"})
+        shift(flow, ["returnManagerRejection"], dx=192)
+
+    mutate(project, invented)
+    assert layout(project) == 1
+
+
+def row_flow(positions: dict[str, tuple[int, int]], edges: list[tuple[str, str]], sticky: tuple[str, ...] = ()) -> dict:
+    nodes = [{"id": i, **({"type": "stickyNote"} if i in sticky else {})} for i in positions]
+    layout_nodes = {i: at(x, y) for i, (x, y) in positions.items()}
+    return {"nodes": nodes, "edges": [{"sourceNodeId": u, "targetNodeId": v} for u, v in edges], "layout": {"nodes": layout_nodes}}
+
+
+def test_insert_on_an_existing_retry_edge_makes_room_past_it(tmp_path: Path) -> None:
+    cycle = [("a", "b"), ("b", "c"), ("c", "d")]
+    original = row_flow({"a": (0, 0), "b": (192, 0), "c": (384, 0), "d": (576, 0)}, [*cycle, ("c", "a")])
+    final = row_flow({"a": (0, 0), "b": (192, 0), "c": (384, 0), "n": (576, 0), "d": (768, 0)}, [*cycle, ("c", "n"), ("n", "a")])
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_sticky_notes_are_left_out_of_order_and_overlap(project: Path) -> None:
+    sticky = {"id": "note", "type": "stickyNote"}
+
+    def with_note(flow: dict) -> None:
+        flow["nodes"].append(dict(sticky))
+        flow["layout"]["nodes"]["note"] = {"position": {"x": 1740, "y": -20}, "size": {"width": 96, "height": 96}}
+
+    mutate(project, lambda f: (with_note(f), make_room(f)))
+    original = project.parent / "original" / FIXTURE.name
+    shutil.copytree(FIXTURE, original)
+    mutate(original, with_note)
+    assert preserved.main(["--aspect", "layout", "--original", str(original), "--project", str(project)]) == 0
+
+
+def test_sibling_within_merge_padding_of_a_grown_container_may_move(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    original["layout"]["nodes"]["below"]["position"]["y"] = 400
+    final = container_flow({**GROWN_BODY, "dedupe": at(336, 304)}, {"width": 560, "height": 496})
+    final["layout"]["nodes"]["below"]["position"]["y"] = 576
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_two_inserted_steps_make_room_for_both(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "b": (192, 0)}, [("a", "b")])
+    final = row_flow({"a": (0, 0), "n1": (192, 0), "n2": (384, 0), "b": (576, 0)}, [("a", "n1"), ("n1", "n2"), ("n2", "b")])
+    assert layout_of(tmp_path, original, final) == 0
