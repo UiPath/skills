@@ -195,14 +195,13 @@ Every attached document id must appear in the documents list (file-backed ones w
 
 **Check the process landed in the intended flow:** the `--all-fields` record's `process_submission_type` must match the flow type you chose in Step 2 (`business-process` = `8`; mapping in [`api-endpoints.md`](api-endpoints.md) → **Idea flow types**). A Business Process that came back as `1`/`2` (Employee-/CoE-driven idea) is a known failure mode — the agent picked the flow by name instead of by type, which Step 2 now prevents at the source; this check is the backstop. **Don't re-create it**; tell the user and fix it with [`change-idea-flow-cli-guide.md`](change-idea-flow-cli-guide.md). The payload was built from the wrong flow's schema, so after the move re-fetch the schema for the process (`uip ah automations schema get $PROCESS_ID --destination ./ah-schema-moved.json --output json`; its `user_inputs` holds the current answers) and check the required questions are answered: answer the missing ones from the source with `automations update`, or tell the user which are still empty. Only then report the corrected flow.
 
-**Report the state the process is in, not "published".** Creating a process submits it to its flow; it does not publish it. In Automation Hub, published means listed in the Automation Store, a separate step taken later in the flow. Read the state from the same `--all-fields` record: the phase is `ProcessPhase.PhaseName`, the status `ProcessPhaseStatus.PhaseStatusName`, and `ProcessIsPublished` is `1` only once the process is in the Store. Never call it published unless `ProcessIsPublished` is `1`. If an answer differs from what the user saw or approved (an application substituted after a failed create, a required question answered just to pass validation), list it in the report so they can correct it in AH.
+If an answer differs from what the user saw or approved (an application substituted after a failed create, a required question answered just to pass validation), list it in the report so they can correct it in AH.
 
 The report **MUST end with both View deep links** — the URL segment is `process_slug` from the `--all-fields` record.
 
 ```
-Created in Automation Hub:
+Published to Automation Hub:
   Process: <name>  (process_id: <id>)
-  State: <PhaseName> / <PhaseStatusName>, not published to the Automation Store
   Documents: PDD ✓ (doc 12, file 42), SDD ✓ (doc 13, file 43)
   Changed after a failed create: <only when something was: what, and why>
   View process:   {Data.Tenant.Url}/automation-profile/{process_slug}
