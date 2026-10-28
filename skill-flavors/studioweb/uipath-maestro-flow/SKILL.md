@@ -108,7 +108,7 @@ Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` a
 - **An open `.flow` with no content** gives `decompile` nothing to read. Treat it as a new file (next item), and compile straight to it.
 - **A new `.flow` in a new file** has no original. Write `.flow-sdk/<Name>.flow.ts` from [Hello world](#hello-world-flow), run step 2 without `--baseline`, and compile it straight to `<Name>.flow`. Then run `uip maestro flow format <Name>.flow --output json` once, and validate it.
 - **A baseline compile that refuses a draft node** (a generic operation with no object picked) stops the round trip: see [`references/brownfield.md`](references/brownfield.md#flows-with-draft-nodes-let-merge-compile).
-- **If the baseline compile refuses a canvas node** that step 2 marks `(pre-existing)`, stop and tell the user: a probable SDK defect (UiPath/builder-sdk#1402).
+- **If the baseline compile refuses a canvas node**, run step 2's check before editing. If it marks the node `(pre-existing)` as a probable SDK defect, stop and tell the user (UiPath/builder-sdk#1402).
 - **A flow with connectors** needs each connection in the solution after the merge ([the connector loop](#the-connector-loop-in-studio-web), step 7).
 
 Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>"` is a real run: ask per references/operate.md. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.
