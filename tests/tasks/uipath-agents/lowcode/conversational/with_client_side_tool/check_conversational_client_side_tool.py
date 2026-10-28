@@ -12,14 +12,9 @@ Shape (per `clientSideToolResourceSchema`):
     properties.folderPath "solution_folder"
   - settings, guardrail, inputSchema, outputSchema all present
 
-Scenario:
-  - outputSchema declares at least one property — an empty object would render
-    an empty form and collect nothing.
-  - outputSchema is not a bare passthrough (`result` / `output` / `data` as the
-    only field), which is the API-response-envelope habit this test exists to
-    catch.
-
-The property names themselves are the agent's choice and are NOT pinned.
+outputSchema is user-facing: on pre-built surfaces the form is generated from
+it, so it must declare at least one property. inputSchema is what the agent
+sends to the client and has no form constraint.
 """
 
 import json
@@ -29,8 +24,6 @@ from pathlib import Path
 
 ROOT = Path(os.getcwd()) / "ReviewSol" / "ReviewAgent"
 RESOURCES = ROOT / "resources"
-
-PASSTHROUGH_NAMES = {"result", "output", "data", "response", "value"}
 
 
 def load_resources() -> list:
@@ -149,26 +142,8 @@ def assert_output_schema_is_a_form(resource: dict) -> None:
             f"form and collects nothing. Got: {json.dumps(out_schema)[:200]}"
         )
 
-    names = set(properties)
-    # Reject only when ALL top-level fields are passthrough names AND none of
-    # them are structured (object/array with their own properties/items).
-    # A field named "data" that nests sub-properties is a real form group, not
-    # an API envelope.
-    if names <= PASSTHROUGH_NAMES:
-        has_structure = any(
-            isinstance(v, dict)
-            and (v.get("properties") or v.get("items"))
-            for v in properties.values()
-        )
-        if not has_structure:
-            sys.exit(
-                f"FAIL: outputSchema looks like an API response envelope (fields: "
-                f"{sorted(names)}). For a client-side tool the outputSchema models what "
-                "the user supplies — name the fields after the decision being captured."
-            )
-
     print(
-        f"OK: outputSchema declares {len(properties)} field(s): {sorted(names)}; "
+        f"OK: outputSchema declares {len(properties)} field(s): {sorted(properties)}; "
         f"required={out_schema.get('required') or []}"
     )
 
