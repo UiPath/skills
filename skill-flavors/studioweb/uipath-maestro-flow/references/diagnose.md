@@ -34,7 +34,7 @@ there is no partial scaffold to repair. If a Flow folder is missing from
 `ui.position` on each node — all of them on one row — and no top-level `layout`
 block. In Studio Web this shows only on a new `.flow` that `compile` wrote
 straight, with no merge: `merge` keeps the layout of the original and places
-each added node. Fix such a new file once with
+each added node, moving nodes only to fit it. Fix such a new file once with
 `uip maestro flow format <Name>.flow` — see
 [`operate.md`](operate.md#lay-out-the-emitted-flow-first). Never run it on a
 merged file: it lays out the canvas of the user again.
