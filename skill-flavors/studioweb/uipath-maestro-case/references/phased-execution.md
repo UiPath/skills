@@ -41,5 +41,9 @@ The host runs the project saved in the open solution: no login, upload, or proje
 <!--skill-flavor:phase-six-requirements:end-->
 
 <!--skill-flavor:phase-six-refresh-note:start-->
-- Run no `uip solution resources refresh` before debug; the host keeps solution resources in sync.
+- Run no `uip solution resources refresh` before debug, even where Rule 15 or an edit recipe says to: the host keeps solution resources in sync.
 <!--skill-flavor:phase-six-refresh-note:end-->
+
+<!--skill-flavor:phase-six-inline-siblings:start-->
+- **Inline-built siblings (agent, api-workflow, business-rule) may not be provisioned by `case debug`** — that task can fault with incident `170007` ("job's associated process could not be found"; agent and api-workflow) or `300400` ("the job carries no debug session properties"; business rule). Verifying that task's runtime needs a full solution deploy (`uip solution publish` → `uip solution deploy run`; Studio Web packages the solution, so no `case pack` or `solution pack`) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue.
+<!--skill-flavor:phase-six-inline-siblings:end-->

@@ -1,2 +1,2 @@
-<!--skill-flavor:flow-sdk-local-entity-keys:start-->
-<!--skill-flavor:flow-sdk-local-entity-keys:end-->
+<!--skill-flavor:flow-sdk-json-entity-node:start-->
+<!--skill-flavor:flow-sdk-json-entity-node:end-->

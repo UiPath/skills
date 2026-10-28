@@ -25,3 +25,7 @@ Hard-stop AskUserQuestion (Step 15): `Run debug session` / `Continue to publish`
 <!--skill-flavor:registry-gate-login:start-->
 Studio Web runs inside an authenticated host, so do not log in or check login state (there is no `uip login` here). Run
 <!--skill-flavor:registry-gate-login:end-->
+
+<!--skill-flavor:never-auto-debug-rule:start-->
+13. **Never auto-debug or publish to Orchestrator.** `uip maestro case debug` executes real emails, messages, and API calls. Phase 7 (`uip solution publish`) ships to the tenant. Each requires its own AskUserQuestion consent.
+<!--skill-flavor:never-auto-debug-rule:end-->

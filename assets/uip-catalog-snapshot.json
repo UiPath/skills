@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-23T04:06:50Z",
-  "cli_version": "1.206.0-dev.9408",
+  "generated_at": "2026-10-26T04:07:32Z",
+  "cli_version": "1.206.0-dev.9516",
   "verbs": [
     "admin",
     "admin audit",
@@ -836,7 +836,6 @@
     "maestro bpmn registry list",
     "maestro bpmn registry pull",
     "maestro bpmn registry search",
-    "maestro bpmn tidy",
     "maestro bpmn update-metadata",
     "maestro bpmn validate",
     "maestro case",
@@ -906,6 +905,8 @@
     "maestro case registry list",
     "maestro case registry pull",
     "maestro case registry search",
+    "maestro case rule-types",
+    "maestro case rule-types list",
     "maestro case sdd",
     "maestro case sdd convert",
     "maestro case sdd parse",

@@ -60,5 +60,5 @@ Output is plain text, not JSON: status, `Trace ID: <id>` when one was found, run
 <!--skill-flavor:case-debug-command:end-->
 
 <!--skill-flavor:refresh-before-debug:start-->
-Not run in Studio Web: the host keeps solution resources in sync, including before `uip maestro case debug`.
+Not run in Studio Web, including before `uip maestro case debug` and where Rule 15 or an edit recipe says to run it before debug or publish: the host keeps solution resources in sync.
 <!--skill-flavor:refresh-before-debug:end-->
