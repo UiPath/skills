@@ -292,16 +292,11 @@ yet. Write it with `location: 'in-solution'` and no `folderPath`:
   `folderPath` beside `location: 'in-solution'` (`HITL_APP_LOCAL_HAS_FOLDER`).
   A decompiled in-solution task (folder `''` or `'solution_folder'`) comes back
   as `location: 'in-solution'`.
-- Needs a `@uipath/maestro-builder-sdk` release later than 6.57.1, and a `uip`
-  CLI whose serializer is flow-converter 0.100.3 or later. No `uip` release
-  carries it yet: `uip` 1.204.0 (and VS Code 1.204.25) ship flow-converter
-  0.69.3, which drops the empty folder from the task, and the task fails at
-  run time with `170004 Invalid input for the HITL task`.
-- On flow-converter 0.69.3 a PUBLISHED app task behaves as before: its app
-  binding rows are keyed by the app's `key`, 0.69.3 looks them up by name and
-  misses, and it falls back to the first `name` / `folderPath` binding row in
-  the flow (which can be another resource's), as it did before the SDK
-  emitted app rows.
+- Needs the `@uipath/maestro-builder-sdk` release that ships `location` on
+  `app` (not released yet: 6.60.0 and older reject it). Check `uip --version`
+  before you deploy: on `uip` 1.204.0 or older an in-solution app task fails at
+  run time with `170004 Invalid input for the HITL task`. Tell the user it needs
+  the next `uip` release, and do not retry the run.
 
 ## Evidence boundary
 
