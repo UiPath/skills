@@ -7,8 +7,8 @@ canvas may have changed the `.flow` since.
 <!--skill-flavor:fresh-decompile-cleanup:start-->
 Decompile fresh, after removing that turn's pipeline artifacts
 ([The generated pipeline](#the-generated-pipeline)).
-<!--skill-flavor:fresh-decompile-cleanup:end-->
 
+<!--skill-flavor:fresh-decompile-cleanup:end-->
 Do not hand-transcribe the graph: decompile it to builder source, edit that
 source, and merge only the delta back into the original.
 

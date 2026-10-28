@@ -1,12 +1,15 @@
-"""Rules for editing an existing Flow on a later turn, on the shipped text.
+"""Safety wording for editing an existing Flow, pinned on the shipped text.
+
+Pins wording, not agent behavior.
 
 - `--force` appears only as `never pass --force`, inside a quoted CLI message,
   or on `registry pull` / `codedagent setup`.
-- SKILL.md never tells an agent to skip the decompile (except for a supplied
-  source) or `compile -o` over an existing flow.
+- SKILL.md skips the decompile only for a supplied source, and writes
+  `-o <Name>.flow` only in the new-flow Lifecycle block.
 - The editing loop removes the generated pipeline's artifacts before decompile.
-- Every shipped debug rule asks first, and none negates the ask.
-- Completion output item 5 holds the connection rule; SKILL.md points to it.
+- The supplied-source loop never decompiles and ends in `merge --original`.
+- The debug, overwrite and guessed-connection rules keep their exact clauses.
+- bindings.md holds the connection-pick rule; the others point to it.
 
 Regex, not PyYAML: CI installs only pytest.
 """
@@ -28,16 +31,62 @@ _STUDIOWEB = os.path.join(_REPO, "skill-flavors", "studioweb", "uipath-maestro-f
 
 PIPELINE_ARTIFACTS = (".flow-sdk/{n}.baseline", ".flow-sdk/{n}.edited", ".flow-sdk/{n}.merged.flow")
 FLAVORS = ("default", "studioweb")
-COMPLETION_OUTPUT = "author.md#completion-output"
 ALLOWED_FORCE = re.compile(r"never pass `--force`|registry pull --force|codedagent setup --force")
+BINDINGS_RULE = "bindings.md#where-both-values-come-from"
+
+INIT_RULE = (
+    '`init` answering "already exists and is not empty. Use --force to overwrite" means it exists: '
+    "never pass `--force`; edit it."
+)
+SKIP_DECOMPILE_EXEMPTION = (
+    "A supplied source skips the decompile ([brownfield.md](references/brownfield.md#a-supplied-source))."
+)
+
+PINNED = {
+    ("default", "SKILL.md"): [
+        INIT_RULE,
+        "When `<Solution>/<Name>/` existed before this turn, skip `init`",
+        f"What `prepare` binds or refuses: [bindings.md](references/{BINDINGS_RULE}).",
+        "# Stated runtime claim; ask per references/operate.md",
+        "`flow debug` is a REAL run, not a validation step: ask first, as it says.",
+    ],
+    ("studioweb", "SKILL.md"): [
+        "`uip maestro flow debug \"<Project>\"` is a real run: ask first unless the user asked for it.",
+        "`flow debug` is a REAL run, not a validation step: ask first, as it says.",
+    ],
+    ("default", "references/operate.md"): [
+        "ask once before the first run, even when the request is for a flow that works; "
+        "that yes covers the fix-and-re-run loop on the flow the user asked to get working in this task.",
+        "run it when the request is for a flow that works, unless a connection was guessed",
+        "for a solution this run did not scaffold, debug only on a yes to a question that names that "
+        "overwrite, and headless, never debug it.",
+    ],
+    ("studioweb", "references/operate.md"): [
+        "ask before each run, even when the request is for a flow that works.",
+        "run it when the request is for a flow that works, unless a connection was guessed",
+    ],
+    ("default", "references/bindings.md"): [
+        "When it refuses with several candidates, ask a user who can answer.",
+        "Headless, pass `--connection-folder` for the folder the request names.",
+        "With no folder named, or when that refuses (no match or several), pass the first candidate line's "
+        "`--connection-id`: that connection is guessed. Do not debug on it, report the flow unverified, and "
+        "list the pick under Open questions as **[REQUIRED]**",
+    ],
+    ("default", "references/author.md"): [
+        "`uip is connections list <connector-key> --all-folders --output json`",
+        f"A guessed connection ([bindings.md]({BINDINGS_RULE})) also goes under Open questions as **[REQUIRED]**.",
+    ],
+    ("default", "references/connector-params.md"): [
+        f"choose as [bindings.md]({BINDINGS_RULE}) says",
+    ],
+}
 
 _FENCE = re.compile(r"^```[^\n]*\n(.*?)^```", re.S | re.M)
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 _QUOTED = re.compile(r'"[^"\n]*"')
 _TRAILING_COMMENT = re.compile(r"\s+#.*$")
 _SUBSHELL = re.compile(r'^\(\s*cd\s+"[^"]*"\s*&&\s*(.*?)\s*\)$')
-_ASK = re.compile(r"\bask\b")
-_NEGATED_ASK = re.compile(r"\b(?:do not|don't|never|no need to)\s+ask\b", re.I)
+_NAME_FLOW_TARGET = re.compile(r"\bcompile\b.*\s-o\s+\"?<Name>\.flow\b")
 
 
 def _read(path: str) -> str:
@@ -52,6 +101,10 @@ def _composed(flavor: str, rel: str) -> str:
         return shipped(text)
 
     return compose(text, _read(override))
+
+
+def _flat(text: str) -> str:
+    return " ".join(text.split())
 
 
 def _files() -> list[str]:
@@ -88,8 +141,13 @@ def _commands(text: str) -> list[str]:
     return commands
 
 
-def _positive_ask(text: str) -> bool:
-    return bool(_ASK.search(_NEGATED_ASK.sub("", text))) and not _NEGATED_ASK.search(text)
+def test_pinned_safety_wording():
+    missing = []
+    for (flavor, rel), phrases in PINNED.items():
+        text = _flat(_composed(flavor, rel))
+        missing += [f"{flavor} {rel}: {phrase}" for phrase in phrases if _flat(phrase) not in text]
+
+    assert not missing, "pinned safety wording changed:\n" + "\n".join(missing)
 
 
 def test_force_only_where_safe():
@@ -105,12 +163,18 @@ def test_force_only_where_safe():
 
 
 def test_existing_flow_is_never_recompiled_over():
+    skill = _composed("default", "SKILL.md")
     offenders = []
-    for sentence in _sentences(_composed("default", "SKILL.md")):
-        if re.search(r"\bskip\w*\b[^.]*\bdecompile", sentence) and "supplied" not in sentence:
+    for sentence in _sentences(skill):
+        if re.search(r"\bskip\w*\b[^.]*\bdecompile", sentence) and sentence != SKIP_DECOMPILE_EXEMPTION:
             offenders.append(sentence)
         if re.search(r"\bexist", sentence) and "compile -o" in sentence:
             offenders.append(sentence)
+
+    targets = [c for c in _commands(skill) if _NAME_FLOW_TARGET.search(c)]
+    lifecycle = _commands(_section(skill, "Lifecycle"))
+    if len(targets) != 1 or targets != lifecycle[:1]:
+        offenders += targets
 
     assert not offenders, "an existing .flow goes through Editing, not compile -o:\n" + "\n".join(offenders)
 
@@ -134,35 +198,10 @@ def test_generated_pipeline_names_the_artifacts():
     )
 
 
-def test_every_debug_rule_asks_first():
-    missing = []
-    for flavor in FLAVORS:
-        skill = _composed(flavor, "SKILL.md")
-        for heading in ("Lifecycle", "Operating a deployed flow"):
-            debug = [u for u in _sentences(_section(skill, heading)) if "debug" in u]
-            debug += [line for line in _section(skill, heading).splitlines() if line.lstrip().startswith("#")]
-            if not any(_positive_ask(u) for u in debug) or any(_NEGATED_ASK.search(u) for u in debug):
-                missing.append(f"{flavor} SKILL.md ## {heading}")
-
-        operate = _composed(flavor, "references/operate.md")
-        rule = next((p for p in _paragraphs(operate) if "`flow debug` executes the flow for real" in p), "")
-        if not re.search(r"\bask (?:once )?before\b", rule) or _NEGATED_ASK.search(rule):
-            missing.append(f"{flavor} references/operate.md debug rule")
-
-    assert not missing, "debug without an ask-first rule:\n" + "\n".join(missing)
-
-
-def test_connection_report_has_one_home():
-    problems = []
-    for flavor in FLAVORS:
-        author = _composed(flavor, "references/author.md")
-        item = re.search(r"^5\. \*\*Connections\*\*.*?(?=^\d+\. \*\*)", author, re.S | re.M)
-        body = " ".join(item.group(0).split()) if item else ""
-        for needed in ("connection: <Name> (<id>)", "folder", "do not debug on that guess", "[REQUIRED]"):
-            if needed not in body:
-                problems.append(f"{flavor} author.md completion item 5 lacks {needed!r}")
-
-        if COMPLETION_OUTPUT not in _composed(flavor, "SKILL.md"):
-            problems.append(f"{flavor} SKILL.md does not point to {COMPLETION_OUTPUT}")
-
-    assert not problems, "\n".join(problems)
+def test_supplied_source_never_decompiles():
+    commands = _commands(_section(_composed("default", "references/brownfield.md"), "A supplied source"))
+    assert commands, "brownfield.md ## A supplied source has no commands"
+    assert not any("decompile" in c for c in commands), "the supplied-source loop must not decompile"
+    assert commands[-1].startswith("uip maestro flow merge ") and "--original" in commands[-1], (
+        "the supplied-source loop must end in `merge --original`"
+    )

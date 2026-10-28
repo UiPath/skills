@@ -211,14 +211,9 @@ When authoring is done, report:
 4. **Placeholders** — each `mock()` and the capability it stands for.
 5. **Connections** — per connector, the `connection: <Name> (<id>)` line
    `prepare` printed and its folder (from the candidate line, or
-   `uip is connections list <connector-key> --output json`), or what is
-   missing or still to prepare. `prepare` binds one from your own folder,
-   `--connection-folder` or the solution's record, and says which. When it
-   refuses with several candidates, ask a user who can answer. Headless, pass
-   `--connection-folder` for the folder the request names. With no folder
-   named, or when that refuses (no match or several), pass the first
-   candidate line's `--connection-id`, do not debug on that guess, report the
-   flow unverified, and list the pick under Open questions as **[REQUIRED]**.
+   `uip is connections list <connector-key> --all-folders --output json`), or
+   what is missing or still to prepare. A guessed connection
+   ([bindings.md](bindings.md#where-both-values-come-from)) also goes under Open questions as **[REQUIRED]**.
 6. **Open questions** — every decision the request left open, each marked
    **[REQUIRED]** or **[OPTIONAL]**.
 <!--skill-flavor:completion-next:start-->

@@ -62,7 +62,7 @@ Write the connector step from the task's own words — the fields you intend, `l
 Check names every prepare you owe, with the exact command:
 `OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> --action <action>` — `--object`, `--resolve` and `-f` compose in a single invocation, it finds the connection itself, writes `.flow-sdk/bindings.json`, and repoints your import at the generated `./connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
 Where two flows import the same connector it names them instead of guessing, and asks for `--source`.
-What `prepare` binds or refuses: [completion output](references/author.md#completion-output) item 5.
+What `prepare` binds or refuses: [bindings.md](references/bindings.md#where-both-values-come-from).
 `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED` and `CONNECTOR_OBJECT_NOT_GENERIC` are source fixes, not prepares: [connector-params.md](references/connector-params.md#author-first--check-names-every-prepare-you-owe).
 
 Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`) need the prepare `check` names with every required `-f`, and a post-compile cache check: [`references/connector-params.md`](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop).
@@ -97,7 +97,7 @@ The `uip maestro flow` commands delegate their semantics to the installed `@uipa
 uip maestro flow validate "<Solution>/<Name>/<Name>.flow" --output json
 # Greenfield only (never a merged or .layout() file), before upload/debug/a designer:
 uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
-# Stated runtime claim only; ask unless asked/headless
+# Stated runtime claim; ask per references/operate.md
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
 ( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
@@ -243,7 +243,7 @@ A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`
 Upload, deploy, debug, trigger, inspect a job, and drive an instance's
 lifecycle. All of it needs `uip login`, and `uip solution resources refresh`
 comes before every upload, publish or debug. `flow debug` is a REAL run, not a
-validation step: ask first unless the user asked for it. Read
+validation step: ask first, as it says. Read
 **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:sdk-operate:end-->
 
