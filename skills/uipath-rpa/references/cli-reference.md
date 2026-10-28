@@ -423,7 +423,6 @@ Diagnose the category, apply recovery, and retry once; do not loop the same fail
 | `project not found`, `no project open` | Wrong path or unopened project | Verify `--project-dir` contains `project.json`; if it persists, `uip rpa project open --project-dir "<PROJECT_DIR>"`. For Desktop-only verbs inspect hidden `uip rpa instances list --output json` and run `uip rpa studio start` if needed. |
 | `not in the project folder` in `validate` | Absolute path/separator mismatch | Use a project-relative `--file-path` (see [validate](#validate)). |
 | `Studio is busy`, `operation in progress` | Prior request still processing | Wait a few seconds, then retry. |
-| `Studio instance (PID <n>) did not become Available within 60s` | A headless Studio (Helm) host stopped mid-command left its status file; Windows reused its PID, so every call for the project waits on the dead instance — `uip rpa instances list --output json` shows that PID with `ExecutionStatus` `ToolExecution`. `uip rpa project close` fails the same way | Confirm PID `<n>` is no Studio or Helm process, delete `%TEMP%\UiPath\Studio\Studio_<n>.status` (Windows), then rerun. Stop a stuck host only between commands, and never one another project uses (`instances list`). |
 | Unrecognized error | Unknown | Rerun with `--verbose`, then inform the user. |
 
 ## RPA discovery tools (non-CLI)
