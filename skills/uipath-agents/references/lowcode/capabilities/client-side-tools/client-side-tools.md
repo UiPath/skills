@@ -110,14 +110,15 @@ Field types: `string`, `number`, `integer`, `boolean`, `array`, `object`.
 ## Walkthrough
 
 ```bash
-# 1. Scaffold solution + agent per [project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
+# 1. Scaffold solution + conversational agent (--conversational is required;
+#    autonomous agents have no client surface). See project-lifecycle.md § Agent Commands.
+uip solution init "<SolutionName>" --output json
+uip agent init "<SolutionName>/<AgentName>" --conversational --output json
 
-# 2. Write resources/<ToolName>/resource.json using the shape above,
-#    and mirror the same object into .agent-builder/agent.json → resources[].
+# 2. Write resources/<ToolName>/resource.json using the shape above.
 
-# 3. Add a line to the Tools slot of the system prompt so the agent calls it.
-#    The docs note the tool description guides that decision — write it as a
-#    trigger condition. See ../../prompting/agent-prompting-guide.md.
+# 3. Reference the tool in the system prompt as @{tools.<ToolName>} with a
+#    matching expression contentToken. See ../../prompting/agent-prompting-guide.md.
 
 # 4. Refresh — regenerates entry-points.json and bindings_v2.json.
 uip agent refresh --output json

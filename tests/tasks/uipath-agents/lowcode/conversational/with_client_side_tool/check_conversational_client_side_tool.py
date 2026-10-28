@@ -150,12 +150,22 @@ def assert_output_schema_is_a_form(resource: dict) -> None:
         )
 
     names = set(properties)
+    # Reject only when ALL top-level fields are passthrough names AND none of
+    # them are structured (object/array with their own properties/items).
+    # A field named "data" that nests sub-properties is a real form group, not
+    # an API envelope.
     if names <= PASSTHROUGH_NAMES:
-        sys.exit(
-            f"FAIL: outputSchema looks like an API response envelope (fields: "
-            f"{sorted(names)}). For a client-side tool the outputSchema models what "
-            "the user supplies — name the fields after the decision being captured."
+        has_structure = any(
+            isinstance(v, dict)
+            and (v.get("properties") or v.get("items"))
+            for v in properties.values()
         )
+        if not has_structure:
+            sys.exit(
+                f"FAIL: outputSchema looks like an API response envelope (fields: "
+                f"{sorted(names)}). For a client-side tool the outputSchema models what "
+                "the user supplies — name the fields after the decision being captured."
+            )
 
     print(
         f"OK: outputSchema declares {len(properties)} field(s): {sorted(names)}; "
