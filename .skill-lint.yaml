@@ -1,0 +1,64 @@
+# skill-lint config for this repo, read by .github/workflows/skill-lint.yml from the base branch (a PR's own
+# edits take effect once merged). Rule reference: UiPath/skill-linter docs/RULES.md.
+#
+# Covers the current skills under skills/. preview/skills, classic/skills and skill-flavors are left out: they
+# reuse the names of skills/ and resolve links and redirects only once a flavor is composed, which
+# scripts/check-skill-links.mjs does. Linting them on their own reports duplicates and false broken links.
+skills:
+  - "skills/*/SKILL.md"
+targets: [agentskills, claude-code, codex, gemini, delegate]  # delegate: coder_eval --type delegate (UiPath Autopilot)
+packs: [core, claude-code, uipath, coder-eval]
+
+rules:
+  # Owned by scripts/check-skill-links.mjs, already a required PR check; reporting them twice adds noise.
+  LINK-BROKEN: off
+  LINK-ANCHOR: off
+  # Every skill grants Bash on purpose (the uip CLI); keep it visible without a warning on each skill.
+  SEC-BROAD-BASH: info
+  SEC-PIPE-TO-SHELL:
+    allowed_hosts: [download.uipath.com]
+  LISTING-BUDGET:
+    # Listing budgets scale with the context window: Claude Code on a 1M-token model, and Codex on the model the
+    # Codex evals run (CODEX_MODEL gpt-5.6-luna: 272,000 tokens in Codex's model catalog).
+    context_window_tokens: 1000000
+    codex_context_window_tokens: 272000
+  UIP-REQUIRED-SECTIONS:
+    sections: ["Critical Rules"]
+  # References within two hops of SKILL.md (the maestro-flow .maintenance convention); deeper is reported as info.
+  STRUCT-REF-DEPTH:
+    max_depth: 2
+  STRUCT-SECTION-TEMPLATE:
+    templates:
+      # Capability entry points: the six-section template used across maestro, admin, governance and platform.
+      - files: "references/**/CAPABILITY.md"
+        ordered: true
+        sections: ["When to use this capability", "Critical rules", "Workflow", "Common tasks", "Anti-patterns",
+                   "References"]
+      # Proposed UiPath Skill Format v1 for SKILL.md: reported only (shadow) until skill owners agree on it.
+      # A missing Critical Rules section is reported by UIP-REQUIRED-SECTIONS, so it is not required here.
+      - files: SKILL.md
+        ordered: true
+        canonical: true
+        shadow: true
+        sections:
+          - {name: "When to Use This Skill", aliases: ["When to Use", "Use For"]}
+          - {name: "Critical Rules", aliases: ["Hard Rules", "Invariants", "Rules"], required: false}
+          - {name: "Workflow", aliases: ["Quick Start", "Workflow Phases", "Workflow Overview"], canonical: false}
+          - {name: "Reference Navigation", aliases: ["Task Navigation", "References", "Resources"]}
+          - {name: "Anti-patterns", aliases: ["What Not to Do", "Common Pitfalls"]}
+  STRUCT-REQUIRED-FILES:
+    groups:
+      # Plugin folders pair a plan with an implementation guide; a few omit the plan on purpose, so shadow for now.
+      - {dirs: "references/*plugins/*", files: [planning.md, "impl*.md"], shadow: true}
+  CONTENT-JSON-VERSION-PIN:
+    documents:
+      # A .flow file's own version comes from `uip maestro flow init`; examples must not hardcode it.
+      - key: version
+        when_keys: [nodes, edges]
+        unless_keys: [nodeType, resources, evaluatorRefs, evaluations]
+        skills: [uipath-maestro-flow]
+  UIP-EVAL-COVERAGE:
+    tasks_dir: tests/tasks
+    required_tiers: [smoke, e2e]
+
+baseline: .skill-lint-baseline.json
