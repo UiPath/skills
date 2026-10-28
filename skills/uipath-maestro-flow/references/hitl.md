@@ -62,8 +62,9 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   channels are `'Slack' | 'teams' | 'Email' | 'ActionCenter'` (Teams really is
   the lowercase `'teams'`); assignee types are `user`, `group`, `staticEmail`,
   `staticGroupName`, `workload`, `roundRobin`, `custom`. Omit the whole object
-  for the definition's default channels (Email + Action Center on the inline
-  forms, Action Center alone on `'action-app'` and `'document-validation'`).
+  for the definition's default channels (Email + Action Center on the default
+  and `'quick-form'` variants, Action Center alone on `'action-app'` and
+  `'document-validation'`).
   An omitted recipient, or any assignee with no `value`, assigns no one: the
   task is created unassigned in its folder until someone picks it up. Give a
   `value` to assign it. `user` and `staticEmail` name one person, so they need
