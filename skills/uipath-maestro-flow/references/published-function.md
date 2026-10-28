@@ -83,7 +83,7 @@ is not published yet, so it has no folder. Write it with
   `location: 'in-solution'` (`FUNCTION_LOCAL_HAS_FOLDER`): the in-solution
   binding's folder is `''`, filled in at deploy.
 
-Needs a `@uipath/maestro-builder-sdk` release later than 6.57.1; an older SDK
+Needs `@uipath/maestro-builder-sdk` 6.59.0 or later; an older SDK
 has no `location` on `publishedFunction()` and refuses the step as having no
 `folderPath` (`FUNCTION_NO_FOLDER`).
 
