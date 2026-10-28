@@ -7,7 +7,7 @@
 <!--skill-flavor:capability-probe:end-->
 
 <!--skill-flavor:register-step:start-->
-In Studio Web there is nothing to register: each sibling was created inside the open solution (`uip <family> init <Name>`, or the `CreateProjects` host tool for a business rule), and the host registered it at creation. `uip solution projects add` and `uip solution resources refresh` are Node-CLI-only here — the host keeps solution-level resources in sync, so continue straight to §4.
+In Studio Web there is nothing to register: each sibling was created inside the open solution (`uip <family> init <Name>`, or the `CreateProjects` host tool for a business rule), and the host registered it at creation. `uip solution projects add` is Node-CLI-only here. Run `uip solution resources refresh --output json` from `/solution` (Rule 15) so the solution-level resource files and `debug_overwrites.json` are generated, then continue to §4.
 <!--skill-flavor:register-step:end-->
 
 <!--skill-flavor:adopt-register:start-->

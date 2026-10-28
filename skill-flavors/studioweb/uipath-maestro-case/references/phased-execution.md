@@ -12,12 +12,13 @@ Auth is injected by the host — no `uip login`.
 ### Publish commands
 
 ```bash
+uip solution resources refresh --output json             # from /solution
 uip solution publish --output json                       # from /solution; lists destinations when several exist
 uip solution publish --location "<key or name>" --output json
 uip solution publish --personal-workspace --output json
 ```
 
-Studio Web intercepts `solution publish` and packages the open solution itself: `resources refresh`, `maestro case pack`, and `solution pack` are Node-CLI-only and are not run in Studio Web. Run with no destination flag first — with one destination it publishes there; with several it publishes nothing and prints the list, so ask the user which to use and rerun with `--location` (or `--personal-workspace`). Publish is asynchronous: report the destination, version, and request id, and verify the terminal state in Studio Web's Publish history.
+Run `resources refresh` first (Rule 15): it syncs artefact files and debug overwrites from `bindings_v2.json` before Studio Web packages them. Studio Web intercepts `solution publish` and packages the open solution itself, so do not run `maestro case pack` or `solution pack` (`solution pack` is not in the Studio Web CLI). Run `publish` with no destination flag first — with one destination it publishes there; with several it publishes nothing and prints the list, so ask the user which to use and rerun with `--location` (or `--personal-workspace`). Publish is asynchronous: report the destination, version, and request id, and verify the terminal state in Studio Web's Publish history.
 <!--skill-flavor:phase-seven-commands:end-->
 
 <!--skill-flavor:phase-seven-on-failure:start-->

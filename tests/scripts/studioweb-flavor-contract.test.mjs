@@ -295,7 +295,7 @@ test("the studioweb Flow skill is the builder-SDK skill", (t) => {
 
 // Studio Web runs the Flow builder SDK inside the page: no npm, no Node, no
 // local connector-library cache, no pipeline helper, no `flow-sdk` bin, no
-// local `.uipx` to refresh, no `uip maestro flow debug`, no login step, and a
+// `--solution-folder` (refresh runs from `/solution`), no `uip maestro flow debug`, no login step, and a
 // `flow debug` that ignores `--output` and `--output-filter`.
 // Guidance that tells the agent to run any of these fails there, so the
 // Studio Web Flow skill must never contain them. Each pattern matches the

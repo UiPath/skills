@@ -49,7 +49,7 @@ Studio Web runs the post-rename CLI — use the commands and flags as documented
 <!--skill-flavor:probe-rule:end-->
 
 <!--skill-flavor:develop-solution-row:start-->
-| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created with `uip <family> init` — flow, case, agent, api-workflow, bpmn, rpa only; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
+| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit / refresh` on the open solution (projects are created with `uip <family> init` — flow, case, agent, api-workflow, bpmn, rpa only; `projects add/import/remove` and `resources remove` are Node-CLI-only); field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
 
 <!--skill-flavor:when-to-use-existing:start-->

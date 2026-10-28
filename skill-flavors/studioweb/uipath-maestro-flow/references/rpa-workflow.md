@@ -1,4 +1,4 @@
 <!--skill-flavor:rpa-sibling-register:start-->
-  The sibling must already be a project in the open solution. Do not run
-  `uip solution resources refresh`: it fails in Studio Web. Then
+  The sibling must already be a project in the open solution. Run
+  `uip solution resources refresh` from `/solution`. Then
 <!--skill-flavor:rpa-sibling-register:end-->
