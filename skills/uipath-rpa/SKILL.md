@@ -223,3 +223,5 @@ When finished, report:
 6. **Trouble?** — if issues occurred, say: “If something didn't work as expected, use `/uipath-feedback` to send a report.”
 
 Do not say “complete”, “done”, “finished”, or “the automation is built” unless all plan tasks are checked; otherwise say “Partial”, “stopped at <task N>”, or “blocked by <stop condition>”.
+
+See [connections](../uipath-platform/references/integration-service/connections.md).

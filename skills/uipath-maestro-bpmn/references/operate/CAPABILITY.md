@@ -91,3 +91,9 @@ These actions may contact UiPath services or external systems.
 - [cli-conventions.md](../cli-conventions.md) - side effects, login, JSON output
 - [structural-bpmn.md](../structural-bpmn.md) - pre-operate validation
 - [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) - failure investigation
+
+<<<<<<< HEAD
+Run the old command.
+=======
+Run the new command.
+>>>>>>> feature
