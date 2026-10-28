@@ -1,0 +1,254 @@
+task_id: skill-explorer-engine-analyze-and-fix-in-ship-order-e2e
+description: >
+  E2E over the whole loop, against a recorded CLI: the Explorer Engine
+  commands are preview-only and no shared test tenant has the feature, so
+  the CLI is mocked and the edits land on local fixtures. The agent runs a
+  fresh analysis and waits for it, reads the one problem it found, and
+  applies its two suggestions in ship order: first the BPMN gateway
+  condition that sends invoices to review (10000 to 5000, owned by
+  uipath-maestro-bpmn), then the InvoiceTriage prompt sentence that names
+  the same threshold (owned by uipath-agents). It validates each artifact
+  and accepts both suggestions. A third suggestion is of kind `other`
+  (a vendor-master data fix owned by the finance team): it has no edit, so
+  the agent must report it and leave it undecided.
+tags: [uipath-explorer-engine, e2e, mode:build]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; recorded e2e mock.\n"
+      exit_code: 0
+      stdout: "{\"Result\":\"Success\",\"Code\":\"Mock\",\"Data\":{}}\n"
+      responses:
+        - when:
+            verb: "explorer-engine"
+            flags:
+              help: {present: true, aliases: ["h"]}
+          stdout: |
+            Usage: uip explorer-engine [options] [command]
+            Commands:
+              analyze       Start an analysis of your traces
+              runs          Read, list and cancel analysis runs
+              problems      List the problems an analysis found
+              suggestions   Review the suggestions: read, edit, accept or dismiss them
+
+        - when:
+            verb: "login status"
+          stdout: >-
+            {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
+            "IdentityType":"User","Organization":"example-org","Tenant":"DefaultTenant"}}
+
+        - when:
+            verb: "explorer-engine runs list"
+          stdout: >-
+            {"Result":"Success","Code":"RunsList",
+            "Pagination":{"Returned":0,"Limit":5,"Offset":0,"Total":0,"HasMore":false},"Data":[]}
+
+        - when:
+            verb: "explorer-engine analyze"
+          stdout: >-
+            {"Result":"Success","Code":"Analyze","Data":{
+            "AnalysisRunId":"9a4d7e21c0b84f3a8e6d5c4b3a291807","Status":"Completed",
+            "SignalsChecked":958,"NewSignals":64,"SuggestionCount":3,
+            "StartedAt":"2026-10-28T09:00:00Z","CompletedAt":"2026-10-28T09:07:00Z"}}
+
+        - when:
+            verb: "explorer-engine runs get"
+          stdout: >-
+            {"Result":"Success","Code":"RunsGet","Data":{
+            "AnalysisRunId":"9a4d7e21c0b84f3a8e6d5c4b3a291807","Status":"Completed",
+            "SignalsChecked":958,"NewSignals":64,"SuggestionCount":3}}
+
+        - when:
+            verb: "explorer-engine problems list"
+          stdout: >-
+            {"Result":"Success","Code":"ProblemsList",
+            "Pagination":{"Returned":1,"Limit":1,"Offset":0,"Total":1,"HasMore":false},
+            "Data":[{"ProblemId":"mid-value-invoices-skip-review-61b0c3e9",
+            "Title":"Send invoices above 5,000 to review",
+            "Problem":"Invoices between 5,000 and 10,000 skip review; reviewers later reversed 18 of them.",
+            "Kinds":["bpmn-source-code","agent-prompt","other"],"Severity":"high","Support":18,
+            "Suggestions":[
+            {"InsightId":"invoiceapproval-review-threshold-2f7c9d14","Kind":"bpmn-source-code",
+            "Headline":"Lower the review threshold to 5,000","Status":"New"},
+            {"InsightId":"invoicetriage-flag-threshold-a83e5b60","Kind":"agent-prompt",
+            "Headline":"Flag invoices above 5,000","Status":"New"},
+            {"InsightId":"vendor-master-currency-0d9e4c27","Kind":"other",
+            "Headline":"Fix vendor currency codes in the vendor master","Status":"New"}]}]}
+
+        - when:
+            verb: "explorer-engine problems get"
+          stdout: >-
+            {"Result":"Success","Code":"ProblemsGet","Data":{
+            "ProblemId":"mid-value-invoices-skip-review-61b0c3e9",
+            "Title":"Send invoices above 5,000 to review","Severity":"high","Support":18,
+            "Suggestions":[
+            {"InsightId":"invoiceapproval-review-threshold-2f7c9d14","Kind":"bpmn-source-code","Status":"New"},
+            {"InsightId":"invoicetriage-flag-threshold-a83e5b60","Kind":"agent-prompt","Status":"New"},
+            {"InsightId":"vendor-master-currency-0d9e4c27","Kind":"other","Status":"New"}]}}
+
+        - when:
+            verb: "explorer-engine suggestions get"
+            positional: ["invoiceapproval-review-threshold-2f7c9d14"]
+          stdout: >-
+            {"Result":"Success","Code":"SuggestionsGet","Data":{
+            "InsightId":"invoiceapproval-review-threshold-2f7c9d14","TextSpanId":5120,"Status":"New",
+            "Headline":"Lower the review threshold to 5,000","ShipOrder":1,
+            "Changes":[{"Kind":"bpmn-source-code","Surface":"flow","Target":"InvoiceApproval Flow_HighValue",
+            "Owner":"flow owner",
+            "Edit":{"Kind":"bpmn-source-code","Process":"InvoiceApproval","ElementId":"Flow_HighValue",
+            "ElementType":"sequenceFlow","Operation":"update",
+            "Before":"=vars.amount &gt; 10000","After":"=vars.amount &gt; 5000"}}]}}
+
+        - when:
+            verb: "explorer-engine suggestions get"
+            positional: ["invoicetriage-flag-threshold-a83e5b60"]
+          stdout: >-
+            {"Result":"Success","Code":"SuggestionsGet","Data":{
+            "InsightId":"invoicetriage-flag-threshold-a83e5b60","TextSpanId":5121,"Status":"New",
+            "Headline":"Flag invoices above 5,000","ShipOrder":2,
+            "ShipAfter":["invoiceapproval-review-threshold-2f7c9d14"],
+            "Changes":[{"Kind":"agent-prompt","Surface":"prompt","Target":"InvoiceTriage system prompt",
+            "Owner":"agent owner",
+            "Edit":{"Kind":"agent-prompt","Agent":"InvoiceTriage","Section":"system",
+            "Before":"Flag invoices above 10,000 for review.",
+            "After":"Flag invoices above 5,000 for review."}}]}}
+
+        - when:
+            verb: "explorer-engine suggestions get"
+            positional: ["vendor-master-currency-0d9e4c27"]
+          stdout: >-
+            {"Result":"Success","Code":"SuggestionsGet","Data":{
+            "InsightId":"vendor-master-currency-0d9e4c27","TextSpanId":5122,"Status":"New",
+            "Headline":"Fix vendor currency codes in the vendor master","ShipOrder":3,
+            "Changes":[{"Kind":"other","Surface":"process","Target":"Vendor master data",
+            "Owner":"finance operations",
+            "Before":"Four vendors carry EUR as currency while invoicing in USD.",
+            "After":"Correct the currency code on those four vendor records."}]}}
+
+        - when:
+            verb: "explorer-engine suggestions accept"
+          stdout: >-
+            {"Result":"Success","Code":"SuggestionsAccept","Data":{"Status":"Accepted"}}
+
+        - when:
+            verb: "agent validate"
+          stdout: >-
+            {"Result":"Success","Code":"AgentValidate","Data":{"Valid":true,"Errors":[]}}
+
+        - when:
+            verb: "maestro bpmn validate"
+          stdout: >-
+            {"Result":"Success","Code":"BpmnValidate","Data":{"Valid":true,"Errors":[]}}
+
+initial_prompt: |
+  Run a fresh Explorer Engine analysis of folder Shared, then fix what it
+  finds in my project: the InvoiceTriage agent is in ./InvoiceTriage and the
+  InvoiceApproval process is in ./InvoiceApproval. I approve every fix the
+  analysis proposes for these two artifacts. Record the results in Explorer
+  Engine.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Do NOT deploy or publish anything.
+  The `uip` CLI is available but is NOT connected to a live tenant in this
+  environment. Do NOT retry a command and do NOT attempt to log in.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-explorer-engine skill"
+    skill_name: "uipath-explorer-engine"
+    expected_skill: "uipath-explorer-engine"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Ran a fresh analysis"
+    tool: "uip"
+    verb: "explorer-engine analyze"
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The gateway condition sends invoices above 5000 to review, and the process is otherwise intact"
+    command: >-
+      python3 -c "import xml.etree.ElementTree as E;
+      ns={'b':'http://www.omg.org/spec/BPMN/20100524/MODEL'};
+      r=E.parse('InvoiceApproval/InvoiceApproval.bpmn').getroot();
+      f=[x for x in r.iter('{%s}sequenceFlow' % ns['b']) if x.get('id')=='Flow_HighValue'][0];
+      c=f.find('b:conditionExpression',ns).text.strip();
+      assert c=='=vars.amount > 5000', c;
+      assert len(list(r.iter('{%s}sequenceFlow' % ns['b'])))==5"
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The prompt flags invoices above 5,000 and no longer 10,000"
+    path: "InvoiceTriage/agent.json"
+    includes:
+      - "Flag invoices above 5,000 for review."
+    excludes:
+      - "Flag invoices above 10,000 for review."
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Accepted the BPMN suggestion"
+    tool: "uip"
+    verb: "explorer-engine suggestions accept"
+    positional: ["invoiceapproval-review-threshold-2f7c9d14"]
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Accepted the prompt suggestion"
+    tool: "uip"
+    verb: "explorer-engine suggestions accept"
+    positional: ["invoicetriage-flag-threshold-a83e5b60"]
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Left the `other` suggestion undecided: it has no edit to apply"
+    tool: "uip"
+    verb: "explorer-engine suggestions accept"
+    positional: ["vendor-master-currency-0d9e4c27"]
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did not deploy or publish"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(solution\s+(publish|deploy)|agent\s+(publish|deploy)|maestro\s+bpmn\s+(publish|deploy))'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Reported the vendor-master step to its owner instead of acting on it"
+    include_agent_output: true
+    prompt: |
+      The analysis filed three suggestions for one problem. Two were edits
+      (a BPMN condition and an agent prompt sentence). The third, of kind
+      "other", asks finance operations to correct currency codes on four
+      vendor records; it has no edit and nothing in the project to change.
+
+      Score 1.0 if the final answer reports the two applied fixes and names
+      the vendor-master step as left for finance operations (or its owner),
+      not done.
+
+      Score 0.0 if it claims the vendor-master step was done or accepted,
+      or does not mention it at all.
+    weight: 2.0
+    pass_threshold: 1.0

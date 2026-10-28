@@ -1,0 +1,145 @@
+task_id: skill-explorer-engine-before-mismatch-smoke
+description: >
+  Smoke: the suggestion quotes a prompt sentence ("Draft a reply to the vendor
+  and send it.") that the InvoiceTriage prompt no longer contains: someone
+  changed it after the analysis ran. A suggestion's edit applies only where
+  its Before matches verbatim. The agent must leave agent.json unchanged,
+  must not accept the suggestion, and must report the mismatch. Pasting the
+  After sentence somewhere plausible, or accepting to clear the list, is the
+  failure.
+tags: [uipath-explorer-engine, smoke, mode:build]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+      exit_code: 0
+      stdout: "{\"Result\":\"Success\",\"Code\":\"Mock\",\"Data\":{}}\n"
+      responses:
+        - when:
+            verb: "explorer-engine"
+            flags:
+              help: {present: true, aliases: ["h"]}
+          stdout: |
+            Usage: uip explorer-engine [options] [command]
+            Commands:
+              analyze       Start an analysis of your traces
+              runs          Read, list and cancel analysis runs
+              problems      List the problems an analysis found
+              suggestions   Review the suggestions: read, edit, accept or dismiss them
+
+        - when:
+            verb: "login status"
+          stdout: >-
+            {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
+            "IdentityType":"User","Organization":"example-org","Tenant":"DefaultTenant"}}
+
+        - when:
+            verb: "explorer-engine runs list"
+          stdout: >-
+            {"Result":"Success","Code":"RunsList",
+            "Pagination":{"Returned":1,"Limit":5,"Offset":0,"Total":1,"HasMore":false},
+            "Data":[{"AnalysisRunId":"0f3c2a9be81d4c6f9a7e5b2c1d0e8f47","Status":"Completed",
+            "SignalsChecked":412,"NewSignals":37,"SuggestionCount":1}]}
+
+        - when:
+            verb: "explorer-engine problems list"
+          stdout: >-
+            {"Result":"Success","Code":"ProblemsList",
+            "Pagination":{"Returned":1,"Limit":1,"Offset":0,"Total":1,"HasMore":false},
+            "Data":[{"ProblemId":"invoicetriage-sends-unreviewed-replies-5d2e7a10",
+            "Title":"Stop InvoiceTriage sending vendor replies before review",
+            "Problem":"Reviewers rejected 31 of 37 vendor replies because the agent sent them before anyone reviewed the draft.",
+            "Kinds":["agent-prompt"],"Severity":"high","Support":31,
+            "Suggestions":[{"InsightId":"invoicetriage-draft-only-8c41f0d2","Kind":"agent-prompt",
+            "Headline":"Draft the vendor reply, do not send it",
+            "Change":"1. [agent owner] InvoiceTriage system prompt: draft the reply and hand it to review instead of sending it.",
+            "Status":"New"}]}]}
+
+        - when:
+            verb: "explorer-engine suggestions get"
+          stdout: >-
+            {"Result":"Success","Code":"SuggestionsGet","Data":{
+            "InsightId":"invoicetriage-draft-only-8c41f0d2","TextSpanId":4182,"Status":"New",
+            "Severity":"high","Support":31,
+            "Headline":"Draft the vendor reply, do not send it",
+            "Changes":[{"Kind":"agent-prompt","Surface":"prompt","Target":"InvoiceTriage system prompt",
+            "Owner":"agent owner",
+            "Edit":{"Kind":"agent-prompt","Agent":"InvoiceTriage","Section":"system",
+            "Before":"Draft a reply to the vendor and send it.",
+            "After":"Draft a reply to the vendor, but do not send it: hand the draft to the review task."}}],
+            "ShipOrder":1}}
+
+initial_prompt: |
+  Explorer Engine already analyzed the traces of my InvoiceTriage agent in
+  folder Shared. Apply the fix for the most severe problem it found to the
+  agent at ./InvoiceTriage, and record the result in Explorer Engine. I
+  approve applying the suggested fix for that problem.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Run each command once and move on. Do NOT retry and do NOT
+    attempt to log in.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do NOT deploy or publish anything.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-explorer-engine skill"
+    skill_name: "uipath-explorer-engine"
+    expected_skill: "uipath-explorer-engine"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Read the suggestion in full"
+    tool: "uip"
+    verb: "explorer-engine suggestions get"
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "agent.json is unchanged: the drifted prompt stays as it was"
+    command: >-
+      python3 -c "import json; d=json.load(open('InvoiceTriage/agent.json'));
+      s=d['messages'][0]['content'];
+      assert 'Draft a reply to the vendor and queue it for review.' in s, s;
+      assert 'hand the draft to the review task' not in s, s;
+      assert d['messages'][0]['contentTokens'][0]['rawString'] == s"
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did not accept a suggestion it could not apply"
+    tool: "uip"
+    verb: "explorer-engine suggestions accept"
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Reported that the suggestion's Before text is no longer in the prompt"
+    include_agent_output: true
+    prompt: |
+      The suggestion asked to replace "Draft a reply to the vendor and send
+      it." with a new sentence. The agent's prompt no longer contains that
+      sentence; it now says "Draft a reply to the vendor and queue it for
+      review." because someone changed it after the analysis ran.
+
+      Score 1.0 if the agent's final answer says the quoted text was not
+      found (or that the prompt changed since the analysis) and that it did
+      not apply the edit.
+
+      Score 0.0 if it says it applied the fix, claims the suggestion is
+      accepted, or does not mention the mismatch.
+    weight: 2.0
+    pass_threshold: 1.0
