@@ -109,6 +109,7 @@ User message: `""` — left blank. The Conversational Service injects the user t
 | `settings.maxTokens` | `64000` | Set ≤ the model's `MaxTokens` cap — see [model-selection-guide.md](../model-selection-guide.md#1-discover-primary-path). |
 | `settings.model` | `anthropic.claude-sonnet-4-5-20250929-v1:0` | **Always verify** — discover + select per [model-selection-guide.md](../model-selection-guide.md). |
 | `guardrails` | `[]` | Custom (deterministic) Tool guardrails only — no built-in validators; mirror in tool `resource.json`. See [capabilities/guardrails/guardrails.md](../capabilities/guardrails/guardrails.md) ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Critical Rule 1). |
+| `appearance` | absent (`uip agent init`) | Add or edit only when the user asks for a welcome title, welcome description, or starting prompts. `startingPrompts` are objects, never strings — see [agent-definition.md § Appearance](../agent-definition.md#appearance-conversational-only) ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 6). |
 
 ## Anti-patterns
 
