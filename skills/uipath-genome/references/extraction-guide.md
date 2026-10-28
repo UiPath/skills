@@ -22,7 +22,7 @@ Run source guide's Detection table against the given path. Decide:
 | Topic | Question | Options (first = Recommended) |
 |---|---|---|
 | Unused parts | Should the genome also carry the parts of the source nothing uses today — a library workflow, entry point or test case nothing in the export calls, a workflow no step invokes — so the rebuild keeps them for a caller to come? Commented-out code is never extracted. | Only what the entry points reach (Recommended): the genome describes what runs, the Source Map names the unused parts, and a partial re-extraction adds any of them later; also the unused live surface — library workflows, entry points and test cases nothing in the export calls, whose callers may sit outside it; every unused part — also the workflows, pages and helpers no caller invokes |
-| Subagents *(the host lets the orchestrator choose the parts' model)* | If the reading runs in parts, which model do the parts run on, and how many parts run at once? | The options of [parts-guide.md](parts-guide.md) item 8 |
+| Subagents *(the host lets the orchestrator choose the parts' model)* | If the reading runs in parts, which model do the parts run on, and how many parts run at once? | The options of [parts-guide.md](parts-guide.md) item 8, the orchestrator's model first |
 
 The answers are shared decisions, written into the brief of a reading in parts ([parts-guide.md](parts-guide.md) item 1).
 
