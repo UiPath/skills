@@ -776,9 +776,13 @@ Maestro projects through the UiPath CLI.
 - **Evaluate** (design evaluators and eval sets, add data points and
   simulations, and start/monitor/compare Studio Web evaluation runs for a BPMN
   project): see [references/evaluate.md](references/evaluate.md).
-  Local CRUD is offline; `eval run *` requires `uip login` and a BPMN solution
-  already in Studio Web. Never auto-run `uip solution upload` to satisfy that
-  prerequisite — ask the user, the same way Rule 10 governs `solution upload`.
+  Local CRUD is offline; `eval run start` requires `uip login` and **deploys**
+  the local solution to Studio Web (packages + uploads, creating or overwriting
+  the solution that matches the local `.uipx` `SolutionId`), so treat it with the
+  same care as `uip solution upload` — or pass both `--solution-id` and
+  `--project-id` to run against an already-provisioned solution without
+  overwriting. Never auto-run a separate `uip solution upload` — ask the user,
+  the same way Rule 10 governs `solution upload`.
 - **Diagnose** (fetch incidents, variables, and element executions, and trace a
   failed run back to its BPMN element): see [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
   Runtime evidence — incidents, variables, element executions, cursors, the

@@ -9,8 +9,9 @@ Every `eval` command takes `--path <path>` — a Maestro BPMN project directory,
 or a solution directory with exactly one BPMN project. It defaults to `.`.
 
 **Local `add` / `list` / `remove` edit project files and need no login.**
-Starting a run does — `uip login` first, and it needs a matching BPMN solution
-already in Studio Web.
+Starting a run does — `uip login` first. `run start` then packages the local
+solution and **deploys it to Studio Web** (see "Running a set deploys your
+solution", below) before executing.
 
 Probe the installed CLI once, then let it write the JSON formats and generated
 file references rather than hand-authoring them:
@@ -126,10 +127,10 @@ uip maestro bpmn eval simulation remove <component-id> \
 from Flow.** Flow auto-resolves a component's output schema from the `.flow`;
 the BPMN CLI does not, so an `Llm` simulation without it fails fast with
 `--output-schema is required for the Llm strategy (BPMN cannot auto-resolve the
-component's output schema)`. A consequence worth knowing: because the schema is
-always supplied, BPMN never consults the process to resolve it, so an `Llm`
-simulation does **not** require the simulated (or parent agent) node to already
-exist in the `.bpmn` the way Flow's does.
+component's output schema)`. The simulated component id is still checked against
+the `.bpmn`: `simulation add <id>` fails with `Component "<id>" not found in the
+BPMN process` when no element has that id, so a mistyped component is caught
+locally instead of silently leaving the real component to run.
 
 Child tool simulations on an agent node (`--parent`) are **not supported for
 Maestro BPMN yet** — BPMN has no agent targets, so the CLI rejects `--parent`
@@ -153,10 +154,11 @@ uip maestro bpmn eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 
 `run start` returns an `evalSetRunId` and does not block. Poll `run status`
 until it settles, then read `run results`. `run start` resolves the BPMN project
-(workload) id and solution from the parent `.uipx` or `SolutionStorage.json`;
-pass `--solution-id` / `--project-id` only when the working tree does not carry
-them, `--folder-key` to run outside the personal workspace, and `--entry-point`
-to override the set's pinned start event for one run.
+(workload) id and solution from the parent `.uipx` or `SolutionStorage.json` and
+deploys from there. Pass **both** `--solution-id` and `--project-id` to run
+against a solution already provisioned in Studio Web — that skips the package +
+upload (see below); `--folder-key` to run outside the personal workspace; and
+`--entry-point` to override the set's pinned start event for one run.
 
 `--wait` polls to a terminal state (default 600s) and then prints results. A
 terminal `Failed` or `WorkloadFailed` set-run prints the per-data-point results,
@@ -171,28 +173,34 @@ to the working directory). `run compare` puts one run against another by
 `--compare-to`, aligning data points by their stable snapshot id — which is how
 a prompt or process change is shown to have helped rather than asserted to have.
 
-## Never upload as part of an eval workflow
+## Running a set deploys your solution — know what it overwrites
 
-**Never run `uip solution upload` automatically here. Always ask first.**
+`eval run start` is a deploy, not just a trigger. It packages the local solution
+and **uploads it to Studio Web, creating or overwriting the solution that
+matches the local `.uipx` `SolutionId`**, then provisions it for execution — the
+eval backend runs *deployed* resources, not merely published ones. There is no
+separate upload step to run, and no prompt before the overwrite. (Flow's `eval
+run start` does the same; this is the shared deploy-before-run path, and it
+mirrors `maestro bpmn debug`.)
 
-`eval run start` needs the BPMN solution in Studio Web, and when it cannot
-resolve one it fails. That error is not licence to upload. `uip solution upload`
-writes to Studio Web: it creates, or **overwrites**, the solution matching the
-local `.uipx` `SolutionId`, with no flag and no prompt. Three ways that costs
-someone real work:
+So `eval run start` costs real work in the same three cases a manual `uip
+solution upload` would:
 
-1. The user is iterating locally and meant to test *before* publishing. Upload
+1. The user is iterating locally and meant to test *before* publishing. The run
    pushes work in progress to where teammates and triggers pick it up.
 2. The user pulled the solution with `uip solution download` to change one
-   piece. Upload sends partial local state back over whatever else moved.
-3. Local and Studio Web have diverged. Upload discards the remote side —
+   piece. The run sends partial local state back over whatever else moved.
+3. Local and Studio Web have diverged. The run discards the remote side —
    nothing is merged.
 
-The overwrite is recorded as a restorable version unless `--no-snapshot` was
-passed, but recovery is browser-only, after the fact, by the user, and it does
-not undo case 1. Ask, and offer the two real options: upload now with the user's
-acknowledgement, or pass `--solution-id` and `--project-id` for an existing
-Studio Web solution and plumb them through to `eval run start`. (Same rule as
+The overwrite is recorded as a restorable version unless the solution was
+uploaded with `--no-snapshot`, but recovery is browser-only, after the fact, by
+the user. So treat `eval run start` with the same care as an upload: confirm the
+local solution is the one the user means to publish. To run **without**
+overwriting — against a solution already provisioned in Studio Web — pass
+**both** `--solution-id` and `--project-id`; that skips the package + upload
+entirely and runs the existing cloud project. And never run `uip solution
+upload` as a separate step on the user's behalf without asking. (Same rule as
 Operate's `solution upload`.)
 
 ## Confirm what was written
