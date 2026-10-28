@@ -271,8 +271,9 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
 On `variant: 'action-app'`, give the app's action schema as `app.actionSchema`.
 For a coded action app, copy the contents of its `action-schema.json`;
 otherwise copy the platform's action schema (the solution resource's
-`spec.actionSchema`, or what the Apps API returns). Both spellings are accepted
-as they are.
+`spec.actionSchema`, or what the Apps API returns). That one is stored as a
+JSON string: parse it and pass the object, or `check` refuses it
+(`HITL_APP_SCHEMA_INVALID`). Both spellings are accepted once they are objects.
 
 ```ts
 .step('review', hitl({
@@ -308,11 +309,8 @@ as they are.
   are the task's typed answer fields, so `out('review', 'reviewerComments')`
   passes `check`. Without the schema such a read fails
   (`HITL_READ_UNKNOWN_FIELD`).
-- **Only each input's type reaches the node,** the way Studio Web's app picker
-  writes it. An `object` input becomes `{ type: 'System.Object' }` and a
-  `file` input `{ type: 'UiPath.Platform.ResourceHandling.IResource' }`; a
-  nested object's `properties`, a `description` and a `title` are not carried.
-  The app itself keeps the full schema.
+- A nested object input's `properties` are not checked; don't rely on `check`
+  for them.
 - **Decompile keeps the schema as written.** It prints `app.actionSchema` when
   that compiles back to the node's exact `inputSchema`. Otherwise (for example a
   hand-edited schema with `title`s) it prints the node's schema verbatim as
