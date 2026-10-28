@@ -115,16 +115,17 @@ Field types: `string`, `number`, `integer`, `boolean`, `array`, `object`.
 uip solution init "<SolutionName>" --output json
 uip agent init "<SolutionName>/<AgentName>" --conversational --output json
 
-# 2. Write resources/<ToolName>/resource.json using the shape above.
+# 2. Write <SolutionName>/<AgentName>/resources/<ToolName>/resource.json
+#    using the shape above.
 
 # 3. Reference the tool in the system prompt as @{tools.<ToolName>} with a
 #    matching expression contentToken. See ../../prompting/agent-prompting-guide.md.
 
 # 4. Refresh — regenerates entry-points.json and bindings_v2.json.
-uip agent refresh --output json
+uip agent refresh "<SolutionName>/<AgentName>" --output json
 
 # 5. Validate — strict, read-only. Confirm Status: "Valid".
-uip agent validate --output json
+uip agent validate "<SolutionName>/<AgentName>" --output json
 ```
 
 ## Runtime Sequence

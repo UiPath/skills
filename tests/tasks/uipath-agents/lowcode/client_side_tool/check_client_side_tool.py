@@ -166,7 +166,7 @@ def assert_client_side_resource(resource: dict) -> None:
         f"id={rid}, referenceKey=null, location={location!r}, "
         f'folderPath="solution_folder", inputSchema/outputSchema/settings objects, '
         f"guardrail.policies list present ({len(guardrail['policies'])} policies), "
-        f"requireConversationalConfirmation={rcc}"
+        f"requireConversationalConfirmation={props.get('requireConversationalConfirmation')}"
     )
 
 
