@@ -492,13 +492,17 @@ def test_malformed_edge_fails_instead_of_crashing(tmp_path: Path) -> None:
     assert layout_of(tmp_path, retry_flow(), final) == 1
 
 
+def place_cap(flow: dict, x: int, y: int) -> None:
+    flow["layout"]["nodes"]["capCreditAmount"]["position"] = {"x": x, "y": y}
+
+
 @pytest.mark.parametrize(
     "change",
     [
         pytest.param(lambda f: f["layout"]["nodes"]["returnResolution"]["position"].update(x=5000), id="shift-beyond-room"),
         pytest.param(lambda f: shift(f, ["resolutionWriter", "returnResolution"], dy=3000), id="drop-with-no-growth"),
-        pytest.param(lambda f: f["layout"]["nodes"]["capCreditAmount"].update(position={"x": 1400, "y": 150}), id="added-left-of-predecessor"),
-        pytest.param(lambda f: f["layout"]["nodes"]["capCreditAmount"].update(position={"x": 1728, "y": 900}), id="added-rows-below-predecessor"),
+        pytest.param(lambda f: place_cap(f, 1400, 150), id="added-left-of-predecessor"),
+        pytest.param(lambda f: place_cap(f, 1728, 900), id="added-rows-below-predecessor"),
     ],
 )
 def test_layout_check_caps_room_to_what_merge_needs(project: Path, change) -> None:
@@ -513,7 +517,8 @@ def test_layout_check_caps_room_to_what_merge_needs(project: Path, change) -> No
 def test_invented_edge_gives_no_room(project: Path) -> None:
     def invented(flow: dict) -> None:
         make_room(flow)
-        flow["edges"].append({"id": "x", "sourceNodeId": "capCreditAmount", "sourcePort": "success", "targetNodeId": "returnManagerRejection", "targetPort": "input"})
+        invented_edge = {"id": "x", "sourceNodeId": "capCreditAmount", "sourcePort": "success"}
+        flow["edges"].append({**invented_edge, "targetNodeId": "returnManagerRejection", "targetPort": "input"})
         shift(flow, ["returnManagerRejection"], dx=192)
 
     mutate(project, invented)
@@ -598,7 +603,9 @@ def test_replacing_a_removable_node_makes_room_past_it(tmp_path: Path) -> None:
 def test_growth_pushes_an_author_node_and_what_it_lands_on(tmp_path: Path, z: tuple[int, int], expected: int) -> None:
     original = row_flow({"start": (0, 0), "after": (800, 0), "w": (1000, 220)}, [("start", "loop"), ("loop", "after")])
     original["nodes"] += [{"id": "loop"}, {"id": "classify", "parentId": "loop"}, {"id": "record", "parentId": "loop"}]
-    original["layout"]["nodes"].update(loop={"position": {"x": 192, "y": -112}, "size": {"width": 560, "height": 320}}, classify=at(144), record=at(336))
+    original["layout"]["nodes"].update(
+        loop={"position": {"x": 192, "y": -112}, "size": {"width": 560, "height": 320}}, classify=at(144), record=at(336)
+    )
     original["edges"] += [{"sourceNodeId": "loop", "targetNodeId": "classify"}, {"sourceNodeId": "classify", "targetNodeId": "record"}]
     final = copy.deepcopy(original)
     final["nodes"] += [{"id": "z"}, {"id": "dedupe", "parentId": "loop"}]
@@ -617,7 +624,7 @@ def nested_flow(layout: dict[str, tuple[int, ...]], inserted: bool) -> dict:
     if inserted:
         nodes.append({"id": "n1", "parentId": "A"})
         edges.append(("a1", "n1"))
-    boxes = {i: {"position": {"x": v[0], "y": v[1]}, "size": {"width": v[2] if len(v) > 2 else 96, "height": v[3] if len(v) > 2 else 96}} for i, v in layout.items()}
+    boxes = {i: {"position": {"x": v[0], "y": v[1]}, "size": dict(zip(("width", "height"), v[2:] or (96, 96)))} for i, v in layout.items()}
     return {"nodes": nodes, "edges": [{"sourceNodeId": u, "targetNodeId": v} for u, v in edges], "layout": {"nodes": boxes}}
 
 

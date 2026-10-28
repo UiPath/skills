@@ -51,8 +51,8 @@ from pathlib import Path
 
 DEFAULT_SIZE = {"width": 96, "height": 96}
 STICKY_NOTE_TYPE = "stickyNote"
-# builder-sdk typescript/sdk/src/node-placement.ts (UiPath/builder-sdk#1501): the gap
-# between two nodes in a row, the padding its overlap test adds, and a container body's.
+# GAP, PADDING and BODY_ORIGIN in builder-sdk typescript/sdk/src/node-placement.ts at
+# 20cbc11b (UiPath/builder-sdk#1501); re-read them there when merge placement changes.
 GAP = 96
 PADDING = 24
 BODY_PADDING = {"x": 144, "y": 96}
@@ -224,6 +224,11 @@ def shares_row(a: dict, b: dict) -> bool:
     return ay < by + bh and by < ay + ah
 
 
+def shifted(entry: dict, dx: int, dy: int) -> dict:
+    x, y, _, _ = box(entry)
+    return {**entry, "position": {"x": x + dx, "y": y + dy}}
+
+
 def offset(before: dict, after: dict) -> tuple[int, int]:
     bx, by, _, _ = box(before)
     ax, ay, _, _ = box(after)
@@ -306,15 +311,65 @@ def moves_without_room(
 
         scope = parent_of.get(node_id)
         runs = [box(after[a])[2] + GAP for a in added if parent_of.get(a) == scope and a in after]
-        growth = [(box(after[c])[2] - box(before[c])[2], box(after[c])[3] - box(before[c])[3]) for c in grown if parent_of.get(c) == scope and c != node_id]
-        room_x = (sum(runs) + GAP if runs else 0) + sum(w for w, _ in growth)
-        room_y = sum(h for _, h in growth)
+        grew = [growth(c, before, after) for c in grown if parent_of.get(c) == scope and c != node_id]
+        room_x = (sum(runs) + GAP if runs else 0) + sum(w for w, _ in grew)
+        room_y = sum(h for _, h in grew)
         if dx > room_x or dy > room_y:
             failures.append(
                 f"{node_id!r} moved: {before[node_id].get('position')} -> {after[node_id].get('position')}, "
                 f"but its container's added nodes and growth make at most {room_x} right and {room_y} down of room"
             )
     return failures
+
+
+def growth(c: str, before: dict, after: dict) -> tuple[int, int]:
+    return box(after[c])[2] - box(before[c])[2], box(after[c])[3] - box(before[c])[3]
+
+
+def followed_edges(original_edges: list[dict], edges: list[dict], added: set[str]) -> list[tuple[str, str]]:
+    """Final edges a push travels along: original ones, and an added node's edge into the node an insert split off."""
+    kept = {edge_key(e) for e in edges}
+    split = {edge_key(e)[2] for e in original_edges if edge_key(e) not in kept}
+    pairs = {ends(e) for e in original_edges}
+    return [(u, v) for u, v in map(ends, edges) if (u, v) in pairs or (u in added and v in split)]
+
+
+def pushed_by_growth(a: str, grown: set[str], before: dict, after: dict, parent_of: dict[str, str | None]) -> bool:
+    """Whether `a`, moved back by a sibling container's growth, sat in that container's way."""
+    for c in grown:
+        if parent_of.get(c) != parent_of.get(a):
+            continue
+
+        dw, dh = growth(c, before, after)
+        for sx, sy in ((dw, 0), (0, dh)):
+            if boxes_overlap(after[c], shifted(after[a], -sx, -sy), PADDING):
+                return True
+    return False
+
+
+def took_spot(c: str, x: str, before: dict, after: dict, parent_of: dict[str, str | None]) -> bool:
+    return c != x and parent_of.get(c) == parent_of.get(x) and boxes_overlap(after[c], before[x], PADDING)
+
+
+def caused(
+    seeds: set[str],
+    moved: set[str],
+    follows: list[tuple[str, str]],
+    before: dict,
+    after: dict,
+    parent_of: dict[str, str | None],
+) -> set[str]:
+    """Every node a push from `seeds` explains: one whose spot a cause took, or that follows a cause."""
+    causes: set[str] = set()
+    frontier = set(seeds)
+    while frontier:
+        causes |= frontier
+        frontier = {
+            x for x in moved - causes
+            if any(took_spot(c, x, before, after, parent_of) for c in causes)
+            or any(u in causes and v == x for u, v in follows)
+        }
+    return causes
 
 
 def moves_without_cause(
@@ -328,35 +383,22 @@ def moves_without_cause(
     parent_of: dict[str, str | None],
 ) -> list[str]:
     """Invariant 3's cause: what merge placed, or a grown container pushed, takes a spot and drags what follows it."""
-    kept = {edge_key(e) for e in edges}
-    split = {edge_key(e)[2] for e in original_edges if edge_key(e) not in kept}
-    pairs = {ends(e) for e in original_edges}
-    follows = [(u, v) for u, v in map(ends, edges) if (u, v) in pairs or (u in added and v in split)]
     moved = {i for i in changed if offset(before[i], after[i]) != (0, 0)}
+    entered = {v for _, v in map(ends, edges)}
+    placed = {a for a in added if a in after and (a in entered or pushed_by_growth(a, grown, before, after, parent_of))}
+    follows = followed_edges(original_edges, edges, added)
 
-    def pushed_by_growth(a: str) -> bool:
-        for c in grown:
-            if parent_of.get(c) != parent_of.get(a):
-                continue
-            dw, dh = box(after[c])[2] - box(before[c])[2], box(after[c])[3] - box(before[c])[3]
-            x, y, w, h = box(after[a])
-            if any(boxes_overlap(after[c], {"position": {"x": x - sx, "y": y - sy}, "size": {"width": w, "height": h}}, PADDING) for sx, sy in ((dw, 0), (0, dh))):
-                return True
-        return False
-
-    placed = {a for a in added if a in after and (any(v == a for _, v in map(ends, edges)) or pushed_by_growth(a))}
-    causes, frontier = set(), placed | grown
-    while frontier:
-        causes |= frontier
-        frontier = {
-            x for x in moved - causes
-            if any(parent_of.get(c) == parent_of.get(x) and boxes_overlap(after[c], before[x], PADDING) for c in causes if c != x)
-            or any(u in causes and v == x for u, v in follows)
-        }
-    return [f"{x!r} moved: {before[x].get('position')} -> {after[x].get('position')}, but nothing took its spot or pushed what it follows" for x in sorted(moved - causes)]
+    causes = caused(placed | grown, moved, follows, before, after, parent_of)
+    return [
+        f"{x!r} moved: {before[x].get('position')} -> {after[x].get('position')}, "
+        "but nothing took its spot or pushed what it follows"
+        for x in sorted(moved - causes)
+    ]
 
 
-def new_overlaps(solid: list[str], changed: set[str], added: set[str], before: dict, after: dict, parent_of: dict[str, str | None]) -> list[str]:
+def new_overlaps(
+    solid: list[str], changed: set[str], added: set[str], before: dict, after: dict, parent_of: dict[str, str | None]
+) -> list[str]:
     """Invariant 4."""
     failures: list[str] = []
     for i, a in enumerate(solid):

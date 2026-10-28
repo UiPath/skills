@@ -35,9 +35,9 @@ file is the most common cause of misshapen nodes in Studio Web.
 
 **Never format a merged brownfield file.** The original's `layout` already
 holds the canvas author's positions, and `merge` keeps them, moving later
-nodes right or down and growing containers only to fit added ones. `format` re-lays
-out every node and discards them. Upload or debug the merged file as `merge`
-wrote it.
+nodes right or down and growing containers only to fit added ones. `format`
+re-lays out every node and discards them. Upload or debug the merged file as
+`merge` wrote it.
 <!--skill-flavor:operate-format:end-->
 
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
