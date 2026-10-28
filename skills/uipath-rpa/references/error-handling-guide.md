@@ -199,7 +199,7 @@ GEH re-enters at every call-stack level. Unconditional `Retry` can retry an alwa
 
 ### Interplay and limits
 
-- GEH runs first-chance: before any local Catch — a Try/Catch around the faulted activity in the same workflow included — then again for every enclosing activity while the exception propagates. A local Try/Catch does not shield it, so a fault the workflow catches as normal flow still reaches the GEH first. Verified under `uip rpa run`; see [UiPath Global Exception Handler docs](https://docs.uipath.com/studio/latest/user-guide/global-exception-handler).
+- GEH runs first-chance: before any local Catch — a Try/Catch around the faulted activity in the same workflow included — then again for every enclosing activity while the exception propagates. A local Try/Catch does not shield it, so a fault the workflow catches as normal flow still reaches the GEH first. Verified under `uip rpa run`; see [UiPath Global Exception Handler docs](https://docs.uipath.com/studio/standalone/latest/user-guide/global-exception-handler).
 - Fully unhandled: GEH fires and verdict applies; verified under `uip rpa run`.
 - Activities with `ContinueOnError=True` never reach the GEH.
 - GEH retries activities, not workflows; retry a whole workflow with your own loop / Retry Scope.
