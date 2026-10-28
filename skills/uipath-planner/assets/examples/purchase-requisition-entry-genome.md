@@ -1,7 +1,7 @@
 <!-- UIPATH-AUTOMATION-GENOME: component | This file is a build specification for one UiPath automation project.
      To build it, invoke the uipath-genome-builder skill (Execute mode): it asks the configuration questions,
      then invokes the skills referenced in Build With. Do NOT execute these steps directly, and do NOT
-     start from a Build With skill. -->
+     start from a Build With skill. To change it, invoke the uipath-planner skill. -->
 
 # Genome: Purchase Requisition Entry
 

@@ -2,7 +2,7 @@
      UiPath automation. Each component has its own genome in the sibling folder named in Components.
      To build it, invoke the uipath-genome-builder skill (Execute mode): it asks the configuration questions,
      then invokes the skills referenced in Components. Do NOT execute these steps directly, and do NOT
-     start from a Components skill. -->
+     start from a Components skill. To change it, invoke the uipath-planner skill. -->
 
 # Genome: {Process Name}
 
