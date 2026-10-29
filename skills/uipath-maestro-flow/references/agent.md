@@ -107,9 +107,7 @@ function fallback — install the package, delete the generated files, and re-ru
 Scaffold from INSIDE the agent directory: the venv holding the framework
 package must exist there before `new`. Run from the solution root itself (the
 directory holding the `.uipx`), `uip codedagent new <AgentName>` creates
-`<AgentName>/` rather than writing `main.py`, `pyproject.toml` and
-`<framework>.json` beside the manifest; from any other directory it scaffolds
-in place.
+`<AgentName>/`; from any other directory it scaffolds in place.
 
 Implement the project, then from that directory:
 

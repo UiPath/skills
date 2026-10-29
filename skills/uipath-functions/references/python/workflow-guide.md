@@ -16,7 +16,7 @@ uip function new <name> --language js       # JavaScript Function → ../js/
 
 `--empty` skips the hello-world function (JS/TS only).
 
-**Where the files land:** current directory, except from a solution root (directory holding a `.uipx`), where `new` creates `<name>/` so the project is a solution member and not files beside the `.uipx`. `cd <name>` before Step 6 (`uip function init`). A `<name>` already present at the solution root is refused; pass `--dir <path>` to pick another directory.
+**Where the files land:** current directory, except from a solution root (directory holding a `.uipx`), where `new` creates `<name>/`. `cd <name>` before Step 6 (`uip function init`). A `<name>` already present at the solution root is refused; pass `--dir <path>` to pick another directory.
 
 **Environment:** `init`, `run` and `pack` run through the Python environment `uip function setup` bound, so it needs `uipath` installed (`uv venv && source .venv/bin/activate && uv pip install uipath`, then `uip function setup --force`). Re-run `setup --force` after switching venv.
 
