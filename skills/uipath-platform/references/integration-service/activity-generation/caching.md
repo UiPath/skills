@@ -95,9 +95,13 @@ const { cache_key: cacheKey, ...query } = context.request.query ?? {};
 const invoke = () => intsvc.cache.remember(`invoke:${cacheKey}`, { ttl: 172800, perScript: true, replay: true }, async () => {
   const res = await intsvc.http({ method: "POST", url: "/v1/message:send", query, body: context.request.body });
   if (res.status >= 400) throw new Error(`message:send failed: ${res.status}`);
-  return res;
+  return { status: res.status, body: res.body };
 });
 ```
+
+Never return the raw `intsvc.http` result from `fill`: the stored value is replayed to
+every caller for the TTL, vendor headers (`Set-Cookie`, rate-limit counters, request
+ids) included. Build `{ status, body }`, plus pagination headers for a list.
 
 Use it only when `cache_key` is present; without one, send the write plainly.
 
