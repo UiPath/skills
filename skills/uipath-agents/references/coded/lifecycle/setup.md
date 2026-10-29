@@ -14,7 +14,7 @@ Windows PowerShell fresh-machine setup: `irm https://download.uipath.com/uipath-
 
 Pick the framework before starting: the package installed in the active venv selects the agent template. Install `<FRAMEWORK_PACKAGE>` before `new`, not after — with none installed, `new` fails with an error naming what to install.
 
-With several installed, name the one to scaffold with: `uip codedagent new <PROJECT_NAME> --agent-framework <FRAMEWORK_PACKAGE>`. Without it, `new` fails and lists them.
+With several installed, name the one to scaffold with: `uip codedagent new <PROJECT_NAME> --agent-framework <FRAMEWORK_PACKAGE>`. Without it, `new` warns, lists them, and scaffolds with the first one it finds.
 
 | Agent Type | `<FRAMEWORK_PACKAGE>` | Framework config | Guide |
 |---|---|---|---|
@@ -56,7 +56,7 @@ After `uip codedagent new`, check the directory before running anything else:
 
 1. `<framework>.json` present (`langgraph.json` / `llama_index.json` / `openai_agents.json`) → continue.
 2. `No agent framework integration is installed` (or `The '<FRAMEWORK_PACKAGE>' package is required to scaffold a '<framework>' agent`) → nothing was generated. Fix: `uv pip install <FRAMEWORK_PACKAGE>`, confirm `uip codedagent setup --force` reports the same venv, then re-run `uip codedagent new <PROJECT_NAME>`.
-3. `Multiple agent frameworks are installed` → re-run with `--agent-framework <FRAMEWORK_PACKAGE>`, or keep exactly one in the venv (`uv pip uninstall` the others).
+3. `Multiple agent frameworks are installed` warning → `new` scaffolded with the first framework it found; if that is the wrong one, delete the generated files and re-run with `--agent-framework <FRAMEWORK_PACKAGE>`, or keep exactly one in the venv (`uv pip uninstall` the others).
 
 ## Generated Files
 
@@ -127,5 +127,5 @@ A pattern that would drop a project the `.uipx` lists (its folder name, or `*.ui
 | `NameError` during `init` | Framework not installed when `init` imports `main.py` | Run `uv sync` before `uip codedagent init` |
 | `No entrypoints found in uipath.json` | Framework config or package missing | Verify `uv pip install` succeeded, then re-run `uip codedagent init` |
 | `No agent framework integration is installed` or `The '<FRAMEWORK_PACKAGE>' package is required to scaffold a '<framework>' agent` from `new` | No framework package in the active venv | `uv pip install <FRAMEWORK_PACKAGE>`, re-run `new` |
-| `Multiple agent frameworks are installed` from `new` | More than one framework package in the venv | Re-run with `--agent-framework <FRAMEWORK_PACKAGE>`, or keep one |
+| `Multiple agent frameworks are installed` warning from `new` (scaffolds with the first one found) | More than one framework package in the venv | If it picked the wrong one, delete the generated files and re-run with `--agent-framework <FRAMEWORK_PACKAGE>`, or keep one |
 | `ModuleNotFoundError` for a package you just installed, even after activating `.venv` | A shell `python` alias points at a different interpreter (uv-managed, system, etc.) | Use `.venv/bin/python` directly for sanity checks, or `unalias python` for the session |

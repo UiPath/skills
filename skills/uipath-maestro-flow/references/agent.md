@@ -94,15 +94,15 @@ mkdir -p <SolutionName>/<AgentProject>
 ```
 
 **Install the framework package BEFORE `new`.**
-`new` defaults to `--type auto`, which picks the template from whichever
-framework package is installed in the active venv — so with none installed it
-scaffolds a coded FUNCTION instead, and nothing says so at the time.
+`uip codedagent new` always scaffolds an agent — it never falls back to a coded
+function — and the framework package installed in the active venv picks the
+template. With none installed, `new` fails naming what to install and generates
+nothing: install the package and re-run `new`. With several installed, pass
+`--agent-framework <framework-package>`.
 
 Verify the scaffold before going further: a `<framework>.json` beside `main.py`
-(`langgraph.json` for `uipath-langchain`) means the agent template was used.
-A `uipath.json` carrying a `functions` map and no `<framework>.json` is the
-function fallback — install the package, delete the generated files, and re-run
-`new`.
+(`langgraph.json` for `uipath-langchain`) must exist. If it is missing, `new`
+did not complete — read its error, fix the venv, and re-run `new`.
 
 Scaffold from INSIDE the agent directory.
 Run `codedagent new` from the solution root and it writes `main.py`,
