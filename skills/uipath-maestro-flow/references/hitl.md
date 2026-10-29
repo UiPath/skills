@@ -302,13 +302,11 @@ yet. Write it with `location: 'in-solution'` and no `folderPath`:
   This differs from an agent escalation's app
   ([agent-resources.md](agent-resources.md#escalation)), which is an agent
   resource and does carry `'solution_folder'`; do not carry either rule across.
-- Needs the `@uipath/maestro-builder-sdk` release that ships `location` on
-  `app`. It is not released yet; every SDK published so far rejects
+- Needs `@uipath/maestro-builder-sdk` 6.66.2 or later; an older SDK rejects
   `location` on `app` (a type error, and `check` asks for the missing
   `folderPath`),
 <!--skill-flavor:inso-app-sdk-upgrade:start-->
-  so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` once it
-  ships.
+  so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:inso-app-sdk-upgrade:end-->
 <!--skill-flavor:inso-app-uip-floor:start-->
   No `uip` build checked so far keeps the app's folder when it packs this task
