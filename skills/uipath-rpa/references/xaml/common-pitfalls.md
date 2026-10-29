@@ -347,7 +347,7 @@ Or omit `Default` entirely if the variable is assigned before its first read.
 
 ## InvokeCode Code Property — Attribute Form Only
 
-Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs, and a VB body fails to compile with `BC30205: End of statement expected. At line 0`. `validate` and `build` compile the body, so a body that no longer compiles fails both; one that still compiles with a changed meaning, as the swallowed C# statements do, passes both and misbehaves only when it runs. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
+Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs, and a VB body fails to compile with `BC30205: End of statement expected. At line 0`. A body that no longer compiles fails with the compiler's errors, at `validate` and `build` or at the latest when the activity runs (`No compiled code to run`); one that still compiles with a changed meaning, as the swallowed C# statements do, passes both and misbehaves only when it runs. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
 
 **Correct:**
 ```xml
@@ -374,7 +374,7 @@ The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLang
 Could not load <FILE> file: 'Failed to create a 'Language' from the text 'VisualBasic'.'
 ```
 
-Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails `validate` with VB errors:
+Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails with VB errors, at `validate` or at the latest when the activity runs:
 ```
 error BC30800: Method arguments must be enclosed in parentheses.
 error BC30037: Character is not valid.
