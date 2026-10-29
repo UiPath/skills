@@ -15,7 +15,7 @@ Both edit the `.flow` on disk and need no login. `--schema '<json>'` takes the d
 
 Because they edit the `.flow`, they do not survive a project that generates it from TypeScript source: if the project has a `.flow-sdk/` directory, the next compile overwrites the taxonomy. See [extract-document-node.md](extract-document-node.md) for which authoring mode to pick.
 
-For the node itself — checking the tenant has it, adding it, wiring `fileRef`, choosing it over a published IXP model — see [extract-document-node.md](extract-document-node.md). This guide assumes the node already exists.
+For the node itself — adding it, wiring `fileRef`, when it applies over a published IXP model — see [extract-document-node.md](extract-document-node.md). This guide assumes the node already exists.
 
 ## Starting from a flow in Studio Web
 
@@ -38,7 +38,7 @@ uip login status --output json
 uip solution download <solution-id>
 ```
 
-The download writes a directory named after the id, with the flow project inside it, and every command in this guide runs against the `.flow` in that project. Where login has expired, say so and ask the user log in with: `uip login`.
+The download writes a directory named after the id, with the flow project inside it, and every command in this guide runs against the `.flow` in that project. Where login has expired, say so and ask the user to log in with `uip login`.
 
 Push the finished taxonomy back with `uip solution upload` from the downloaded solution's root, so the flow they opened in Studio Web is updated with the changes, and tell them where to find it.
 
@@ -63,10 +63,13 @@ JVBERi0xLjMKJe…
 A header line gives the media type and the byte count, then a separator, then the payload. Reading one directly returns that text instead of a document, and decoding the whole file fails because of the first two lines. Drop them, then decode:
 
 ```bash
+mkdir -p decoded
 for f in <Project>/evals/*/eval-files/*; do
   tail -n +3 "$f" | base64 -d > "decoded/$(basename "$f")"
 done
 ```
+
+With more than one dataset under `evals/`, two files can share a name and overwrite each other — decode per dataset directory when that happens.
 
 Read the decoded copies.
 
@@ -80,12 +83,12 @@ uip maestro flow nodes schema set Flow/Flow.flow --node-id extractDocument1 --fi
 uip maestro flow validate Flow/Flow.flow --output json
 ```
 
-`set` replaces the whole document, mints a stable id for every new entry and keeps the ids already there, rebuilds the model-settings copy, and refuses a document that breaks a limit with one `Data.Issues` entry per problem. Read the documents before designing: a taxonomy written from the user's sentence alone misses the fields that are actually on the page, and invents ones that are not.
+`set` replaces the whole document rather than patching it ([What `set` does for you](#what-set-does-for-you)). Read the documents before designing: a taxonomy written from the user's sentence alone misses the fields that are actually on the page, and invents ones that are not.
 
 ## The loop
 
-1. **Collect the samples.** "The files uploaded to the node" are the ones that come down with the solution, under `<Project>/evals/<dataset-id>/eval-files/`, and they need decoding first — pull the flow down if it is not already local ([Starting from a flow in Studio Web](#starting-from-a-flow-in-studio-web)). Otherwise ask which documents are representative if the user has not said. Prefer variety over volume — a handful covering the layouts that differ tells you more than twenty of the same one.
-2. **Read them.** One full `Read` per document returns text and image for both digital and scanned files, so no PDF tooling is needed — provided the file really is one. A document that came down with a solution is wrapped and reads as text until it is decoded.
+1. **Collect the samples.** Documents uploaded through Studio Web come down with the solution and need decoding first ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). Otherwise ask which documents are representative if the user has not said. Prefer variety over volume — a handful covering the layouts that differ tells you more than twenty of the same one.
+2. **Read them.** One full `Read` per decoded document returns text and image for both digital and scanned files, so no PDF tooling is needed.
 3. **Design the taxonomy** against the rules below and write it to a JSON file.
 4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --file <path> --output json`.
 5. **Fix what it rejects.** Exit 3 means the document is a schema but breaks a rule; `Data.Issues` lists each problem with the path it is at. Correct those and run the same command again.
@@ -257,19 +260,20 @@ Never write a replacement from scratch over a taxonomy that already has content.
 | `Groups`, `Fields`, `FieldTypes` | what the written taxonomy now holds |
 | `GroupIdsPreserved`, `FieldIdsPreserved` | entries that kept the id they already had |
 | `GroupIdsMinted`, `FieldIdsMinted` | entries that were new and got one |
+| `BusinessChecksDropped` | checks that were attached to an id no longer in the document, and went with it |
 | `DraftDiscarded` | an unsaved editor draft was thrown away |
+| `ReplacedLegacyDocument` | the node had been carrying the superseded `{taxonomy, fieldTypes}` form, so nothing kept an id |
 | `Warnings` | the node names a tenant-side processor that still holds the previous schema |
 
-On an edit, `FieldIdsMinted` above zero where you expected a rename is the signal that an id was dropped — check before reporting success.
+On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting success. A minted id where a rename was intended means the id was dropped, so the annotations stored against it no longer point at the field; business checks hang off those same ids, so a dropped id takes its checks with it.
 
 ## When it refuses
 
 | Exit | Message | What to do |
 | --- | --- | --- |
-| 3 | `Schema document failed validation` | Read `Data.Issues`: each one names the path and the problem. Fix and resend. |
+| 3 | `Schema document failed validation` | Content problems arrives under this message. Read `Data.Issues`: each entry names the path and the problem. A missing parent is reported here too (`Nested field group "<key>" has no parent group "<parent>"`) — a group named `Parent > Child` needs `Parent` defined in the same document. |
 | 3 | `Invalid schema document` | The document is not a schema — it needs `prompt` and `outputSchema`. |
-| 3 | `Legacy schema document shape` | The node still carries the superseded `{taxonomy, fieldTypes}` form. Opening the flow once in Studio Web converts it. |
-| 3 | `Nested field group "<key>" has no parent group "<parent>"` | A group named `Parent > Child` needs `Parent` to be a group of its own in the same document. Add it, or flatten the name. |
+| 3 | `Legacy schema document shape` | The document sent uses the superseded `{taxonomy, fieldTypes}` form; send `{ prompt, outputSchema }`. A legacy document already on the node is simply replaced, reported as `ReplacedLegacyDocument: true`. |
 | 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. |
 | 1 | `Invalid --schema JSON` | The argument did not parse. Prefer `--file` for anything sizeable; shells mangle inline JSON. |
 | 1 | `Cannot read --file` | The path does not exist or could not be read. This is a wrong path, not a malformed schema. |

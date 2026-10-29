@@ -37,7 +37,7 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
   model: { modelName: 'invoiceixp-cef0d447-ixp', folderKey: '<folder-guid>' } }))
 ```
 
-Two routes author Dynamic Extract, and they are not equivalent — see
+Two routes author Dynamic Extract — see
 [Two ways to author Dynamic Extract](#two-ways-to-author-dynamic-extract).
 
 ## Two ways to author Dynamic Extract
@@ -49,8 +49,7 @@ carries, and the runtime picks what to run from `inputs.processorKey`. The
 requirement is the factory's, inherited from `ixpExtract`'s shape, so a user
 with no published IxP project cannot call it at all.
 
-**The CLI commands** author the same node with no model deployment, which is the
-only route open to a user who has never trained one. Use
+**The CLI commands** author the same node with no model deployment. Use
 [extract-document-node.md](extract-document-node.md) to establish the tenant has the node,
 add it, and wire `fileRef`.
 
@@ -59,8 +58,7 @@ Both routes need the same taxonomy, and
 written. One difference matters when choosing: every field group and field in
 the taxonomy must carry a stable id, and `nodes schema set` mints those for
 you, while a `schema` passed to the factory is emitted verbatim and must
-already have them or `flow validate` fails. Reach for the CLI when the user is
-starting from documents rather than from a trained model.
+already have them or `flow validate` fails.
 
 ## Schema and outputs
 
