@@ -1,10 +1,10 @@
-# Document classify and Dynamic Extract
+# Document classify and Extract document
 
 *Exact signatures, fields, and defaults: `documentClassify()` and `dynamicExtract()`.*
 
 Two document steps that need no published IxP project: classification
-(`uipath.document.classify`) labels a document, and Dynamic Extract
-(`uipath.ixp.extract-document-builder`, named Extract document) pulls fields
+(`uipath.document.classify`) labels a document, and the Extract document node
+(`uipath.ixp.extract-document-builder`) pulls fields
 against a taxonomy you author INLINE. For a published project's trained fields,
 use `ixpExtract` ([ixp.md](ixp.md)) instead.
 
@@ -37,15 +37,15 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
   model: { modelName: 'invoiceixp-cef0d447-ixp', folderKey: '<folder-guid>' } }))
 ```
 
-Two routes author Dynamic Extract — see
-[Two ways to author Dynamic Extract](#two-ways-to-author-dynamic-extract).
+Two routes author the Extract document node — see
+[Two ways to author it](#two-ways-to-author-it).
 
-## Two ways to author Dynamic Extract
+## Two ways to author it
 
 **The SDK factory**, `dynamicExtract()`, is the route above. It requires a
 `model` with `modelName` and `folderKey` — copy them from the tenant, never
 construct them. The node itself does not use them: it runs the taxonomy it
-carries, and the runtime picks what to run from `inputs.processorKey`. The
+carries, and the runtime picks what to run from `inputs.processorKey`, which exists only after the flow is saved once in Studio Web ([Making it actually extract](extract-document-node.md#making-it-actually-extract)). The
 requirement is the factory's, inherited from `ixpExtract`'s shape, so a user
 with no published IxP project cannot call it at all.
 
