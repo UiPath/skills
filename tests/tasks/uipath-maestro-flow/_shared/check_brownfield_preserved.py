@@ -20,7 +20,8 @@ for an added node, as postconditions:
    split; and by no more than its container's added nodes' width plus a gap
    each, one gap more, how far left of an added node the nodes it pushes sat,
    and its grown containers' growth plus a gap each.
-4. Nothing lands on another node; sticky notes are free to sit anywhere.
+4. Nothing lands on another node. Sticky notes may overlap anything, and move only with the original node they
+   cover most.
 5. Nodes keep their order in a row, and edges keep pointing right (a retry
    edge back to an earlier node is exempt).
 6. An added node sits within two rows of a node it is wired to, or of an added
@@ -53,7 +54,7 @@ from pathlib import Path
 DEFAULT_SIZE = {"width": 96, "height": 96}
 STICKY_NOTE_TYPE = "stickyNote"
 # GAP, PADDING and BODY_ORIGIN in builder-sdk typescript/sdk/src/node-placement.ts at
-# 75a5a57c (UiPath/builder-sdk#1501); re-read them there when merge placement changes.
+# 8a0fedc2 (UiPath/builder-sdk#1501); re-read them there when merge placement changes.
 GAP = 96
 PADDING = 24
 BODY_PADDING = {"x": 144, "y": 96}
@@ -358,10 +359,9 @@ def pushed_from_left(
         pushed = {
             o for o in kept
             if parent_of.get(o) == scope and o not in sources and (anchor is None or box(before[o])[0] >= anchor)
-            and (o in after_it or boxes_overlap(after[a], before[o], PADDING))
+            and (o in after_it or boxes_overlap(after[a], path(before[o], after[o]), PADDING))
         }
-        succs = {v for u, v in map(ends, edges) if u == a}
-        in_row = [o for o in pushed if o in succs or rows_meet(after[a], before[o])]
+        in_row = [o for o in pushed if rows_meet(after[a], path(before[o], after[o]))]
         short = max((box(after[a])[0] - box(before[o])[0] for o in in_row), default=0)
         if short > 0:
             found.append((a, {a} | pushed, short))
@@ -492,6 +492,27 @@ def moves_without_cause(
     ]
 
 
+def covered_area(a: dict, b: dict) -> int:
+    ax, ay, aw, ah = box(a)
+    bx, by, bw, bh = box(b)
+    return max(0, min(ax + aw, bx + bw) - max(ax, bx)) * max(0, min(ay + ah, by + bh) - max(ay, by))
+
+
+def sticky_moves(notes: set[str], solid: list[str], before: dict, after: dict, parent_of: dict[str, str | None]) -> list[str]:
+    """A sticky note moves with the original node it covers most (ties by id), or not at all."""
+    failures: list[str] = []
+    for note in sorted(notes):
+        cover = [(covered_area(before[note], before[i]), i) for i in solid if i in before and parent_of.get(i) == parent_of.get(note)]
+        cover = sorted((c for c in cover if c[0] > 0), key=lambda c: (-c[0], c[1]))
+        moved_with = offset(before[cover[0][1]], after[cover[0][1]]) if cover else (0, 0)
+        if offset(before[note], after[note]) != moved_with:
+            failures.append(
+                f"sticky note {note!r} moved {offset(before[note], after[note])}, not with the node it covers "
+                f"({cover[0][1] if cover else 'none'}, {moved_with})"
+            )
+    return failures
+
+
 def new_overlaps(
     solid: list[str], changed: set[str], added: set[str], before: dict, after: dict, parent_of: dict[str, str | None]
 ) -> list[str]:
@@ -609,8 +630,10 @@ def check_layout(original: dict, final: dict, removable_nodes: set[str] = frozen
     tucked = pushed_from_left(added, kept, edges, before, after, parent_of)
     retries = retry_edges(original.get("edges", []), edges, before, after, parent_of)
     follows = followed_edges(original.get("edges", []), edges, added, retries, parent_of)
-    failures += moves_without_room(changed, added, grown, tucked, follows, before, after, parent_of)
-    failures += moves_without_cause(changed, added, grown, original.get("edges", []), edges, retries, before, after, parent_of)
+    nodes_moved = changed - sticky
+    failures += moves_without_room(nodes_moved, added, grown, tucked, follows, before, after, parent_of)
+    failures += moves_without_cause(nodes_moved, added, grown, original.get("edges", []), edges, retries, before, after, parent_of)
+    failures += sticky_moves(changed & sticky, solid, before, after, parent_of)
     failures += new_overlaps(solid, changed, added, before, after, parent_of)
     failures += order_changes(solid, edges, retries, before, after, parent_of)
     failures += added_placement(added, solid, edges, before, after, parent_of)

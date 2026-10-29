@@ -687,7 +687,7 @@ def test_insert_before_an_index_tucked_under_its_agent_clears_the_agent(tmp_path
     assert layout_of(tmp_path, original, final) == expected
 
 
-# placeAddedNodes' own merge output on UiPath/builder-sdk#1501 2501a23c and 75a5a57c, one case per room or row allowance it needs.
+# placeAddedNodes' own merge output on UiPath/builder-sdk#1501 2501a23c, 75a5a57c and 8a0fedc2, one case per room or row allowance it needs.
 MERGE_LAYOUTS = json.loads((HERE / "merge_layouts.json").read_text())
 
 
@@ -752,3 +752,22 @@ def test_insert_on_a_retry_loop_left_of_its_predecessor_fails(tmp_path: Path, n:
     original = row_flow(row, [("a", "b"), *retry_loop])
     final = row_flow({**row, "n": n}, [("a", "n"), ("n", "b"), *retry_loop])
     assert layout_of(tmp_path, original, final) == 1
+
+
+@pytest.mark.parametrize("note_x, expected", [pytest.param(1282, 0, id="with-its-node"), pytest.param(1482, 1, id="past-its-node")])
+def test_sticky_note_moves_only_with_the_node_it_covers(tmp_path: Path, note_x: int, expected: int) -> None:
+    def flow(body: dict, loop_width: int, z_x: int, note_x: int) -> dict:
+        built = container_flow(body, {"width": loop_width, "height": 320})
+        kept = [n for n in built["nodes"] if n["id"] not in ("after", "below")]
+        built["nodes"] = kept + [{"id": "z"}, {"id": "note", "type": "stickyNote"}]
+        built["edges"] = [e for e in built["edges"] if e["targetNodeId"] != "after"] + [{"sourceNodeId": "loop", "targetNodeId": "z"}]
+        layout = built["layout"]["nodes"]
+        del layout["after"], layout["below"]
+        layout["z"] = at(z_x, 0)
+        layout["note"] = {"position": {"x": note_x, "y": -20}, "size": {"width": 120, "height": 130}}
+        return built
+
+    original = flow(ORIGINAL_BODY, 560, 1100, 1090)
+    # placeAddedNodes' own output on UiPath/builder-sdk#1501 8a0fedc2: the loop grows, z moves 192 and its note with it.
+    final = flow({"classify": at(144), "dedupe": at(336), "record": at(528)}, 752, 1292, note_x)
+    assert layout_of(tmp_path, original, final) == expected
