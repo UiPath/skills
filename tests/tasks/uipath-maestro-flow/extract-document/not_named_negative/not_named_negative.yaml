@@ -1,0 +1,75 @@
+task_id: skill-flow-extract-document-not-named-negative
+description: >
+  Negative smoke: document-extraction requests that never name the Extract
+  document node, including one with no trained model. The node is opt-in, so
+  none of them may add `uipath.ixp.extract-document-builder`. Requests with
+  documents and no model belong to the IXP project route, which
+  `ixp/e2e_03_project_creation_handoff` grades.
+
+  Passes whether or not the run produces a `.flow`: a run cut short by the IXP
+  handoff leaves no flow, and that is not a failure here.
+
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, node:extract-document]
+dataset:
+  rows:
+    - id: invoice-fields
+      prompt: >-
+        Build a UiPath Flow called "InvoiceIntake" that takes a PDF invoice and
+        extracts the vendor name, invoice number and total.
+
+    - id: receipt-no-model
+      prompt: >-
+        Build a UiPath Flow called "ReceiptReader" that pulls the merchant,
+        date and total out of receipt images. We don't have a trained model
+        for receipts yet.
+
+    - id: contract-fields
+      prompt: >-
+        Build a UiPath Flow called "ContractReview" that extracts the party
+        names and effective date from PDF contracts.
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  ${row.prompt}
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "No Extract document node in any .flow (or no .flow at all)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --expect-none || python3 $REFERENCE_DIR/_shared/flow_contains.py --absent-regex '\"type\"\\s*:\\s*\"uipath\\.ixp\\.extract-document-builder\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    skill_name: "uipath-ixp"
+    expected_skill: "uipath-ixp"
+    description: "Advisory: agent handed the extraction to the uipath-ixp skill"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Agent did not create an Extract document node"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+nodes\s+(create|add)\b[^\n]*extract-document-builder'
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 15
+  max_turns: 25
+  turn_timeout: 600
+  task_timeout: 600
