@@ -64,6 +64,12 @@ Returns the full field breakdown for the specified operation:
 - **`reference`** — field value must be looked up from another resource. See [reference-resolution.md](reference-resolution.md). When baking a static value for a reference field, also emit `designTimeMetadata.designTimeLookups` so the edit-UI renders a label — see [reference-resolution.md — Static Reference-Value Labeling](reference-resolution.md#static-reference-value-labeling).
 - **`enum`** — field only accepts the listed values (e.g., `["low", "normal", "high"]`).
 
+### File responses
+
+An operation returns a file (a binary download, such as an email attachment or a drive file) when its `responseFields` include a field with `type` `octet-stream` or `file`. This is the only signal to rely on. Do not infer it from the activity's name, display name or registry tags.
+
+Field method keys follow the operation's metadata label, not the HTTP verb: a Retrieve is keyed `GETBYID` even though it is sent as `GET`. Describe the operation the activity actually runs (`--operation` with its name, e.g. `Retrieve`) before reading `responseFields`.
+
 Results are cached locally. Use `--refresh` to bypass cache after re-auth or schema changes.
 
 ### `--activity-version`
