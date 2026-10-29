@@ -52,6 +52,11 @@ options and limits; follow it where this page differs.
 | who reads it | every script on the connection whose `fill` source is identical | this script version only; editing the script ends it |
 | use for | data several scripts reuse: Salesforce `describe:{object}` for metadata discovery, record lists and record writes | a whole answer: one page of a list, the object list, metadata discovery output |
 
+Inline scripts (`--inline-script`) cache too, in their own namespace: an inline script
+never reads or overwrites a published script's entries, and the reverse. Inline
+scripts share with each other by identical `fill` text, and `perScript` is keyed by
+the inline source's digest.
+
 Editing `fill` starts a new entry by itself, so no version suffix is needed in
 `name`; a new name is still fine for a deliberate cut-over. Editing or
 re-authenticating the connection also starts fresh entries.
@@ -80,6 +85,7 @@ data may be, not from how expensive the call is:
 | input | CLI flag | effect |
 |---|---|---|
 | `cache_data=uncache` on the inbound request | `--refresh` | every `remember` in the run skips the read and replaces its entry |
+| `cache_data=bypass` on the inbound request | `--no-cache` | every `remember` in the run just runs `fill`: no read, no write |
 | `cache_key=<value>` | `--cache-key <value>` | reaches the script on `context.request.query` |
 
 `refresh: true` on one call does the same for that call alone.
@@ -107,9 +113,12 @@ Use it only when `cache_key` is present; without one, send the write plainly.
 
 ## Testing
 
-- **`--inline-script` runs never use the cache**: `remember` just runs `fill`. They
-  prove the script, not the caching. Check caching against the published script
-  with `--script-ref`: run the same call twice, then once with `--refresh`.
+- **While iterating, run with `--no-cache`** (`cache_data=bypass`) so nothing
+  work-in-progress is stored. `--refresh` is not a substitute: it still replaces the
+  entry with the new value.
+- **Once the script is right, test the caching** with `--inline-script` or
+  `--script-ref`: run the same call twice (the second is a hit), then once with
+  `--refresh`.
 - **Only a miss costs budget**: its `fill`'s `intsvc.http` calls count against the
   4-call run budget; a hit costs none.
 - **Say in the report** which values are cached, with `name`, `ttl`, and whether

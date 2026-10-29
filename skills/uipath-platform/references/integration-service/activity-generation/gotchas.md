@@ -64,7 +64,8 @@
 - **No Node globals in the sandbox**: `Buffer`, `btoa`/`atob`,
   `TextEncoder`/`TextDecoder` are absent (`JSON` and `Uint8Array` are present).
   Anything needing base64 cannot be written in a script.
-- **Cache reads, never writes, and test caching with `--script-ref`.** Wrap vendor
+- **Cache reads, never writes, and iterate with `--no-cache`.** Wrap vendor
   reads in `intsvc.cache.remember` and throw on any vendor failure (a 2xx
-  `ok: false` too), or the failure is stored. Keep writes outside `fill`. An
-  `--inline-script` run never touches the cache ([caching.md](caching.md)).
+  `ok: false` too), or the failure is stored. Keep writes outside `fill`. Inline
+  scripts cache too, so run work-in-progress with `--no-cache` to store nothing;
+  test caching once the script is right ([caching.md](caching.md)).
