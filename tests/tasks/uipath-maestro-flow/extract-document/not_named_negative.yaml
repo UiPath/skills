@@ -29,7 +29,7 @@ dataset:
         names and effective date from PDF contracts.
 
 reference:
-  directory: ../..
+  directory: ..
 
 initial_prompt: |
   ${row.prompt}
@@ -47,9 +47,9 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
-    description: "No Extract document node in any .flow (or no .flow at all)"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --expect-none || python3 $REFERENCE_DIR/_shared/flow_contains.py --absent-regex '\"type\"\\s*:\\s*\"uipath\\.ixp\\.extract-document-builder\"'"
-    timeout: 30
+    description: "nodes list reports no Extract document node in any .flow (or there is no .flow)"
+    command: "python3 $REFERENCE_DIR/extract-document/check_extract_document_node.py absent"
+    timeout: 120
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

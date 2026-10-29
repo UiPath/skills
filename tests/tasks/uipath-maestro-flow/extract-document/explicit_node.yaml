@@ -5,13 +5,15 @@ description: >
   model node, wires its file input from a flow variable, and leaves a flow that
   validates, without starting an IXP project.
 
-  Graded on the final `.flow`, so a node that a later compile from builder-SDK
-  source drops counts as missing. The taxonomy is not graded here: writing it
-  needs `nodes schema set`, which the taxonomy tasks cover.
+  Graded through the CLI on the final `.flow`: `nodes list` for the node types,
+  so a node that a later compile from builder-SDK source drops counts as
+  missing, and `flow validate`, which also rejects a `fileRef` that is not a
+  `$vars` reference. The taxonomy is not graded here: writing it needs
+  `nodes schema set`, which the taxonomy tasks cover.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
 reference:
-  directory: ../..
+  directory: ..
 
 initial_prompt: |
   Build a UiPath Flow called "InvoiceReader" that takes an invoice PDF as input
@@ -38,27 +40,11 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "InvoiceReader.flow contains an Extract document node"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceReader --regex '\"type\"\\s*:\\s*\"uipath\\.ixp\\.extract-document-builder\"'"
-    timeout: 30
+    description: "nodes list reports an Extract document node in InvoiceReader.flow, and no other uipath.ixp.* node"
+    command: "python3 $REFERENCE_DIR/extract-document/check_extract_document_node.py present --flow-name InvoiceReader"
+    timeout: 120
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "The node's fileRef reads a $vars expression, in either accepted form"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceReader --regex '\"fileRef\"\\s*:\\s*(\"=js:\\$vars\\.|\\{[^}]*\"expression\"\\s*:\\s*\"\\$vars\\.)'"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "No other uipath.ixp.* node (published model or processor) in the flow"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceReader --absent-regex '\"type\"\\s*:\\s*\"uipath\\.ixp\\.(?!extract-document-builder\")'"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_not_executed
@@ -69,7 +55,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro flow validate passes on InvoiceReader.flow"
+    description: "uip maestro flow validate passes on InvoiceReader.flow, including a $vars fileRef"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
