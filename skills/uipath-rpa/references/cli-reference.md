@@ -140,7 +140,7 @@ Rules: `count=42` sends string `"42"`; `count:=42` sends number `42`. `debug tes
 
 `uip rpa validate` returns diagnostics for a file or project and revalidates by default. `--skip-validation` reads possibly stale cached results; `--min-severity` filters. Confirm flags with `uip rpa validate --help`. `--file-path` accepts a project-relative or absolute path with forward, back, or mixed separators; prefer the shorter relative form.
 
-`Result: Success` and exit code 0 mean validate ran, with or without findings. The diagnostics are the text of `Data.message`: `No diagnostics found.`, or `Found N error(s)[, M warning(s)]:` followed by one `[error]` or `[warning]` line per finding (file, message, activity).
+`Result: Success` and exit code 0 mean validate found no errors; warnings and info may still be listed. At least one error gives `Result: Failure`, exit code 1, `Code: ValidationErrorsFound`, `ErrorCode: execution_failed` and `Message` `Validation failed with N error(s)`. In both cases the diagnostics are the text of `Data.message`: `No diagnostics found.`, or `Found N error(s)[, M warning(s)]:` followed by one `[error]` or `[warning]` line per finding (file, message, activity).
 
 An activity that can run without a target reports no unset target: Type Into and Keyboard Shortcuts act on the focused element by design, so validate's "Target or Input UI Element must be set" errors are not a count of a file's target slots.
 
