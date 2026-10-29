@@ -62,16 +62,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Downstream script references output by field ID .approved"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '.output.approved'"
+    description: "Downstream script reads output.approved by field ID (the `.output.approved` form, or through a local alias of $vars.<id>.output, or by destructuring)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --regex '(?:\\.output\\.approved|(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[])[\\s\\S]*?(?:(?<![\\w$.])|(?<=\\\\[nt]))\\1\\.approved\\b|\\{(?:[^{}]*,)?(?:\\s|\\\\[nrt])*approved(?=(?:\\s|\\\\[nrt])*[,}:=])[^{}]*\\}\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[]))'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Downstream script references output by field ID .reviewcomments"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '.output.reviewcomments'"
+    description: "Downstream script reads output.reviewcomments by field ID (the `.output.reviewcomments` form, or through a local alias of $vars.<id>.output, or by destructuring)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --regex '(?:\\.output\\.reviewcomments|(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[])[\\s\\S]*?(?:(?<![\\w$.])|(?<=\\\\[nt]))\\1\\.reviewcomments\\b|\\{(?:[^{}]*,)?(?:\\s|\\\\[nrt])*reviewcomments(?=(?:\\s|\\\\[nrt])*[,}:=])[^{}]*\\}\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[]))'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -81,8 +81,8 @@ success_criteria:
   # the ContractReview flow was read, and the forbidden pattern is absent —
   # a missing or unreadable flow can never score these points.
   - type: run_command
-    description: "Script does NOT reference output by variable name (.output.legalApproval or .output.legalNotes)"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --absent-regex '\\.output\\.(legalApproval|legalNotes)'"
+    description: "Script does NOT reference output by variable name (.output.legalApproval / .output.legalNotes, directly, through an alias, or by destructuring)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --absent-regex '(?:\\.output\\.(?:legalApproval|legalNotes)|(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[])[\\s\\S]*?(?:(?<![\\w$.])|(?<=\\\\[nt]))\\1\\.(?:legalApproval|legalNotes)\\b|\\{(?:[^{}]*,)?(?:\\s|\\\\[nrt])*(?:legalApproval|legalNotes)(?=(?:\\s|\\\\[nrt])*[,}:=])[^{}]*\\}\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[]))'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
