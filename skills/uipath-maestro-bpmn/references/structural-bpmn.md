@@ -649,7 +649,9 @@ unsupported for generation until current tooling confirms them.
 The registry emits no diagram. Import is **diagram-driven**: the canvas builds
 nodes from `BPMNShape`s and edges from `BPMNEdge`s, not by walking
 `flowElements`. **A node with no shape is invisible; a flow with no edge is
-dropped.** Generate the full `BPMNDiagram` with `uip maestro bpmn format <file.bpmn>`.
+dropped.** Generate the full `BPMNDiagram` with `uip maestro bpmn format <file.bpmn>`
+— on a file this task created. A file that already had a diagram keeps it: see
+[Keep the user's diagram](../SKILL.md#keep-the-users-diagram).
 
 - One `<bpmndi:BPMNShape id="S_<nodeId>" bpmnElement="<nodeId>">` per node, with
   `<dc:Bounds x= y= width= height= />`. SubProcess shapes carry `isExpanded`.
@@ -673,24 +675,29 @@ Example:
 ## Editing operations
 
 Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
-— see [SKILL.md](../SKILL.md#editing-an-existing-bpmn-preserve-what-you-did-not-author)):
+— see [SKILL.md](../SKILL.md#editing-an-existing-bpmn-preserve-what-you-did-not-author)).
+
+**Updating the diagram after an edit.** If the file already had a diagram when
+the task started, do NOT run `uip maestro bpmn format` — it deletes the user's
+pools, lanes, colors and layout. Add, move or remove only the shapes and edges
+of what you changed, as
+[Keep the user's diagram](../SKILL.md#keep-the-users-diagram) prescribes, and
+run its check. Run `format` only on a file this task created.
 
 - **Add / delete / reconnect a node**: add the element with a stable id and its
   `<bpmn:incoming>`/`<bpmn:outgoing>` refs, add the sequence-flow elements in the
   owning scope. On delete, remove orphaned flows and recheck entry-point variables,
-  output mappings, and binding references. Then regenerate the diagram:
-  `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: add/update `BPMNShape`
-  and edge waypoints manually.
+  output mappings, and binding references. Then update the diagram (above): one
+  shape for the new node, one edge per new or re-targeted flow.
 - **Insert a gateway**: split the existing sequence flow into an incoming and an
   outgoing flow, add conditions to the outgoing flows plus one `default`, add a
-  matching join only if branches actually need synchronization. Then regenerate the
-  diagram: `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: re-waypoint
-  manually (gateway shape + all edges).
+  matching join only if branches actually need synchronization. Then update the
+  diagram (above): the gateway shape plus an edge for each new or split flow.
 - **Move logic into a subprocess**: move only elements that share a valid scope,
   re-scope their variables, and recreate legal subprocess flow boundaries. Then
-  regenerate the diagram: `uip maestro bpmn format <file.bpmn>` — it emits one
-  shape per nested node in the single root plane. Do not hand-author a second
-  plane; the next `format` run replaces it.
+  update the diagram (above): draw the subprocess shape with `isExpanded="true"`
+  around the moved nodes' existing shapes, in the single root plane. Do not
+  hand-author a second plane.
 - **Add an entry point**: use a root-level start event and generate a stable,
   unique UUID for its serializer-owned `uipath:entryPointId`. Do not copy the
   example UUID; this scaffold field is not a registry-owned node payload. Also

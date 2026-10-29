@@ -14,8 +14,14 @@ Point the plane to a valid element or remove the orphaned diagram.
 ## Missing shape or waypoint
 
 Rendered elements without BPMN DI may parse but fail to render correctly.
-Run `uip maestro bpmn format <file.bpmn>` to regenerate all shapes and waypoints.
+On a file this task created, run `uip maestro bpmn format <file.bpmn>` to regenerate all shapes and waypoints.
+On a file that already had a diagram, do NOT run `format` — it deletes the user's pools, lanes, colors and layout; add only the missing shape or edge as [Keep the user's diagram](../../SKILL.md#keep-the-users-diagram) prescribes.
 If CLI unavailable: add bounds for nodes and waypoints for edges manually.
+
+## Pools, lanes or colors disappeared after an edit
+
+The diagram was regenerated: `uip maestro bpmn format` (or a whole-file rewrite) replaced the user's diagram, so the plane now targets the process instead of the collaboration and the pool, lane and color attributes are gone. `validate` still passes.
+Restore the original diagram from the pre-edit copy or the cloud version, re-apply only the semantic change, and follow [Keep the user's diagram](../../SKILL.md#keep-the-users-diagram).
 
 ## Entry point mismatch
 
