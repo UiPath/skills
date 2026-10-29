@@ -221,12 +221,17 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  # The next two criteria (the `--result` words) are informational (weight 0):
+  # they read the command TEXT, and an agent that records the three cases in a
+  # shell loop (`--result $res`) makes a correct recording with no literal
+  # `--result Passed`. What was recorded, and for which case, is decided by the
+  # run_command criterion below, which reads the server's own testcaselogs.
   - type: command_executed
     description: "Agent recorded the two passes (`testcaselog finish --result Passed`)"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+Passed\b)'
     min_count: 1
-    weight: 3.0
+    weight: 0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -234,7 +239,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+Failed\b)'
     min_count: 1
-    weight: 2.0
+    weight: 0
     pass_threshold: 1.0
 
   # The point of the task. A manual run closes itself when its last log
