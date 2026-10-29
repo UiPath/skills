@@ -50,10 +50,15 @@ ISSUETYPE_ID = "11457"  # "Task" issue type, scoped to the CE project
 # The flow suite's identified target on this same connection
 # (escalation_slack_alert/check_escalation_slack_alert.py).
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
-EXPECTED_LIVE_TARGET = {
-    "BaseUrl": "https://alpha.uipath.com",
-    "Organization": "codereval",
-    "Tenant": "DefaultTenant",
+# The run's eval target, keyed by the `uip login status` field it must match.
+# The pipeline exports these per run (a fresh org and tenant on ETE and
+# provisioned runs), and coder-eval's default env_passthrough forwards them
+# into the sandbox. The agent can re-login the shared session; it cannot
+# change the grader's environment.
+TARGET_ENV = {
+    "BaseUrl": "UIPATH_URL",
+    "OrganizationId": "UIPATH_ORGANIZATION_ID",
+    "TenantId": "UIPATH_TENANT_ID",
 }
 
 # Flat cleanup journal in the sandbox CWD, one JSON record per line the moment
@@ -99,9 +104,32 @@ TEARDOWN_TIMEOUT = (
 )
 
 
-def assert_live_target() -> dict[str, str]:
-    """Refuse to run against anything but the Alpha codereval tenant."""
+def _normalize_target_value(value: object) -> str:
+    return str(value or "").strip().rstrip("/").casefold()
 
+
+def configured_target() -> dict[str, str]:
+    """Read the run's eval target from the environment; refuse when unset."""
+
+    missing = [
+        name for name in TARGET_ENV.values() if not os.environ.get(name, "").strip()
+    ]
+    if missing:
+        raise CheckFailure(
+            f"no configured eval target: {missing} not set, so the live "
+            "grader refuses to create Jira issues and Slack messages; export "
+            "them for the eval tenant"
+        )
+    return {
+        key: _normalize_target_value(os.environ[name])
+        for key, name in TARGET_ENV.items()
+    }
+
+
+def assert_live_target() -> dict[str, str]:
+    """Refuse to run unless the active `uip` session is the configured target."""
+
+    expected = configured_target()
     completed = run_cli(["uip", "login", "status"], timeout=LOGIN_STATUS_TIMEOUT)
     _payload, data = payload_data(completed, "read active UiPath login")
     if not isinstance(data, dict):
@@ -109,11 +137,7 @@ def assert_live_target() -> dict[str, str]:
     if str(get_ci(data, "Status", "")).casefold() != "logged in":
         raise CheckFailure("UiPath CLI is not logged in")
     actual = {
-        key: str(get_ci(data, key, "")).rstrip("/")
-        for key in EXPECTED_LIVE_TARGET
-    }
-    expected = {
-        key: value.rstrip("/") for key, value in EXPECTED_LIVE_TARGET.items()
+        key: _normalize_target_value(get_ci(data, key, "")) for key in TARGET_ENV
     }
     if actual != expected:
         raise CheckFailure(
