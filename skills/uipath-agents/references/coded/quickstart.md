@@ -266,7 +266,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 <!--skill-flavor:flow-project-creation:end-->
 
 <!--skill-flavor:agent-scaffold-solution-root:start-->
-3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`), create the agent folder first and run everything inside it — the venv and the framework package that selects the template must exist there before `new`. `uip codedagent new` scaffolds into the current directory; only when run from the solution root itself (the directory holding the `.uipx`) does it create `<AgentName>/` instead of writing beside the manifest.
+3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`) — `uip codedagent new` scaffolds into the **current directory**, it does NOT create a subfolder, so create the agent folder first and run everything inside it:
 <!--skill-flavor:agent-scaffold-solution-root:end-->
 
    ```bash

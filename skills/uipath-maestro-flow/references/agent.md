@@ -104,12 +104,11 @@ A `uipath.json` carrying a `functions` map and no `<framework>.json` is the
 function fallback — install the package, delete the generated files, and re-run
 `new`.
 
-Scaffold from INSIDE the agent directory: the venv holding the framework
-package must exist there before `new`. Run from the solution root itself (the
-directory holding the `.uipx`), `uip codedagent new <AgentName>` creates
-`<AgentName>/` rather than writing `main.py`, `pyproject.toml` and
-`<framework>.json` beside the manifest; from any other directory it scaffolds
-in place.
+Scaffold from INSIDE the agent directory: `new` writes into the current
+directory, and the venv holding the framework package must exist there first.
+Run from the solution root (the directory holding the `.uipx`) it is refused,
+with these steps as instructions, instead of writing `main.py`,
+`pyproject.toml` and `<framework>.json` beside the manifest.
 
 Implement the project, then from that directory:
 
