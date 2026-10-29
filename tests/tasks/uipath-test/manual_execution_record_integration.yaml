@@ -232,7 +232,7 @@ success_criteria:
     command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+Passed\b)'
     min_count: 1
     weight: 0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Agent recorded the one failure (`testcaselog finish --result Failed`)"
@@ -240,7 +240,7 @@ success_criteria:
     command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+Failed\b)'
     min_count: 1
     weight: 0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   # The point of the task. A manual run closes itself when its last log
   # finishes, so reaching for the force-close means the lifecycle was misread.
@@ -252,9 +252,9 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Guards the third case. With min_count 1 the Passed and Failed criteria above
-  # are each satisfied by one log, so nothing else would notice TC3 missing.
-  # Asserted on the server's own totals rather than on what the agent typed.
+  # The criterion that decides the recording (the `--result` text criteria above
+  # are informational): counts AND which case failed, asserted on the server's
+  # own testcaselogs rather than on what the agent typed.
   - type: run_command
     description: "The run Test Manager stored really holds 3 results: 2 passed, 1 failed"
     command: |
