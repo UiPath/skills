@@ -33,12 +33,14 @@ If the user has not mentioned Studio Web at all, but no local `.flow` turns up, 
 
 Then pull it down:
 
+<!--skill-flavor:extract-pull-login:start-->
 ```bash
 uip login status --output json
 uip solution download <solution-id>
 ```
 
 The download writes a directory named after the id, with the flow project inside it, and every command in this guide runs against the `.flow` in that project. Where login has expired, say so and ask the user to log in with `uip login`.
+<!--skill-flavor:extract-pull-login:end-->
 
 Push the finished taxonomy back with `uip solution upload` from the downloaded solution's root, so the flow they opened in Studio Web is updated with the changes, and tell them where to find it.
 

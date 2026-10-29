@@ -175,3 +175,29 @@ def test_a_reshaped_declaration_is_an_error_and_writes_nothing(tmp_path):
     result = refresh.refresh(decl, write=True)
     assert "no longer has the shape" in result["error"]
     assert decl.snapshot.read_text() == before
+
+
+def test_notes_are_reported_and_never_fail(tmp_path):
+    decl = make_decl(tmp_path, {**SNAPSHOT_DATA, "Kinds": [{"Type": "a"}, {"Type": "b"}, {"Type": "c"}]})
+    (tmp_path / "test_copy.py").write_text("def test_nothing_restated():\n    pass\n")
+    (tmp_path / "notes_mod.py").write_text(
+        "def extra(data):\n    return [f\"- `{k['Type']}` is declared but unused\" for k in data['Kinds'] if k['Type'] in ('b', 'c')]\n"
+    )
+    decl = refresh.Declaration(**{**decl.__dict__, "notes": (tmp_path / "notes_mod.py", "extra")})
+    result = refresh.refresh(decl, write=True)
+    assert result["passed"]
+    body = refresh.report([result], "1.0.0-dev.1")
+    assert "- `c` is declared but unused" in body
+    assert "- `b` is declared but unused" not in body  # already unused before this move
+    assert "Do not merge" not in body
+
+
+def test_a_failing_notes_hook_is_reported_and_the_refresh_still_reports(tmp_path):
+    decl = make_decl(tmp_path, {**SNAPSHOT_DATA, "Kinds": [{"Type": "a"}, {"Type": "b"}, {"Type": "c"}]})
+    (tmp_path / "test_copy.py").write_text("def test_nothing_restated():\n    pass\n")
+    (tmp_path / "notes_mod.py").write_text("def extra(data):\n    raise KeyError('Stage exit')\n")
+    decl = refresh.Declaration(**{**decl.__dict__, "notes": (tmp_path / "notes_mod.py", "extra")})
+    result = refresh.refresh(decl, write=True)
+    assert result["passed"]
+    assert result["notes"] == ["- notes unavailable: KeyError: 'Stage exit'"]
+    assert "Moved: fake kinds." in refresh.report([result], "1.0.0-dev.1")

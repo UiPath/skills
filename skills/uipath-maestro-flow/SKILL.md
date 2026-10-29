@@ -16,6 +16,7 @@ An existing Flow JSON can also be decompiled back into TypeScript for editing.
 
 ## Project layout
 
+<!--skill-flavor:sdk-project-layout:start-->
 `@uipath/maestro-builder-sdk` is installed globally (`npm install -g`); `examples/` contains authored examples, and `references/` contains the details routed from this guide.
 A Flow is authored as `.flow-sdk/<Name>.flow.ts` inside its project folder `<Solution>/<Name>/`, and it imports the package directly.
 
@@ -45,7 +46,9 @@ Exactly one emitted `<Name>.flow` may exist, at `<Solution>/<Name>/<Name>.flow`,
 Emitting to the root is correct only for the packaged-SDK local gates, which never scaffold a project; pick the loop first ([Lifecycle](#lifecycle)) and do not mix the two.
 
 **Install the SDK first, once per machine:** `npm install -g @uipath/maestro-builder-sdk`; skip it when already installed, and see [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for the checks and failure handling.
+<!--skill-flavor:sdk-project-layout:end-->
 
+<!--skill-flavor:sdk-connector-discovery:start-->
 Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the local connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()` (not for an external agent: see the table), and a usage error means the library is not cached, so run `uip maestro registry pull` first. For another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/agent.md`](references/agent.md)). **For document extraction, the default is a published IXP model** ([`references/ixp.md`](references/ixp.md)) — including when the user has documents and no trained model, where the project is built first and the flow then runs against it. Reach for the Extract document node, which carries its own taxonomy and is authored with the CLI ([`references/extract-document-node.md`](references/extract-document-node.md)), only when the user asks for it by name or the flow already holds one. A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent.
 Connectors require [`.flow-sdk/bindings.json`](references/bindings.md).
 `uip maestro registry pull` writes a descriptor per referenced connector to `.flow-sdk/connectors/<key>.ts`, and caches the library itself outside the project.
@@ -62,6 +65,7 @@ Where two flows import the same connector it names them instead of guessing, and
 `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED` and `CONNECTOR_OBJECT_NOT_GENERIC` are source fixes, not prepares: [connector-params.md](references/connector-params.md#author-first--check-names-every-prepare-you-owe).
 
 Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`) need the prepare `check` names with every required `-f`, and a post-compile cache check: [`references/connector-params.md`](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop).
+<!--skill-flavor:sdk-connector-discovery:end-->
 
 ### Hello world Flow
 
@@ -79,6 +83,7 @@ A Flow can have outputs, which are returned to the caller when the flow complete
 
 ## Lifecycle
 
+<!--skill-flavor:sdk-lifecycle:start-->
 Pick one loop before any build command; never mix them in one workspace or use one as a probe for the other:
 
 - **Product-CLI loop (emit-only)** when the task asks for product validate/debug evidence, or the workspace is emit-only: a `package.json` with `{ "flowSdk": { "emitOnly": true } }` (the product-runtime eval sets it), or `FLOW_SDK_EMIT_ONLY=1`. Scaffold first ([Project layout](#project-layout)), then run the block below.
@@ -99,9 +104,11 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 ```
 
 `<Out>`: each declared `out` variable, never all of `variables.globals`. Re-run it from `compile` after the last source or binding edit. Valid is top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory and `err()` diagnostics. `Completed` with the expected globals and an empty `failed` is runtime evidence; a bare exit code is not. Debug inputs, attachments, other projections and incidents: [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
+<!--skill-flavor:sdk-lifecycle:end-->
 
 ## Editing an existing flow
 
+<!--skill-flavor:sdk-editing:start-->
 In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. If only emitted `.flow` JSON exists, decompile it, compile the pristine baseline, edit narrowly, and merge the delta back into the original.
 These are before/after judgments; no final-artifact checker can prove them.
 
@@ -119,6 +126,7 @@ If the source must stay inside the Flow project (for example, to preserve relati
 
 **True-brownfield procedure:**
 **[`references/brownfield.md`](references/brownfield.md)**.
+<!--skill-flavor:sdk-editing:end-->
 
 ## Builder frame
 
@@ -142,6 +150,7 @@ The quick start above shows the shape — `flow(id)`, declarations, nodes, `.ret
 
 ## API index
 
+<!--skill-flavor:sdk-api-index:start-->
 **Every signature, option shape and field is indexed in the installed `@uipath/maestro-builder-sdk` package**, not in this guide; a row's path is relative to the package root:
 
 | you have | look in | a row gives you |
@@ -150,6 +159,7 @@ The quick start above shows the shape — `flow(id)`, declarations, nodes, `.ret
 | an exported symbol — `HitlInputs`, `hitl`, `FlowBuilder` | `dist/api-index.md` | its kind, area, and the lines that declare it |
 
 **Match one name; do not read either file end to end.** Then read the span (e.g. `dist/core/actions.d.ts:583-597`): the whole declaration with its doc comment, so one read answers the question. Read the `.d.ts`, never `dist/*.js` (no types, no comments). A name in neither index is probably a RUNTIME output key, which the node references carry. Why the index ships in the package, and more lookup rules: [`references/author.md`](references/author.md#api-index-lookups).
+<!--skill-flavor:sdk-api-index:end-->
 
 ## Supported node types
 
@@ -227,11 +237,13 @@ A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`
 
 ## Operating a deployed flow
 
+<!--skill-flavor:sdk-operate:start-->
 Upload, deploy, debug, trigger, inspect a job, and drive an instance's
 lifecycle. All of it needs `uip login`, and `uip solution resources refresh`
 comes before every upload, publish or debug. `flow debug` is a REAL run, not a
 validation step. Read
 **[`references/operate.md`](references/operate.md)**.
+<!--skill-flavor:sdk-operate:end-->
 
 ## Diagnosing a failed run
 

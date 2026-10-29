@@ -42,9 +42,14 @@ from __future__ import annotations
 import glob
 import os
 import re
+import sys
 from dataclasses import dataclass
 
 import pytest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from flavor_markers import shipped  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
@@ -245,7 +250,7 @@ def test_every_required_skill_is_present():
 def test_real_preview_skills_fit_read_window(path):
     skill = _skill_id(path)
     with open(path, encoding="utf-8") as f:
-        text = f.read()
+        text = shipped(f.read())
     problems = window_problems(text, REQUIRED.get(skill, ()))
     assert not problems, (
         f"{os.path.relpath(path, _REPO)}:\n  "
