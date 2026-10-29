@@ -27,6 +27,7 @@ The owning skill's contract reads the installed package's per-activity doc for e
 | Activity | Installed doc says | The activity does |
 |---|---|---|
 | Read Range Workbook (cross-platform) | nothing on empty cells | An empty cell of a text column comes back as empty text, not as no value. A source that leaves empty cells out of a row (a workflow tool's spreadsheet read) is matched only when the build treats empty text as absent |
+| Use Excel File (`ExcelApplicationCard`) | nothing on a sheet reference the workbook lacks | A sheet reference through the scope's workbook reference (`Excel.Sheet("<name>")`) adds the sheet when the workbook has none of that name: a cell or range read on a missing sheet returns no value with no error, and the next save writes the new empty sheet. Where a missing sheet must fail, check the name against the workbook's sheet names before the first reference to it |
 
 ## `UiPath.MicrosoftOffice365.Activities` — docs shipped with 3.12.10 and earlier
 
