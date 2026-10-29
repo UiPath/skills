@@ -62,7 +62,8 @@ Private workflows compile into the package and stay invocable from the library's
 
 ### Activity identity
 
-- Activity name and class = workflow file name (`SendInvoiceNotification.xaml` → activity `SendInvoiceNotification`)
+- Activity name and class = workflow file name (`SendInvoiceNotification.xaml` → activity `SendInvoiceNotification`); a coded workflow's = its class name plus `Activity` (`Copy Folder.cs`, class `Copy_Folder` → `Copy_FolderActivity`), its properties named as [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) states
+- Argument defaults reach consumers: a XAML workflow's root-element default ([xaml/xaml-editing-catalog.md § Setting Default Values for Arguments](xaml/xaml-editing-catalog.md)) and a coded workflow's parameter default compile into the package and apply when a consumer leaves the argument unset. `packages inspect` prints no defaults, so each argument's description states its default
 - Activity namespace = library name with dots and hyphens sanitized to underscores (`Company.Email.Utilities` → namespace `Company_Email_Utilities`); the package ID and assembly keep the dotted name. Read the real namespace from `uip rpa packages inspect` on the packed `.nupkg` — never derive it
 - Property tooltip = the argument's description annotation in XAML: `sap2010:Annotation.AnnotationText` on the `x:Property`
 
