@@ -685,3 +685,52 @@ def test_insert_before_an_index_tucked_under_its_agent_clears_the_agent(tmp_path
     merged = {**AGENT_INDEX, "n": (1344, 32), "index": (index_x, 32), "next": (1872, -16)}
     final = agent_flow(merged, [("s", "agent"), ("agent", "n"), ("n", "index"), ("agent", "next")])
     assert layout_of(tmp_path, original, final) == expected
+
+
+# placeAddedNodes' own merge output on UiPath/builder-sdk#1501 2501a23c, one case per room or row allowance it needs.
+MERGE_LAYOUTS = json.loads((HERE / "merge_layouts.json").read_text())
+
+
+@pytest.mark.parametrize("name", sorted(MERGE_LAYOUTS))
+def test_merge_output_passes_the_layout_check(name: str) -> None:
+    case = MERGE_LAYOUTS[name]
+    assert preserved.check_layout(case["original"], case["final"]) == []
+
+
+RETRY_ROW = {"a": (0, 0), "b": (192, 0), "c": (384, 0), "d": (576, 0), "e": (768, 0)}
+RETRY_ROW_EDGES = [("a", "b"), ("b", "c"), ("c", "d"), ("d", "e"), ("e", "a")]
+
+
+@pytest.mark.parametrize(
+    "dx, expected", [pytest.param(192, 0, id="insert-makes-one-slot"), pytest.param(500, 1, id="retry-split-gives-no-room")]
+)
+def test_insert_on_a_retry_edge_gives_no_room_to_the_row(tmp_path: Path, dx: int, expected: int) -> None:
+    moved = {"n": (384, 0), "c": (576 + dx - 192, 0), "d": (768 + dx - 192, 0), "e": (960 + dx - 192, 0), "m": (1152 + dx - 192, 0)}
+    edges = [("a", "b"), ("b", "n"), ("n", "c"), ("c", "d"), ("d", "e"), ("e", "m"), ("m", "a")]
+    assert layout_of(tmp_path, row_flow(RETRY_ROW, RETRY_ROW_EDGES), row_flow({**RETRY_ROW, **moved}, edges)) == expected
+
+
+@pytest.mark.parametrize("child", [pytest.param({}, id="no-layout-entry"), pytest.param({"type": "stickyNote"}, id="sticky-note")])
+def test_container_growing_around_nothing_on_the_canvas_fails(child: dict) -> None:
+    loop = {"id": "c", "type": "core.logic.loop"}
+    box_c = {"position": {"x": 0, "y": 0}, "size": {"width": 560, "height": 320}}
+    original = {"nodes": [loop], "edges": [], "layout": {"nodes": {"c": box_c}}}
+    final = copy.deepcopy(original)
+    final["nodes"].append({"id": "k", "parentId": "c", **child})
+    final["edges"].append({"sourceNodeId": "c", "targetNodeId": "k"})
+    final["layout"]["nodes"]["c"]["size"]["width"] = 700
+    if child:
+        final["layout"]["nodes"]["k"] = at(144, 96)
+    assert preserved.check_layout(original, final) != []
+
+
+def test_added_node_right_of_its_successor_on_another_row_fails(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "b": (384, 0)}, [("a", "b")])
+    final = row_flow({"a": (0, 0), "n": (600, 200), "b": (384, 0)}, [("a", "n"), ("n", "b")])
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_node_left_of_the_insertion_gets_no_room_from_it(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "p": (500, 0), "o": (200, 100)}, [("a", "p")])
+    final = row_flow({"a": (0, 0), "p": (500, 0), "n": (692, 0), "o": (900, 100)}, [("a", "p"), ("p", "n")])
+    assert layout_of(tmp_path, original, final) == 1
