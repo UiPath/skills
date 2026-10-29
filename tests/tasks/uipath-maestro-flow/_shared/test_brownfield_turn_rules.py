@@ -16,6 +16,7 @@ Regex, not PyYAML: CI installs only pytest.
 """
 from __future__ import annotations
 
+import fnmatch
 import glob
 import os
 import re
@@ -30,7 +31,12 @@ _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
 _CANONICAL = os.path.join(_REPO, "skills", "uipath-maestro-flow")
 _STUDIOWEB = os.path.join(_REPO, "skill-flavors", "studioweb", "uipath-maestro-flow")
 
-PIPELINE_ARTIFACTS = ("'{n}.baseline'", "'{n}.edited'", "'{n}.merged.flow'", "'*-*-*-*-*'")
+UUID_SHAPE = "????????-????-????-????-????????????"
+PIPELINE_ARTIFACTS = ("'{n}.baseline'", "'{n}.edited'", "'{n}.merged.flow'", f"'{UUID_SHAPE}'")
+CLEANUP_GUARD = "[ ! -d .flow-sdk ] || find .flow-sdk "
+HYPHENATED = "get-weather-for-a-city"
+KEPT = (f"{HYPHENATED}.flow.ts", f"{HYPHENATED}.pipeline.mjs", "bindings.json", "connectors", "connectors-local")
+SIDECAR = "07249eb5-c297-418b-b9e5-1b91d5f8e86b"
 CLEAR_WORK = 'rm -rf "${WORK:?}"'
 FLAVORS = ("default", "studioweb")
 ALLOWED_FORCE = re.compile(r"never pass `--force`|registry pull --force|codedagent setup --force")
@@ -147,6 +153,13 @@ def _removes(command: str, names: list[str]) -> bool:
     return ("rm -rf" in command) and all(name in command for name in names)
 
 
+def _cleanups() -> list[str]:
+    skill = _commands(_section(_composed("default", "SKILL.md"), "Editing an existing flow"))
+    brownfield = _composed("default", "references/brownfield.md")
+    units = skill + _commands(brownfield) + [p for p in _paragraphs(brownfield) if "find .flow-sdk" in p]
+    return [u for u in units if "find .flow-sdk" in u]
+
+
 def test_pinned_safety_wording():
     missing = []
     for (flavor, rel), phrases in PINNED.items():
@@ -226,3 +239,23 @@ def test_work_loops_clear_work_first():
             stale.append(commands[writes])
 
     assert not stale, f"a loop that writes $WORK/candidate must `{CLEAR_WORK}` first:\n" + "\n".join(stale)
+
+
+def test_cleanups_are_guarded():
+    unguarded = [c for c in _cleanups() if CLEANUP_GUARD not in c]
+    assert len(_cleanups()) >= 4, "expected the Editing, pipeline, hand and supplied-source cleanups"
+    assert not unguarded, f"each .flow-sdk cleanup must start `{CLEANUP_GUARD}`:\n" + "\n".join(unguarded)
+
+
+def test_cleanup_keeps_a_hyphenated_projects_source():
+    problems = []
+    for cleanup in _cleanups():
+        patterns = [p.strip("'") for p in re.findall(r"-name ('[^']+'|\S+)", cleanup)]
+        patterns = [p.replace("<Name>", HYPHENATED).replace("Deployed", HYPHENATED) for p in patterns]
+        deleted = [entry for entry in KEPT if any(fnmatch.fnmatchcase(entry, p) for p in patterns)]
+        if deleted:
+            problems.append(f"{cleanup}\n  deletes {deleted}")
+        if not any(fnmatch.fnmatchcase(SIDECAR, p) for p in patterns):
+            problems.append(f"{cleanup}\n  keeps the agent sidecar {SIDECAR}")
+
+    assert not problems, "\n".join(problems)

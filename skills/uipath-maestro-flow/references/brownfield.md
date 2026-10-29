@@ -219,7 +219,7 @@ hand loop below with `merge --strict`.
 Re-running it after further edits repeats only the compile and merge — the
 baseline is captured once and reused. A later turn is not a further edit: before
 its fresh decompile, remove the earlier turn's artifacts and agent sidecars:
-`find .flow-sdk -maxdepth 1 \( -name 'Deployed.baseline' -o -name 'Deployed.edited' -o -name 'Deployed.merged.flow' -o -name '*-*-*-*-*' \) -exec rm -rf {} +`.
+`[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name 'Deployed.baseline' -o -name 'Deployed.edited' -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +`.
 Pass `--no-pipeline` to `decompile` when
 you deliberately want the manual sequence instead. The pipeline writes its
 `.flow` artifacts into that `.flow-sdk/` directory (the baseline and the edited
@@ -238,7 +238,7 @@ When the task supplied `.flow-sdk/Deployed.flow.ts`, do not decompile: it
 overwrites that source. Compile its baseline before the edit, then merge:
 
 ```bash
-find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '*-*-*-*-*' \) -exec rm -rf {} +
+[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
 mkdir -p .flow-sdk/baseline .flow-sdk/edited
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow --no-check
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
@@ -254,7 +254,7 @@ Install `.flow-sdk/Deployed.merged.flow` as [the same loop by hand](#the-same-lo
 
 <!--skill-flavor:hand-loop:start-->
 ```bash
-find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '*-*-*-*-*' \) -exec rm -rf {} +
+[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
 uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts --no-pipeline
 mkdir -p .flow-sdk/baseline .flow-sdk/edited
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow
