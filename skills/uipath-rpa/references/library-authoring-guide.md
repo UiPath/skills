@@ -144,7 +144,7 @@ Each public workflow is an API surface. Apply every rule:
 - **Never swallow errors**: no empty `Catch` blocks, no `out` boolean success flags in place of exceptions. A swallowed error returns control to a consumer whose target app is in an unknown state.
 - **Never set `ContinueOnError` inside a library** — the consumer decides failure policy.
 - **No hardcoded paths** — accept paths as arguments, or build from `UiPath.Constants.Project.Location` for files packed with the library.
-- **No embedded config or secrets** — read Orchestrator assets at the consumer level and pass them in as arguments. A credential passes as its asset's name, and the library reads it inside the scope that uses it: a `SecureString` argument fails `build` ([cli-reference.md § Analyzer errors](cli-reference.md#analyzer-errors)).
+- **No embedded config or secrets** — read Orchestrator assets at the consumer level and pass them in as arguments; a credential by its asset's name (SKILL.md Common Rule 5a).
 
 ## Versioning
 
