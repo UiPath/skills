@@ -28,6 +28,8 @@ ALL phases. Never override.
 
 **State:** `.local/investigations/raw/` (full CLI responses — create at start) and `.local/investigations/notes.md` (running log: anchor, signals, playbook matches, branch decisions with rejecting data, checklist verdicts, escalation record). No other state files.
 
+**Git-ignore before the first capture.** Raw captures hold tenant data verbatim (job arguments, queue item payloads, credentials). Before the first CLI call, run `mkdir -p .local/investigations/raw && printf '*\n' > .local/.gitignore` from the investigation root, so nothing under `.local/` can be committed or synced. Never skip this step, and never write a capture before it has run.
+
 **Progress:** track phases with TaskCreate/TaskUpdate, subjects tailored to the user's problem.
 
 ## 2. Anchor & primary evidence
@@ -109,4 +111,4 @@ New data mid-investigation (error messages, job IDs, logs) → re-run §2–§4 
 
 ## 10. Completion
 
-After presenting and finishing any interactive actions: offer follow-up help and offer to delete or preserve `.local/investigations/`. If no root cause was found, offer via `AskUserQuestion`: provide more data (re-anchor) or open a UiPath support ticket with the evidence gathered.
+After presenting and finishing any interactive actions: offer follow-up help, then ask via `AskUserQuestion` whether to keep `.local/investigations/` (default: delete). Delete it with `rm -rf .local/investigations` unless the user explicitly chooses to keep it — a decline, non-answer, or unavailable `AskUserQuestion` means delete. Leave `.local/.gitignore` in place. If no root cause was found, offer via `AskUserQuestion`: provide more data (re-anchor) or open a UiPath support ticket with the evidence gathered.
