@@ -1,0 +1,124 @@
+task_id: skill-byo-llm-connector-chat-bridge-e2e
+description: >
+  E2E: build a BYO LLM custom connector that lets a product speaking OpenAI
+  chat-completions use a vendor with its own request/response format (the
+  fictional Acme Inference API in vendor/), then walk the tenant lifecycle:
+  import, publish, test connection, and the product-probe create. The build is
+  graded on outcome — check_byo_connector.py executes the connector's own
+  registered hooks on an OpenAI body and on Acme answers and checks the
+  translation both ways, plus the flavor path, the template tag, the auth
+  header and the absence of secret defaults. The tenant steps run against a
+  disconnected CLI and are graded on the command shape: the published custom-
+  key for the connection and Custom + CustomAiGateway + --no-enabled for the
+  probe.
+tags: [uipath-byo-llm-connector, e2e, 'mode:build', 'lifecycle:setup', connector, 'feature:hooks', 'feature:connections']
+
+run_limits:
+  expected_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+      mount_point: vendor
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Our customer runs the Acme Inference API (spec: vendor/acme-inference-api.md)
+  and wants UiPath Agents (product `agents`, feature
+  `agents-design-eval-deploy`) to use it in place of the catalog model
+  `gpt-4o-2024-11-20`. Agents talks OpenAI chat-completions, so build a BYO LLM
+  custom connector that bridges OpenAI chat-completions to the Acme API, then
+  take it through the tenant steps up to the product-probe run.
+
+  Connector: display name "Acme Chat Bridge", organization slug `acme`,
+  vendor model id `acme-large`.
+
+  Important:
+  - The `uip` CLI is installed but NOT logged in to a tenant here. Build the
+    connector offline (pass the organization explicitly). Tenant commands
+    (import, publish, connections, llm-configuration) WILL fail with auth
+    errors — that is expected. Run each tenant command once and move on;
+    use placeholder ids where a previous step returned none. Do NOT try to
+    log in.
+  - No real credentials exist; never put a key anywhere.
+
+  Before starting, load the uipath-byo-llm-connector skill and follow its
+  workflow. Do NOT ask for approval, confirmation, or feedback. Do NOT pause
+  between steps. The build is not complete until `uip is connectors builder
+  validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the connector with builder init"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "validate re-run confirms a valid connector (exit 0)"
+    command: "uip is connectors builder validate --connector-dir periodic-design-acme-acmechatbridge"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Primary outcome: the connector's own hooks translate both ways.
+  - type: run_command
+    description: "check_byo_connector.py: flavor path, tag, auth header, and the hooks' translation both ways"
+    command: "python3 $REFERENCE_DIR/check_byo_connector.py periodic-design-acme-acmechatbridge --hooks"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the feature's allowed flavors and connectors"
+    tool_name: Bash
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+list-product-configs(?=[\s\S]*--product\s+agents)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent imported the connector"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+import'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent published the connector"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+publish'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the test connection with the published custom- key"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connections\s+create\s+custom-acme-acmechatbridge'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never created a connection with the design- key"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connections\s+create\s+design-'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent probed with a disabled Custom configuration carrying the CustomAiGateway template"
+    tool_name: Bash
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+create(?=[\s\S]*--no-enabled)(?=[\s\S]*Custom)(?=[\s\S]*CustomAiGateway)(?=[\s\S]*OpenAiChatCompletions)(?=[\s\S]*acme-large)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

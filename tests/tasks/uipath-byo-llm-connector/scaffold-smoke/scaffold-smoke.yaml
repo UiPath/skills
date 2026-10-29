@@ -1,0 +1,64 @@
+task_id: skill-byo-llm-connector-scaffold
+description: >
+  Smoke: scaffold the shell of a BYO LLM custom connector offline for the
+  OpenAiChatCompletions flavor and validate it. Guards the contract rules a
+  shell must get right before any hook is written — the resource sits at the
+  flavor's path (/v1/chat/completions, not the vendor's), the template tag is
+  set, the key travels in the vendor's header, and no secret has a default —
+  graded by the e2e task's check_byo_connector.py without its hook checks.
+tags: [uipath-byo-llm-connector, smoke, 'mode:build', 'lifecycle:generate', connector]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../chat-bridge-e2e/fixtures
+      mount_point: vendor
+
+reference:
+  directory: ../chat-bridge-e2e
+
+initial_prompt: |
+  Scaffold the shell of a BYO LLM custom connector that will let a UiPath
+  product speaking OpenAI chat-completions call the Acme Inference API
+  (spec: vendor/acme-inference-api.md). Only the shell for now: resource,
+  authentication, metadata — no request/response translation yet.
+
+  Connector: display name "Acme Chat Bridge", organization slug `acme`.
+  This is an OFFLINE build — the `uip` CLI is not logged in; pass the
+  organization explicitly and do not import or publish.
+
+  Before starting, load the uipath-byo-llm-connector skill and follow its
+  workflow. Do NOT ask for approval, confirmation, or feedback. The task is not
+  complete until `uip is connectors builder validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the connector with builder init"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "validate re-run confirms a valid connector (exit 0)"
+    command: "uip is connectors builder validate --connector-dir periodic-design-acme-acmechatbridge"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "check_byo_connector.py (static): flavor path, template tag, x-api-key header, no secret defaults"
+    command: "python3 $REFERENCE_DIR/check_byo_connector.py periodic-design-acme-acmechatbridge"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Offline build: the agent did not import to a tenant"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+import'
+    weight: 1.0
+    pass_threshold: 1.0
