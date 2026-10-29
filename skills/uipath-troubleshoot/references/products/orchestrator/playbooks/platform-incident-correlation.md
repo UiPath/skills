@@ -26,9 +26,15 @@ Do NOT mistake this for: a single automation's logic bug, one robot's credential
 ## Investigation
 
 1. Establish the fan-out — list faulted jobs across folders in the reported window:
-   `uip or jobs list --state Faulted --output json` (cross-folder; add `--created-after/--created-before` to bound the window). Count DISTINCT `ProcessName` / `FolderName`. Many unrelated automations in a tight window ⇒ suspect platform.
+   ```bash
+   uip or jobs list --all-folders --state Faulted --limit 50 \
+     --created-after <START_TIMESTAMP> --created-before <END_TIMESTAMP> --output json \
+     --output-filter '[].{Key:Key,ProcessName:ProcessName,ReleaseKey:ReleaseKey,StartTime:StartTime}' \
+     | tee .local/investigations/raw/incident-jobs-offset-0.json
+   ```
+   Use ISO 8601 timestamps for the reported window. While `Pagination.HasMore` is true, repeat with `--offset 50`, `--offset 100`, and so on, saving each page to a separate raw file. Count distinct nonempty `ReleaseKey` values and label them with `ProcessName`; `jobs list` does not return `FolderName`. A release key identifies a process, not a folder. Confirm the folder spread in step 2 before treating the failures as cross-folder.
 2. Confirm the error shape on a sample:
-   `uip or jobs get <job-key> --output json` on two or three of the affected jobs — infrastructure errors (503 / token / gateway), not automation-logic exceptions, and different processes carrying the SAME class of error.
+   `uip or jobs get <JOB_KEY> --no-download --output json` on two or three jobs from different releases, capturing each response per the investigation guide. Read `FolderKey` from those details and match it to `Path` in the captured folder list. Require different folders and processes carrying the SAME infrastructure error class (503 / token / gateway), not automation-logic exceptions. If folder identity is missing or the sample only establishes one folder, cross-folder spread remains unconfirmed.
 3. Correlate with platform status:
    - Check **status.uipath.com** for a reported incident overlapping the failure window (region/service).
    - Check the customer-portal **known-issues** feed for a matching active issue.

@@ -52,10 +52,11 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
    3. Do NOT continue with any data fetch until the user answers.
    4. Record the chosen folder in `.local/investigations/notes.md` and proceed to step 2 (Process).
 
-   **Bounded fallback** — applies ONLY when the user explicitly answers step B.3 with "I don't know" / "no preference" / equivalent. Run ONCE across accessible folders and pick the most-recent matching job:
+   **Bounded fallback** — applies ONLY when the user explicitly answers step B.3 with "I don't know" / "no preference" / equivalent. Run ONCE across accessible folders and pick the newest-created matching job. This bounded fallback only needs the first page because `--sort-by "CreationTime desc"` orders newest-first; it is not a complete inventory:
    ```
-   uip or jobs list --all-folders --limit 50 --state <state> --output json \
-     --output-filter "[].{Key:Key,State:State,StartTime:StartTime,ProcessName:ProcessName,ReleaseKey:ReleaseKey}" \
+   uip or jobs list --all-folders --limit 50 --state <state> \
+     --sort-by "CreationTime desc" --output json \
+     --output-filter "[].{Key:Key,State:State,CreationTime:CreationTime,StartTime:StartTime,ProcessName:ProcessName,ReleaseKey:ReleaseKey}" \
      | tee .local/investigations/raw/triage-jobs-cross-folder.json
    ```
    `jobs list` returns `ProcessName` and `ReleaseKey`, not `ReleaseName` or `FolderName`. Resolve the selected job's folder from its details before proceeding:
@@ -96,7 +97,7 @@ For every job under investigation, gather these in order. Follow the generic gui
      --output-filter '{Key:Key,State:State,StartTime:StartTime,EndTime:EndTime,Info:Info,JobError:JobError,InputArguments:InputArguments,OutputArguments:OutputArguments}' \
      | tee .local/investigations/raw/triage-job-get.json
    ```
-2. **Job logs** — robot execution logs, newest-first. Folder is inferred from the job key. Use `--level Error` to find errors quickly. `--limit` controls entry count (default 50).
+2. **Job logs** — robot execution logs, newest-first. Folder is inferred from the job key. Use `--level Error` to find errors quickly. The command below requests up to 50 entries.
    ```
    uip or jobs logs <key> --level Error --limit 50 --output json \
      --output-filter '[].{Level:Level,TimeStamp:TimeStamp,Message:Message}' \
