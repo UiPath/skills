@@ -28,9 +28,6 @@ dataset:
         Build a UiPath Flow called "ContractReview" that extracts the party
         names and effective date from PDF contracts.
 
-reference:
-  directory: ..
-
 initial_prompt: |
   ${row.prompt}
 
@@ -48,7 +45,10 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "nodes list reports no Extract document node in any .flow (or there is no .flow)"
-    command: "python3 $REFERENCE_DIR/extract-document/check_extract_document_node.py absent"
+    command: >-
+      for f in $(find . -name '*.flow' -not -path '*/node_modules/*'); do
+      [ "$(uip maestro flow nodes list "$f" --output plain --output-filter "length(Nodes[?Type=='uipath.ixp.extract-document-builder'])")" = 0 ] || exit 1;
+      done
     timeout: 120
     expected_exit_code: 0
     weight: 3.0

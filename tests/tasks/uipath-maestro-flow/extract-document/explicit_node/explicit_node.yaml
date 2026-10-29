@@ -5,15 +5,13 @@ description: >
   model node, wires its file input from a flow variable, and leaves a flow that
   validates, without starting an IXP project.
 
-  Graded through the CLI on the final `.flow`: `nodes list` for the node types,
-  so a node that a later compile from builder-SDK source drops counts as
+  Graded by asking the CLI about the final `.flow`: `nodes list` for the node
+  types, so a node that a later compile from builder-SDK source drops counts as
   missing, and `flow validate`, which also rejects a `fileRef` that is not a
   `$vars` reference. The taxonomy is not graded here: writing it needs
   `nodes schema set`, which the taxonomy tasks cover.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
-reference:
-  directory: ..
 
 initial_prompt: |
   Build a UiPath Flow called "InvoiceReader" that takes an invoice PDF as input
@@ -40,11 +38,25 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "nodes list reports an Extract document node in InvoiceReader.flow, and no other uipath.ixp.* node"
-    command: "python3 $REFERENCE_DIR/extract-document/check_extract_document_node.py present --flow-name InvoiceReader"
-    timeout: 120
+    description: "nodes list reports an Extract document node in InvoiceReader.flow"
+    command: >-
+      f=$(find . -name InvoiceReader.flow -not -path '*/node_modules/*' | head -1);
+      [ -n "$f" ] &&
+      [ "$(uip maestro flow nodes list "$f" --output plain --output-filter "length(Nodes[?Type=='uipath.ixp.extract-document-builder'])")" -ge 1 ]
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "nodes list reports no other uipath.ixp.* node (published model or processor)"
+    command: >-
+      f=$(find . -name InvoiceReader.flow -not -path '*/node_modules/*' | head -1);
+      [ -n "$f" ] &&
+      [ "$(uip maestro flow nodes list "$f" --output plain --output-filter "length(Nodes[?starts_with(Type, 'uipath.ixp.') && Type != 'uipath.ixp.extract-document-builder'])")" = 0 ]
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_not_executed
@@ -56,7 +68,9 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes on InvoiceReader.flow, including a $vars fileRef"
-    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    command: >-
+      f=$(find . -name InvoiceReader.flow -not -path '*/node_modules/*' | head -1);
+      [ -n "$f" ] && uip maestro flow validate "$f" --output json
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
