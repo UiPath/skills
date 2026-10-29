@@ -200,6 +200,7 @@ Declare the namespace and use each public workflow as an element — property na
 
 5. **Stale design session after the dependency becomes resolvable:** `build` compiles the consumer but `validate` keeps failing with `Cannot create unknown type` for the library activity. Run `uip rpa project close --project-dir "<CONSUMER_PROJECT_DIR>"` and re-run `validate`; the next command reloads the project.
 6. **Same version repacked:** the package cache keeps the first package under an id and version and ignores a repack, so bump the library version whenever a consumer must see a change.
+7. **Dependency floor:** the consumer's version of each package the library depends on is at least the library's. A consumer pinned lower validates and builds with only a warning, `Detected package downgrade: <PACKAGE_ID> from <LIBRARY_VERSION> to <CONSUMER_VERSION>`, then fails at run time loading the library's assembly version (`Could not load file or assembly '<PACKAGE_ID>, Version=…'`). Treat that warning as an error: raise the consumer's dependency to the version it names.
 
 ## Library Patterns
 
