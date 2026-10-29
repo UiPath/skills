@@ -23,7 +23,8 @@ for an added node, as postconditions:
 4. Nothing lands on another node; sticky notes are free to sit anywhere.
 5. Nodes keep their order in a row, and edges keep pointing right (a retry
    edge back to an earlier node is exempt).
-6. An added node sits within two rows of a node it is wired to.
+6. An added node sits within two rows of a node it is wired to, or of an added
+   branch beside it from the same node.
 
 `--aspect merged` checks that the `.flow` came out of the skill's decompile ->
 compile -> merge loop, not a hand edit.
@@ -52,7 +53,7 @@ from pathlib import Path
 DEFAULT_SIZE = {"width": 96, "height": 96}
 STICKY_NOTE_TYPE = "stickyNote"
 # GAP, PADDING and BODY_ORIGIN in builder-sdk typescript/sdk/src/node-placement.ts at
-# 2501a23c (UiPath/builder-sdk#1501); re-read them there when merge placement changes.
+# 75a5a57c (UiPath/builder-sdk#1501); re-read them there when merge placement changes.
 GAP = 96
 PADDING = 24
 BODY_PADDING = {"x": 144, "y": 96}
@@ -309,15 +310,15 @@ def container_growth(
     return failures
 
 
-def run_sources(a: str, added: set[str], edges: list[dict], before: dict, parent_of: dict[str, str | None]) -> list[int]:
-    """The x of each original node the run of added nodes holding `a` starts from: where merge inserted it."""
-    xs, seen, frontier = [], {a}, {a}
+def run_sources(a: str, added: set[str], edges: list[dict], before: dict, parent_of: dict[str, str | None]) -> set[str]:
+    """The original nodes the run of added nodes holding `a` starts from: where merge inserted it."""
+    sources, seen, frontier = set(), {a}, {a}
     while frontier:
         preds = {u for u, v in map(ends, edges) if v in frontier and parent_of.get(u) == parent_of.get(a) and u not in seen}
-        xs += [box(before[u])[0] for u in preds if u in before]
+        sources |= {u for u in preds if u in before}
         frontier = {u for u in preds if u in added}
         seen |= preds
-    return xs
+    return sources
 
 
 def pushed_from_left(
@@ -334,14 +335,16 @@ def pushed_from_left(
             continue
 
         scope = parent_of.get(a)
-        anchors = run_sources(a, added, edges, before, parent_of)
-        after_it = downstream(a, edges, parent_of)
+        sources = run_sources(a, added, edges, before, parent_of)
+        anchor = min((box(before[u])[0] for u in sources), default=None)
+        after_it = downstream(a, edges, parent_of) - sources
         pushed = {
             o for o in kept
-            if parent_of.get(o) == scope and (not anchors or box(before[o])[0] >= min(anchors))
+            if parent_of.get(o) == scope and o not in sources and (anchor is None or box(before[o])[0] >= anchor)
             and (o in after_it or boxes_overlap(after[a], before[o], PADDING))
         }
-        in_row = [o for o in pushed if rows_meet(after[a], before[o])]
+        succs = {v for u, v in map(ends, edges) if u == a}
+        in_row = [o for o in pushed if o in succs or rows_meet(after[a], before[o])]
         short = max((box(after[a])[0] - box(before[o])[0] for o in in_row), default=0)
         if short > 0:
             found.append((a, {a} | pushed, short))
@@ -386,12 +389,21 @@ def growth(c: str, before: dict, after: dict) -> tuple[int, int]:
     return box(after[c])[2] - box(before[c])[2], box(after[c])[3] - box(before[c])[3]
 
 
-def followed_edges(original_edges: list[dict], edges: list[dict], added: set[str]) -> list[tuple[str, str]]:
-    """Final edges a push travels along: original ones, and an added node's edge into the node an insert split off."""
+def followed_edges(
+    original_edges: list[dict], edges: list[dict], added: set[str], after: dict, parent_of: dict[str, str | None]
+) -> list[tuple[str, str]]:
+    """Final edges a push travels along: original ones, an added node's edge into the node an insert split off,
+    and from a retry edge's source on to what its target reaches, as merge pushes round the cycle."""
     kept = {edge_key(e) for e in edges}
     split = {edge_key(e)[2] for e in original_edges if edge_key(e) not in kept}
     pairs = {ends(e) for e in original_edges}
-    return [(u, v) for u, v in map(ends, edges) if (u, v) in pairs or (u in added and v in split)]
+    follows = [(u, v) for u, v in map(ends, edges) if (u, v) in pairs or (u in added and v in split)]
+    original = [{"sourceNodeId": u, "targetNodeId": v} for u, v in pairs]
+    for e in edges:
+        u, t = ends(e)
+        if u in after and t in after and is_back_edge(e, edges, parent_of, after):
+            follows += [(u, w) for w in downstream(t, original, parent_of) if w != u]
+    return follows
 
 
 def pushed_by_growth(a: str, grown: set[str], before: dict, after: dict, parent_of: dict[str, str | None]) -> bool:
@@ -454,7 +466,7 @@ def moves_without_cause(
     moved = {i for i in changed if offset(before[i], after[i]) != (0, 0)}
     entered = {v for _, v in map(ends, edges)}
     placed = {a for a in added if a in after and (a in entered or pushed_by_growth(a, grown, before, after, parent_of))}
-    follows = followed_edges(original_edges, edges, added)
+    follows = followed_edges(original_edges, edges, added, after, parent_of)
 
     causes = caused(placed | grown, moved, follows, before, after, parent_of)
     return [
@@ -491,7 +503,7 @@ def order_changes(solid: list[str], edges: list[dict], before: dict, after: dict
             if parent_of.get(a) != parent_of.get(b) or not shares_row(before[a], before[b]):
                 continue
             was, now = box(before[a])[0] - box(before[b])[0], box(after[a])[0] - box(after[b])[0]
-            if (was > 0) - (was < 0) != (now > 0) - (now < 0):
+            if was and (was > 0) != (now > 0):
                 failures.append(f"{a!r} and {b!r} changed order in their row")
 
     on_canvas = set(solid)
@@ -526,7 +538,11 @@ def added_placement(
             continue
         _, y, _, h = box(after[a])
         succs = [v for u, v in map(ends, edges) if u == a and v in on_canvas and parent_of.get(v) == parent_of.get(a)]
-        if min(abs(y - box(after[n])[1]) for n in preds + succs) > 2 * (h + GAP):
+        siblings = [
+            v for u, v in map(ends, edges)
+            if u in preds and v != a and v in added and v in on_canvas and parent_of.get(v) == parent_of.get(a)
+        ]
+        if min(abs(y - box(after[n])[1]) for n in preds + succs + siblings) > 2 * (h + GAP):
             failures.append(f"new node {a!r} at {after[a].get('position')} is more than two rows from every node it is wired to")
 
     for i in solid:
@@ -572,9 +588,8 @@ def check_layout(original: dict, final: dict, removable_nodes: set[str] = frozen
 
     grown = entry_changes(changed, before, after, failures)
     failures += container_growth(grown, touched, solid, before, after, parent_of)
-    forward = [e for e in edges if not (ends(e)[0] in after and ends(e)[1] in after and is_back_edge(e, edges, parent_of, after))]
-    tucked = pushed_from_left(added, kept, forward, before, after, parent_of)
-    follows = followed_edges(original.get("edges", []), edges, added)
+    tucked = pushed_from_left(added, kept, edges, before, after, parent_of)
+    follows = followed_edges(original.get("edges", []), edges, added, after, parent_of)
     failures += moves_without_room(changed, added, grown, tucked, follows, before, after, parent_of)
     failures += moves_without_cause(changed, added, grown, original.get("edges", []), edges, before, after, parent_of)
     failures += new_overlaps(solid, changed, added, before, after, parent_of)

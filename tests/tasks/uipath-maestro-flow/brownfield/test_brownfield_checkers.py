@@ -687,7 +687,7 @@ def test_insert_before_an_index_tucked_under_its_agent_clears_the_agent(tmp_path
     assert layout_of(tmp_path, original, final) == expected
 
 
-# placeAddedNodes' own merge output on UiPath/builder-sdk#1501 2501a23c, one case per room or row allowance it needs.
+# placeAddedNodes' own merge output on UiPath/builder-sdk#1501 2501a23c and 75a5a57c, one case per room or row allowance it needs.
 MERGE_LAYOUTS = json.loads((HERE / "merge_layouts.json").read_text())
 
 
