@@ -54,7 +54,7 @@ from pathlib import Path
 DEFAULT_SIZE = {"width": 96, "height": 96}
 STICKY_NOTE_TYPE = "stickyNote"
 # GAP, PADDING and BODY_ORIGIN in builder-sdk typescript/sdk/src/node-placement.ts at
-# 8a0fedc2 (UiPath/builder-sdk#1501); re-read them there when merge placement changes.
+# d60f3320 (UiPath/builder-sdk#1501); re-read them there when merge placement changes.
 GAP = 96
 PADDING = 24
 BODY_PADDING = {"x": 144, "y": 96}
