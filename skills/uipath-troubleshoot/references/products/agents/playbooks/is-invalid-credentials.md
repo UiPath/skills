@@ -42,14 +42,14 @@ What to look for:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?attributes.error != null].{name: name, spanType: spanType, error: attributes.error}"
+     --output-filter "[?Attributes.Error != null].{name: Name, spanType: SpanType, error: Attributes.Error}"
    ```
 
 3. Parse the error JSON to identify credential type:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?attributes.error != null].attributes.error" \
+     --output-filter "[?Attributes.Error != null].Attributes.Error" \
      | jq -r '.[] | fromjson | .details' 2>/dev/null \
      || grep -o '"details":"[^"]*"'
    ```
@@ -61,7 +61,7 @@ What to look for:
 
    ```bash
    uip is connections list --output json \
-     --output-filter "connections[?name == '<connection-name>'].{id: id, name: name, connector: connector, folders: resource.folders}"
+     --output-filter "[?Name == '<connection-name>'].{id: Id, name: Name, connector: ConnectorName, state: State, folder: Folder}"
    ```
 
 5. Ping to confirm authentication fails:

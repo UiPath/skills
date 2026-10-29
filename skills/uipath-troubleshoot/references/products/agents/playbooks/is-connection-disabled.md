@@ -43,7 +43,7 @@ What to look for:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?attributes.error != null].{name: name, spanType: spanType, error: attributes.error}"
+     --output-filter "[?Attributes.Error != null].{name: Name, spanType: SpanType, error: Attributes.Error}"
    ```
 
    Note the connection name or ID from the error text or span name.
@@ -52,7 +52,7 @@ What to look for:
 
    ```bash
    uip is connections list --output json \
-     --output-filter "connections[?name == '<connection-name>'].{id: id, name: name, connector: connector}"
+     --output-filter "[?Name == '<connection-name>'].{id: Id, name: Name, connector: ConnectorName, state: State}"
    ```
 
 4. Ping the connection to confirm lockout:
