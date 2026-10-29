@@ -68,5 +68,7 @@
   reads in `intsvc.cache.remember` and throw on any vendor failure (a 2xx
   `ok: false` too), or the failure is stored. Keep writes outside `fill`. Put a
   version in shared names (`describe@1:${object}`) and bump it when the stored shape
-  changes. Run work-in-progress with `--no-cache` to store nothing; test caching
+  changes, in every script that shares the base; in a connector repo, declare sharing
+  in `app/element/v4/cache-names.json` and fix `uip is connectors builder validate`
+  `script-cache-names` errors. Run work-in-progress with `--no-cache` to store nothing; test caching
   once the script is right ([caching.md](caching.md)).

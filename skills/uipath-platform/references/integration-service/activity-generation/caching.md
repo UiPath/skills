@@ -58,6 +58,22 @@ contract:
 - **Every input that changes the value goes in the name.** `fill` copies in different
   scripts need not be identical, but each must store the same shape under that name.
 
+A script that lives in a connector repo (`app/element/v4/scripts/*.js`) is checked at
+design time by `uip is connectors builder validate --connector-dir <dir>`, check
+`script-cache-names`. `perScript` calls are ignored; every shared name must:
+
+- **Start with `<base>@<version>:`** (`` `user-by-email@1:${email}` ``). A name without
+  one is an error.
+- **Use a base no other script uses, unless declared.** Intentional sharing goes in
+  `app/element/v4/cache-names.json`, listing exactly the scripts that use the base
+  (file names without `.js`): `{ "user-by-email": ["GetUserByEmail", "SendMessageToUser"] }`.
+  An undeclared shared base is an error; a declaration naming a script that no longer
+  uses it, or a base used by one script or none, is a warning.
+- **Carry one version across its scripts.** When the stored shape changes, bump the
+  version in every script that shares the base, together; mixed versions are an error.
+
+Fix `script-cache-names` errors before publishing the connector.
+
 Inline scripts (`--inline-script`) cache in their own namespace and per caller: an
 inline script never sees a published script's entries, nor another caller's inline
 entries. With no caller identity the cache is off for that run.
