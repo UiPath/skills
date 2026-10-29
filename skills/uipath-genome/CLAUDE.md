@@ -8,7 +8,7 @@ Every subject is stated in full in exactly one file; every other mention is a on
 |---|---|
 | Genome levels (component / process), test-components-are-one-test-project exception, section rules, stubs, population matrix, `*[Inferred]*`, write-then-offer-edits, complexity inference | `references/genome-format-guide.md` |
 | Composite UI interaction **contract** (what a substep must carry) | `genome-format-guide.md` § Workflow |
-| Credential asset per login account; secrets never in genome, data file or report | `genome-format-guide.md` § Platform Dependencies; at build: `execution-guide.md` § 2.2, credentials |
+| Credential asset per login account, Secret asset per secret with no account, a secret crossing no component boundary; secrets never in genome, data file or report; values the platform keeps per environment as assets | `genome-format-guide.md` § Platform Dependencies; at build: `execution-guide.md` § 2.2, credentials |
 | Source Map contract rows and the step table (its columns and rules), how extracted unused parts are written and where those left out go; "genome files are the only output" (locators and rows stay in export) | `references/extracted-genome-guide.md` § Source Map |
 | The kinds of source fact read from the source, never from its rendering (literals and case rules, counts, lengths, waits and budgets, set or typed, control-flow flags, formats, built-ins, parameter documentation, log texts, file kinds and the field a filter uses) | `extracted-genome-guide.md` § Source values |
 | The source-defect marker, the evident intent, which behaviour the rebuild follows, user rulings, the defect index | `extracted-genome-guide.md` § Source Defects |
