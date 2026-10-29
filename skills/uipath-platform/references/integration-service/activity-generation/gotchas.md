@@ -66,6 +66,7 @@
   Anything needing base64 cannot be written in a script.
 - **Cache reads, never writes, and iterate with `--no-cache`.** Wrap vendor
   reads in `intsvc.cache.remember` and throw on any vendor failure (a 2xx
-  `ok: false` too), or the failure is stored. Keep writes outside `fill`. Inline
-  scripts cache too, so run work-in-progress with `--no-cache` to store nothing;
-  test caching once the script is right ([caching.md](caching.md)).
+  `ok: false` too), or the failure is stored. Keep writes outside `fill`. Put a
+  version in shared names (`describe@1:${object}`) and bump it when the stored shape
+  changes. Run work-in-progress with `--no-cache` to store nothing; test caching
+  once the script is right ([caching.md](caching.md)).
