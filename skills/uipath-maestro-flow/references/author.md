@@ -38,11 +38,11 @@ cannot make: which node, which topology, what an output means, and what to ask.
    pagination loop before reporting "not found".
 4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit
    with `compile -o` for a new flow; a non-empty `.flow` that existed before this
-   turn is re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)). Never hand-edit the emitted `.flow`, `content/*.bpmn`,
-   `bindings_v2.json`, `entry-points.json`, `operate.json` or
-   `package-descriptor.json` — the CLI regenerates them, and the next compile
-   silently undoes a hand edit. Brownfield JSON goes through `decompile`
-   ([`brownfield.md`](brownfield.md)).
+   turn is re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)).
+   Never hand-edit the emitted `.flow`, `content/*.bpmn`, `bindings_v2.json`,
+   `entry-points.json`, `operate.json` or `package-descriptor.json` — the CLI
+   regenerates them, and the next compile silently undoes a hand edit.
+   Brownfield JSON goes through `decompile` ([`brownfield.md`](brownfield.md)).
 5. **Run the loop once the source is complete.** `check --source` is cheap, so
    use it freely while writing; `compile` and `validate` run on the finished
    source, and again after the last edit. Treat every `validate` warning as a

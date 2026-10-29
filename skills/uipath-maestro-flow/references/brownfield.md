@@ -5,7 +5,7 @@ supplied its `.flow.ts`. A `.flow.ts` an earlier turn left is not supplied: the
 canvas may have changed the `.flow` since.
 
 <!--skill-flavor:fresh-decompile-cleanup:start-->
-Decompile fresh, after removing that turn's pipeline artifacts
+Decompile fresh, after removing an earlier turn's pipeline artifacts
 ([The generated pipeline](#the-generated-pipeline)).
 
 <!--skill-flavor:fresh-decompile-cleanup:end-->
@@ -37,7 +37,7 @@ it recursively.
 PROJECT=Solution/Deployed
 CANONICAL="$PROJECT/Deployed.flow"
 WORK=.flow-work/Deployed
-mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
+rm -rf "${WORK:?}" && mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow" --no-check
@@ -164,6 +164,7 @@ source, and so do the pipeline and the by-hand loop below. Hand the edited
 itself:
 
 ```bash
+rm -rf "${WORK:?}" && mkdir -p "$WORK/candidate"
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
 flow-sdk flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL" \
@@ -217,7 +218,8 @@ hand loop below with `merge --strict`.
 
 Re-running it after further edits repeats only the compile and merge — the
 baseline is captured once and reused. A later turn is not a further edit: before
-its fresh decompile, run `rm -rf .flow-sdk/Deployed.baseline .flow-sdk/Deployed.edited .flow-sdk/Deployed.merged.flow`.
+its fresh decompile, remove the earlier turn's artifacts and agent sidecars:
+`find .flow-sdk -maxdepth 1 \( -name 'Deployed.baseline' -o -name 'Deployed.edited' -o -name 'Deployed.merged.flow' -o -name '*-*-*-*-*' \) -exec rm -rf {} +`.
 Pass `--no-pipeline` to `decompile` when
 you deliberately want the manual sequence instead. The pipeline writes its
 `.flow` artifacts into that `.flow-sdk/` directory (the baseline and the edited
@@ -236,7 +238,8 @@ When the task supplied `.flow-sdk/Deployed.flow.ts`, do not decompile: it
 overwrites that source. Compile its baseline before the edit, then merge:
 
 ```bash
-rm -rf .flow-sdk/baseline .flow-sdk/edited && mkdir -p .flow-sdk/baseline .flow-sdk/edited
+find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '*-*-*-*-*' \) -exec rm -rf {} +
+mkdir -p .flow-sdk/baseline .flow-sdk/edited
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow --no-check
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/edited/Deployed.flow
@@ -251,6 +254,7 @@ Install `.flow-sdk/Deployed.merged.flow` as [the same loop by hand](#the-same-lo
 
 <!--skill-flavor:hand-loop:start-->
 ```bash
+find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '*-*-*-*-*' \) -exec rm -rf {} +
 uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts --no-pipeline
 mkdir -p .flow-sdk/baseline .flow-sdk/edited
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow

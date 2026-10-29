@@ -6,7 +6,8 @@ Pins wording, not agent behavior.
   or on `registry pull` / `codedagent setup`.
 - SKILL.md skips the decompile only for a supplied source, and writes
   `-o <Name>.flow` only in the new-flow Lifecycle block.
-- The editing loop removes the generated pipeline's artifacts before decompile.
+- Every brownfield loop clears an earlier turn's artifacts and agent sidecars
+  before it writes new ones.
 - The supplied-source loop never decompiles and ends in `merge --original`.
 - The debug, overwrite and guessed-connection rules keep their exact clauses.
 - bindings.md holds the connection-pick rule; the others point to it.
@@ -29,7 +30,8 @@ _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
 _CANONICAL = os.path.join(_REPO, "skills", "uipath-maestro-flow")
 _STUDIOWEB = os.path.join(_REPO, "skill-flavors", "studioweb", "uipath-maestro-flow")
 
-PIPELINE_ARTIFACTS = (".flow-sdk/{n}.baseline", ".flow-sdk/{n}.edited", ".flow-sdk/{n}.merged.flow")
+PIPELINE_ARTIFACTS = ("'{n}.baseline'", "'{n}.edited'", "'{n}.merged.flow'", "'*-*-*-*-*'")
+CLEAR_WORK = 'rm -rf "${WORK:?}"'
 FLAVORS = ("default", "studioweb")
 ALLOWED_FORCE = re.compile(r"never pass `--force`|registry pull --force|codedagent setup --force")
 BINDINGS_RULE = "bindings.md#where-both-values-come-from"
@@ -51,14 +53,14 @@ PINNED = {
         "`flow debug` is a REAL run, not a validation step: ask first, as it says.",
     ],
     ("studioweb", "SKILL.md"): [
-        "`uip maestro flow debug \"<Project>\"` is a real run: ask first unless the user asked for it.",
+        "`uip maestro flow debug \"<Project>\"` is a real run: ask per references/operate.md.",
         "`flow debug` is a REAL run, not a validation step: ask first, as it says.",
     ],
     ("default", "references/operate.md"): [
         "ask once before the first run, even when the request is for a flow that works; "
-        "that yes covers the fix-and-re-run loop on the flow the user asked to get working in this task.",
+        "that yes covers the fix-and-re-run loop on the flow the user asked to get working this turn.",
         "run it when the request is for a flow that works, unless a connection was guessed",
-        "for a solution this run did not scaffold, debug only on a yes to a question that names that "
+        "for a solution not scaffolded this turn, debug only on a yes to a question that names that "
         "overwrite, and headless, never debug it.",
     ],
     ("studioweb", "references/operate.md"): [
@@ -141,6 +143,10 @@ def _commands(text: str) -> list[str]:
     return commands
 
 
+def _removes(command: str, names: list[str]) -> bool:
+    return ("rm -rf" in command) and all(name in command for name in names)
+
+
 def test_pinned_safety_wording():
     missing = []
     for (flavor, rel), phrases in PINNED.items():
@@ -185,15 +191,15 @@ def test_editing_loop_clears_pipeline_artifacts_first():
     assert decompile is not None, "## Editing an existing flow has no decompile command"
 
     wanted = [p.format(n="<Name>") for p in PIPELINE_ARTIFACTS]
-    cleaned = any(c.startswith("rm -rf ") and all(p in c.split() for p in wanted) for c in commands[:decompile])
-    assert cleaned, f"## Editing an existing flow must run `rm -rf {' '.join(wanted)}` before `decompile`"
+    cleaned = any(_removes(c, wanted) for c in commands[:decompile])
+    assert cleaned, f"## Editing an existing flow must remove {wanted} before `decompile`"
 
 
 def test_generated_pipeline_names_the_artifacts():
     pipeline = _section(_composed("default", "references/brownfield.md"), "The generated pipeline")
     wanted = [p.format(n="Deployed") for p in PIPELINE_ARTIFACTS]
     units = _commands(pipeline) + _paragraphs(pipeline)
-    assert any("rm -rf" in u and all(p in u for p in wanted) for u in units), (
+    assert any(_removes(u, wanted) for u in units), (
         f"brownfield.md generated pipeline must remove {wanted} before a later turn's decompile"
     )
 
@@ -205,3 +211,18 @@ def test_supplied_source_never_decompiles():
     assert commands[-1].startswith("uip maestro flow merge ") and "--original" in commands[-1], (
         "the supplied-source loop must end in `merge --original`"
     )
+
+
+def test_work_loops_clear_work_first():
+    brownfield = _composed("default", "references/brownfield.md")
+    stale = []
+    for block in _FENCE.findall(brownfield):
+        commands = _commands("```\n" + block + "```\n")
+        writes = next((i for i, c in enumerate(commands) if '"$WORK/candidate' in c and "-o" in c), None)
+        if writes is None:
+            continue
+
+        if not any(c.startswith(CLEAR_WORK) for c in commands[:writes]):
+            stale.append(commands[writes])
+
+    assert not stale, f"a loop that writes $WORK/candidate must `{CLEAR_WORK}` first:\n" + "\n".join(stale)

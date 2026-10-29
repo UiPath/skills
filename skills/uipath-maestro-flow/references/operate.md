@@ -137,13 +137,13 @@ The argument is the PROJECT directory, the one holding `project.uiproj`.
 messages, calls the APIs. It is not a validation step — `validate` is. When a
 user can answer and did not ask for the run, ask once before the first run, even
 when the request is for a flow that works; that yes covers the fix-and-re-run
-loop on the flow the user asked to get working in this task. With nobody to ask,
+loop on the flow the user asked to get working this turn. With nobody to ask,
 run it when the request is for a flow that works, unless a connection was guessed
 ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report the flow as unverified rather than
 letting a passing `validate` stand as the result. Debug overwrites the Studio Web
-solution whose `SolutionId` matches the local `.uipx`: for a solution this run
-did not scaffold, debug only on a yes to a question that names that overwrite,
-and headless, never debug it.
+solution whose `SolutionId` matches the local `.uipx`: for a solution not
+scaffolded this turn, debug only on a yes to a question that names that
+overwrite, and headless, never debug it.
 <!--skill-flavor:operate-debug:end-->
 
 Operational constraints, each of which has its own failure:

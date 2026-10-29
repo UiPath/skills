@@ -111,12 +111,11 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 
 <!--skill-flavor:sdk-editing:start-->
 In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless the task supplied source, decompile the `.flow` fresh, compile the baseline, edit narrowly, and merge the delta into the original. A supplied source skips the decompile ([brownfield.md](references/brownfield.md#a-supplied-source)).
-These are before/after judgments; no final-artifact checker can prove them.
 
 For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which runs the loop in two invocations and gets the baseline ordering right. It keeps its baseline, edited and merged `.flow` files in `.flow-sdk/` too:
 
 ```bash
-( cd "<Solution>/<Name>" && rm -rf .flow-sdk/<Name>.baseline .flow-sdk/<Name>.edited .flow-sdk/<Name>.merged.flow )
+( cd "<Solution>/<Name>" && find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name '<Name>.merged.flow' -o -name '*-*-*-*-*' \) -exec rm -rf {} + )
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
 node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
 # edit .flow-sdk/<Name>.flow.ts narrowly; no .layout() for added steps (builder-sdk#1320)
