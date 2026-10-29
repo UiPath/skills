@@ -86,7 +86,7 @@ data may be, not from how expensive the call is:
 |---|---|---|
 | `cache_data=uncache` on the inbound request | `--refresh` | every `remember` in the run skips the read and replaces its entry |
 | `cache_data=bypass` on the inbound request | `--no-cache` | every `remember` in the run just runs `fill`: no read, no write |
-| `cache_key=<value>` | `--cache-key <value>` | reaches the script on `context.request.query` |
+| `cache_key=<value>` | `--query cache_key=<value>` | reaches the script on `context.request.query`; only a script that builds a name from it uses it |
 
 `refresh: true` on one call does the same for that call alone.
 
