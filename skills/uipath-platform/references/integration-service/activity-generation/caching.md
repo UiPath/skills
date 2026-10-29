@@ -4,7 +4,7 @@ A script can keep a computed value and serve the next call from it, with
 `intsvc.cache.remember`:
 
 ```js
-const fields = await intsvc.cache.remember(`describe:${name}`, { ttl: 86400 }, async () => {
+const fields = await intsvc.cache.remember(`describe@1:${name}`, { ttl: 86400 }, async () => {
   const res = await intsvc.http({ method: "GET", url: `/services/data/v62.0/sobjects/${name}/describe` });
   if (res.status !== 200) throw new Error(`describe ${name} failed: ${res.status}`);
   return res.body.fields.map(({ name, type, label, nillable, referenceTo }) => ({ name, type, label, nillable, referenceTo }));
@@ -32,12 +32,6 @@ options and limits; follow it where this page differs.
 
 - **Throw on every vendor failure**, including a 2xx body that reports one (Slack's
   `ok: false`). A throw stores nothing; a return is stored, whatever it holds.
-- **Everything that shapes the value goes inside `fill`**: API version, URL,
-  projection. The entry is keyed on `fill`'s source, not on the values it closes
-  over, so an outer value (a variable, `context`) that `fill` reads and `name` does
-  not carry is invisible to the key: two callers with different values share one
-  entry. Read outer values only when `name` carries them (`name` in the describe
-  example), and nothing else.
 - **Writes stay outside `fill`.** A `fill` that made a PUT, PATCH or DELETE, or a
   POST not marked `read: true` on `intsvc.http`, is not stored (except `replay`
   below). Mark a POST `read: true` only when it is a query API with no side effect.
@@ -48,18 +42,27 @@ options and limits; follow it where this page differs.
 
 | | shared (default) | `perScript: true` |
 |---|---|---|
-| key | connection + revision + hash of `fill` source + `name` | the same, plus this script version's digest |
-| who reads it | every script on the connection whose `fill` source is identical | this script version only; editing the script ends it |
-| use for | data several scripts reuse: Salesforce `describe:{object}` for metadata discovery, record lists and record writes | a whole answer: one page of a list, the object list, metadata discovery output |
+| key | connection + revision + `name` | the same, plus this script version's digest |
+| who reads it | every published script on the connection that uses the same `name` | this script version only; editing the script ends it |
+| name | versioned: `describe@1:${object}` | no version needed |
+| use for | data several scripts reuse: Salesforce `describe@1:{object}` for metadata discovery, a user looked up by email | a whole answer: one page of a list, the object list, metadata discovery output |
 
-Inline scripts (`--inline-script`) cache too, in their own namespace: an inline script
-never reads or overwrites a published script's entries, and the reverse. Inline
-scripts share with each other by identical `fill` text, and `perScript` is keyed by
-the inline source's digest.
+A shared entry is keyed on `name` alone, never on the `fill` code, so the name is the
+contract:
 
-Editing `fill` starts a new entry by itself, so no version suffix is needed in
-`name`; a new name is still fine for a deliberate cut-over. Editing or
-re-authenticating the connection also starts fresh entries.
+- **Put a version in a shared name** (`describe@1:${object}`, `user-by-email@1:${email}`)
+  and bump it whenever the stored value's shape changes. Editing `fill` does not start
+  a new entry; an old-shape entry lives until its TTL.
+- **Use a descriptive prefix.** Any published script on the connection that uses the
+  same name shares the entry and can overwrite it, so a generic `list` collides.
+- **Every input that changes the value goes in the name.** `fill` copies in different
+  scripts need not be identical, but each must store the same shape under that name.
+
+Inline scripts (`--inline-script`) cache in their own namespace and per caller: an
+inline script never sees a published script's entries, nor another caller's inline
+entries. With no caller identity the cache is off for that run.
+
+Editing or re-authenticating the connection starts fresh entries.
 
 **`name`** carries every input that changes the value: object name, cursor, limit,
 team, types, normalized email. At most 512 characters. A missing input in the name
