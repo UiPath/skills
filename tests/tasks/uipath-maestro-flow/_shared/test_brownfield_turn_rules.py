@@ -4,7 +4,7 @@ Pins wording, not agent behavior.
 
 - `--force` appears only as `never pass --force`, inside a quoted CLI message,
   or on `registry pull` / `codedagent setup`.
-- SKILL.md skips the decompile only for a supplied source, and writes
+- SKILL.md never skips the decompile of an existing flow, and writes
   `-o <Name>.flow` only in the new-flow Lifecycle block.
 - Every brownfield loop clears an earlier turn's artifacts and agent sidecars
   before it writes new ones.
@@ -46,13 +46,12 @@ INIT_RULE = (
     '`init` answering "already exists and is not empty. Use --force to overwrite" means it exists: '
     "never pass `--force`; edit it."
 )
-SKIP_DECOMPILE_EXEMPTION = (
-    "A supplied source skips the decompile ([brownfield.md](references/brownfield.md#a-supplied-source))."
-)
+SUPPLIED_SOURCE_RULE = "Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source)."
 
 PINNED = {
     ("default", "SKILL.md"): [
         INIT_RULE,
+        SUPPLIED_SOURCE_RULE,
         "When `<Solution>/<Name>/` existed before this turn, skip `init`",
         f"What `prepare` binds or refuses: [bindings.md](references/{BINDINGS_RULE}).",
         "# Stated runtime claim; ask per references/operate.md",
@@ -185,7 +184,7 @@ def test_existing_flow_is_never_recompiled_over():
     skill = _composed("default", "SKILL.md")
     offenders = []
     for sentence in _sentences(skill):
-        if re.search(r"\bskip\w*\b[^.]*\bdecompile", sentence) and sentence != SKIP_DECOMPILE_EXEMPTION:
+        if re.search(r"\bskip\w*\b[^.]*\bdecompile", sentence):
             offenders.append(sentence)
         if re.search(r"\bexist", sentence) and "compile -o" in sentence:
             offenders.append(sentence)

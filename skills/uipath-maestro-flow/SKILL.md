@@ -110,7 +110,7 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 ## Editing an existing flow
 
 <!--skill-flavor:sdk-editing:start-->
-In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless the task supplied source, decompile the `.flow` fresh, compile the baseline, edit narrowly, and merge the delta into the original. A supplied source skips the decompile ([brownfield.md](references/brownfield.md#a-supplied-source)).
+In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless the task supplied source, decompile the `.flow` fresh, compile the baseline, edit narrowly, and merge the delta into the original. Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source).
 
 For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which runs the loop in two invocations. It keeps its baseline, edited and merged `.flow` files in `.flow-sdk/` too:
 
