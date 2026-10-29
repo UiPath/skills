@@ -35,7 +35,7 @@ Runs when the extraction guide's sizing (its Step 2b) plans parts, under [parts-
 
 Before the extraction guide's Step 6b Source Map check and before edits are offered, the orchestrator works through every item:
 
-1. **Questions.** A question two or more components ask moves to the process genome's Configuration Questions; each component keeps, in its own numbered list, a one-line pointer that names that number: `N. {What it decides}: process genome Configuration Question M.`
+1. **Questions.** A question two or more components ask moves to the process genome's Configuration Questions; each component keeps, in its own numbered list, a one-line pointer that names that number, a statement with no question mark: `N. {What it decides}: process genome Configuration Question M.`
 2. **Names.** Every platform resource, lane and environment carries the brief's name in every file; each drift is renamed.
 3. **Defect index.** The process genome's defect table is built from the returned verdicts ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)).
 4. **Rebuild follows.** Each defect is re-checked against that section's rule on which behaviour the rebuild follows, from the intent evidence its verdict returned. A wrong mark is corrected at the step and in the index.

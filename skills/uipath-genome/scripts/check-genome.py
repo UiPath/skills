@@ -97,6 +97,7 @@ STEPS_COLUMNS = ["step", "source objects", "data sets", "captures", "notes"]
 REFERENCE = re.compile(r"`([^`]+)`(?:\s*\(((?:[^()`]|`[^`]*`)*)\))?")  # `Name`, `Name` (id), `Name` (id, locator)
 TEMPLATES = Path(__file__).resolve().parent.parent / "assets" / "templates"
 PLACEHOLDER = re.compile(r"\{[a-z][^}]*\}")
+ONE_WORD = re.compile(r"\{[a-z]+\}")
 
 
 class Report:
@@ -288,13 +289,15 @@ def effective_flows(ts: str) -> tuple[list[tuple[str, str]], bool]:
 
 @functools.cache
 def template_placeholders() -> frozenset[str]:
-    """The `{…}` placeholders of the templates' Transactional Shape sections. A genome's own braces — a value built
-    from parts, such as a reference `{item key}_{date}` — are content, not a placeholder left unfilled."""
+    """The `{…}` placeholders of the templates' Transactional Shape sections, a one-word one with the word before it
+    (`with {result}`, `retried {n}`). A genome's own braces — a value built from parts, such as `{item}_{date}` or
+    `INV-{n}` — are content, not a placeholder left unfilled."""
     found: set[str] = set()
     for name in ("component-genome-template.md", "process-genome-template.md"):
         path = TEMPLATES / name
         if path.exists():
-            found |= set(PLACEHOLDER.findall(section_body(path.read_text(encoding="utf-8"), "Transactional Shape")))
+            for m in re.finditer(rf"(\S+ )?({PLACEHOLDER.pattern})", section_body(path.read_text(encoding="utf-8"), "Transactional Shape")):
+                found.add((m.group(1) or "") + m.group(2) if ONE_WORD.fullmatch(m.group(2)) else m.group(2))
     return frozenset(found)
 
 
@@ -316,9 +319,9 @@ def check_transactional(text: str, level: str, r: Report, part_of: bool = False)
     if not in_process and "**Flows:**" not in ts:
         r.strict("Transactional Shape has no 'Flows:' line")
     template = template_placeholders()  # without the templates beside the script, every lower-case `{…}` counts
-    unfilled = [p for p in sorted(template) if p in ts] if template else PLACEHOLDER.findall(ts)
+    unfilled = [p for p in template if p in ts] if template else PLACEHOLDER.findall(ts)
     if unfilled:
-        r.strict(f"Transactional Shape leaves a template placeholder unfilled: {unfilled[0]}")
+        r.strict(f"Transactional Shape leaves a template placeholder unfilled: {min(unfilled, key=ts.index)}")
     for name, body in flows:
         if in_process:
             if "**Role:**" not in body:

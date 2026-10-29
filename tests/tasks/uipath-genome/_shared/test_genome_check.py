@@ -89,10 +89,10 @@ def test_external_consumer_line_replaces_split_options(tmp_path):
 def test_a_value_pattern_is_no_template_placeholder(tmp_path):
     text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
     at = text.index("**Unit of work:**")
-    pattern = text[:at] + "Items are tagged `{kind};{region}` and referenced `{item key}_{date}`.\n\n" + text[at:]
+    pattern = text[:at] + "Items are tagged `{kind};{region}` and {region}/{unit}, referenced `{item}_{date}` and INV-{n}.\n\n" + text[at:]
     assert run(tmp_path, pattern, profile="strict") == 0
-    left = text[:at] + "Items are tagged {status, tags, fields, output}.\n\n" + text[at:]
-    assert run(tmp_path, left, profile="strict") == 1
+    for leftover in ("Items are tagged {status, tags, fields, output}.", "Each item is recorded as done with {result}."):
+        assert run(tmp_path, text[:at] + leftover + "\n\n" + text[at:], profile="strict") == 1
 
 
 def test_process_example_core_with_skills():
