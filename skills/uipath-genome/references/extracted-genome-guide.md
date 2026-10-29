@@ -48,6 +48,7 @@ A genome is extracted through a rendering of the source — a framework's invent
 8. **Values bound to a built-in** (the run date, the user's folder), computed at run time — never the stored default a same-named project variable carries.
 9. **A parameter's unit, its default, and which of two filled parameters overrides the other**, read from the source's own documentation of that parameter (a framework export often carries it) before they are called unknown.
 10. **Log texts** of each step, with their literal wording and variable substitutions.
+11. **Which file and which field**: the kind of each file the process reads or writes, by its extension (a workbook, not a text file), and which of several dates or fields a filter, sort or window uses (loaded or completed, created or updated).
 
 Extraction writes them so ([extraction-guide.md](extraction-guide.md) Step 3); execution checks every one the genome cites before a group builds on it ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4).
 
