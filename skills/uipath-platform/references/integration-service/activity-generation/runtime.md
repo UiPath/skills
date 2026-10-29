@@ -48,14 +48,14 @@ script sees them.
 | capability | kind | what it does |
 |---|---|---|
 | `intsvc.http(request)` | brokered egress | one credential-injected, egress-guarded vendor call. Costs one of the 4 per-request calls |
+| `intsvc.cache.remember(name, opts, fill)` | script cache | returns the stored value, or runs `fill` and stores what it returns. A hit costs no budget. See [caching.md](caching.md) |
 
-`intsvc.http` is the whole surface. There are no pagination helpers: the runtime
-carries no page token in or out.
+There are no pagination helpers: the runtime carries no page token in or out.
 
 ### `intsvc.http` — request and response
 
 ```js
-intsvc.http({ method, url, query?, headers?, body?, cache? })   // → { status, headers, body }
+intsvc.http({ method, url, query?, headers?, body?, read? })   // → { status, headers, body }
 ```
 
 | field | rule |
@@ -64,7 +64,7 @@ intsvc.http({ method, url, query?, headers?, body?, cache? })   // → { status,
 | `query` | `{ k: v }` — serialized for you; prefer it over hand-encoding |
 | `headers` | `{ name: value }` or `[{ name, value }]` (ordered, duplicates preserved) |
 | `body` | an object is sent as JSON; a string is sent as its UTF-8 bytes |
-| `cache` | `{ ttl, key?, keyHeaders?, refresh?, storeWhen? }` — serve this call from the runtime's vendor-call cache. Reads only; ignored where there is no cache. See [caching.md](caching.md) |
+| `read` | `true` marks a POST as a read (a query API with no side effect), so a `remember` `fill` that made it can be stored |
 
 | response field | rule |
 |---|---|

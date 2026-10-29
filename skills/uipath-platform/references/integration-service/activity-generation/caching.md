@@ -1,103 +1,112 @@
-# Caching vendor calls in a generated script
+# Caching vendor reads in a generated script
 
-A script can ask the runtime to keep a vendor answer and serve the next identical
-call from it, per `intsvc.http` call, with a `cache` option:
+A script can keep a computed value and serve the next call from it, with
+`intsvc.cache.remember`:
 
 ```js
-const resp = await intsvc.http({
-  method: 'GET',
-  url: '/conversations.list',
-  query: { types: 'public_channel', limit: 200, cursor },
-  cache: { ttl: 900, storeWhen: { ok: true } },
+const fields = await intsvc.cache.remember(`describe:${name}`, { ttl: 86400 }, async () => {
+  const res = await intsvc.http({ method: "GET", url: `/services/data/v62.0/sobjects/${name}/describe` });
+  if (res.status !== 200) throw new Error(`describe ${name} failed: ${res.status}`);
+  return res.body.fields.map(({ name, type, label, nillable, referenceTo }) => ({ name, type, label, nillable, referenceTo }));
 });
 ```
 
-A runtime without the cache ignores the option and calls the vendor, so passing it
-is always safe. The runtime proxy's `docs/intsvc-sdk.md` §3a is the live contract
-for the fields and their limits; follow it where this page differs.
+```js
+const page = await intsvc.cache.remember(
+  `users.list:${cursor ?? ""}:${limit}`, { ttl: 900, perScript: true },
+  async () => {
+    const res = await intsvc.http({ method: "GET", url: "/users.list", query: { limit, cursor } });
+    if (res.status !== 200 || res.body.ok === false) throw new Error(`users.list failed: ${res.status} ${res.body.error ?? ""}`);
+    return { members: res.body.members.map(({ id, name }) => ({ id, name })), next: res.body.response_metadata?.next_cursor };
+  },
+);
+```
+
+`remember(name, { ttl, perScript?, replay?, refresh? }, fill)`. A hit returns the
+stored value: no vendor call, and nothing charged to the script's call/egress
+budget. A miss runs `fill`, stores what it returns (JSON, at most 8 MiB) and
+returns it. The runtime proxy's `docs/intsvc-sdk.md` is the live contract for the
+options and limits; follow it where this page differs.
+
+## What goes in `fill`
+
+- **Throw on every vendor failure**, including a 2xx body that reports one (Slack's
+  `ok: false`). A throw stores nothing; a return is stored, whatever it holds.
+- **Everything that shapes the value goes inside `fill`**: API version, URL,
+  projection. The entry is keyed on `fill`'s source, not on the values it closes
+  over, so an outer value (a variable, `context`) that `fill` reads and `name` does
+  not carry is invisible to the key: two callers with different values share one
+  entry. Read outer values only when `name` carries them (`name` in the describe
+  example), and nothing else.
+- **Writes stay outside `fill`.** A `fill` that made a PUT, PATCH or DELETE, or a
+  POST not marked `read: true` on `intsvc.http`, is not stored (except `replay`
+  below). Mark a POST `read: true` only when it is a query API with no side effect.
+- **Return the projection, not the raw body.** Keep the fields the script uses;
+  the entry is the stored value.
+
+## Shared or per script
+
+| | shared (default) | `perScript: true` |
+|---|---|---|
+| key | connection + revision + hash of `fill` source + `name` | the same, plus this script version's digest |
+| who reads it | every script on the connection whose `fill` source is identical | this script version only; editing the script ends it |
+| use for | data several scripts reuse: Salesforce `describe:{object}` for metadata discovery, record lists and record writes | a whole answer: one page of a list, the object list, metadata discovery output |
+
+Editing `fill` starts a new entry by itself, so no version suffix is needed in
+`name`; a new name is still fine for a deliberate cut-over. Editing or
+re-authenticating the connection also starts fresh entries.
+
+**`name`** carries every input that changes the value: object name, cursor, limit,
+team, types, normalized email. At most 512 characters. A missing input in the name
+serves one caller another caller's answer.
 
 ## When to cache
 
-Cache a read whose answer changes slowly and that callers repeat: the list behind
-a lookup field (channels, users, projects), and object or field discovery
-(Salesforce `GET /sobjects`, `GET /sobjects/{name}/describe`). Do not cache a read
-the caller expects to be live (a record they just changed, a status they are
-polling for).
+Cache what changes slowly and callers repeat: the list behind a lookup field
+(channels, users, projects), and object or field discovery. Do not cache live data
+(record lists, search results) as a whole; cache the lookups inside them, such as
+the field schema the list needs. Do not cache anything a user edits and reads back.
 
-Never cache a write. Passing `cache` on a POST tells the runtime the call is a read,
-such as a query API; it cannot tell otherwise. A cached write is not sent again
-until the entry expires.
-
-Pick the TTL from how stale the data may be, not from how expensive the call is:
+`ttl` is required, in seconds, capped at 48 h (`172800`). Pick it from how stale the
+data may be, not from how expensive the call is:
 
 | data | TTL |
 |---|---|
-| object and field schemas | 6–24 h (`21600`–`86400`) |
-| people, channels, groups, projects | 15 min–1 h (`900`–`3600`) |
-| anything a user edits and then reads back | do not cache |
-
-The runtime caps every TTL. Editing or re-authenticating the connection starts
-fresh entries, so a TTL only bounds staleness between changes.
-
-## The `cache` option
-
-| field | rule |
-|---|---|
-| `ttl` | seconds; required |
-| `key` | names the entry instead of the request, so two different calls share it |
-| `keyHeaders` | request header names whose values change the answer. Ignored with `key` |
-| `refresh` | `true` skips the read, calls the vendor, and replaces the entry |
-| `storeWhen` | top-level JSON fields a 2xx body must carry to be stored, such as `{ ok: true }`. Not part of the key |
-
-The runtime builds the key, scoped to the tenant and the connection. Without `key`,
-the entry is the request itself: method, full URL with its query, the named
-`keyHeaders`, and for a POST the `Content-Type` and body. So:
-
-- **a list's cursor or offset belongs in `query`**: each page is its own entry,
-  which is what one-page-per-invocation wants;
-- **a header that changes the answer** (`Accept-Language`, an API-version header)
-  goes in `keyHeaders`, or two variants share one entry.
-
-Not stored: a non-2xx answer, a `Set-Cookie` or `Cache-Control: no-store`
-response, a streamed download, a body over the runtime's entry limit. A large POST
-body, or one streamed from an attachment, is not cached without a `key`. PUT,
-PATCH and DELETE never are.
-
-A vendor that reports errors with a 2xx status (Slack's `{ "ok": false }`) would
-have them stored like any answer. Pass `storeWhen` with the success marker the
-script already checks, so only a successful answer is stored.
-
-Concurrent calls need no handling in the script. Identical calls that miss at the
-same time make one vendor call, the others waiting briefly for it. An answer
-fetched earlier never overwrites one fetched later, so a `refresh` is not undone by
-a slower call that started before it.
+| object and field schemas | 6-24 h (`21600`-`86400`) |
+| people, channels, groups, projects | 15 min-1 h (`900`-`3600`) |
 
 ## What the caller controls
 
-Two inbound query parameters, which the CLI sets with flags:
-
-| parameter | CLI flag | effect |
+| input | CLI flag | effect |
 |---|---|---|
-| `cache_data=uncache` | `--refresh` | every cached call in the run skips the read and replaces its entry. The runtime removes it before the script sees `context.request.query` |
-| `cache_key=<value>` | `--cache-key <value>` | reaches the script on `context.request.query`. A script that supports it passes it as `cache.key` |
+| `cache_data=uncache` on the inbound request | `--refresh` | every `remember` in the run skips the read and replaces its entry |
+| `cache_key=<value>` | `--cache-key <value>` | reaches the script on `context.request.query` |
 
-Support `cache_key` only when two different calls must share an answer, such as an
-invoke and the poll that reads its result. Pass the value unchanged, and take it
-out of any query you send to the vendor:
+`refresh: true` on one call does the same for that call alone.
+
+`replay: true` (requires `perScript`) is for one case: an invoke that writes and
+must not repeat under the same caller `cache_key` (Agent2Agent `/invokeAgent`,
+Power Automate `/run_flow`). Build `name` from the caller's `cache_key` and use
+`ttl: 172800`; a repeat returns the first answer without sending again. Take
+`cache_key` out of any query sent to the vendor.
 
 ```js
 const { cache_key: cacheKey, ...query } = context.request.query ?? {};
-const resp = await intsvc.http({
-  method: 'GET', url: `/tasks/${context.request.body.id}`, query,
-  cache: { ttl: 3600, ...(cacheKey ? { key: cacheKey } : {}) },
+const invoke = () => intsvc.cache.remember(`invoke:${cacheKey}`, { ttl: 172800, perScript: true, replay: true }, async () => {
+  const res = await intsvc.http({ method: "POST", url: "/v1/message:send", query, body: context.request.body });
+  if (res.status >= 400) throw new Error(`message:send failed: ${res.status}`);
+  return res;
 });
 ```
 
+Use it only when `cache_key` is present; without one, send the write plainly.
+
 ## Testing
 
-- **`--inline-script` runs never use the cache.** They prove the script, not the
-  caching. Check caching against the published script with `--script-ref`: run the
-  same call twice, then once with `--refresh`.
-- **A hit still costs one of the 4 calls** in the run's budget.
-- **Say in the report** which calls are cached, with what TTL and any `key`,
-  `keyHeaders` or `storeWhen`.
+- **`--inline-script` runs never use the cache**: `remember` just runs `fill`. They
+  prove the script, not the caching. Check caching against the published script
+  with `--script-ref`: run the same call twice, then once with `--refresh`.
+- **Only a miss costs budget**: its `fill`'s `intsvc.http` calls count against the
+  4-call run budget; a hit costs none.
+- **Say in the report** which values are cached, with `name`, `ttl`, and whether
+  `perScript` or `replay`.
