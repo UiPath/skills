@@ -259,10 +259,27 @@ def downstream(source: str, edges: list[dict], parent_of: dict[str, str | None])
     return reached
 
 
-def is_back_edge(edge: dict, edges: list[dict], parent_of: dict[str, str | None], after: dict) -> bool:
-    """An edge that closes a cycle by pointing left, as a retry `.stepToRef` does."""
-    u, v = ends(edge)
-    return box(after[v])[0] <= box(after[u])[0] and (u == v or u in downstream(v, edges, parent_of))
+def retry_edges(
+    original_edges: list[dict], edges: list[dict], before: dict, after: dict, parent_of: dict[str, str | None]
+) -> set[tuple[str, str]]:
+    """Final edges that may point left, as a retry `.stepToRef` does.
+
+    An original back edge the edit kept, and a left-pointing edge that closes a cycle no kept back edge is on, such as
+    the pieces of a split one or a retry the edit authored. A cycle through a kept back edge belongs to that edge: an
+    insert elsewhere on it gets no pass.
+    """
+    back = {
+        (u, v) for u, v in map(ends, original_edges)
+        if u in before and v in before and box(before[v])[0] <= box(before[u])[0]
+        and (u == v or u in downstream(v, original_edges, parent_of))
+    }
+    final = set(map(ends, edges))
+    retries = back & final
+    rest = [e for e in edges if ends(e) not in retries]
+    for x, y in final - retries:
+        if x in after and y in after and box(after[y])[0] <= box(after[x])[0] and (x == y or x in downstream(y, rest, parent_of)):
+            retries.add((x, y))
+    return retries
 
 
 def entry_changes(changed: set[str], before: dict, after: dict, failures: list[str]) -> set[str]:
@@ -390,7 +407,7 @@ def growth(c: str, before: dict, after: dict) -> tuple[int, int]:
 
 
 def followed_edges(
-    original_edges: list[dict], edges: list[dict], added: set[str], after: dict, parent_of: dict[str, str | None]
+    original_edges: list[dict], edges: list[dict], added: set[str], retries: set[tuple[str, str]], parent_of: dict[str, str | None]
 ) -> list[tuple[str, str]]:
     """Final edges a push travels along: original ones, an added node's edge into the node an insert split off,
     and from a retry edge's source on to what its target reaches, as merge pushes round the cycle."""
@@ -399,10 +416,8 @@ def followed_edges(
     pairs = {ends(e) for e in original_edges}
     follows = [(u, v) for u, v in map(ends, edges) if (u, v) in pairs or (u in added and v in split)]
     original = [{"sourceNodeId": u, "targetNodeId": v} for u, v in pairs]
-    for e in edges:
-        u, t = ends(e)
-        if u in after and t in after and is_back_edge(e, edges, parent_of, after):
-            follows += [(u, w) for w in downstream(t, original, parent_of) if w != u]
+    for u, t in retries:
+        follows += [(u, w) for w in downstream(t, original, parent_of) if w != u]
     return follows
 
 
@@ -458,6 +473,7 @@ def moves_without_cause(
     grown: set[str],
     original_edges: list[dict],
     edges: list[dict],
+    retries: set[tuple[str, str]],
     before: dict,
     after: dict,
     parent_of: dict[str, str | None],
@@ -466,7 +482,7 @@ def moves_without_cause(
     moved = {i for i in changed if offset(before[i], after[i]) != (0, 0)}
     entered = {v for _, v in map(ends, edges)}
     placed = {a for a in added if a in after and (a in entered or pushed_by_growth(a, grown, before, after, parent_of))}
-    follows = followed_edges(original_edges, edges, added, after, parent_of)
+    follows = followed_edges(original_edges, edges, added, retries, parent_of)
 
     causes = caused(placed | grown, moved, follows, before, after, parent_of)
     return [
@@ -494,7 +510,9 @@ def new_overlaps(
     return failures
 
 
-def order_changes(solid: list[str], edges: list[dict], before: dict, after: dict, parent_of: dict[str, str | None]) -> list[str]:
+def order_changes(
+    solid: list[str], edges: list[dict], retries: set[tuple[str, str]], before: dict, after: dict, parent_of: dict[str, str | None]
+) -> list[str]:
     """Invariant 5."""
     failures: list[str] = []
     kept = [i for i in solid if i in before]
@@ -512,7 +530,7 @@ def order_changes(solid: list[str], edges: list[dict], before: dict, after: dict
         if u not in on_canvas or v not in on_canvas or parent_of.get(u) != parent_of.get(v):
             continue
         ux, vx = box(after[u])[0], box(after[v])[0]
-        if ux < vx or (ux == vx and not shares_row(after[u], after[v])) or is_back_edge(e, edges, parent_of, after):
+        if ux < vx or (ux == vx and not shares_row(after[u], after[v])) or (u, v) in retries:
             continue
         was_right = u in before and v in before and box(before[u])[0] < box(before[v])[0]
         if was_right or u not in before or v not in before:
@@ -589,11 +607,12 @@ def check_layout(original: dict, final: dict, removable_nodes: set[str] = frozen
     grown = entry_changes(changed, before, after, failures)
     failures += container_growth(grown, touched, solid, before, after, parent_of)
     tucked = pushed_from_left(added, kept, edges, before, after, parent_of)
-    follows = followed_edges(original.get("edges", []), edges, added, after, parent_of)
+    retries = retry_edges(original.get("edges", []), edges, before, after, parent_of)
+    follows = followed_edges(original.get("edges", []), edges, added, retries, parent_of)
     failures += moves_without_room(changed, added, grown, tucked, follows, before, after, parent_of)
-    failures += moves_without_cause(changed, added, grown, original.get("edges", []), edges, before, after, parent_of)
+    failures += moves_without_cause(changed, added, grown, original.get("edges", []), edges, retries, before, after, parent_of)
     failures += new_overlaps(solid, changed, added, before, after, parent_of)
-    failures += order_changes(solid, edges, before, after, parent_of)
+    failures += order_changes(solid, edges, retries, before, after, parent_of)
     failures += added_placement(added, solid, edges, before, after, parent_of)
     return failures
 

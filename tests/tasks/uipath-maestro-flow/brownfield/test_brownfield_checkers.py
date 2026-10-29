@@ -734,3 +734,21 @@ def test_node_left_of_the_insertion_gets_no_room_from_it(tmp_path: Path) -> None
     original = row_flow({"a": (0, 0), "p": (500, 0), "o": (200, 100)}, [("a", "p")])
     final = row_flow({"a": (0, 0), "p": (500, 0), "n": (692, 0), "o": (900, 100)}, [("a", "p"), ("p", "n")])
     assert layout_of(tmp_path, original, final) == 1
+
+
+@pytest.mark.parametrize("x", [pytest.param(900, id="past-the-row"), pytest.param(480, id="between-its-successors")])
+def test_original_retry_edge_gives_an_insert_no_pass_to_point_left(tmp_path: Path, x: int) -> None:
+    row = {"s": (0, 0), "a": (192, 0), "b": (384, 0), "c": (576, 0), "z": (768, 0)}
+    retry_loop = [("s", "a"), ("b", "c"), ("c", "z"), ("c", "a")]
+    original = row_flow(row, [("a", "b"), *retry_loop])
+    final = row_flow({**row, "X": (x, 0)}, [("a", "X"), ("X", "b"), *retry_loop])
+    assert layout_of(tmp_path, original, final) == 1
+
+
+@pytest.mark.parametrize("n", [pytest.param((0, 160), id="below-its-predecessor"), pytest.param((-400, 0), id="left-of-the-row")])
+def test_insert_on_a_retry_loop_left_of_its_predecessor_fails(tmp_path: Path, n: tuple[int, int]) -> None:
+    row = {"s": (0, 0), "a": (192, 0), "b": (384, 0), "c": (576, 0)}
+    retry_loop = [("s", "a"), ("b", "c"), ("c", "a")]
+    original = row_flow(row, [("a", "b"), *retry_loop])
+    final = row_flow({**row, "n": n}, [("a", "n"), ("n", "b"), *retry_loop])
+    assert layout_of(tmp_path, original, final) == 1
