@@ -80,6 +80,7 @@ LOGIN_STATUS = {
         "CredentialSource": "SavedLogin",
         "Organization": "acme",
         "Tenant": "DefaultTenant",
+        "BaseUrl": "https://alpha.uipath.com",
     },
 }
 
