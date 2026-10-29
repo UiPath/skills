@@ -44,7 +44,7 @@ success_criteria:
     description: "Agent wrote the payload with a heredoc and passed that same file to --updates-file in one command"
     tool_name: "Bash"
     command_pattern: >-
-      (?s)(?=.*my_invoices-f1afa9ef-ixp)cat\s*>\s*(?:\\?["'])*(\S*?payloads/[^\s"'\\]+\.json|\$\{?\w+\}?)(?:\\?["'])*\s*<<-?\s*\\?['"]?(\w+)\\?['"]?.*?\n\2\b.*update-prompts\s.*--updates-file\s+(?:\\?["'])*\1(?![\w/.])
+      (?s)\A(?=.*my_invoices-f1afa9ef-ixp).*?cat\s*>\s*(?:\\?["'])*(\S*?payloads/[^\s"'\\]+\.json|\$\{?\w+\}?)(?:\\?["'])*\s*<<-?\s*\\?['"]?(\w+)\\?['"]?.*?\n\2\b.*update-prompts\s.*--updates-file\s+(?:\\?["'])*\1(?![\w/.])
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
