@@ -667,7 +667,9 @@ In the V1 template, `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` reference
 the connection from the node context as **`connectionId`** =
 `=bindings.<bindingId>` (activities use `connection`; a V2 element uses
 `connection` for all three, see [v2-connector-nodes.md](v2-connector-nodes.md)); the timer trigger binds no connection. After authoring the
-connection binding, lay the diagram out (`uip maestro bpmn format <file.bpmn>`)
+connection binding, lay the diagram out (`uip maestro bpmn format <file.bpmn>`;
+on a file that already had a diagram, see
+[Keep the user's diagram](../SKILL.md#keep-the-users-diagram) instead)
 and then run `uip maestro bpmn refresh <project>` so the binding is
 materialized into a `Connection` resource in `bindings_v2.json` — a trigger whose
 connection is not materialized passes `validate` but faults at runtime with a
@@ -715,7 +717,9 @@ auth, schema, or enrichment decision is missing).
    gateway conditions/defaults, event definitions, boundary events,
    subprocess/call-activity containers, multi-instance markers.
 5. Generate the `bpmndi:BPMNDiagram`, after the final source edit:
-   `uip maestro bpmn format <file.bpmn>`
+   `uip maestro bpmn format <file.bpmn>`. Not on a file that already had a
+   diagram — there, add only the shapes and edges you changed, per
+   [Keep the user's diagram](../SKILL.md#keep-the-users-diagram).
 6. Validate (see [structural-bpmn.md#validation](structural-bpmn.md#validation)).
    Re-run step 5 after any later source edit — `validate` errors on a node with
    no shape, so a stale diagram fails it.
