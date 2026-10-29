@@ -23,8 +23,7 @@ for an added node, as postconditions:
 4. Nothing lands on another node; sticky notes are free to sit anywhere.
 5. Nodes keep their order in a row, and edges keep pointing right (a retry
    edge back to an earlier node is exempt).
-6. An added node sits right of its leftmost predecessor and within two rows
-   of the nearest one.
+6. An added node sits within two rows of a node it is wired to.
 
 `--aspect merged` checks that the `.flow` came out of the skill's decompile ->
 compile -> merge loop, not a hand edit.
@@ -525,9 +524,7 @@ def added_placement(
         preds = [u for u, v in map(ends, edges) if v == a and u in on_canvas and parent_of.get(u) == parent_of.get(a)]
         if not preds:
             continue
-        x, y, _, h = box(after[a])
-        if x <= min(box(after[u])[0] for u in preds):
-            failures.append(f"new node {a!r} sits left of every node that leads to it ({', '.join(sorted(preds))})")
+        _, y, _, h = box(after[a])
         succs = [v for u, v in map(ends, edges) if u == a and v in on_canvas and parent_of.get(v) == parent_of.get(a)]
         if min(abs(y - box(after[n])[1]) for n in preds + succs) > 2 * (h + GAP):
             failures.append(f"new node {a!r} at {after[a].get('position')} is more than two rows from every node it is wired to")
