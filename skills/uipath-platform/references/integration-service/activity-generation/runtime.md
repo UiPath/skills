@@ -48,7 +48,7 @@ script sees them.
 | capability | kind | what it does |
 |---|---|---|
 | `intsvc.http(request)` | brokered egress | one credential-injected, egress-guarded vendor call. Costs one of the 4 per-request calls |
-| `intsvc.cache.remember(name, opts, fill)` | script cache | returns the stored value, or runs `fill` and stores what it returns. A hit costs no budget. See [caching.md](caching.md) |
+| `intsvc.cache.remember(name, opts, fill)` | script cache | returns the stored value, or runs `fill` and stores what it returns; applies to inline and published scripts alike (`--no-cache` skips it). A hit costs no budget. See [caching.md](caching.md) |
 
 There are no pagination helpers: the runtime carries no page token in or out.
 
