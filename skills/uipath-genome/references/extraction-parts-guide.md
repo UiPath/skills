@@ -2,7 +2,7 @@
 
 Runs when the extraction guide's sizing (its Step 2b) plans parts, under [parts-guide.md](parts-guide.md). Extraction's own agent is the orchestrator: besides the work that guide gives it, it reconciles the parts' output and writes the process genome.
 
-1. **One part per component, reading its objects whole.** A component above one part's budget is split along its call graph: each part takes one phase's subtree (the object that runs the phase and what only it calls) and a step range the orchestrator assigns. Every object belongs to exactly one part. A part whose objects call an object another part owns names that part's step and does not describe the object.
+1. **One part per component, reading its objects whole.** A component above one part's budget is split along its call graph: each part takes one phase's subtree (the object that runs the phase and what only it calls) and a step range the orchestrator assigns. An object above the budget on its own is split the same way inside it, when the source guide renders its sub-procedures one at a time: each part takes the sub-procedures one phase runs and reads each whole. Every object, or sub-procedure of a split object, belongs to exactly one part. A part whose objects call an object another part owns names that part's step and does not describe the object.
 2. **Who writes.** A part that owns a whole component writes that component's genome file. The parts of a split component write notes, and the orchestrator writes that component's genome from them. Notes go to the part's notes file in the working folder, in genome wording, so the orchestrator assembles and reconciles instead of rewording: each step of the range with its substeps, Business Rules, Error Handling entries, Acceptance Criteria and Source Map rows, then the facts the component's shared sections need (Interface, Target Applications, Platform Dependencies, open values).
 3. **The shared decisions** ([parts-guide.md](parts-guide.md) item 1). The orchestrator runs the source guide's self-test and export-wide commands once, reads the export-wide renderings (an inventory profile) in full and the per-object renderings of the shared components, and writes into the brief:
    - the component list with file names; each part's objects and bytes, with the step range of each part of a split component;
@@ -35,7 +35,7 @@ Runs when the extraction guide's sizing (its Step 2b) plans parts, under [parts-
 
 Before the extraction guide's Step 6b Source Map check and before edits are offered, the orchestrator works through every item:
 
-1. **Questions.** A question two or more components ask moves to the process genome's Configuration Questions; each component keeps a one-line pointer to its number there.
+1. **Questions.** A question two or more components ask moves to the process genome's Configuration Questions; each component keeps, in its own numbered list, a one-line pointer that names that number: `N. {What it decides}: process genome Configuration Question M.`
 2. **Names.** Every platform resource, lane and environment carries the brief's name in every file; each drift is renamed.
 3. **Defect index.** The process genome's defect table is built from the returned verdicts ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)).
 4. **Rebuild follows.** Each defect is re-checked against that section's rule on which behaviour the rebuild follows, from the intent evidence its verdict returned. A wrong mark is corrected at the step and in the index.
