@@ -61,7 +61,7 @@ carries its own copies and depends on no other skill.
 | Any input that is a vendor-internal ID | [activity-generation/lookup-fields.md](activity-generation/lookup-fields.md) |
 | Authoring the min.json — the schema and every derivation rule | [activity-generation/minimal-metadata-design.md](activity-generation/minimal-metadata-design.md) |
 | The metadata procedure, and its field-by-field contract | [activity-generation/standard-resource.md](activity-generation/standard-resource.md) · [contract](activity-generation/standard-resource-contract.md) |
-| Caching a lookup or a schema read with `intsvc.cache.remember`, and the caller's `cache_key` / `--refresh` / `--no-cache` | [activity-generation/caching.md](activity-generation/caching.md) |
+| Caching a lookup or a schema read with `cacheFor`, or a whole read activity with `export const cache`, and the caller's `--refresh` / `--no-cache` | [activity-generation/caching.md](activity-generation/caching.md) |
 | Mistakes that recur across connectors | [activity-generation/gotchas.md](activity-generation/gotchas.md) |
 | A complete worked connector, end to end | [activity-generation/slack.md](activity-generation/slack.md) |
 | Target shapes to copy | [example-action.js.txt](activity-generation/example-action.js.txt) · [example-list-action.js.txt](activity-generation/example-list-action.js.txt) |
@@ -171,7 +171,7 @@ uip is resources run script \
   --output json
 ```
 
-`--no-cache` makes any `intsvc.cache.remember` just run `fill`, so a value from a
+`--no-cache` turns off `cacheFor` and `export const cache` for the run, so a value from a
 work-in-progress script is never stored. Drop it only to test the caching itself
 ([caching.md](activity-generation/caching.md)).
 

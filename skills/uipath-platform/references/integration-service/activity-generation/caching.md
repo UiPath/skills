@@ -1,144 +1,208 @@
-# Caching vendor reads in a generated script
+# Caching in a generated script
 
-A script can keep a computed value and serve the next call from it, with
-`intsvc.cache.remember`:
+The runtime caches in two layers. Both build their own keys; a script author writes
+at most two things:
 
 ```js
-const fields = await intsvc.cache.remember(`describe@1:${name}`, { ttl: 86400 }, async () => {
-  const res = await intsvc.http({ method: "GET", url: `/services/data/v62.0/sobjects/${name}/describe` });
-  if (res.status !== 200) throw new Error(`describe ${name} failed: ${res.status}`);
-  return res.body.fields.map(({ name, type, label, nillable, referenceTo }) => ({ name, type, label, nillable, referenceTo }));
-});
+// Layer 1: keep one vendor read for a day. Every script on the connection shares it.
+const describe = await intsvc.http({ method: "GET", url: `/sobjects/${name}/describe`, cacheFor: 86400 });
 ```
 
 ```js
-const page = await intsvc.cache.remember(
-  `users.list:${cursor ?? ""}:${limit}`, { ttl: 900, perScript: true },
-  async () => {
-    const res = await intsvc.http({ method: "GET", url: "/users.list", query: { limit, cursor } });
-    if (res.status !== 200 || res.body.ok === false) throw new Error(`users.list failed: ${res.status} ${res.body.error ?? ""}`);
-    return { members: res.body.members.map(({ id, name }) => ({ id, name })), next: res.body.response_metadata?.next_cursor };
-  },
-);
+// Layer 2: keep this activity's whole answer for an hour. A repeat call never runs the script.
+export const cache = { ttl: 3600 };
+
+export async function execute(context) { /* … */ }
 ```
 
-`remember(name, { ttl, perScript?, replay?, refresh? }, fill)`. A hit returns the
-stored value: no vendor call, and nothing charged to the script's call/egress
-budget. A miss runs `fill`, stores what it returns (JSON, at most 8 MiB) and
-returns it. The runtime proxy's `docs/intsvc-sdk.md` is the live contract for the
-options and limits; follow it where this page differs.
+Both need a runtime with UiPath/IPE-Runtime-Proxy#165 deployed. On an older runtime
+`cacheFor` is ignored and `export const cache` has no effect, so the script still works,
+just uncached.
 
-## What goes in `fill`
-
-- **Throw on every vendor failure**, including a 2xx body that reports one (Slack's
-  `ok: false`). A throw stores nothing; a return is stored, whatever it holds.
-- **Writes stay outside `fill`.** A `fill` that made a PUT, PATCH or DELETE, or a
-  POST not marked `read: true` on `intsvc.http`, is not stored (except `replay`
-  below). Mark a POST `read: true` only when it is a query API with no side effect.
-- **Return the projection, not the raw body.** Keep the fields the script uses;
-  the entry is the stored value.
-
-## Shared or per script
-
-| | shared (default) | `perScript: true` |
-|---|---|---|
-| key | connection + revision + `name` | the same, plus this script version's digest |
-| who reads it | every published script on the connection that uses the same `name` | this script version only; editing the script ends it |
-| name | versioned: `describe@1:${object}` | no version needed |
-| use for | data several scripts reuse: Salesforce `describe@1:{object}` for metadata discovery, a user looked up by email | a whole answer: one page of a list, the object list, metadata discovery output |
-
-A shared entry is keyed on `name` alone, never on the `fill` code, so the name is the
-contract:
-
-- **Put a version in a shared name** (`describe@1:${object}`, `user-by-email@1:${email}`)
-  and bump it whenever the stored value's shape changes. Editing `fill` does not start
-  a new entry; an old-shape entry lives until its TTL.
-- **Use a descriptive prefix.** Any published script on the connection that uses the
-  same name shares the entry and can overwrite it, so a generic `list` collides.
-- **Every input that changes the value goes in the name.** `fill` copies in different
-  scripts need not be identical, but each must store the same shape under that name.
-
-A script that lives in a connector repo (`app/element/v4/scripts/*.js`) is checked at
-design time by `uip is connectors builder validate --connector-dir <dir>`, check
-`script-cache-names`. `perScript` calls are ignored; every shared name must:
-
-- **Start with `<base>@<version>:`** (`` `user-by-email@1:${email}` ``). A name without
-  one is an error.
-- **Use a base no other script uses, unless declared.** Intentional sharing goes in
-  `app/element/v4/cache-names.json`, listing exactly the scripts that use the base
-  (file names without `.js`): `{ "user-by-email": ["GetUserByEmail", "SendMessageToUser"] }`.
-  An undeclared shared base is an error; a declaration naming a script that no longer
-  uses it, or a base used by one script or none, is a warning.
-- **Carry one version across its scripts.** When the stored shape changes, bump the
-  version in every script that shares the base, together; mixed versions are an error.
-
-Fix `script-cache-names` errors before publishing the connector.
-
-Inline scripts (`--inline-script`) cache in their own namespace and per caller: an
-inline script never sees a published script's entries, nor another caller's inline
-entries. With no caller identity the cache is off for that run.
-
-Editing or re-authenticating the connection starts fresh entries.
-
-**`name`** carries every input that changes the value: object name, cursor, limit,
-team, types, normalized email. At most 512 characters. A missing input in the name
-serves one caller another caller's answer.
+Never name entries, version them, list inputs, or clear anything. The runtime derives
+the keys and Udon clears entries when the connection or connector changes.
 
 ## When to cache
 
-Cache what changes slowly and callers repeat: the list behind a lookup field
-(channels, users, projects), and object or field discovery. Do not cache live data
-(record lists, search results) as a whole; cache the lookups inside them, such as
-the field schema the list needs. Do not cache anything a user edits and reads back.
+| Cache this | With |
+|---|---|
+| a lookup (a user by email, a channel, a project) | `cacheFor` on the call |
+| a describe, or object and field discovery, including the describe a record list or a write needs | `cacheFor` on the call |
+| a read activity that is called repeatedly with the same inputs (a dropdown list, object discovery, metadata discovery) | `export const cache` |
 
-`ttl` is required, in seconds, capped at 48 h (`172800`). Pick it from how stale the
-data may be, not from how expensive the call is:
+Do not cache:
 
-| data | TTL |
+- **Write activities.** A run that makes a write call is never stored, so `export const
+  cache` on a write does nothing. Cache the reads inside it with `cacheFor`.
+- **Data a user edits and reads back within the TTL.** They would read the old value.
+- **Anything that depends on inbound headers, the time or randomness.** Those are not
+  part of the key, so one caller would be served another's answer.
+
+Live data as a whole (record lists, search results) is not a fit for `export const
+cache`; cache the lookups inside it with `cacheFor` instead.
+
+## `cacheFor` on `intsvc.http`
+
+`cacheFor` is the maximum age in **seconds**. A cached response is served only while it
+is no older than that, so two scripts asking for 1 h and 24 h share one entry and each
+gets the age it asked for. Absent or `0` means not cached.
+
+| Rule | |
+|---|---|
+| eligible calls | GET, HEAD, OPTIONS, and a POST marked `read: true` (a query API with no side effect) |
+| `cacheFor` on any other call | rejected as `script_invalid` (`cache_for_not_read`) |
+| stored when | the vendor answers 2xx with a normal body (not streamed, not a download, no attachment), up to 8 MiB |
+| never stored when | the vendor's response says `Cache-Control: no-store` or `private`; `cacheFor` cannot override it |
+| shared with | every script on the connection that makes the same request: method, URL with its query, the headers that change an answer (`accept`, `accept-language`, `content-type`, `prefer`, any `x-*` header the script sets) and the body |
+| not in the key | the script, and the credential, which is injected after the key is built |
+| longest life | 48 h, whatever `cacheFor` says |
+| a hit | no vendor call and no call-budget charge (the response bytes still count) |
+| after a write in the run | later `cacheFor` reads in that run go to the vendor, so a read after a write is fresh |
+
+The runtime does not infer caching from the vendor's `Cache-Control`; it only lets a
+`no-store` or `private` header switch caching off.
+
+Pick the TTL from how stale the data may be, not from how expensive the call is:
+
+| data | `cacheFor` |
 |---|---|
 | object and field schemas | 6-24 h (`21600`-`86400`) |
+| a user looked up by email or id | up to 24 h (`86400`) |
 | people, channels, groups, projects | 15 min-1 h (`900`-`3600`) |
+
+A hit returns the response the vendor sent, so check the vendor's success signal on it as
+you would on a live call ([runtime.md](runtime.md)). Only a 2xx is stored, but a vendor
+that reports failure inside a 200 (Slack's `ok: false`) is stored too, for the `cacheFor`
+you gave it. Keep `cacheFor` short on such a call, and run it with `--no-cache` while the
+script is still being fixed.
+
+## `export const cache` on an activity
+
+```js
+export const cache = { ttl: 3600 };
+```
+
+Top level of the script, an object literal, `ttl` a positive number of seconds. Anything
+else is rejected as `script_invalid` (`cache_declaration_invalid`). On a repeat request
+the runtime answers before it fetches the script or starts a worker.
+
+| Rule | |
+|---|---|
+| keyed on | the connection, the connector and its version, the script's own source, and the whole inbound request: the query (without `cache_data`) and the body |
+| pagination | nothing to do: the page token is in the query, so each page has its own entry |
+| stored when | the run made no write call, returned 2xx with a normal body, had no attachments, and is under 8 MiB |
+| age | `min(ttl, the remaining age of the cached reads it used)`; never older than the data it was built from |
+| `context.request.headers` | **absent** in a script that declares `cache`, so it cannot read what is not in its key |
+| changing the script | ends its entries; there is nothing to version |
+
+Use it on a read activity whose answer depends only on the query and body. It is safe to
+add by mistake to a write (nothing is stored) but pointless.
+
+## Both together: Slack
+
+**List channels.** Both layers apply. The whole answer is kept for an hour; the Slack call
+inside it is kept for 15 minutes and shared with any other script that lists channels.
+
+```js
+export const cache = { ttl: 3600 };
+
+export async function execute(context) {
+  const { pageSize: qPageSize, nextPage, types = "public_channel" } = context.request?.query ?? {};
+  const page = intsvc.decodePageToken(nextPage) ?? {};
+  const pageSize = Number(page.pageSize ?? qPageSize ?? 200);
+  const cursor = page.next;
+
+  const query = { types, exclude_archived: "true", limit: pageSize };
+  if (cursor) query.cursor = cursor;
+
+  const listed = await intsvc.http({ method: "GET", url: "/conversations.list", query, cacheFor: 900 });
+  if (!listed.body?.ok) throw new Error("conversations.list failed: " + listed.body?.error);
+
+  const channels = (listed.body.channels ?? []).map((c) => ({ id: c.id, name: c.name, is_private: c.is_private }));
+  const next = listed.body.response_metadata?.next_cursor || "";
+
+  listed.body = channels;
+  intsvc.setPaginationHeaders(listed, { current: cursor, next, pageSize, hasMore: next !== "" });
+  listed.headers["elements-returned-count"] = String(channels.length);
+  return listed;
+}
+```
+
+**Send a message to a user by email.** A write, so no `export const cache`. The email
+lookup is cached for a day and shared with every other script that looks users up by email.
+
+```js
+export async function execute(context) {
+  const { email, text } = context.request?.body ?? {};
+  if (!email || !text) throw new Error("email and text are required");
+
+  const user = await intsvc.http({ method: "GET", url: "/users.lookupByEmail", query: { email }, cacheFor: 86400 });
+  if (!user.body?.ok) throw new Error("users.lookupByEmail failed: " + user.body?.error);
+
+  const dm = await intsvc.http({ method: "POST", url: "/conversations.open", body: { users: user.body.user.id } });
+  if (!dm.body?.ok) throw new Error("conversations.open failed: " + dm.body?.error);
+
+  const sent = await intsvc.http({ method: "POST", url: "/chat.postMessage", body: { channel: dm.body.channel.id, text } });
+  if (!sent.body?.ok) throw new Error("chat.postMessage failed: " + sent.body?.error);
+
+  sent.body = { channel: sent.body.channel, ts: sent.body.ts, user: user.body.user.id };
+  return sent;
+}
+```
+
+| Call | Whole answer | Vendor read | Vendor calls made |
+|---|---|---|---|
+| ListChannels, page 1, first time | miss, script runs | miss | 1 |
+| The same call within the hour | hit, script does not run | not reached | 0 |
+| The same call with `types=private_channel` | miss, different query | miss, different URL | 1 |
+| Any call after Udon invalidates the connection | miss | miss | 1 |
+| SendMessageToUser to Alice, first time | not declared | lookup miss | 3 |
+| SendMessageToUser to Alice again | not declared | lookup hit | 2 |
+| AddUserToChannel for Alice, a different script | not declared | lookup hit, same entry | one fewer |
+
+Salesforce follows the same pattern: `cacheFor` on the describe inside lists, writes and
+metadata discovery; `export const cache` on object discovery and metadata discovery.
+
+## Invalidation
+
+Nothing to do. When Udon edits, re-authenticates or deletes a connection, or publishes a
+connector, it tells the runtime, and the entries for that connection or connector stop
+being served. If that call is lost, entries still end at their TTL (48 h at most). A token
+refresh, a rename or an enable and disable clears nothing, because none of them changes an
+answer.
 
 ## What the caller controls
 
 | input | CLI flag | effect |
 |---|---|---|
-| `cache_data=uncache` on the inbound request | `--refresh` | every `remember` in the run skips the read and replaces its entry |
-| `cache_data=bypass` on the inbound request | `--no-cache` | every `remember` in the run just runs `fill`: no read, no write |
-| `cache_key=<value>` | `--query cache_key=<value>` | reaches the script on `context.request.query`; only a script that builds a name from it uses it |
+| `cache_data=uncache` on the inbound request | `--refresh` | both layers skip their reads and store fresh values |
+| `cache_data=bypass` on the inbound request | `--no-cache` | both layers are off for the run: nothing read, nothing stored |
 
-`refresh: true` on one call does the same for that call alone.
+The runtime removes `cache_data` from the query before the script sees it.
 
-`replay: true` (requires `perScript`) is for one case: an invoke that writes and
-must not repeat under the same caller `cache_key` (Agent2Agent `/invokeAgent`,
-Power Automate `/run_flow`). Build `name` from the caller's `cache_key` and use
-`ttl: 172800`; a repeat returns the first answer without sending again. Take
-`cache_key` out of any query sent to the vendor.
+## Warnings from `uip is connectors builder validate`
 
-```js
-const { cache_key: cacheKey, ...query } = context.request.query ?? {};
-const invoke = () => intsvc.cache.remember(`invoke:${cacheKey}`, { ttl: 172800, perScript: true, replay: true }, async () => {
-  const res = await intsvc.http({ method: "POST", url: "/v1/message:send", query, body: context.request.body });
-  if (res.status >= 400) throw new Error(`message:send failed: ${res.status}`);
-  return { status: res.status, body: res.body };
-});
-```
+In a connector repo, `uip is connectors builder validate --connector-dir <dir>` warns on:
 
-Never return the raw `intsvc.http` result from `fill`: the stored value is replayed to
-every caller for the TTL, vendor headers (`Set-Cookie`, rate-limit counters, request
-ids) included. Build `{ status, body }`, plus pagination headers for a list.
+- `cacheFor` on a non-read method;
+- `export const cache` in a script whose source contains a write;
+- a cached script that reads `context.request.headers`, `Date.now`, `new Date` or `Math.random`;
+- a `ttl` above the 48 h cap.
 
-Use it only when `cache_key` is present; without one, send the write plainly.
+Fix them before publishing. The runtime makes the likely mistakes harmless (a run that
+writes is never stored, headers are unavailable, the cap is enforced), but a warning
+means the cache is not doing what the script says.
 
 ## Testing
 
-- **While iterating, run with `--no-cache`** (`cache_data=bypass`) so nothing
-  work-in-progress is stored. `--refresh` is not a substitute: it still replaces the
-  entry with the new value.
+- **While iterating, run with `--no-cache`** so nothing from a work-in-progress script is
+  stored. `--refresh` is not a substitute: it still stores the new result.
 - **Once the script is right, test the caching** with `--inline-script` or
-  `--script-ref`: run the same call twice (the second is a hit), then once with
-  `--refresh`.
-- **Only a miss costs budget**: its `fill`'s `intsvc.http` calls count against the
-  4-call run budget; a hit costs none.
-- **Say in the report** which values are cached, with `name`, `ttl`, and whether
-  `perScript` or `replay`.
+  `--script-ref`: run the same call twice with no flag. The second run should make no
+  vendor call (for a `cacheFor` read, one fewer). Confirm it from the vendor's own request
+  count or the run's cache diagnostics, not from the response, which looks the same.
+  Then run once with `--refresh` and expect the vendor to be called again.
+- **A `cacheFor` hit costs no call budget**, so a script near the 4-call limit has more
+  room once its reads are cached; a miss still counts.
+- **Say in the report** what is cached: each `cacheFor` call with its seconds, and each
+  `export const cache` with its `ttl`.
