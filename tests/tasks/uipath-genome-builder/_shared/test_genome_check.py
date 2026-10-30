@@ -296,3 +296,48 @@ def test_heading_case_and_wording_variants_pass_core(tmp_path):
     text = re.sub(r"`(uipath-rpa)`", r"\1", text)
     assert run(tmp_path, text, profile="core") == 0
     assert run(tmp_path, text, profile="strict") == 1
+
+
+# context: the facts the read plans branch on, read once from the file
+
+SALESFORCE_EXAMPLE = EXAMPLES / "salesforce-accounts-and-contacts-genome.md"
+MAP_BOUND_FIXTURE = REPO / "tests" / "tasks" / "uipath-planner" / "sdd_only_migration" / "fixtures" / "invoice-intake-genome.md"
+
+
+@pytest.mark.parametrize("path, level, mode, transactional", [
+    (PROCESS_EXAMPLE, "process", "build", False),
+    (COMPONENT_EXAMPLE, "component", "build", True),
+    (SALESFORCE_EXAMPLE, "component", "refactor", False),
+])
+def test_context_reads_level_mode_and_shape_from_the_file(path, level, mode, transactional):
+    ctx = genome_check.context(path)
+    assert (ctx["level"], ctx["build_mode"], ctx["transactional"]) == (level, mode, transactional)
+    assert ctx["check"]["ok"], ctx["check"]["errors"]
+
+
+def test_context_lists_a_process_genomes_components():
+    assert len(genome_check.context(PROCESS_EXAMPLE)["components"]) == 3
+
+
+def test_context_reads_the_map_binding():
+    assert genome_check.context(MAP_BOUND_FIXTURE)["map_binding"]
+
+
+def test_context_fingerprint_changes_with_any_byte(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text(COMPONENT_EXAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+    before = genome_check.context(genome)["sha256"]
+    genome.write_text(genome.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    assert genome_check.context(genome)["sha256"] != before
+
+
+def test_context_without_marker_fails_the_check(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text("# not a genome\n", encoding="utf-8")
+    ctx = genome_check.context(genome)
+    assert ctx["level"] is None and not ctx["check"]["ok"]
+
+
+def test_context_cli_prints_json(capsys):
+    assert genome_check.main(["context", str(COMPONENT_EXAMPLE)]) == 0
+    assert json.loads(capsys.readouterr().out)["level"] == "component"

@@ -5,6 +5,10 @@ Usage:
   check-genome.py component <genome.md> [--profile core|strict] [--expect TOKEN ...] [--source-map TOKEN ...]
   check-genome.py process   <genome.md> [--profile core|strict] [--skills SKILL ...] [--expect TOKEN ...]
   check-genome.py tokens    <pattern>   --expect TOKEN ... [--min FRACTION] [--files N]
+  check-genome.py context   <genome.md>   JSON of the facts the read plans branch on: level (from the first-line
+                                          marker), sha256, components, source framework and build mode
+                                          (build|refactor|migration), transactional, Designed in, Map binding,
+                                          and the strict check result
   component and process also take: [--shape transactional|stub [--flows N] [--unit TOKEN ...]]
                                    [--shape-checks gate|advisory]  advisory: Transactional Shape findings
                                    are graded by the strict profile only (a task that tests something else)
@@ -601,7 +605,54 @@ def load_inventory(path: str, what: str) -> list[dict]:
     return data
 
 
+MARKER = re.compile(r"<!--\s*UIPATH-AUTOMATION-GENOME:\s*(component|process)\b", re.I)
+DESIGNED_IN = re.compile(r"^>\s*Designed in:\s*\[[^\]]*\]\(([^)]+)\)", re.M)
+MAP_BINDING = re.compile(r"^>\s*Map binding:\s*(\S+)", re.M)
+
+
+def context(path: Path) -> dict:
+    """The facts every read plan branches on, read from the file once instead of re-derived by each lane."""
+    text = path.read_text(encoding="utf-8")
+    marker = MARKER.search(text.split("\n", 1)[0])
+    level = marker.group(1).lower() if marker else None
+    framework_row = next((row for row in table_rows(section_body(text, "Source Map"), "| Row |")
+                          if row and row[0].lower() == "source framework"), None)
+    framework = framework_row[1].split("—")[0].strip() if framework_row and len(framework_row) > 1 else None
+    designed_in, binding = DESIGNED_IN.search(text), MAP_BINDING.search(text)
+    errors = []
+    if level:
+        errors = (check_component(path, argparse.Namespace(**CONTEXT_CHECK), part_of=False) if level == "component"
+                  else check_process(path, argparse.Namespace(**CONTEXT_CHECK)))
+    return {
+        "genome": path.as_posix(),
+        "sha256": __import__("hashlib").sha256(text.encode("utf-8")).hexdigest(),
+        "level": level,
+        "components": [t.as_posix() for _, t, _ in component_links(path, text)] if level == "process" else [],
+        "extracted": framework is not None,
+        "source_framework": framework,
+        "build_mode": None if not level else "build" if not framework else "refactor" if framework.lower().startswith("uipath") else "migration",
+        "transactional": not section_body(text, "Transactional Shape").strip().startswith(STUB),
+        "designed_in": designed_in.group(1) if designed_in else None,
+        "map_binding": binding.group(1) if binding else None,
+        "check": {"profile": "strict", "ok": bool(level) and not errors,
+                  "errors": errors if level else ["first line carries no <!-- UIPATH-AUTOMATION-GENOME: component|process marker"]},
+    }
+
+
+CONTEXT_CHECK = dict(profile="strict", expect=[], source_map=[], skills=[], shape=None, shape_checks="gate", flows=None,
+                     unit=[], min_steps=5, min_criteria=5, processes=None, recordsets=None)
+
+
 def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+    if argv[:1] == ["context"]:
+        paths = resolve(argv[1]) if len(argv) > 1 else []
+        if len(paths) != 1:
+            print(f"FAIL: context takes exactly one genome, found {len(paths)}")
+            return 1
+        print(json.dumps(context(paths[0]), indent=2))
+        return 0
     ap = argparse.ArgumentParser()
     ap.add_argument("level", choices=["component", "process", "tokens"])
     ap.add_argument("genome")
