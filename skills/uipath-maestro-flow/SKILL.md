@@ -126,14 +126,13 @@ For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which run
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
 node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
 # edit .flow-sdk/<Name>.flow.ts narrowly; no .layout() for added steps (builder-sdk#1320)
+uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error
 node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
 ```
 
 Back up the project to `mktemp -d`, `cp` the merge output over it whole, validate it there (not the edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`.
 Source that must stay inside the project (relative sidecars): [the safe project loop](references/brownfield.md#the-safe-project-loop).
-
-**True-brownfield procedure:**
-**[`references/brownfield.md`](references/brownfield.md)**.
+**True-brownfield procedure:** **[`references/brownfield.md`](references/brownfield.md)**.
 <!--skill-flavor:sdk-editing:end-->
 
 ## Builder frame

@@ -45,7 +45,14 @@ cannot make: which node, which topology, what an output means, and what to ask.
    Brownfield JSON goes through `decompile` ([`brownfield.md`](brownfield.md)).
 5. **Run the loop once the source is complete.** `check --source` is cheap, so
    use it freely while writing; `compile` and `validate` run on the finished
-   source, and again after the last edit. Treat every `validate` warning as a
+   source, and again after the last edit. `compile` does not run `check`, so a
+   clean `check` comes before every `compile` (in a brownfield edit, with
+   `--baseline <original.flow>`: [`brownfield.md`](brownfield.md#check-only-what-you-changed-check---baseline)).
+   The exception is an error whose message says when to ignore it, in a case
+   that applies (a false positive such as `INLINE_AGENT_PROMPT_JSON_TEXT` on a
+   prompt that mentions JSON only as data).
+   Emit-only mode is the exception: there `check` refuses and `validate` is
+   the gate. Treat every `validate` warning as a
    failure unless the loop reference names it as reviewed.
 6. **Bind every declared output on every path.** Each `.return({...})` must
    name every key in `.output({...})`. `check` does not catch a missing one:
