@@ -32,6 +32,7 @@ import {
   materializeComposition,
   packageName,
   packAllVariants,
+  packInstallableFlavor,
   parseMarkerBlocks,
   prepareRootDefaultPackage,
   readTarballEntries,
@@ -1384,6 +1385,106 @@ test("npm pack output that names no tarball still fails loudly", (t) => {
         }),
       ),
     /could not parse npm pack output/,
+  );
+});
+
+function installableFixture(t) {
+  const repo = fixtureRepo(t);
+  addSkill(
+    repo,
+    "uipath-changed",
+    `Before.\n\n${block("project", "Canonical project workflow.")}\nAfter.\n`,
+  );
+  writeOverride(repo, "as-host", "uipath-changed/SKILL.md", block("project", "AS project tool."));
+  writeOverride(repo, "studioweb", "uipath-changed/SKILL.md", block("project", "Studio Web project tool."));
+  addPackageManifest(repo, "1.2.3-preview.45", {
+    publishConfig: { registry: "https://registry.npmjs.org/", tag: "latest" },
+  });
+  return repo;
+}
+
+test("pack-installable ships one flavor in the default package's full shape", (t) => {
+  const repo = installableFixture(t);
+
+  const packed = withNpmCache(repo, () => packInstallableFlavor(repo, "as-host"));
+  assert.equal(packed.packageName, "@uipath/skills-as-host");
+  assert.equal(packed.version, "1.2.3-preview.45");
+  assert.equal(
+    packed.tarball,
+    join(repo, "build", "installable", "as-host", basename(packed.tarball)),
+  );
+  assertMarkerFreeSkillTarball(packed.tarball, "@uipath/skills-as-host", "as-host");
+
+  const entries = readTarballEntries(packed.tarball);
+  const manifest = JSON.parse(entries.get("package/package.json").toString("utf8"));
+  // Kept for npm --provenance; no registry pin, so the publisher chooses.
+  assert.deepEqual(manifest.repository, {
+    type: "git",
+    url: "https://github.com/UiPath/skills.git",
+  });
+  assert.equal(manifest.publishConfig, undefined);
+  assert.equal(manifest.scripts, undefined);
+  assert.ok(!manifest.files.includes("scripts/npm-package-lifecycle.mjs"));
+  for (const name of [
+    "package/assets/shared.txt",
+    "package/hooks/tool.sh",
+    "package/version-manifest.json",
+    "package/LICENSE",
+    "package/README.md",
+  ]) {
+    assert.ok(entries.has(name), `installable package must ship ${name}`);
+  }
+  assert.ok(![...entries.keys()].some((name) => name.startsWith("package/scripts/")));
+  assert.match(entries.get("package/README.md").toString("utf8"), /\*\*as-host\*\* flavor/);
+  assert.match(
+    entries.get("package/skills/uipath-changed/SKILL.md").toString("utf8"),
+    /AS project tool/,
+  );
+  assert.ok(existsSync(join(packed.packageDir, "package.json")));
+  assert.deepEqual(
+    readdirSync(dirname(packed.tarball)).filter((name) => name.endsWith(".tgz")),
+    [basename(packed.tarball)],
+  );
+  assert.ok(!existsSync(join(repo, "build", "npm")), "pack-installable must not touch pack output");
+
+  const cli = runCli(repo, "pack-installable", "as-host");
+  assert.equal(cli.status, 0, cli.stderr);
+  assert.equal(cli.stdout, `${packed.tarball}\n`);
+
+  for (const flavor of ["default", "missing-host"]) {
+    assert.throws(() => packInstallableFlavor(repo, flavor), /not a custom skill flavor/);
+  }
+  assert.notEqual(runCli(repo, "pack-installable").status, 0);
+});
+
+test("pack-installable refuses a tarball that drops default package payload", (t) => {
+  const repo = installableFixture(t);
+  // npm honors nested .npmignore files, so hooks/ silently vanishes from the tarball.
+  writeFileSync(join(repo, "hooks", ".npmignore"), "*\n");
+
+  assert.throws(
+    () => withNpmCache(repo, () => packInstallableFlavor(repo, "as-host")),
+    /installable npm tarball is missing default package payload: package\/hooks/,
+  );
+  assert.ok(!existsSync(join(repo, "build", "installable", "as-host")));
+});
+
+test("a failed installable pack keeps the last successful output", (t) => {
+  const repo = installableFixture(t);
+  const first = withNpmCache(repo, () => packInstallableFlavor(repo, "as-host"));
+  const before = readFileSync(first.tarball);
+
+  assert.throws(
+    () =>
+      packInstallableFlavor(repo, "as-host", {
+        runNpmPack: () => ({ status: 1, stdout: "", stderr: "registry offline" }),
+      }),
+    /npm pack failed for @uipath\/skills-as-host: registry offline/,
+  );
+  assert.ok(readFileSync(first.tarball).equals(before));
+  assert.deepEqual(
+    readdirSync(join(repo, "build", "installable")).filter((name) => name.startsWith(".")),
+    [],
   );
 });
 

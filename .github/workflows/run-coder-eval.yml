@@ -92,6 +92,14 @@ on:
         description: 'Model override (blank = default).'
         type: string
         default: ''
+      # Tasks read skills/ from this checkout. A flavor (a directory under
+      # skill-flavors/, e.g. automation-suite) is built and swapped into
+      # skills/ before any task runs, so the eval reads the files that
+      # flavor's package ships. `default` keeps the canonical tree.
+      flavor:
+        description: 'Skill flavor to evaluate (default = canonical skills/).'
+        type: string
+        default: default
 
 # No concurrency group: this is a manual, on-demand workflow — allow any number
 # of runs (e.g. the same task across claude / codex / antigravity) at once.
@@ -250,6 +258,18 @@ jobs:
       EVALBOARD_UPLOAD_ENABLED: ${{ secrets.AZURE_STORAGE_KEY != '' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      # Only a flavor run needs Node on this host; default runs are unchanged.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        if: inputs.flavor != 'default'
+        with:
+          node-version: '22.x'
+
+      - name: Activate the skill flavor
+        if: inputs.flavor != 'default'
+        env:
+          FLAVOR: ${{ inputs.flavor }}
+        run: node scripts/activate-skill-flavor.mjs "$FLAVOR"
 
       # The coder_eval_uipath repo (private): the build context of the delegate
       # docker overlay below, and `eval_runner/`, a separate package
@@ -931,6 +951,13 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: '20'
+
+      - name: Activate the skill flavor
+        if: inputs.flavor != 'default'
+        shell: bash
+        env:
+          FLAVOR: ${{ inputs.flavor }}
+        run: node scripts/activate-skill-flavor.mjs "$FLAVOR"
 
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4.3.1
         with:

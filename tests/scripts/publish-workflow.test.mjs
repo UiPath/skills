@@ -24,8 +24,58 @@ function gate(name) {
   return match[1].replace(/\s+/g, " ").trim();
 }
 
+const NPMJS_JOBS = ["publish-npmjs", "publish-automation-suite-npmjs"];
+
 test("publishing to npmjs cannot start without the release gate", () => {
-  assert.match(job("publish-npmjs"), /needs: \[guard, release-gate\]/);
+  for (const name of NPMJS_JOBS) assert.match(job(name), /needs: \[guard, release-gate\]/);
+});
+
+// Only the npmjs publishers and the gate exchange OIDC tokens; a new job
+// reaching npmjs must be added here deliberately.
+test("only the gate and the npmjs publishers request OIDC tokens", () => {
+  const jobsSection = PUBLISH.slice(PUBLISH.indexOf("\njobs:\n"));
+  const jobs = [...jobsSection.matchAll(/^ {2}([a-z][a-z0-9-]*):\n/gm)].map((match) => match[1]);
+  assert.deepEqual(
+    jobs.filter((name) => /^\s*id-token: write\s*$/m.test(job(name))),
+    ["release-gate", ...NPMJS_JOBS],
+  );
+});
+
+// The Automation Suite package rides the default npmjs gate exactly, behind
+// an operator switch that stays off until its npmjs package is bootstrapped.
+test("the Automation Suite job is the npmjs gate plus its kill switch", () => {
+  assert.equal(
+    gate("publish-automation-suite-npmjs"),
+    `vars.ENABLE_AUTOMATION_SUITE_PUBLISH == 'true' && ${gate("publish-npmjs")}`,
+  );
+  assert.doesNotMatch(job("publish-npmjs"), /ENABLE_AUTOMATION_SUITE_PUBLISH/);
+});
+
+// One stamping rule for every npmjs package, so both packages of a run share
+// a version and neither can take `preview` from a higher release line.
+test("every npmjs job stamps and tags through the shared script", () => {
+  assert.match(
+    job("publish-npmjs"),
+    /^\s*run: node scripts\/resolve-publish-tag\.mjs @uipath\/skills\s*$/m,
+  );
+  assert.match(
+    job("publish-automation-suite-npmjs"),
+    /^\s*run: node scripts\/resolve-publish-tag\.mjs @uipath\/skills-automation-suite\s*$/m,
+  );
+  assert.doesNotMatch(PUBLISH, /npm view "@uipath\/skills@preview"/);
+});
+
+test("the Automation Suite job publishes the one installable tarball it packed and scanned", () => {
+  const asJob = job("publish-automation-suite-npmjs");
+  assert.match(
+    asJob,
+    /TARBALL=\$\(node scripts\/compose-skill-flavor\.mjs pack-installable automation-suite\)/,
+  );
+  assert.match(asJob, /python3 scripts\/check-sensitive-content\.py "\$TARBALL"/);
+  assert.match(asJob, /TARBALL: \$\{\{ steps\.pack\.outputs\.tarball \}\}/);
+  assert.match(asJob, /^\s*npm publish "\$TARBALL" --access public --provenance --tag "\$TAG"\s*$/m);
+  // No token: one would make npm use token auth and bypass OIDC.
+  assert.doesNotMatch(asJob, /npm run skills:pack|build\/npm|secrets\./);
 });
 
 // Drift here is the failure that matters: a channel that reaches npmjs

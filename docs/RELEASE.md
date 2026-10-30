@@ -6,7 +6,9 @@ The complete default tree is published as **`@uipath/skills`**, versioned in loc
 > Azure DevOps release gate (`.pipelines/release-gate.yml`), which runs the
 > blocking per-release FOSSA scan. A gate failure stops the publish — there is
 > no ungated fallback. `dev` builds on GitHub Packages skip the gate, and
-> flavor packages ship no `hooks/` at all. Package integrity on npmjs is the
+> minimal flavor packages ship no `hooks/` at all (the Automation Suite
+> package ships the default hooks and passes the same gate as the default
+> package). Package integrity on npmjs is the
 > `--provenance` attestation; the hooks are Node scripts (`hooks/*.mjs`) and
 > carry no per-file signature (the retired PowerShell hooks were
 > Authenticode-signed by this same gate). To exercise the whole path, publish
@@ -38,6 +40,8 @@ All channels carry `package.json`'s version; the pre-release channels (`dev`, `p
 | `@uipath/skills` | `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per push to `main`, or dev dispatch |
 | `@uipath/skills-studioweb` | `preview` | GitHub Packages | `M.N.<release>-preview.<run>` | per push to `release/v*`, or preview dispatch |
 | `@uipath/skills-studioweb` | `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per push to `main`, or dev dispatch |
+| `@uipath/skills-automation-suite` | `latest` | npmjs | `M.N.<release>` | per stable release, once enabled — what an Automation Suite CLI installs |
+| `@uipath/skills-automation-suite` | `preview` | npmjs | `M.N.<release>-preview.<run>` | per push to `release/v*`, or preview dispatch, once enabled |
 | plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.cursor-plugin/plugin.json`, `gemini-extension.json`) | — | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex / Cursor plugin auto-update |
 
 `sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the `dev`/`preview` stamps from `publish.yml` never land in the plugin manifests. Both marketplace indexes (`.claude-plugin/marketplace.json` for Claude Code, `.agents/plugins/marketplace.json` for Codex), the Codex plugin, the Cursor plugin, and the Gemini extension versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
@@ -90,6 +94,15 @@ All generated packages use the root `package.json` version. Adding a valid `skil
 
 Studio Web is the first explicit caller of the generic flavor publisher. `publish.yml` calls `.github/workflows/publish-skill-flavor.yml` with `flavor: studioweb` in the same workflow run so both paths derive the same stamped version from `github.run_number`. The reusable workflow accepts only a flavor and channel, validates the flavor, derives `@uipath/skills-<flavor>` through the composer package-name contract, builds all packages, and selects exactly one tarball with the expected name, flavor, and version. It scans that exact archive for flavor markers and publishes only the selected path. The reusable workflow is GitHub Packages-only and accepts only `dev` or `preview`; Studio Web is never published to npmjs or `latest`. Its only job is skipped unless the repository variable `ENABLE_SKILL_FLAVOR_PUBLISH` equals exactly `true`; this leaves every default-package job unchanged.
 
+### Automation Suite: the one npmjs flavor
+
+`@uipath/skills-automation-suite` is the one flavor that end users install through `uip skills install`, so it is the one flavor published to npmjs. Two things set it apart from every other flavor:
+
+- **Installable shape.** `npm run skills:pack-installable -- automation-suite` (`compose-skill-flavor.mjs pack-installable`) packs the default package's complete payload (plugin manifests, hooks, commands, assets) around the flavor's built `skills/`, because the CLI's Claude Code install fails without `.claude-plugin/marketplace.json`. The manifest keeps `repository`, which `--provenance` requires, and drops `scripts` and `publishConfig`, so the publisher chooses the registry. The command verifies the tarball, refuses one that lost any default payload path, writes it to `build/installable/automation-suite/`, and prints only its path. `npm run skills:pack` still builds the minimal package for every flavor, this one included.
+- **npmjs publisher.** The `publish-automation-suite-npmjs` job in `publish.yml` publishes it with the default package's gate (`release-gate`), channels (`preview`, `latest`), OIDC trusted publishing, `--provenance`, and stamped version. The job cannot live in `publish-skill-flavor.yml`: an npmjs trusted publisher names one workflow file. It runs only when the repository variable `ENABLE_AUTOMATION_SUITE_PUBLISH` equals exactly `true`; set it only after the bootstrap in [Required setup](#required-setup). Both npmjs jobs stamp and tag through `scripts/resolve-publish-tag.mjs <PACKAGE>`, so the two packages of one run share a version, and each package's `preview` tag follows [Which line owns `preview`](#which-line-owns-preview) on its own.
+
+The Automation Suite package has no `dev` channel yet. Evals build the flavor from source instead: `scripts/activate-skill-flavor.mjs <FLAVOR>` swaps a CI checkout's `skills/` for the built flavor tree (the `flavor` input of `run-coder-eval.yml`).
+
 ### One-time Internal package bootstrap
 
 Registry routing does not set GitHub package visibility. Keep `ENABLE_SKILL_FLAVOR_PUBLISH` absent or false until an organization owner or package administrator completes this sequence for every flavor with an explicit publish caller:
@@ -124,12 +137,16 @@ Registry follows channel — you pick a channel, not a registry.
 | default | `workflow_dispatch` (channel: `latest`) | `latest` | npmjs | `latest` | `package.json` version | yes |
 | Studio Web | push to `main` or dispatch `dev` | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
 | Studio Web | push to `release/v*` or dispatch `preview` | `preview` | GitHub Packages | `preview` | `<base>-preview.<run_number>` | no¹ |
+| Automation Suite³ | push to `release/v*` or dispatch `preview` | `preview` | npmjs | `preview`² | `<base>-preview.<run_number>` | yes |
+| Automation Suite³ | `workflow_dispatch` (channel: `latest`) | `latest` | npmjs | `latest` | `package.json` version | yes |
 
 ¹ GitHub Packages does not support npm provenance attestations; only the npmjs channels are signed.
 
 ² Only the **highest** release line takes the bare `preview` tag. A lower line publishes to `preview-v<M.N>` instead — see [Which line owns `preview`](#which-line-owns-preview).
 
-**Two default-package channels publish automatically** (mirroring `UiPath/cli`): every push to `main` (normally a merge) publishes a default `dev` build to GitHub Packages, and every push to a `release/v*` branch publishes a default `preview` build to npmjs. When the custom-package gate is enabled after bootstrap, the same run invokes the isolated Studio Web publisher for its GitHub Packages `dev` or `preview` counterpart. `latest` (stable) is published **only** for the default package by an explicit `channel=latest` dispatch — there is no `release:` trigger, so creating a GitHub Release does not publish anything. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release. The `preview`/`dev` version suffix (`<base>-preview.<run_number>` / `<base>-dev.<run_number>`) matches the CLI's stamping scheme exactly.
+³ `@uipath/skills-automation-suite`, only while `ENABLE_AUTOMATION_SUITE_PUBLISH=true` — see [Automation Suite: the one npmjs flavor](#automation-suite-the-one-npmjs-flavor).
+
+**Two default-package channels publish automatically** (mirroring `UiPath/cli`): every push to `main` (normally a merge) publishes a default `dev` build to GitHub Packages, and every push to a `release/v*` branch publishes a default `preview` build to npmjs. When the custom-package gate is enabled after bootstrap, the same run invokes the isolated Studio Web publisher for its GitHub Packages `dev` or `preview` counterpart, and once enabled the Automation Suite job publishes its npmjs `preview` at the same version. `latest` (stable) is published **only** for the default package and, once enabled, the Automation Suite package, by an explicit `channel=latest` dispatch — there is no `release:` trigger, so creating a GitHub Release does not publish anything. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release. The `preview`/`dev` version suffix (`<base>-preview.<run_number>` / `<base>-dev.<run_number>`) matches the CLI's stamping scheme exactly.
 
 ### Cutting a preview
 
@@ -168,6 +185,7 @@ Both released packages are under the **`@uipath` scope**. There is no committed 
 |-----|----------|------|
 | `publish-dev` | GitHub Packages (`npm.pkg.github.com`) | built-in `GITHUB_TOKEN` |
 | `publish-npmjs` | npmjs (`registry.npmjs.org`) | **OIDC trusted publishing** (no token) + signed `--provenance` |
+| `publish-automation-suite-npmjs` | npmjs (`registry.npmjs.org`) | **OIDC trusted publishing** (no token) + signed `--provenance` |
 | `publish-skill-flavor.yml` / `publish` | GitHub Packages (`npm.pkg.github.com`) only | built-in `GITHUB_TOKEN` |
 
 ## Promoting a line to stable (manual)
@@ -206,6 +224,7 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 - [x] **npmjs Trusted Publishing for the default package** — configure a GitHub Actions trusted publisher on `@uipath/skills` (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the default `publish-npmjs` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
 - [x] **Studio Web registry isolation in code** — the explicit Studio Web jobs call `publish-skill-flavor.yml` with `flavor: studioweb`; generated custom manifests and the reusable workflow target only GitHub Packages. It requires no npmjs package, trusted publisher, OIDC permission, or provenance configuration.
 - [ ] **Studio Web Internal package bootstrap** — manually create `@uipath/skills-studioweb`, set it to Internal, confirm it does not inherit access from the public source repository, grant `UiPath/skills` Actions write access, and only then set `ENABLE_SKILL_FLAVOR_PUBLISH=true` as described above.
+- [ ] **Automation Suite npmjs bootstrap** — npm attaches a trusted publisher only to a package that already exists (re-check at setup time). An `@uipath` npmjs org admin stamps a throwaway version that no CLI line matches (`npm version 0.0.0-bootstrap.0 --no-git-tag-version`), builds `npm run skills:pack-installable -- automation-suite`, and publishes that tarball once by hand with `--access public --tag bootstrap`. They then add the trusted publisher (repository `UiPath/skills`, workflow `publish.yml`) and revoke the token they used. Discard the local version stamp, and only then set `ENABLE_AUTOMATION_SUITE_PUBLISH=true`.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
 - [x] **Version source confirmed** — `package.json` and `version-manifest.json` are authoritative for the current CLI minor line; do not copy a volatile version number into this checklist. The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 06:00 UTC, 6 h before the CLI's own cut, on the same 14-day cadence anchored at `2026-06-14`).
 

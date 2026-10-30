@@ -160,6 +160,7 @@ Inspect the final package contract, not only sparse sources:
 - Custom manifests contain no repository lifecycle scripts or `package.json.repository` field. They pin both `publishConfig.registry` and `publishConfig["@uipath:registry"]` to `https://npm.pkg.github.com/`; the scoped pin prevents an ambient `@uipath` npmjs configuration from winning. The publisher still validates the effective scoped registry and supplies the reviewed `dev` or `preview` tag. Do not set an access value during normal publishing because the existing Internal visibility must remain unchanged.
 - No built tree, staged package, or tarball contains `skill-flavor:` comments, `skill-flavors/`, repository tests, or composer source.
 - Binary and template assets remain byte-identical.
+- `npm run skills:pack-installable -- <flavor>` builds one flavor in the **installable** shape for a flavor that end users install through `uip skills install`: the default package's complete payload (plugin manifests, hooks, commands, assets) around that flavor's built `skills/`, with no lifecycle scripts, no lifecycle driver, no `publishConfig`, and the root `repository` kept for npm provenance. It fails if the tarball lost any default payload path, and replaces only `build/installable/<flavor>/`. `npm run skills:pack` keeps every custom package minimal.
 
 Clarify what "available" means before release work: a successful
 `skills:pack` makes a local tarball available; registry availability requires
@@ -181,6 +182,16 @@ package visibility are separate controls, and this variable is an enablement
 switch rather than a live visibility check. Follow the one-time procedure in
 `docs/RELEASE.md`, and disable the global gate again before adding a caller for
 another not-yet-bootstrapped flavor.
+
+Automation Suite is the one reviewed exception to GitHub-Packages-only flavor
+publishing. Its end users install it through `uip skills install`, so
+`publish.yml`'s `publish-automation-suite-npmjs` job publishes
+`@uipath/skills-automation-suite` in the installable shape to npmjs, with the
+default package's release gate, channels, OIDC trusted publishing,
+provenance, and `scripts/resolve-publish-tag.mjs` version stamp, behind its own
+`ENABLE_AUTOMATION_SUITE_PUBLISH` switch. Adding another npmjs flavor requires
+the same explicit review; never route a flavor to npmjs through
+`publish-skill-flavor.yml`.
 
 ## Critical Rules
 
@@ -204,4 +215,4 @@ another not-yet-bootstrapped flavor.
 - Do not trust a source-tree scan as proof of package safety; inspect the actual tarballs.
 - Do not remove or bypass the root `prepack`/`postpack` lifecycle; source markers must never reach the default npm package.
 - Do not make the default publisher iterate over `build/npm/*.tgz`, and do not publish a flavor through an unreviewed registry wildcard.
-- Do not configure npmjs credentials, OIDC trusted publishing, provenance, or public access for a custom flavor package.
+- Do not configure npmjs credentials, OIDC trusted publishing, provenance, or public access for a custom flavor package. The reviewed `publish-automation-suite-npmjs` job is the only exception.

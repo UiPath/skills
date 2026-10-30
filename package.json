@@ -41,11 +41,12 @@
     "scripts/npm-package-lifecycle.mjs"
   ],
   "scripts": {
-    "skills:test": "node --test tests/docker/tool-line.test.mjs tests/scripts/check-skill-links.test.mjs tests/scripts/publish-workflow.test.mjs tests/scripts/compose-skill-flavor.test.mjs tests/scripts/manage-skill-flavors-skill.test.mjs tests/scripts/studioweb-flavor-contract.test.mjs tests/scripts/slack-stable-publish-notify.test.mjs tests/scripts/codeowners-check.test.mjs tests/scripts/optimize-skill-workflow.test.mjs",
+    "skills:test": "node --test tests/docker/tool-line.test.mjs tests/scripts/check-skill-links.test.mjs tests/scripts/publish-workflow.test.mjs tests/scripts/resolve-publish-tag.test.mjs tests/scripts/activate-skill-flavor.test.mjs tests/scripts/compose-skill-flavor.test.mjs tests/scripts/manage-skill-flavors-skill.test.mjs tests/scripts/studioweb-flavor-contract.test.mjs tests/scripts/slack-stable-publish-notify.test.mjs tests/scripts/codeowners-check.test.mjs tests/scripts/optimize-skill-workflow.test.mjs",
     "skills:validate": "node scripts/compose-skill-flavor.mjs validate",
     "skills:check-links": "node scripts/check-skill-links.mjs",
     "skills:build": "node scripts/compose-skill-flavor.mjs build",
     "skills:pack": "node scripts/compose-skill-flavor.mjs pack",
+    "skills:pack-installable": "node scripts/compose-skill-flavor.mjs pack-installable",
     "skills:recover": "node scripts/npm-package-lifecycle.mjs recover",
     "prepack": "node scripts/npm-package-lifecycle.mjs prepare",
     "postpack": "node scripts/npm-package-lifecycle.mjs restore",
