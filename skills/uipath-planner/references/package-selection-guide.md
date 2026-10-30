@@ -98,12 +98,10 @@ These two mechanisms both provide access to third-party systems, but they are **
 ### Decision
 
 1. If Orchestrator has a configured **Integration Service** connection for the target system AND the PDD does not require specific native-package activities → use the **Integration Service connector**.
-2. If a catalog connector exists but no connection is configured yet → still use the **Integration Service connector**, and list creating the connection as a prerequisite. A missing connection is a provisioning task, not a reason to change mechanism.
-3. If no catalog connector exists and the target is a REST+JSON API → **build a custom connector** (`uipath-connector-builder`, `uip is connectors builder`) and treat it as tier 1 from there. Budget it as a task in the plan.
-4. Otherwise → use the matching **NuGet package**, or a direct authenticated call with the key in a `Credential` asset.
+2. If a catalog connector exists but no connection is configured yet → still use the **Integration Service connector**; list creating the connection as a prerequisite.
+3. If no catalog connector exists and the target is a REST+JSON API → **build a custom connector** (`uipath-connector-builder`) and budget it as a plan task.
+4. Otherwise → use the matching **NuGet package**, or a direct authenticated call (key in a `Credential` asset) with a written justification in the SDD.
 5. If both paths are listed in §9 for the same application, pick Integration Service for the primary path and note the NuGet package as a fallback in §14.
-
-A direct authenticated API call (step 4) is the **last** resort and needs a written justification in the SDD. It is invisible to `uip is connections list`, cannot be pinged, and cannot be re-pointed per environment without editing the project. Putting the key in a `Credential` asset stores the secret safely but leaves the integration unmanaged — the two are different problems.
 
 ### Side-by-side
 
@@ -120,7 +118,7 @@ A direct authenticated API call (step 4) is the **last** resort and needs a writ
 
 - **Do not** list the connector slug in §14 Packages. Slugs are not NuGet packages.
 - **Do not** install `UiPath.Salesforce.Activities` when the design uses the Salesforce Integration Service connector — they are parallel paths, not complementary.
-- **Do not** assume every Orchestrator instance has Integration Service enabled. Confirm during Phase 1 scoping. If it is genuinely disabled on the target tenant, take the NuGet path and record that as the reason — "I did not check" is not the same finding, so resolve the doubt instead of defaulting past Integration Service.
+- **Do not** assume every Orchestrator instance has Integration Service enabled. Confirm during Phase 1 scoping; take the NuGet path only when it is disabled on the target tenant, and record that as the reason.
 
 ### Example — Salesforce via Integration Service
 
