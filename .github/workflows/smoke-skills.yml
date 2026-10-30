@@ -56,16 +56,15 @@ jobs:
           MAX_SMOKE_TASKS: ${{ vars.SMOKE_MAX_TASKS || '40' }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.sha }}
-          EVENT_NAME: ${{ github.event_name }}
-          SMOKE_ON_PR: ${{ vars.SMOKE_ON_PR }}
+          DISABLE_SMOKE: ${{ vars.DISABLE_SMOKE }}
         run: |
-          # Temporarily disabled on PRs: coder-eval smoke runs fail on expired
-          # registry tokens rather than on skill regressions. Emitting skip=true
-          # keeps this required check (and the gated one) green. Still runs on
-          # workflow_dispatch; set repo variable SMOKE_ON_PR=true to re-enable.
-          if [ "$EVENT_NAME" = "pull_request" ] && [ "$SMOKE_ON_PR" != "true" ]; then
+          # Kill switch: repo variable DISABLE_SMOKE=true skips the smoke tests
+          # (e.g. while coder-eval runs fail on expired registry tokens rather
+          # than on skill regressions). Emitting skip=true keeps this required
+          # check (and the gated one) green. Unset or any other value: run.
+          if [ "$DISABLE_SMOKE" = "true" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Smoke tests disabled on PRs (vars.SMOKE_ON_PR != 'true') — skipping"
+            echo "Smoke tests disabled (vars.DISABLE_SMOKE == 'true') — skipping"
             exit 0
           fi
 
