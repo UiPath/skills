@@ -12,7 +12,7 @@ Automation Cloud Orchestrator enforces per-tenant rate limits on the Jobs and Qu
 2. **Prefer `jobs start --wait-for-completion` over a hand-written wait loop.** It polls through the same `Jobs(<id>)` path at `--poll-interval` (default 5s).
 3. **Budget every `uip` call and external script at 100 requests per minute for the whole tenant.** Only calls made by the Get Jobs, Get Queue Items and Orchestrator HTTP Request activities inside a running job count as automation usage (1,000 per minute). The CLI, PowerShell scripts, monitoring tools and other integrations share the 100-per-minute budget.
 4. **Do not use `--export` for routine log or audit reads.** `uip or jobs logs --export` and `uip or audit-logs list --export` call export endpoints capped at **100 requests per day per tenant**, resetting at 00:00 UTC and shared with everyone on the tenant. Read with `--output json` and paginate. Export only when the user explicitly asks for a CSV file.
-5. **Keep `--limit` at 100 or below on `queue-items list`.** `GET /odata/QueueItems` rejects `$top` above 100 with HTTP 400. Paginate with `--offset` (see [orchestrator.md — Pagination pattern](orchestrator.md#common-flags)).
+5. **Keep `--limit` at 100 or below on `queue-items list`.** `GET /odata/QueueItems` rejects `$top` above 100 with HTTP 400, so the CLI refuses a larger `--limit` itself (`invalid_argument`, no call made). Paginate with `--offset` (see [orchestrator.md — Pagination pattern](orchestrator.md#common-flags)). Other listings are not capped this way.
 6. **The CLI does not retry a 429.** It returns `Result: Failure` with `ErrorCode: rate_limited` and a `Retry` hint. Handle it as described in [Handling a 429](#handling-a-429). Never retry immediately in a tight loop.
 
 ---

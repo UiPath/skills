@@ -265,7 +265,8 @@ With `variablesError`, the outputs are unknown, not empty: run the re-read
 command its `Instructions` give.
 
 For example, a direct-input claim can keep the useful status, outputs, and
-diagnostics in one read-back instead of printing the full execution envelope:
+diagnostics in one read-back instead of printing the full execution envelope
+(a real run: [ask first](operate.md#debug--a-real-end-to-end-run)):
 
 ```bash
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
