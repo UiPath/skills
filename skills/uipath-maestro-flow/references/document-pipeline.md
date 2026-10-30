@@ -2,11 +2,12 @@
 
 *Exact signatures, fields, and defaults: `documentClassify()` and `dynamicExtract()`.*
 
-Two document steps that need no published IxP project: classification
+Two document steps that need no trained IxP fields: classification
 (`uipath.document.classify`) labels a document, and the Extract document node
-(`uipath.ixp.extract-document-builder`) pulls fields
-against a taxonomy you author INLINE. For a published project's trained fields,
-use `ixpExtract` ([ixp.md](ixp.md)) instead.
+(`uipath.ixp.extract-document-builder`) pulls fields against a taxonomy you
+author INLINE — though the `dynamicExtract()` factory still needs a published
+model's identity ([Two ways to author it](#two-ways-to-author-it)). For a
+published project's trained fields, use `ixpExtract` ([ixp.md](ixp.md)) instead.
 
 Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
 `dynamicExtract({ fileRef, schema, model, pageRange?, modelConfig? })`.
@@ -36,9 +37,6 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
 .step('extract', dynamicExtract({ fileRef: input('file'), schema: invoiceTaxonomy,
   model: { modelName: 'invoiceixp-cef0d447-ixp', folderKey: '<folder-guid>' } }))
 ```
-
-Two routes author the Extract document node — see
-[Two ways to author it](#two-ways-to-author-it).
 
 ## Two ways to author it
 

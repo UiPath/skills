@@ -6,16 +6,14 @@ An Extract document node (`uipath.ixp.extract-document-builder`) decides what to
 
 ```bash
 uip maestro flow nodes schema get <file> --node-id <id> --output json
-uip maestro flow nodes schema set <file> --node-id <id> --file <taxonomy.json> --output json
+uip maestro flow nodes schema set <file> --node-id <id> --schema @<taxonomy.json> --output json
 ```
 
-Both edit the `.flow` on disk and need no login. `--schema '<json>'` takes the document inline instead of `--file`.
+Both edit the `.flow` on disk and need no login. `--schema` takes the document as a JSON string, or reads it from a file when the value starts with `@`.
 
 **These commands are new.** A CLI that predates them answers `error: unknown command 'schema'` with `"Result": "ValidationError"`. That means the installed `uip` is older than the commands, not that the node or the flow is wrong — so tell the user to update their CLI.
 
-Because they edit the `.flow`, they do not survive a project that generates it from TypeScript source: if the project has a `.flow-sdk/` directory, the next compile overwrites the taxonomy. See [extract-document-node.md](extract-document-node.md) for which authoring mode to pick.
-
-For the node itself — adding it, wiring `fileRef`, when it applies over a published IXP model — see [extract-document-node.md](extract-document-node.md). This guide assumes the node already exists.
+This guide assumes the node already exists. Adding it, wiring `fileRef`, when it applies over a published IXP model, and why these commands do not survive a project with a `.flow-sdk/` directory (the next compile overwrites the taxonomy) are in [extract-document-node.md](extract-document-node.md).
 
 ## Starting from a flow in Studio Web
 
@@ -81,7 +79,7 @@ Read the user's sample documents, design the taxonomy from what is on the page, 
 
 ```bash
 uip maestro flow nodes schema get Flow/Flow.flow --node-id extractDocument1 --output json   # what is there now
-uip maestro flow nodes schema set Flow/Flow.flow --node-id extractDocument1 --file taxonomy.json --output json
+uip maestro flow nodes schema set Flow/Flow.flow --node-id extractDocument1 --schema @taxonomy.json --output json
 uip maestro flow validate Flow/Flow.flow --output json
 ```
 
@@ -92,14 +90,14 @@ uip maestro flow validate Flow/Flow.flow --output json
 1. **Collect the samples.** Documents uploaded through Studio Web come down with the solution and need decoding first ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). Otherwise ask which documents are representative if the user has not said. Prefer variety over volume — a handful covering the layouts that differ tells you more than twenty of the same one.
 2. **Read them.** One full `Read` per decoded document returns text and image for both digital and scanned files, so no PDF tooling is needed.
 3. **Design the taxonomy** against the rules below and write it to a JSON file.
-4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --file <path> --output json`.
+4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.
 5. **Fix what it rejects.** Exit 3 means the document is a schema but breaks a rule; `Data.Issues` lists each problem with the path it is at. Correct those and run the same command again.
 6. **Validate the flow:** `uip maestro flow validate <file> --output json` must come back `Valid`.
 7. **Report** what was created, pass on the processor warning if the output carries one, and say that taking the node live is the user's step in Studio Web.
 
 ## The document
 
-`set` takes the whole document, not a patch. It has two members that matter:
+The document has two members that matter:
 
 - `prompt` — the overall extraction instructions, applying to everything.
 - `outputSchema` — an OpenAI structured-outputs JSON Schema. Its top-level `properties` are the field groups; its `$defs` are the field types.
@@ -273,12 +271,12 @@ On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 
 | Exit | Message | What to do |
 | --- | --- | --- |
-| 3 | `Schema document failed validation` | Content problems arrives under this message. Read `Data.Issues`: each entry names the path and the problem. A missing parent is reported here too (`Nested field group "<key>" has no parent group "<parent>"`) — a group named `Parent > Child` needs `Parent` defined in the same document. |
+| 3 | `Schema document failed validation` | Content problems arrive under this message. Read `Data.Issues`: each entry names the path and the problem. A missing parent is reported here too (`Nested field group "<key>" has no parent group "<parent>"`) — a group named `Parent > Child` needs `Parent` defined in the same document. |
 | 3 | `Invalid schema document` | The document is not a schema — it needs `prompt` and `outputSchema`. |
 | 3 | `Legacy schema document shape` | The document sent uses the superseded `{taxonomy, fieldTypes}` form; send `{ prompt, outputSchema }`. A legacy document already on the node is simply replaced, reported as `ReplacedLegacyDocument: true`. |
 | 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. |
-| 1 | `Invalid --schema JSON` | The argument did not parse. Prefer `--file` for anything sizeable; shells mangle inline JSON. |
-| 1 | `Cannot read --file` | The path does not exist or could not be read. This is a wrong path, not a malformed schema. |
+| 1 | `Invalid --schema JSON` | The argument did not parse. Prefer `--schema @<file>` for anything sizeable; shells mangle inline JSON. |
+| 1 | `Cannot read the schema file` | The path after `@` does not exist or could not be read. This is a wrong path, not a malformed schema. |
 | 1 | node not found, or wrong node type | `uip maestro flow nodes list <file>` gives the ids and types. Only Extract document nodes carry a taxonomy. |
 
 ## Evidence boundary

@@ -37,6 +37,7 @@ Do not hand-write the skeleton.
 `--sdk-source` decompiles the trigger-only artifact `flow init` writes into the project's `.flow-sdk/<Name>.flow.ts`, creating the folder; the source carries the flow id and name the product already assigned — a hand-written `flow('<name>')` invents an id instead.
 So the stub is the seed rather than litter: the first `compile -o` overwrites it in place.
 `init` refuses an existing source file unless `--force`; when the source is already there, drop `--sdk-source`.
+**A flow that will hold an Extract document node is initialised without `--sdk-source` and authored with the CLI throughout** — compiling from source overwrites the node and its taxonomy ([`references/extract-document-node.md`](references/extract-document-node.md)).
 **Maestro Automate is `--automate` on the same `flow init`:** when the request names **Maestro Automate** as the product, run `( cd "<Solution>" && uip maestro flow init <Name> --automate --sdk-source )`; the bare verb ("automate invoice intake") asks for a plain Flow.
 Nothing after `init` changes; the flag writes `runtimeOptions.profile` into `operate.json` plus a `.maestro_automate` marker, and `compile -o` rewrites only the `.flow`, so both survive.
 

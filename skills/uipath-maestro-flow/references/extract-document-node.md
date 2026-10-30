@@ -13,7 +13,7 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-The default for document extraction in a flow is a published IXP model, covered in [ixp.md](ixp.md), where the IXP project is built and deployed first and the flow then runs against it. Use the Extract document node only when the user asks for it, by either name, or is already using it: the flow holds a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or the request is about a node's taxonomy, which only this node carries.
+The default for document extraction in a flow is a published IXP model, covered in [ixp.md](ixp.md), where the IXP project is built and deployed first and the flow then runs against it. Use the Extract document node only when the user asks for it, by either name, or is already using it: the flow holds a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or the request is about the taxonomy an Extract document node carries inline. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
 
 Three node families share the `uipath.ixp.` prefix and they are not interchangeable:
 
@@ -55,7 +55,7 @@ The feature is new and tenant-gated, so not every tenant has it yet. Nothing in 
 
 ## Adding the node
 
-**These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project initialised with `--sdk-source` generates its `.flow` from a `.flow.ts` by compiling, and the next compile overwrites whatever `nodes create` and `nodes schema set` wrote. Check for a `.flow-sdk/` directory before starting. Where one exists, either author the whole flow from source and accept that this node cannot be authored that way at all ([document-pipeline.md](document-pipeline.md) explains why the SDK factory does not fit it), or build the flow in a project without source and keep to the CLI. Do not alternate between the two and re-apply the CLI edits after each compile.
+**These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project initialised with `--sdk-source` generates its `.flow` from a `.flow.ts` by compiling, and the next compile overwrites whatever `nodes create` and `nodes schema set` wrote. Check for a `.flow-sdk/` directory before starting. Where one exists, the node can be added from source only with `dynamicExtract()`, which needs a published model's `modelName` and `folderKey` ([document-pipeline.md](document-pipeline.md)). Without one, build the flow in a project without source and keep to the CLI. Do not alternate between the two and re-apply the CLI edits after each compile.
 
 `--label` sets the canvas name and seeds the node id. Give it a name that says which document and which fields, not "Extract" — a flow with two extraction nodes is common, and the label is what the user reads on the canvas and in a trace. Run `uip maestro flow nodes list <file> --output json` afterwards to get the id that was minted; later commands address the node by that id.
 
@@ -85,7 +85,7 @@ Set it at creation when the upstream node already exists:
 uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.start.output.invoice"}' --output json
 ```
 
-Two shapes are accepted — the plain `=js:$vars.…` string above, and the structured form `{"type":"jsExpression","expression":"$vars.start.output.invoice"}` with no `=js:` prefix inside it. Prefer the plain string: it is what Studio Web writes for this node family. Anything else, including a literal file name or a hand-built attachment object, reaches the runtime as a literal and the upstream output never resolves.
+Write it as the plain `=js:$vars.…` string above, the simplest form that validates. The structured form `{"type":"jsExpression","expression":"$vars.…","fieldType":"object"}` also validates, but only with `fieldType` present — without it the value is not recognised as an expression and validation rejects it twice over. A literal file name or a hand-built attachment object reaches the runtime as a literal and the upstream output never resolves.
 
 Where the file comes from depends on the trigger. A connector event carries its own file-reference field, named in the trigger's output definition — a SharePoint-backed event declaring `ReferenceID` is wired as `$vars.start.output.ReferenceID`. Read the trigger's contract rather than guessing the field name, and do not insert a download step to change the shape; this node takes the reference directly.
 
@@ -183,7 +183,7 @@ Before that fault the node may appear to succeed: the element completes in a fra
 
 The Studio Web save is what provisions the processor; extraction works from then on. Do not synthesise a `processorKey`, and do not copy one from another node — it names a different taxonomy.
 
-One thing to expect on the way back. Saving in Studio Web may convert the node to the processor variant (`uipath.ixp.processor.<key>`), which is a different node type from the one that was created. Pull the solution down again before editing it further, so a later CLI write does not overwrite what Studio Web wrote.
+One thing to expect on the way back. Saving in Studio Web may convert the node to the processor variant (`uipath.ixp.processor.<key>`), which is a different node type from the one that was created. Pull the solution down again before editing it further, so a later CLI write does not overwrite what Studio Web wrote — and where the pulled node is the processor variant, `nodes schema set` refuses it, and the taxonomy is edited in Studio Web from then on.
 
 ## When Extract document is not available
 
