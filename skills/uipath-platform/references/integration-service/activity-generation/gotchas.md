@@ -36,8 +36,8 @@
   `resp.items` is always `undefined`. A list action unwraps the vendor's
   envelope INSIDE `execute()` and returns the **relevant records array** — you
   filter that array yourself. Pagination is NOT concatenated
-  into that array: one invocation is one page, and the runtime carries no page
-  token (step 3). Inside a main action,
+  into that array: one invocation is one page; the next page's token round-trips via
+  `elements-next-page-token` and `request.query.nextPage` ([runtime.md](runtime.md), step 3). Inside a main action,
   operation-internal reads (e.g. the read half of read-merge-write) unwrap
   `resp.body` the same way, and the main action returns the final `intsvc.http`
   result untouched.
@@ -64,3 +64,10 @@
 - **No Node globals in the sandbox**: `Buffer`, `btoa`/`atob`,
   `TextEncoder`/`TextDecoder` are absent (`JSON` and `Uint8Array` are present).
   Anything needing base64 cannot be written in a script.
+- **Cache reads, never writes, and iterate with `--no-cache`.** Put `cacheFor` on
+  lookups, describes and field discovery, and `export const cache` on a read activity
+  that is called repeatedly with the same inputs. Not on a write, on data a user edits
+  and reads back, or on anything that depends on inbound headers, time or randomness.
+  Throw on every vendor failure, including a 2xx whose body reports an error (Slack's
+  `ok: false`): a run that throws stores nothing. Run work-in-progress with `--no-cache`
+  and test caching once the script is right ([caching.md](caching.md)).

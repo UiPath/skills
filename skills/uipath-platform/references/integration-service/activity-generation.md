@@ -61,6 +61,7 @@ carries its own copies and depends on no other skill.
 | Any input that is a vendor-internal ID | [activity-generation/lookup-fields.md](activity-generation/lookup-fields.md) |
 | Authoring the min.json — the schema and every derivation rule | [activity-generation/minimal-metadata-design.md](activity-generation/minimal-metadata-design.md) |
 | The metadata procedure, and its field-by-field contract | [activity-generation/standard-resource.md](activity-generation/standard-resource.md) · [contract](activity-generation/standard-resource-contract.md) |
+| Caching a lookup or a schema read with `cacheFor`, or a whole read activity with `export const cache`, and the caller's `--refresh` / `--no-cache` | [activity-generation/caching.md](activity-generation/caching.md) |
 | Mistakes that recur across connectors | [activity-generation/gotchas.md](activity-generation/gotchas.md) |
 | A complete worked connector, end to end | [activity-generation/slack.md](activity-generation/slack.md) |
 | Target shapes to copy | [example-action.js.txt](activity-generation/example-action.js.txt) · [example-list-action.js.txt](activity-generation/example-list-action.js.txt) |
@@ -166,8 +167,13 @@ uip is resources run script \
   --connection-id <connectionId> \
   --inline-script $WORK/<scriptRef>.js \
   --body '{ "channel": "C0A66HP9KKM" }' \
+  --no-cache \
   --output json
 ```
+
+`--no-cache` turns off `cacheFor` and `export const cache` for the run, so a value from a
+work-in-progress script is never stored. Drop it only to test the caching itself
+([caching.md](activity-generation/caching.md)).
 
 Read `Data.Body` — the vendor's own response, parsed — and loop:
 
@@ -219,6 +225,7 @@ uip is resources run script \
   --connection-id <connectionId> \
   --inline-script $WORK/<scriptRef>.js \
   --body '{ "name": "test-1756900000" }' \
+  --no-cache \
   --output json
 ```
 

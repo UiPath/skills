@@ -49,13 +49,15 @@ script sees them.
 |---|---|---|
 | `intsvc.http(request)` | brokered egress | one credential-injected, egress-guarded vendor call. Costs one of the 4 per-request calls |
 
-`intsvc.http` is the whole surface. There are no pagination helpers: the runtime
-carries no page token in or out.
+`intsvc.setPaginationHeaders(result, { current, next, pageSize, hasMore })` writes the `elements-has-more` and `elements-next-page-token` headers on a list result, and `intsvc.decodePageToken(text)` reads the token the caller echoes back as `request.query.nextPage` (`null` when absent or garbled). Both are synchronous and cost no call budget.
+
+Caching is not a call of its own: it is `cacheFor` on `intsvc.http` and an `export const cache`
+declaration on the script, both in [caching.md](caching.md).
 
 ### `intsvc.http` — request and response
 
 ```js
-intsvc.http({ method, url, query?, headers?, body? })   // → { status, headers, body }
+intsvc.http({ method, url, query?, headers?, body?, read?, cacheFor? })   // → { status, headers, body }
 ```
 
 | field | rule |
@@ -64,6 +66,8 @@ intsvc.http({ method, url, query?, headers?, body? })   // → { status, headers
 | `query` | `{ k: v }` — serialized for you; prefer it over hand-encoding |
 | `headers` | `{ name: value }` or `[{ name, value }]` (ordered, duplicates preserved) |
 | `body` | an object is sent as JSON; a string is sent as its UTF-8 bytes |
+| `read` | `true` marks a POST as a read (a query API with no side effect), so it does not count as a write for the cache and may carry `cacheFor` |
+| `cacheFor` | seconds to keep this response and serve it to the next identical call on the connection, from any script. Only on GET, HEAD, OPTIONS or a `read: true` POST, and a 2xx is what is stored. See [caching.md](caching.md) |
 
 | response field | rule |
 |---|---|
@@ -76,11 +80,12 @@ intsvc.http({ method, url, query?, headers?, body? })   // → { status, headers
 ### One page per invocation
 
 A list script returns **one page** — the page the vendor answers with for the
-query it was given. Pagination is not handled by the runtime: no token travels in
-or out, and nothing concatenates pages. If a caller needs a later page, the
-script has to accept the vendor's own paging parameter (`cursor`, `offset`,
-`page`) as an input and pass it through in `query`. A script that walks the
-cursor itself in a loop exhausts the 4-call budget on a large tenant, so do not.
+query it was given. The runtime never concatenates pages. To hand the caller the
+next one, put the vendor's cursor in the token with `intsvc.setPaginationHeaders`
+(set `result.body` to the page first); the caller echoes the token as
+`request.query.nextPage`, and `intsvc.decodePageToken` gives the cursor back. A script
+that walks the cursor itself in a loop exhausts the 4-call budget on a large tenant,
+so do not.
 
 ## Reading the response
 

@@ -58,16 +58,20 @@ The procedure, per lookup field:
    and whose output is the **relevant records array**.
 
    **Pagination: ONE page per invocation — the script never walks the list.**
-   The runtime carries no page token. The script returns the page the vendor
-   answers with; if a caller needs another page, the vendor's own paging
-   parameter (`cursor`, `offset`, `page`) is an ordinary input passed through in
-   `query`.
+   The script returns the page the vendor answers with; if a caller needs
+   another page, it carries the vendor's cursor in the page token
+   (`intsvc.setPaginationHeaders` / `intsvc.decodePageToken`, see
+   [runtime.md](runtime.md)) rather than looping.
 
    ```js
    async function execute(context) {
-     const { limit, cursor } = context.request.body ?? {};
-     const query = { limit: String(limit ?? 200) };
-     if (cursor) query.cursor = cursor;   // the vendor's own paging param, passed through
+     const { limit } = context.request.body ?? {};
+     // The caller echoes the previous page's token as query.nextPage.
+     const page = intsvc.decodePageToken(context.request.query?.nextPage) ?? {};
+     const pageSize = Number(page.pageSize ?? limit ?? 200);
+     const cursor = page.next;
+     const query = { limit: String(pageSize) };
+     if (cursor) query.cursor = cursor;   // the vendor's own paging param
 
      const listed = await intsvc.http({ method: 'GET', url: '/users.list', query });
      // Slack's failure signal. Use YOUR vendor's — see the gotchas.
@@ -80,11 +84,14 @@ The procedure, per lookup field:
      // from a dropdown (deactivated members, bots): they only crowd the one page.
      const members = (listed.body.members ?? []).filter(m => !m.deleted && !m.is_bot);
 
+     const next = listed.body.response_metadata?.next_cursor || "";
+
      // Swap the body on the vendor response and return it, rather than a
      // fabricated `{ status: 200, headers: [], body }`: Slack's content-type
      // header stays on the response, so the caller receives parsed JSON, not a
      // string.
      listed.body = members;
+     intsvc.setPaginationHeaders(listed, { current: cursor, next, pageSize, hasMore: next !== '' });
      return listed;
    }
    ```
