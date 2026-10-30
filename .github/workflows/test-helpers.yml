@@ -238,7 +238,7 @@ jobs:
       # uipath-planner writes genomes and uipath-genome-builder builds them; each ships the genome core
       # (format guides, templates, check-genome.mjs), canonical in the planner. Fails when a copy differs.
       - name: Check the genome core is identical in both skills
-        run: python3 scripts/check-genome-core.py
+        run: node scripts/check-genome-core.mjs
 
   runtime-payload-casing-guard:
     runs-on: uipath-ubuntu-latest

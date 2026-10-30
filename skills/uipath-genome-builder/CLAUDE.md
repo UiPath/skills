@@ -4,7 +4,7 @@ Governs editing this skill; never read in a run. The skill builds automations fr
 
 ## Genome core — shared with `uipath-planner`, canonical there
 
-`references/genome-format-guide.md`, `extracted-genome-guide.md`, `transactional-shape-guide.md`, `skill-mapping-guide.md`, `uipath-source-guide.md`, `parts-guide.md`, `source-frameworks-guide.md`, `assets/templates/*-genome-template.md` and `scripts/check-genome.mjs` are copies of `uipath-planner`'s genome core. **Never edit them here**: edit the planner's copy, then run `python3 scripts/check-genome-core.py --fix` from the repository root. The rules for core files (links, verb names) are in `skills/uipath-planner/CLAUDE.md` § Genome core.
+`references/genome-format-guide.md`, `extracted-genome-guide.md`, `transactional-shape-guide.md`, `skill-mapping-guide.md`, `uipath-source-guide.md`, `parts-guide.md`, `source-frameworks-guide.md`, `assets/templates/*-genome-template.md` and `scripts/check-genome.mjs` are copies of `uipath-planner`'s genome core. **Never edit them here**: edit the planner's copy, then run `node scripts/check-genome-core.mjs --fix` from the repository root. The rules for core files (links, verb names) are in `skills/uipath-planner/CLAUDE.md` § Genome core.
 
 ## Home per subject
 

@@ -24,7 +24,7 @@ Governs editing this skill; never read in a run. The skill is one entry point wi
 
 `references/genome-format-guide.md`, `extracted-genome-guide.md`, `transactional-shape-guide.md`, `skill-mapping-guide.md`, `uipath-source-guide.md`, `parts-guide.md`, `source-frameworks-guide.md`, `assets/templates/component-genome-template.md`, `assets/templates/process-genome-template.md` and `scripts/check-genome.mjs` are the genome core. Both skills ship them byte-identical, because each is installed on its own and may not read the other's files; the canonical copies are here.
 
-1. **Edit the core here**, then run `python3 scripts/check-genome-core.py --fix` from the repository root to copy it to `uipath-genome-builder`; CI (`uipath-genome checker unit tests`) fails while a copy differs.
+1. **Edit the core here**, then run `node scripts/check-genome-core.mjs --fix` from the repository root to copy it to `uipath-genome-builder`; CI (`uipath-genome checker unit tests`) fails while a copy differs.
 2. **A core file links only to core files and to `SKILL.md`** (both skills have one). A guide outside the core is named by its skill and file name — "`uipath-genome-builder`'s execution-guide.md § 2.2" — never linked, so every link resolves in both skills; the check fails on a link that breaks this.
 3. **A core file names a verb with its skill** — `uipath-planner`'s `author`, `extract`, `edit`; `uipath-genome-builder`'s `build` — so it reads correctly from either skill.
 4. **Never restate the core** in either skill: point into it by section.
