@@ -14,7 +14,7 @@ All `uip or` commands share a set of cross-cutting options:
 |------|-------|---------|
 | `--tenant <name>` | All commands | Override the default tenant (set during `uip login tenant set`). |
 | `--output json` | All commands | Emit structured JSON instead of table output. Always use this when parsing output programmatically. |
-| `--limit <n>` | List commands | Number of items to return (default 50). On `queue-items list` keep it at 100 or below — Orchestrator rejects a larger `$top` with HTTP 400. |
+| `--limit <n>` | List commands | Number of items to return (default 50). On `queue-items list` keep it at 100 or below — Orchestrator rejects a larger `$top`, so the CLI refuses it (`invalid_argument`) before any call. |
 | `--offset <n>` | List commands | Number of items to skip for pagination. |
 | `--sort-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
 | `--all-fields` | Most get/list commands | Return the full API DTO instead of the curated summary. Use when you need a field the curated view drops. Note: curated keys are PascalCase, raw DTO keys are camelCase — the shapes do not share casing. |
