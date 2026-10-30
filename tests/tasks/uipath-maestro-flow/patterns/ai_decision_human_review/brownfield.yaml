@@ -78,7 +78,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Original nodes keep their canvas positions and the new nodes overlap none of them"
+    description: "Original nodes move only to make room for the new nodes, which overlap none of them"
     command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect layout --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
     timeout: 30
     expected_exit_code: 0

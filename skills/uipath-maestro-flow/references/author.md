@@ -37,11 +37,12 @@ cannot make: which node, which topology, what an output means, and what to ask.
    question. `resources.md` covers reference-field lookups; finish its
    pagination loop before reporting "not found".
 4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit
-   with `compile -o`. Never hand-edit the emitted `.flow`, `content/*.bpmn`,
-   `bindings_v2.json`, `entry-points.json`, `operate.json` or
-   `package-descriptor.json` — the CLI regenerates them, and the next compile
-   silently undoes a hand edit. Brownfield JSON goes through `decompile`
-   ([`brownfield.md`](brownfield.md)).
+   with `compile -o` for a new flow; a non-empty `.flow` that existed before this
+   turn is re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)).
+   Never hand-edit the emitted `.flow`, `content/*.bpmn`, `bindings_v2.json`,
+   `entry-points.json`, `operate.json` or `package-descriptor.json` — the CLI
+   regenerates them, and the next compile silently undoes a hand edit.
+   Brownfield JSON goes through `decompile` ([`brownfield.md`](brownfield.md)).
 5. **Run the loop once the source is complete.** `check --source` is cheap, so
    use it freely while writing; `compile` and `validate` run on the finished
    source, and again after the last edit. Treat every `validate` warning as a
@@ -208,7 +209,11 @@ When authoring is done, report:
 3. **Loop status** — the last `check`, `compile` and `validate` results,
    including any warning you judged acceptable and why.
 4. **Placeholders** — each `mock()` and the capability it stands for.
-5. **Missing connections or pending prepares** — per connector.
+5. **Connections** — per connector, the `connection: <Name> (<id>)` line
+   `prepare` printed and its folder (from the candidate line, or
+   `uip is connections list <connector-key> --all-folders --output json`), or
+   what is missing or still to prepare. A guessed connection
+   ([bindings.md](bindings.md#where-both-values-come-from)) also goes under Open questions as **[REQUIRED]**.
 6. **Open questions** — every decision the request left open, each marked
    **[REQUIRED]** or **[OPTIONAL]**.
 <!--skill-flavor:completion-next:start-->
