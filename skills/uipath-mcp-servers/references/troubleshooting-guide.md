@@ -51,7 +51,8 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | `Forbidden (403). …` on `refresh-tools` of a `remote` / `swagger` server with a `%ASSETS/<ASSET_NAME>%` header | Orchestrator refused to give that asset's value for a CLI login (it gives it to Agent Gateway in the portal and to jobs). The token's scopes are not the cause, and `mcp get` still shows the header as stored. Ask the user to refresh the tools in Agent Gateway, or whether to store the value as a secret header (`--header <NAME>=<VALUE>`) instead. |
 | ``Tools on `uipath` MCP servers are manually authored and cannot be refreshed.`` | Add tools with `mcp-tools create-resource`. |
 | ``Tools on `selfhosted` MCP servers come from the runtime connected to them …`` | Change the tools in the runtime. |
-| `Failed to retrieve authentication token from Integration Service connection` on `refresh-tools` of a `remote` server | Ping the connection ([Checking a Server](../SKILL.md#checking-a-server)): an `Expired` one needs its owner to sign in again. It must be an OAuth connection of connector `uipath-uipath-mcp`. When the server's connection is active, the refresh may have used your own per-user connection on the server: check it in Agent Gateway. |
+| `Failed to retrieve authentication token from Integration Service connection` on `refresh-tools` of a `remote` server | Ping the connection ([Checking a Server](../SKILL.md#checking-a-server)): an `Expired` one needs its owner to sign in again; one with no stored OAuth refresh token needs its OAuth app changed first, and signing in again alone does not fix it. It must be an OAuth connection of connector `uipath-uipath-mcp`. When the server's connection is active, the refresh may have used your own per-user connection on the server: check its `Status` with `uip agenthub mcp-user-connections list --mcp <SLUG> --folder-path <FOLDER_PATH> --output json` ([Per-User Connections](../SKILL.md#per-user-connections)). |
+| `HTTP 400: Response exceeded maximum allowed size of 102,400 bytes` on `refresh-tools` of a `remote` server | The server's tool list is over the 100 KB limit on tool discovery (tool calls allow 5 MB). Ask the user which fix to take: a narrower endpoint of the same server (GitHub: `/mcp/x/repos/readonly`, not `/mcp/readonly`), the server's own header that limits its toolsets (`--header`; on `mcp update` it replaces every stored header), or Relay (`--use-relay` raises the limit to 5 MB; a Relay client must reach the host). Then refresh again. |
 | `Failed to connect to MCP server: …` / HTTP 504 `Request timeout` | The remote server is unreachable: check the URI, the headers, and Relay for a private host. |
 
 ## Platform
@@ -73,6 +74,20 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | `--target-name requires --category …` / `Ambiguous --target-name …` / `No <CATEGORY> candidate matched name '<NAME>'.` | Pass `--category`; for a resource in another folder pass `--target-folder-*`; or pick an `Id` from `candidates` and pass it as `--target-identifier`. |
 | `Found <N> matching tools.` | Several tools matched `--name` and none is named exactly that: pass a tool id, or `--allow-multiple` to act on every match. `Found 0 matching tools.` (`mcp-tools get`) means none matched: take a name from `mcp-tools list`. |
 | `RCS Entities/Search requires the RCS.Search scope. …` (Instructions of a 401 / 403 on `candidates`) | Re-run `uip login`. |
+
+## Per-user connections
+
+| Text | Fix |
+|------|-----|
+| ``Per-user connections exist only on remote MCP servers, and '<SLUG>' is a `<TYPE>` server.`` | Pass a `remote` server's slug; the `NextCommand` lists them. |
+| `Per-user connections are not enabled on this tenant.` | The feature is off: the server's own connection serves every user. Tell the user; change that connection (`mcp update <SLUG> --connection-id <CONNECTION_ID>`) only if they ask, since it changes it for every user. |
+| `Forbidden (403). …` on `mcp-user-connections set`, with `Instructions` naming Connections.Edit and McpServers.Edit | A missing permission, or a connection that is not Enabled or that you cannot see (one in another user's personal workspace: see the next row): run `uip is connections ping <CONNECTION_ID> --force-refresh --output json`. When it is not Enabled, its owner re-authenticates it (`uip is connections edit <CONNECTION_ID>`). |
+| `You can see no connection of the UiPath MCP connector named '<NAME>'.` | `uip is connections list uipath-uipath-mcp --all-folders --output json` lists the ones you can see. A connection in another user's personal workspace is among them only while you explore that workspace, which the CLI cannot start; until then its id with `--connection-id` gets a 403 too. Have that user run `set --me`, or explore the workspace in Orchestrator first. |
+| `<N> connections of the UiPath MCP connector are named '<NAME>'.` / `<N> users in the organization have the email '<EMAIL>'.` | `Instructions` lists each id (connections with folder and state): show them to the user, ask which one, and pass it as `--connection-id` / `--user-id`. |
+| `No user in the organization has the email '<EMAIL>'.` | Check the email with the user; `uip admin users list --search <TEXT> --output json` lists users with their emails. |
+| `Looking a user up by email needs permission to read the organization's users. …` (Instructions of a 403) | Ask for the user's id and pass `--user-id`. |
+| `--me needs a user's login, …` | The login is an external application's: pass `--user-email` or `--user-id`. |
+| `'<SLUG>' has no per-user connection for user <USER>.` | Nothing to delete: `mcp-user-connections list` shows the users that have one. |
 
 ## Network
 

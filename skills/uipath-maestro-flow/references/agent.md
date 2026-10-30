@@ -79,7 +79,7 @@ at author time.
 4. Read the two identifiers back, then author the Flow with `agent({
    location: 'in-solution', ... })`.
 5. Compile into the nested Flow project, validate, refresh resources, and
-   debug the Flow.
+   debug the Flow ([ask first](operate.md#debug--a-real-end-to-end-run)).
 
 ```bash
 uip solution init <SolutionName> --output json
