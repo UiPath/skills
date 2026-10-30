@@ -226,10 +226,10 @@ Deploy picks fresh-vs-upgrade purely on whether the app is **already deployed** 
 Resolution order:
 1. `--folder-path <path>` flag — a fully qualified path (`Shared`, `Finance/Invoicing`) or a folder's display name when that name is unique. The CLI resolves it to the key
 2. `--folder-key <key>` flag — pass this when you already hold the GUID
-3. `UIPATH_FOLDER_KEY=<key>` env-var prefix — same deploy, and the only form that skips the flag's folder pre-check (see [below](#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible))
+3. `UIPATH_FOLDER_KEY=<key>` env-var prefix — the same deploy as `--folder-key`
 4. Interactive folder selection (**must avoid** — see warning below)
 
-`--folder-path` and `--folder-key` are mutually exclusive; passing both fails with `Pass either --folder-path or --folder-key, not both.`
+`--folder-path` and `--folder-key` are mutually exclusive; passing both fails with `--folder-path and --folder-key both name the folder to deploy into. Pass only one of them.`
 
 ```bash
 uip codedapp deploy -n my-webapp --folder-path "Finance/Invoicing" --output json
@@ -237,17 +237,25 @@ uip codedapp deploy -n my-webapp --folder-path "Finance/Invoicing" --output json
 
 What `--folder-path` accepts:
 
-- A fully qualified path, matched case-insensitively. A leading or trailing `/`, a Windows-style separator, and spaces around a separator are all accepted, so `/finance/invoicing` resolves the same folder as `Finance/Invoicing`.
-- A folder's display name, when exactly one folder carries it. When a path and a display name both match, the exact path wins. An ambiguous display name fails and asks for the full path, with the reachable paths printed on stderr.
-- A **Personal Workspace** folder, resolved from the same listing as shared folders.
+- A fully qualified path, matched case-insensitively. A leading or trailing `/` and a Windows-style separator are accepted, so `/finance\invoicing/` resolves the same folder as `Finance/Invoicing`. Spaces around a separator are **not** stripped, so do not pad them.
+- A folder's display name, when exactly one folder carries it. A name two folders share fails as ambiguous and the error lists their full paths; pass one of those paths instead.
+- A **Personal Workspace** folder, or one inside it.
 
-Resolution reads the account's folder listing, which needs a session carrying the `OR.Default` scope. Granular Orchestrator scopes (`OR.Folders`, `OR.Execution`, `OR.Administration`) authenticate and deploy but list no folders, so a correct path reads as "not found" — the CLI names that scope in the error. `--folder-key` needs no listing and is unaffected. See [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
+Two feeds answer this, and they need different scopes. The tenant's folder collection is always queried first — it needs `Folders.View` (`OR.Folders` or `OR.Folders.Read`) whatever you pass. The account's own folders are read after it, and need `OR.Default`:
+
+| What you pass | Is the account's own listing read? |
+|---|---|
+| A path the tenant collection carries | No — the tenant query settles it |
+| A bare display name | Yes, so a workspace folder of that name is not missed |
+| A path or name under a Personal Workspace | Yes — the tenant collection never carries a workspace |
+
+That second read happens only when a Personal Workspace could be the target: a package published to a shared folder can never deploy into one, so the read is skipped entirely. Each error names the scope it needed. `--folder-key` reads neither feed. See [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 > **Name the folder explicitly with `--folder-path` or `--folder-key`.** Running `uip codedapp deploy` with neither drops the command into an interactive folder picker that fails in non-TTY contexts (CI, agent shells, IDE terminals piped to a runner). When invoked from an agent, you MUST pass one of them.
 
 #### Resolving folder name → folder key
 
-`--folder-path` makes this unnecessary for a deploy: pass the name or path straight to the command. Resolve a key yourself only when you need the GUID for something else — persisting it in project state, reusing it across many calls, or working around the pre-check below.
+`--folder-path` makes this unnecessary for a deploy: pass the name or path straight to the command. Resolve a key yourself only when you need the GUID for something else, such as persisting it in project state or reusing it across many calls.
 
 Resolve it with the **server-side `--name` filter** — do **not** fetch the full list and match client-side. The plain list is **paginated at 50 per page**, so a folder beyond the first page is silently missed. `--name` (contains match), `--path` (prefix), and `--type` all **require `--all`**.
 
@@ -287,22 +295,13 @@ Each folder JSON object includes: `Key` (GUID — pass this to `--folder-key`), 
 your account. Re-check the key with 'uip or folders list --output json'."
 ```
 
-**Cause: a CLI-side pre-check, not the folder.** `uip codedapp deploy --folder-key` first fetches the account's folder list (`Folders/GetAllForCurrentUser`) in one unpaged call and looks the key up in whatever came back. On an account that can see a very large number of folders that copy can be incomplete, and any folder missing from it is reported "not found" — a folder created moments ago and a long-standing shared folder alike. Folder age does not matter, and neither do folder-level roles: granting yourself a role on the folder does not change the answer. `Retry: RetryWillNotFix` is accurate — retrying the same key does not help.
-
-**Fix — move the key into the env-var prefix and drop the flag.** The pre-check runs only for `--folder-key`; `UIPATH_FOLDER_KEY` skips it, and the deploy request itself still carries the key, so a genuinely wrong key still fails at the server:
+**Only on `uip` older than 1.204.0.** That release dropped the client-side pre-check behind this error: `--folder-key` is no longer rejected for a folder the CLI cannot list, so a current CLI never reports it. Upgrade (`npm i -g @uipath/cli`). Until then, move the key into the env-var prefix and drop the flag — the pre-check ran only for `--folder-key`, and the deploy request still carries the key, so a genuinely wrong key still fails at the server:
 
 ```bash
 UIPATH_FOLDER_KEY="<FOLDER_KEY>" uip codedapp deploy -n "<APP_NAME>" --output json
 ```
 
-Keep every other flag from the failed call (`--path-name`, `--tags`, …); only `--folder-key` goes. Run it **once, immediately**.
-
-Rules when you see this error:
-
-1. **Confirm the key once:** `uip or folders list --all --name "<name>" --output json` returns a row with that `Key` → it is this pre-check; re-run with the env-var prefix. No row → the key is wrong; fix the key.
-2. **Do not sleep, back off, or loop the same `--folder-key` call.** Nothing is propagating; every retry returns the same answer and costs a full command.
-3. **Do not create another folder, re-`publish`, grant roles, or change `--permission-model`.** None of these affect the pre-check, and re-publishing yields `Package not found` on the next deploy.
-4. **Zero rows from `uip or folders list` (with `Result: Success`)** is a different problem — the session lacks `OR.Default`; see [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
+Keep every other flag from the failed call. Run it once; do not sleep, back off, or loop. **Zero rows from `uip or folders list` (with `Result: Success`)** is a different problem on any version — the session lacks `OR.Default`; see [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 #### Storing the resolved key
 
@@ -404,10 +403,13 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 | `App not found` on deploy | App genuinely not published | Run `uip codedapp publish` first |
 | `has not been published yet` / `still being indexed` right after a successful publish | Catalog **indexing lag** — not a missing package | CLI auto-retries ~15s (1/2/4/8s backoff). If it still fails, **wait a few seconds and rerun `deploy`**. If you passed `-v <version>`, drop it — deploy defaults to Latest. |
 | `Folder key required` / deploy hangs on prompt | No folder named on the deploy call | Re-run with `--folder-path "<FOLDER_PATH>"`, or `--folder-key <key>` when you hold the GUID (or the `UIPATH_FOLDER_KEY=<key>` env-var prefix). |
-| `--folder-path '<PATH>' was not found among folders accessible to your account` | The path does not match any folder the account can see, or the session lacks `OR.Default` so the listing is empty | Check the paths the CLI prints on stderr. Zero rows from `uip or folders list` (with `Result: Success`) means the scope is missing; see [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login). |
-| `--folder-path '<PATH>' matched N folders` | A display name that several folders share | Pass the fully qualified path (`Parent/Child`) instead of the bare name, or `--folder-key <key>`. |
-| `Pass either --folder-path or --folder-key, not both.` | Both folder flags on one call | Keep one. They name the same thing. |
-| `Folder key '<GUID>' was not found among folders accessible to your account` | Two causes, told apart by whether `uip or folders list` returns rows. **Rows returned:** the `--folder-key` pre-check worked from an incomplete copy of the account's folder list — the key is fine. **Zero rows** (with `Result: Success`): session scope is missing `OR.Default` | Rows → re-run once as `UIPATH_FOLDER_KEY=<GUID> uip codedapp deploy …` without `--folder-key`; no waiting, no retry loop ([details](#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible)). Zero rows → [debug.md](debug.md). |
+| `No folder named '<PATH>' in this tenant.` | No folder the account can reach carries that path or name | Run `uip or folders list --output json` (the error says so) and pass a path it lists, or `--folder-key`. |
+| `Folder name '<NAME>' matches N folders: <paths>.` | A display name several folders share | Pass one of the fully qualified paths the error lists, or `--folder-key <key>`. |
+| `--folder-path and --folder-key both name the folder to deploy into. Pass only one of them.` | Both folder flags on one call | Keep one. |
+| `Not allowed to look up the folder named '<NAME>'.` | Session cannot read the tenant's folders | Grant `Folders.View` (`OR.Folders` or `OR.Folders.Read`), or pass `--folder-key`, which needs no lookup. |
+| `'<NAME>' is not in the tenant's folders, and reading your account's own folders was refused` | The name is not shared, and the Personal Workspace check was refused | Grant `OR.Default`, or pass `--folder-key`. |
+| `--folder-path has to look the folder up in Orchestrator, which needs a session.` | `--folder-path` with no login and no credential flags | Run `uip login`, or pass the credential flags the error names. `--folder-key` needs no lookup. |
+| `Folder key '<GUID>' was not found among folders accessible to your account` | `uip` older than 1.204.0 only — a client-side pre-check that current CLIs no longer run | Upgrade the CLI; until then re-run once as `UIPATH_FOLDER_KEY=<GUID> uip codedapp deploy …` without `--folder-key` ([details](#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible)). |
 | `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenant-name` |
 | `The clientId '<GUID>' provided in the package is not valid` on deploy | `uipath.json` shipped a placeholder or unknown `clientId` — the server validates it against External Applications you can access | Put a real client ID in `uipath.json` (an existing non-confidential app with the needed scopes — see [oauth-client-setup.md](oauth-client-setup.md#when-the-cli-cant-be-used)), rebuild, re-`pack`, re-`publish` with a bumped `--version`, then deploy. Retrying deploy alone cannot fix it. |
 | `dist/ not found` | App not built | Run `npm run build` |
