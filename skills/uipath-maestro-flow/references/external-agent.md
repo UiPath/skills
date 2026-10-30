@@ -13,6 +13,7 @@ uip is connections list <connector-key> --all-folders --output json           # 
 Search a short name (`'Cortex'`, not `'Snowflake Cortex'`): a full product name can match only a connector's HTTP-request tool.
 
 - **In the connector library** (Snowflake Cortex is): author it with `connector(...)` like any connector ([connector-params.md](connector-params.md)).
+<!--skill-flavor:external-agent-cli:start-->
 - **Not in the library** (CrewAI returns `"total": 0`): build it with the product CLI, below. `rawNode` is not an option for a `uipath.connector.*` type. Build the whole flow that holds it with the CLI too, from `flow init <Name>` (no `--sdk-source`), and give it no SDK source: `compile` from SDK source rewrites the `.flow`.
 
 ## Build it with the product CLI
@@ -29,5 +30,6 @@ uip maestro flow validate <Name>/<Name>.flow --output json
 - Required inputs are the `RequestFields` with `Required: true` from `is resources describe`; `registry get` may not list them (CrewAI's `inputs.email_content`). Keep a dotted field name as one key: `"inputs.email_content": "..."`.
 - Use the node id `nodes create` returns; it is not derived from the operation name.
 - Agent nodes are Curated activities, so `--detail` takes no `objectName`; only Generic activities need one.
-- The node definition from the registry may say `Intsvc.AsyncAgentExecution` even for a sync agent (Snowflake Cortex on alpha, 2026-10-19). The flow still ran it as sync, from `executionType: sync` in the configured detail. Leave the service type as the CLI wrote it.
+- The node definition from the registry may say `Intsvc.AsyncAgentExecution` even for a sync agent (Snowflake Cortex on alpha, 2026-10-19). The flow still ran it as sync, from the `executionType: sync` that `nodes configure` writes into the detail (`--detail` refuses the key). Leave the service type as the CLI wrote it.
 - Then `uip solution resources refresh` and `uip maestro flow debug <Name>` ([CLI-LOOP.md](CLI-LOOP.md)).
+<!--skill-flavor:external-agent-cli:end-->

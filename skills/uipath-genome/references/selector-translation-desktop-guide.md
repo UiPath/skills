@@ -65,3 +65,11 @@ The driver's default `java` selector is built from `role`, `name`, `cls`, the ta
 | `curl` | `cls`, `role`, `name`, `text`, `tableRow`, `tableCol`, `colName`, `idx` | Curl applets |
 | `ax` | `role`, `subrole`, `name`, `title`, `identifier`, `filename`, `url`, `help`, `value`, `rowCount`, `columnCount`, `tableRow`, `tableCol`, `rowName`, `colName`, states, `idx` | macOS accessibility |
 | `rdp`, `rdpapp` | `<wnd>` attribute set | remote runtime |
+
+## Rule 8 — desktop
+
+A Windows Forms list view (`SysListView32`) reached through UI Automation exposes each row as a `list item` whose cells are `text` children, and its column headers as `header item`s under a `header`, outside the rows. Each cell carries `colName`, its column's header caption, and `rowName`, the text of its row's first cell, so a cell found by row content and column caption is `<uia role='text' rowName='{{Key}}' colName='<header caption>' />` under the list. Under the list, the Find Elements filter `<uia role='text' />` in Find Descendants mode takes only the cells; searched from the window, it also takes the window's captions and those of the windows it owns (§ Rule 9), so a source that reads the cells in groups by position reads the wrong cell of every row, or overruns the collection.
+
+## Rule 9 — desktop
+
+**A window's UI Automation tree holds the windows it owns.** A modal dialog, a form the window opened and the windows those own in turn sit under their owner, topmost first and ahead of the owner's own elements. A `uia` search from the owner's scope therefore also matches in every open window it owns, and there first: a Find Elements with no Target in the owner's card returns the owned windows' matches ahead of the owner's, and a target under the owner's window selector resolves a control of an owned window, whatever the card's attach mode.

@@ -16,7 +16,8 @@ Assertion map (Flow → BPMN):
   F check_escalation_slack_alert.py:44        assert_flow_uses_connector_target(SLACK_KEY)
       -> resolve_contract(): ids_for(*SLACK_SEND) via index_runtime_connectors
   F check_escalation_slack_alert.py:45        assert_connector_send_identity(key, "user", ...)
-      -> resolve_contract(): send_as input == "user" on every slack_send_id
+      -> resolve_contract(): exactly one send_as == "user" (V1 input or V2 queryParameters key) on every
+         slack_send_id
   F check_escalation_slack_alert.py:58        run_debug(inputs=case["inputs"], retries=1)
       -> ephemeral `solution init` + `solution projects import` (sha256-pinned) + bpmn_live.run_debug(project_dir,
          inputs, log)
@@ -194,15 +195,11 @@ def resolve_contract(root: ET.Element) -> Contract:
     for element in process.iter():
         if element.attrib.get("id") not in slack_ids:
             continue
-        sends_as = [
-            item.attrib.get("value")
-            for item in element.iter(q(UIPATH_NS, "input"))
-            if item.attrib.get("name") == "send_as"
-        ]
+        sends_as = bpmn_check.query_values(element, "send_as")
         if sends_as != [SLACK_SEND_AS]:
             raise CheckFailure(
                 f"Slack node {element.attrib.get('id')!r} must carry exactly "
-                f"one send_as input with value {SLACK_SEND_AS!r}, found "
+                f"one send_as query parameter with value {SLACK_SEND_AS!r}, found "
                 f"{sends_as!r}"
             )
 

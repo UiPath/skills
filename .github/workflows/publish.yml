@@ -263,6 +263,20 @@ jobs:
           echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
           echo "Packed $TARBALL"
 
+      # Last line of defence before customers: scan the exact bytes about to
+      # be published — the composed, marker-free tree, not the sources — and
+      # refuse to publish on any block-tier finding. No baseline: a value a
+      # customer content-inspection gate rejects blocks the release no matter
+      # how long it has been on main (1.202.0/1.203.0 were rejected this way).
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Scan the packed tarball for customer-blocked content
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: python3 scripts/check-sensitive-content.py "$TARBALL"
+
       # No auth token and no setup-node registry-url — a token would make npm
       # use token auth and bypass OIDC. We only pin the scoped package to
       # npmjs; credentials come from the OIDC exchange. `--provenance` attaches

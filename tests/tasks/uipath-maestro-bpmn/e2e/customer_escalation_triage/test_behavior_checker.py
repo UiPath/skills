@@ -680,6 +680,12 @@ class ComputedSeverityTests(unittest.TestCase):
                 checker.resolve_contract(path)
 
 
+V1_SEND_AS = '<uipath:input target="query" name="send_as" value="user"/>'
+V2_QUERY_TEMPLATE = (
+    '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA[{}]]></uipath:input>'
+)
+
+
 class SendIdentityTests(unittest.TestCase):
     """Flow grades send_as because the runtime response cannot reveal it.
 
@@ -710,6 +716,29 @@ class SendIdentityTests(unittest.TestCase):
 
     def test_user_identity_passes(self):
         self.assertTrue(self._contract_from(SAMPLE_BPMN).slack_send_ids)
+
+    def test_v2_user_identity_passes(self):
+        self.assertTrue(self._contract_from(self._v2('{"send_as":"user"}')).slack_send_ids)
+
+    def test_v2_other_identity_fails(self):
+        for payload in ('{"send_as":"bot"}', '{"send_as":"user "}', "{}", "not json"):
+            with self.subTest(payload=payload):
+                with self.assertRaisesRegex(checker.CheckFailure, "send_as"):
+                    self._contract_from(self._v2(payload))
+
+    def test_v1_trailing_space_fails(self):
+        with self.assertRaisesRegex(checker.CheckFailure, "send_as"):
+            self._contract_from(SAMPLE_BPMN.replace('name="send_as" value="user"', 'name="send_as" value="user "'))
+
+    def test_both_shapes_on_one_node_fail(self):
+        with self.assertRaisesRegex(checker.CheckFailure, "send_as"):
+            self._contract_from(
+                SAMPLE_BPMN.replace(V1_SEND_AS, V1_SEND_AS + V2_QUERY_TEMPLATE.format('{"send_as":"user"}'))
+            )
+
+    @staticmethod
+    def _v2(payload: str) -> str:
+        return SAMPLE_BPMN.replace(V1_SEND_AS, V2_QUERY_TEMPLATE.format(payload))
 
 
 if __name__ == "__main__":

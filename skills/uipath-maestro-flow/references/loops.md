@@ -90,12 +90,16 @@ drop `version` (2.4).
   its own, so "log the failure and skip this item" needs it. Do not write
   `.stepToRef('<the loop>')` for this: that enters the loop from its outer
   input and restarts it, and `check` refuses it (`REF_TO_OWN_LOOP`). Works on
-  a 1.0.0 loop too (via `loopBack`). Needs `@uipath/maestro-builder-sdk`
-  6.20.0 or later; an older SDK fails with `continue is not a function`, so
+  a 1.0.0 loop too (via `loopBack`).
+  Needs `@uipath/maestro-builder-sdk`
+  6.20.0 or later; an older SDK fails with `continue is not a function`,
+<!--skill-flavor:continue-sdk-upgrade:start-->
+  so
   upgrade the copy `uip` uses:
   `npm install -g @uipath/maestro-builder-sdk@latest`, or
   `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a
   workspace copy.
+<!--skill-flavor:continue-sdk-upgrade:end-->
 
 ```ts
 .loop('each', input('items'), (body) => body
@@ -124,7 +128,8 @@ pass, so the body always runs at least once (`core.logic.dowhile`). The
 container publishes no data output: write results to a `.var()` from inside
 the body with `{ updates }`. `limit` caps iterations (1–10,000; blank means
 the platform default of 10,000), and `body.break()` and `body.continue()`
-work exactly as in `.loop()`.
+work exactly as in `.loop()`. A body step's failure can route to `.onError()`
+after the `.doWhile(...)`, as with `.loop()` ([error-handling.md](error-handling.md)).
 
 Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
 

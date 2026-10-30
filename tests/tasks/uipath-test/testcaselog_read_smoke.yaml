@@ -2,7 +2,8 @@ task_id: skill-test-testcaselog-read-smoke
 description: >
   Smoke test: the agent reads one test case's log and reports what result the
   run reports and whether it was later changed. Exercises the read side of
-  `uip tm testcaselog` — `list`/`get`/`latest` — and the Result-versus-
+  `uip tm testcaselog` — `list`/`get`/`latest`, or the case's own
+  `testcases list-result-history`, which returns the same log rows — and the Result-versus-
   OriginalResult idea, checking the agent reaches for the CLI rather than
   inventing a result. The fixture seeds one finished log create-if-absent, so
   the read is never empty.
@@ -128,11 +129,12 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    # The core smoke behaviour: read the log through the CLI. list/get/latest, or
-    # a run-scoped testcaselogs list, are all valid; what is graded is that the
-    # answer came from the CLI (as JSON) rather than being made up.
+    # The core smoke behaviour: read the log through the CLI. list/get/latest, a
+    # run-scoped testcaselogs list, or the case's list-result-history (its rows
+    # are the case's logs, with Result and OriginalResult) are all valid; what is
+    # graded is that the answer came from the CLI (as JSON) rather than made up.
     description: "Agent read a test case log through the CLI"
-    command_pattern: 'uip\s+tm\s+(testcaselog\s+(list|get|latest)|executions?\s+testcaselogs\s+list)\b'
+    command_pattern: 'uip\s+tm\s+(testcaselog\s+(list|get|latest)|executions?\s+testcaselogs\s+list|testcases\s+list-result-history)\b'
     tool_name: "Bash"
     min_count: 1
     weight: 3.0

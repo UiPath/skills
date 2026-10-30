@@ -2,7 +2,7 @@
 
 Transform data outside activities: DataTable LINQ, strings, RegEx, DateTime, conversion, collections, and JSON.
 
-**Owned elsewhere:** DataTable activity mechanics (BuildDataTable `TableInfo` trap + inline build, FilterDataTable type-compat, LookupDataTable, GetRowItem) → [xaml/common-pitfalls.md § DataTable Activity Gotchas](xaml/common-pitfalls.md); C# XAML expression binding (`CSharpValue`/`CSharpReference`) → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); REFramework Config.xlsx access → [reframework-guide.md](reframework-guide.md); activity properties (ForEachRow, AddDataRow, JoinDataTables, SortDataTable, …) → `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/` or `references/activity-docs/UiPath.System.Activities/`; coded-mode `using` directives → [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
+**Owned elsewhere:** DataTable activity mechanics (BuildDataTable `TableInfo` trap + inline build, FilterDataTable type-compat, LookupDataTable, GetRowItem) → [xaml/common-pitfalls.md § DataTable Activity Gotchas](xaml/common-pitfalls.md); C# XAML expression binding (`CSharpValue`/`CSharpReference`) → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); REFramework configuration access → [reframework-guide.md](reframework-guide.md); activity properties (ForEachRow, AddDataRow, JoinDataTables, SortDataTable, …) → `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/` or `references/activity-docs/UiPath.System.Activities/`; coded-mode `using` directives → [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
 
 ## Where each snippet goes — read first
 

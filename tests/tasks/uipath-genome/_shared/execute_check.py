@@ -9,6 +9,9 @@ Usage:
   execute_check.py open-items --expect TOKEN … [--sections]   a Markdown file outside every project, under any
                                                name, headed '# Open items' and naming every expected token;
                                                --sections also requires the always-present section headings
+  execute_check.py handoff [--open-items]      a '<slug>-handoff' folder outside every project whose README.md
+                                               has the completion report's Status and Configuration answers
+                                               sections; --open-items also requires the open items inside it
   execute_check.py genome-unchanged <genome> <reference>   execution left the genome byte-identical
 
 Cross-platform on purpose: coder-eval runs run_command through cmd.exe on Windows, so criteria call this
@@ -198,6 +201,38 @@ def cmd_open_items(a: argparse.Namespace) -> int:
     return 0
 
 
+HANDOFF_SECTIONS = ["## Status", "## Configuration answers"]
+
+
+def cmd_handoff(a: argparse.Namespace) -> int:
+    """The engineer's hand-off: a folder named '<slug>-handoff' outside every project, whose README.md is the
+    completion report with its Status and Configuration answers sections, as the execution guide's template
+    has them. --open-items also requires a file headed '# Open items' inside that folder."""
+    projects = rpa_projects(Path("."))
+    folders = []
+    for dirpath, dirnames, _ in os.walk("."):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")]
+        folders += [Path(dirpath, d).resolve() for d in dirnames if d.lower().endswith("-handoff")]
+    inside = [f for f in folders if any(p == f or p in f.parents for p in projects)]
+    folders = [f for f in folders if f not in inside]
+    if not folders:
+        print(f"FAIL: no '<slug>-handoff' folder outside the project{' (found inside: ' + ', '.join(map(str, inside)) + ')' if inside else ''}")
+        return 1
+    for folder in folders:
+        readme = folder / "README.md"
+        lines = {l.strip() for l in readme.read_text(encoding="utf-8", errors="ignore").splitlines()} if readme.is_file() else set()
+        missing = [s for s in HANDOFF_SECTIONS if s not in lines]
+        if not readme.is_file() or missing:
+            print(f"FAIL: {folder.name}/README.md {'is missing' if not readme.is_file() else 'lacks ' + ', '.join(missing)}")
+            continue
+        if a.open_items and not any(OPEN_ITEMS_HEADING.search(p.read_text(encoding="utf-8", errors="ignore")) for p in folder.rglob("*.md")):
+            print(f"FAIL: {folder.name} holds no file headed '# Open items'")
+            continue
+        print(f"OK: hand-off in {folder.name}")
+        return 0
+    return 1
+
+
 def cmd_genome_unchanged(a: argparse.Namespace) -> int:
     same = Path(a.genome).is_file() and filecmp.cmp(a.genome, a.reference, shallow=False)
     print(("OK" if same else "FAIL") + f": {a.genome} {'matches' if same else 'differs from'} the reference")
@@ -215,6 +250,9 @@ def main() -> int:
     p.add_argument("--expect", nargs="*", default=[])
     p.add_argument("--sections", action="store_true", help="also require the always-present section headings")
     p.set_defaults(func=cmd_open_items)
+    p = sub.add_parser("handoff")
+    p.add_argument("--open-items", action="store_true", help="also require the open items inside the hand-off folder")
+    p.set_defaults(func=cmd_handoff)
     p = sub.add_parser("genome-unchanged")
     p.add_argument("genome")
     p.add_argument("reference")

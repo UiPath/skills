@@ -175,7 +175,7 @@ uip or jobs list --folder-key <FOLDER_KEY> --output json
 ```
 
 - `Cancelled` within seconds with logs pointing to `CreateTestAutomationJobs` / `InternalServerError`: no serverless machine in the default folder.
-- `Finished` with `Passed: 0 / Failed: 0 / None: N`: no per-test results reached Test Manager; the log `Info` contains the reason (results upload failed or job never started). `report get` counts `None` as **`Skipped`**, so 0% means results lost, not tests skipped.
+- `Finished` with `Passed: 0 / Failed: 0 / None: N`: no per-test results reached Test Manager; the log `Info` contains the reason (results upload failed or job never started). `report get` reports them as `None` and leaves them out of `PassRate` (passed over passed + failed), so `None: N` with `PassRate: 0` means results lost, not tests failed.
 - Stuck `Pending`: dispatch worked but nothing executes. A faulted job may never sync; check after ~5 minutes rather than waiting 30 minutes. Fixing the folder does not rescue the existing execution; fix it and start a new run.
 - `Serverless.Runtime.CannotIssueUserTokenDueToUserNotPartOfOrg` in `Info`: the selected folder account remains assigned but is no longer valid in the org. Point the project to a folder whose members satisfy Step 4, or create one, then rerun.
 

@@ -86,7 +86,7 @@ success_criteria:
   - type: command_not_executed
     description: "no mutating case CLI verbs — caseplan.json is authored directly per the skill's invariant"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+case\s+(cases|stages|tasks|[a-z-]*conditions)\s+(add|update|remove)'
+    command_pattern: 'uip\s+maestro\s+case\s+(cases|stages|tasks|[a-z-]*conditions)\s+(add|update|remove)(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
 
   - type: command_not_executed
     description: "no debug run — this case is HITL- and SLA-driven and cannot run headless"

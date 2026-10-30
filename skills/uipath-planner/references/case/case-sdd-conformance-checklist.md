@@ -5,7 +5,7 @@ written `sdd.md` BEFORE the `Status: ready` flip, in every mode — normally ins
 § Template conformance gate allows ([case-design-lane-guide.md](case-design-lane-guide.md)).
 
 This file is NOT part of the design reading set. Authoring reads the template for the render contract;
-only the gate reads the item list. Keeping the two apart keeps 35 items of checker detail out of the
+only the gate reads the item list. Keeping the two apart keeps 37 items of checker detail out of the
 turn that is writing the document.
 
 Answer every item PASS or FAIL with one verbatim quote from the file — the line that violates (FAIL) or
@@ -14,7 +14,7 @@ which table, which column), not by prose wording. The enforcement detail behind 
 template's cell rules, which are COMPLETE for the render contract; design semantics stay
 [case-design-layers-guide.md](case-design-layers-guide.md)'s.
 
-CONFORMANCE CHECKLIST — 35 items in 10 families. Items 30–33 apply only when finalizing a draft. Each item
+CONFORMANCE CHECKLIST — 37 items in 10 families. Items 30–33 apply only when finalizing a draft. Each item
 names only what to LOOK AT; the enforcement detail behind it is the cell rules above, and for the render
 contract those cells are COMPLETE — there is no third location, and nothing outside this template states a
 shape rule they do not. (Design semantics — which response, which gate, which default — stay
@@ -46,7 +46,7 @@ case-design-layers-guide.md's; the cells own the shape.)
      skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
      inputOutputs[]) appears anywhere in the body.
  Closed enums + gate-slot pairing
-  8. Every task `**Type:**` is one of the sixteen literals in case-design-layers-guide.md § Task types.
+  8. Every task `**Type:**` is one of the sixteen literals in case-design-layers-guide.md § Task types. If a `Type:` appears in that section's never-author block, fix it as the block directs for its group: write the plan type it gives, or leave the task to Studio Web.
   9. In every table with a `Marks Stage Complete` / `Marks Case Complete` column, the WHEN rule is legal for
      that row's Yes/No per § Lifecycle gates; Stage Entry Conditions rows use only Stage-entry rules and task
      Entry Condition rows only Task-entry rules.
