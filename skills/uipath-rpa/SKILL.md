@@ -163,6 +163,7 @@ Follow [execution-maps-guide.md](references/execution-maps-guide.md) for every b
 | Test Manager setup | Both | [cli-reference.md § Test Manager](references/cli-reference.md) — `uip rpa tm connect` / `set-default-project` |
 | Error handling/resilience (Try/Catch, Retry Scope, BusinessRuleException, ContinueOnError, screenshot-on-error, Global Exception Handler, recover app state, transaction boundary, idempotency / avoid duplicate creates, queue vs local retry ownership) | Both | [error-handling-guide.md](references/error-handling-guide.md) |
 | UI automation | Both | UIA package guide `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md` |
+| Register/link recorded or inferred targets offline | Both | [offline-object-repository-guide.md](references/offline-object-repository-guide.md) — capability-first execution; non-Python generated orchestration only when needed |
 | Share OR selectors/UI Library | Both | [uia-starter-guide.md § Object Repository as a Published UI Library](references/uia-starter-guide.md) |
 | Run/debug UIA | Both | [uia-starter-guide.md § Running UI Automation Workflows](references/uia-starter-guide.md) |
 | Drive captured controls | Both | UIA package guide § Control-Specific Interaction Patterns |

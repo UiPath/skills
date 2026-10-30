@@ -220,7 +220,7 @@ This compiles, validates, runs, and does nothing. It is the most expensive kind 
 ### When the rule does NOT apply
 
 - **Live capture is available.** Run `uia-configure-target` / Indicate first; the workflow ships with real descriptors. No stub pattern needed.
-- **A migration translates the source's recorded targets.**
+- **A migration translates the source's recorded targets.** Register/link accepted targets through [offline-object-repository-guide.md](offline-object-repository-guide.md). It owns capability discovery and the non-Python generated-tool fallback; no live capture or healing is implied.
 - **The activity is not UI.** Logging is fine for actual logging steps (e.g., "Log the transaction ID before processing"). The rule applies only to UI-interaction steps that, in a finished workflow, would be `NTypeInto` / `NClick` / `NGetText` / etc.
 
 ### Acceptance check
