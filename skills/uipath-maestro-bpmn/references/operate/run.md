@@ -29,10 +29,12 @@ BPMN project, refresh resources, and run debug from the solution directory:
 ```bash
 uip solution init <SolutionName> --output json
 cd <SolutionName>
-uip solution projects import ../<ProjectDir> --output json
+uip solution projects import <path-to-ProjectDir> --output json
 uip solution resources refresh --output json
 uip maestro bpmn debug <ProjectDirName> --output json
 ```
+
+`<path-to-ProjectDir>` is relative to `<SolutionName>` (`../MyProject`) or absolute.
 <!--skill-flavor:local-debug-solution:end-->
 
 <!--skill-flavor:debug-command-usage:start-->

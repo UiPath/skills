@@ -165,6 +165,7 @@ def run_cli(
     *,
     timeout: int,
     log_file: Path | None = None,
+    cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
     effective_timeout: float = timeout
     command = [*arguments, "--output", "json"]
@@ -175,6 +176,7 @@ def run_cli(
         capture_output=True,
         text=True,
         timeout=effective_timeout,
+        cwd=cwd,
     )
 
 
@@ -576,10 +578,9 @@ def import_exact(bpmn_path: Path, project_dir: Path, solution_dir: Path) -> Path
             "projects",
             "import",
             str(project_dir.resolve()),
-            "--solution-file",
-            str(solution_files[0]),
         ],
         timeout=SOLUTION_IMPORT_TIMEOUT,
+        cwd=solution_dir,
     )
     payload_data(imported, "import exact BPMN project")
 
