@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "rules": [
+    {"match": "--help", "passthrough": true},
+    {"match": "--print-schema", "file": "create_swagger_schema.json"},
+    {"match": "or folders list", "file": "or_folders_list.json"},
+    {"match": "agenthub mcp list", "file": "agenthub_mcp_list.json"},
+    {"match": "agenthub mcp template swagger", "file": "template_swagger.json"},
+    {"match": "--dry-run", "file": "create_swagger_dryrun.json"},
+    {"match": "agenthub mcp create swagger", "file": "create_swagger_not_supported.json", "exit_code": 1}
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}
