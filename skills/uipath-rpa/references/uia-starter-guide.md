@@ -128,11 +128,20 @@ A real `<uix:NTypeInto>` activity with placeholder selector + `TODO Indicate` ma
                       sap2010:WorkflowViewState.IdRef="NApplicationCard_1">
     <uix:NApplicationCard.Body>
         <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+            <Sequence.Variables>
+                <Variable x:TypeArguments="x:String" Name="username" />
+                <Variable x:TypeArguments="ss:SecureString" Name="password" />
+            </Sequence.Variables>
+            <ui:GetRobotCredential DisplayName="Get ACME WI credential"
+                                   AssetName="[in_CredentialAssetName]"
+                                   Username="[username]"
+                                   Password="[password]"
+                                   sap2010:WorkflowViewState.IdRef="GetRobotCredential_1" />
             <uix:NTypeInto DisplayName="TODO Indicate — Type Username"
-                           Text="[in_Username]"
+                           Text="[username]"
                            sap2010:WorkflowViewState.IdRef="NTypeInto_1" />
             <uix:NTypeInto DisplayName="TODO Indicate — Type Password"
-                           Text="[in_Password]"
+                           SecureText="[password]"
                            sap2010:WorkflowViewState.IdRef="NTypeInto_2" />
             <uix:NClick DisplayName="TODO Indicate — Click Login"
                         sap2010:WorkflowViewState.IdRef="NClick_1" />
@@ -147,7 +156,7 @@ A real `<uix:NTypeInto>` activity with placeholder selector + `TODO Indicate` ma
 What this gives the developer:
 - `NApplicationCard` is in the right place (entry point of the screen).
 - Three `NTypeInto` / `NClick` / `NGetText` are wired into the Sequence in the right order.
-- `Text` arguments are bound to the right input/output variables.
+- The credential is read inside the card from the asset name the workflow receives (SKILL.md Common Rule 5a); `Text`, `SecureText` and the `NGetText` output are bound to the right variables.
 - Each activity's `DisplayName` is `TODO Indicate — <human description>`. Studio shows this on the canvas; the developer clicks each and runs Indicate.
 - Once Indicate is run, `DisplayName` is updated, `Target` becomes a real descriptor, and the workflow is shippable.
 
@@ -165,16 +174,17 @@ That XAML compiles, validates, runs — and does nothing. A re-run of the build 
 
 ```csharp
 [Workflow]
-public void Execute(string in_Username, string in_Password, out string out_WIID)
+public void Execute(string in_CredentialAssetName, out string out_WIID)
 {
     // TODO[Indicate]: attach to the ACME WI app — replace placeholder with Descriptors.<App>.<Screen>
     using var app = uiAutomation.Open(/* TODO[Indicate]: Descriptors.AcmeWi.Login */);
+    var (username, password) = system.GetCredential(in_CredentialAssetName);
 
     // TODO[Indicate]: target the Username field
-    app.TypeInto(/* TODO[Indicate]: Descriptors.AcmeWi.Login.Username */ "username-placeholder", in_Username);
+    app.TypeInto(/* TODO[Indicate]: Descriptors.AcmeWi.Login.Username */ "username-placeholder", username);
 
     // TODO[Indicate]: target the Password field
-    app.TypeInto(/* TODO[Indicate]: Descriptors.AcmeWi.Login.Password */ "password-placeholder", in_Password);
+    app.TypeInto(/* TODO[Indicate]: Descriptors.AcmeWi.Login.Password */ "password-placeholder", password);
 
     // TODO[Indicate]: target the Login button
     app.Click(/* TODO[Indicate]: Descriptors.AcmeWi.Login.LoginButton */ "login-button-placeholder");
@@ -194,10 +204,10 @@ What you must NOT do:
 
 ```csharp
 [Workflow]
-public void Execute(string in_Username, string in_Password, out string out_WIID)
+public void Execute(string in_CredentialAssetName, out string out_WIID)
 {
     // TODO[selectors]: replace these with real uiAutomation calls once Object Repository is populated
-    Log("LoginWorkflow: type username " + in_Username);
+    Log("LoginWorkflow: type username");
     Log("LoginWorkflow: type password");
     Log("LoginWorkflow: click Login");
     Log("LoginWorkflow: read WIID");
