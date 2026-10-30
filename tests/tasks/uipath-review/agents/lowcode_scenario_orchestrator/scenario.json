@@ -1,0 +1,28 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_orchestrator.py",
+  "expected": [
+    {"ids": ["LC_TOOL_DELEGATION_DEPTH"], "category": "tools"},
+    {"ids": ["LC_TOOL_OVERLAP", "LC_FAILURE_WRONG_TOOL"], "category": "tools", "pattern": "web_lookup|web_search"},
+    {"ids": ["LC_TOOL_MINIMALITY_SUFFICIENCY"], "category": "tools", "pattern": "French|translat"},
+    {"ids": ["LC_PROMPT_REFERENCES_NONEXISTENT_RESOURCE"], "category": "tools", "pattern": "ReportsArchive"},
+    {"ids": ["LC_SETTINGS_MAXITERATIONS_FIT"], "category": "general"},
+    {"ids": ["LC_SETTINGS_MODEL_FIT"], "category": "general"},
+    {"ids": ["LC_PROMPT_WHEN_GUIDANCE"], "category": "general"},
+    {"ids": ["VAGUE_TOOL_DESCRIPTION"], "category": "tools"}
+  ],
+  "min_recall": 0.7,
+  "decoys": [
+    {"id": "LC_OUTPUT_CONSUMER_DRIFT", "reason": "no in-scope consumer"},
+    {"id": "LC_PROMPT_STOPPING_CRITERIA", "reason": "prompt states a stop after three searches"},
+    {"id": "LC_USER_PROMPT_BIASED_EXAMPLE", "reason": "no example in the user message"}
+  ],
+  "min_categories": 2,
+  "min_severity_bands": 1,
+  "max_findings": null,
+  "forbidden_bands": [],
+  "allowed_grades": ["C", "D", "F"],
+  "grade_not_above_cli": true,
+  "cli_expected": [],
+  "cli_only_expected": false
+}

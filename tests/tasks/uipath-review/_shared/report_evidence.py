@@ -7,6 +7,7 @@ as `python3 $REFERENCE_DIR/check_*.py` -- so this directory is already
 `sys.path[0]` and a plain import works.
 """
 
+import json
 import re
 import shutil
 import subprocess
@@ -69,3 +70,24 @@ def cli_identity(uip: str) -> str:
     except (OSError, subprocess.SubprocessError, IndexError):
         version = "unknown"
     return f"{path} (v{version})"
+
+
+def run_review_cli(uip: str, verb: list[str], project: str) -> tuple[bool, dict, str]:
+    """Run the review CLI on `project`; return (ok, parsed Data, diagnostic)."""
+    argv = [uip, *verb, project, "--output", "json"]
+    try:
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=180)
+    except FileNotFoundError:
+        return False, {}, f"{uip} not on PATH"
+    except subprocess.TimeoutExpired:
+        return False, {}, f"{' '.join(argv)} timed out after 180s"
+    if proc.returncode != 0:
+        tail = (proc.stderr or proc.stdout or "").strip()[-400:]
+        return False, {}, f"exit {proc.returncode}: {tail}"
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError as e:
+        return False, {}, f"non-JSON output ({e}): {proc.stdout.strip()[:400]}"
+    if payload.get("Result") != "Success":
+        return False, {}, f"Result={payload.get('Result')}: {payload.get('Message', '')[:400]}"
+    return True, payload.get("Data") or {}, ""
