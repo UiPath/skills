@@ -19,10 +19,11 @@ tests/tasks/uipath-mcp-servers/
 ├── resource-create/                   # mocked
 ├── update-cross-folder-retarget/      # mocked
 ├── user-connection-set/               # mocked
+├── user-connection-explore/           # mocked
 ├── user-connection-status/            # mocked
 │   ├── task.yaml
 │   └── fixtures/mocks/responses/
-│       ├── manifest.json              # rule dispatch (substring match → response file)
+│       ├── manifest.json              # rule dispatch (substring match → response file; `after` gates a rule on an earlier answer)
 │       └── *.json                     # canned per-rule responses
 ├── e2e-command-server/                # live
 ├── e2e-platform-server/               # live
@@ -57,6 +58,7 @@ Rule numbers reference the SKILL.md Critical Rules (1-11).
 | `resource-create`              | smoke (mock) | Tools section | `candidates --category automation`; `mcp-tools create-resource ... --dry-run` scoped to the server (`template resource` is advisory) |
 | `update-cross-folder-retarget` | smoke (mock) | Tools section | `mcp-tools update` (not a new create) with `--target-identifier` + explicit `--target-folder-*` |
 | `user-connection-set`          | smoke (mock) | 2, Per-User Connections | `mcp-user-connections set` for the named user (`--user-email` / `--user-id`) and connection (`--connection-name` / `--connection-id`) in the server's folder, never `--me`, and no `mcp update` (graded from the mock call log by `check_user_connection_set.py`) |
+| `user-connection-explore`      | smoke (mock) | 2, Per-User Connections | the user's connection is in their personal workspace, so `set` by name fails until the agent runs `uip or folders explore --owner <email>` (or the workspace by name or key; approved in the prompt); then `set` for that user and connection, then `uip or folders stop-exploring`, in that order, and no other workspace explored (graded from the mock call log by `check_user_connection_explore.py`; the manifest's `after` rules switch the `set` and `is connections list` answers once the explore ran) |
 | `user-connection-status`       | smoke (mock) | Per-User Connections | `mcp-user-connections list` shows the user's own connection as `RequiresAuth`; nothing changed; LLM judge: the user re-authenticates their own connection |
 | `e2e-command-server`           | e2e (live)   | 2, 7          | `mcp get` shows a command server running `npx` with `@modelcontextprotocol/server-everything`; async `refresh-tools` with a folder flag |
 | `e2e-platform-server`          | e2e (live)   | 2, 7, 9       | `mcp get` shows the `testmanager` service; `mcp-tools list` returns exactly `Get_test_sets` and `Get_test_cases` |
