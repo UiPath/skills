@@ -53,6 +53,8 @@ uip rpa init \
 
 Decide and pass both `--target-framework` and `--expression-language`; never omit them. They are immutable after creation. Omitting `--target-framework` silently creates **Windows**. The new-project options shown here are `Windows` and `Portable`; `Windows - Legacy` is a last resort for an explicit ask or hard .NET 4.6.1 need and must be created/authored in **Legacy mode**, not through this command. Choose from runtime/host-OS signals per SKILL.md Common Rule 2a.
 
+Inside a solution folder, `init` registers the new project in the enclosing `.uipx`; pass `--skip-solution-registration` for a project that stays out of the solution, such as a scratch or probe project.
+
 `--expression-language` defaults to `VisualBasic`; use `CSharp` only when explicitly requested for C# expressions in XAML. Headless Studio needs no `--studio-dir`; pass it only when Studio Desktop is explicitly forced (`UIPATH_RPA_TOOL_USE_STUDIO=1`, or `diff`/`focus-activity`) and registry auto-detection fails.
 
 ### For Coded Projects (only when the user explicitly requested coded)
@@ -69,6 +71,7 @@ Run the same command above; there is no separate coded form. Then add `.cs` work
 | `--expression-language` | `VisualBasic`, `CSharp` | none—set explicitly | XAML expression syntax; immutable |
 | `--target-framework` | `Windows`, `Portable` (Cross-platform), `Legacy` (Windows - Legacy) | none—set explicitly (omitting → Windows) | Immutable; `Legacy` only as a last resort per Rule 2a |
 | `--description` | Any string | none | Description in `project.json` |
+| `--skip-solution-registration` | flag | off | Inside a solution folder, leaves the project out of the `.uipx` |
 
 `uip rpa init` may return `success: false` while creating files. On failure, check for the project directory and `project.json` before retrying.
 
