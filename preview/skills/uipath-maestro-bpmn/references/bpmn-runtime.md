@@ -179,6 +179,15 @@ binding half, which is the same for every connector-backed node.
   wrong in ways `validate` does not report. `examples/ContractRegistry.bpmn.ts` is
   the full lifecycle.
 
+<!-- RULE:bpmn.connector.data-service-folder-entity -->
+- An entity that lives in an Orchestrator folder (the picker shows it under a folder; the request says "folder entity" or "entity scope: folder") is `entity: { name, folderKey }`, not a plain name.
+  `folderKey` is the key of the folder holding the ENTITY: `uip or folders list --all --path <FolderPath> --output json` → `Key`.
+  `folder` stays the folder holding the CONNECTION; the two are often the same key and are still two options.
+- The record operations (`create`, `update`, `get`, `query`, `delete`) then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …) with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows.
+  Do not hand-fill that through `.activity()`, and do not pass a folder entity's name as a plain `entity` string: that writes the tenant-scope operation, which validates but does not address the folder entity.
+- The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
+- The entity and its folder are literals in the compiled task, not deploy-time bindings, so a deploy cannot re-point them per environment.
+
 <!-- RULE:bpmn.connector.parameter-rows -->
 - A connector's path and query parameters are one `uipath:input` row each, under
   the library's own parameter name and tagged `target="path"` / `target="query"`;
