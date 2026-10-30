@@ -261,6 +261,10 @@ When the `--config-file` links a resource (`deploy config link`, `linkToResource
 
 `-y, --yes` is not this consent: it only skips the already-deployed check. Nothing prompts. The same stop applies to `deploy upgrade` when the new version replaces an installed resource with a link, and there the confirming re-run must not add `--discard-draft` — see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place). The flag only exists on newer CLI builds; on an older one the option is unknown (check `uip solution deploy run --help`). Against a server that predates the confirmation, such a deploy never reaches a terminal status, and the CLI reports its usual timeout ("may still be in progress").
 
+### A re-run under an existing deployment's name
+
+The Pipelines install is keyed on the deployment name. `deploy run --yes` with the `--name` of a live deployment of the **same** package does not create a second copy: it re-applies that deployment's configuration (same version) or upgrades it (another version), in the folder it already has — so a separate copy needs a different `--name`, not just `--yes`. Two refusals are about the name itself, and neither means the package is missing from the feed, so do not answer them with a publish: `DeploymentAlreadyInProgress` (`Retry: RetryLater`) means an earlier run under that name has not finished — wait, follow it with `deploy list` under the same feed flag, then `deploy upgrade <deployment-key>` or pick another `--name`; `NameInUseByAnotherDeployment` means the name belongs to a deployment of another package — pick another `--name`. Any other install refusal on a Personal Workspace or folder feed usually is a package that was never published there (`uip solution publish <package> --personal-workspace` / `--feed <name-or-key>`).
+
 ## Step 5: Check Deployment Status
 
 The `deploy run` command returns a pipeline deployment ID. Use it to check progress:
