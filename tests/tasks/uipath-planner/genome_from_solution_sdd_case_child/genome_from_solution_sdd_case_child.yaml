@@ -1,0 +1,133 @@
+task_id: skill-planner-genome-from-solution-sdd-case-child
+description: >
+  Integration: the uipath-planner skill's `author` verb writes ONE genome for a ready, autonomous solution
+  SDD whose root lists two child SDDs: an RPA project (handoff with `Tasks file`) and a Case Management case
+  (handoff with `Build handoff`). The case child does not stop the genome; it becomes one `uipath-maestro-case`
+  component whose Interface names the case child SDD as its build input, and the case is never redesigned.
+  Gates on the process genome named after the root (core profile, both skills in Components), on the case
+  component pointing at its SDD, on the case SDD staying byte-identical with no caseplan written, on the
+  `Genome` handoff row landing in the root SDD only, and on no project being scaffolded or built.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# Genome checks call the skill's check-genome.mjs with node through $REFERENCE_DIR (the skill's scripts folder).
+reference:
+  directory: ../../../../skills/uipath-planner/scripts
+
+initial_prompt: |
+  Write the genome for the agreed design in `supplier-onboarding-solution-sdd.md`.
+
+  Do not ask follow-up questions — take the defaults.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "One genome for the solution, named after the root SDD and written beside it"
+    path: "supplier-onboarding-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The solution genome is a process genome meeting the core contract, with the RPA and the case components"
+    command: >-
+      node $REFERENCE_DIR/check-genome.mjs process supplier-onboarding-genome.md --profile core --skills uipath-rpa uipath-maestro-case
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # genome-from-sdd-guide item 3 / genome-format-guide § Interface: the case component is built with
+  # uipath-maestro-case and names the case child SDD as its build input. Passes when a Components row names
+  # uipath-maestro-case and that row, or the component genome it links (whose Build With names the skill),
+  # contains the case SDD's file name.
+  - type: run_command
+    description: "The case component is built with uipath-maestro-case and names the case child SDD as its build input"
+    command: >-
+      node -e "const fs = require('fs'), path = require('path');
+      const norm = (f) => fs.readFileSync(f, 'utf8').replace(/\r/g, '');
+      const section = (text, head) => text.split(/^## /m).find((s) => s.startsWith(head)) || '';
+      const g = 'supplier-onboarding-genome.md';
+      const rows = section(norm(g), 'Components').split('\n').filter((l) => l.startsWith('|') && l.includes('uipath-maestro-case'));
+      const ok = rows.some((row) => { let text = row; const m = row.match(/\]\(([^)]+-genome\.md)\)/);
+      if (m) { const f = path.join(path.dirname(g), m[1]); if (!fs.existsSync(f)) return false;
+      const c = norm(f); if (!section(c, 'Build With').includes('uipath-maestro-case')) return false; text += c; }
+      return text.includes('supplier-onboarding-case-sdd.md'); });
+      process.exit(ok ? 0 : 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The case is restated from its SDD, never redesigned: the case SDD is unchanged (sha256 of the fixture
+  # with CR stripped) and no case definition was generated.
+  - type: run_command
+    description: "The case child SDD is unchanged"
+    command: >-
+      node -e "const h = require('crypto').createHash('sha256').update(require('fs').readFileSync('supplier-onboarding-case-sdd.md', 'utf8').replace(/\r/g, '')).digest('hex');
+      process.exit(h === '7d0a13dc4a6751820a33192c9b1d65882cc9718e98d72b6976e4ee99705ecee1' ? 0 : 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No caseplan file was written: the case is built later from its SDD"
+    command: >-
+      node -e "const fs = require('fs');
+      const hits = fs.readdirSync('.', { recursive: true }).map(String)
+      .filter((f) => !/(^|[\\\\/])(\.git|\.claude|node_modules)([\\\\/]|$)/.test(f))
+      .filter((f) => /caseplan[^\\\\/]*\.json$/i.test(f));
+      if (hits.length) console.log(hits.join('\n')); process.exit(hits.length ? 1 : 0)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The root SDD stays ready and gains the Genome handoff row naming the solution genome"
+    command: >-
+      node -e "const t = require('fs').readFileSync('supplier-onboarding-solution-sdd.md', 'utf8');
+      const row = t.split('\n').find((l) => l.startsWith('| **Genome** |')) || '';
+      process.exit(t.includes('| **Status** | ready |') && row.includes('supplier-onboarding-genome.md') ? 0 : 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Neither child SDD gains a Genome handoff row"
+    command: >-
+      node -e "const fs = require('fs');
+      const bad = ['supplier-vendor-creation-sdd.md', 'supplier-onboarding-case-sdd.md']
+      .filter((f) => !fs.existsSync(f) || fs.readFileSync(f, 'utf8').includes('**Genome**'));
+      if (bad.length) console.log(bad.join('\n')); process.exit(bad.length ? 1 : 0)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Writing a genome does not scaffold, build or deploy a project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa|maestro\s+case|solution)\s+(init|new|build|pack|deploy|publish|run)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: the solution genome meets every mechanical format rule (strict profile)"
+    command: >-
+      node $REFERENCE_DIR/check-genome.mjs process supplier-onboarding-genome.md --profile strict
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
