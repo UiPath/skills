@@ -12,7 +12,9 @@ Consult this reference when planning or implementing any of:
 
 ## Prerequisites
 
+<!--skill-flavor:connector-login-prerequisite:start-->
 1. `uip login` — tenant-scoped connectors are only visible after authentication.
+<!--skill-flavor:connector-login-prerequisite:end-->
 2. `uip maestro case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uip/case-resources/`.
 3. A healthy Integration Service connection for the connector. If `Connections` is empty after `get-connection`, offer to create one (Step 2) rather than failing — see [§ Creating a Connection](#creating-a-connection).
 

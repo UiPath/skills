@@ -19,6 +19,7 @@ every other step, port and name the pattern inserted.
 
 ## The safe project loop
 
+<!--skill-flavor:safe-project-loop:start-->
 Keep authored source beside the canonical Flow so relative sidecars still
 resolve, but put every compiled working artifact outside the Flow project. The
 project must contain exactly one `.flow` file when product validation discovers
@@ -57,6 +58,7 @@ If validate fails, restore the project before merging again:
 `test -d "${BACKUP:?}" && rm -rf "${PROJECT:?}" && mkdir "$PROJECT" && cp -r "$BACKUP/." "$PROJECT/" && rm -rf "$BACKUP"`.
 Keep the backup in `mktemp -d`, never under the working directory: a copy of
 the project there is a second Flow project.
+<!--skill-flavor:safe-project-loop:end-->
 
 Compile the baseline before the edit, never after: merge diffs edited against
 it, so a baseline of the edited source drops your change.
@@ -64,7 +66,10 @@ it, so a baseline of the edited source drops your change.
 With an edited `.flow.ts` and `--baseline-from`, `merge` runs `check` on the edited source and refuses the write on an error in a node or subflow the edit changed (`N error(s) in nodes merge takes from the edited flow`), and on one it cannot place that the edit introduced.
 An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
 Fix a finding when you edit its node.
-Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node,
+<!--skill-flavor:merge-check-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:merge-check-sdk-upgrade:end-->
 
 If the edited compile fails `check` only with `HTTP_READ_WITHOUT_RETURNS`, the
 deployed HTTP node has no body schema
@@ -92,9 +97,11 @@ flow-merge: wrote Deployed.flow (12 nodes, 13 edges)
 flow-merge: wrote <source-uuid>/agent.json (carries messages[0].content)
 ```
 
+<!--skill-flavor:install-agent-files:start-->
 `cp -r "$WORK/candidate/."` installs the `.flow` and every agent file merge
 carried. Fields the round trip does not reproduce (such as `maxIterations`, or a
 `description` on an agent input) keep the project's values.
+<!--skill-flavor:install-agent-files:end-->
 
 Merge warns, does not carry, and refuses under `--strict` when:
 
@@ -124,10 +131,12 @@ flow-merge: remove <project>/<source-uuid>/resources/<dir> from the project: the
 flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derived as compile does)
 ```
 
+<!--skill-flavor:resource-install:start-->
 - An added or changed resource is installed by `cp -r`. A changed one keeps its
   original directory.
 - A removed one is not: delete every directory merge lists under `remove`
   (`Data.Removed` in `--output json`). Otherwise the agent keeps that resource.
+<!--skill-flavor:resource-install:end-->
 - A resource another `.flow` in the project still uses is kept
   (`flow-merge: kept <source>/resources/<dir>: <Other>.flow still references it`).
   No action needed: do not delete it.
@@ -136,6 +145,7 @@ flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derive
 
 ## Flows with draft nodes: let merge compile
 
+<!--skill-flavor:draft-nodes:start-->
 A canvas-saved flow often holds **draft** nodes: a connector with no connection
 yet, a required input left empty, or a generic operation with no object picked
 (connector action steps only; a draft trigger, `waitForEvent` or connector tool
@@ -171,9 +181,11 @@ loop above.
 - Pass `--library` / `--bindings` as you would to `compile`; `--strict` works
   here too. Use the SDK's `flow-sdk` bin: `uip maestro flow merge` does not
   forward `--baseline-from` yet (UiPath/cli#5214).
+<!--skill-flavor:draft-nodes:end-->
 
 ## The generated pipeline
 
+<!--skill-flavor:generated-pipeline:start-->
 `decompile` writes `<Name>.pipeline.mjs` into the `.flow-sdk/` work directory
 beside the source. Prefer it for any narrow edit: it chains all four steps below,
 and it captures the baseline before your edit rather than after, which is the
@@ -205,9 +217,11 @@ directory is outside the canonical Flow project, because product validation
 treats every `.flow` below the project, hidden folders included, as a
 deliverable. When source must remain in the
 project for relative sidecars, use the safe project loop above.
+<!--skill-flavor:generated-pipeline:end-->
 
 ## The same loop by hand
 
+<!--skill-flavor:hand-loop:start-->
 ```bash
 uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts --no-pipeline
 mkdir -p .flow-sdk/baseline .flow-sdk/edited
@@ -222,6 +236,7 @@ Like the pipeline, this keeps every candidate in `.flow-sdk/`. Back up the
 project, replace the original with `.flow-sdk/Deployed.merged.flow`, copy every
 `<source>/` file merge reports writing, then validate the original, as in
 [the safe project loop](#the-safe-project-loop).
+<!--skill-flavor:hand-loop:end-->
 
 The baseline must be compiled from the pristine decompiled source, before any
 edit. It lets merge distinguish authored changes from reconstructed content;
@@ -256,10 +271,14 @@ decompiled entry. `check` reports `INLINE_AGENT_RESOURCE_NODE_ID` for a blank
 resource), `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
 uuid, and `INLINE_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
 with the same `source`: both would write one `resource.json`. Delete both
-`nodeId` and `source` from a copied entry. Needs `@uipath/maestro-builder-sdk`
+`nodeId` and `source` from a copied entry.
+Needs `@uipath/maestro-builder-sdk`
 6.33.0 or later; an older SDK's decompile omits these fields and compile renames
-the node with a new directory, so upgrade with
+the node with a new directory,
+<!--skill-flavor:resource-ids-sdk-upgrade:start-->
+so upgrade with
 `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:resource-ids-sdk-upgrade:end-->
 
 A step's node id is its name with every character other than a letter, digit
 or `_` turned into `_` (`a b` gets id `a_b`), and compile never renames a step
@@ -270,9 +289,13 @@ equals the trigger's id. Give the new step a name of its own. (A child flow's
 steps are not checked against the caller's: a copy whose ids are taken is
 prefixed `<caller>_<step>`.) To send a
 second path to an existing step, end that path with `.stepToRef('<name>')`
-instead of adding the step again. Needs `@uipath/maestro-builder-sdk` 6.32.4 or
-later; an older SDK silently renames the second step `<name>2`, so upgrade with
+instead of adding the step again.
+Needs `@uipath/maestro-builder-sdk` 6.32.4 or
+later; an older SDK silently renames the second step `<name>2`,
+<!--skill-flavor:dup-step-sdk-upgrade:start-->
+so upgrade with
 `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:dup-step-sdk-upgrade:end-->
 
 A node type the SDK has no factory for still round-trips: it comes back as
 `rawNode({ nodeType, version, manifest, inputs })`, carrying the definition the
@@ -327,6 +350,7 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   input or output edit, and refuses a merged node that drops or changes that
   configuration, or whose kept prompt still uses `{{input.X}}` after your edit
   removed input `X`.
+<!--skill-flavor:strict-merge:start-->
 - Pass `--strict` to make merge refuse (exit 1, no file written) instead of
   warning. The benign End line never refuses. `--strict` needs `--baseline`:
   run `node .flow-sdk/<Name>.pipeline.mjs --strict`, which always has one, or
@@ -340,6 +364,31 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   flow-sdk flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
     -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow --strict
   ```
+<!--skill-flavor:strict-merge:end-->
+
+## Scripts come back as functions
+
+`decompile` prints each script step as a TypeScript function, declared after the flow and passed by name:
+
+```ts
+  .step("normalize", script(script_normalize, { returns: { amount: "number" } }), { version: "1.0.0" })
+  // …
+function script_normalize($vars: FlowVars) {
+  const amount = Number($vars.start.output.amount);
+  return { amount };
+}
+```
+
+Edit the script in the function's body; the text between its braces is exactly the node's script, so an untouched script compiles back byte for byte.
+The rules in [script.md](script.md#writing-the-script-as-a-function) apply to the edit: the function may read only what the script runtime has.
+
+A script that cannot be printed as a function stays `script({ code: "…" })`, and decompile warns once for each: `flow-decompile: warning: step "<id>": script kept as a string: <why>`.
+The reasons are a body that does not parse (a half-written designer script), TypeScript-only syntax, a name that is not on the SDK's list of runtime names, a trailing line comment, or an error that would stop the module from loading.
+The warning is informational: the string form loses nothing, and `--strict` does not turn it into an error.
+Edit such a script as a string, as before.
+To print every script that way, pass `--scripts string`: `uip maestro flow decompile <file> -o <file>.flow.ts --scripts string`. With an SDK older than 6.57.0, `uip` refuses the option and names the version to install.
+
+Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lists `ScriptValue`); an older SDK's decompile prints every script as `script({ code })`.
 
 ## The file's schema version comes back out
 
@@ -355,7 +404,10 @@ job, not an edit to this call.
 ## Designer shapes decompile keeps
 
 Leave each as decompile writes it.
-Needs `@uipath/maestro-builder-sdk` 6.44.0 or later: an older SDK's decompile writes `js\`[object Object]\`` for the envelope, drops the fork's arms and the `variable` rows with a `has no spelling` / `cannot write back` warning, and compile then refuses the source — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+Needs `@uipath/maestro-builder-sdk` 6.44.0 or later: an older SDK's decompile writes `js\`[object Object]\`` for the envelope, drops the fork's arms and the `variable` rows with a `has no spelling` / `cannot write back` warning, and compile then refuses the source
+<!--skill-flavor:envelope-sdk-upgrade:start-->
+— upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:envelope-sdk-upgrade:end-->
 
 - a decision or switch condition stored as a `jsExpression` envelope or as `=js: …`
 - a quick form's asked-field `variable` ([hitl.md](hitl.md))
@@ -412,10 +464,24 @@ its case below says to; every other edit goes through merge.
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
   merge into it: `merge` preserves the original's declared version.
-- An **edge the builder cannot spell** — for example a second edge leaving a
-  decision's `true` port, which no builder construct produces. The
-  warning names it as `<source>@<port> -> <target>@<port>`, and the source marks
-  the spot with a `/* TODO: edge(s) … are NOT in this source */` comment (or a
+- An **edge the builder cannot spell** — for example two edges out of one
+  port where one path stops on a step with no successor and no End. Other
+  fan-outs do come back as a `.parallel`, see
+  [parallel-merge.md](parallel-merge.md):
+  - paths that meet again at a plain step: each arm ends in
+    `.stepToRef(<step>)` (SDK 6.44.0 or later);
+  - paths that each end at an End or a Terminate: the arms all end, and the
+    fork is named `<node>Fork` after the node it leaves (SDK 6.46.6 or later).
+
+  Two shapes of the second kind still get the TODO below: an arm that runs a
+  step before its Terminate (`check` allows a Terminate only at an arm's head,
+  `TERMINATE_NOT_ARM_HEAD`), and a fan-out inside a loop body whose arms leave
+  by `.break()` or `.continue()`. A fan-out decompile cannot spell keeps its
+  first arm behind a `/* TODO: unstructured fan-out … */` marker.
+
+  The warning names each dropped edge as `<source>@<port> -> <target>@<port>`,
+  and the source marks the spot with a
+  `/* TODO: edge(s) … are NOT in this source */` comment (or a
   `// TODO: edge …` line near the top when no step leads to it). Recompiling
   drops that edge, and `merge` writes the loss into the original. If your edit
   touches that part of the flow, change the `.flow` JSON there directly instead
@@ -434,11 +500,22 @@ its case below says to; every other edit goes through merge.
   process's output fields on the definition whether or not the step waits, and
   `agenticProcess()` refuses `returns` beside `completion: 'fire-and-forget'`
   (nothing could read it), so the source omits it and the warning names the
-  fields. Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK's
-  decompile writes `returns` and compile refuses it — upgrade with
-  `npm install -g @uipath/maestro-builder-sdk@latest`. Recompiling writes the definition without the schema; `merge` keeps
+  fields.
+  Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK's
+  decompile writes `returns` and compile refuses it
+<!--skill-flavor:fire-and-forget-sdk-upgrade:start-->
+  — upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:fire-and-forget-sdk-upgrade:end-->
+  Recompiling writes the definition without the schema; `merge` keeps
   the original's definition row, so a no-edit round trip loses nothing. To read
   the result, set `completion: 'wait'` and declare `returns`.
+
+Pin a step you add with a `{ version }` the source gives other nodes of its
+type, one that decompile did not warn about. If it warned about all of them,
+leave it unpinned. If no node keeps the file's version, merge drops its
+definition with no warning. An End also needs a fresh name: see
+[A path without an End stays open](#a-path-without-an-end-stays-open).
 
 Validate the merged file after installing it as in
 [the safe project loop](#the-safe-project-loop), never the intermediate edited
@@ -450,7 +527,10 @@ Decompiled source carries that layout as a `.layout({ nodes })` block, one long-
 Keep it.
 Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves.
 At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
-Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
+Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile,
+<!--skill-flavor:subflow-layout-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
+<!--skill-flavor:subflow-layout-sdk-upgrade:end-->
 A step the edit removes must lose its entry, or compile fails on the unknown key.
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 
@@ -468,6 +548,11 @@ left open too. To make that path return the flow's outputs, end it with
 `.return({ ... })`. An open path maps no outputs. A human task's exit is
 always capped with an End, because a task with nothing after it never
 finishes.
+
+Give an End you add a name no node uses and, when the source has Ends, their
+`{ version }`: `.return({ ... }, { name: 'endSummary', version: '<END_VERSION>' })`.
+An added `name: 'end'` takes the id of an existing End decompile wrote without
+a name, which becomes `end2` with no warning.
 
 ## Split (`$ref`) artifacts
 

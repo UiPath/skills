@@ -38,7 +38,7 @@ initial_prompt: |
 
   * Connector: uipath-uipath-dataservice (use the tenant's Data Fabric connection)
   * Start: the "Record Updated" trigger (object EntityTriggers_V3, operation UPDATED_V3)
-  * Then: "Create Entity Record (Experimental)" (object CreateEntityRecordExperimental_V3)
+  * Then: "Create Entity Record (Preview)" (object CreateEntityRecord_V3)
   * Entity scope: folder, on both
   * Entity: the folder entity named "SkillPickerEvalEntity" in the Shared folder, on both
   * Set the new record's "title" field to "V2Test"

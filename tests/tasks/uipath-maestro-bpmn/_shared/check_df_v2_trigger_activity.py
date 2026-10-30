@@ -10,7 +10,7 @@ Checks performed:
      v2, a V2 `connection` (not V1 `connectionId`), a `uipath:entryPointId`,
      design-time metadata, and the entity on `folderEntityName`.
   3. A bpmn:sendTask carries Intsvc.ActivityExecution on the same connector
-     for CreateEntityRecordExperimental_V3, V2 the same way, picking the
+     for CreateEntityRecord_V3, V2 the same way, picking the
      entity and setting `title` to `V2Test`.
   4. `bindings_v2.json` beside the .bpmn has an EventTrigger resource whose
      EntryPointUniqueId is the trigger's entry point id, and the entity
@@ -41,6 +41,7 @@ from _shared.check_df_picker_folder_entity import (  # noqa: E402
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
+ACTIVITY_OBJECT = "CreateEntityRecord_V3"
 TITLE = "V2Test"
 
 
@@ -117,8 +118,8 @@ def main() -> None:
         ],
         f"Intsvc.ActivityExecution send task on {CONNECTOR_KEY}",
     )
-    if context_value(activity, "objectName") != "CreateEntityRecordExperimental_V3":
-        fail(f"{path}: the activity is {context_value(activity, 'objectName')!r}, not CreateEntityRecordExperimental_V3")
+    if context_value(activity, "objectName") != ACTIVITY_OBJECT:
+        fail(f"{path}: the activity is {context_value(activity, 'objectName')!r}, not {ACTIVITY_OBJECT}")
     require_v2(path, activity, "activity")
     if not picker_values(activity, bindings) & entity:
         fail(f"{path}: the activity does not pick {fixture['name']} on folderEntityName")

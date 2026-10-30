@@ -13,3 +13,7 @@ In Studio Web there is nothing to register: each sibling was created inside the 
 <!--skill-flavor:adopt-register:start-->
 2. **Register.** Nothing to do — the host registered the sibling when it was created; there is no `.uipx` and no stale declaration file to clear.
 <!--skill-flavor:adopt-register:end-->
+
+<!--skill-flavor:prerequisite-login:start-->
+Studio Web runs inside an authenticated host, so do not log in or check login state (there is no `uip login` here). Run
+<!--skill-flavor:prerequisite-login:end-->

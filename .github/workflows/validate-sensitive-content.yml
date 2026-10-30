@@ -1,0 +1,55 @@
+name: Validate Sensitive Content
+
+on:
+  # No `paths:` filter on purpose, for the same two reasons as
+  # validate-skills-sh.yml and validate-skill-flavors.yml:
+  #
+  # 1. Required-check safety: if this job is ever made a required status
+  #    check, a `paths:` filter that excludes a PR leaves the check unreported
+  #    and blocks merge forever. The job is a checkout plus a ~15s
+  #    dependency-free script, so just always run it.
+  # 2. A path list is not a reliable trigger. Anything under the packaged
+  #    `files` (skills/, skill-flavors/, assets/, hooks/, commands/, plugin
+  #    manifests) reaches customers, and a list naming them goes stale.
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: uipath-ubuntu-latest
+    name: Scan shipped content for customer-blocked data
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          # refs/pull/N/merge: HEAD^1 is the base commit. Depth 2 is all the
+          # baseline read needs.
+          fetch-depth: 2
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      # Customers run the published package through a DLP-style content
+      # inspection gate that rejects a whole skill on one shape match: a
+      # Luhn-valid digit run, an SSN, an MM/DD/YYYY or `--expiration` date, a
+      # phone number, a street address, a token. 1.202.0 and 1.203.0 were both
+      # rejected on such values (cleared by hand in #3714). This blocks new
+      # ones at review time instead of at the customer.
+      #
+      # --baseline-ref fails only on findings THIS PR introduces; findings
+      # already on the base branch print as pre-existing and do not block.
+      # Warn-tier shapes are annotated on the diff but never fail the run.
+      # A manual dispatch has no merge commit and scans the whole tree
+      # strictly — the publish gate's view.
+      - name: Scan for sensitive-data shapes
+        env:
+          IS_PR: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [ "$IS_PR" = "true" ]; then
+            python3 scripts/check-sensitive-content.py --baseline-ref HEAD^1
+          else
+            python3 scripts/check-sensitive-content.py
+          fi

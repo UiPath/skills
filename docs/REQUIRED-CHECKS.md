@@ -152,6 +152,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `Validate skill status manifest & README` | `validate-skill-status.yml` |
 | `Validate skills.sh.json against skills/` | `validate-skills-sh.yml` |
 | `Build and inspect every skill package` | `validate-skill-flavors.yml` |
+| `Scan shipped content for customer-blocked data` | `validate-sensitive-content.yml` |
 | `maestro-flow checker unit tests` | `test-helpers.yml` |
 | `maestro-bpmn checker unit tests` | `test-helpers.yml` |
 | `maestro-case checker unit tests` | `test-helpers.yml` |
@@ -167,7 +168,9 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `runtime-payload key-casing contract guard` | `test-helpers.yml` |
 | `maestro-bpmn contract guards` | `test-helpers.yml` |
 | `catalog build integrity guards` | `test-helpers.yml` |
+| `CLI declaration refresh unit tests` | `test-helpers.yml` |
 | `skills.sh grouping checker unit tests` | `test-helpers.yml` |
+| `sensitive-content checker unit tests` | `test-helpers.yml` |
 | `telemetry hook contract guard` | `test-helpers.yml` |
 | `task/experiment gate unit tests` | `test-helpers.yml` |
 | `required-check contract guard` | `test-helpers.yml` |
@@ -217,6 +220,7 @@ Reading a ruleset needs admin on the repository, which the default `GITHUB_TOKEN
 - **`release/*` has no required checks.** The ruleset condition is `["~DEFAULT_BRANCH"]`, so ~92 release-branch PRs per quarter (mostly cherry-picks — where a stale conflict resolution most easily breaks a checker) merge on review alone. Fix by extending the condition to `["~DEFAULT_BRANCH", "refs/heads/release/*"]`; `apply-required-checks.sh --with-release-branches` emits that payload.
 - **`strict_required_status_checks_policy` is `false`.** Branches may merge green against a stale base. Leave it off while `Run skill smoke tests` (p95 22 min) is required — forcing re-runs on base drift would serialize the merge queue.
 - **`Validate task schema (advisory)` is not requirable yet.** It is `continue-on-error` by design and validates the whole task tree, so pre-existing drift shows red on unrelated PRs. Clean the tree, then drop `continue-on-error` and the `(advisory)` suffix.
+- **`No new skill-lint errors` is not requirable yet.** It is in phase 1: `fail-on-findings: "false"` in `skill-lint.yml` keeps it green on new findings (Rule 4), and `Post the skill-lint result on the PR` only writes the PR comment. To promote it: remove that line once a week or two of PRs show no false alarms, then add the context to § Current target set in the same PR. Before requiring it, confirm the ruleset requires code-owner review, since a PR that edits the workflow can relax it. `PAT_LINTER`, the token that reads the internal linter, is a fine-grained token owned by @CarlesUIPath; renew it before it expires, or the check fails on every PR.
 - **`--check` is not scheduled.** See § Checking for drift — it needs an admin-scoped token to read the ruleset from CI.
 - **`validate-skill-flavors.yml` is the only required workflow on GitHub-hosted runners.** Every other one is `uipath-ubuntu-latest`. Dropping its `paths:` filter (Rule 1) puts a ~52s node build on billed minutes for every PR, doc-only ones included. Accepted on purpose: the build is what ships to consumers and the 28-entry path list it replaced went stale each time an input was added. Move it to the self-hosted pool once that pool is verified to carry `rg` and `sha512sum`.
 - **Three rulesets overlap.** `Merge rule` (`14273765`) and `Require PR` (`13681075`) duplicate the `main` ruleset's `pull_request` rule. `Merge rule` returns an empty ref filter from the API — confirm its scope in the Rules UI before folding it in.

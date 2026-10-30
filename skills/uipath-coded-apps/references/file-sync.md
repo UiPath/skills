@@ -17,31 +17,34 @@ File sync lets you develop coded web apps locally with your preferred tools and 
 - **Project ID**: Required for both commands. Can be:
   - Auto-created during `push` (first time only)
   - Set as `UIPATH_PROJECT_ID` in `.env`
-  - Passed as the first argument
+  - Passed with `--project-id <id>`
 
 ## Push Workflow
 
 ### First-Time Push (Auto-Create Project)
 
-When no `UIPATH_PROJECT_ID` exists, `push` offers to create a new Coded App project:
+When no `UIPATH_PROJECT_ID` exists, `push` creates a new Studio Web solution with a Coded App project inside it. The two names are separate: the **solution** is the container that holds the app and its resources, and the **project** is the app end users open.
+
+**When you cannot answer prompts, pass both names as flags.** Without them, push stops with "Project ID is required". Pick names that describe what the user is building, for example the product for the solution and the user-facing app for the project. Ask the user if you cannot tell. Do not use placeholders like `App` or `Solution`; the user would have to rename them in Studio Web.
 
 ```bash
 # 1. Build your app
 npm run build
 
-# 2. Push (will prompt to create project)
-uip codedapp push
+# 2. First push: create the solution and project
+uip codedapp push --solution-name "Product Announcements" --project-name "Announcements Portal" --output json
 ```
 
-Interactive flow:
+Run interactively, push asks instead. It offers a new or an existing solution, then prompts for both names, defaulting to the folder name:
 ```
-? No project ID found. Create a new Coded App project? (Y/n)
-? Enter a name for the new Coded App: my-webapp
-✔ Created coded app project "my-webapp" with ID: abc-123-def
+? No project ID found. Would you like to create a new solution or use an existing one? Create a new solution
+? Enter a name for the new solution (the Studio Web container for your app and its resources): Product Announcements
+? Enter a name for the new Coded App (the app end users open): Announcements Portal
+✔ Created solution "Product Announcements" with coded app project "Announcements Portal" (ID: abc-123-def)
   Saved UIPATH_PROJECT_ID to .env
 ```
 
-The project ID is automatically saved to `.env` for future pushes.
+The project ID is automatically saved to `.env` for future pushes. The name flags only apply to that first push: once a project ID is set (by `--project-id`, `UIPATH_PROJECT_ID`, or `.env`), passing them makes push fail instead of pushing into that project. To create another solution from the same folder, remove `UIPATH_PROJECT_ID` from `.env` first.
 
 ### Subsequent Pushes
 
@@ -56,7 +59,7 @@ uip codedapp push
 
 ```bash
 # Push with explicit project ID (overrides .env)
-uip codedapp push abc-123-def
+uip codedapp push --project-id abc-123-def
 
 # Push a custom build directory (default: dist)
 uip codedapp push --build-dir build
@@ -85,7 +88,7 @@ The `--ignore-resources` flag skips importing referenced resources (connections,
 uip codedapp pull
 
 # Pull with explicit project ID
-uip codedapp pull abc-123-def
+uip codedapp pull --project-id abc-123-def
 ```
 
 ### Pull to a Specific Directory
@@ -130,7 +133,7 @@ uip codedapp push
 uip login
 
 # 2. Pull the project (get project ID from Studio Web URL)
-uip codedapp pull <project-id> --target-dir ./my-app
+uip codedapp pull --project-id <project-id> --target-dir ./my-app
 
 # 3. Install dependencies
 cd my-app
@@ -165,3 +168,5 @@ Authentication is handled by `uip login` and the coded app CLI. **NEVER** read, 
 | `dist/ directory not found` | Run `npm run build` before pushing |
 | File conflict on pull | Use `--overwrite` to force, or manually resolve |
 | `UIPATH_PROJECT_ID` not saved | Check `.env` file permissions; set it manually |
+| `Project ID is required` on the first push | You cannot answer the prompts. Pass `--solution-name <name> --project-name <name>` |
+| `a project ID is already set by …` | `--solution-name` / `--project-name` were passed with a project ID already set. Drop the flags to push to that project, or remove `UIPATH_PROJECT_ID` from `.env` to create a new solution |

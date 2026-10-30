@@ -53,8 +53,10 @@ source. The loop is:
    - `CONNECTOR_NOT_IN_LIBRARY` — the library has no such operation (or
      connector, or version). The message lists the connector's operations and
      a `Closest:` match. The operation is the node type's slug, not the
-     tenant's `objectName` (`send-email`, not `send-mail-v2`). If the operation
-     is newer than the library, run `uip maestro registry pull`.
+     tenant's `objectName` (`send-email`, not `send-mail-v2`).
+<!--skill-flavor:not-in-library-pull:start-->
+     If the operation is newer than the library, run `uip maestro registry pull`.
+<!--skill-flavor:not-in-library-pull:end-->
    - `CONNECTOR_OBJECT_REQUIRED` — a generic operation covers many objects;
      add `{ object: '<name>' }`. The message lists the objects.
    - `CONNECTOR_OBJECT_NOT_GENERIC` — `object` on a single, non-generic
@@ -90,6 +92,7 @@ plausible Flow compiles but loses the intended runtime or Studio Web contract:
 
 ## Discovering operations and fields
 
+<!--skill-flavor:library-discovery:start-->
 `$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
 (machine-readable, for compiling) point at a connector library staged by the
 environment. It is not baked into the npm package, so when those variables are
@@ -115,6 +118,7 @@ The four library verbs are `pull`, `search`, `path` and `prepare`.
 Like the authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace.
 `uip` is the entry point and is what delivers these skills, so it is present wherever this guidance is being read.
 (The package also exposes a `flow-sdk` bin for invoking the same commands directly, which is what the printed remedies fall back to when nothing sets `FLOW_SDK_INVOKED_AS`.)
+<!--skill-flavor:library-discovery:end-->
 
 **`uip maestro registry` is not `uip maestro flow registry`.** The names are one
 word apart and the jobs are unrelated: this one is the connector library the
@@ -124,6 +128,7 @@ references reach for (`uipath.core.function`, `uipath.core.agent.<name>`). A
 connector operation is never in the node registry and a node type is never in
 the library, so a miss in one is not evidence about the other.
 
+<!--skill-flavor:library-search:start-->
 Search that library for static contracts:
 
 ```bash
@@ -131,6 +136,7 @@ jq '.entries[] | select(.label | test("send email"; "i")) | {label,nodeType,path
   "$FLOW_SDK_LIBRARY_MD/index.json"
 sed -n '1,220p' "$FLOW_SDK_LIBRARY_MD/<path-from-index>"
 ```
+<!--skill-flavor:library-search:end-->
 
 When `check` refuses a connection-specific field as unknown — or warns the
 schema is unprepared — materialize the live schema rather than guessing or
@@ -157,6 +163,7 @@ it would write an overlay with no fields and the next compile would still
 reject every input as unknown — the refusal is the only signal that says
 "connection", not "field".
 
+<!--skill-flavor:descriptor-imports:start-->
 Descriptors from either tree are imported with their real `.ts` extension — a
 `.js` specifier does not resolve, because these are sources rather than compiled
 output. The paths are relative to the source, which sits in `.flow-sdk/` beside
@@ -166,6 +173,7 @@ both trees:
 import { CreateInvoiceShare } from './connectors-local/uipath-salesforce-sfdc.ts';
 import { SendMessageToChannel } from './connectors/uipath-salesforce-slack.ts';
 ```
+<!--skill-flavor:descriptor-imports:end-->
 
 Older environments provide the same tool as a bare `prepare-connector` on
 `PATH`. The arguments are identical apart from one name: a connector version is
@@ -556,6 +564,7 @@ value for is resolved with its helper, not filled from a look-alike input. Run
 `check` before compiling: it finds everything else that is wrong first, so the
 one expensive call is spent last.
 
+<!--skill-flavor:connection-user:start-->
 **When the task names nobody for a person-shaped required field** (`reporter`,
 `requester`, `owner`), the value is the connection's own user: take the account
 from `uip login status` and resolve by **display name**. Search only by the
@@ -564,6 +573,7 @@ raw collections. Jira in particular hides e-mail addresses from user search, so
 an `emailAddress=` query returns nothing for a user that plainly exists, while
 `displayName=` finds them; the field's spec (`matches on displayName |
 accountId`) already told you e-mail was not searchable.
+<!--skill-flavor:connection-user:end-->
 
 Each operation's markdown page lists its lookup fields, the helper for each, and
 what it can be searched by. The generated descriptor carries the same facts as a
@@ -633,10 +643,12 @@ the record does not exist. The parameter name is `nextPage`, not
 A get-by-id not-found is a service error. Add `.onError(...)` when the scenario
 wants a not-found answer; otherwise failing loud can be intentional.
 
+<!--skill-flavor:output-names:start-->
 Output field names are case-sensitive and `check` does not verify them:
 `out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is
 `webUrl`. Copy each name from the operation's `## Outputs` in
 `$FLOW_SDK_LIBRARY_MD`.
+<!--skill-flavor:output-names:end-->
 
 For a response with no declared fields, read the whole output into a script
 local before inspecting service-specific properties:
