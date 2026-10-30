@@ -45,6 +45,14 @@ initial_prompt: |
   Investigate my last job in Orchestrator folder Shared — it faulted. I also see a Healing Agent log line on that job and I'm worried: was the Healing Agent actually engaged on this run, did it consume any AI units / credits, and what does that log line actually mean?
 
 success_criteria:
+  - type: file_contains
+    description: "Investigation data is git-ignored (.local/.gitignore contains *)"
+    path: ".local/.gitignore"
+    includes:
+      - "*"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
     skill_name: "uipath-troubleshoot"

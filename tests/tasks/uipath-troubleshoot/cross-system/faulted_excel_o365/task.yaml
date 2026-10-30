@@ -50,6 +50,14 @@ initial_prompt: |
   This process is failing to run from Orchestrator, the last failing job is in my personal folder. Pinned job key: 3033bce6-5585-4455-aaec-db7a9f791126.
 
 success_criteria:
+  - type: file_contains
+    description: "Investigation data is git-ignored (.local/.gitignore contains *)"
+    path: ".local/.gitignore"
+    includes:
+      - "*"
+    weight: 1.0
+    pass_threshold: 1.0
+
   # Binary tool-invocation check: confirms the right skill ran at all.
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
