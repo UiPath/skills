@@ -87,7 +87,7 @@ uip api-workflow registry stub <activity-type-id> \
 | Flag | Required/default | Purpose |
 |---|---|---|
 | `<activity-type-id>` | required | `uiPathActivityTypeId` from `resolve`. |
-| `--connection-id <uuid>` | IntSvc only; optional | Pinged vendor UUID. Without it, IntSvc output contains placeholders; ignored for Http. |
+| `--connection-id <uuid>` | IntSvc; optional | Pinged vendor UUID. The stub checks it (`Enabled`, same connector) and reads the connector's settings through it; without it, IntSvc output contains placeholders. For Http, optional: any connector's `Enabled` connection. |
 | `--inputs <json>` | optional, default `{}` | Flat schema field names to values; bare strings are literals and `${...}` values are expressions. |
 | `--instance <n>` | optional, default `1` | Suffixes slot/export keys, such as `_2`. |
 | `--slot-key <PascalCase>` | optional | Overrides the slot key only; export key remains object-name-derived. |
