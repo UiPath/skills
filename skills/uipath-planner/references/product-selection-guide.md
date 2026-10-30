@@ -6,7 +6,7 @@ This is the most important decision the SDD makes. Select the wrong product and 
 
 Selection is layered, not one whole-process pick. **Solution is packaging, not a runtime tool** — and Integration Service, Action Center, IXP, and Libraries are capabilities/components, not automatic primaries. Layer 0 precedes everything: the [Suitability Gate](#level-0--suitability-gate) decides whether to automate at all. Then design the component topology; decide packaging last.
 
-1. **Decompose the process into steps** — Phase 1 extraction + the [need profile](sdd-generation-guide.md#step-35-synthesize-the-need), recording the per-step factors (interface, determinism, state, human interaction, volume, risk, reuse, runtime, existing estate).
+1. **Decompose the process into steps** — Phase 1 extraction + the [need profile](design-guide.md#step-35-synthesize-the-need), recording the per-step factors (interface, determinism, state, human interaction, volume, risk, reuse, runtime, existing estate).
 2. **Choose an executor per step** — the [Per-task component placement](#per-task-component-placement-the-to-be-per-step) table (RPA / API / IXP / Agent / LLM activity / Function / HITL / Data Fabric).
 3. **Choose the coordination & state host** — the Level 1 decision table: a single host absorbs in-process capabilities (absorption fold); Maestro (Flow / BPMN / Case) only when peer runtimes or the coordination shape exceed a single host.
 4. **Choose packaging & deployment last** — standalone package vs Solution (`.uipx`), via Solution Signals / Level 1.75 and the Constraint Gate. A single-component design does not need a Solution wrapper by default.
@@ -52,11 +52,11 @@ Not every process should be automated as-is — a Solution Architect first decid
 6. **Economics** — volume × time saved vs build + run + maintain cost; thin cases → downscope or recommend against.
 7. **Residual human work** — what stays manual after automation; when the human loop dominates, automation may not pay.
 
-**Outcomes:** `proceed` (default) · `proceed-with-redesign` (the to-be drops or reshapes steps) · `partial` (automate a subset; rest stays manual or native) · `do-not-automate` (recommend the native capability / process fix — confirm with the user, then end Phase D with the [findings note](#do-not-automate-findings-note) instead of a full SDD). Levels 1+ run only on `proceed` / `proceed-with-redesign` / `partial`.
+**Outcomes:** `proceed` (default) · `proceed-with-redesign` (the to-be drops or reshapes steps) · `partial` (automate a subset; rest stays manual or native) · `do-not-automate` (recommend the native capability / process fix — confirm with the user, then end `design` with the [findings note](#do-not-automate-findings-note) instead of a full SDD). Levels 1+ run only on `proceed` / `proceed-with-redesign` / `partial`.
 
 ### Estate sweep
 
-Operationalizes item 2. Best-effort and auth-required — same rules as tenant library discovery: never blocks Phase D, no mid-generation auth troubleshooting, skip entirely when the user's prompt forbids `uip` commands. Query only the rows matching the step→executor map's candidate products, filtering results by PDD Application Inventory and process-name keywords:
+Operationalizes item 2. Best-effort and auth-required — same rules as tenant library discovery: never blocks `design`, no mid-generation auth troubleshooting, skip entirely when the user's prompt forbids `uip` commands. Query only the rows matching the step→executor map's candidate products, filtering results by PDD Application Inventory and process-name keywords:
 
 | Estate | Discovery |
 |---|---|
@@ -79,7 +79,7 @@ Record every covering hit as a reuse candidate in the Recommended Scope reasonin
 
 ### Do-not-automate findings note
 
-Confirm the outcome with the user, then write `<PROCESS_NAME_KEBAB>-findings.md` instead of an SDD and end Phase D. Structure:
+Confirm the outcome with the user, then write `<PROCESS_NAME_KEBAB>-findings.md` instead of an SDD and end `design`. Structure:
 
 1. `# <PROCESS_NAME> — Suitability Findings` + generation date
 2. `## Outcome` — `do-not-automate`, plus each failed gate item (1–7) with one line of evidence
@@ -87,13 +87,13 @@ Confirm the outcome with the user, then write `<PROCESS_NAME_KEBAB>-findings.md`
 4. `## Revisit Triggers` — what would change the decision (volume growth, a stable API appearing, process stabilization)
 5. `## Action Required — SME Review Items` — only when open questions remain
 
-The note carries NO `## Planner Handoff` header and NO `planner-handoff:v1` marker — it is terminal: it must never route to Lane A and needs no Status field. `partial` does not produce a findings note — dropped steps are recorded in the SDD's Recommended Scope reasoning.
+The note carries NO `## Planner Handoff` header and NO `planner-handoff:v1` marker — it is terminal: it must never route to `plan` and needs no Status field. `partial` does not produce a findings note — dropped steps are recorded in the SDD's Recommended Scope reasoning.
 
 ## Level 1 — Primary Scope Selection
 
-> **Match on the need, not the keyword.** Each row's "Signal in PDD" is *evidence* of an underlying need — the decision is the need it points to, not the literal term. Read the [need profile](sdd-generation-guide.md#step-35-synthesize-the-need) and pick the product whose purpose fits the need:
+> **Match on the need, not the keyword.** Each row's "Signal in PDD" is *evidence* of an underlying need — the decision is the need it points to, not the literal term. Read the [need profile](design-guide.md#step-35-synthesize-the-need) and pick the product whose purpose fits the need:
 >
-> **No single factor decides — weigh the whole need profile.** Determinism (rule-expressible vs judgment) is one key factor, not the sole gate; also weigh input structure, whether a stable API exists (API-first — avoid UI fragility), volume/cost (agentic execution is costlier and far less cost-predictable than deterministic — estimate per model/tenant at volume), risk/reversibility/confidence (→ a HITL gate), auditability/compliance, and coordination shape. See the full [need profile](sdd-generation-guide.md#step-35-synthesize-the-need). Genuine judgment/reasoning is the only thing that justifies an **Agent** (not the words "AI"/"smart"/"automatic"). The dominant pattern is **hybrid** — AI decides, deterministic RPA/API execute as governed tools, Maestro orchestrates when real orchestration is needed (see Light vs real orchestration), HITL gates the risky/low-confidence steps — so a mostly-deterministic process with one judgment step is a deterministic primary + an Agent component, not an Agent overall.
+> **No single factor decides — weigh the whole need profile.** Determinism (rule-expressible vs judgment) is one key factor, not the sole gate; also weigh input structure, whether a stable API exists (API-first — avoid UI fragility), volume/cost (agentic execution is costlier and far less cost-predictable than deterministic — estimate per model/tenant at volume), risk/reversibility/confidence (→ a HITL gate), auditability/compliance, and coordination shape. See the full [need profile](design-guide.md#step-35-synthesize-the-need). Genuine judgment/reasoning is the only thing that justifies an **Agent** (not the words "AI"/"smart"/"automatic"). The dominant pattern is **hybrid** — AI decides, deterministic RPA/API execute as governed tools, Maestro orchestrates when real orchestration is needed (see Light vs real orchestration), HITL gates the risky/low-confidence steps — so a mostly-deterministic process with one judgment step is a deterministic primary + an Agent component, not an Agent overall.
 >
 > - judgment / reasoning not expressible as fixed rules, or dynamic tool planning → **Agents**
 > - a fixed generative step inside a known path → **LLM activity in the host workflow**, not an Agent
@@ -462,7 +462,7 @@ Example unified project list for a Solution (Flow + RPA Library×2 + RPA Test Au
 
 ## Per-task component placement (the to-be, per step)
 
-Type each step and place it on the component that fits — the canonical UiPath placement model. Applied **twice**: at Phase 1 Step 3.5 to build the step→executor map that feeds Level 1 (layer 2 before layer 3), and at Phase 2 Steps 3–4 of the [SDD Generation Guide](sdd-generation-guide.md) to record each placement in the template's inventory table and flag non-primary components as integrated components. This is how the SDD says **where** API / RPA / Agents / DU / DMN / HITL / Maestro are each needed.
+Type each step and place it on the component that fits — the canonical UiPath placement model. Applied **twice**: at Phase 1 Step 3.5 to build the step→executor map that feeds Level 1 (layer 2 before layer 3), and at Phase 2 Steps 3–4 of the [Design Guide](design-guide.md) to record each placement in the template's inventory table and flag non-primary components as integrated components. This is how the SDD says **where** API / RPA / Agents / DU / DMN / HITL / Maestro are each needed.
 
 | Task type (verb) | Best-fit component | Routes to |
 |---|---|---|
@@ -487,7 +487,7 @@ Rules:
 
 ## Level 3 — Capability Add-ons
 
-These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section. Lane A (task derivation) reads the flags from the SDD when it derives the task list and routes the work to the correct skill.
+These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section. `plan` (task derivation) reads the flags from the SDD when it derives the task list and routes the work to the correct skill.
 
 ### HITL (Human-in-the-Loop)
 
@@ -559,7 +559,7 @@ Based on the Level 1 primary, select one template:
 | Coded Apps | `../assets/templates/coded-app-sdd-template.md` |
 | API Workflows | `../assets/templates/api-workflow-sdd-template.md` |
 
-> **Coded Functions are never a Level 1 primary and have no standalone template.** A Function's contract is the host template's `### Coded Functions` table (Flow / BPMN / Case / Agent templates carry it). In a Solution it is a project-list row with a build task routed to `uipath-functions`, but NO per-project SDD file. A request that is *only* a Function is a Lane B single-skill deferral to `uipath-functions`.
+> **Coded Functions are never a Level 1 primary and have no standalone template.** A Function's contract is the host template's `### Coded Functions` table (Flow / BPMN / Case / Agent templates carry it). In a Solution it is a project-list row with a build task routed to `uipath-functions`, but NO per-project SDD file. A request that is *only* a Function is a `decompose` single-skill deferral to `uipath-functions`.
 
 ### Solution scope (Level 1 = Solution or user picked Solution (customize))
 
@@ -572,14 +572,14 @@ A Solution produces **one SDD file per project in the Level 2.5 unified project 
 
 For RPA projects in the Solution, use the RPA template once per RPA *group* — if the Level 2.5 Part A decomposition produced a Master Project (e.g., Dispatcher + Performer + Reporting), those sub-projects share one RPA SDD file (§10/§11 cover the sub-projects). If two RPA projects are unrelated (e.g., a Library not called by the Performer), they each get their own RPA SDD file.
 
-**Component rows get no SDD file.** Project-list rows whose product is a component (Coded Function, IXP model, custom connector) do NOT get a per-project SDD file — their contract is the host SDD's table (`### Coded Functions`, `### IXP / Document Understanding Models`, connector rows) plus their row in the solution overview's Project Inventory. Lane A derives their build tasks from those rows, ordered before their consumers.
+**Component rows get no SDD file.** Project-list rows whose product is a component (Coded Function, IXP model, custom connector) do NOT get a per-project SDD file — their contract is the host SDD's table (`### Coded Functions`, `### IXP / Document Understanding Models`, connector rows) plus their row in the solution overview's Project Inventory. `plan` derives their build tasks from those rows, ordered before their consumers.
 
 ### Solution overview SDD structure
 
 The solution overview SDD includes:
 
 1. Solution Overview (objective, business context)
-2. Planner Handoff — solution-level handoff header with `Project SDD role: root`, `Solution ID: <SOLUTION_NAME_KEBAB>`, `Solution root SDD: <its own filename>`, and the canonical `Tasks file: <SOLUTION_NAME_KEBAB>-tasks.md` (the ONE tasks file every child also names), plus cross-project ordering notes (integrated components built before their consumers) for Lane A to consume. Position 2 keeps the header inside the first ~50 lines the Entry Guard reads — do not move it lower. Do not include a task list here — Lane A owns task generation.
+2. Planner Handoff — solution-level handoff header with `Project SDD role: root`, `Solution ID: <SOLUTION_NAME_KEBAB>`, `Solution root SDD: <its own filename>`, and the canonical `Tasks file: <SOLUTION_NAME_KEBAB>-tasks.md` (the ONE tasks file every child also names), plus cross-project ordering notes (integrated components built before their consumers) for `plan` to consume. Position 2 keeps the header inside the first ~50 lines the Entry Guard reads — do not move it lower. Do not include a task list here — `plan` owns task generation.
 3. Project Inventory — the unified project list from Level 2.5 Part B
 4. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
 5. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
@@ -627,7 +627,7 @@ Emit this block as the Phase 1 summary content:
 **Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, <PRODUCT_2>, ...)>
 **Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
 **Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... | none>
-**Need profile:** <ONE_LINE_CORE_NEED_AND_TARGET_KPI — from sdd-generation-guide.md Step 3.5>
+**Need profile:** <ONE_LINE_CORE_NEED_AND_TARGET_KPI — from design-guide.md Step 3.5>
 **Reasoning:**
 - <NEED_FACTOR — determinism / input structure / integration surface / coordination shape / volume / risk / trigger> → <PRODUCT>
 - ...

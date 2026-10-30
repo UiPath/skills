@@ -20,7 +20,7 @@ The markdown SDD this skill writes is the **agent-first** artifact: implementati
 
 4. **Compute missing pieces.** For a template section with no direct SDD source, derive it from SDD data when present; when it needs information the SDD does not hold, write the literal marker `[SME REVIEW]` followed by what is needed, and add the item to a list the user must fill. Never fabricate.
 
-   > **Marker discipline (see SKILL.md Critical Rule 10).** `[SME REVIEW]` and `[DEFAULT]` are the only gap markers, written verbatim with nothing else inside the brackets — the note goes after the closing bracket (`[SME REVIEW] repository not recorded in the source SDD`). Do not invent a second vocabulary (`[PLACEHOLDER]`, `[TBD]`, `<fill in>`) and do not decorate the marker (`[SME REVIEW — …]`); both are invisible to the reviewer grepping the client document for open items. **Markers already in the source SDD copy through byte-for-byte** — this crosswalk relocates content, it never re-words a gap the SDD author recorded.
+   > **Marker discipline (see SKILL.md Critical Rule 6).** `[SME REVIEW]` and `[DEFAULT]` are the only gap markers, written verbatim with nothing else inside the brackets — the note goes after the closing bracket (`[SME REVIEW] repository not recorded in the source SDD`). Do not invent a second vocabulary (`[PLACEHOLDER]`, `[TBD]`, `<fill in>`) and do not decorate the marker (`[SME REVIEW — …]`); both are invisible to the reviewer grepping the client document for open items. **Markers already in the source SDD copy through byte-for-byte** — this crosswalk relocates content, it never re-words a gap the SDD author recorded.
 
 5. **Assemble** the matched + computed content into the template's section order, then convert:
 

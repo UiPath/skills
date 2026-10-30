@@ -1,0 +1,122 @@
+task_id: skill-planner-genome-from-sdd
+description: >
+  Smoke: the uipath-planner skill's Author lane writes the genome of a ready SDD it produced for a
+  sheet-to-web-client process worked by a pool of robots. The SDD proposes a dispatcher and a performer
+  over one queue; the genome describes them as one component whose Transactional Shape holds one flow
+  over a sheet row. Gates on the genome contract (core profile), on that Transactional Shape, on the
+  genome's `Designed in:` line naming the SDD, on the SDD's gaps reaching the genome as `*[Inferred]*`,
+  and on the SDD gaining its `Genome` handoff row while staying ready. The full format rules (strict
+  profile) are graded as an advisory criterion.
+tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# run_command goes through cmd.exe on Windows, so every check calls the skill's check-genome.py
+# through `python -c` and reads REFERENCE_DIR (the planner's scripts folder, which holds its copy of
+# the shared checker) from the environment. The genome's file name is the agent's choice: the checker
+# resolves "*-genome.md" itself.
+reference:
+  directory: ../../../../skills/uipath-planner/scripts
+
+initial_prompt: |
+  The SDD in `customer-address-sync-sdd.md` is ready. Write its genome beside it so
+  the build can start from it. Do not build anything yet.
+
+  Do not ask follow-up questions — take the defaults. Do not run any `uip` commands.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one component genome written"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'),
+      'tokens', '*-genome.md', '--files', '1', '--expect', 'UIPATH-AUTOMATION-GENOME: component']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Genome meets the core contract and describes one flow whose unit of work is a row"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'),
+      'component', '*-genome.md', '--profile', 'core', '--expect', 'uipath-rpa', 'Dynamics 365',
+      '--shape', 'transactional', '--flows', '1', '--unit', 'row']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome's Designed in line names the SDD it was authored from"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'),
+      'tokens', '*-genome.md', '--expect', 'Designed in:', 'customer-address-sync-sdd.md']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The SDD's open gaps reach the genome as inferred lines"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'),
+      'tokens', '*-genome.md', '--expect', '*[Inferred]*']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Business rules, schedule, assets and notification target come from the SDD"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'),
+      'tokens', '*-genome.md', '--min', '0.8', '--expect', 'postcode', '07:00', 'requester',
+      'customer number', 'CRM_Robot_Login']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The Author lane records the genome in the SDD's handoff and changes nothing else about it.
+  - type: run_command
+    description: "The SDD stays ready and gains its Genome handoff row"
+    command: >-
+      python -c "import sys; t = open('customer-address-sync-sdd.md', encoding='utf-8').read();
+      sys.exit(0 if '| **Status** | ready |' in t and '**Genome**' in t else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Writing a genome does not scaffold, build or run a project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(init|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: the genome meets every mechanical format rule (strict profile)"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'),
+      'component', '*-genome.md', '--profile', 'strict']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

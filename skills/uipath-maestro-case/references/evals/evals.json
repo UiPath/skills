@@ -41,7 +41,7 @@
     {
       "id": 4,
       "prompt": "I want to create a case management project",
-      "expected_output": "Skill triggers, shows the new-case roadmap, and hands the design to the uipath-planner Case Design Lane in the same conversation — no entry menu, no interview run by this skill",
+      "expected_output": "Skill triggers, shows the new-case roadmap, and hands the design to the uipath-planner case design path in the same conversation — no entry menu, no interview run by this skill",
       "expectations": [
         "The case-management skill was triggered",
         "Shows the journey-specific roadmap with the design prefix line before design work begins — user-facing language never mentions the handoff or skill mechanics",

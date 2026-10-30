@@ -1,0 +1,117 @@
+task_id: skill-planner-sdd-only-migration
+description: >
+  SDD-only design: the planner's Extract lane wrote an extracted genome of a legacy UiPath project
+  (`invoice-intake-genome.md`) bound to a Map of Work snapshot, its steps citing the Map's record ids;
+  the planner must design the migration SDD from it with no PDD. No Cartographer MCP is available, so
+  the genome's inferred lines stand in for the Map's open items. Grades the outcome: a planner SDD
+  whose handoff records the migration design input and the genome, the record ids cited where the
+  design uses them, the inferred exception carried as an `[SME REVIEW]` item, the genome left
+  unchanged, and nothing built. The equivalence testing strategy
+  (parallel run against the source) is graded as an advisory criterion.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 24
+  # Full Phase D authoring in one autonomous turn, as in pdd_to_sdd: raise both the task and the turn
+  # timeout so the experiment's 1200s default does not fire before the SDD lands.
+  task_timeout: 2700
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# REFERENCE_DIR is this task's folder: fixtures/ holds the untouched genome to compare against.
+reference:
+  directory: .
+
+initial_prompt: |
+  We extracted our legacy UiPath invoice intake robot into `invoice-intake-genome.md`; it is
+  bound to our Map of Work snapshot SNAP-INVOICE-INTAKE-001. Design the Solution Design
+  Document for migrating it like-for-like to UiPath Automation Cloud. There is no PDD.
+
+  Use Autonomous mode — do not pause for checkpoints. For any [SME REVIEW] items, use the
+  defaults and proceed. Save the SDD as `invoice-intake-sdd.md` in the current directory.
+  Only design it: do not change the genome, do not build anything, and do not run any
+  `uip` commands.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "The SDD was written"
+    path: "invoice-intake-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The SDD carries the planner handoff and records the migration design input"
+    path: "invoice-intake-sdd.md"
+    includes:
+      - "planner-handoff:v1"
+      - "Design input"
+      - "migration"
+      - "invoice-intake-genome.md"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The design cites the Map record ids it draws on"
+    path: "invoice-intake-sdd.md"
+    includes:
+      - "RULE-001"
+      - "RULE-002"
+      - "EXC-001"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The inferred exception is carried as an SME review item"
+    path: "invoice-intake-sdd.md"
+    includes:
+      - "[SME REVIEW]"
+      - "EXC-002"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The source's facts reach the design: the queue and the 25,000 limit"
+    path: "invoice-intake-sdd.md"
+    includes:
+      - "ERP_InvoicePosting"
+      - "25,000"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The extracted genome is left unchanged"
+    command: >-
+      python3 -c "import os, pathlib, sys; ref = pathlib.Path(os.environ['REFERENCE_DIR'], 'fixtures');
+      bad = [str(p.relative_to(ref)) for p in ref.rglob('*') if p.is_file() and (lambda t: not t.is_file()
+      or t.read_bytes() != p.read_bytes())(pathlib.Path(str(p.relative_to(ref)).removesuffix('.fixture')))];
+      print('changed or missing:', bad) if bad else print('OK: unchanged'); sys.exit(1 if bad else 0)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Designing does not build, run or deploy anything"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa|solution|maestro|api-workflow)\s'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: the testing strategy is equivalence — a parallel or shadow run against the source"
+    command: "grep -Eqi 'parallel run|shadow' invoice-intake-sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

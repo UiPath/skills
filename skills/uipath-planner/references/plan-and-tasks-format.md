@@ -213,7 +213,7 @@ The planner emits live tasks that mirror the file. Mapping rules:
 | `Blocked by:` | `addBlockedBy` (after all tasks are created) |
 | `Completed:` | `metadata.completed_by`, `metadata.completed_date` |
 
-**Rule G-8 applies (defined in [sdd-generation-guide.md](sdd-generation-guide.md) Phase 1 Step 0.5):** if any TaskCreate or TaskUpdate fails, log a single warning, continue without live tasks, and do not retry. The markdown plan / tasks file is the authoritative deliverable.
+**Rule G-8 applies (defined in [design-guide.md](design-guide.md) Phase 1 Step 0.5):** if any TaskCreate or TaskUpdate fails, log a single warning, continue without live tasks, and do not retry. The markdown plan / tasks file is the authoritative deliverable.
 
 ## Plan-mode integration
 
