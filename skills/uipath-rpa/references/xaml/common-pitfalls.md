@@ -45,7 +45,6 @@ Setting both properties in these pairs causes a **validation error**:
 |-----------|-----------|----------|
 | `Password` | `SecurePassword` | ExcelApplicationScope, PDF, Mail activities |
 | `EditPassword` | `SecureEditPassword` | ExcelApplicationScope |
-| `SimulateClick` | `SendWindowMessages` | Click, ExtractData (UIAutomation) |
 
 Only set one from each pair, never both.
 
@@ -106,11 +105,9 @@ Some properties are only required when another property has a specific value:
 
 ## Input Method Constraints (UIAutomation)
 
-- `SimulateClick` cannot be used with `ClickType=Double` or `MouseButton=Right/Middle` — validation error
-- `TypeInto` with `SimulateType=True` **cannot use special keys** (Ctrl, Alt, Shift, etc.) — validation error via `SpecialKeyHelper.IsSpecialKeyUsed()`
-- `SimulateClick=True` AND `SendWindowMessages=True` is always invalid — pick one or neither
-- Input method resolution: `SendWindowMessages` → WINDOW_MESSAGES; else `SimulateClick` → API; else → HARDWARE_EVENTS (physical)
-- These are validated both at design-time (CacheMetadata) and runtime
+- Set the input method with `InteractionMode`: `NInteractionMode` on `NApplicationCard`, `NChildInteractionMode` on child activities (default `SameAsCard`).
+- Type Into's `Text` can hold special-key codes (`[k(enter)]` presses Enter; `[d(ctrl)]a[u(ctrl)]` is Ctrl+A). With `Simulate` they are not pressed but typed as literal text, and no error is raised; use `HardwareEvents` or `DebuggerApi` when `Text` holds special keys.
+- Choosing a method: `DebuggerApi` for Chrome and Edge; `Simulate` for Firefox, Java and SAP GUI, and as the first try for other apps (verify the result, its failures are silent); `HardwareEvents` when `Simulate` has no effect or the target needs real key events (the window must be in the foreground); `WindowMessages` (Windows only) when `Simulate` has no effect and the window must stay in the background. If the installed package ships `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/input-methods-guide.md`, it has the full switch triggers.
 
 ## NKeyboardShortcuts: `Shortcuts` vs `ShortcutsArgument`
 
@@ -504,8 +501,8 @@ Skipping both produces `Cannot create unknown type` at `build`.
 | ExcelApplicationScope | `CreateNewFile` | `True` | Creates file if it doesn't exist |
 | Click | `ClickType` | `Single` | Single click (not double) |
 | Click | `MouseButton` | `Left` | Left mouse button |
-| Click | `AlterIfDisabled` | `True` | Alters element even if disabled (legacy compat) |
-| UI Automation activities | `Timeout` | `30` seconds, a double (Check App State: `5`) | How long to wait for the target before failing |
+| Click | `AlterIfDisabled` | `False` | When selected, the activity executes the action even if the target element is disabled. Does not apply if the input mode is Hardware Events |
+| UI Automation activities | `Timeout` | `30` seconds, a double (Check App State: `5`) | The amount of time (in seconds) to wait for the operation to be performed before generating an error. Check App State: the time to wait for the element to appear or disappear |
 | UI Automation activities | `DelayBefore` | `0.2` seconds | Delay before action |
 | UI Automation activities | `DelayAfter` | `0.3` seconds | Delay after action; classic activities' millisecond values: [legacy/selector-guide.md](../legacy/selector-guide.md) |
 | ExtractData | `DelayBetweenPagesMS` | `300`ms | Between pagination clicks |
