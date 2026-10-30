@@ -17,7 +17,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](genome-format-gui
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide, [genome-format-guide.md](genome-format-guide.md), [extracted-genome-guide.md](extracted-genome-guide.md) and [skill-mapping-guide.md](skill-mapping-guide.md) whole; the template of the level chosen; the extracted example [salesforce-accounts-and-contacts-genome.md](../assets/examples/salesforce-accounts-and-contacts-genome.md) by its § Source Map only, to calibrate the step table; [source-frameworks-guide.md](source-frameworks-guide.md) and the source guide it names |
+| start | — | this guide, [genome-format-guide.md](genome-format-guide.md), [extracted-genome-guide.md](extracted-genome-guide.md) and [skill-mapping-guide.md](skill-mapping-guide.md) whole; the template of the level chosen; [source-frameworks-guide.md](source-frameworks-guide.md) and the source guide it names |
 | from the inventory on | the inventory or a signal shows per-item work: queue items fetched or added, a loop over rows, files or mails with a per-item catch, a work list read, a framework state machine | [transactional-shape-guide.md](transactional-shape-guide.md), in the turn after the first such signal |
 | the sizing plan is stated | the extraction runs in parts | [parts-guide.md](parts-guide.md) and [extraction-parts-guide.md](extraction-parts-guide.md) |
 | the first suspected source defect | — | [defect-verification-guide.md](defect-verification-guide.md) |

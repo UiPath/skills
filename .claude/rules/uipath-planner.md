@@ -25,7 +25,8 @@ Governs editing `skills/uipath-planner/`; it lives here, not in the skill folder
 1. **A new verb** gets a row in `SKILL.md` § Verbs, a line in § Choosing the Verb, its edges in § Chaining, an entry guide with § Verb Rules and § Read Plan, and a row here.
 2. **A rule every verb obeys** goes in `SKILL.md` § Critical Rules; **a rule one verb obeys** goes in that verb guide's § Verb Rules; **a rule every genome write obeys** goes in `genome-format-guide.md` § Writing Rules. Never state one in two of these.
 3. **Scripts are Node** (`node`, built-ins only, Node >= 20): users install the skills through the Node-based `uip` CLI, so `node` is present where `python3`, `bash` or `pwsh` may not be. Repository tests and graders may stay Python.
-4. **The genome owners own** the genome verbs (`author`, `extract`, `edit`), their guides, the genome core, the checker and the genome tests, and `uipath-genome-builder`; the planner owners own `design`, `plan`, `decompose` and their guides (`CODEOWNERS`).
+4. **The skill ships genome templates, never worked examples.** The known-good genomes live with the tests (`tests/tasks/uipath-planner/_shared/genome-examples/`), where every one must pass the strict profile. An A/B eval on 2026-10-30 (`author_component`, `extract_component`, `genome_from_sdd`, 3 repeats each) showed the same pass rate on every criterion without them; `author` used about 15% more tokens. Put an example back in the skill only with an eval showing it fixes a regression.
+5. **The genome owners own** the genome verbs (`author`, `extract`, `edit`), their guides, the genome core, the checker and the genome tests, and `uipath-genome-builder`; the planner owners own `design`, `plan`, `decompose` and their guides (`CODEOWNERS`).
 
 ## Genome core — shared with `uipath-genome-builder`
 

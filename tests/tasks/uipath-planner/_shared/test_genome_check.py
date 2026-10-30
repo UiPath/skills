@@ -58,7 +58,7 @@ class genome_check:
         return json.loads(node("skills").stdout)
 
 
-EXAMPLES = REPO / "skills" / "uipath-planner" / "assets" / "examples"
+EXAMPLES = HERE / "genome-examples"  # known-good genomes, kept with the tests; the skill ships the templates only
 MAPPING_GUIDE = REPO / "skills" / "uipath-planner" / "references" / "skill-mapping-guide.md"
 COMPONENT_EXAMPLE = EXAMPLES / "purchase-requisition-entry-genome.md"  # transactional, two units of work
 PROCESS_EXAMPLE = EXAMPLES / "invoice-processing-genome.md"

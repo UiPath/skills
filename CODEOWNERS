@@ -134,7 +134,7 @@
 /skills/uipath-planner/references/uipath-source-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/assets/templates/component-genome-template.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/assets/templates/process-genome-template.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
-/skills/uipath-planner/assets/examples/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/genome-examples/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/scripts/check-genome.mjs @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /.claude/rules/uipath-planner.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria @roberts-cliff
 /.claude/rules/uipath-genome-builder.md @danmunteanu1 @vlad-coteanu-uipath

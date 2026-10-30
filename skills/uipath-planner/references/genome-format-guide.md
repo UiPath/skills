@@ -1,6 +1,6 @@
 # Genome Format Guide
 
-Content rules for every genome, however produced — `uipath-planner`'s `author`, `extract` and `edit` write genomes; `uipath-genome-builder`'s `build` builds them. Both skills ship this guide byte-identical. Templates (`component-genome-template.md`, `process-genome-template.md`) live in `assets/templates/`; worked examples, each passing the checker, in `uipath-planner`'s `assets/examples/`.
+Content rules for every genome, however produced — `uipath-planner`'s `author`, `extract` and `edit` write genomes; `uipath-genome-builder`'s `build` builds them. Both skills ship this guide byte-identical. Templates (`component-genome-template.md`, `process-genome-template.md`) live in `assets/templates/`.
 
 ## Writing Rules
 

@@ -16,7 +16,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](genome-format-gui
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide, [genome-format-guide.md](genome-format-guide.md) and [skill-mapping-guide.md](skill-mapping-guide.md) whole; the template of the level chosen ([component](../assets/templates/component-genome-template.md), [process](../assets/templates/process-genome-template.md)); one example to calibrate depth — for a process genome [invoice-processing-genome.md](../assets/examples/invoice-processing-genome.md), for a component [classify-document-and-create-validation-genome.md](../assets/examples/classify-document-and-create-validation-genome.md), or [purchase-requisition-entry-genome.md](../assets/examples/purchase-requisition-entry-genome.md) when the description iterates over items |
+| start | — | this guide, [genome-format-guide.md](genome-format-guide.md) and [skill-mapping-guide.md](skill-mapping-guide.md) whole; the template of the level chosen ([component](../assets/templates/component-genome-template.md), [process](../assets/templates/process-genome-template.md)) |
 | products are selected | — | the [product-selection-guide.md](product-selection-guide.md) sections Step 5 names; [platform-availability-guide.md](platform-availability-guide.md) |
 | the input is a PDD | — | [pdd-analysis-guide.md](pdd-analysis-guide.md) by section — every section except § Accepted process-knowledge sources and § Gap Detection Checklist; the genome's gaps follow genome-format-guide.md |
 | the unit of work is assessed | the description iterates over items | [transactional-shape-guide.md](transactional-shape-guide.md) |
@@ -48,7 +48,7 @@ Accept anything from one sentence to several pages. Do not ask the user to elabo
    - input source (item 3)
    - what it exercises: products and skills
 
-   Cover different shapes of [skill-mapping-guide.md § Common Combinations](skill-mapping-guide.md) where the answers allow — one skill on one application, no UI application, several skills across applications — so the pick sets the scope while complexity is still inferred (Step 3). Invent the storyline for the answers: the combinations and [assets/examples/](../assets/examples/) give shapes and depth, not stories. Present the cards as one single-select `AskUserQuestion`, each card in its option's preview; the user merges or amends cards through Other.
+   Cover different shapes of [skill-mapping-guide.md § Common Combinations](skill-mapping-guide.md) where the answers allow — one skill on one application, no UI application, several skills across applications — so the pick sets the scope while complexity is still inferred (Step 3). Invent the storyline for the answers: the combinations give shapes, the templates the depth, not stories. Present the cards as one single-select `AskUserQuestion`, each card in its option's preview; the user merges or amends cards through Other.
 3. **An invented scenario names where its input comes from:** a public source, sample files the build writes as data files, or a generator component in the Components table. A described process brings its inputs; an invented one has none until the scenario gives them. The genome names the source in Target Applications (Actors and Systems in a process genome), and the acceptance criteria take their inputs from it.
 4. **The pick is the description.** Continue at Step 2 with the chosen, merged or amended card. A prototype or workshop has no sign-off, so it gets no SDD.
 
