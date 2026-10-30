@@ -10,10 +10,10 @@ Signature: `.loop(name, collection, bodyFn, options?)`.
     'return { id: $vars.eachOrder.currentItem.id };' })))
 ```
 
-The SDK does not expose mutation of a Flow variable on each iteration. Keep
-per-item dispatch and decisions in the body. If work after the loop needs a
-summary, compute it from data already available outside the loop or use a
-dedicated step whose contract supplies that aggregate.
+Keep per-item dispatch and decisions in the body. A value the steps after the
+loop need is written to a `.var()` from a body step with `{ updates }`, as the
+`scan` example in [Loop options](#loop-options) shows; a parallel loop hands its
+results over differently (`parallel: true` there).
 
 Use a one-armed branch to skip the rest of one iteration without terminating
 the run. When the condition is false, that iteration completes and the loop
@@ -58,23 +58,56 @@ Every `.loop()` emits `core.logic.loop` 2.4: the body reads
 `$vars.<loop>.currentItem` and `$vars.<loop>.currentIteration` (not the legacy
 1.0.0 `currentIndex`, which `check` refuses). Options: `parallel: true`,
 `completionCondition` (checked after each iteration, stops early), and
-`body.break()` exits the whole loop from inside an arm. The option details and
-examples are below.
+`body.break()` exits the whole loop from inside an arm; `body.continue()` goes
+on to the next item, from an arm or an `.onError()` handler. The option details
+and examples are below.
 
 ## Loop options
 
 Every `.loop()` emits the loop's 2.4 definition (inner `start`/`continue`/`break`
 handles), the version the registry serves and the designer authors. The legacy
 1.0.0 shape (body from `output`, back-edge into `loopBack`, `currentIndex`) is
-emitted only for an explicit `{ version: '1.0.0' }`, which accepts none of the
-options below.
+emitted only for an explicit `{ version: '1.0.0' }`. On 1.0.0, `body.continue()`
+works; `completionCondition`, `breakEnabled` and `body.break()` fail `check` with
+`LOOP_VERSION_UNSUPPORTED`. `parallel: true` compiles on 1.0.0 only to
+round-trip a canvas 1.0.0 loop, and `check` warns `LOOP_PARALLEL_LEGACY`: that
+version is not confirmed to run iterations in parallel. For a new parallel loop,
+drop `version` (2.4).
 
 - `parallel: true` — run iterations concurrently instead of sequentially.
+  Concurrent iterations' `{ updates }` writes overwrite each other, so a `.var()`
+  they all update keeps only some of the writes, in no fixed order. Read the
+  results after the loop from `$vars.<loop>.output` instead: one entry per item,
+  in collection order, each `{ <bodyStep>: { output } }`.
 - `completionCondition` — an expression checked after each iteration; the loop
   stops early when it is true.
 - `body.break()` — exit the whole loop from inside an arm. Terminal on its
   path, like `.terminate()` but scoped to the loop; using it shows the loop's
   break handle automatically (`breakEnabled`).
+- `body.continue()` — go on to the next iteration from inside an arm or an
+  `.onError()` handler, through the loop's continue handle. Terminal on its
+  path. A handler inside the body otherwise ends the whole run on an End of
+  its own, so "log the failure and skip this item" needs it. Do not write
+  `.stepToRef('<the loop>')` for this: that enters the loop from its outer
+  input and restarts it, and `check` refuses it (`REF_TO_OWN_LOOP`). Works on
+  a 1.0.0 loop too (via `loopBack`).
+  Needs `@uipath/maestro-builder-sdk`
+  6.20.0 or later; an older SDK fails with `continue is not a function`,
+<!--skill-flavor:continue-sdk-upgrade:start-->
+  so
+  upgrade the copy `uip` uses:
+  `npm install -g @uipath/maestro-builder-sdk@latest`, or
+  `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a
+  workspace copy.
+<!--skill-flavor:continue-sdk-upgrade:end-->
+
+```ts
+.loop('each', input('items'), (body) => body
+  .step('call', http({ url: 'https://api.example.test/items', method: 'POST', managed: true }))
+  .onError((h) => h
+    .step('logFailure', script({ code: 'return "logged";' }))
+    .continue()))
+```
 
 ```ts
 .var('found', types.string, '')
@@ -94,8 +127,9 @@ Run a body, then repeat **while a condition is true** — checked AFTER each
 pass, so the body always runs at least once (`core.logic.dowhile`). The
 container publishes no data output: write results to a `.var()` from inside
 the body with `{ updates }`. `limit` caps iterations (1–10,000; blank means
-the platform default of 10,000), and `body.break()` works exactly as in
-`.loop()`.
+the platform default of 10,000), and `body.break()` and `body.continue()`
+work exactly as in `.loop()`. A body step's failure can route to `.onError()`
+after the `.doWhile(...)`, as with `.loop()` ([error-handling.md](error-handling.md)).
 
 Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
 

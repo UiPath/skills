@@ -27,3 +27,23 @@ If `publish` fails, print the CLI error verbatim, note it in `build-issues.md`, 
 <!--skill-flavor:phase-seven-next-steps:start-->
 Before the prompt: `Suggested next steps: publish to Orchestrator when you want the case on the tenant solution feed, or stop here if Studio Web and debug are enough.` After a successful publish: `Suggested next steps: check the publish result in Studio Web's Publish history, then deploy it to an Orchestrator folder from Orchestrator.` On `Done`: `Suggested next steps: review the case plan in Studio Web, or update sdd.md and re-run when you want changes.`
 <!--skill-flavor:phase-seven-next-steps:end-->
+
+<!--skill-flavor:phase-table-six-row:start-->
+| **6 — Debug** | Optional debug run through the host (real execution: emails, API calls, etc.) | Run status, logs, and trace printed | `Run debug session` / `Continue to publish`; a re-publish after a fix is confirmed separately |
+<!--skill-flavor:phase-table-six-row:end-->
+
+<!--skill-flavor:phase-six-run-option:start-->
+- `Run debug session`: run `uip maestro case debug "<ProjectName>"`. It waits for a terminal state.
+<!--skill-flavor:phase-six-run-option:end-->
+
+<!--skill-flavor:phase-six-requirements:start-->
+The host runs the project saved in the open solution: no login, upload, or project path. Output is plain text: status, `Trace ID` when one was found, run logs, execution trace. Exit 1 means `Faulted` or `Failed`. `TimedOut after <N>s` also exits 1, but the run is still going in the host and the timeout does not stop it: do not troubleshoot it, and do not re-run it. Tell the user to follow the run in Studio Web. Run debug again only after a fresh AskUserQuestion that says it executes the case again, possibly while the first run is still going.
+<!--skill-flavor:phase-six-requirements:end-->
+
+<!--skill-flavor:phase-six-refresh-note:start-->
+- Run no `uip solution resources refresh` before debug, even where Rule 15 or an edit recipe says to: the host keeps solution resources in sync.
+<!--skill-flavor:phase-six-refresh-note:end-->
+
+<!--skill-flavor:phase-six-inline-siblings:start-->
+- **Inline-built siblings (agent, api-workflow, business-rule) are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found"; agent and api-workflow) or `300400` ("the job carries no debug session properties"; business rule) by design. Verifying that task's runtime needs a full solution deploy (`uip solution publish` → `uip solution deploy run`; Studio Web packages the solution, so no `case pack` or `solution pack`) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline) / [business-rule/planning.md § Creating a business rule inline](plugins/tasks/business-rule/planning.md#creating-a-business-rule-inline).
+<!--skill-flavor:phase-six-inline-siblings:end-->

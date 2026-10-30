@@ -29,16 +29,16 @@ read a scalar return with `out('parse')`.
 
 Run inline JavaScript for computation that is not a first-class Flow node.
 
-Signature: `script({ code: string })`; read the result with `out(step, path?)`.
+Signature: `script({ code: string })`, or `script(fn, { returns })` for [a function](#writing-the-script-as-a-function); read the result with `out(step, path?)`.
 
 Use a first-class action when the scenario names one; use script for computation.
 
 ## What the step publishes
 
-The node's own definition can only say `output: {type: 'object'}` — a node TYPE
-cannot know what a particular body returns — so the designer would type every
-script read as `Record<string, any>` and reject mapping one into a `string` flow
-output. The compiler therefore reads the body and declares what it plainly
+The node's own definition can only declare a generic output (`object` on
+1.0.0, `any` on 1.1) — a node TYPE cannot know what a particular body returns —
+so the designer would type every script read as `Record<string, any>` and
+reject mapping one into a `string` flow output. The compiler therefore reads the body and declares what it plainly
 returns, so this needs nothing from you:
 
 ```ts
@@ -59,5 +59,52 @@ call — declares nothing, which is where `returns` comes in:
 ```
 
 `returns` always wins over the body, and takes either a type
-(`'string' | 'number' | 'boolean' | 'object' | 'array'`) or, to name the fields
+(`'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'`) or, to name the fields
 of an object return, a map — `returns: { total: 'number', currency: 'string' }`.
+`'any'` is valid only as the top-level `returns` of a `script@1.1` step — not
+on 1.0.0 and never as a field type (`check` reports `SCRIPT_RETURNS_UNKNOWN_TYPE`).
+It keeps the output untyped even when the body plainly returns one type.
+
+## Writing the script as a function
+
+A body longer than a line is easier to get right as a TypeScript function: pass the function instead of a string, and the editor and tsc check the body like the rest of the `.flow.ts`.
+
+```ts
+import { script, type FlowVars } from '@uipath/maestro-builder-sdk';
+
+// … flow(…) chain
+  .step('normalize', script(normalize, { returns: { amount: 'number', valid: 'boolean' } }))
+
+function normalize(vars: FlowVars) {
+  const amount = Number(vars.start.output.amount);
+  return { amount, valid: Number.isFinite(amount) };
+}
+```
+
+- The function is never called. Its body, exactly as written, becomes the script, and its parameter is renamed to the runtime's `$vars`. Name the parameter `$vars` and nothing is renamed.
+- Read the parameter only with dots (`vars.start.output.amount`). A destructured parameter, an alias (`const v = vars`), `vars['start']`, `vars?.start`, or passing `vars` to a helper is refused, because a step read hidden that way is invisible to `check`.
+<!--skill-flavor:script-function-returns-check:start-->
+- `returns` is what the `.flow` declares, and its type is checked against the function's return: `returns: { amount: 'string' }` over the function above is a type error. `compile` does not type-check, so the error shows only where tsc runs: with a workspace copy (`npm install --save-dev @uipath/maestro-builder-sdk typescript`), `npx tsc --noEmit --strict --module nodenext --moduleResolution nodenext --skipLibCheck <file>.flow.ts` reports it. With only the global SDK copy nothing checks it, so match the `returns` fields to what the function returns by hand. Without `returns`, the body's type is inferred as for a string body.
+<!--skill-flavor:script-function-returns-check:end-->
+- The function reads only what [the runtime](#the-javascript-runtime) has. A value from outside the function is refused: a module constant or an import throws when the flow loads (`script(normalize) cannot be a script: it reads LIMIT, …`), and so does a module helper named like a runtime global (`parseInt`), which `compile` and `check` refuse. Move the value inside the function, or declare it with `.var()` and read `vars.<name>`. Pass the function to `script()` by name or inline, from a `.ts` file: `compile` and `check` refuse any other shape (`script(h.check)`, a wrapper around `script`), because they cannot check what it reads.
+- Also refused, with a message naming the function: `async`, generators, more than one parameter, a default or rest parameter, `this` or `arguments` outside a nested function, a reference to the function's own name, and a `var` or function declaration that reuses the parameter's name.
+
+<!--skill-flavor:script-function-sdk-version:start-->
+The function form needs `@uipath/maestro-builder-sdk` 6.57.0 or later: check that `dist/api-index.md` of the SDK copy in use lists `ScriptValue`. An older SDK fails on a function with `compile: Cannot read properties of undefined (reading 'matchAll')`. Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy (it is used before the global one), else `npm install -g @uipath/maestro-builder-sdk@latest`; or write `script({ code })`.
+<!--skill-flavor:script-function-sdk-version:end-->
+
+## The JavaScript runtime
+
+A script gets modern syntax (`?.`, `??`, arrow functions), the
+language's built-in objects and `console`, and nothing more. `require`,
+`fetch`, Luxon's `DateTime`, moment, lodash, `Intl`, `URL`, `TextEncoder`,
+`Buffer` and `structuredClone` all read `undefined` in a real run. A body ported
+from a runtime that has them (a Node.js script, a low-code platform's code step)
+is rewritten without them. `toLocaleDateString` returns the long English form
+whatever locale and options it is given, so build a formatted date from its
+`getUTC…` parts.
+
+`flow validate` types scripts against the ES2020 library, so it warns
+`EXPRESSION_DIAGNOSTIC` on later members such as `replaceAll`, which the run
+executes. Write `replace` with a global regular expression
+(`s.replace(/-/g, '+')`) instead.

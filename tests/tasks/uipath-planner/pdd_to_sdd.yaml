@@ -17,7 +17,7 @@ run_limits:
   turn_timeout: 1800
 
 initial_prompt: |
-  Analyze the following Process Design Document and generate a Solution Design
+  Analyze the following Process Definition Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.
 
   For any [SME REVIEW] items, use the defaults and proceed.
@@ -32,7 +32,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Invoice Data Entry
+  # Process Definition Document: Invoice Data Entry
 
   ## Process Overview
   - **Process Name:** Invoice Data Entry

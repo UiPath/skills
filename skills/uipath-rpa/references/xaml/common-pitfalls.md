@@ -347,7 +347,7 @@ Or omit `Default` entirely if the variable is assigned before its first read.
 
 ## InvokeCode Code Property — Attribute Form Only
 
-Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs, and a VB body fails to compile with `BC30205: End of statement expected. At line 0`. `validate` and `build` do not compile the Invoke Code body, so both pass either way; a body that does not compile fails only when the activity runs, with `Code: No compiled code to run` and the compiler errors. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
+Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs, and a VB body fails to compile with `BC30205: End of statement expected. At line 0`. A body that no longer compiles fails with the compiler's errors, at `validate` and `build` or at the latest when the activity runs (`No compiled code to run`); one that still compiles with a changed meaning, as the swallowed C# statements do, passes both and misbehaves only when it runs. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
 
 **Correct:**
 ```xml
@@ -374,7 +374,7 @@ The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLang
 Could not load <FILE> file: 'Failed to create a 'Language' from the text 'VisualBasic'.'
 ```
 
-Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails when the activity runs, with VB errors:
+Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails with VB errors, at `validate` or at the latest when the activity runs:
 ```
 error BC30800: Method arguments must be enclosed in parentheses.
 error BC30037: Character is not valid.
@@ -398,6 +398,7 @@ XAML expressions (C# or VB) use the types a project's coded source files (`.cs`)
 
 - **Import and reference:** add `<x:String><Namespace></x:String>` to `TextExpression.NamespacesForImplementation` and `<AssemblyReference><ProjectName>.Core</AssemblyReference>` to `TextExpression.ReferencesForImplementation`, plus `System.Collections` ([§ Assembly References Studio Requires and the CLI Does Not Check](#assembly-references-studio-requires-and-the-cli-does-not-check)).
 - **Type argument:** a variable or argument of the type also needs a root prefix `xmlns:local="clr-namespace:<Namespace>;assembly=<ProjectName>.Core"`, then `x:TypeArguments="local:<Type>"`.
+- **Global variables** cannot take a type the coded source files define; type the global `Dictionary(String, Object)` or `Object` and cast where it is read.
 - **Static `void` method:** an expression must return a value, so a `void` helper is called with Invoke Method — `TargetType` names the class through the same prefix, and one positional `InArgument` child per parameter follows in declaration order:
 
   ```xml
@@ -427,11 +428,7 @@ The project's Studio host compiles the coded files when it loads the project, so
 
 ## CopyFolderX Copies Into `To`, Not As `To`
 
-`CopyFolderX` places the source folder inside `To`: copying folder `case1` with `To` set to folder `done` produces a `case1` folder inside `done`. `To` must already exist; otherwise the activity fails with `Source or destination folder missing.` The package doc's example reads like a copy to a new path. Pass the parent folder as `To`.
-
-## DeleteFileX Raises on a Missing File
-
-`DeleteFileX` raises `The file was not found at the provided path.` when the file is absent, although its package doc says it does not. Where the file may be missing, check it with Path Exists first.
+`CopyFolderX` places the source folder inside `To`: copying folder `case1` with `To` set to folder `done` produces a `case1` folder inside `done`. `To` must already exist; otherwise the activity fails with `Source or destination folder missing.` Pass the parent folder as `To`.
 
 ## `Chr()` / `Asc()` Break at Runtime in Modern Projects — Use `ChrW()` / `AscW()`
 
@@ -493,7 +490,7 @@ To launch a local executable (`.exe`/`.cmd`/`.bat`), use `ui:StartProcess` (prop
 
 Before writing any `<prefix:Tag>` not already in the file:
 
-- **Doc check.** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md`, or `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. No file → no such tag.
+- **Doc check.** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md`, or `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. A missing file does not prove a missing tag: an activity can ship without a per-activity doc, so the CLI lookup decides.
 - **CLI lookup.** `uip rpa activities find --query "<verb>" --output json` → use the returned `ClassName`.
 
 Skipping both produces `Cannot create unknown type` at `build`.
@@ -508,9 +505,9 @@ Skipping both produces `Cannot create unknown type` at `build`.
 | Click | `ClickType` | `Single` | Single click (not double) |
 | Click | `MouseButton` | `Left` | Left mouse button |
 | Click | `AlterIfDisabled` | `True` | Alters element even if disabled (legacy compat) |
-| All UIAutomation activities | `TimeoutMS` | `30000` (30s) | How long to wait for element before timeout |
-| UIAutomation | `DelayBefore` | `200`ms | Delay before action |
-| UIAutomation | `DelayAfter` | `300`ms | Delay after action |
+| UI Automation activities | `Timeout` | `30` seconds, a double (Check App State: `5`) | How long to wait for the target before failing |
+| UI Automation activities | `DelayBefore` | `0.2` seconds | Delay before action |
+| UI Automation activities | `DelayAfter` | `0.3` seconds | Delay after action; classic activities' millisecond values: [legacy/selector-guide.md](../legacy/selector-guide.md) |
 | ExtractData | `DelayBetweenPagesMS` | `300`ms | Between pagination clicks |
 | HTTP Request | `Timeout` | `10000` (10s) | Request timeout |
 | HTTP Request | `ContinueOnError` | `True` | Failures don't stop execution (unusual default) |

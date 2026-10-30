@@ -22,6 +22,7 @@ sandbox:
       mount_point: _setup
 run_limits:
   turn_timeout: 1200
+  task_timeout: 2100
 
 reference:
   directory: ../..

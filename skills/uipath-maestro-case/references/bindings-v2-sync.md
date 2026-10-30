@@ -42,11 +42,11 @@ It reads the root `bindings[]`, groups entries by `resourceKey`, and writes `bin
     "name": { "defaultValue": "<name binding default>" },
     "folderPath": { "defaultValue": "<folderPath binding default>" }
   },
-  "metadata": { "subType": "<resourceSubType — omit metadata key if none>" }
+  "metadata": { "BindingsVersion": "2.2", "subType": "<resourceSubType — omit if none>" }
 }
 ```
 
-> **Inline-built sibling exception (agent / api-workflow) — the one case where the shape's `<folderPath binding default>` placeholder does NOT take the caseplan default.** `value.folderPath.defaultValue` is **`"solution_folder"`** (resource identity), NOT the caseplan `folderPath` binding `default` (which is `""` for an inline sibling). `bindings_v2.json` keeps the `solution_folder` sentinel while the caseplan runtime `folderPath` stays `""` — they are intentionally decoupled. `value.name.defaultValue` and `metadata.subType` (`"Agent"` / `"Api"` per kind) follow the caseplan binding as usual. Full rationale: the inline-built-sibling decoupling blockquote later in this file.
+> **Inline-built sibling exception (agent / api-workflow / business-rule) — the one case where the shape's `<folderPath binding default>` placeholder does NOT take the caseplan default.** `value.folderPath.defaultValue` is **`"solution_folder"`** (resource identity), NOT the caseplan `folderPath` binding `default` (which is `""` for an inline sibling). `bindings_v2.json` keeps the `solution_folder` sentinel while the caseplan runtime `folderPath` stays `""` — they are intentionally decoupled. `value.name.defaultValue` and `metadata.subType` (`"Agent"` / `"Api"` per kind; omitted for a business rule) follow the caseplan binding as usual. Full rationale: the inline-built-sibling decoupling blockquote later in this file.
 
 ### Connector resource entry
 
@@ -131,7 +131,7 @@ All three required for `uip solution upload` and `uip maestro case debug` to wor
 
 > **`refresh` never removes.** See [§ Prune orphaned solution resources](#prune-orphaned-solution-resources).
 
-> **Inline-built siblings (agent / api-workflow) — `bindings_v2` identity and the caseplan runtime `folderPath` are DECOUPLED.** This is the one case where `bindings_v2.json` does NOT mirror the caseplan binding's `folderPath`. Keep the **resource identity** at the `solution_folder` sentinel everywhere it belongs — `bindings_v2.json` `key` (`"solution_folder.<name>"`) and `value.folderPath.defaultValue` (`"solution_folder"`), plus the caseplan `resourceKey` and the `resources/solution_folder/…` path. **BUT the caseplan task's `folderPath` binding `default` MUST be `""`** (co-located runtime folder), NOT the sentinel — `"solution_folder"` there fails at invocation with `folder not exist`. Prerequisite for deploy/debug: the sibling registered in the `.uipx`. Full rationale (deploy provisioning, runtime invocation): [create-inline-common.md § Step 3](plugins/tasks/create-inline-common.md#step-3--binding-invariants); per-type debug behavior in each type's § Step 3.
+> **Inline-built siblings (agent / api-workflow / business-rule) — `bindings_v2` identity and the caseplan runtime `folderPath` are DECOUPLED.** This is the one case where `bindings_v2.json` does NOT mirror the caseplan binding's `folderPath`. Keep the **resource identity** at the `solution_folder` sentinel everywhere it belongs — `bindings_v2.json` `key` (`"solution_folder.<name>"`) and `value.folderPath.defaultValue` (`"solution_folder"`), plus the caseplan `resourceKey` and the `resources/solution_folder/…` path. **BUT the caseplan task's `folderPath` binding `default` MUST be `""`** (co-located runtime folder), NOT the sentinel — `"solution_folder"` there fails at invocation with `folder not exist`. Prerequisite for deploy/debug: the sibling registered in the `.uipx`. Full rationale (deploy provisioning, runtime invocation): [create-inline-common.md § Step 3](plugins/tasks/create-inline-common.md#step-3--binding-invariants); per-type debug behavior in each type's § Step 3.
 
 ---
 

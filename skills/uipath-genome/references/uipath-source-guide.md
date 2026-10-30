@@ -1,25 +1,37 @@
 # UiPath Source Guide
 
-Read § Reading the Project through § Component Detection, § Call Graph Rules, § Platform Resources, § Provenance and § Framework Pitfalls in full. Read a § Signals section only for artifact types present in the inventory.
+Read § Reading the Project through § Component Detection, § Call Graph Rules, § Platform Resources, § Deployed State, § Provenance and § Framework Pitfalls in full. Read a § Signals section only for artifact types present in the inventory.
 
 ## Reading the Project
 
-A UiPath project is its own raw form. No inventory script renders it: extraction reads the files, and a suspected source defect is verified in one pass — the cited workflow re-read in full with its disabled activities, both directions of its argument bindings and the workflow it invokes ([extraction-guide.md](extraction-guide.md) Step 4b). Read in this order:
+A UiPath project is its own raw form. No inventory script renders it: extraction reads the files, and a suspected source defect is verified in one pass — the cited workflow re-read in full with its disabled activities, both directions of its argument bindings and the workflow it invokes ([defect-verification-guide.md](defect-verification-guide.md)). Read in this order:
 
 1. **Manifest** — `project.json` (fields: § Signals — XAML; test registrations: § Signals — Test projects), or the solution's `.uipx` (§ Detection) and each project's manifest.
 2. **Inventory** with Glob per § Inventory and Exclusions — files per folder and per artifact type, the counts § Provenance names.
 3. **Project activity defaults** in `.settings/` (§ Signals — Project settings), before any workflow: they decide every property a workflow leaves unset.
-4. **Every workflow in full** — `.xaml`, `.cs` with its `.cs.json`. Designer data fills up to half of an older project's XAML. A large corpus may be read through this filter, which drops view state, namespace and assembly lists and layout sizes only, keeping every activity, property, annotation, `IdRef` and `xmlns`:
+4. **Every workflow in full** — `.xaml`, `.cs` with its `.cs.json`. Designer data fills up to half of an older project's XAML, and an Integration Service connector activity carries its connector's cached object schema — every field of the object with its search operators and picklist values — which can fill nine tenths of a connector-heavy file. Read the files through this filter, which drops view state, namespace and assembly lists, layout sizes, the cached schemas and the compressed design configuration only, keeping every activity, property, annotation, `IdRef`, `xmlns`, expression and every field the activity sets (a field it sets carries a child value element, so its line is never a self-closed one):
 
    ```bash
-   sed -e '/<TextExpression.NamespacesForImplementation>/,/<\/TextExpression.NamespacesForImplementation>/d' \
-       -e '/<TextExpression.ReferencesForImplementation>/,/<\/TextExpression.ReferencesForImplementation>/d' \
-       -e '/<sap:WorkflowViewStateService.ViewState>/,/<\/sap:WorkflowViewStateService.ViewState>/d' \
-       -e '/<sap2010:WorkflowViewState.ViewStateManager>/,/<\/sap2010:WorkflowViewState.ViewStateManager>/d' \
+   sed -e '/<TextExpression.NamespacesForImplementation>.*<\/TextExpression.NamespacesForImplementation>/d; /<TextExpression.NamespacesForImplementation>/,/<\/TextExpression.NamespacesForImplementation>/d' \
+       -e '/<TextExpression.ReferencesForImplementation>.*<\/TextExpression.ReferencesForImplementation>/d; /<TextExpression.ReferencesForImplementation>/,/<\/TextExpression.ReferencesForImplementation>/d' \
+       -e '/<sap:WorkflowViewStateService.ViewState>.*<\/sap:WorkflowViewStateService.ViewState>/d; /<sap:WorkflowViewStateService.ViewState>/,/<\/sap:WorkflowViewStateService.ViewState>/d' \
+       -e '/<sap2010:WorkflowViewState.ViewStateManager>.*<\/sap2010:WorkflowViewState.ViewStateManager>/d; /<sap2010:WorkflowViewState.ViewStateManager>/,/<\/sap2010:WorkflowViewState.ViewStateManager>/d' \
+       -e '/<uibi:BusinessEntity.SearchableFields>.*<\/uibi:BusinessEntity.SearchableFields>/d; /<uibi:BusinessEntity.SearchableFields>/,/<\/uibi:BusinessEntity.SearchableFields>/d' \
+       -e '/<uibi:BusinessEntity.EntityMetadata>.*<\/uibi:BusinessEntity.EntityMetadata>/d; /<uibi:BusinessEntity.EntityMetadata>/,/<\/uibi:BusinessEntity.EntityMetadata>/d' \
+       -e '/<uiisi:OperationEntityField.EnumValues>.*<\/uiisi:OperationEntityField.EnumValues>/d; /<uiisi:OperationEntityField.EnumValues>/,/<\/uiisi:OperationEntityField.EnumValues>/d' \
+       -e '/^ *<uiisi:OperationEntityField [^>]*\/> *$/d' \
+       -e 's/ Configuration="H4sI[^"]*"/ Configuration="(compressed)"/g' \
        -e 's/ sap:VirtualizedContainerService.HintSize="[^"]*"//g' "<XAML_FILE>"
    ```
 
+   A generic connector activity (`isactr:ConnectorActivity`) names its connector, object, operation, path and page size only inside that compressed configuration (base64 of gzip JSON). Print them, one line per activity in file order, leaving out the schema it also holds:
+
+   ```bash
+   python3 -c "import base64,gzip,json,re,sys; [print(json.dumps({k: v for k, v in json.loads(gzip.decompress(base64.b64decode(m))).items() if k != 'FieldsContainer'})) for m in re.findall(r'Configuration=\"(H4sI[^\"]+)\"', open(sys.argv[1], encoding='utf-8').read())]" "<XAML_FILE>"
+   ```
+
 5. **Object Repository** by its node files, never its descriptors: every node folder under `.objects/` holds `.type` (`Library`, `App`, `AppVersion`, `Screen`, `Element`) and `.metadata` (JSON: `Name`, `Id`, `Reference`) — application, screen and element names for Target Applications, counts for the Source Map.
+6. **Deployed state**, when the user gave its folder or an export of it (§ Deployed State).
 
 ## Detection
 
@@ -75,6 +87,8 @@ Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `Connections
 | `project.uiproj` `ProjectType: "AppV2"` or standalone coded app markers | Coded app (Web or Action per `webAppManifest.json` `config.isActionApp`) | `uipath-coded-apps` | |
 | `element.json` + `element-metadata.json` | Custom connector | `uipath-connector-builder` | |
 
+The project folder is the part of a workflow's path the project stands for; the rest, the project-relative path the step table's Source objects cell carries (§ Provenance), is the workflow's path in the rebuild.
+
 A test project (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outputType: Tests`) beside the projects it tests is evidence, not a component: record "test coverage present" in the Source Map and use its assertions as acceptance-criteria evidence. When the source holds only test projects, the suite is what the genome documents: its test-case groups are test components, and its execution template with the helpers the cases share is one shared component of the same project ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1; signals: § Signals — Test projects).
 
 ## Signals — XAML
@@ -103,13 +117,13 @@ Designer view state and layout sizes are not logic (§ Reading the Project).
 
 ### REFramework projects
 
-A project built on the Robotic Enterprise Framework template is recognised by its shape, not by a manifest flag: `Main.xaml` is a `<StateMachine>` whose states are Init, Get Transaction Data, Process Transaction and End Process; a `Framework/` folder holds the framework workflows; `Data/Config.xlsx` has the sheets Settings, Constants and Assets. The framework **is** the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)); the business logic is the Workflow. Which file feeds which row:
+A project built on the Robotic Enterprise Framework template is recognised by its shape, not by a manifest flag: `Main.xaml` is a `<StateMachine>` whose states are Init, Get Transaction Data, Process Transaction and End Process; a `Framework/` folder holds the framework workflows. The framework **is** the Transactional Shape ([transactional-shape-guide.md](transactional-shape-guide.md)); the business logic is the Workflow. Which file feeds which row:
 
 | Source | Feeds | How |
 |---|---|---|
-| `Data/Config.xlsx` Settings sheet: `OrchestratorQueueName`, `OrchestratorQueueFolder` | Transactional Shape As-is item store; Platform Dependencies (queue) | A queue name that the item-fetch workflow actually reads → `queue` mode, name kept as the source value. Blank, or the template's sample `ProcessABCQueue` beside a customised item fetch → `direct` mode, data source from that fetch |
-| Settings and Constants rows — `MaxRetryNumber`, `MaxConsecutiveSystemExceptions`, and every custom row (URLs, paths, thresholds) | Sorted per [genome-format-guide.md § Configuration Questions](genome-format-guide.md): an environment row (URL, path, mailbox, folder) is a Configuration Question with the sheet value as default; the two counts go in the outcomes table; every other row goes in the step or rule that uses it | `logF_BusinessProcessName`, `TransactionNumber`, `RetryNumberGetTransactionItem`, `RetryNumberSetTransactionStatus` are framework plumbing — no question |
-| Assets sheet rows | Platform Dependencies | One row per asset name; Credential when the description or the consuming activity says so, otherwise Text |
+| The queue and folder *Get Transaction Item* reads in `Framework/GetTransactionData.xaml`, set on the activity or from the configuration's settings | Transactional Shape As-is item store; Platform Dependencies (queue) | A queue name that the item-fetch workflow actually reads → `queue` mode, name kept as the source value. Blank, or the template's sample `ProcessABCQueue` beside a customised item fetch → `direct` mode, data source from that fetch |
+| Settings and Constants rows — `MaxRetryNumber`, `MaxConsecutiveSystemExceptions`, and every custom row (URLs, paths, thresholds) | Sorted per [genome-format-guide.md § Configuration Questions](genome-format-guide.md): an environment row (URL, path, mailbox, folder) is a Configuration Question with the file's value as default; the two counts go in the outcomes table; every other row goes in the step or rule that uses it | `logF_BusinessProcessName`, `TransactionNumber`, `RetryNumberGetTransactionItem`, `RetryNumberSetTransactionStatus` are framework plumbing — no question |
+| Assets the configuration lists, and the asset and credential activities | Platform Dependencies | One row per asset name; Credential when the description or the consuming activity says so, otherwise Text |
 | `Framework/InitAllApplications.xaml` (`GetAppCredentials.xaml` in older templates) | Once-per-run steps; credential assets | Open and sign-in per application |
 | `Framework/Process.xaml` (root `Process.xaml` in older templates) and every workflow it invokes | Per-item steps — the Workflow's numbered steps | The call graph starts here, not at `Main.xaml` |
 | `Throw` of a `BusinessRuleException` inside the per-item workflows | Business Rules (the condition) and the business-exception row of the outcomes table | The exception message is the reason wording |
@@ -118,7 +132,7 @@ A project built on the Robotic Enterprise Framework template is recognised by it
 | `Framework/CloseAllApplications.xaml`, `Framework/KillAllProcesses.xaml` | At-the-end steps; Error Handling § Global (forced close between retries) | |
 | `Main.xaml` and its transitions, `InitAllSettings.xaml`, `RetryCurrentTransaction.xaml`, `TakeScreenshot.xaml`, the template's `Tests/`, `Exceptions_Screenshots/`, `Documentation/` | **Not steps.** Source Map row `Framework files` listing them; `Tests/` is test-coverage evidence | Execution recreates them from the template when the shape is applied |
 
-A **dispatcher** is recognised the other way round: a plain project (Sequence or Flowchart root) whose loop reads a source and adds one queue item per row with a reference; the queue name — a literal or a configuration value — joins it to the performer that consumes it (§ Call Graph Rules rule 3). A REFramework project whose initialisation adds the items its own item fetch then takes from the same queue is both at once: its producer steps are the initialisation's reads and adds, its consumer is the rest of the framework, and the As-is is one process holding both roles over a queue — the shape Split option C keeps ([genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 3). A guard in that initialisation (a unique reference, a check that the day's items already exist) is the Coordination row's once-guard.
+A **dispatcher** is recognised the other way round: a plain project (Sequence or Flowchart root) whose loop reads a source and adds one queue item per row with a reference; the queue name — a literal or a configuration value — joins it to the performer that consumes it (§ Call Graph Rules rule 3). A REFramework project whose initialisation adds the items its own item fetch then takes from the same queue is both at once: its producer steps are the initialisation's reads and adds, its consumer is the rest of the framework, and the As-is is one process holding both roles over a queue — the shape Split option C keeps ([transactional-shape-guide.md](transactional-shape-guide.md) rule 3). A guard in that initialisation (a unique reference, a check that the day's items already exist) is the Coordination row's once-guard.
 
 ## Signals — Coded C#
 
@@ -294,13 +308,13 @@ Skip `bpmndi:` diagram elements.
 2. Edges inside a component: `<InvokeWorkflowFile FileName>`, `workflows.<Name>()` (`<Name>` is the workflow's file name without extension, whatever its class is called), `core.subflow`, BPMN `callActivity`, Case sub-stages. Depth-first from entry point; order siblings top-to-bottom (Sequence), left-to-right (Flowchart), by `edges[]` order (Flow), by `sequenceFlow` order (BPMN).
 3. Edges across components (handoffs): Flow resource nodes, BPMN `uipath:type` values that start a job or agent, Case task types `process` / `rpa` / `agent` / `api-workflow` / `action`, agent tools with `type` `process` / `api` / `agent`, `sdk.processes.invoke`, `StartJob` activities, queue producers and consumers sharing a queue name, Action Center task creation and the coded app that renders it.
 4. Missing entry point: `outputType: Library` → each public workflow is an independent capability, listed as separate steps; `Process` without `main` → `Main.xaml` / `Main.cs` by convention, else alphabetical with `*[Inferred]*`.
-5. Unreachable workflows: list in Source Map as dead code; exclude from Workflow.
+5. Unreachable workflows are unused parts: steps or the Source Map's `Unused` row, as the Unused parts answer decides ([extraction-guide.md](extraction-guide.md) Step 1).
 6. Test project: the execution template invokes every registered case through its placeholder, so its steps are shared steps of every case (§ Signals — Test projects). A workflow belongs to the component whose folder holds it; a call from another component's case is a cross-component edge, never a copy of the callee.
-7. REFramework / StateMachine: the Workflow's call graph starts at the per-item process workflow and adds the once-per-run and at-the-end workflows as steps of their own (§ Signals — XAML › REFramework projects); the state machine, its transitions and the framework's retry and status workflows are not steps. The queue is a Platform Dependency; the business/system outcome classification and the counts go to the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)).
+7. REFramework / StateMachine: the Workflow's call graph starts at the per-item process workflow and adds the once-per-run and at-the-end workflows as steps of their own (§ Signals — XAML › REFramework projects); the state machine, its transitions and the framework's retry and status workflows are not steps. The queue is a Platform Dependency; the business/system outcome classification and the counts go to the Transactional Shape ([transactional-shape-guide.md](transactional-shape-guide.md)).
 
 ## Expression Translation
 
-Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `AndAlso` / `OrElse` / `&` / `=` / `<>` / `Not`. CSharp: `&&` / `||` / `+` / `==` / `!=` / `!`. Flow, BPMN, and API workflow expressions are JavaScript (`===`, `&&`, `||`, `?.`); BPMN predicates are `=`-prefixed. Case conditions are `=js:` prefixed. Translate all with the table in [genome-format-guide.md § Business Rules](genome-format-guide.md). `DateTime.Now.AddDays(-30)` style arithmetic → "more than 30 days old". String concatenation → describe resulting text.
+Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `AndAlso` / `OrElse` / `&` / `=` / `<>` / `Not`. CSharp: `&&` / `||` / `+` / `==` / `!=` / `!`. Flow, BPMN, and API workflow expressions are JavaScript (`===`, `&&`, `||`, `?.`); BPMN predicates are `=`-prefixed. Case conditions are `=js:` prefixed. Translate all with the table in [genome-format-guide.md § Business Rules](genome-format-guide.md). `DateTime.Now.AddDays(-30)` style arithmetic → "more than 30 days old". String concatenation → describe resulting text. The text is what sits inside the quotes: in `"exists for "  + name` the second space stands between the closing quote and the operator, so it is code, and the logged text has one space.
 
 ## Platform Resources
 
@@ -311,10 +325,26 @@ Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `And
 | `.flow` top-level `bindings[]` | Processes, agents, API workflows invoked; folders |
 | XAML queue / asset / credential / bucket / StartJob activities; `.cs` `system.` calls | Queues, assets, credentials, buckets, jobs |
 | `project.json` `dependencies` that are libraries (packages published from another automation project, not activity packages); feeds in the project's `NuGet.config` | One row per library: package, version, feed. Steps describe the library workflows they call by behaviour, from their arguments; a library's bodies are read only when its project is given as a related resource |
-| `Data/Config.xlsx` Assets sheet (REFramework) | One Platform Dependencies row per asset name; Credential when the sheet's description or the consuming activity says so, otherwise Text |
+| Assets a REFramework configuration lists | One Platform Dependencies row per asset name; Credential when the configuration's description or the consuming activity says so, otherwise Text |
 | BPMN `<uipath:context>` inputs (`folderPath`, `releaseKey`, `appId`, `connection`) | Processes, HITL apps, connections |
 | `entry-points.json` | Interface inputs and outputs per component |
 | Triggers: `.flow` scheduled/connector trigger nodes, BPMN start event types, Case trigger `serviceType`, `bindings_v2.json` `HttpTrigger` | Deployment → Entry points and triggers |
+
+## Deployed State
+
+A package runs as Orchestrator processes, and what runs is the process: each binds one package version, can override any binding of the package, and owns its triggers. When the user names the folder that runs it, read it with `uipath-platform`'s read commands — each process record with all its fields (its binding overrides are among them), the triggers, the assets and queues the workflows name, the job history, the other processes sharing them — and write nothing; an export of those records the user gives is read the same way.
+
+| Read | Tells you | Genome |
+|---|---|---|
+| Processes per package: entry point, package version, runtime, job priority | which entry points run, and where; two processes of one package bound to different versions run different code | Deployment; a version difference is a Source Map row naming the files that differ, and each process's steps are described from the version it runs |
+| Binding overrides of each process | the connection, folder, file, queue or asset each binding resolves to at run time — one package binding can resolve differently in two processes | the override is the value that runs: an environment-bound value's default is the override, the package's value goes to the Source Map |
+| The connection behind each binding: connector, the account it signs in as, its folder | the identity every read and write runs as; a connection's name in the XAML is its name at design time | Platform Dependencies, identity in the purpose; a person's account is a Source Map finding |
+| Triggers: type, schedule and time zone, queue and its job limits, event (connector, object, event, filter) | how each entry point starts | Workflow step 1, Deployment. An event trigger is read here and never inferred from the entry point's event arguments, which show only that an event starts it |
+| Assets the workflows read, the queues' settings | values (never a credential's secret); unique reference, retries, retention | Configuration Question defaults; the Transactional Shape's As-is |
+| Job history of a window: runs, faults grouped by message and step, durations, items per run | whether an entry point is used, its volumes, what a fault does on real data | the Source Map's runtime row; a consequence the history shows is a fact, not `*[Inferred]*` |
+| The other processes of the folder and of each folder a binding resolves to: their declared resources, their triggers, and their packages' workflows when the declared resources leave a name blank or the package declares none | who else adds items to each queue the component uses or reads them, starts it or is started by it, and uses its assets, buckets and connections; a name another package builds from an expression is unresolved, never matched to one | each Platform Dependencies row names the processes sharing it and how; the processes read and the unresolved names go to the Source Map's deployed-state row |
+
+Without the deployed state, Platform Dependencies and Deployment come from the package, a trigger the package does not hold is `*[Inferred]*`, and the Source Map's deployed-state row says it was not read.
 
 ## UI Target Locators
 
@@ -342,7 +372,7 @@ Variation row holding a password-looking field (`*password*`, `*pwd*`, `*secret*
 
 ## Provenance
 
-What the Source Map rows of [genome-format-guide.md § Source Map](genome-format-guide.md) carry for a UiPath source:
+What the Source Map rows of [extracted-genome-guide.md § Source Map](extracted-genome-guide.md) carry for a UiPath source:
 
 | Identity of | Carried as |
 |---|---|
@@ -351,6 +381,8 @@ What the Source Map rows of [genome-format-guide.md § Source Map](genome-format
 | A test case | Its path plus `testCaseId`, `` `Tests/Case.xaml` (<testCaseId>) ``; a checkpoint inside it by its activity `IdRef` |
 | A step's data set | The data variation file's project-relative path, `` `.variations/<Case>.json` ``, in the step table's Data sets cell |
 | Inventory | Workflows per artifact type, test cases, data files and rows, Object Repository applications, screens and elements, accounts |
+| Deployed state | The folder and the date read; per process its package version, runtime and triggers, and each binding override with the package value it replaces; the other processes read, and each name another package builds from an expression; or "not read" (§ Deployed State) |
+| Runtime | The job-history window: per process the runs, the faults grouped by message and step, the durations; an entry point with no run named |
 
 No inventory script derives a process inventory or a recordset list, so the genome check runs without the export check, and [extraction-guide.md](extraction-guide.md) Step 6b's Glob check takes its place.
 
@@ -368,3 +400,5 @@ No inventory script derives a process inventory or a recordset list, so the geno
 10. A `[TestCase]` `.cs` file or `Test` project beside the projects it tests is evidence, not a component (§ Component Detection).
 11. The REFramework template's sample values survive customisation: `ProcessABCQueue` in the settings sheet of a project whose item fetch reads rows, the template's own `Tests/` cases, `Exceptions_Screenshots/`. A queue is evidence only when the item fetch actually reads it (§ Signals — XAML › REFramework projects).
 12. Framework workflows look like logic and are the template: the state machine, the retry counter, the three status updates and the screenshot on exception describe the Transactional Shape, not steps — transcribing them doubles the shape in the genome.
+13. A `DisplayName` is a hint the author may have copied with the activity: a branch named after a sibling's test ("check if vendor form" on a test of another field) describes the sibling. The condition decides what the step does, and a container with no `DisplayName` (an `If` around a whole file) can hold its structure — a search by names misses it, a full read does not.
+14. The connection and folder names a connector activity shows are the ones it was designed with. The deployed process's overrides decide what runs (§ Deployed State).

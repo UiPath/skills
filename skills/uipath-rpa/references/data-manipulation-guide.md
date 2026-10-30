@@ -1,91 +1,84 @@
 # Data Manipulation Guide
 
-Expression/code patterns for transforming data in modern projects: DataTable LINQ, strings, RegEx, DateTime, type conversion, collections, JSON — the layer **not wrapped in activities**.
+Transform data outside activities: DataTable LINQ, strings, RegEx, DateTime, conversion, collections, and JSON.
 
-**Boundary — these own their topics, link don't reinvent:**
-- DataTable *activity* mechanics (BuildDataTable `TableInfo` trap + inline build, FilterDataTable type-compat, LookupDataTable, GetRowItem) → [xaml/common-pitfalls.md § DataTable Activity Gotchas](xaml/common-pitfalls.md).
-- C# XAML expression *binding* form (`CSharpValue`/`CSharpReference`) → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
-- Config.xlsx row/field access in REFramework → [reframework-guide.md](reframework-guide.md).
-- Per-activity property surfaces (ForEachRow, AddDataRow, JoinDataTables, SortDataTable, …) → `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/` or `references/activity-docs/UiPath.System.Activities/`.
-- Coded-mode `using` directives → [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
+**Owned elsewhere:** DataTable activity mechanics (BuildDataTable `TableInfo` trap + inline build, FilterDataTable type-compat, LookupDataTable, GetRowItem) → [xaml/common-pitfalls.md § DataTable Activity Gotchas](xaml/common-pitfalls.md); C# XAML expression binding (`CSharpValue`/`CSharpReference`) → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); REFramework configuration access → [reframework-guide.md](reframework-guide.md); activity properties (ForEachRow, AddDataRow, JoinDataTables, SortDataTable, …) → `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/` or `references/activity-docs/UiPath.System.Activities/`; coded-mode `using` directives → [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
 
 ## Where each snippet goes — read first
 
-Each code block below is tagged. **A DataTable LINQ chain is a single value — it belongs in one `Assign`. A `For Each`/`Dim`/object-mutation block is NOT an expression — it cannot go in an `Assign`.** Putting statement-style VB into an `Assign` is the most common paste error.
+A DataTable LINQ chain is one value for one `Assign`. `For Each`, `Dim`, and mutation blocks are not expressions and cannot go in an `Assign`; statement-style VB pasted there is the most common paste error.
 
-| Tag | Where it goes |
-|-----|---------------|
-| `[expr]` | One `Assign.Value` — a single expression. Examples are **VB**; in a C#-expression project translate per the VB↔C# key AND wrap in `CSharpValue` — the VB text is not valid C# as-is. |
-| `[seq]` | An XAML **activity sequence** — `For Each` / `Add Data Row` / multiple `Assign`s. Not one expression. |
-| `[coded]` | Coded `.cs` workflow (or `Invoke Code`) only — statement blocks, `Dim`, mutation loops. |
+| Tag | Placement |
+|---|---|
+| `[expr]` | One `Assign.Value`, one expression. Examples are VB; translate for C#-expression projects and wrap in `CSharpValue`; VB is not valid C# as-is. |
+| `[seq]` | XAML activity sequence: `For Each` / `Add Data Row` / multiple `Assign`s; never one expression. |
+| `[coded]` | Coded `.cs` workflow or `Invoke Code` only: statements, `Dim`, mutation loops. |
 
-When a transform needs more than ~2 chained `[seq]` steps or a real helper, **stop hand-assembling XAML and write a coded workflow** — see § When to move to coded.
+After more than ~2 chained `[seq]` steps or a real helper, stop hand-assembling XAML and write a coded workflow; see § When to move to coded.
 
 ## Required imports & references
 
-A DataTable LINQ chain needs ALL of the following in `TextExpression` (XAML). Don't infer — set them:
+For a DataTable LINQ chain, set these in XAML `TextExpression`:
 
-- **Namespace imports** (`NamespacesForImplementation`): `System.Data`, `System.Linq`
-- **Assembly references** (`ReferencesForImplementation`): `System.Data`, `System.Data.Common`, `System.Data.DataSetExtensions`
+- `NamespacesForImplementation`: `System.Data`, `System.Linq`
+- `ReferencesForImplementation`: `System.Data`, `System.Data.Common`, `System.Data.DataSetExtensions`
 
-A scaffolded project (`uip rpa init`) already has all of these — untouched, the LINQ family just works. Add them only when hand-authoring a XAML file or after trimming imports. Coded (`.cs`): `using System.Data;` + `using System.Linq;` ([coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules)).
+A scaffolded project (`uip rpa init`) already has all of these — untouched, the LINQ family just works. Add them only when hand-authoring a XAML file or after trimming imports. In coded `.cs`, add `using System.Data;` and `using System.Linq;` ([coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules)).
 
-Notes:
-- `AsEnumerable` / `CopyToDataTable` / `DataRowComparer`: in modern (Windows / cross-platform) they resolve via `System.Data` (the `System.Data.DataSetExtensions` reference is harmless and present by default); **legacy (.NET Framework 4.6.1) requires `System.Data.DataSetExtensions`** — there they live in that assembly, not `System.Data`. Including it in both is the safe default.
-- Drop the `System.Linq` import and `AsEnumerable` won't resolve — the break surfaces at **run** (runtime JIT), not at `uip rpa validate` or even `uip rpa build` packaging.
+`AsEnumerable` / `CopyToDataTable` / `DataRowComparer` resolve through `System.Data` in modern Windows/cross-platform projects; legacy .NET Framework 4.6.1 requires `System.Data.DataSetExtensions`. Including that reference in both is safe. Without `System.Linq`, `AsEnumerable` fails at **run** (runtime JIT), not at `uip rpa validate` or even `uip rpa build` packaging.
 
 ## VB ↔ C# translation key
 
-Examples are **VB** (default expression language; bracket `[expr]` in XAML attributes). VB→C# is mechanical (`Function(r) r("Col")` → `r => r["Col"]`, `()`→`[]` indexing, `If(c,a,b)` → `c ? a : b`); coded (`.cs`) uses the C# form directly and C#-expression XAML uses it too — **except** the coded-only constructs below.
+Examples are VB, the default XAML expression language. Translate `Function(r) r("Col")` to `r => r["Col"]`, `()` to `[]`, and `If(c,a,b)` to `c ? a : b`; coded `.cs` and C#-expression XAML use C# forms.
 
-**Coded-only — these do NOT compile in any XAML expression:** the C# `out` **parameter** keyword (e.g. `int.TryParse(s, out int n)` — this is the C# `out` keyword, *not* a workflow/XAML `OutArgument`), null-propagation `?.` / `?[]`, the null-coalescing `??`, and collection initializers (`new Dictionary<…>{ … }`). They work only in coded (`.cs`) workflows. They fail in a VB XAML `Assign`, and — despite being "C#" — also fail **inside `CSharpValue`** in a C#-expression XAML project, because XAML binds expressions as expression trees that forbid them (CS8198 `out`, CS8072 `?.`, CS8074 initializer; statement-body lambdas/IIFEs fail CS0834).
+Coded-only constructs that fail in VB XAML and inside `CSharpValue` because XAML binds expression trees: C# `out` parameters (`int.TryParse(s, out int n)`; not a workflow/XAML `OutArgument`), `?.`, `?[]`, `??`, collection initializers (`new Dictionary<…>{ … }`), and statement-body lambdas/IIFEs. Failures include CS8198 (`out`), CS8072 (`?.`), CS8074 (initializer), and CS0834 (statement-body lambdas/IIFEs). In C#-expression XAML only, optional-argument overloads also fail (`CS0854`).
 
-**XAML-safe forms instead** (both VB and C# expression projects):
-- Parse: pre-declare `n`, use the composite VB `If(Integer.TryParse(s, n), n, 0)` (C#-expression XAML: there is no `out`-free `TryParse`, so do the parse in a coded helper or workflow, or accept the VB form — `out` cannot appear in `CSharpValue`).
-- Null-safe: `If(x Is Nothing, "", x.ToString())` (VB) — not `?.`/`??`.
-- Build a dictionary across `Assign`s / `Invoke Method`, not an inline initializer.
+XAML-safe alternatives:
+
+- Parse: pre-declare `n` and use `If(Integer.TryParse(s, n), n, 0)`; C#-expression XAML has no `out`-free `TryParse`, so parse in a coded helper/workflow or accept the VB form—`out` cannot appear in `CSharpValue`.
+- Null-safe: `If(x Is Nothing, "", x.ToString())` in VB, not `?.`/`??`.
+- Build dictionaries across `Assign`s / `Invoke Method`, not with an inline initializer.
 
 See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 
 ## Choose the approach
 
 | Task | Use | Notes |
-|------|-----|-------|
-| Simple single-condition filter | **Filter Data Table** activity | GUI, no expression |
-| Expression filter, no new columns | `dt.Select("[Amount] > 1000")` | returns `DataRow()`; string match is **case-INSENSITIVE** by default; SQL-ish syntax |
-| Filter/sort/group/join/project | **LINQ** in one `Assign` | most flexible; ~2× faster than Join Data Tables on large sets |
-| Heavy multi-step transforms, unit-tested logic, safe accessors | **coded** (`.cs`) | C# LINQ inline; see § When to move to coded |
-| Multi-step transform inside a **C#-expression XAML** workflow | **Helper method in a Coded Source File**, Invoke Code, or a coded workflow via Invoke Workflow File | C# XAML expression trees forbid statements/`out var`/optional-arg overloads (`CS0854`); a helper's body is plain C# — see § Exception below |
-| Key-value config / counters | `Dictionary(Of K,V)` | |
-| Tabular data | `DataTable` | typed columns; LINQ via `.AsEnumerable()` |
+|---|---|---|
+| Simple single-condition filter | **Filter Data Table** activity | GUI, no expression. |
+| Expression filter without new columns | `dt.Select("[Amount] > 1000")` | Returns `DataRow()`; string matching is case-INSENSITIVE by default and SQL-like. |
+| Filter/sort/group/join/project | LINQ in one `Assign` | Most flexible; ~2× faster than Join Data Tables on large sets. |
+| Heavy multi-step transforms, unit-tested logic, safe accessors | coded `.cs` | C# LINQ inline; see § When to move to coded. |
+| Multi-step transform in C#-expression XAML | Coded Source File helper, `Invoke Code`, or coded workflow via `Invoke Workflow File` | Expression trees forbid statements, `out var`, and optional-argument overloads (`CS0854`). |
+| Key-value config/counters | `Dictionary(Of K,V)` | |
+| Tabular data | `DataTable` | Typed columns; LINQ via `.AsEnumerable()`. |
 
 ### When to move to coded
 
-**Default in VB projects: native expressions (`Assign`) for LINQ and JSON — not `Invoke Code`.** Inline `Invoke Code` adds assembly/import/version pitfalls (it compiles against a separately-resolved set, drifts from the project's references, and isn't checked by `validate`); native expressions reuse the project's imports and round-trip in the designer. The `[expr]` snippets here are all native.
+In VB projects, default to native `Assign` expressions for LINQ and JSON, not `Invoke Code`: `Invoke Code` introduces separately resolved assembly/import/version pitfalls, can drift from project references, and is not checked by `validate`; native expressions reuse project imports and round-trip in the designer. The `[expr]` snippets here are native.
 
-When a transform genuinely outgrows expressions — >2 statement steps, a reusable safe accessor/helper, mutating rows in a loop, real try/catch around a parse, or an unreadable one-liner — move to a **coded (`.cs`) workflow** ([coded/operations-guide.md](coded/operations-guide.md)), still not `Invoke Code`. Coded gives `?.`, `out var`, multi-statement logic, and unit tests.
+When a transform exceeds expressions—more than 2 statement steps, a reusable safe accessor/helper, row mutation in a loop, real try/catch around parsing, or an unreadable one-liner—move to a coded `.cs` workflow ([coded/operations-guide.md](coded/operations-guide.md)), still not `Invoke Code`. Coded workflows provide `?.`, `out var`, multi-statement logic, and unit tests.
 
 ### Exception: C#-expression XAML workflows — the transform leaves the expression
 
-When the transform must live inside a C#-expression XAML workflow, one hard limit changes the advice above: C# XAML expressions compile as expression trees — no statements, no `out var` (`TryParse`), no optional-argument overloads (`CS0854`) ([xaml/common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](xaml/common-pitfalls.md)).
+C# XAML expressions are expression trees: no statements, `out var` (`TryParse`), or optional-argument overloads (`CS0854`) ([xaml/common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](xaml/common-pitfalls.md)). Escalate to:
 
-Three valid escalations:
-
-- **Helper method in a Coded Source File** — a `public static` method of a plain `.cs` class; the expression calls it (`NameRules.LastWord(name)`) and its body is ordinary C#. The workflow imports the class's namespace and references the project's coded assembly ([xaml/common-pitfalls.md § Coded Source File Types in XAML Expressions Need a Namespace Import and Assembly Reference](xaml/common-pitfalls.md#coded-source-file-types-in-xaml-expressions-need-a-namespace-import-and-assembly-reference)).
-- **`Invoke Code`** — logic stays inline in the XAML; data in/out via its Arguments collection; author `Code` as an XML attribute ([xaml/common-pitfalls.md § InvokeCode Code Property](xaml/common-pitfalls.md)).
-- **Coded Workflow invoked via `Invoke Workflow File`** — logic moves to a `.cs` file carrying `[Workflow]` + `Execute`; the XAML calls it like any child workflow (see § Source file vs workflow below). Use it when the logic needs the coded services or activities.
+- **Coded Source File helper:** a `public static` method on a plain `.cs` class; call it from the expression (for example, `NameRules.LastWord(name)`). Import its namespace and reference the project's coded assembly ([xaml/common-pitfalls.md § Coded Source File Types in XAML Expressions Need a Namespace Import and Assembly Reference](xaml/common-pitfalls.md#coded-source-file-types-in-xaml-expressions-need-a-namespace-import-and-assembly-reference)).
+- **`Invoke Code`:** keep logic inline, pass data through its Arguments collection, and author `Code` as an XML attribute ([xaml/common-pitfalls.md § InvokeCode Code Property](xaml/common-pitfalls.md)).
+- **Coded Workflow via `Invoke Workflow File`:** move logic to a `.cs` file with `[Workflow]` + `Execute`; use when it needs coded services or activities.
 
 **Code vs activity chains for row processing:** unless the user states a preference, complex bulk row processing (per-row parse + validate + branch + accumulate) goes to **code** — one of the escalations above — not an activity chain. Nested `If`/`Switch` levels inside a `ForEach` become unreadable, trip the analyzer nesting threshold, and every embedded expression re-fights the expression-tree limits. A simple `ForEach` row with ONE `If` or `Switch` is fine as plain XAML activities — more readable than code for that size.
 
-**Source file vs workflow — and how to call it:** a bare **Coded Source File** (helper class, no entry point) is called from expressions, XAML or coded. A **Coded Workflow** (`[Workflow]` + `Execute`) is invoked as a step: via **Invoke Workflow File** (from XAML) or `RunWorkflow` / the typed `workflows` property (from coded) — see [coded/operations-guide.md](coded/operations-guide.md).
+A bare Coded Source File helper has no entry point and is called from expressions, XAML, or coded code. A Coded Workflow has `[Workflow]` + `Execute` and is invoked as a step via **Invoke Workflow File** (XAML) or `RunWorkflow` / typed `workflows` (coded); see [coded/operations-guide.md](coded/operations-guide.md).
 
-Tabular *source/sink*: modern projects use the **Use Excel File** scope (not classic Excel Application Scope) — route to the Excel activity docs.
+For tabular Excel source/sink, use modern **Use Excel File**, not classic Excel Application Scope; route to Excel activity docs.
 
 ## Safe data access first
 
-Production data (Excel, scraping, UI, queues) is full of `DBNull`, blanks, localized numbers, and bad dates. A `DBNull` cell's `.ToString()` returns `""` (no error) — so **bare reads silently propagate blanks**, and `CDbl`/`Convert.ToDateTime`/`ParseExact` then **throw on the resulting blank/garbage**; a genuinely `Nothing` value throws `Object reference not set`. Use direct casts only on **typed, known-non-null** columns (e.g. a Decimal column you built). For String/Excel/scraped columns, read safely.
+Excel, scraping, UI, and queue data may contain `DBNull`, blanks, localized numbers, and bad dates. `DBNull` `.ToString()` returns `""`, so bare reads silently propagate blanks and `CDbl`/`Convert.ToDateTime`/`ParseExact` then throw; genuine `Nothing` causes an object-reference error. Direct-cast only typed, known-non-null columns; safely read String/Excel/scraped columns.
 
-**Inline safe reads** `[expr]`:
+**Inline safe reads `[expr]`:**
+
 ```vb
 ' string cell (never throws)
 If(IsDBNull(r("Name")), "", r("Name").ToString().Trim())
@@ -93,50 +86,45 @@ If(IsDBNull(r("Name")), "", r("Name").ToString().Trim())
 If(Decimal.TryParse(If(IsDBNull(r("Amount")), "", r("Amount").ToString()), Globalization.NumberStyles.Any, Globalization.CultureInfo.InvariantCulture, n), n, 0D)
 ```
 
-**Reusable safe accessor** `[coded]` — the maintainable form once more than a couple of fields are involved (Coded Source File, plain `.cs`, no `CodedWorkflow` base):
+**Reusable `[coded]` accessor** (plain Coded Source File, no `CodedWorkflow` base):
+
 ```csharp
 public static class Row
 {
     public static string Str(DataRow r, string c) => r.IsNull(c) ? "" : r[c].ToString().Trim();
-    public static decimal Dec(DataRow r, string c) =>
-        decimal.TryParse(Str(r, c), NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : 0m;
-    public static DateTime? Date(DataRow r, string c, string fmt) =>
-        DateTime.TryParseExact(Str(r, c), fmt, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) ? dt : (DateTime?)null;
+    public static decimal Dec(DataRow r, string c) => decimal.TryParse(Str(r, c), NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : 0m;
+    public static DateTime? Date(DataRow r, string c, string fmt) => DateTime.TryParseExact(Str(r, c), fmt, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) ? dt : (DateTime?)null;
 }
 ```
-Throw a `BusinessRuleException` (not a crash) when invalid business data must stop the item — e.g. `If String.IsNullOrWhiteSpace(Row.Str(r,"Id")) Then Throw New BusinessRuleException("Missing Id at row " & i)`.
+
+When invalid business data must stop the item, throw `BusinessRuleException`, not a crash: `If String.IsNullOrWhiteSpace(Row.Str(r,"Id")) Then Throw New BusinessRuleException("Missing Id at row " & i)`.
 
 ## DataTable transforms (LINQ)
 
-`.AsEnumerable()` first; `.CopyToDataTable()` to produce a DataTable. Casts below assume a **typed/clean** column — for String/Excel data wrap fields per § Safe data access first.
+Call `.AsEnumerable()` first and `.CopyToDataTable()` to produce a DataTable. The casts below assume typed/clean columns; safely wrap String/Excel fields as above.
 
-**Rule — guard `CopyToDataTable()` against empty results (MANDATORY).** It throws `InvalidOperationException: "The source contains no DataRows"` on an empty sequence:
+**MANDATORY: guard every possibly empty `CopyToDataTable()` result.** Otherwise it throws `InvalidOperationException: "The source contains no DataRows"`:
+
 ```vb
 [If(q.Any(), q.CopyToDataTable(), dt.Clone())]
 ```
-`dt.Clone()` = empty table, same schema (`dt.Copy()` = schema + all rows).
+
+`dt.Clone()` is an empty same-schema table; `dt.Copy()` includes schema and all rows.
 
 ### Filter, sort, dedup, paginate — each `[expr]`
+
 ```vb
-' filter — explicit case-insensitive + trimmed. dt.Select / Filter Data Table string
-' match is case-INSENSITIVE by default; use StringComparison.Ordinal for case-sensitive.
 dt.AsEnumerable().Where(Function(r) r("Status").ToString().Trim().Equals("active", StringComparison.OrdinalIgnoreCase))
-
-' sort descending
 dt.AsEnumerable().OrderByDescending(Function(r) CDbl(r("Amount"))).CopyToDataTable()
-
-' distinct whole rows
 dt.AsEnumerable().Distinct(DataRowComparer.Default).CopyToDataTable()
-
-' dedup by a SUBSET of columns — GroupBy + first row per key
 dt.AsEnumerable().GroupBy(Function(r) r("Id").ToString()).Select(Function(g) g.First()).CopyToDataTable()
-
-' pagination
 dt.AsEnumerable().Skip(10).Take(10).CopyToDataTable()
 ```
-Wrap each `…CopyToDataTable()` in the empty-guard when the filter may match nothing. C#: `r => r["Status"]…`, `g => g.First()`.
+
+Guard each `CopyToDataTable()` when no match is possible. `dt.Select`/Filter Data Table matching is case-INSENSITIVE by default; use `StringComparison.Ordinal` for case-sensitive matching. C# equivalents use `r => r["Status"]…` and `g => g.First()`.
 
 ### Aggregate — each `[expr]`
+
 ```vb
 dt.AsEnumerable().Sum(Function(r) CDbl(r("Amount")))
 dt.AsEnumerable().Count(Function(r) r("Status").ToString().Trim().Equals("active", StringComparison.OrdinalIgnoreCase))
@@ -144,80 +132,87 @@ dt.AsEnumerable().Any(Function(r) CDbl(r("Amount")) > 10000)
 ```
 
 ### Compare two DataTables (diff) — each `[expr]`
+
 ```vb
-' rows in A not in B — whole-row (guard + CopyToDataTable)
 dtA.AsEnumerable().Except(dtB.AsEnumerable(), DataRowComparer.Default)
-' rows in A whose key is absent from B
 dtA.AsEnumerable().Where(Function(a) Not dtB.AsEnumerable().Any(Function(b) b("Id").ToString() = a("Id").ToString()))
 ```
+
+The first returns rows in A not in B by whole row; guard and copy it when producing a DataTable. The second returns A rows whose key is absent from B.
 
 ### Join two DataTables (VLOOKUP equivalent) — `[expr]`
 
 | Need | Use |
-|------|-----|
-| Pull one value from a lookup table | **Lookup Data Table** activity |
-| Combine columns from both, simple | **Join Data Tables** activity (slower at scale) |
-| Combine/filter/shape in one pass | **LINQ join** |
+|---|---|
+| One value from lookup | **Lookup Data Table** activity |
+| Simple combination | **Join Data Tables** activity, slower at scale |
+| Combine/filter/shape in one pass | LINQ join |
 
 ```vb
 (From a In dtA.AsEnumerable()
  Join b In dtB.AsEnumerable() On a("Id").ToString() Equals b("Id").ToString()
  Select New Object(){ a("Id"), a("Name"), b("Region") }).ToList()
 ```
-`Select New Object(){…}` makes each element an `Object()`, so the result is **`List(Of Object())`** — type the receiving variable accordingly (or project to an anonymous type for named fields).
+
+`Select New Object(){…}` produces `List(Of Object())`; type the receiving variable accordingly, or project to an anonymous type for named fields.
 
 ### Remove blank rows — `[expr]`
-Excel/scraping leave trailing all-empty rows; left in, they pollute counts/output and break downstream numeric/date casts (blank → failed parse). Drop them:
+
+Remove trailing all-empty Excel/scraping rows because they pollute counts/output and break numeric/date casts:
+
 ```vb
 dt.AsEnumerable().Where(Function(r) Not r.ItemArray.All(Function(f) f Is DBNull.Value OrElse String.IsNullOrWhiteSpace(f.ToString())))
 ```
-(guard + `CopyToDataTable()`).
+
+Guard and `CopyToDataTable()` the result.
 
 ### Group-by-sum into a NEW DataTable — `[seq]` (or `[coded]`)
-Not an `Assign` — a `For Each` over the groups feeding `Add Data Row`:
+
+This is not an `Assign`: use `For Each` over groups and `Add Data Row`. `grouped` must already contain `Category(String)` and `Total(Decimal)` columns.
+
 ```vb
-' grouped: pre-built DataTable with columns Category(String), Total(Decimal)
 For Each g In dt.AsEnumerable().GroupBy(Function(r) r("Category").ToString())
     grouped.Rows.Add(g.Key, g.Sum(Function(r) CDec(r("Amount"))))
 Next
 ```
-In XAML: `ui:ForEach` (with `<ui:ForEach.Body>`) over `…GroupBy(...).Select(Function(g) New Object(){g.Key, g.Sum(...)}).ToList()`, body = `Add Data Row` into `grouped`.
+
+In XAML, use `ui:ForEach` with `<ui:ForEach.Body>` over `…GroupBy(...).Select(Function(g) New Object(){g.Key, g.Sum(...)}).ToList()`, with `Add Data Row` into `grouped`.
 
 ### Convert DataTable ↔ collections / JSON — `[expr]`
+
 ```vb
-' first row -> Dictionary(Of String,String)
 dt.Columns.Cast(Of DataColumn)().ToDictionary(Function(c) c.ColumnName, Function(c) dt.Rows(0)(c.ColumnName).ToString())
-' DataTable -> JSON
 Newtonsoft.Json.JsonConvert.SerializeObject(dt)
-' JSON array of objects -> DataTable
 Newtonsoft.Json.JsonConvert.DeserializeObject(Of System.Data.DataTable)(jsonString)
 ```
-`CollectionToDataTable` activity builds a DataTable from a `List(Of T)`.
+
+`CollectionToDataTable` builds a DataTable from `List(Of T)`.
 
 ## Iterating rows & common errors
 
-- **For Each Row in Data Table** for row-by-row work; the row var (`CurrentRow`) is a `DataRow`. Does **not** support persistence — inside a Long Running Workflow use a coded path ([xaml/long-running-workflow-guide.md](xaml/long-running-workflow-guide.md)).
-- **Modify-during-iteration trap (MANDATORY).** Never add/remove rows on the table you are iterating — throws `Collection was modified; enumeration operation may not execute`. Iterate a fresh array (`dt.Select()` returns one) and `AcceptChanges()` after `[seq]`/`[coded]`:
-  ```vb
-  For Each r In dt.Select()            ' fresh DataRow array — safe to Delete during the loop
-      If r("Status").ToString() = "drop" Then r.Delete()
-  Next
-  dt.AcceptChanges()
-  ```
-- **Null cells.** A cell may be `DBNull.Value` (not `Nothing`) — see § Safe data access first.
-- **`Input array is longer than the number of columns in this table`** (Add Data Row). Cause: passing a wider source row's `ItemArray` into a narrower table. Fix: add the missing columns first, or build the `Object()` array to match the target's column count/order.
+- Use **For Each Row in Data Table** for row work; `CurrentRow` is a `DataRow`. It does not support persistence; inside a Long Running Workflow use coded code ([xaml/long-running-workflow-guide.md](xaml/long-running-workflow-guide.md)).
+- **MANDATORY modify-during-iteration rule:** never add/remove rows from the table being iterated; it throws `Collection was modified; enumeration operation may not execute`. Iterate a fresh array (`dt.Select()`), then call `AcceptChanges()` after `[seq]`/`[coded]`:
+
+```vb
+For Each r In dt.Select()
+    If r("Status").ToString() = "drop" Then r.Delete()
+Next
+dt.AcceptChanges()
+```
+
+- A null cell is `DBNull.Value`, not `Nothing`; use § Safe data access first.
+- Add Data Row error `Input array is longer than the number of columns in this table`: a wider source `ItemArray` was passed to a narrower target. Add missing target columns or build an `Object()` matching target count/order.
 
 ## Strings & RegEx
 
-- Always `Trim()` text from UI/web/Excel; check `String.IsNullOrWhiteSpace(s)` before use.
-- Build strings in loops with `System.Text.StringBuilder` (`sb.AppendLine(...)` then `sb.ToString()`) `[seq]`/`[coded]`, not `&`.
-- Split on multiple delimiters: `s.Split(New Char(){";"c, ","c})`; format numbers: `value.ToString("N2", Globalization.CultureInfo.InvariantCulture)` (bare `ToString("N2")` follows the machine locale).
+**Always** `Trim()` text from UI/web/Excel; check `String.IsNullOrWhiteSpace(s)` before use. In loops use `System.Text.StringBuilder` (`sb.AppendLine(...)`, then `sb.ToString()`), not `&`. Split multiple delimiters with `s.Split(New Char(){";"c, ","c})`; format numbers with `value.ToString("N2", Globalization.CultureInfo.InvariantCulture)` because bare `ToString("N2")` follows machine locale.
 
-RegEx via `System.Text.RegularExpressions.Regex` (no package needed) — each `[expr]`:
+Use `System.Text.RegularExpressions.Regex` without a package; each is `[expr]`:
+
 ```vb
 System.Text.RegularExpressions.Regex.IsMatch(input, "\d{3}-\d{2}-\d{4}")
 System.Text.RegularExpressions.Regex.Match(input, "INV-\d+").Value
-System.Text.RegularExpressions.Regex.Matches(input, "\$[\d,]+\.?\d{0,2}")   ' MatchCollection — iterate
+System.Text.RegularExpressions.Regex.Matches(input, "\$[\d,]+\.?\d{0,2}")
 System.Text.RegularExpressions.Regex.Replace(input, "\s+", " ")
 ```
 
@@ -231,94 +226,99 @@ System.Text.RegularExpressions.Regex.Replace(input, "\s+", " ")
 | ZIP (US) | `\d{5}(-\d{4})?` |
 | Decimal | `-?\d+\.?\d*` |
 
-Patterns are **unanchored** (extraction — `IsMatch`/`Match` find them anywhere in the string). For full-string *validation*, anchor: `^…$` (e.g. ZIP `^\d{5}(-\d{4})?$`).
+Patterns are unanchored and extract anywhere. For full-string validation, anchor with `^…$`, such as `^\d{5}(-\d{4})?$` for ZIP.
 
-**Escaping the pattern string differs by mode:**
-- **VB** (XAML `Assign` or coded VB): single-escaped, `"\d+"`.
-- **C# coded**: verbatim `@"\d+"` or doubled `"\\d+"` (bare `"\d+"` is a compile error).
-- **Any XAML attribute** (VB or C# expression): `<` and `>` are illegal raw XML — escape as `&lt;`/`&gt;`. So a named group is `(?&lt;amt&gt;…)` in XAML; raw `(?<amt>…)` only in coded `.cs`.
+Pattern-string escaping:
 
-Named-group extraction:
+- VB (XAML `Assign` or coded VB): `"\d+"`.
+- C# coded: `@"\d+"` or `"\\d+"`; bare `"\d+"` is a compile error.
+- Any XAML attribute: raw `<` and `>` are illegal XML; use `&lt;`/`&gt;`. Thus named-group XAML uses `(?&lt;amt&gt;…)`; raw `(?<amt>…)` is only for coded `.cs`.
+
+Named-group examples:
+
 ```vb
-' XAML Assign (note &lt; &gt;):  Groups("amt").Value
 System.Text.RegularExpressions.Regex.Match(input, "(?&lt;amt&gt;\$[\d,.]+)").Groups("amt").Value
 ```
+
 ```csharp
-// coded C#: raw <, >, verbatim string
 Regex.Match(input, @"(?<amt>\$[\d,.]+)").Groups["amt"].Value
 ```
-Prefer named over positional groups; escape literal dots (`\.`); for untrusted/long input set a timeout — `New Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(5))` — against catastrophic backtracking. The `Matches` activity doesn't support persistence; use the code form in a Long Running Workflow.
+
+Prefer named groups; escape literal dots. For untrusted/long input, set a timeout to prevent catastrophic backtracking: `New Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(5))`. `Matches` does not support persistence; use code in a Long Running Workflow.
 
 ## DateTime & type conversion
 
-Parse with an EXPLICIT format + invariant culture (uppercase `MM` = month, lowercase `mm` = minutes) — each `[expr]`:
+Use an explicit format and invariant culture. `MM` is month and `mm` is minutes; `"mm/dd/yyyy"` silently misparses June as January, so only a test catches it.
+
 ```vb
 DateTime.ParseExact(dateText, "MM/dd/yyyy", System.Globalization.CultureInfo.InvariantCulture)
-' wrong case SILENTLY misparses (does not throw): "mm/dd/yyyy" on a June date -> January, the month digits read as minutes. Only a test catches it.
-' multiple accepted formats:
 DateTime.ParseExact(s, New String(){"dd/MM/yyyy", "dd.MM.yyyy"}, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None)
-' SAFE (no throw) for external dates — uses TryParseExact, see § Safe data access first
 ```
 
-**Parse safely** — pick by data trust:
+For external dates use `TryParseExact`, as in § Safe data access first.
 
-| Method | On bad input | Use when |
+| Method | Bad input | Use |
 |---|---|---|
-| `CInt(v)` / `Integer.Parse(v)` | throws | known-good data |
-| `Convert.ToInt32(v)` | throws (`Nothing`→0) | known-good; a literal `Nothing` needs `CObj(Nothing)` in VB XAML (overload ambiguity) |
-| `Integer.TryParse(v, n)` / `Decimal.TryParse` / `DateTime.TryParseExact` | returns `False`, out=default | **external/user/Excel input (default choice)** |
+| `CInt(v)` / `Integer.Parse(v)` | throws | Known-good data |
+| `Convert.ToInt32(v)` | throws; `Nothing` → 0 | Known-good; literal `Nothing` needs `CObj(Nothing)` in VB XAML because of overload ambiguity |
+| `Integer.TryParse(v, n)` / `Decimal.TryParse` / `DateTime.TryParseExact` | returns `False`, out = default | External/user/Excel input; default choice |
 
-**TryParse out-var:** read it in the SAME composite expression — `If(Integer.TryParse(v, n), n, 0)`, `n` pre-declared. A standalone `Integer.TryParse(v, n)` in one `Assign` does NOT reliably write `n` back for a later step (WF expression evaluation binds the ByRef arg to a copy). Same for `Dictionary.TryGetValue`.
+Read a `TryParse` result in the same composite expression: `If(Integer.TryParse(v, n), n, 0)`, with `n` pre-declared. A standalone `Integer.TryParse(v, n)` does not reliably write `n` for a later step because WF may bind `ByRef` to a copy. The same applies to `Dictionary.TryGetValue`.
 
-Specify culture for external numbers/dates: `Double.Parse("1,234.56", System.Globalization.CultureInfo.InvariantCulture)` — bare `CDbl` follows machine locale (US vs German flips `.`/`,`).
-
-Traps: `CInt("12.5")` rounds (banker's, to even) not truncates → `CInt(Math.Floor(...))`; `CBool("yes")` throws (only `"True"`/`"False"`); comparing `GenericValue` strings is lexical, not numeric → cast first.
+Specify culture for external numbers/dates: `Double.Parse("1,234.56", System.Globalization.CultureInfo.InvariantCulture)`; bare `CDbl` follows machine locale. `CInt("12.5")` rounds banker's-style to even, not truncates; use `CInt(Math.Floor(...))` to truncate. `CBool("yes")` throws; only `"True"`/`"False"` are accepted. `GenericValue` string comparison is lexical, not numeric; cast first.
 
 ## Collections
 
-`[expr]` — init & reads:
+`[expr]` initialization and reads:
+
 ```vb
 New List(Of String) From {"a", "b"}
 New Dictionary(Of String, Integer) From {{"a", 1}, {"b", 2}}
 myDict.ContainsKey("k")
-If(myDict.TryGetValue("k", value), value, 0)        ' value is a pre-declared out-var
+If(myDict.TryGetValue("k", value), value, 0)
 ```
-`[seq]`/`[coded]` — iterate & mutate:
+
+`value` is a pre-declared out variable. Iterate/mutate under `[seq]`/`[coded]`:
+
 ```vb
 For Each kvp As KeyValuePair(Of String, Object) In myDict
     ' kvp.Key, kvp.Value
 Next
-For Each kvp In dict2 : dict1(kvp.Key) = kvp.Value : Next     ' merge (dict2 wins)
+For Each kvp In dict2 : dict1(kvp.Key) = kvp.Value : Next
 ```
-Nested config `[expr]`: `DirectCast(configDict("DatabaseSettings"), Dictionary(Of String, String))("ConnectionString")`.
 
-C# coded adds collection initializers (`{ ["a"]=1 }`), null-conditional (`dict.GetValueOrDefault("k")?.Trim()`), null-coalescing (`?? ""`).
+The merge gives precedence to `dict2`. Nested config `[expr]`: `DirectCast(configDict("DatabaseSettings"), Dictionary(Of String, String))("ConnectionString")`.
+
+C# coded permits collection initializers (`{ ["a"]=1 }`), null-conditional (`dict.GetValueOrDefault("k")?.Trim()`), and null-coalescing (`?? ""`).
 
 ## JSON (JObject / JArray)
 
-`Newtonsoft.Json` ships with UiPath projects; use `Newtonsoft.Json.Linq`. (The `Deserialize JSON` / `Deserialize JSON Array` activities wrap these; `System.Text.Json` is the modern BCL alternative for coded.)
+`Newtonsoft.Json` ships with UiPath projects; use `Newtonsoft.Json.Linq`. `Deserialize JSON` / `Deserialize JSON Array` wrap it. `System.Text.Json` is the modern BCL alternative in coded code.
 
-`[expr]` — parse & read:
+`[expr]` parse/read:
+
 ```vb
 Newtonsoft.Json.Linq.JObject.Parse(jsonString)
 Newtonsoft.Json.Linq.JArray.Parse(jsonArrayString)
-jObj("name").ToString()                              ' top-level
-jObj("address")("city").ToString()                  ' nested
-jArr(0)("name").ToString()                           ' array element
-jObj("count").Value(Of Integer)()                    ' typed
-' safe nested access — VB ?. does NOT compile in a XAML Assign (BC37240); use an If guard:
+jObj("name").ToString()
+jObj("address")("city").ToString()
+jArr(0)("name").ToString()
+jObj("count").Value(Of Integer)()
 If(jObj("optional") IsNot Nothing AndAlso jObj("optional")("nested") IsNot Nothing, jObj("optional")("nested").ToString(), Nothing)
-jArr.Where(Function(i) i("status").ToString() = "active")           ' LINQ-to-JSON
+jArr.Where(Function(i) i("status").ToString() = "active")
 jArr.Select(Function(i) i("name").ToString()).ToList()
 ```
-`[coded]`/`[seq]` — build/modify (statement block, not one `Assign`):
+
+VB `?.` does not compile in a XAML `Assign` (BC37240); use the guard shown. Build/modify under `[coded]`/`[seq]`, not one `Assign`:
+
 ```vb
 Dim o = New Newtonsoft.Json.Linq.JObject()
 o("name") = "John" : o("age") = 30
-o.ToString()                                          ' or Newtonsoft.Json.JsonConvert.SerializeObject(o)
+o.ToString()
 ```
-API-response pattern: parse `responseBody`, `If response("error") IsNot Nothing` → `Throw New BusinessRuleException(...)`, then read `DirectCast(response("data")("items"), Newtonsoft.Json.Linq.JArray)`.
+
+For an API response, parse `responseBody`; if `response("error") IsNot Nothing`, throw `BusinessRuleException(...)`; then read `DirectCast(response("data")("items"), Newtonsoft.Json.Linq.JArray)`.
 
 ## Coded (`.cs`) note
 
-Coded workflows use the C# forms directly (`r => r["Col"]`, ternary, `out`, `?.`, `??`, collection initializers, verbatim `@"\d+"` regex, query or method LINQ). Add the `using`s (`System.Data`, `System.Linq`, `System.Text.RegularExpressions`, `System.Globalization`) per [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules). The XAML C# *binding* wrapper is separate — [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
+Coded workflows use C# directly: `r => r["Col"]`, ternary, `out`, `?.`, `??`, collection initializers, verbatim `@"\d+"` regex, and query or method LINQ. Add `using`s `System.Data`, `System.Linq`, `System.Text.RegularExpressions`, and `System.Globalization` per [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules). The XAML C# binding wrapper is separate: [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).

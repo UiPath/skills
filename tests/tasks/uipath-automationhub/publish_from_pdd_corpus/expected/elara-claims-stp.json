@@ -1,0 +1,38 @@
+{
+ "name_contains": "Motor Claims STP: Automated Adjudication and SEPA Settlement for Minor Damage Claims",
+ "documents": {
+  "pdd": "corpus/elara-claims-stp/pdd.md",
+  "process_map": "corpus/elara-claims-stp/process-map.bpmn"
+ },
+ "systems": {
+  "Guidewire ClaimCenter": [
+   "guidewire",
+   "claimcenter",
+   "claim center"
+  ],
+  "Solera CV API": [
+   "solera"
+  ],
+  "Deutsche Bank PaymentConnect": [
+   "paymentconnect",
+   "payment connect"
+  ],
+  "Splunk SIEM": [
+   "splunk"
+  ]
+ },
+ "optional_systems": {
+  "Elara self-service portal": [
+   "self-service portal",
+   "self service portal",
+   "elara portal"
+  ],
+  "Fraud ML Model API": [
+   "fraud"
+  ],
+  "Notification Service": [
+   "notification"
+  ]
+ },
+ "allow_other_category": true
+}

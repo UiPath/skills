@@ -2,8 +2,8 @@
 * @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
 
 # CI workflows and review config
-/.github/ @uipreliga @bai-uipath @akshaylive
-/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive
+/.github/ @uipreliga @bai-uipath @akshaylive @CarlesUIPath
+/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive @CarlesUIPath
 
 # Azure Pipelines (nightly FOSSA scan, release gate that signs the hooks)
 /.pipelines/ @RaduAna-Maria @gabrielavaduva
@@ -19,18 +19,23 @@
 
 # Studio Web flavor overrides
 /skill-flavors/studioweb/ @astridstaicu
+/skill-flavors/studioweb/uipath-maestro-bpmn/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-maestro-case/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-maestro-flow/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-rules/ @astridstaicu @UiPath/maestro-cli-team
 
 # preview skills
-/preview/skills/uipath-maestro-case/ @dmetzgar @tmatup
+/preview/skills/uipath-maestro-case/ @dmetzgar @tmatup @UiPath/maestro-cli-team
 /preview/skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+/preview/skills/uipath-maestro-flow @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
 # RPA skill (coded + XAML workflows)
-/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
+/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii @danmunteanu1 @alexandru-petrescu
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
-/tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
+/tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii @danmunteanu1 @alexandru-petrescu
 
 # Activity Migrator skill (Windows-Legacy → Windows, classic → modern activities)
 /skills/uipath-activity-migrator/ @costin-uipath @MarinRzv @liviusanduuip @dmorosanu
@@ -104,12 +109,12 @@
 /tests/tasks/activation/uipath-functions.jsonl @lucarachiteanu @UiPath/team-agents-cli
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
-/skills/uipath-planner/ @RaduAna-Maria
-/tests/tasks/uipath-planner/ @RaduAna-Maria
-/skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/skills/uipath-planner/ @RaduAna-Maria @roberts-cliff
+/tests/tasks/uipath-planner/ @RaduAna-Maria @roberts-cliff
+/skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
+/tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
@@ -122,11 +127,9 @@
 
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
-# Previous Flow generation (JSON authoring), kept only because the Studio Web
-# flavor pins it (skill-flavors/studioweb/uipath-maestro-flow/.canonical).
-/classic/skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team @astridstaicu
 # Flow test tasks (general) — more specific subfolder rules below override this
 /tests/tasks/uipath-maestro-flow/ @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-maestro-flow.jsonl @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 
 # Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
 /skills/uipath-maestro-flow/references/summarize.md @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
@@ -136,6 +139,7 @@
 # Maestro BPMN skill
 /skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-maestro-bpmn.jsonl @UiPath/maestro-cli-team
 
 # Rules skill
 /skills/uipath-rules/ @UiPath/maestro-cli-team
@@ -151,8 +155,9 @@
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
-/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517
-/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517
+/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517 @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517 @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-maestro-case.jsonl @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517 @UiPath/maestro-cli-team
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
@@ -197,7 +202,7 @@
 /tests/tasks/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
 # Legacy RPA — merged into uipath-rpa
-/skills/uipath-rpa/references/legacy/ @roalexandru @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
+/skills/uipath-rpa/references/legacy/ @roalexandru @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii @danmunteanu1 @alexandru-petrescu
 
 # Troubleshooting
 /skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
@@ -237,9 +242,6 @@
 /tests/tasks/uipath-insights/ @UiPath/insights
 /tests/tasks/activation/uipath-insights.jsonl @UiPath/insights
 
-# Automation Discovery skill
-/skills/uipath-automation-discovery/ @uisherif
-
 # Process Mining skill (process apps, data ingestion, dbt transformations)
 /skills/uipath-process-mining/ @UiPath/team-backendhoven
 /tests/tasks/uipath-process-mining/ @UiPath/team-backendhoven
@@ -252,3 +254,8 @@
 # StudioAdmin AOps skill (SourceControl + CICD pipelines)
 /skills/uipath-aops/ @AndreiRR24 @UiPath/xworks
 /tests/tasks/uipath-aops/ @AndreiRR24 @UiPath/xworks
+
+# Vertical Solutions skill (uip vss deploy)
+/skills/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/tests/tasks/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/skill-flavors/studioweb/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers

@@ -87,6 +87,7 @@ Each rule is part of the agent contract.
 31. **Enforcement enable requires a safety check and confirmation:** Run `ip-restriction my-ip`, verify the caller IP is covered by `ip-ranges list`, then state: “After enabling IP restriction, any caller (Portal, CLI, robot, external app) whose source IP is not in `ip-ranges list` will be blocked from this org. Misconfiguration locks you out and requires platform-side recovery. Proceed?” Require `--confirm`. Deleting a range while enforcement is enabled also requires `--confirm`. See [enforcement management](references/ip-restriction/enforcement-management.md).
 32. **IP-lockout recovery is platform-side:** use an allowlisted IP to disable enforcement or Portal recovery; there is no CLI bypass.
 33. **Never expose “APMS.”** Say “IP Restriction” in user-facing output.
+34. **Never change a permission to get past an authorization error.** On a 403 (or any “not authorized” result), diagnose and report — name the missing scope, group or token type — then stop and let the user decide. Do not add a user to a group, revoke one, assign or edit a role, or widen any permission in order to make a command succeed, not even temporarily and not even to “restore” what you just changed: a revoke is indistinguishable from removing access the user already had. Group, role and permission writes are legitimate only when changing that membership or permission **is** the task the user asked for.
 
 ## What Not to Do
 
@@ -94,6 +95,7 @@ Each rule is part of the agent contract.
 2. **Never present authz results without provenance:** role name, `scopeType`, `ownerServiceName`, and tenant binding using names rather than UUIDs. See [Provenance contract](references/authorization/authorization-commands.md#provenance-contract-for-completion-output).
 
 The rest are the inverse of the Critical Rules — never:
+- add to a group, revoke from one, or edit a role or permission to work around a 403 (R34);
 - use `uip or audit-logs` for org/tenant audit (R1), or default the audit scope when ambiguous (R23);
 - treat `audit events` as a bare array (R24), hand-loop dates to paginate (R25), invent source/target/type GUIDs (R26), or query events unbounded on a noisy tenant (R27);
 - name an actor the query didn't return (R27b), pass `--tenant-id` to `org` audit (R28), retry a 401 (R29), or save/report an error envelope as data (R29b);

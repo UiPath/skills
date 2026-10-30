@@ -15,6 +15,7 @@ first one did.
 
 ## Step 0 — read the cause in the output you already have
 
+<!--skill-flavor:diagnose-step-0:start-->
 `Data.finalStatus: "Faulted"` means the response in hand holds the reason.
 A projection can drop `Data.incidents`, but `--output-filter` never filters
 `Message` and `Instructions`: they summarize the incidents, when PIMS returned
@@ -22,10 +23,13 @@ any, and name the `uip maestro flow debug-instance incidents <instanceId>`
 command. If `Data.incidents` is missing, or `null` in a projection, run that
 command. Do not re-run the flow. On the next run, add `incidents:incidents` to the projection,
 or redirect the unfiltered output to a file and search it:
+<!--skill-flavor:diagnose-step-0:end-->
 
+<!--skill-flavor:debug-redirect:start-->
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json
 ```
+<!--skill-flavor:debug-redirect:end-->
 
 Look for the faulted element and its message. The node id in the fault maps
 back to the `.step('<id>', …)` that produced it, so the fix is usually a source
@@ -56,9 +60,11 @@ uip maestro flow job status <job-key> --output json
 uip maestro flow job traces <job-key> --output json
 ```
 
+<!--skill-flavor:diagnose-auth:start-->
 All of these need `uip login`. Every `instance` command and `incident get` also
 needs `--folder-key` (`-f`) or it is rejected before reaching the API. Get the key from
 `uip or folders list --output json`, or from the job or process context.
+<!--skill-flavor:diagnose-auth:end-->
 
 **Use these commands, never the underlying APIs.** The CLI applies the tenant
 and folder resolution the raw endpoints do not, so a direct call that appears to
@@ -96,6 +102,7 @@ time against a connection this tenant does not have. Read keys from
 `registry list --local` or the generated resource file, never from another
 project.
 
+<!--skill-flavor:skip-registration-fix:start-->
 **A single-nested project that upload rejects.** `uip maestro flow init` with
 `--skip-solution-registration` opts out of auto-scaffold and registration and
 leaves `<Project>/<Project>.flow` where `<Solution>/<Project>/<Project>.flow` is
@@ -108,16 +115,24 @@ running `uip solution init` then `flow init` from inside the solution; add
 `--automate` on the rebuild if the original was a Maestro Automate project — a
 `.maestro_automate` file in the project root says it was, and rebuilding without
 the flag silently returns a plain Flow.
+<!--skill-flavor:skip-registration-fix:end-->
 
+<!--skill-flavor:misshapen-format:start-->
 **Misshapen nodes on the canvas.** `compile` writes a placeholder
 `ui.position` on each node — all of them on one row — and no top-level `layout`
-block, which is what the canvas renders from. Symptom: the flow behaves
-correctly and is unreadable, a switch's arms strung out in a line instead of
-side by side. This is not a run-time fault and no check reports it — `validate`
-passes, because layout is not an authoring concern. Fix:
-`uip maestro flow format <Name>.flow`, which is owed before an upload, a debug,
-or anyone opening the project in a designer — see
-[`operate.md`](operate.md#lay-out-the-emitted-flow-first).
+block. The canvas uses a node's `layout.nodes[<id>]` entry when there is one
+and its `node.ui` otherwise, so a greenfield file draws at the placeholders.
+Symptom: the flow behaves correctly and is unreadable, a switch's arms strung
+out in a line instead of side by side. This is not a run-time fault and no
+check reports it — `validate` passes, because layout is not an authoring
+concern. Fix, for a greenfield file only: `uip maestro flow format <Name>.flow`,
+which is owed before an upload, a debug, or anyone opening the project in a
+designer — see [`operate.md`](operate.md#lay-out-the-emitted-flow-first). Do not
+run it on a merged brownfield file; it re-lays out the author's canvas.
+<!--skill-flavor:misshapen-format:end-->
+When the source sets `.layout()`, the misshapen node is the one with no entry, an entry at the wrong coordinates, an agent node (`inlineAgent`, `conversationalAgent`, `voiceAgent`) without `dim(288, 96)`, or a container whose `dim()` no longer holds a body that grew.
+In a greenfield source: add or move its `at(x, y)`, resize with `dim(width, height)`, and recompile rather than running `format`, which would discard every other entry too.
+In a merged brownfield file only an added node's entry lands; fix an existing node's position or size in the merged `.flow`'s `layout.nodes` ([`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim), [`brownfield.md`](brownfield.md#the-same-loop-by-hand)).
 
 **Green `validate`, faulted `debug`.** Structural correctness and runtime
 correctness are different claims. `validate` proves the emitted `.flow` is well

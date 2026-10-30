@@ -173,6 +173,24 @@ For_Each_1#Body
 
 To include the If's output, reference `$context.outputs.If_1`; the wrapper exports under the If number, not the branch name.
 
+### 11. Paging a connector list or search
+
+To collect all records from a GET list, set `maximumRecordsReturned: -1` on the activity and write no loop. Loop for another method, or when each page needs its own processing: leave `maximumRecordsReturned` unset, and drive the loop from the activity's `.page` output, never from the `elements-next-page-token` header or page length. Declare `nextPage` with no default, so the first call sends none, and `pageCount` with default `0`. In a workflow edited in Studio Web, prefer `maximumRecordsReturned`: the designer can drop `nextPage` on save. Rules: [connector-activity-discovery.md](connector-activity-discovery.md#paging-list-and-search-results).
+
+```text
+Do_While_1 (doWhile: ${$context.variables.hasMore && $context.variables.pageCount < 100})
+└─ Do_While_1#Body
+   ├─ Search activity (queryParameters.nextPage: ${$context.variables.nextPage})
+   ├─ … process this page's .content
+   ├─ Assign nextPage = ${$context.outputs.<ExportBucketKey>.page?.nextPageToken ?? null}
+   ├─ Assign hasMore = ${$context.outputs.<ExportBucketKey>.page?.hasMorePages === true}
+   └─ Assign pageCount = ${$context.variables.pageCount + 1}
+If_1#Wrapper
+├─ If_1 (when: ${$context.variables.hasMore})
+├─ If_1#Then → Response (markJobAsFailed: true, then: "end"): page cap reached
+└─ If_1#Else → []
+```
+
 ## Anti-patterns
 
 - Reusing `If_1#Then` or any other key, even at another nesting level; increment suffixes.

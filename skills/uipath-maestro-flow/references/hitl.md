@@ -8,7 +8,7 @@ type, a deployed Action App, or a document-validation station.
 Signature:
 `hitl({ variant?: 'quick-form' | 'action-app' | 'document-validation', app?,
 document?, title?, priority?, labels?, recipient?, fields?, outcomes,
-outcomePorts?, exposeError? })`.
+outcomePorts?, exposeError?, legacyCompleted? })`.
 
 ```ts
 .var('status', types.string)
@@ -67,6 +67,86 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
   at the field's own id).
+- An asked field's answer also lands in a Flow variable, named by `variable`
+  (the name only, no `vars.` prefix) and defaulting to the field id. Later steps
+  read it as `v('<variable>')`, or bind a shown field to it with
+  `value: v('<variable>')`. Studio Web names it `<Step>_<field>`
+  (`variable: 'P_comments'` writes `vars.P_comments`), and a decompiled canvas
+  form keeps that name — leave it as written, or every downstream read fails
+  `EXPR_UNDECLARED_REF`. `check` reports `HITL_FIELD_VARIABLE` for a `vars.`
+  prefix, a dotted path, or a `variable` on any field that is not
+  `direction: 'output'`. The answer is always `out('<step>', '<id>')` too.
+  Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK ignores
+  `variable` (the row is written as `vars.<id>`, so the reads fail
+  `EXPR_UNDECLARED_REF`) and its decompile warns that it cannot write the
+  designer's row back
+<!--skill-flavor:field-variable-sdk-upgrade:start-->
+  — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:field-variable-sdk-upgrade:end-->
+- A field's `type` is one of the platform's 11 quick-form types: `'string'`,
+  `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`,
+  `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are
+  accepted as older spellings of `'string'` / `'datetime'`; leave them as they
+  are in existing source. A decompiled canvas form keeps its types as written,
+  except a type copied from a bound Flow variable (`'string[]'`,
+  `'string | null'`), which decompiles to the type it resolves to (`'array'`,
+  `'string'`).
+- A picker field uses a choice-control spelling, with its choices in `options`
+  (`{ id, value, label }` each, all three required): `'singleSelect'` and
+  `'enum'` are a single-choice dropdown (a `string` answer), `'multiSelect'` a
+  multi-select (an `array` answer). Never change one to `'string'` or
+  `'array'`: the form loses its picker. A decompiled canvas form keeps these
+  spellings and their `options`, and you can edit the node unless
+  `flow decompile` warns about one of its fields (see below).
+  Needs `@uipath/maestro-builder-sdk` 6.31.9 or later; an older SDK reports
+  `HITL_FIELD_TYPE_UNKNOWN` (do not follow its `type: 'string'` hint),
+<!--skill-flavor:field-type-sdk-upgrade:start-->
+  so
+  upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:field-type-sdk-upgrade:end-->
+
+  ```ts
+  fields: [{
+    id: 'priority', type: 'singleSelect', direction: 'output',
+    options: [{ id: 'opt-1', value: 'high', label: 'High' }, { id: 'opt-2', value: 'low', label: 'Low' }],
+  }]
+  ```
+
+- A field also takes the platform's settings keys, with the platform's names
+  and shapes: `controlType` (how it renders: `'text'`, `'textarea'`,
+  `'numberInput'`, `'datePicker'`, `'dateAndTimePicker'`, `'checkbox'`,
+  `'dropdown'`, `'radioGroup'`, `'multiSelect'`, `'checkboxGroup'`,
+  `'fileUpload'`), `defaultValue` (a string, or a list for a multi-select),
+  `colSpan` (width on the 12-column grid, 1 to 12), `rules`
+  (`{ id, conditions: [{ when, is?, ... }], operator?, effects }`),
+  `requiredMessage`, and `description`. A canvas dropdown is often
+  `type: 'string', controlType: 'dropdown'`: keep both keys. Removing
+  `controlType` turns the dropdown into a text box. A decompiled canvas form
+  keeps all of these, and you can edit the node like any other. `check`
+  reports a value the platform refuses as `HITL_FIELD_SETTING_INVALID`
+  (`INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent's quick-form
+  escalation).
+  These keys need `@uipath/maestro-builder-sdk` 6.35.0 or later;
+  an older SDK drops them on decompile and does not write them on compile,
+<!--skill-flavor:field-settings-sdk-upgrade:start-->
+  so
+  upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:field-settings-sdk-upgrade:end-->
+
+  ```ts
+  fields: [{
+    id: 'priority', label: 'Priority', type: 'string', direction: 'output', required: true,
+    requiredMessage: 'Pick one', colSpan: 6, controlType: 'dropdown',
+    options: [{ id: 'o1', value: 'high', label: 'High' }, { id: 'o2', value: 'low', label: 'Low' }],
+    defaultValue: 'high',
+  }]
+  ```
+
+  If `flow decompile` warns that a form field has a key the SDK "cannot write
+  back" (for example a `variable` other than `vars.<id>`, or a key the
+  platform's schema does not define), editing that node drops the key. Leave
+  that node untouched so merge keeps the original, or edit its JSON in the
+  `.flow` directly. `flow decompile --strict` refuses such a file.
 - **Every outcome is its own exit — the SDK never emits `completed` on a task
   that has outcomes.** Each outcome gets `outcome-<slug>` (the name lowercased,
   non-alphanumerics to `-`). This holds on the default node and on quick-form,
@@ -76,7 +156,18 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `getEffectiveHitlHandleCustomization`). A `completed` edge on a task with
   outcomes is stale: Studio Web and the converter remap it to the PRIMARY
   outcome, so every other outcome loses its path. `check` refuses it
-  (HITL_COMPLETED_PORT_GONE). `exposeError: true` additionally exposes
+  (HITL_COMPLETED_PORT_GONE). The one exception is `legacyCompleted: true`:
+  decompile writes it for a file whose task already leaves on `completed`, so
+  a no-edit round trip writes that edge back unchanged, and `check` warns
+  (HITL_LEGACY_COMPLETED). Never add it yourself. If the task asks you to fix
+  that task's routing, replace it with `outcomePorts: false` (every outcome
+  continues) or route each outcome. A decompiled task the designer drew may write
+  an outcome as `{ name: 'Reject', id: 'outcome-1778015958049' }`: the `id`
+  keeps the original outcome id, so its port is `outcome-outcome-1778015958049`
+  (route it with `.stepToList` by that port; `.stepSwitch` arms still match the
+  name), and the merged edges match the original node. Leave it as it is; new
+  outcomes need no `id`.
+  `exposeError: true` additionally exposes
   `out('<step>', 'error')` and selects the 1.2 definition (default node only).
 
   **Every outcome must be wired**, and there are three ways. Prefer the first:

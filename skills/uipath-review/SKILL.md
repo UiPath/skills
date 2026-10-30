@@ -35,17 +35,17 @@ Run from the user-specified directory or current working directory, excluding ma
 
 ```bash
 find . -maxdepth 3 \( -type d \( -name ".agent-builder" -o -path "*/.local/build" \) \) -prune -o \( -name "*.uipx" -o -name "project.json" -o -name "project.uiproj" -o -name "agent.json" -o -name "*.flow" -o -name "*.bpmn" -o -name "app.config.json" -o -name ".uipath" -o -name "pyproject.toml" -o -name "langgraph.json" -o -name "llama_index.json" -o -name "openai_agents.json" -o -name "uipath.json" -o -name "main.py" \) -print 2>/dev/null
-find . -maxdepth 3 \( -type d \( -name ".agent-builder" -o -path "*/.local/build" \) \) -prune -o \( -name "*PDD*" -o -name "*pdd*" -o -name "*Process_Design*" -o -name "*process_design*" -o -name "*Process-Design*" -o -name "*ProcessDesign*" -o -name "*SDD*" -o -name "*Solution_Design*" -o -name "*design_document*" -o -name "*DesignDocument*" -o -name "*requirements*" -o -name "*specification*" \) -print 2>/dev/null
+find . -maxdepth 3 \( -type d \( -name ".agent-builder" -o -path "*/.local/build" \) \) -prune -o \( -name "*PDD*" -o -name "*pdd*" -o -name "*Process_Definition*" -o -name "*process_definition*" -o -name "*Process-Definition*" -o -name "*ProcessDefinition*" -o -name "*Process_Design*" -o -name "*process_design*" -o -name "*Process-Design*" -o -name "*ProcessDesign*" -o -name "*SDD*" -o -name "*Solution_Design*" -o -name "*design_document*" -o -name "*DesignDocument*" -o -name "*requirements*" -o -name "*specification*" \) -print 2>/dev/null
 ```
 
 #### 0b. Locate and Use the PDD
 
-The PDD is the source of truth for process behavior, business context, inputs/outputs, exceptions, SLAs, transactions, queues, applications, credentials, and success criteria. Search in order: `./docs/`, `./documentation/`, `./Design/`, project root; names containing `PDD.*`, `Process_Design_Document.*`, `SDD.*`, `Solution_Design_Document.*`, or `Requirements.*`; root `AGENTS.md` or `README.md`; then `project.json.description` and metadata. Read supported documents with appropriate tools and extract review criteria.
+The PDD is the source of truth for process behavior, business context, inputs/outputs, exceptions, SLAs, transactions, queues, applications, credentials, and success criteria. Search in order: `./docs/`, `./documentation/`, `./Design/`, project root; names containing `PDD.*`, `Process_Definition_Document.*`, `Process_Design_Document.*`, `SDD.*`, `Solution_Design_Document.*`, or `Requirements.*`; root `AGENTS.md` or `README.md`; then `project.json.description` and metadata. Read supported documents with appropriate tools and extract review criteria.
 
 If none is found, use the `AskUserQuestion` tool to ask interactively (do not print the question as prose):
 
 ```text
-Question: I could not find a Process Design Document (PDD) in this project. Do you have one I can use as the source of truth for this review?
+Question: I could not find a Process Definition Document (PDD) in this project. Do you have one I can use as the source of truth for this review?
 Header: PDD
 Options:
   1. Yes, I have a file — provide a path, URL, or Confluence/SharePoint link.

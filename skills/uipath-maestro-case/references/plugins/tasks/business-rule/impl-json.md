@@ -34,13 +34,15 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
 ```
 
 
+> **Built-inline sibling.** A rule built inline at the Rule 18 gate ([planning.md § Creating a business rule inline](planning.md#creating-a-business-rule-inline)) is already a **fully resolved task** by Phase 2 — bound during planning. Its I/O was read during planning from the rules project's raw `entry-points.json` (`entryPoints[0].input.properties` / `.output.properties` — case-preserving), located/confirmed via `uip maestro case registry search "<Name>" --type businessRule --local --output json` (`search`, not `get` — `get --local` matches only the opaque `entityKey`, never the name). Do **not** read field names from the `--output json` `Resource.{Inputs,Outputs}` — its keys are PascalCased. NOT tenant `tasks describe` (the sibling isn't in the tenant). Skip Step 0 for it; the binding shape below is identical, only the `folderPath` default differs: it is **empty `""`, or omitted** (`sdd convert` from `@uipath/maestro-tool` 1.205.0-dev.9328 writes no default), NOT the `solution_folder` sentinel (`resourceKey` keeps the sentinel; `folderPath` does not).
+
+
 **Step 1 — Root-level bindings:**
 
 
 - `resource`: `"BusinessRule"`
 - `resourceSubType`: omit
-- `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)).
-- `resourceKey`: `<folderPath>.<name>`, or `<name>` alone when `folderPath` is empty — never `.<name>`, which the general [resourceKey construction](../../variables/bindings/impl-json.md) would give. Studio Web writes the bare name for a rule with no folder.
+- `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)). **Built-inline sibling:** `folderPath` default is **empty `""` or omitted** (co-located — the case runs the rule in its own deployed folder) while `resourceKey="solution_folder.<name>"` keeps the sentinel. Do NOT set `folderPath` to `solution_folder` — it passes `validate` but fails invocation with `Folder does not exist`. See [planning.md § Creating a business rule inline](planning.md#creating-a-business-rule-inline).
 
 
 **Step 2 — Write task:**
@@ -48,11 +50,11 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
 2. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`, `data.version` = `"v3"`
 3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`. The rule's whole result is one output, `output` with `source: "=result"`, plus `Error`; read a decision's column downstream as `vars.<output var>.<decision>.<column>`.
 
-   To store one decision column in a case variable, write an extract row `result.<decision>.<column> -> <case variable>` per the [nested extract example](../../variables/io-binding/impl-json.md). The first segment `result` matches the `output` row's source; the leaf name and type come from that row's `_jsonSchema`. Keep the `output` and `Error` rows next to the extract: Studio Web writes both on every business rule task, so rule 5's parent suppression does not apply here. Write the extract row's `type` by hand from the leaf: `splice --described` types only the rows describe returns (`output`, `Error`), and the parser drops a row without `type`:
+   To store one decision column in a case variable, write an extract row `<decision>.<column> -> <case variable>` per the [nested extract example](../../variables/io-binding/impl-json.md). Its `source` is `=<decision>.<column>`: every output row reads a field of the rule's result, the way Studio Web and `sdd convert` write it, and only the bare `output` row reads the whole result as `=result`. Never write `=result.<decision>.<column>` (case `validate` rejects it: `VARIABLE_DOES_NOT_EXIST`) or `=output.<decision>.<column>` (validate passes it, but it reads an `output` field the rule's result does not have). The leaf name and type come from the `output` row's `_jsonSchema`. Keep the `output` and `Error` rows next to the extract: Studio Web writes both on every business rule task, so rule 5's parent suppression does not apply here. Write the extract row's `type` by hand from the leaf: `splice --described` types only the rows describe returns (`output`, `Error`), and the parser drops a row without `type`:
 
    ```json
    { "name": "riskBand", "type": "string", "id": "riskBand", "var": "riskBand", "originalVar": "riskBand",
-     "value": "riskBand", "source": "=result.RiskDecision.riskBand", "target": "=riskBand",
+     "value": "riskBand", "source": "=RiskDecision.riskBand", "target": "=riskBand",
      "elementId": "Stage_aB3kL9-tR7kWm2Pd" }
    ```
 
@@ -63,7 +65,7 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
 ## Post-Write Verification
 
 - `type: "business-rule"`, `data.version: "v3"`
-- `data.outputs` is `output` (`source: "=result"`) plus `Error`, plus any `=result.<decision>.<column>` extract rows
+- `data.outputs` is `output` (`source: "=result"`) plus `Error`, plus any `=<decision>.<column>` extract rows
 - the bindings array has 2 entries: `resource: "BusinessRule"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `id` captured in `id-map.json`
 

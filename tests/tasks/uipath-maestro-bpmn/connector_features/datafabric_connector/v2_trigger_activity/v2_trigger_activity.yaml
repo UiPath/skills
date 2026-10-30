@@ -1,0 +1,93 @@
+task_id: skill-bpmn-datafabric-v2-trigger-activity
+description: >
+  A BPMN process that starts on a Data Fabric "Record Updated" trigger for a
+  folder entity and creates a record in the same entity. With a live
+  connection the skill authors both connector nodes as the V2 elements Studio
+  Web saves, from `registry get --input-details`, with the entity resolved as
+  a solution-resource picker, and `refresh` packages the trigger as an entry
+  point with its EventTrigger and entity resources.
+tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:multi-node, connector, connector-trigger, uipath-uipath-dataservice, "feature:entities", data-fabric]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+run_limits:
+  max_turns: 120
+  turn_timeout: 1800
+  task_timeout: 2700
+
+reference:
+  directory: ../../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_folder_entity.py" "_setup/skill_picker_eval_entity.entity.json"'
+    timeout: 120
+
+initial_prompt: |
+  Build a UiPath Maestro BPMN project, inside a solution, whose process starts
+  when a record changes in a Data Fabric folder entity and then adds a record
+  to that entity:
+
+  * Connector: uipath-uipath-dataservice (use the tenant's Data Fabric connection)
+  * Start: the "Record Updated" trigger (object EntityTriggers_V3, operation UPDATED_V3)
+  * Then: "Create Entity Record (Preview)" (object CreateEntityRecord_V3)
+  * Entity scope: folder, on both
+  * Entity: the folder entity named "SkillPickerEvalEntity" in the Shared folder, on both
+  * Set the new record's "title" field to "V2Test"
+
+  The process will be opened and edited in Studio Web's designer, so both
+  connector nodes must be configured there the way Studio Web configures them.
+  Finish with the package files regenerated and the process passing
+  `uip maestro bpmn validate`. Do NOT run debug. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Before starting, load the uipath-maestro-bpmn skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent built the trigger as a V2 element with the entity in --input-details"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.EventTrigger(?:(?!uip\s)[^&;|])*--input-details(?:(?!uip\s)[^&;|])*SkillPickerEvalEntity'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent built the activity as a V2 element with the entity in --input-details"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution(?:(?!uip\s)[^&;|])*--input-details(?:(?!uip\s)[^&;|])*SkillPickerEvalEntity'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent regenerated the package files with refresh"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+refresh'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final .bpmn passes `uip maestro bpmn validate`"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both nodes are V2 on the recorded entity, and the trigger is packaged as an entry point with its EventTrigger and entity resources"
+    command: "python3 $REFERENCE_DIR/_shared/check_df_v2_trigger_activity.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
