@@ -51,7 +51,7 @@ gets the age it asked for. Absent or `0` means not cached.
 |---|---|
 | eligible calls | GET, HEAD, OPTIONS, and a POST marked `read: true` (a query API with no side effect) |
 | `cacheFor` on any other call | rejected as `script_invalid` (`cache_for_not_read`) |
-| stored when | the vendor answers 2xx with a normal body (not streamed, not a download, no attachment), up to 8 MiB |
+| stored when | the vendor answers 2xx with a normal body (not streamed, not a download, no attachment), up to 8 MiB, and the run then completes successfully (a script that throws stores nothing) |
 | never stored when | the vendor's response says `Cache-Control: no-store` or `private`; `cacheFor` cannot override it |
 | shared with | every script on the connection that makes the same request: method, URL with its query, the headers that change an answer (`accept`, `accept-language`, `content-type`, `prefer`, any `x-*` header the script sets) and the body |
 | not in the key | the script, and the credential, which is injected after the key is built |
@@ -71,10 +71,10 @@ Pick the TTL from how stale the data may be, not from how expensive the call is:
 | people, channels, groups, projects | 15 min-1 h (`900`-`3600`) |
 
 A hit returns the response the vendor sent, so check the vendor's success signal on it as
-you would on a live call ([runtime.md](runtime.md)). Only a 2xx is stored, but a vendor
-that reports failure inside a 200 (Slack's `ok: false`) is stored too, for the `cacheFor`
-you gave it. Keep `cacheFor` short on such a call, and run it with `--no-cache` while the
-script is still being fixed.
+you would on a live call ([runtime.md](runtime.md)). **Throw on every vendor failure,
+including a 2xx whose body reports an error** (Slack's `ok: false`): a cached read is
+committed only when the run completes successfully, so a script that throws on the
+response stores nothing.
 
 ## `export const cache` on an activity
 

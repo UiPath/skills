@@ -68,6 +68,6 @@
   lookups, describes and field discovery, and `export const cache` on a read activity
   that is called repeatedly with the same inputs. Not on a write, on data a user edits
   and reads back, or on anything that depends on inbound headers, time or randomness.
-  A 200 that reports failure in its body (Slack's `ok: false`) is stored like any 2xx,
-  so run work-in-progress with `--no-cache` and test caching once the script is right
-  ([caching.md](caching.md)).
+  Throw on every vendor failure, including a 2xx whose body reports an error (Slack's
+  `ok: false`): a run that throws stores nothing. Run work-in-progress with `--no-cache`
+  and test caching once the script is right ([caching.md](caching.md)).

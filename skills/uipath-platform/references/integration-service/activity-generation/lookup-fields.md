@@ -58,10 +58,10 @@ The procedure, per lookup field:
    and whose output is the **relevant records array**.
 
    **Pagination: ONE page per invocation — the script never walks the list.**
-   The runtime carries no page token. The script returns the page the vendor
-   answers with; if a caller needs another page, the vendor's own paging
-   parameter (`cursor`, `offset`, `page`) is an ordinary input passed through in
-   `query`.
+   The script returns the page the vendor answers with; if a caller needs
+   another page, it carries the vendor's cursor in the page token
+   (`intsvc.setPaginationHeaders` / `intsvc.decodePageToken`, see
+   [runtime.md](runtime.md)) rather than looping.
 
    ```js
    async function execute(context) {
