@@ -24,13 +24,25 @@ There is **no `executions create`** — open a manual run with
 
 1. `testsets run --test-set-key <KEY> --execution-type manual` → `Data.ExecutionId`.
    Every log the run creates is Manual even for automated cases; the default
-   `--execution-type automated` instead dispatches the automations.
+   `--execution-type automated` instead dispatches the automations. To record
+   specific cases rather than the whole set, `uip tm testcases run --test-case-id
+   <TCID> --execution-type manual` opens a run the same way.
 2. `executions testcaselogs list --execution-id <ID>` → one row per case with
    `TestCaseId` + `TestCase.Name`; resolves every id in one call.
-3. `testcaselog start` then `testcaselog finish --result <...> --has-error <...>` per case.
-4. **The run closes itself** once its last manual log finishes (`ExecutionFinished`
-   is stamped). `executions finish` is only the force-close for a run you want to end
-   with logs still open.
+3. `testcaselog start` then `testcaselog finish --result <...> --has-error <...>
+   --executed-by <EMAIL>` per case. **All three finish flags are required** — omit
+   any and it is a `ValidationError`/exit 3 with an empty message. `--executed-by` is
+   stored as the authenticated caller whatever you pass, so pass your own login email
+   (`uip login status` → `Data.UserEmail`, or `uip tm user get`) when the session
+   names no executor; never tell the user a result was attributed to someone they named.
+4. **The run closes itself** once its *last* manual log finishes (`ExecutionFinished`
+   is stamped); finishing only some logs of a multi-case run leaves it open. To close
+   an open run on purpose, first `start` at least one log — a run with no started log
+   cannot be closed at all — then either `finish` every log or `executions finish` to
+   force-close the rest. `executions finish` is the only force-close and is **refused
+   on a run with no started log**.
+5. Report the run's totals with `get-stats --execution-id <ID>` (its own
+   `Passed`/`Failed`/`None` aggregate), never by hand-counting the results you recorded.
 
 ## Traps
 

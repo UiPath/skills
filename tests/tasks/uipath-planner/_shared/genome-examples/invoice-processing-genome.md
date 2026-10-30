@@ -46,67 +46,21 @@ Build order follows the table: the BPMN process references the robot's entry poi
 5. **Human review** — component 1 creates an Action Center task for the AP clerk carrying the invoice, the discrepancies, and the agent's proposal; exits when the clerk submits `Approve proposal`, `Override`, or `Reject`.
 6. **Resolve** — component 1 routes: approved or overridden `repost-with-correction` → step 3 with the corrected fields; `request-supplier-credit-note` or `reject` → supplier notification and close.
 
-BPMN-style process view — one lane per actor or system; circles are start and end events, rectangles tasks prefixed with the component number, diamonds gateways, dashed arrows message or data flows across lanes.
+The components, their triggers and the queue.
 
 ```mermaid
 flowchart TB
-  subgraph ORCH["[1] Invoice Orchestration - one instance per invoice"]
-    S((Start: queue item)) --> T1["[2] Extract fields and<br/>three-way match"]
-    T1 --> G1{Matched and total<br/>below ceiling?}
-    G1 -- yes --> T5["[2] Post to ERP"]
-    G1 -- no --> T2["[3] Triage exception"]
-    T2 --> G2{Confidence >= 0.4?}
-    G2 -- no --> T3["Set proposal = manual"]
-    G2 -- yes --> T4["Create review task"]
-    T3 --> T4
-    T4 --> G3{Clerk decision}
-    G3 -- approve or override<br/>correction --> T5
-    G3 -- reject or<br/>credit note --> T6["Notify supplier"]
-    T5 --> G4{ERP accepted?}
-    G4 -- yes --> E1(((Posted)))
-    G4 -- "no, first time" --> T2
-    G4 -- "no, second time" --> T6
-    T6 --> E2(((Rejected)))
-  end
-  subgraph CLERK[AP clerk]
-    H1[Review invoice, discrepancies<br/>and agent proposal]
-  end
-  subgraph SAP[SAP S/4HANA]
-    X1[Purchase order]
-    X2[Posted invoice document]
-  end
-  subgraph MAIL[Supplier mailbox]
-    M1[Invoice PDF received]
-    M2[Rejection email]
-  end
-  M1 -.->|queue item| S
-  T1 -.->|read PO| X1
-  T4 -.->|Action Center task| H1
-  H1 -.->|decision| G3
-  T5 -.->|post| X2
-  X2 -.->|document number| G4
-  T6 -.->|email| M2
+  R["⏰ [2] Extraction and Matching<br/>reads the mailbox every 15 min;<br/>extracts fields, three-way<br/>matches against SAP, posts<br/>approved invoices"]
+  Q[("AP_InvoiceIntake<br/>one item per received invoice")]
+  O["🔔 [1] Invoice Orchestration<br/>one instance per invoice;<br/>triage, human review, posting"]
+  A["[3] Exception Triage Agent<br/>classifies match failures,<br/>proposes a resolution"]
+  R -->|"adds an item per invoice"| Q
+  Q -->|"starts one instance<br/>per item"| O
+  O -->|"matching, posting<br/>(start job)"| R
+  O -->|"triage (agent job)"| A
 ```
 
-Component view — build-time dependencies and run-time data between the three projects:
-
-```mermaid
-flowchart LR
-  subgraph SOL[Solution: InvoiceProcessing]
-    O["[1] Invoice Orchestration<br/>BPMN process"]
-    R["[2] Extraction and Matching<br/>RPA process"]
-    A["[3] Exception Triage Agent<br/>agent"]
-  end
-  O -->|start job| R
-  O -->|agent job| A
-  R -.->|invoice record, match result| O
-  A -.->|proposal, confidence| O
-  Q[AP_InvoiceIntake queue]
-  B[AP_Invoices bucket]
-  R -.->|queue item| Q
-  Q -.-> O
-  O & R & A --- B
-```
+Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file or mail.
 
 ## Handoffs
 
@@ -115,8 +69,8 @@ flowchart LR
 | Component 2 (intake entry point) | Component 1 | Queue item on `AP_InvoiceIntake`; queue trigger starts one process instance per item | `MailId`, `PdfBucketPath`, `ReceivedAt`, `SenderAddress` | Queue item retried 2× by Orchestrator, then Failed with the mail ID in the reason |
 | Component 1 | Component 2 (matching) | Start job, wait for completion | In: `PdfBucketPath`; out: invoice record (`VendorId`, `VendorName`, `InvoiceNumber`, `InvoiceDate`, `PoNumber`, line items, `Subtotal`, `Tax`, `Total`, `Currency`), `MatchResult` (`matched` / `exception`), `Discrepancies[]` (field, expected, actual) | Job faulted → retry once after 5 minutes, then route to Triage with a single discrepancy `extraction-failed` |
 | Component 1 | Component 3 | Agent job | Invoice record, `Discrepancies[]`, PO summary | Agent unavailable or confidence below 0.4 → proposal `manual`, straight to Human review |
-| Component 1 | AP clerk | Action Center task (Validation app) | Invoice record, discrepancies, agent proposal and rationale, PDF link | Task not completed within 1 business day → reassign to team lead and flag SLA breach |
 | Component 1 | Component 2 (posting) | Start job, wait for completion | Invoice record (possibly corrected) | ERP rejects (duplicate or locked period) → Discrepancy `erp-rejected` with the ERP message, back to Triage; second rejection → Reject and notify supplier |
+| Component 1 | AP clerk | Action Center task (Validation app) | Invoice record, discrepancies, agent proposal and rationale, PDF link | Task not completed within 1 business day → reassign to team lead and flag SLA breach |
 
 ## Platform Dependencies
 
