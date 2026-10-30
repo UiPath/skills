@@ -22,6 +22,10 @@
  * flavor by convention. Legacy explicit-flavor validate/build invocations are
  * retained for focused debugging. Generated files are marker-free and are
  * swapped into `build/` only after the complete operation succeeds.
+ *
+ * `pack-installable FLAVOR` packs one flavor in the default package's full
+ * shape for a publisher that ships it to end users through `uip skills
+ * install` (Automation Suite); `pack` keeps every custom package minimal.
  */
 
 import {
@@ -70,6 +74,10 @@ const MARKER_LINE_RE =
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
 const REMOVE_OPTIONS = { recursive: true, force: true, maxRetries: 3, retryDelay: 100 };
 const ROOT_PACK_STATE_SCHEMA = 1;
+const INSTALLABLE_DIRNAME = "installable";
+// The default package's prepack/postpack driver. Only the default package
+// runs repository lifecycle scripts, so no custom package ships it.
+const LIFECYCLE_DRIVER_ENTRY = "scripts/npm-package-lifecycle.mjs";
 
 export class FlavorCompositionError extends Error {
   constructor(findings) {
@@ -670,13 +678,16 @@ export function materializeComposition(plan, outputDir) {
   }
 }
 
+function prepareGeneratedRoot(root) {
+  const stats = safeLstat(root);
+  if (stats?.isSymbolicLink()) throw new Error(`generated build root cannot be a symlink: ${root}`);
+  if (stats && !stats.isDirectory()) throw new Error(`generated build root is not a directory: ${root}`);
+  mkdirSync(root, { recursive: true });
+  return root;
+}
+
 function prepareBuildRoot(repoRoot) {
-  const buildRoot = path.join(path.resolve(repoRoot), "build");
-  const stats = safeLstat(buildRoot);
-  if (stats?.isSymbolicLink()) throw new Error(`generated build root cannot be a symlink: ${buildRoot}`);
-  if (stats && !stats.isDirectory()) throw new Error(`generated build root is not a directory: ${buildRoot}`);
-  mkdirSync(buildRoot, { recursive: true });
-  return buildRoot;
+  return prepareGeneratedRoot(path.join(path.resolve(repoRoot), "build"));
 }
 
 function materializeVariants(variants, outputRoot) {
@@ -858,24 +869,42 @@ function copyPayload(source, destination, label) {
   }
 }
 
-function generatedPackageManifest(sourceManifest, variant, customFiles) {
+/**
+ * Package shapes. `default` is the root package. A custom flavor is staged
+ * either `minimal` (skills only, pinned to GitHub Packages; what `pack` and
+ * the generic flavor publisher use) or `installable` (the default package's
+ * complete payload with the flavor's skills, so `uip skills install` can
+ * register it with every agent; the publisher picks its registry).
+ */
+const PACKAGE_SHAPES = Object.freeze({ DEFAULT: "default", MINIMAL: "minimal", INSTALLABLE: "installable" });
+
+function packageShape(variant, customShape) {
+  return variant === DEFAULT_VARIANT ? PACKAGE_SHAPES.DEFAULT : customShape;
+}
+
+function generatedPackageManifest(sourceManifest, variant, shape, files) {
   const manifest = JSON.parse(JSON.stringify(sourceManifest));
   manifest.name = packageName(sourceManifest.name, variant);
   manifest.uipathSkillsFlavor = variant;
-  if (variant !== DEFAULT_VARIANT) {
-    delete manifest.scripts;
+  if (shape === PACKAGE_SHAPES.DEFAULT) return manifest;
+
+  delete manifest.scripts;
+  if (shape === PACKAGE_SHAPES.MINIMAL) {
     delete manifest.repository;
     manifest.publishConfig = { ...CUSTOM_PACKAGE_PUBLISH_CONFIG };
-    manifest.description = `UiPath agent skills composed for the ${variant} host environment.`;
-    const keywords = Array.isArray(sourceManifest.keywords)
-      ? sourceManifest.keywords.filter((item) => typeof item === "string")
-      : [];
-    for (const keyword of ["skill-flavor", variant]) {
-      if (!keywords.includes(keyword)) keywords.push(keyword);
-    }
-    manifest.keywords = keywords;
-    manifest.files = customFiles;
+  } else {
+    // npm --provenance requires repository.url to match the publishing repo.
+    delete manifest.publishConfig;
   }
+  manifest.description = `UiPath agent skills composed for the ${variant} host environment.`;
+  const keywords = Array.isArray(sourceManifest.keywords)
+    ? sourceManifest.keywords.filter((item) => typeof item === "string")
+    : [];
+  for (const keyword of ["skill-flavor", variant]) {
+    if (!keywords.includes(keyword)) keywords.push(keyword);
+  }
+  manifest.keywords = keywords;
+  manifest.files = files;
   return manifest;
 }
 
@@ -891,7 +920,23 @@ function customPackageReadme(name, variant) {
   );
 }
 
-function stagePackages(repoRoot, variants, skillTreesRoot, packagesRoot) {
+/** Non-skill `files` entries of the default package that a variant of `shape` ships. */
+function sharedPayload(checkedPayload, shape) {
+  return checkedPayload.filter(({ entry }) => {
+    const normalized = entry.replace(/\/$/, "");
+    if (normalized === "skills") return false;
+    // Custom packages carry a generated README and no lifecycle driver.
+    return shape === PACKAGE_SHAPES.DEFAULT || (normalized !== "README.md" && normalized !== LIFECYCLE_DRIVER_ENTRY);
+  });
+}
+
+function stagePackages(
+  repoRoot,
+  variants,
+  skillTreesRoot,
+  packagesRoot,
+  customShape = PACKAGE_SHAPES.MINIMAL,
+) {
   const sourceManifest = loadPackageManifest(repoRoot);
   const baseName = sourceManifest.name;
   const version = sourceManifest.version;
@@ -904,6 +949,7 @@ function stagePackages(repoRoot, variants, skillTreesRoot, packagesRoot) {
   mkdirSync(packagesRoot, { recursive: false });
   const staged = new Map();
   for (const variant of variants) {
+    const shape = packageShape(variant.name, customShape);
     const packageDir = path.join(packagesRoot, variant.name);
     mkdirSync(packageDir);
     const builtSkills = path.join(skillTreesRoot, variant.name);
@@ -912,31 +958,33 @@ function stagePackages(repoRoot, variants, skillTreesRoot, packagesRoot) {
       throw new Error(`complete built skill tree is missing for ${variant.name}: ${builtSkills}`);
     }
 
-    let customFiles = [];
-    if (variant.name === DEFAULT_VARIANT) {
-      for (const item of checkedPayload) {
-        if (item.entry.replace(/\/$/, "") === "skills") continue;
-        if (!existsSync(item.source)) continue;
-        copyPayload(item.source, path.join(packageDir, ...item.relative), "default package payload");
-      }
-    } else {
-      customFiles = ["skills", "README.md", "LICENSE"];
+    let files;
+    if (shape === PACKAGE_SHAPES.MINIMAL) {
+      files = ["skills", "README.md", "LICENSE"];
       const licensePath = path.join(repoRoot, "LICENSE");
       if (!safeLstat(licensePath)?.isFile()) throw new Error(`custom packages require a LICENSE file: ${licensePath}`);
       copyPayload(licensePath, path.join(packageDir, "LICENSE"), "package license");
       const versionManifest = path.join(repoRoot, "version-manifest.json");
       if (safeLstat(versionManifest)?.isFile()) {
         copyPayload(versionManifest, path.join(packageDir, "version-manifest.json"), "package version manifest");
-        customFiles.push("version-manifest.json");
+        files.push("version-manifest.json");
       }
+    } else {
+      for (const item of sharedPayload(checkedPayload, shape)) {
+        if (!existsSync(item.source)) continue;
+        copyPayload(item.source, path.join(packageDir, ...item.relative), `${shape} package payload`);
+      }
+      files = shape === PACKAGE_SHAPES.DEFAULT
+        ? sourceManifest.files
+        : sourceManifest.files.filter((entry) => entry.replace(/\/$/, "") !== LIFECYCLE_DRIVER_ENTRY);
     }
 
     copyPayload(builtSkills, path.join(packageDir, "skills"), "built skill tree");
     const name = packageName(baseName, variant.name);
-    if (variant.name !== DEFAULT_VARIANT) {
+    if (shape !== PACKAGE_SHAPES.DEFAULT) {
       writeFileSync(path.join(packageDir, "README.md"), customPackageReadme(name, variant.name), "utf8");
     }
-    const manifest = generatedPackageManifest(sourceManifest, variant.name, customFiles);
+    const manifest = generatedPackageManifest(sourceManifest, variant.name, shape, files);
     writeFileSync(path.join(packageDir, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
     staged.set(variant.name, { packageName: name, version, packageDir });
   }
@@ -1395,7 +1443,7 @@ export function verifyTarball(tarball, packageDir, expectedName, expectedVersion
       name.startsWith("package/skill-flavors/") ||
       name.startsWith("package/tests/") ||
       (name.startsWith("package/scripts/") &&
-        name !== "package/scripts/npm-package-lifecycle.mjs"),
+        name !== `package/${LIFECYCLE_DRIVER_ENTRY}`),
   );
   if (forbidden.length) throw new Error(`npm tarball contains source-only paths: ${forbidden.slice(0, 5).join(", ")}`);
 }
@@ -1499,6 +1547,71 @@ export function packAllVariants(
   }
 }
 
+function assertSharedPayloadPacked(tarball, repoRoot) {
+  const names = [...readTarballEntries(tarball).keys()];
+  const checkedPayload = loadPackageManifest(repoRoot).files.map((entry) => ({
+    entry,
+    ...checkedPayloadPath(repoRoot, entry),
+  }));
+  const missing = sharedPayload(checkedPayload, PACKAGE_SHAPES.INSTALLABLE)
+    .filter(({ source }) => existsSync(source))
+    .map(({ relative }) => `package/${relative.join("/")}`)
+    .filter((prefix) => !names.some((name) => name === prefix || name.startsWith(`${prefix}/`)));
+  if (missing.length) {
+    throw new Error(`installable npm tarball is missing default package payload: ${missing.join(", ")}: ${tarball}`);
+  }
+}
+
+/**
+ * Build one custom flavor as an installable package: the default package's
+ * complete payload (plugin manifests, hooks, commands, assets) with the
+ * flavor's built skills, and no registry pin. The verified result replaces
+ * only `build/installable/<flavor>/` (the staged `package/` and its tarball).
+ */
+export function packInstallableFlavor(
+  repoRoot = REPO_ROOT,
+  flavor,
+  { runNpmPack = defaultRunNpmPack } = {},
+) {
+  repoRoot = path.resolve(repoRoot);
+  const variant = flavor === DEFAULT_VARIANT
+    ? undefined
+    : createAllVariants(repoRoot).find(({ name }) => name === flavor);
+  if (!variant) {
+    throw new Error(`not a custom skill flavor under ${FLAVORS_DIRNAME}/: ${quote(flavor)}`);
+  }
+  const installableRoot = prepareGeneratedRoot(path.join(prepareBuildRoot(repoRoot), INSTALLABLE_DIRNAME));
+  const temporaryRoot = mkdtempSync(path.join(installableRoot, ".skill-flavor-pack-"));
+  const temporarySkills = path.join(temporaryRoot, "skills");
+  const temporaryPackages = path.join(temporaryRoot, "packages");
+  const temporaryOutput = path.join(temporaryRoot, flavor);
+  try {
+    materializeVariants([variant], temporarySkills);
+    const findings = markerFindings(temporarySkills, "built skill tree");
+    if (findings.length) throw new FlavorCompositionError(findings);
+    const staged = stagePackages(
+      repoRoot,
+      [variant],
+      temporarySkills,
+      temporaryPackages,
+      PACKAGE_SHAPES.INSTALLABLE,
+    );
+    const [packed] = packStagedPackages(staged, temporaryOutput, runNpmPack);
+    assertSharedPayloadPacked(packed.tarball, repoRoot);
+    renameSync(packed.packageDir, path.join(temporaryOutput, "package"));
+
+    const finalOutput = path.join(installableRoot, flavor);
+    replaceGeneratedDirectories([[temporaryOutput, finalOutput]]);
+    return {
+      ...packed,
+      packageDir: path.join(finalOutput, "package"),
+      tarball: path.join(finalOutput, path.basename(packed.tarball)),
+    };
+  } finally {
+    rmSync(temporaryRoot, REMOVE_OPTIONS);
+  }
+}
+
 function usage() {
   return `Usage: node scripts/compose-skill-flavor.mjs [--repo-root PATH] <command> [arguments]\n\n` +
     `Commands:\n` +
@@ -1506,6 +1619,7 @@ function usage() {
     `  build-default [OUTPUT_DIR]         Write the complete default skill tree\n` +
     `  build [FLAVOR_ROOT] [OUTPUT_ROOT]  Build all trees or the default and one explicit flavor\n` +
     `  pack                               Build, stage, pack, and verify every package\n` +
+    `  pack-installable FLAVOR            Pack one flavor with the full default payload; print its tarball path\n` +
     `  prepare-root-pack                  Activate a marker-free default tree for root npm packaging\n` +
     `  restore-root-pack                  Restore canonical sources after root npm packaging\n`;
 }
@@ -1528,11 +1642,13 @@ function parseCli(argv) {
     "build-default": 1,
     build: 2,
     pack: 0,
+    "pack-installable": 1,
     "prepare-root-pack": 0,
     "restore-root-pack": 0,
   };
   if (!(command in limits)) throw new Error(`unknown command: ${command}`);
   if (args.length > limits[command]) throw new Error(`too many arguments for ${command}`);
+  if (command === "pack-installable" && !args[0]) throw new Error("pack-installable requires a FLAVOR");
   return { help: false, repoRoot, command, args };
 }
 
@@ -1594,6 +1710,11 @@ export function main(argv = process.argv.slice(2)) {
       for (const item of packages) {
         console.log(`  ${item.packageName}@${item.version} [${item.variant}] -> ${item.tarball}`);
       }
+    } else if (command === "pack-installable") {
+      const item = packInstallableFlavor(repoRoot, args[0]);
+      // stdout carries only the path, so a workflow can capture it.
+      console.error(`Built and verified installable ${item.packageName}@${item.version} [${item.variant}].`);
+      console.log(item.tarball);
     } else if (command === "prepare-root-pack") {
       const prepared = prepareRootDefaultPackage(repoRoot);
       console.log(

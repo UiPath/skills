@@ -24,6 +24,13 @@
 /skill-flavors/studioweb/uipath-maestro-flow/ @astridstaicu @UiPath/maestro-cli-team
 /skill-flavors/studioweb/uipath-rules/ @astridstaicu @UiPath/maestro-cli-team
 
+# Automation Suite flavor overrides
+/skill-flavors/automation-suite/ @gabrielavaduva
+/skill-flavors/automation-suite/uipath-admin/ @gabrielavaduva @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge @yadvender-uipath @CalinMPopa @chandhanshanth
+/skill-flavors/automation-suite/uipath-coded-apps/ @gabrielavaduva @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/skill-flavors/automation-suite/uipath-ixp/ @gabrielavaduva @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath @alexandrujircan
+/skill-flavors/automation-suite/uipath-maestro-flow/ @gabrielavaduva @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
+
 # preview skills
 /preview/skills/uipath-maestro-case/ @dmetzgar @tmatup @UiPath/maestro-cli-team
 /preview/skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team

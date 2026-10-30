@@ -7,6 +7,8 @@ description: "UiPath IXP (Document Understanding) via `uip ixp` — create proje
 
 Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects — creating projects, uploading documents, reviewing predictions, and improving extraction quality.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## When to Use This Skill
 
 - User asks to create an IXP project, upload documents, or train a document extraction model

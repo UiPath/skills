@@ -157,6 +157,7 @@ whole, including as an HTTP request body. Pass the expression directly; no
 serializer inspection or taxonomy lookup is needed for that shape. The joined
 recipe above shows the complete handoff.
 
+<!--skill-flavor:ixp-taxonomy-lookup:start-->
 A model taxonomy is needed only when the flow must select named extracted
 fields. If the trained model version is already known, run
 `uip ixp deployments get-taxonomy '<taxonomyProject>' --version <number>` once.
@@ -167,6 +168,7 @@ the deployment. If the one retry also fails, use defensive reads from the
 `Fields[]` or `Tables[]` paths above, state the assumed field names, and finish
 the compile/validation loop. This is interim guidance for
 [UiPath/cli#3512](https://github.com/UiPath/cli/issues/3512).
+<!--skill-flavor:ixp-taxonomy-lookup:end-->
 
 ## Recovery and evidence
 

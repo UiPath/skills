@@ -75,6 +75,7 @@ Inspect staged directories and real `.tgz` archives.
 - Root `npm publish --dry-run` selects only `@uipath/skills` and restores canonical sources before returning.
 - Root `npm pack` and the generated default tarball have identical SHA-512 digests.
 - A generated default package can be repacked safely even though composer source is intentionally absent.
+- `pack-installable <flavor>` ships the default package's complete non-skill payload with the flavor's skills, keeps `repository`, has no `scripts`, lifecycle driver, or `publishConfig`, prints only the tarball path, rejects `default` and unknown flavors, fails when the tarball lost a payload path, and keeps the last successful `build/installable/<flavor>/` on failure.
 
 ## Replacement and Failure Cases
 
@@ -102,4 +103,5 @@ Inspect staged directories and real `.tgz` archives.
 - Studio Web callers pass `flavor: studioweb` after stamping the same channel and caller `github.run_number` used by the default path.
 - Publish concurrency is normalized by effective channel: a `main` push shares a group with manual `dev`, and a `release/v*` push shares a group with manual `preview`.
 - A new flavor remains automatically buildable but needs an explicit caller of the generic publisher before it becomes registry-available.
+- `publish-automation-suite-npmjs` needs `[guard, release-gate]`, its gate equals `publish-npmjs`'s plus `ENABLE_AUTOMATION_SUITE_PUBLISH`, it stamps through `resolve-publish-tag.mjs`, and it publishes only the installable tarball it packed and scanned. Only the gate and the two npmjs jobs request `id-token: write`.
 - Local tarball, Studio Web GitHub Packages `dev`/`preview`, default GitHub Packages `dev`, and default npmjs `preview`/`latest` are distinct availability targets; confirm which one the change requires.

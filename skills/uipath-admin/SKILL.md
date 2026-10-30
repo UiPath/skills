@@ -84,6 +84,8 @@ Each rule is part of the agent contract.
 
 ### IP Restriction
 
+<!--skill-flavor:ip-restriction-scope:start-->
+<!--skill-flavor:ip-restriction-scope:end-->
 31. **Enforcement enable requires a safety check and confirmation:** Run `ip-restriction my-ip`, verify the caller IP is covered by `ip-ranges list`, then state: “After enabling IP restriction, any caller (Portal, CLI, robot, external app) whose source IP is not in `ip-ranges list` will be blocked from this org. Misconfiguration locks you out and requires platform-side recovery. Proceed?” Require `--confirm`. Deleting a range while enforcement is enabled also requires `--confirm`. See [enforcement management](references/ip-restriction/enforcement-management.md).
 32. **IP-lockout recovery is platform-side:** use an allowlisted IP to disable enforcement or Portal recovery; there is no CLI bypass.
 33. **Never expose “APMS.”** Say “IP Restriction” in user-facing output.
