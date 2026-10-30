@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "HelpdeskTriageAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c6afd89a-9714-4060-b3f9-9a66078f1275",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "HelpdeskTriageAgent"
+    },
+    "locks": [],
+    "key": "ccfe628f-0431-4b2b-92d7-f0c1cecd7d20",
+    "files": []
+  }
+}

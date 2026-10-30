@@ -1,0 +1,107 @@
+# skill-lint config for this repo, read by .github/workflows/skill-lint.yml from the base branch (a PR's own
+# edits take effect once merged; the check only validates that they load). Rule reference: UiPath/skill-linter
+# docs/RULES.md. Kept in step with UiPath/skill-linter examples/uipath-skills.skill-lint.yaml.
+#
+# Covers the current skills under skills/. preview/skills and skill-flavors are left out on purpose: they reuse the
+# names of skills/ and are composed into flavors, so linting them alongside reports duplicate names. They are not
+# linted at all for now.
+skills:
+  - "skills/*/SKILL.md"
+targets: [agentskills, claude-code, codex, gemini, delegate]  # delegate: coder_eval --type delegate (UiPath Autopilot)
+packs: [core, claude-code, uipath, coder-eval]
+
+rules:
+  # Owned by scripts/check-skill-links.mjs (required check "Build and inspect every skill package"). It also
+  # fails on dead anchors, but only in uipath-maestro-bpmn (FRAGMENT_ENFORCED), so LINK-ANCHOR stays on elsewhere
+  # (see overrides), as a warning like the script's own report for the other skills.
+  LINK-BROKEN: off
+  LINK-ANCHOR: warning
+  SEC-PIPE-TO-SHELL:
+    allowed_hosts: [download.uipath.com]
+  LISTING-BUDGET:
+    # Listing budgets scale with the context window: Claude Code on a 1M-token model, and Codex on the model the
+    # Codex evals run (CODEX_MODEL gpt-5.6-luna: 272,000 tokens in Codex's model catalog).
+    context_window_tokens: 1000000
+    codex_context_window_tokens: 272000
+  UIP-REQUIRED-SECTIONS:
+    sections: ["Critical Rules"]
+    aliases: {"Critical Rules": ["Hard Rules", "Invariants"]}  # keep in step with the SKILL.md template below
+  # References within two hops of SKILL.md (SKILL.md -> hub -> page); deeper is reported as info.
+  STRUCT-REF-DEPTH:
+    max_depth: 2
+  # A judgment call: a table of contents pays off in long files, and costs tokens in short ones, which
+  # .claude/rules/token-optimization.md asks authors to cut.
+  STRUCT-REF-TOC:
+    min_lines: 300
+  # Claude Code's read cap is in real tokens: estimate them with the ratio measured in
+  # tests/tasks/uipath-maestro-flow/_shared/test_skill_size_budget.py (55,055 bytes -> 21,357 tokens).
+  AGENT-READ-TRUNCATED:
+    claude_code_bytes_per_token: 2.56
+  # SKILL.md size is budgeted per skill (budget tests, the Optimize workflow), and Critical Rules stay in SKILL.md by
+  # house rule. Keep the size visible; CONTENT-CRITICAL-LATE and AGENT-READ-TRUNCATED warn where it costs the agent.
+  SIZE-SKILL-TOKENS: info
+  # Its advice (move triggers into description) conflicts with the 1,024-char cap and LISTING-BUDGET's Codex share,
+  # until the skills maintainers decide whether Codex and Delegate routing is a target.
+  AGENT-ROUTING-TEXT-LOST: info
+  DESC-FRONT-LOAD:
+    extra_terms:
+      uipath-troubleshoot: [investigation, diagnos, root cause]
+  STRUCT-SECTION-TEMPLATE:
+    templates:
+      # Capability entry points: the six-section template used across maestro, admin, governance and platform.
+      - files: "references/**/CAPABILITY.md"
+        skills: [uipath-admin, uipath-governance, uipath-maestro-bpmn, uipath-platform]  # coded-apps' is laid out by intent
+        ordered: true
+        sections: ["When to use this capability", "Critical rules", "Workflow", "Common tasks", "Anti-patterns",
+                   "References"]
+      # Proposed UiPath Skill Format v1 for SKILL.md: reported only (shadow) until skill owners agree on it.
+      # A missing Critical Rules section is reported by UIP-REQUIRED-SECTIONS, so it is not required here.
+      - files: SKILL.md
+        ordered: true
+        canonical: true
+        shadow: true
+        sections:
+          - {name: "When to Use This Skill", aliases: ["When to Use", "Use For"]}
+          - {name: "Critical Rules", aliases: ["Hard Rules", "Invariants"], required: false}
+          - {name: "Workflow", aliases: ["Quick Start", "Workflow Phases", "Workflow Overview"], canonical: false}
+          - {name: "Reference Navigation", aliases: ["Task Navigation", "References", "Resources"]}
+          - {name: "Anti-patterns", aliases: ["What Not to Do", "Common Pitfalls"]}
+  STRUCT-REQUIRED-FILES:
+    groups:
+      # Plugin folders pair a plan with an implementation guide; a few omit the plan on purpose, so shadow for now.
+      # Scoped to the skills that use the pair (coded-apps' dashboard plugins plan from CAPABILITY.md).
+      - {dirs: "references/*plugins/*", files: [planning.md, "impl*.md"], shadow: true,
+         skills: [uipath-maestro-case, uipath-governance]}
+  CONTENT-JSON-VERSION-PIN:
+    documents:
+      # A .flow file's own version comes from `uip maestro flow init`; examples must not hardcode it.
+      - key: version
+        when_keys: [nodes, edges]
+        unless_keys: [nodeType, resources, evaluatorRefs, evaluations]
+        skills: [uipath-maestro-flow]
+  UIP-EVAL-COVERAGE:
+    tasks_dir: tests/tasks
+    required_tiers: [smoke, e2e]
+
+overrides:
+  - paths: ["skills/uipath-maestro-bpmn/**"]
+    rules: {LINK-ANCHOR: off}  # scripts/check-skill-links.mjs fails on dead anchors here
+  # The skill reaches activity docs by path template ("references/activity-docs/{PackageId}/...",
+  # "activity-docs/{PackageName}.md"), not by link, so link-based reachability doesn't apply.
+  - paths: ["skills/uipath-rpa/references/activity-docs/**", "skills/uipath-rpa/references/legacy/activity-docs/**"]
+    rules: {STRUCT-REF-DEPTH: off, STRUCT-ORPHAN-FILE: off}
+  # The current tree is mostly imported from the Activities repository: fix its layout and size there. The legacy
+  # tree is maintained here, so it keeps these rules.
+  - paths: ["skills/uipath-rpa/references/activity-docs/**"]
+    rules: {STRUCT-REF-TOC: off, SIZE-REFERENCE-FILE: off}
+
+suppressions:
+  - rule: STRUCT-REQUIRED-FILES
+    paths: ["skills/uipath-maestro-case/references/plugins/logging",
+            "skills/uipath-maestro-case/references/plugins/variables/bindings"]
+    reason: "No planning.md on purpose: each impl-json.md says 'Intentional, not a gap'"
+  - rule: AGENT-READ-TRUNCATED
+    paths: ["skills/uipath-rpa/references/xaml/common-pitfalls.md"]
+    reason: "Read by section, never whole: SKILL.md says to list its headings and read the matching sections"
+
+# No `baseline:` file: the PR check compares with the merge base (--compare-to), which ignores baselines.
