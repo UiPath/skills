@@ -43,7 +43,7 @@ but the local engine (`flow-debug`) currently reads 0 for the first item, and
 the cloud runtime is not yet verified
 ([flow-builder-sdk#874](https://github.com/UiPath/flow-builder-sdk/issues/874)).
 If a flow's result depends on the number, confirm it with a live
-`uip maestro flow debug` run.
+`uip maestro flow debug` run ([ask first](operate.md#debug--a-real-end-to-end-run)).
 
 The item is named after the LOOP, not after the collection and not by a
 convention: **there is no `$vars.item`, `$vars.currentItem` or `$vars.<collection>`.**
