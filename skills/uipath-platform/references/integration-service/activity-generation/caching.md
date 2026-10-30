@@ -15,9 +15,8 @@ export const cache = { ttl: 3600 };
 export async function execute(context) { /* … */ }
 ```
 
-Both need a runtime with UiPath/IPE-Runtime-Proxy#165 deployed. On an older runtime
-`cacheFor` is ignored and `export const cache` has no effect, so the script still works,
-just uncached.
+Both need a runtime with UiPath/IPE-Runtime-Proxy#165 deployed. Behaviour on a runtime
+without #165 is undefined; deploy after it.
 
 Never name entries, version them, list inputs, or clear anything. The runtime derives
 the keys and Udon clears entries when the connection or connector changes.
@@ -200,7 +199,7 @@ means the cache is not doing what the script says.
 - **Once the script is right, test the caching** with `--inline-script` or
   `--script-ref`: run the same call twice with no flag. The second run should make no
   vendor call (for a `cacheFor` read, one fewer). Confirm it from the vendor's own request
-  count or the run's cache diagnostics, not from the response, which looks the same.
+  count, not from the response, which looks the same.
   Then run once with `--refresh` and expect the vendor to be called again.
 - **A `cacheFor` hit costs no call budget**, so a script near the 4-call limit has more
   room once its reads are cached; a miss still counts.
