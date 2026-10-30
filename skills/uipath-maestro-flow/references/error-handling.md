@@ -39,7 +39,6 @@ Which variable holds the envelope is a per-node-family runtime fact, measured on
 | `core.subflow` | `<step>.error` | the envelope |
 | `core.action.queue.create` | `<step>.error` | the envelope |
 | `core.action.http.v2` (`managed: true`) | `<step>.output` | the boolean `true` |
-| `core.action.http` (`managed: false`) | nowhere | the boolean `true` |
 
 `serialize` rewrites the read for the exception families, so authored source stays uniform and a family moving is a table edit rather than a fleet-wide rewrite.
 A bare `err(step)` is the did-this-fail test and is never rewritten: it reads truthy on every family, the envelope object included.
@@ -48,8 +47,7 @@ A bare `err(step)` is the did-this-fail test and is never rewritten: it reads tr
 
 When a step with a handler fails, a script step still applies its own `{ updates }`; a sub-flow step does not, and neither does a `.loop()` container. An update that must happen only on success goes on the step after it.
 
-Plain `http({ managed: false })` publishes no envelope in any version — 1.0.0 and the 1.3 `uip maestro flow migrate` upgrades it to both leave `<step>.output` null — so `check` refuses a handler there (`HTTP_ONERROR_V1`) instead of emitting a read that resolves to nothing.
-That node is also gone from the tenant registry, which serves only `core.action.http.v2`; `check` says so (`HTTP_V1_RETIRED`).
+Plain `http({ managed: false })` no longer runs: the tenant answers 500 `No handler registered for extension type 'Intsvc.HttpExecution'` and its registry serves only `core.action.http.v2`. `check` warns `HTTP_V1_RETIRED` and refuses a handler there (`HTTP_ONERROR_V1`).
 Moving to the managed node is a behaviour change, not a rename: a non-2xx stops arriving on the success path with `statusCode` and fails the step instead, so a status branch becomes a handler reading `err(step, 'status')`.
 
 A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's canvas label in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.

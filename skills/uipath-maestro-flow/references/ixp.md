@@ -144,7 +144,7 @@ export default flow('archive-card-intake')
     fileRef: out('start', 'ReferenceID'),
   }))
   .step('deliver', http({
-    method: 'POST', url: 'https://catalog.example.test/cards', managed: false,
+    method: 'POST', url: 'https://catalog.example.test/cards', managed: true,
     body: out('extract'), contentType: 'application/json',
   }))
   .build();

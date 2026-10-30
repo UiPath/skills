@@ -1578,3 +1578,15 @@ def test_resolution_writer_advisory_rejects_proxy_send_without_bound_connection(
     result = run_script("advisory_billing_resolution_writer.py", target)
     assert result.returncode != 0
     assert "Slack" in (result.stdout + result.stderr)
+
+
+def test_managed_http_v2_counts_as_raw_http(tmp_path: Path) -> None:
+    """The guide steers URL calls to `core.action.http.v2`; an exact-type match
+    on `core.action.http` lets that bypass through."""
+
+    def mutate(flow: dict) -> None:
+        flow["nodes"].append({"id": "rawHttp", "type": "core.action.http.v2"})
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "raw HTTP" in result.stdout + result.stderr
