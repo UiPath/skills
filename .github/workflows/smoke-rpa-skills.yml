@@ -38,7 +38,19 @@ jobs:
 
       - name: Detect changed Windows-tagged skills and map to test tasks
         id: detect
+        env:
+          DISABLE_SMOKE: ${{ vars.DISABLE_SMOKE }}
         run: |
+          # Kill switch: repo variable DISABLE_SMOKE=true skips the smoke tests
+          # (e.g. while coder-eval runs fail on expired registry tokens rather
+          # than on skill regressions). Emitting skip=true keeps this required
+          # check (and the gated one) green. Unset or any other value: run.
+          if [ "$DISABLE_SMOKE" = "true" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Smoke tests disabled (vars.DISABLE_SMOKE == 'true') — skipping"
+            exit 0
+          fi
+
           BASE_REF="${{ github.base_ref }}"
           if [ -z "$BASE_REF" ]; then BASE_REF="main"; fi
           CHANGED=$(git diff --name-only origin/$BASE_REF...HEAD)

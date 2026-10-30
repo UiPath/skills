@@ -1,0 +1,68 @@
+task_id: skill-mcp-servers-user-connection-status
+description: |
+  Find out why a remote-type Agent Gateway MCP server fails for one user while it works for everyone else, without changing anything. Exercises Per-User Connections: the server's own connection is fine, but `uip agenthub mcp-user-connections list` shows the user's own connection with status `RequiresAuth` (it expired), so that user has to re-authenticate it. Graded from the uip mock's call log, plus an LLM judge on the answer. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:operate', 'lifecycle:validate']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Jane Doe (jane.doe@example.com) says the remote AgentHub MCP server vendor-mcp
+  in the Shared folder stopped working for her, while it works for everyone
+  else. Find out why and tell me what she needs to do. Don't change anything.
+success_criteria:
+- type: command_executed
+  description: Agent listed the server's per-user connections
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp-user-connections\s+list\b[^\n]*--mcp[ =]vendor-mcp\b'
+  min_count: 1
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT set or delete a per-user connection
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp-user-connections\s+(set|delete)\b(?![^\n]*--(dry-run|help))'
+- type: command_not_executed
+  description: Agent did NOT change the server (mcp update / delete / refresh-tools)
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp\s+(update|delete|refresh-tools)\b(?![^\n]*--(dry-run|help|print-schema))'
+- type: command_not_executed
+  description: Agent did NOT create, edit or delete an Integration Service connection
+  tool_name: Bash
+  command_pattern: 'uip\s+is\s+connections\s+(create|edit|delete|rename|set-default)\b'
+- type: llm_judge
+  description: The answer says Jane's own per-user connection needs re-authentication
+  weight: 2.0
+  pass_threshold: 0.7
+  include_reference: false
+  include_dialog: true
+  include_agent_output: true
+  prompt: |
+    On the MCP server, the server's own Integration Service connection is
+    Enabled. Jane has her own per-user connection on the server,
+    "Vendor MCP (Jane)" (id 7a1b2c3d-0000-4000-8000-0000000000aa), which `mcp-user-connections list` shows
+    with status RequiresAuth: it has expired. Grade the agent's final answer
+    to the user:
+
+      1.0  Says Jane's calls use her own per-user connection, not the
+           server's, and that it expired or needs re-authentication; says
+           Jane has to sign in to it again (re-authenticate it, e.g.
+           `uip is connections edit <id>` or in Integration Service). It may
+           also offer deleting her per-user connection, so she uses the
+           server's, or setting another one, as alternatives.
+      0.7  Identifies Jane's per-user connection as the cause and that it
+           needs re-authentication, but is vague about who does it or how.
+      0.3  Blames a connection without saying it is Jane's own per-user one,
+           or says the server's connection is the problem.
+      0.0  Says the server works for Jane, blames something else, or reports
+           that it changed the server or a connection.
+run_limits: {max_turns: 60}

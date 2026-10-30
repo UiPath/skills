@@ -42,3 +42,8 @@
 {"id": "uipath-mcp-servers-049", "prompt": "Is the Integration Service connection on my Agent Gateway MCP server still valid?", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-050", "prompt": "Register a remote MCP server in Agent Gateway that authenticates with my Integration Service connection", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-051", "prompt": "Switch my remote MCP server in Agent Gateway to another Integration Service connection", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-052", "prompt": "Make one user call my remote MCP server in Agent Gateway with their own Integration Service connection", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-053", "prompt": "Which users have their own connection on my Agent Gateway MCP server, and are they still valid?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-054", "prompt": "Remove a user's per-user connection from an Agent Gateway MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-055", "prompt": "Register a swagger MCP server in Agent Gateway on our Automation Suite 26.10 tenant", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-056", "prompt": "uip agenthub mcp create swagger says the swagger MCP server type isn't supported on the connected environment, what does that mean?", "expected_skill": "uipath-mcp-servers"}

@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpGet",
+  "Data": {
+    "Id": "mcp-mock-vendor-01",
+    "Name": "Vendor MCP",
+    "Slug": "vendor-mcp",
+    "Description": "Vendor MCP server",
+    "Version": "1.0.0",
+    "CreatedAt": "2026-08-03T00:00:00.000Z",
+    "CreatedBy": "mock.user@example.com",
+    "IsActive": true,
+    "UseRelay": false,
+    "Type": 4,
+    "Status": 1,
+    "Arguments": "https://mcp.mock.example.com/mcp",
+    "ConnectionId": "7a1b2c3d-0000-4000-8000-000000000001",
+    "ConnectionFolderKey": "folder-mock-shared",
+    "FolderKey": "folder-mock-shared",
+    "RuntimesCount": 0,
+    "McpUrl": "https://mock.uipath.example.com/mockorg/mocktenant/agenthub_/mcp/folder-mock-shared/vendor-mcp"
+  }
+}
