@@ -266,12 +266,80 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `extractionResult` to the upstream extract step's `ExtractionResult`.
   `render: 'custom'` requires `taxonomy` (and takes `app`).
 
+## Action App inputs and answers
+
+On `variant: 'action-app'`, give the app's action schema as `app.actionSchema`.
+Two spellings are accepted; pass either one as it is and do not convert
+between them:
+
+- a coded action app's `action-schema.json`: each section (`inputs`,
+  `outputs`, `inOuts`, `outcomes`) is `{ type: 'object', properties: { <name>:
+  { type, required? } } }`;
+- the platform's action schema, the solution resource's `spec.actionSchema`
+  (`resources/solution_folder/app/codedAction/<App>.json`): each section is an
+  array of `{ name, type: 'System.String', required, isList }`. It is stored as
+  a JSON string: parse it and pass the object, or `check` refuses it
+  (`HITL_APP_SCHEMA_INVALID`).
+
+If neither file is available, ask the user for the schema; never write one by
+hand.
+
+```ts
+.step('review', hitl({
+  variant: 'action-app',
+  app: {
+    name: 'InvoiceReview', key: appKey, folderPath: 'Shared',
+    inputs: { invoiceAmount: input('invoice_amount'), variancePct: out('math', 'variance_pct') },
+    actionSchema: {                       // the app's action-schema.json
+      inputs: { type: 'object', properties: {
+        invoiceAmount: { type: 'number', required: true },
+        variancePct: { type: 'number', required: true } } },
+      outputs: { type: 'object', properties: {
+        reviewerComments: { type: 'string', required: true } } },
+      outcomes: { type: 'object', properties: { Approve: { type: 'string' }, Reject: { type: 'string' } } },
+    },
+  },
+  outcomes: ['Approve', 'Reject'],
+}))
+.return({ decision: out('review', 'Action'), comments: out('review', 'reviewerComments') })
+```
+
+- **Without it every input reaches the app as a string.** The task's input
+  schema is built from `actionSchema`; with none, the platform types each
+  `app.inputs` key as `string`, so `invoiceAmount: 10450` arrives as
+  `"10450"`. `check` warns (`HITL_APP_NO_SCHEMA`) when inputs are sent with no
+  schema.
+- **`check` holds the flow to the schema:** an input the app does not declare
+  (`HITL_APP_INPUT_UNKNOWN`), a required input left unbound
+  (`HITL_APP_INPUT_REQUIRED`), an outcome the app has no button for
+  (`HITL_APP_OUTCOME_UNKNOWN`), and a value that is not an action schema
+  (`HITL_APP_SCHEMA_INVALID`) are errors.
+- **The app's answers become readable.** The schema's `outputs` and `inOuts`
+  are the task's typed answer fields, so `out('review', 'reviewerComments')`
+  passes `check`. Without the schema such a read fails
+  (`HITL_READ_UNKNOWN_FIELD`).
+- A nested object input's `properties` are not checked; don't rely on `check`
+  for them.
+- **Decompile keeps the schema as written.** It prints `app.actionSchema` when
+  that compiles back to the node's exact `inputSchema`. Otherwise (for example a
+  hand-edited schema with `title`s) it prints the node's schema verbatim as
+  `app.inputSchema`. Keep that as it is; give `actionSchema` or `inputSchema`,
+  not both.
+
+Needs `@uipath/maestro-builder-sdk` 6.59.1 or later; an older SDK has no
+`actionSchema` on `app`, so TypeScript rejects the key (check that
+`dist/api-index.md` lists `PlatformActionSchema`),
+<!--skill-flavor:action-schema-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:action-schema-sdk-upgrade:end-->
+
 ## Variant judgment
 
 Use the node variant explicitly named by the scenario. The default and
 quick-form variants own their fields in the Flow; action-app delegates the form
 to an already-deployed app. For an app task, resolve the app key, name, folder,
-and argument names from the same tenant resource.
+and argument names from the same tenant resource, and give its schema as
+`app.actionSchema` ([Action App inputs and answers](#action-app-inputs-and-answers)).
 
 ## Evidence boundary
 
