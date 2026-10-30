@@ -43,7 +43,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 1. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This is what makes `$vars.start.output.invoice` resolve, so it comes before the node that reads it.
 2. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`.
-3. **Connect it in the graph** with `edges create`, remembering `--source-port success` on the edge leaving it ([Wiring the file it reads](#wiring-the-file-it-reads)).
+3. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
 4. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
 5. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
 6. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
@@ -55,7 +55,7 @@ The feature is new and tenant-gated, so not every tenant has it yet. Nothing in 
 
 ## Adding the node
 
-**These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project initialised with `--sdk-source` generates its `.flow` from a `.flow.ts` by compiling, and the next compile overwrites whatever `nodes create` and `nodes schema set` wrote. Check for a `.flow-sdk/` directory before starting. Where one exists, the node can be added from source only with `dynamicExtract()`, which needs a published model's `modelName` and `folderKey` ([document-pipeline.md](document-pipeline.md)). Without one, build the flow in a project without source and keep to the CLI. Do not alternate between the two and re-apply the CLI edits after each compile.
+**These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project initialised with `--sdk-source` generates its `.flow` from a `.flow.ts` by compiling, and the next compile overwrites whatever `nodes create` and `nodes schema set` wrote. Check for a `.flow-sdk/` directory before starting. Where one exists, build the Extract document flow in a separate project without source and keep to the CLI — the SDK's `dynamicExtract()` is not the route here ([document-pipeline.md](document-pipeline.md) explains its limits). Do not alternate between the two and re-apply the CLI edits after each compile.
 
 `--label` sets the canvas name and seeds the node id. Give it a name that says which document and which fields, not "Extract" — a flow with two extraction nodes is common, and the label is what the user reads on the canvas and in a trace. Run `uip maestro flow nodes list <file> --output json` afterwards to get the id that was minted; later commands address the node by that id.
 
@@ -101,10 +101,10 @@ Then connect the node in the graph:
 
 ```bash
 uip maestro flow edges create <file> <upstream-id> <extract-id> --output json
-uip maestro flow edges create <file> <extract-id> <downstream-id> --source-port success --output json
+uip maestro flow edges create <file> <extract-id> <downstream-id> --output json
 ```
 
-**The edge leaving this node needs `--source-port success`.** `edges create` defaults to a port called `output`, which this node does not have, and the command refuses with `Source port "output" not found on node "<id>". Available source ports: success, error`. The names are close enough to mislead: `success` and `error` are the graph ports you draw edges from, while `output` and `error` are the variable outputs you read with `$vars`. The incoming edge needs no flag, because the target port is the default `input`.
+`edges create` picks the node's default source port, so the outgoing edge leaves on `success` without a flag. The graph ports (`success`, `error`) are distinct from the variable outputs read with `$vars` (`output`, `error`), which share a name on the error side only.
 
 Adding the same edge twice is safe — the command reports the existing edge rather than creating a duplicate.
 
@@ -133,7 +133,7 @@ Declare the output global, then add an End node and wire the extract node to it:
 ```bash
 uip maestro flow variables create <file> extractedData -d out -t object --description 'The structured data extracted from the document' --output json
 uip maestro flow nodes create <file> core.control.end --label 'End' --output json
-uip maestro flow edges create <file> <extract-id> <end-id> --source-port success --output json
+uip maestro flow edges create <file> <extract-id> <end-id> --output json
 ```
 
 The binding itself lives in the End node's own `outputs` block, keyed by the output's name:

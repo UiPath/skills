@@ -62,7 +62,7 @@ MAX_SECTION_BYTES = 1300
 # H2 title -> its own byte budget, for the sections that must stay larger.
 # Each is the #3718 size plus ~5%.
 SECTION_BUDGETS = {
-    "Project layout": 8_100,  # scaffold + node choice + connector loop (7,725)
+    "Project layout": 8_500,  # scaffold + node choice + connector loop (7,725); re-set for the Extract document routing and its init exception (8,474)
     "Lifecycle": 2_500,  # loop choice + the emit-only command block (2,374)
     "Editing an existing flow": 1_600,  # brownfield pointer + pipeline block (1,495)
     "Builder frame": 2_050,  # vars, return/terminate, expression table (1,930)

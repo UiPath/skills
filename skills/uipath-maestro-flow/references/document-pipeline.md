@@ -40,23 +40,28 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
 
 ## Two ways to author it
 
-**The SDK factory**, `dynamicExtract()`, is the route above. It requires a
-`model` with `modelName` and `folderKey` — copy them from the tenant, never
-construct them. The node itself does not use them: it runs the taxonomy it
-carries, and the runtime picks what to run from `inputs.processorKey`, which exists only after the flow is saved once in Studio Web ([Making it actually extract](extract-document-node.md#making-it-actually-extract)). The
-requirement is the factory's, inherited from `ixpExtract`'s shape, so a user
-with no published IxP project cannot call it at all.
+**The SDK factory**, `dynamicExtract()`, is the call above, and it carries
+limits the node itself does not have. It requires a `model` with a published
+deployment's `modelName` and `folderKey` — copy them from the tenant, never
+construct them — although the node never reads them: it runs the taxonomy it
+carries, through `inputs.processorKey`, which exists only after the flow is
+saved once in Studio Web ([Making it actually extract](extract-document-node.md#making-it-actually-extract)).
+Decompiling a flow that holds this node and compiling it back also throws on
+the missing `model`. So the factory is usable only where a flow must stay in
+TypeScript source and a published model's identity is to hand; everywhere else,
+use the CLI.
 
-**The CLI commands** author the same node with no model deployment. Use
-[extract-document-node.md](extract-document-node.md) to establish the tenant has the node,
-add it, and wire `fileRef`.
+**The CLI commands** author the same node with no model deployment, and are the
+route the router row and both guides point at: add it and wire `fileRef` per
+[extract-document-node.md](extract-document-node.md).
 
 Both routes need the same taxonomy, and
 [extract-document-taxonomy.md](extract-document-taxonomy.md) is where it is designed and
-written. One difference matters when choosing: every field group and field in
-the taxonomy must carry a stable id, and `nodes schema set` mints those for
-you, while a `schema` passed to the factory is emitted verbatim and must
-already have them or `flow validate` fails.
+written. One difference decides between them: every field group and field must
+carry a stable id, and `nodes schema set` mints those for you, while a `schema`
+passed to the factory is emitted verbatim — validation passes only when every
+id is already written by hand, which the taxonomy guide warns against because
+hand-managed ids are how annotations detach from fields.
 
 ## Schema and outputs
 
