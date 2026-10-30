@@ -36,8 +36,8 @@
   `resp.items` is always `undefined`. A list action unwraps the vendor's
   envelope INSIDE `execute()` and returns the **relevant records array** — you
   filter that array yourself. Pagination is NOT concatenated
-  into that array: one invocation is one page, and the runtime carries no page
-  token (step 3). Inside a main action,
+  into that array: one invocation is one page; the next page's token round-trips via
+  `elements-next-page-token` and `request.query.nextPage` ([runtime.md](runtime.md), step 3). Inside a main action,
   operation-internal reads (e.g. the read half of read-merge-write) unwrap
   `resp.body` the same way, and the main action returns the final `intsvc.http`
   result untouched.
