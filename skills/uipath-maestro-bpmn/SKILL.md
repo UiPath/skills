@@ -707,11 +707,12 @@ Draft mode only.
    Exit 0 = valid. Exit 1 = a parse error, a `grep` hit, or a `validate`
    failure. Read severity from each issue's `[error]`/`[warning]` tag, not
    from the `Found N error(s)` header, which counts errors while the list under
-   it prints warnings too. Fix only
-   error-severity findings, then re-run 4d and validate again; stop
-   re-validating once every remaining finding is a warning or the placeholder
-   pair below. `read but never assigned` is a defect no error covers: nothing
-   writes a value the process reads, so a step that should produce it does not.
+   it prints warnings too. Fix
+   error-severity findings and the warnings named below, then re-run 4d and
+   validate again; stop re-validating once every remaining finding is another
+   warning or the placeholder pair below. `read but never assigned` is a
+   defect no error covers: nothing writes a value the process reads, so a step
+   that should produce it does not.
    `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
    about one unresolved node, and the binding half is a live tenant lookup.
    Bind the node to a deployed resource. When the user asked for a
@@ -720,9 +721,11 @@ Draft mode only.
    `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
    expected result. Report the pair once and continue; `refresh` (4f)
    succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
-   it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on
-   the node reading a start-event-scoped caller input is expected; see
-   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+   it names a reference with no declaration. Fix every `VARIABLE_NOT_SET` and
+   `read but never assigned` on a variable a node or a flow condition reads; neither is expected.
+   A declared start-event input reaches a process variable only through the
+   start event's `BPMN.Variables` mapping, see
+   [references/structural-bpmn.md#variables](references/structural-bpmn.md#variables).
 
    `[warning] [(xml)] unknown attribute <type>` is expected noise from the
    script-task template's `<uipath:inputSchema type="jsonSchema">`. Leave it.
