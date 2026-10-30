@@ -64,11 +64,10 @@
 - **No Node globals in the sandbox**: `Buffer`, `btoa`/`atob`,
   `TextEncoder`/`TextDecoder` are absent (`JSON` and `Uint8Array` are present).
   Anything needing base64 cannot be written in a script.
-- **Cache reads, never writes, and iterate with `--no-cache`.** Wrap vendor
-  reads in `intsvc.cache.remember` and throw on any vendor failure (a 2xx
-  `ok: false` too), or the failure is stored. Keep writes outside `fill`. Put a
-  version in shared names (`describe@1:${object}`) and bump it when the stored shape
-  changes, in every script that shares the base; in a connector repo, declare sharing
-  in `app/element/v4/cache-names.json` and fix `uip is connectors builder validate`
-  `script-cache-names` errors. Run work-in-progress with `--no-cache` to store nothing; test caching
-  once the script is right ([caching.md](caching.md)).
+- **Cache reads, never writes, and iterate with `--no-cache`.** Put `cacheFor` on
+  lookups, describes and field discovery, and `export const cache` on a read activity
+  that is called repeatedly with the same inputs. Not on a write, on data a user edits
+  and reads back, or on anything that depends on inbound headers, time or randomness.
+  A 200 that reports failure in its body (Slack's `ok: false`) is stored like any 2xx,
+  so run work-in-progress with `--no-cache` and test caching once the script is right
+  ([caching.md](caching.md)).
