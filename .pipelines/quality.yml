@@ -1,0 +1,39 @@
+name: $(Date:yyMMdd)$(Rev:.r)-quality
+
+trigger: none
+
+pr: none
+
+schedules:
+  - cron: "0 3 * * *"
+    displayName: Nightly SonarCloud coverage analysis
+    branches:
+      include:
+        - main
+    always: true
+
+parameters:
+  - name: sonarServiceConnection
+    displayName: SonarCloud service connection (Autopilot's SonarCloud, as shared into skills)
+    type: string
+    default: 'SonarCloud-skills'
+  # A single space, trimmed below: an empty string default makes the queue
+  # dialog demand a value.
+  - name: sonarPoolName
+    displayName: Agent pool (blank = Microsoft-hosted ubuntu-latest)
+    type: string
+    default: ' '
+
+resources:
+  repositories:
+    - repository: sonar
+      type: github
+      name: UiPath/AzurePipelinesTemplates
+      ref: refs/tags/uipath.sonar-coverage.4.0.1
+      endpoint: github.com_UiPath
+
+stages:
+  - template: jobs/ci.quality.sonar.yml
+    parameters:
+      sonarServiceConnection: ${{ parameters.sonarServiceConnection }}
+      poolName: ${{ trim(parameters.sonarPoolName) }}

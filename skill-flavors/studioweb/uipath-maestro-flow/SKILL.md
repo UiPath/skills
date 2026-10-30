@@ -62,7 +62,7 @@ Integrations with non-UiPath systems use connectors. **Choose the node before wr
 Run each command from the project folder `/solution/<Project>`. `prepare` writes `.flow-sdk/connectors-local/<key>.ts` and `.flow-sdk/bindings.json` there.
 
 1. **Describe the operation:** `uip maestro registry describe <node-type> --output plain`. The page gives the inputs, outputs, lookup fields and the code to write.
-2. **Choose the connection:** `uip is connections list <connector-key> --all-folders --output json`. When more than one connection is `Enabled`, ask the user which one to use. Then pass `--connection-id <id>` to `prepare`. `prepare` refuses a connection in state `Failed`.
+2. **Choose the connection:** `uip is connections list <connector-key> --all-folders --output json`. When more than one connection is `Enabled`, ask the user which one to use. Then pass `--connection-id <id>` to `prepare`, and report it ([completion output](references/author.md#completion-output) item 5). `prepare` refuses a connection in state `Failed`.
 3. **Prepare the action:** `uip maestro registry prepare <connector-key> --action <action>`. For each lookup field, add `--resolve <field>:<key|name>=<value>`. Then run it again with `-f <field>=<value>` for all of those fields. The hints of `prepare` give the exact next command: run it.
 4. **Author with the prepared descriptor**, as the `next:` lines of `prepare` show. The import path is relative to the draft in `.flow-sdk/`:
 
@@ -84,7 +84,7 @@ Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRe
 <!--skill-flavor:sdk-connector-discovery:end-->
 
 <!--skill-flavor:sdk-lifecycle:start-->
-Every change — a new flow or an edit — is the same round trip through the target `.flow` ([Project layout](#project-layout)). The merge keeps what the SDK does not model (canvas layout, positions, sidecars) as the user left it. Run it from the project folder:
+Every change — a new flow or an edit — is the same round trip through the target `.flow` ([Project layout](#project-layout)). Merge keeps what the SDK does not model (layout, sidecars); leave nodes it moves where it put them. Run it from the project folder:
 
 ```bash
 cd /solution/<Project>
@@ -111,7 +111,7 @@ Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` a
 - **If the baseline compile refuses a decompiled connector input**, stop and tell the user (UiPath/builder-sdk#1402).
 - **A flow with connectors** needs each connection in the solution after the merge ([the connector loop](#the-connector-loop-in-studio-web), step 7).
 
-Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>"` is a real run. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.
+Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>"` is a real run: ask per references/operate.md. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.
 <!--skill-flavor:sdk-lifecycle:end-->
 
 <!--skill-flavor:sdk-editing:start-->
@@ -139,6 +139,6 @@ publish or debug, make sure each connection is in the solution; never run
 `uip solution resources refresh` here. Run the flow
 with `uip maestro flow debug "<Project>"`.
 Publish the open solution with `uip solution publish` (the destination is the
-user's choice). `flow debug` is a REAL run, not a validation step. Read
+user's choice). `flow debug` is a REAL run, not a validation step: ask first, as it says. Read
 **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:sdk-operate:end-->
