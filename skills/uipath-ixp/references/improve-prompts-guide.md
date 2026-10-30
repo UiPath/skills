@@ -1,98 +1,76 @@
 # Improve Prompts Guide
 
-Iterative optimization loop for improving extraction quality on an existing IXP project. Runs multiple iterations automatically, rolling back if scores regress.
+Iteratively improve extraction quality in an existing IXP project: run iterations, measure, and roll back regressions.
 
 ## What Prompts CAN and CANNOT Fix
 
-Before starting, understand the limits of prompt iteration:
-
-**Prompts CAN fix:**
-
-- Fields where the model extracts the wrong value (precision problems) — better instructions clarify what to extract
-- Fields where the model misses the value entirely (recall problems) — location hints help the model find the field
-- Ambiguous fields where the model picks the wrong candidate — disambiguation rules and closed vocabularies help
-
-**Neither prompts nor reviewing can fix:**
-
-- **OCR quality issues** — if the OCR garbles a field's text, no instruction will fix it. During review those predictions are NOT CONFIRMED and stay unannotated. Report every OCR-garbled field to the user as a data quality issue, even a single one, and do not spend prompt iterations on it.
-- **Missing fields** — if a field simply doesn't exist in the documents, no instruction will conjure it.
+Prompts can fix wrong values (precision), missed values through location hints (recall), and ambiguous candidate selection (disambiguation and closed vocabularies). Prompts and review cannot fix OCR-garbled text or absent fields. OCR-garbled predictions are **NOT CONFIRMED**, remain unannotated, and must all be reported as data-quality issues, even one; do not iterate on them. Missing fields cannot be conjured.
 
 ## How prompt updates work
 
-Prompts live at three levels and are edited by three separate commands:
+- Run `uip ixp projects update-prompt <project> --prompt "<text>"` for overall instructions seen by every field; it overwrites the entire project prompt, so submit the full text.
+- Run `uip ixp groups update-prompts <project> --updates-file <path>` for field-group (`label_def`) instructions matched by `label_def` name.
+- Run `uip ixp fields update-prompts <project> --updates-file <path>` for field instructions matched by field-group name plus field name; it fails if either combination is absent.
 
-- **`uip ixp projects update-prompt <project> --prompt "<text>"`** — the project's **Overall extraction instructions**, seen on every extraction for every field.
-- **`uip ixp groups update-prompts <project> --updates-file <path>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
-- **`uip ixp fields update-prompts <project> --updates-file <path>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name and fails if either combination is not found.
-
-`groups update-prompts` and `fields update-prompts` match by their supplied identity and update only the named entries, preserving every definition you didn't change. `projects update-prompt` overwrites the entire project prompt, so always submit the full text. To update more than one level in the same iteration, run the commands back-to-back.
+Group and field updates modify only supplied entries and preserve the rest. Run commands back-to-back to update multiple levels in one iteration.
 
 ## Before Starting
 
-The user may specify a max number of iterations (default: 3). Track:
+The user may set max iterations (default `3`). Track baseline metrics and `ModelVersion`, previous successful-iteration metrics, and previous successful per-field, group, and project instructions. A trained version can be reread with `--model-version <N>`; retaining the version is sufficient for recovery.
 
-- **Baseline metrics** — the `get-metrics` output before any changes, and its `ModelVersion` — a trained version's metrics can be re-read at any time with `--model-version <N>`, so keeping the version number is enough to recover anything. The values that drive the loop are mapped in [What `get-metrics` returns](#what-get-metrics-returns-and-which-values-decide); the rest is reported once or ignored.
-- **Previous iteration metrics** — the same, for the last successful iteration's version
-- **Previous instructions** — from the last successful iteration: the per-field instructions, the group instructions, and the project prompt (for rollback)
-
-Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each instruction update + retrain cycle. This assumes no one modifies the taxonomy or documents externally during the loop. If the user mentions changes were made in the web UI, re-fetch the taxonomy and document list before continuing.
+Do not reread taxonomy or sample documents between iterations; reread metrics only after each update/retrain cycle, assuming no external taxonomy/document changes. If the user reports web-UI changes, refetch taxonomy and document list before continuing.
 
 ## What `get-metrics` returns, and which values decide
 
-The values `get-metrics` returns are neither independent nor interchangeable — using the wrong one silently changes the loop's behaviour.
+Use values exactly as follows:
 
-| Value | Level | Role in this loop |
-|-------|-------|-------------------|
-| `F1` | field, group | **Decision variable.** Targeting (2a), regression (2f), stopping (2f). |
-| `Precision` | field, group | **Decision variable.** Splits a low `F1` into PRECISION vs RECALL (2a) — that split picks which rewrite to attempt. |
-| `Recall` | field, group | **Decision variable.** Same split, plus the `< 0.5` labelling-gap probe (2a-check). |
-| `Annotations` | field | **Decision variable.** Reviewed **extractions** for that field (not documents) — the sample `F1` is computed over, so it sets that field's regression threshold (2f). |
-| `Documents` | field, group | **Decision variable.** How many documents this field (or group) was reviewed in — a per-field count, not a project total. `0` → SKIP (2a): no evidence to evaluate a rewrite against. Below `ValidatedDocuments` → some reviewed documents carry no label for this field (2f). |
-| `ProjectScore` | project | **Report only** — the headline number, an average of the per-field `F1` values. Never gate on it (2f diffs the fields directly). |
-| `ValidatedDocuments` | project | **Decision variable.** How many labelled documents the metrics are computed over — project-level only, and the ceiling for every per-field `Documents`. Below the project's total document count → unlabelled documents exist; label them before looping (1e). |
+| Value | Level | Use |
+|---|---|---|
+| `F1` | field, group | **Decision variable.** Targeting (2a), regression, and stopping (2f). |
+| `Precision` | field, group | **Decision variable.** With `Recall`, selects PRECISION vs RECALL rewrite (2a). |
+| `Recall` | field, group | **Decision variable.** Same split; also triggers the `< 0.5` labelling-gap probe (2a-check). |
+| `Annotations` | field | **Decision variable.** Reviewed **extractions**, not documents; sets that field's regression threshold (2f). |
+| `Documents` | field, group | **Decision variable.** Reviewed documents for that field/group, not project total. `0` means SKIP (2a). Below `ValidatedDocuments` means some reviewed documents have no label for the field (2f). |
+| `ProjectScore` | project | Report only; average of per-field `F1`; never gate on it. |
+| `ValidatedDocuments` | project | **Decision variable.** Labelled documents used for metrics and ceiling for per-field `Documents`. Below total document count means unlabelled documents exist; label them before looping (1e). |
 | `ModelVersion` | project | **Decision variable.** Retrain completion ([Waiting for retrain](#waiting-for-retrain)). |
-| `ErrorRate` | field, group | **Report — independent of `Precision`.** Wrong extractions over `Annotations`. A wrong value counts **once** (not as a false positive plus a false miss), and a miss counts even though it cannot lower `Precision` — so `Precision` 1.00 can still carry `ErrorRate` 0.20. Report it as the manual-correction burden; diagnose direction from `Precision`/`Recall`. |
-| `Quality` | field | **Ignore.** A coarse label derived from the numbers, on a scale inconsistent with `ProjectScoreQuality` (an `F1` of 1.00 still reads `good` while a `ProjectScore` of 0.91 reads `excellent`). Never gate on it and don't report it per field — if the user asks about the UI's label, explain the scales differ. |
-| `ProjectScoreQuality` | project | **Report on the project line only** (the label the UI shows beside the score) — different scale from field `Quality` (above). |
+| `ErrorRate` | field, group | Report independently of `Precision`: wrong extractions over `Annotations`, counted once; misses count even though they do not lower `Precision`. Thus `Precision` 1.00 can have `ErrorRate` 0.20. Report manual-correction burden and diagnose direction from precision/recall. |
+| `Quality` | field | Ignore; its coarse scale differs from `ProjectScoreQuality` (an `F1` of 1.00 still reads `good` while a `ProjectScore` of 0.91 reads `excellent`). Never gate or report it per field; explain differing UI scales if asked. |
+| `ProjectScoreQuality` | project | Report only on the project line; it is the UI label beside the project score and uses a different scale from field `Quality`. |
 | `FieldGroup`, `FieldId`, `Name` | field | Identity — SKILL.md Critical Rule 21. |
-
 
 ## Waiting for retrain
 
-Every change to model inputs — labellings, instructions, document upload/delete, taxonomy edits — triggers a full retrain. Metrics read mid-retrain are *pre*-change scores and corrupt every downstream comparison, so wait before each metrics read.
+Every model-input change (labellings, instructions, document upload/delete, taxonomy edits) triggers full retraining. Never read metrics mid-retrain.
 
 **Bounded wait. Poll on a fixed interval; never poll indefinitely:**
 
-1. Record `ModelVersion` from the last metrics read BEFORE the change.
-2. Wait 2 minutes, then read `uip ixp projects get-metrics <project-name> --output json`.
-3. `ModelVersion` **greater than** the recorded value → retrain is done, proceed. Any increment counts. Do NOT wait for a specific number: queued input changes can bump the version by more than one, so waiting for exactly *N*+1 polls until the budget dies when the version jumps straight to *N*+2.
-4. Otherwise repeat step 2 — **2 minutes between checks, 5 checks in total** (10 minutes). Do NOT use a single long sleep, and do NOT escalate or shorten the interval between checks. Issue one `uip` call per command, never a loop, never a chain — bundled checks hit the command timeout and get killed.
-5. Still unchanged after the 5th check → **stop polling** and report that the retrain did not complete. Metrics you carry forward predate the change: label them as such, never present them as the post-change measurement, and never roll back instructions on a comparison against them.
+1. Record `ModelVersion` from the last metrics read before the change.
+2. Wait 2 minutes, then run `uip ixp projects get-metrics <project-name> --output json`.
+3. If `ModelVersion` is greater than the recorded value, proceed. Any increment counts; do not wait for exactly `N`+1 because queued changes may skip versions.
+4. Otherwise repeat step 2, with 2 minutes between checks and 5 checks total (10 minutes). Do not use one long sleep, escalate, shorten the interval, loop, or chain commands; issue one `uip` call per command because bundled checks time out.
+5. If unchanged after check 5, stop polling and report incomplete retraining. Carry metrics as pre-change, label them as such, never present them as post-change, and never roll back instructions based on them.
 
-A read that fails counts against the budget like any other attempt, and never restarts it.
+A failed read consumes a check and never restarts the budget.
 
 ## Step 1 — Setup (once, before the loop)
 
 ### 1a. Get baseline metrics
 
-If documents were just labelled (or uploaded, or the taxonomy was edited), wait out the resulting retrain before reading metrics — apply the bounded wait in [Waiting for retrain](#waiting-for-retrain).
+If documents were labelled, uploaded, or taxonomy-edited, wait using [Waiting for retrain](#waiting-for-retrain), then run:
 
 ```bash
 mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,payloads}
 uip ixp projects get-metrics <project-name> --model-version latest --output json
 ```
 
-`--model-version latest` is deliberate: the baseline is the latest trained version — the model your instruction edits retrain — not the `live` tag (Critical Rule 20: the version follows the question).
+`--model-version latest` is deliberate: use the latest trained version, not the `live` tag (Critical Rule 20: the version follows the question). Record `ModelVersion`; if it matches a known pre-labelling version, the retrain may still be in flight; refetch under the bounded wait, then proceed with whatever it returns. Save the complete top-level `Fields` array as `baseline_metrics`.
 
-Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` / `projects update-prompt` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; re-fetch under the bounded wait in [Waiting for retrain](#waiting-for-retrain), then proceed with whatever it returns.
-
-Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — re-fetch under the bounded wait above.)
-
-**Field names:** compare on `FieldId`, report on `Name`, and qualify a shared `Name` with its `FieldGroup` — SKILL.md Critical Rule 21.
+Validated output is flat (`Fields`/`FieldGroups`/`ValidatedDocuments` top-level); an unvalidated model returns `Data: { Metrics: null }`, so refetch under the bounded wait. Compare fields by `FieldId`, report by `Name`, and qualify shared names with `FieldGroup` — SKILL.md Critical Rule 21.
 
 ### 1b. Check model configuration
 
-If many fields have low scores across the board, the model configuration may be wrong (e.g., no table pre-processing for table-heavy documents). View sample documents and check if the current config matches the document type. If not, reconfigure:
+If many fields score poorly, inspect sample documents and verify configuration, including table preprocessing for table-heavy documents. If wrong, run:
 
 ```bash
 uip ixp projects configure-model <project-name> \
@@ -101,7 +79,7 @@ uip ixp projects configure-model <project-name> \
   --output json
 ```
 
-See the [Project Setup Guide](project-setup-guide.md) Step 2 for the decision table.
+See the [Project Setup Guide](project-setup-guide.md) Step 2 decision table.
 
 ### 1c. Get taxonomy
 
@@ -109,9 +87,7 @@ See the [Project Setup Guide](project-setup-guide.md) Step 2 for the decision ta
 uip ixp projects get-taxonomy <project-name> --output json
 ```
 
-Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. Output is `{ status, dataset: { entity_defs, label_groups } }` (raw snake_case); each `dataset.label_groups[]` holds `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each prompt update (v2, v3, …).
-
-The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"Invoice Number"`) are what you pass to `fields update-prompts --updates-file` as `group` and `name`.
+Save the raw-snake-case response `{ status, dataset: { entity_defs, label_groups } }` to `/tmp/ixp/<project-name>/taxonomies/v1.json`. `dataset.label_groups[]` contains `label_defs`, fields, and current `instructions`; iterate field instructions and increment versions after updates (`v2`, `v3`, …). Pass parent `label_def.name` as `group` and field `name` as `name` in field updates.
 
 ### 1d. Read sample documents (2-3 documents)
 
@@ -122,73 +98,41 @@ uip ixp documents list <project-name> --output json
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id> --output json
 ```
 
-The `download` command appends the extension that matches the server's content type — read the resolved `Path` from the response. View the document with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively for PDF/PNG/JPG). Files persist across sessions — check for existing files before downloading.
+`download` appends the server content-type extension; read the resolved response `Path`. Use the **Read tool**, one full Read per document, with **no `pages` parameter** (PDF/PNG/JPG returns text and image natively). Check for existing files before downloading; files persist across sessions.
 
 ### 1e. Check for unlabelled documents
 
-Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Review and label them first using the [Label Documents Guide](label-documents-guide.md), then re-fetch metrics under the bounded wait in [Waiting for retrain](#waiting-for-retrain) before starting the loop.
-
----
+Compare the document list with metrics. If `ValidatedDocuments` is below total documents, review and label unlabelled documents using the [Label Documents Guide](label-documents-guide.md), then refetch metrics under [Waiting for retrain](#waiting-for-retrain) before looping.
 
 ## Step 2 — Optimization Loop
 
-Repeat the following for each iteration (up to max iterations):
+Run each iteration up to the maximum.
 
 ### 2a. Diagnose fields and field groups
 
-Use the current metrics (baseline on first iteration, post-relabel metrics on subsequent iterations). The metrics include both `FieldGroups` (per-group scores) and `Fields` (per-field scores).
+Use baseline metrics on iteration 1 and post-relabel metrics thereafter. Inspect `FieldGroups` first: a low group score may require `groups update-prompts` rather than individual fixes. Target each field with `F1 < 0.7`:
 
-**Field group diagnosis:** Check `FieldGroups` first. If an entire group has low F1, the group-level instructions may need updating with `groups update-prompts` rather than fixing individual fields.
+1. `Documents = 0` → **SKIP**; otherwise → **REFINE**.
+2. Split precision and recall: `Precision < Recall` significantly → **PRECISION**; `Recall < Precision` significantly → **RECALL**; otherwise → **BOTH**. `F1` measures severity; the split selects the rewrite.
+3. Record `Annotations`; it does not change classification but determines measurable delta in 2f.
 
-**Per-field diagnosis:** Identify individual fields with F1 < 0.7 as targets. Diagnose each:
-
-1. **Classify the action:**
-   - `Documents = 0` → **SKIP**
-   - Otherwise → **REFINE**
-
-2. **Diagnose the problem type** from the `Precision`/`Recall` split — `F1` says *how bad*, the split says *what to write*:
-   - `Precision < Recall` significantly → **PRECISION** — model extracts wrong values
-   - `Recall < Precision` significantly → **RECALL** — model misses the field
-   - Otherwise → **BOTH** — rewrite entirely
-
-3. **Record the field's `Annotations` count** next to the diagnosis. It does not change the classification, but it sets how much of the following delta you are entitled to believe (2f), so carry it forward rather than re-fetching it later.
-
-Print a diagnosis summary with one row per field — name, `F1`, `Precision`, `Recall`, `ErrorRate`, `Annotations`, `Documents`, diagnosis — plus the group rows and the project line (`ProjectScore` / `ProjectScoreQuality` / `ValidatedDocuments` / `ModelVersion`). Ignore the `Quality` labels ([What `get-metrics` returns](#what-get-metrics-returns-and-which-values-decide)).
-
-If no fields need REFINE, stop — the project is already at target quality.
+Print one row per field containing name, `F1`, `Precision`, `Recall`, `ErrorRate`, `Annotations`, `Documents`, and diagnosis; include group rows and project `ProjectScore` / `ProjectScoreQuality` / `ValidatedDocuments` / `ModelVersion`. Ignore field `Quality`. If no field needs REFINE, stop.
 
 ### 2a-check. Check for labelling gaps (before writing instructions)
 
-For each REFINE field with **Recall < 0.5**, check whether the problem is a bad prompt or a missing label:
+For every REFINE field with `Recall < 0.5`, inspect Step 1d images and determine whether the value is visible. If visible, refetch predictions and review again because a prior correct prediction may not have been confirmed. If genuinely absent, treat it as prompt/recall work.
 
-1. Look at the sample document images you already have from Step 1d
-2. For each low-recall field, check: **can you see this field's value in the document?**
-   - If yes, the model may have predicted it correctly but it wasn't confirmed in a previous round → re-fetch predictions and review those fields again
-   - If the field is genuinely not visible in the document → it's a prompt/recall issue, handle with instruction changes
-
-**If you find previously skipped predictions that are actually correct**, confirm them now using `labellings confirm --fields` for those specific documents and fields, then re-fetch metrics under the bounded wait in [Waiting for retrain](#waiting-for-retrain) before continuing.
-
-**If no labelling gaps are found**, proceed directly to writing instructions.
+If skipped predictions are correct, confirm only those documents/fields with `labellings confirm --fields`, then refetch metrics under [Waiting for retrain](#waiting-for-retrain). If no gaps exist, write instructions.
 
 ### 2b. Write improved instructions
 
-For each field marked REFINE, rewrite its `instructions`:
+Rewrite every REFINE field:
 
-- **PRECISION** → Be more specific about WHAT to extract
-- **RECALL** → Better describe WHERE to find the field
-- **BOTH** → Full rewrite — what and where
+- **PRECISION:** specify more precisely what to extract.
+- **RECALL:** describe where to find it.
+- **BOTH:** rewrite what and where.
 
-**Instruction quality standards:**
-
-Focus on **what** to extract and **where** to find it. Do NOT specify format — the entity_def (field type) already handles that.
-
-- **Minimum length**: 120+ characters. Short instructions like "Extract the date" are too vague.
-- **Maximum length**: 4096 characters, at every level (field, field group, overall project prompt). A longer value is rejected and nothing is saved, so trim before you submit.
-- **Location hint**: describe WHERE in the document (section, header area, table, near a label). Keywords: "section", "header", "table", "top of", "labeled", "near".
-- **Real example**: include an actual value from the documents (e.g., "Example: '2106732'", "Example: 'SINV0077023'").
-- **Disambiguation**: identify the target by its label, role, and location; avoid naming an incorrect candidate or writing "Do NOT return [value]".
-- **Closed vocabularies**: use one only when the complete allowed set is explicit in the taxonomy, business rules, or an authoritative reference. Never infer or rationalize the set from sample documents.
-- **No format patterns**: do NOT include "Format: MM/DD/YYYY" or similar — the entity_def type (Date, Monetary, Text) already defines the format. Adding format in instructions creates conflicting signals.
+Focus on what and where; the entity_def supplies format. Field instructions: 120+ characters (short ones like "Extract the date" are too vague). Every level (field, field group, overall project prompt): at most 4096 characters; trim before submission because longer values are rejected and nothing is saved. Include a document location (section, header, table, top, label, or nearby text) and, for visible fields, an actual document value (e.g., "Example: '2106732'", "Example: 'SINV0077023'"). For invisible fields, use a generic instruction with no example: `Extract [what] from this document, as it appears on the page.`
 
 **Good instruction** (145 chars):
 > "The unique invoice identifier, found in the header area near the top-right, labeled 'Invoice #' or 'Invoice Number'. Example: '2106732'."
@@ -196,20 +140,13 @@ Focus on **what** to extract and **where** to find it. Do NOT specify format —
 **Bad instruction** (25 chars):
 > "Extract the invoice number"
 
-**For fields visible in documents** — include location and a real example from the actual documents.
-**For fields NOT visible** — use a generic instruction with no example: "Extract [what] from this document, as it appears on the page."
+Identify the target by label, role, and location; do not name an incorrect candidate or write `Do NOT return [value]`. Use a closed vocabulary only when its complete set is explicit in taxonomy, business rules, or an authoritative reference; never infer it from samples. Do not specify format patterns such as `Format: MM/DD/YYYY`; Date, Monetary, and Text entity types already define format.
 
-**Align with the group and project prompts:** The model sees the project prompt, the parent label_def `instructions`, and the per-field instructions together. If the project or a group prompt says "Extract only values on the first page", but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` and the project prompt with `projects update-prompt` if either contradicts. A project rule that does not hold for every field it covers belongs at field or group level.
-
-**Additional rules:**
-
-1. NEVER reference specific page numbers — use section headings or labels
-2. Each instruction targets one specific field (e.g., "Invoice Number", "Invoice Date")
-3. On iteration 2+, do NOT repeat the same instruction that failed last time — try a different approach (different wording, different location hints, a closed vocabulary)
+Keep project, group, and field prompts consistent. If the project or a group prompt says "Extract only values on the first page", but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals — also update the parent group instruction with `groups update-prompts` and the project prompt with `projects update-prompt` if either contradicts; a rule not true for every covered field belongs at field or group level. Each instruction addresses one field. Never reference specific page numbers; use headings or labels. From iteration 2 onward, do not repeat the same failed instruction; use different wording, location hints, vocabulary, or examples.
 
 ### 2c. Update instructions
 
-Use the parent **field group name** and exact **field name** in each field-update object; use the **label_def/group name** in each group-update object:
+Use the parent field-group name and exact field name in field objects, and `label_def`/group name in group objects:
 
 ```bash
 cat > /tmp/ixp/<project-name>/payloads/field_updates.json << 'FIELDS_EOF'
@@ -238,68 +175,52 @@ uip ixp groups update-prompts <project-name> \
 uip ixp projects update-prompt <project-name> --prompt "<FULL_PROMPT_TEXT>" --output json
 ```
 
-The group and project calls are optional — skip each one if that level doesn't need changing. Store the full project prompt used for each iteration with that iteration's prompt files. A rollback must resubmit the saved prompt from the previous iteration.
+Group/project calls are optional; skip each unnecessary level. Save the full project prompt for each iteration; rollback must resubmit the previous saved prompt.
 
-**Post-update verification:** After the update, re-fetch the taxonomy, save it as the next version, and verify that field counts per label_def are unchanged:
+After updating, refetch and version the taxonomy, verifying field counts per updated `label_def`:
 
 ```bash
 uip ixp projects get-taxonomy <project-name> --output json > /tmp/ixp/<project-name>/taxonomies/v<N>.json
 ```
 
-Compare the number of fields in each updated label_def against the previous version. If any fields are missing, **STOP the workflow immediately** and report to the user — the taxonomy was corrupted and needs manual restoration. The previous taxonomy version has the old instructions for rollback.
+If any updated `label_def` loses fields, **STOP immediately** and report corruption for manual restoration. The previous taxonomy version has the old instructions for rollback.
 
 ### 2d. Review and confirm predictions for all documents
 
-Wait out the retrain triggered by the updated instructions ([Waiting for retrain](#waiting-for-retrain)), then review predictions for all documents using the [Label Documents Guide](label-documents-guide.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the correct ones. Documents with incorrect predictions are skipped (their old labels remain).
+Wait for the instruction-triggered retrain using [Waiting for retrain](#waiting-for-retrain). Using the [Label Documents Guide](label-documents-guide.md), review every document against actual content and confirm correct predictions. Skip incorrect predictions; old labels remain.
 
 ### 2e. Wait and get new metrics
 
-Wait out the retrain triggered by the new labellings ([Waiting for retrain](#waiting-for-retrain)), then:
+Wait for the labelling-triggered retrain using [Waiting for retrain](#waiting-for-retrain), then run:
 
 ```bash
 uip ixp projects get-metrics <project-name> --model-version latest --output json
 ```
 
-If `ModelVersion` hasn't advanced since the last check, keep re-reading under that same bounded budget. When the budget runs out, record the metrics you have and move on to step 2f — do NOT stall the iteration waiting for a version bump.
+If `ModelVersion` has not advanced, reread under that same bounded budget. When it expires, record available metrics and continue to 2f; do not stall for a version bump.
 
 ### 2f. Compare and decide
 
-Compare the new metrics against the **previous iteration** at both levels — the fields you touched, and the project as a whole.
-
-#### Regression noise floor
-
-With few `Annotations`, `F1` moves in jumps: a single annotation flipping by chance jumps it as far as a genuinely worse instruction would, and the number alone cannot tell the two apart. The rollback threshold therefore scales with the sample:
+Compare complete new output with the previous iteration for touched fields and the whole project. For each field:
 
 ```text
 regression_threshold = max(0.1, 1 / Annotations)
 ```
 
-That is 0.2 at `Annotations` = 5 — one flipped annotation is not evidence — and the flat 0.1 from `Annotations` = 10 up. Fields whose `Annotations` differ get different thresholds in the same iteration; that is intended, not an inconsistency.
+A field with 5 annotations therefore has threshold 0.2; thresholds are flat 0.1 from 10 annotations upward. Use each field's own threshold. A move below threshold is **not measurable**, not “no change”. Do not report a sub-threshold move as an improvement either; repeated sub-threshold movement with few annotations cannot evaluate a rewrite.
 
-**Below the threshold is not "no change" — it is "not measurable yet".** Do not report a sub-threshold move as an improvement either. If a field keeps drifting sub-threshold across iterations and its `Annotations` is small, no prompt rewrite can be evaluated — but which remedy to report depends on *why* the sample is small.
+`Annotations` counts reviewed extractions, not documents (one document may contribute several); `Annotations / Documents` is average extractions per document. Compare field `Documents` with project `ValidatedDocuments`:
 
-**A small `Annotations` has two causes with opposite remedies.** `Annotations` counts reviewed **extractions**, not documents — one document can contribute several — so it cannot be compared against a document count directly. Compare the field's own `Documents` against the project-level `ValidatedDocuments`:
+- Equal → tag final report **UPLOAD**: evidence covers every labelled document and the sample cannot grow without more documents.
+- Below → tag **REVIEW**: some labelled documents lack field evidence; the [Label Documents Guide](label-documents-guide.md) identifies whether they were unreviewed or skipped. This is a report tag, not a loop action.
 
-- **`Documents` equal to `ValidatedDocuments`** → this field already has evidence on every labelled document; the sample is as large as the data allows. Tag it **UPLOAD**.
-- **`Documents` below `ValidatedDocuments`** → some labelled documents carry no evidence for this field, and the output cannot say why — never reviewed there, or reviewed and skipped because the prediction was wrong. Tag it **REVIEW** — the review pass ([Label Documents Guide](label-documents-guide.md)) shows which in seconds, and 2a-check's `Recall < 0.5` gate would never trigger it. Even when the review finds nothing to add, confirming that costs a glance, while an unreviewed document left unfound caps the field for good.
+Continue normally; do not pause to request documents or review. State that the tagged field cannot rise until its sample grows and report the remedy.
 
-Both tags are **final-report lines, not loop actions**: the loop runs on to its normal stopping criteria — never pause mid-run to ask for documents or to review — and the report then says plainly that a tagged field's score cannot rise further until its sample grows.
+For every field updated this iteration, roll back only fields whose `F1` drop exceeds their own threshold; keep improved or unchanged fields. Diff every untouched field too: group edits affect every field in that group and project edits affect every project field. An untouched field beyond its threshold is collateral damage. Report its name and delta; roll back only when it shares a field group with a `groups update-prompts` edit made this iteration (roll back that group edit), or when the project prompt was edited this iteration (roll back the project prompt). Otherwise keep the iteration and recheck next round because two reads cannot establish causation.
 
-`Annotations / Documents` is the average number of extractions per document — about 1 for a single-value field, higher under a repeatable group.
+Do not gate on `ProjectScore`; it is the unweighted mean of field `F1` and can hide a field regression.
 
-**Selective regression check:** For each field you updated this iteration, compare its `F1` drop against **that field's** `regression_threshold`:
-
-- **Regressed fields** (drop > their threshold): roll back ONLY those fields' instructions to the previous iteration's version. Keep the improved instructions for fields that gained or held steady.
-- **Improved/unchanged fields**: keep their new instructions.
-
-**Collateral check (fields you did NOT touch):** per-field checks only cover the fields you edited, but a `groups update-prompts` edit rewrites the parent `label_def` and so moves every field under it, and a `projects update-prompt` edit moves every field in the project.
-
-Do **not** gate this on `ProjectScore`. It is an average over fields — observed to be the unweighted mean of the per-field `F1` values — so it carries nothing the `Fields[]` array does not, and it divides a single field's move by the field count, burying a real regression below its own noise. Diff **every** field against the previous iteration instead, each against **its own** `regression_threshold`:
-
-- An **edited** field regressed beyond its threshold → roll that field back, as above.
-- An **unedited** field regressed beyond its threshold → collateral damage. Report it by name with its delta. Roll it back only when it shares a field group with a `groups update-prompts` edit you made this iteration, or when you edited the project prompt this iteration (roll back the project prompt) — those are the interactions with a mechanical cause. Otherwise **keep the iteration and re-check next round**: two metric reads cannot establish that your edit caused the move, and discarding edits that individually passed destroys work on a guess.
-
-If any fields regressed, do a selective rollback:
+If fields regressed, selectively roll back:
 
 ```bash
 # Only include the regressed fields, not the whole iteration
@@ -312,23 +233,15 @@ uip ixp fields update-prompts <project-name> \
   --output json
 ```
 
-Wait out the retrain ([Waiting for retrain](#waiting-for-retrain)). On the next iteration, try a **different approach** for the regressed fields only (different wording, shorter instruction, fewer examples).
+Wait for retraining. On the next iteration use a different approach for regressed fields only (different wording, shorter instruction, or fewer examples). Rollback restores instructions but requires retraining and may recover only partially; prefer small-scope iterations.
 
-**Rollback caveat:** Rollback restores the previous instructions but the model needs to retrain. Expect only **partial recovery** — prefer small-scope iterations (few fields at a time).
+With no regression, accept the iteration and replace `previous_metrics` with the complete output and `previous_instructions` with new values.
 
-**No regression:** Accept the iteration. Update `previous_metrics` (the complete output again, not just F1) and `previous_instructions` with the new values.
-
-**Stopping criteria — stop the loop if:**
-
-- All fields meet the user's target F1 (default: 0.7)
-- Max iterations reached
-- No fields improved by more than their own `regression_threshold` in the last 2 consecutive iterations (diminishing returns — a run of sub-threshold moves is not progress)
-
----
+Stop when all fields meet the user's target F1 (default `0.7`), max iterations is reached, or no field improves by more than its own threshold for 2 consecutive iterations.
 
 ## Step 3 — Final Report
 
-After the loop ends, print a summary:
+Print:
 
 ```text
 Optimization complete after N iterations. Model version V1 -> V2.
@@ -348,6 +261,4 @@ Fields whose regression_threshold sits above the flat 0.1 (too few Annotations t
 Labelling gaps fixed: [list any fields re-labelled in 2a-check]
 ```
 
-`ErrorRate` is the manual-correction burden left; `Annotations` tells a real plateau from an unmeasurable one.
-
-If fields still need work, suggest the user run another round with more iterations. For any field in the *too-few-`Annotations`* list, say plainly that its score cannot rise further until its sample grows, and which remedy grows it — **UPLOAD** (more documents) or **REVIEW** (the documents where it carries no label).
+`ErrorRate` is remaining manual-correction burden; `Annotations` distinguishes a real plateau from an unmeasurable one. If fields remain below target, suggest another round with more iterations. For every too-few-`Annotations` field, state that its score cannot rise until the sample grows and identify **UPLOAD** (more documents) or **REVIEW** (documents where it has no label).

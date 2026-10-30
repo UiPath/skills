@@ -7,7 +7,7 @@ The final step of a project's lifecycle: making a trained model version availabl
 | **Project** ("publish") | `uip ixp projects publish <project-name> --output json` | Marks the version published and, with `--tag`, moves the `live`/`staging` tag — the tagged version is what the DU framework, and DU activities that call through it, resolve. Also the rollback mechanism. |
 | **Orchestrator folder** | `uip ixp deployments create <project-name> --version <N> --folder-key <guid> --output json` | Makes the model callable by folder-resolving runtime callers — Maestro Flow among them. Neither labelling nor `publish` is required first. |
 
-Runtime callers split by how they address the model: folder-resolving callers (Maestro Flow nodes; anything reading folder deployments) see only the **folder** target, and tag-resolving callers (the DU framework API and its activities) see only the **project** target's tags. Neither substitutes for the other — pick per consumer, or do both. See the "Publish the model" row in [SKILL.md Task Navigation](../SKILL.md#task-navigation) for tags, rollback, and unpublish.
+Runtime callers split by how they address the model: folder-resolving callers (Maestro Flow nodes; anything reading folder deployments) see only the **folder** target, and tag-resolving callers (the DU framework API and its activities) see only the **project** target's tags. Neither substitutes for the other — pick per consumer, or do both. See the **Publish**, **Rollback/restore** and **Unpublish/tag** bullets in [SKILL.md Task Navigation](../SKILL.md#task-navigation) for tags, rollback, and unpublish.
 
 ## Deploy to a folder
 
