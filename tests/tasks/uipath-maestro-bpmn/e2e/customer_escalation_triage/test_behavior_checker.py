@@ -483,6 +483,89 @@ class PackageBindingTests(unittest.TestCase):
         self.assertFalse(packager.is_real_connection_key("not-a-uuid"))
 
 
+class LiveTargetTests(unittest.TestCase):
+    """The grader creates real Jira and Slack records, so it runs only when
+    the active `uip` session is the target the run configured.
+    """
+
+    CLOUD = {
+        "UIPATH_URL": "https://alpha.uipath.com",
+        "UIPATH_ORGANIZATION_ID": "5b2a7c1e-0d4f-4e8a-9c3b-6f1e2d7a8b90",
+        "UIPATH_TENANT_ID": "a1c3e5f7-2b4d-4f6a-8c0e-1d3f5a7b9c2e",
+    }
+    ETE = {
+        "UIPATH_URL": "https://as.loc",
+        "UIPATH_ORGANIZATION_ID": "0e9d8c7b-6a5f-4e3d-8c2b-1a0f9e8d7c6b",
+        "UIPATH_TENANT_ID": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2918",
+    }
+
+    @staticmethod
+    def _status(env, organization, tenant, status="Logged in"):
+        return {
+            "Status": status,
+            "BaseUrl": env["UIPATH_URL"],
+            "Organization": organization,
+            "OrganizationId": env["UIPATH_ORGANIZATION_ID"],
+            "Tenant": tenant,
+            "TenantId": env["UIPATH_TENANT_ID"],
+        }
+
+    def _assert(self, environ, status):
+        completed = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout=json.dumps({"Result": "Success", "Data": status}),
+        )
+        with patch.dict(escalation_is.os.environ, environ, clear=True), patch.object(
+            escalation_is, "run_cli", return_value=completed
+        ) as self.ran:
+            return escalation_is.assert_live_target()
+
+    def test_cloud_target_is_accepted(self):
+        status = self._status(self.CLOUD, "codereval", "DefaultTenant")
+        target = self._assert(self.CLOUD, status)
+        self.assertEqual(target["TenantId"], self.CLOUD["UIPATH_TENANT_ID"])
+
+    def test_configured_ete_target_is_accepted(self):
+        status = self._status(self.ETE, "codereval_13100000", "CoderEvalProv_13100000")
+        target = self._assert(self.ETE, status)
+        self.assertEqual(target["BaseUrl"], "https://as.loc")
+
+    def test_trailing_slash_and_id_case_do_not_matter(self):
+        status = self._status(self.ETE, "codereval_13100000", "CoderEvalProv_13100000")
+        status["BaseUrl"] += "/"
+        status["TenantId"] = status["TenantId"].upper()
+        self._assert(self.ETE, status)
+
+    def test_session_on_another_target_is_refused(self):
+        status = self._status(self.CLOUD, "codereval", "DefaultTenant")
+        with self.assertRaises(escalation_is.CheckFailure) as caught:
+            self._assert(self.ETE, status)
+        self.assertIn("active profile", str(caught.exception))
+
+    def test_session_on_another_tenant_of_the_same_org_is_refused(self):
+        status = self._status(self.ETE, "codereval_13100000", "CoderEvalProv_13100000")
+        status["TenantId"] = self.CLOUD["UIPATH_TENANT_ID"]
+        with self.assertRaises(escalation_is.CheckFailure):
+            self._assert(self.ETE, status)
+
+    def test_no_configured_target_is_refused_before_the_session_is_read(self):
+        status = self._status(self.CLOUD, "codereval", "DefaultTenant")
+        for name in [None, *escalation_is.TARGET_ENV.values()]:
+            environ = {} if name is None else {
+                key: value for key, value in self.CLOUD.items() if key != name
+            }
+            with self.subTest(missing=name or "all"):
+                with self.assertRaises(escalation_is.CheckFailure) as caught:
+                    self._assert(environ, status)
+                self.assertIn("no configured eval target", str(caught.exception))
+                self.ran.assert_not_called()
+
+    def test_logged_out_session_is_refused(self):
+        status = self._status(self.CLOUD, "codereval", "DefaultTenant", status="Expired")
+        with self.assertRaises(escalation_is.CheckFailure):
+            self._assert(self.CLOUD, status)
+
 
 
 class ConnectionResolutionTests(unittest.TestCase):
@@ -524,6 +607,17 @@ class ConnectionResolutionTests(unittest.TestCase):
         with self.assertRaises(escalation_is.CheckFailure) as caught:
             self._resolve(self._rows(folder="some-other-team"))
         self.assertIn(escalation_is.FOLDER_PATH, str(caught.exception))
+
+    def test_connection_that_is_not_the_sandbox_one_is_rejected(self):
+        for connector in escalation_is.CONNECTION_NAMES:
+            rows = [
+                self._row(key, f"{name}-other" if key == connector else name)
+                for key, name in escalation_is.CONNECTION_NAMES.items()
+            ]
+            with self.subTest(connector=connector):
+                with self.assertRaises(escalation_is.CheckFailure) as caught:
+                    self._resolve(rows)
+                self.assertIn(connector, str(caught.exception))
 
     def test_disabled_connection_is_rejected(self):
         with self.assertRaises(escalation_is.CheckFailure):
