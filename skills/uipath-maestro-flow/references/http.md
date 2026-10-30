@@ -8,6 +8,7 @@ path. `managed: false` (`core.action.http`) no longer runs: the tenant answers 5
 `check` only warns (`HTTP_V1_RETIRED`). A `managed: false` step you edit gets
 the same switch, and every read of its `statusCode` becomes an `.onError()`
 handler ([error-handling.md](error-handling.md)); leave an untouched one alone.
+An older SDK's `HTTP_V1_RETIRED` text saying to "keep managed: false" for a URL without a connection is outdated; still use `managed: true`.
 
 Signature:
 `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
