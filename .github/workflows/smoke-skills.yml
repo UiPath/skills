@@ -113,7 +113,13 @@ jobs:
           # Source of truth: the `windows` tag in each task YAML, so adding
           # a new Windows-only skill is just a tag, not a workflow edit.
           WINDOWS_TASKS=$(grep -rEl '^tags:.*\bwindows\b' tests/tasks/ 2>/dev/null | sort -u)
-          WINDOWS_SKILLS=$(echo "$WINDOWS_TASKS" | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p' | sort -u)
+          # A skill is skipped whole only when it owns a Windows-tagged *smoke*
+          # task: this workflow runs `--tags smoke`, so a Windows-only e2e task
+          # (uipath-planner's genome build) must not take the skill's Linux
+          # smoke tasks down with it. Each Windows task file stays excluded on
+          # its own through WINDOWS_TASKS.
+          WINDOWS_SKILLS=$(for f in $WINDOWS_TASKS; do grep -qE '^tags:.*\bsmoke\b' "$f" && echo "$f"; done \
+            | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p' | sort -u)
 
           # Opt-in benchmarks live alongside skill tests but are NOT smoke
           # tests — they're large/expensive and run via the dashboard

@@ -268,7 +268,7 @@ test("the built studioweb uipath-planner uses plan mode and no task tools", (t) 
 
   assert.deepEqual(plannerBodyLinesNaming(output, TASK_TOOLS), []);
   assert.deepEqual(plannerBodyLinesNaming(output, RETIRED_PLAN_TOOLS), []);
-  const laneB = readFileSync(join(output, "uipath-planner", "references", "non-pdd-lane-guide.md"), "utf8");
+  const laneB = readFileSync(join(output, "uipath-planner", "references", "decompose-guide.md"), "utf8");
   assert.ok(
     laneB.includes("Call `EnterPlanMode` as soon as the user picks this option"),
     "explore-first must enter plan mode before discovery",
@@ -277,7 +277,7 @@ test("the built studioweb uipath-planner uses plan mode and no task tools", (t) 
     laneB.includes("call `ExitPlanMode` with outcome `complete`"),
     "explore-first must present the plan with ExitPlanMode",
   );
-  const laneA = readFileSync(join(output, "uipath-planner", "references", "pdd-driven-lane-guide.md"), "utf8");
+  const laneA = readFileSync(join(output, "uipath-planner", "references", "plan-guide.md"), "utf8");
   assert.ok(laneA.includes("1. Call `EnterPlanMode`."), "Lane A interactive review must enter plan mode");
 });
 

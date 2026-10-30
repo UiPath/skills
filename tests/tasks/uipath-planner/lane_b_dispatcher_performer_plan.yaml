@@ -1,10 +1,10 @@
 task_id: skill-planner-integration-lane-b-dispatcher-performer-plan
 description: >
-  Lane B (non-PDD) build→deploy routing coverage: a doc-less request for a
+  `decompose` (non-PDD) build→deploy routing coverage: a doc-less request for a
   multi-project RPA solution (a Dispatcher bot and a Performer bot connected by
   an Orchestrator queue, then deployed) must engage the planner, route the
   build to uipath-rpa, and route the deploy step to uipath-solution /
-  uipath-platform. Exercises the build-then-deploy routing chain in Lane B.
+  uipath-platform. Exercises the build-then-deploy routing chain in `decompose`.
   Unambiguously multi-project so the routing decision is deterministic.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
@@ -28,7 +28,7 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
-    description: "Lane B wrote the implementation plan file"
+    description: "`decompose` wrote the implementation plan file"
     path: "rpa-build-plan.md"
     weight: 2.0
     pass_threshold: 1.0

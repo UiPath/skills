@@ -63,7 +63,7 @@ Components are the specific, testable units the skill teaches. What counts as a 
 | RPA workflows (`uipath-rpa`) | Workflow modes (Coded C#, XAML), activity types, project types. Found in section headings like "Coded Workflows Quick Reference", "XAML Workflows Quick Reference". |
 | Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
 | Solution lifecycle (`uipath-solution`) | `uip solution` lifecycle (init, pack, publish, deploy, activate). Found in the CLI Surface Probe, Critical Rules, and Workflow sections of the SKILL.md. |
-| Solution design + planning (`uipath-planner`) | PDD → SDD design (Phase D: PDD analysis, architecture review, SDD generation, product/scope selection, SDD templates) plus multi-skill task derivation (Lane A/B). Found in the Critical Rules, Entry Guard, Phase D, lane summaries, and Reference Navigation sections. |
+| Solution design + planning (`uipath-planner`) | PDD → SDD design (`design`: PDD analysis, architecture review, SDD generation, product/scope selection, SDD templates) plus multi-skill task derivation (`plan`/`decompose`). Found in the Critical Rules, Entry Guard, `design`, lane summaries, and Reference Navigation sections. |
 | Agent development (`uipath-agents`) | Lifecycle stages (Auth, Setup, Build, Bindings, Run, Deploy), framework types (LangGraph, LlamaIndex, etc.). Found in "Lifecycle Stages" section. |
 | Coded apps (`uipath-coded-apps`) | Pipeline stages (Push, Pull, Pack, Publish, Deploy), app configuration concepts. Found in lifecycle and "Ship It" sections. |
 | Cross-cutting capability (`uipath-context-grounding`) | The **modes × surfaces** matrix from the inventory doc: BatchTransform (coded, low-code), DeepRAG (coded, low-code), Index search (coded, low-code) — 6 components from `context-grounding-patterns.md` §The Three Modes + §Surface Selection. Found in the registered inventory source(s), NOT a SKILL.md. |
@@ -240,7 +240,7 @@ Count: `(Direct + Indirect) / Total`. Report Direct and Indirect separately in t
 
 **Top untested buckets (roll-up signal).** After scoring components, record the **2–3 categories with the most `None` components** as a compact, comma-separated string — this is what makes the penalty legible from the SUMMARY without opening the per-skill file. Format each as `<category> <none>/<total>`, e.g. `triggers 0/3, IS connectors 0/2, run/publish 2/8`. Pick the categories that drag the score most (largest absolute `None` count; break ties by lowest coverage %). Rules:
 - Derive these from the **same `None` rows** already in the Component Coverage tables — do not invent new groupings.
-- **Planning skills (Components N/A)** and **catalog skills with no categories**: fall back to the largest-gap **workflow-step groups** or **rule groups** instead (e.g. `Lane A 0/10, entry-guard 0/1, rules 0/5`), so the column is never empty for a scored skill.
+- **Planning skills (Components N/A)** and **catalog skills with no categories**: fall back to the largest-gap **workflow-step groups** or **rule groups** instead (e.g. ``plan` 0/10, entry-guard 0/1, rules 0/5`), so the column is never empty for a scored skill.
 - **Skills with no tests / planned skills:** use `all (no tests)` / `— (planned)` respectively.
 - Keep it under ~60 chars; it rides in one Overview cell. The full enumeration stays in the per-skill report's **Untested Features** section — this is just the headline.
 

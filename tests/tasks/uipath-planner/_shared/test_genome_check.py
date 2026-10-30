@@ -1,13 +1,14 @@
-"""Unit tests for the skill's scripts/check-genome.py, the checker the genome tasks grade with:
+"""Unit tests for the skill's scripts/check-genome.mjs, the checker the genome tasks grade with:
 the skill's own worked examples pass the strict profile, a format slip fails strict but not core,
-and a broken contract fails core.
+and a broken contract fails core. The checker is Node (users need no Python); these tests drive it
+through `node`, so the CI job needs Node >= 20 on the runner.
 
-Run: pytest tests/tasks/uipath-genome/_shared/ -v
+Run: pytest tests/tasks/uipath-planner/_shared/test_genome_check.py -v
 """
 
-import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -15,15 +16,50 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
-_spec = importlib.util.spec_from_file_location("genome_check", REPO / "skills" / "uipath-genome" / "scripts" / "check-genome.py")
-genome_check = importlib.util.module_from_spec(_spec)
-sys.modules["genome_check"] = genome_check
-_bytecode, sys.dont_write_bytecode = sys.dont_write_bytecode, True  # no __pycache__ inside the shipped skill
-_spec.loader.exec_module(genome_check)
-sys.dont_write_bytecode = _bytecode
+CHECKER = REPO / "skills" / "uipath-planner" / "scripts" / "check-genome.mjs"
 
-EXAMPLES = REPO / "skills" / "uipath-genome" / "assets" / "examples"
-MAPPING_GUIDE = REPO / "skills" / "uipath-genome" / "references" / "skill-mapping-guide.md"
+
+def node(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["node", str(CHECKER), *args], capture_output=True, text=True, encoding="utf-8")
+
+
+def node_call(function: str, *args):
+    """Call one of the checker's exported functions with JSON arguments; returns its JSON result."""
+    script = (f"import * as c from {json.dumps(CHECKER.as_uri())};"
+              f"process.stdout.write(JSON.stringify(c.{function}(...{json.dumps(list(args))})));")
+    r = subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, encoding="utf-8", check=True)
+    return json.loads(r.stdout)
+
+
+class genome_check:
+    """The checker's surface as these tests use it."""
+
+    @staticmethod
+    def main(argv: list[str]) -> int:
+        r = node(*argv)
+        sys.stdout.write(r.stdout)
+        return r.returncode
+
+    @staticmethod
+    def context(path: Path) -> dict:
+        return node_call("context", str(path))
+
+    @staticmethod
+    def check_export(genomes, processes, recordsets):
+        errors, notes = node_call("checkExport", [[str(p), lib] for p, lib in genomes], processes, recordsets)
+        return errors, notes
+
+    @staticmethod
+    def workflow_steps(text: str) -> list[str]:
+        return node_call("workflowSteps", text)
+
+    @staticmethod
+    def skills() -> dict:
+        return json.loads(node("skills").stdout)
+
+
+EXAMPLES = REPO / "skills" / "uipath-planner" / "assets" / "examples"
+MAPPING_GUIDE = REPO / "skills" / "uipath-planner" / "references" / "skill-mapping-guide.md"
 COMPONENT_EXAMPLE = EXAMPLES / "purchase-requisition-entry-genome.md"  # transactional, two units of work
 PROCESS_EXAMPLE = EXAMPLES / "invoice-processing-genome.md"
 
@@ -62,7 +98,7 @@ def test_domain_outcome_row_fails_strict_only(tmp_path):
 
 
 def test_preamble_without_uipath_genome_fails_strict_only(tmp_path):
-    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome", "the build skills")
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-planner", "the build skills")
     assert run(tmp_path, text, profile="core") == 0
     assert run(tmp_path, text, profile="strict") == 1
 
@@ -193,14 +229,15 @@ def test_unit_is_read_from_the_unit_of_work_line_only(tmp_path):
 def test_skill_lists_cover_the_shipped_skills():
     shipped = {p.name for root in (REPO / "skills", REPO / "preview" / "skills") if root.is_dir()
                for p in root.iterdir() if (p / "SKILL.md").is_file()}
-    listed = genome_check.VALID_SKILLS | genome_check.OPERATE_SKILLS | {"uipath-genome"}
+    names = genome_check.skills()
+    listed = set(names["build"]) | set(names["operate"])
     assert shipped - listed == set(), "add each new skill to VALID_SKILLS or OPERATE_SKILLS"
     assert listed - shipped == set(), "a listed skill no longer ships"
 
 
 def test_mapping_guide_names_every_build_skill():
     guide = MAPPING_GUIDE.read_text(encoding="utf-8")
-    assert {s for s in genome_check.VALID_SKILLS if f"`{s}`" not in guide} == set()
+    assert {s for s in genome_check.skills()["build"] if f"`{s}`" not in guide} == set()
 
 
 def test_checker_reads_rules_not_lookalikes(tmp_path):
@@ -305,3 +342,53 @@ def test_heading_case_and_wording_variants_pass_core(tmp_path):
     text = re.sub(r"`(uipath-rpa)`", r"\1", text)
     assert run(tmp_path, text, profile="core") == 0
     assert run(tmp_path, text, profile="strict") == 1
+
+
+def test_preamble_of_a_genome_written_before_the_merge_still_passes(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-planner", "uipath-genome")
+    assert run(tmp_path, text, profile="strict") == 0
+
+
+# context: the facts the read plans branch on, read once from the file
+
+SALESFORCE_EXAMPLE = EXAMPLES / "salesforce-accounts-and-contacts-genome.md"
+MAP_BOUND_FIXTURE = REPO / "tests" / "tasks" / "uipath-planner" / "sdd_only_migration" / "fixtures" / "invoice-intake-genome.md"
+
+
+@pytest.mark.parametrize("path, level, mode, transactional", [
+    (PROCESS_EXAMPLE, "process", "build", False),
+    (COMPONENT_EXAMPLE, "component", "build", True),
+    (SALESFORCE_EXAMPLE, "component", "refactor", False),
+])
+def test_context_reads_level_mode_and_shape_from_the_file(path, level, mode, transactional):
+    ctx = genome_check.context(path)
+    assert (ctx["level"], ctx["build_mode"], ctx["transactional"]) == (level, mode, transactional)
+    assert ctx["check"]["ok"], ctx["check"]["errors"]
+
+
+def test_context_lists_a_process_genomes_components():
+    assert len(genome_check.context(PROCESS_EXAMPLE)["components"]) == 3
+
+
+def test_context_reads_the_map_binding():
+    assert genome_check.context(MAP_BOUND_FIXTURE)["map_binding"]
+
+
+def test_context_fingerprint_changes_with_any_byte(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text(COMPONENT_EXAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+    before = genome_check.context(genome)["sha256"]
+    genome.write_text(genome.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    assert genome_check.context(genome)["sha256"] != before
+
+
+def test_context_without_marker_fails_the_check(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text("# not a genome\n", encoding="utf-8")
+    ctx = genome_check.context(genome)
+    assert ctx["level"] is None and not ctx["check"]["ok"]
+
+
+def test_context_cli_prints_json(capsys):
+    assert genome_check.main(["context", str(COMPONENT_EXAMPLE)]) == 0
+    assert json.loads(capsys.readouterr().out)["level"] == "component"

@@ -2,7 +2,7 @@ task_id: skill-planner-smoke-lane-b-activation
 description: >
   Positive activation / boundary coverage: a doc-less request that genuinely
   spans multiple separately-built projects must ENGAGE the uipath-planner skill
-  and route to the Non-PDD lane (Lane B). The whole non-PDD path was previously
+  and route to the `decompose` verb. The whole non-PDD path was previously
   0% covered. Complements single_project_deferral (which checks planner does
   NOT trigger on single-project work).
 tags: [uipath-planner, smoke, mode:build, lifecycle:discover]
@@ -15,9 +15,8 @@ initial_prompt: |
   Load the appropriate UiPath skill to decide how to approach this. Do NOT
   build anything and do NOT author an SDD or task list.
 
-  After loading the skill, write to `lane.txt` the exact name of the entry-guard
-  lane this request routes to — use the name exactly as it appears in the skill
-  body.
+  After loading the skill, write to `lane.txt` the exact name of the verb this
+  request routes to — use the name exactly as it appears in the skill body.
 
 success_criteria:
   - type: skill_triggered
@@ -34,9 +33,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Routed to the Non-PDD lane (Lane B), verbatim from SKILL.md"
+    description: "Routed to the decompose verb, verbatim from SKILL.md"
     path: "lane.txt"
     includes:
-      - "Lane B"
+      - "decompose"
     weight: 3.0
     pass_threshold: 1.0

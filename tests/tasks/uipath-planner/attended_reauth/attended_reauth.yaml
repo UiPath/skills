@@ -10,7 +10,7 @@ description: >
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 run_limits:
-  # Full Phase D SDD authoring is one unbroken autonomous turn (read PDD +
+  # Full `design` SDD authoring is one unbroken autonomous turn (read PDD +
   # guides, select scope, generate §1–§18). Mirror the gap_detection / e2e
   # budgets: the experiment task_timeout fires before the SDD lands unless
   # BOTH the wall clock and the long authoring turn are raised.

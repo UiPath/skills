@@ -1,6 +1,6 @@
 task_id: skill-case-phase-0-candidate-interview
 description: >
-  CASE DESIGN ONLY (planner Case Design Lane) — simulated interview → sdd.draft.md for a
+  CASE DESIGN ONLY (planner case design path) — simulated interview → sdd.draft.md for a
   candidate-interview process at a software company. Tests whether the design conversation captures a logically coherent design: 7 primary stages in order
   (Application Received → Recruiter Screen → Technical Screen → Onsite Loop →
   Debrief → Offer → Hired), 3 exception lanes (Rejected, Withdrawn, On Hold),

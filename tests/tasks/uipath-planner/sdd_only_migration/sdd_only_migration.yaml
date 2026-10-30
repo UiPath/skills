@@ -1,6 +1,6 @@
 task_id: skill-planner-sdd-only-migration
 description: >
-  SDD-only design: the planner's Extract lane wrote an extracted genome of a legacy UiPath project
+  SDD-only design: the planner's `extract` verb wrote an extracted genome of a legacy UiPath project
   (`invoice-intake-genome.md`) bound to a Map of Work snapshot, its steps citing the Map's record ids;
   the planner must design the migration SDD from it with no PDD. No Cartographer MCP is available, so
   the genome's inferred lines stand in for the Map's open items. Grades the outcome: a planner SDD
@@ -12,7 +12,7 @@ tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 24
-  # Full Phase D authoring in one autonomous turn, as in pdd_to_sdd: raise both the task and the turn
+  # Full `design` authoring in one autonomous turn, as in pdd_to_sdd: raise both the task and the turn
   # timeout so the experiment's 1200s default does not fire before the SDD lands.
   task_timeout: 2700
   turn_timeout: 1800

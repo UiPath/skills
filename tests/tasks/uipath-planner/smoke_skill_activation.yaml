@@ -2,9 +2,9 @@ task_id: skill-planner-smoke-skill-activation
 description: >
   Smoke test: a non-trivial UiPath planning prompt loads the uipath-planner
   skill body. Verifies activation only — no SDD analysis, no task generation,
-  no AskUserQuestion. The agent echoes the three entry-guard paths the skill
-  defines, which appear verbatim in SKILL.md and cannot be fabricated without
-  loading the skill.
+  no AskUserQuestion. The agent echoes the verbs the skill defines, which
+  appear verbatim in SKILL.md § Verbs and cannot be fabricated without loading
+  the skill.
 tags: [uipath-planner, smoke, lifecycle:plan]
 
 run_limits:
@@ -19,9 +19,9 @@ initial_prompt: |
   Do NOT analyze any document. Do NOT generate any plan or tasks file. Do
   NOT ask me clarifying questions. Do NOT call AskUserQuestion.
 
-  After loading the skill, write to `paths.txt` the EXACT names of the three
-  paths the entry guard routes to (one design phase plus two lanes), one per
-  line. Use the names exactly as they appear in the skill body.
+  After loading the skill, write to `paths.txt` the EXACT names of the verbs
+  the skill defines, one per line. Use the names exactly as they appear in the
+  skill body.
 
   Stop after writing `paths.txt`.
 
@@ -33,13 +33,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "paths.txt lists the three entry-guard paths (verbatim from SKILL.md)"
+    description: "paths.txt lists the skill's verbs (verbatim from SKILL.md § Verbs)"
     path: "paths.txt"
     includes:
-      - "Phase D"
-      - "Lane A"
-      - "PDD-driven"
-      - "Lane B"
-      - "Non-PDD"
+      - "design"
+      - "decompose"
+      - "author"
+      - "extract"
+      - "build"
     weight: 3.0
     pass_threshold: 1.0

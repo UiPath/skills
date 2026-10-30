@@ -1,9 +1,9 @@
 task_id: skill-planner-integration-lane-b-multiskill-plan
 description: >
-  Lane B (non-PDD) plan-emission coverage: a doc-less request spanning several
-  separately-built projects must engage the planner, route to Lane B, and emit
+  `decompose` (non-PDD) plan-emission coverage: a doc-less request spanning several
+  separately-built projects must engage the planner, route to `decompose`, and emit
   an implementation plan that routes work to the correct specialists
-  (uipath-maestro-flow + uipath-rpa + uipath-agents). Lane B plan emission was
+  (uipath-maestro-flow + uipath-rpa + uipath-agents). `decompose` plan emission was
   previously untested. Criteria kept to high-confidence routing/structure
   tokens (not prose) to stay low-flake.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
@@ -27,7 +27,7 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
-    description: "Lane B wrote the implementation plan file"
+    description: "`decompose` wrote the implementation plan file"
     path: "solution-plan.md"
     weight: 2.0
     pass_threshold: 1.0

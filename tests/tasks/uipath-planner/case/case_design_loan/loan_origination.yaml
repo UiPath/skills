@@ -1,6 +1,6 @@
 task_id: skill-case-phase-0-loan-origination
 description: >
-  CASE DESIGN ONLY (planner Case Design Lane) — simulated interview → sdd.draft.md for a
+  CASE DESIGN ONLY (planner case design path) — simulated interview → sdd.draft.md for a
   commercial-loan origination case at a mid-market bank. Tests whether the design conversation captures a logically coherent design: 6 primary stages in
   order (Intake → Loan Setup → Underwriting → QA/QC → Closing → Resolved), 4
   exception lanes (Customer Comms, Escalation, Withdrawn, Rejected), and the

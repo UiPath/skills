@@ -78,7 +78,6 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-case": 95,
     "uipath-api-workflow": 100,
     "uipath-functions": 100,
-    "uipath-genome": 90,
 }
 
 DROP_PP = 10

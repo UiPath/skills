@@ -1,7 +1,7 @@
 task_id: skill-case-phase-0-finalize-draft
 description: >
-  CASE DRAFT FINALIZATION ONLY (planner Case Design Lane) — a complete CandidateInterview interview draft
-  (sdd.draft.md) is staged into the sandbox; the planner's Case Design Lane resumes from the
+  CASE DRAFT FINALIZATION ONLY (planner case design path) — a complete CandidateInterview interview draft
+  (sdd.draft.md) is staged into the sandbox; the planner's case design path resumes from the
   draft, runs the Finalization checks, and renames it to an approved sdd.md. Decoupled from the
   interview (covered by candidate_interview) so the heavy finalization step runs
   in one bounded turn. Grades mechanical validity of the produced sdd.md

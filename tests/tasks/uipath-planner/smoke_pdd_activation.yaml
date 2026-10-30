@@ -1,10 +1,10 @@
 task_id: skill-planner-smoke-pdd-activation
 description: >
   Smoke test: a PDD-design prompt loads the uipath-planner skill body and
-  routes to Phase D (design). Verifies activation only — no PDD analysis, no
-  SDD generation. The agent echoes the three Phase D phase names defined in
-  the skill, which appear verbatim in SKILL.md and cannot be fabricated
-  without loading the skill.
+  routes to the `design` verb, whose guide the skill opens at once (SKILL.md
+  § Setup). Verifies activation only — no PDD analysis, no SDD generation. The
+  agent echoes the three phase names the design guide defines, which cannot be
+  fabricated without loading the skill and its verb guide.
 tags: [uipath-planner, smoke, lifecycle:generate]
 
 run_limits:
@@ -20,7 +20,7 @@ initial_prompt: |
   ask me clarifying questions.
 
   After loading the skill, write to `phases.txt` the EXACT names of the
-  three phases of SDD generation as the skill defines them, one per line.
+  three phases of its design verb as the skill defines them, one per line.
   Use the names exactly as they appear in the skill body.
 
   Stop after writing `phases.txt`.
@@ -33,7 +33,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "phases.txt lists the three phases by name (verbatim from SKILL.md)"
+    description: "phases.txt lists the three phases by name (verbatim from the design guide)"
     path: "phases.txt"
     includes:
       - "PDD Analysis"
