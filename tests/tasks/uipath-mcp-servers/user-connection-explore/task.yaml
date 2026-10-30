@@ -1,0 +1,46 @@
+task_id: skill-mcp-servers-user-connection-explore
+description: |
+  Give one user their own Integration Service connection on a remote-type Agent Gateway MCP server when that connection is in the user's personal workspace. The caller cannot see it until they explore the workspace, so `mcp-user-connections set` by name fails first. Exercises Per-User Connections: `uip or folders explore --owner <email>` (or the workspace by name or key) of that user's workspace (the user approved it), `set` again for that user and connection, then `uip or folders stop-exploring`. Graded from the uip mock's call log; the mock answers `set` and `is connections list` differently once the workspace was explored. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:build', 'lifecycle:configure']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: On the remote AgentHub MCP server vendor-mcp in the Shared folder, Jane Doe
+  (jane.doe@example.com) should call with her own Integration Service connection
+  "Vendor MCP (Jane)" instead of the server's connection. Everyone else keeps
+  using the server's connection. Set that up.
+
+  Jane keeps that connection in her personal workspace. If you need access to
+  her workspace for this, I approve it, but don't leave it open afterwards.
+success_criteria:
+- type: run_command
+  description: 'In order: an executed `or folders explore` of Jane''s workspace, a `mcp-user-connections set --mcp vendor-mcp` for Jane and her connection in the Shared folder, then `or folders stop-exploring` of her workspace; no other workspace explored, and no set used --me or another user or connection'
+  command: python3 $REFERENCE_DIR/check_user_connection_explore.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT change the server itself (mcp update would change the connection for every user)
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp\s+update\b(?![^\n]*--(dry-run|help|print-schema))'
+- type: command_not_executed
+  description: Agent did NOT delete a per-user connection
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp-user-connections\s+delete\b(?![^\n]*--(dry-run|help))'
+- type: command_not_executed
+  description: Agent did NOT create, edit or delete an Integration Service connection
+  tool_name: Bash
+  command_pattern: 'uip\s+is\s+connections\s+(create|edit|delete|rename|set-default)\b'
+run_limits: {max_turns: 60}
