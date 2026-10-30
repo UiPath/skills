@@ -96,7 +96,7 @@ uip or libraries delete "UiPath.System.Activities:24.4.0" --yes --output json
 
 ## Output Behavior
 
-These commands return a **curated PascalCase view** by default — a focused projection of the most useful fields. Pass `--all-fields` on list/get-style commands to receive the raw API DTO instead (raw DTO keys are camelCase; the two shapes do not share casing). This matches the convention across all `uip or` commands; see [orchestrator.md](orchestrator.md).
+These commands return a **curated PascalCase view** by default — a focused projection of the most useful fields. Pass `--all-fields` on list/get-style commands to receive the raw API DTO instead (stdout prints PascalCase keys for both shapes; they differ in which fields they carry). This matches the convention across all `uip or` commands; see [orchestrator.md](orchestrator.md).
 
 List responses include a `Pagination` block:
 
