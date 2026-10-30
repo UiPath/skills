@@ -59,24 +59,31 @@ Both routes need the same taxonomy, and
 [extract-document-taxonomy.md](extract-document-taxonomy.md) is where it is designed and
 written. One difference decides between them: every field group and field must
 carry a stable id, and `nodes schema set` mints those for you, while a `schema`
-passed to the factory is emitted verbatim — validation passes only when every
-id is already written by hand, which the taxonomy guide warns against because
-hand-managed ids are how annotations detach from fields.
+passed to the factory is emitted verbatim — `flow validate` warns about each
+missing id, and the remedy its warning names, `nodes schema set`, is overwritten
+by the next compile. On this route the ids have to be written into the source,
+which the taxonomy guide warns against because hand-managed ids are how
+annotations detach from fields.
 
 ## Schema and outputs
 
 `schema` is the extraction taxonomy: an object with `prompt` (the overall
 instructions) and `outputSchema` (the field groups and the field types they
-reference). It is emitted as the node's `schemaDocument`, and `flow validate`
-rejects a node whose `schemaDocument` is any other shape, so a bare JSON-Schema
-object with `properties` alone does not work here. The format, with a worked
-example, is in [extract-document-taxonomy.md](extract-document-taxonomy.md).
+reference). It is emitted as the node's `schemaDocument`. `flow validate` only
+warns about any other shape, so it will not catch a bare JSON-Schema object
+with `properties` alone for you — the format, with a worked example, is in
+[extract-document-taxonomy.md](extract-document-taxonomy.md).
 
-Classification lands at `out('classify', ...)`. The extracted values land at
-`out('extract')` under `result.output`, one property per taxonomy field; the
-port itself carries the whole processed document, with the values' page
-provenance alongside them under `result.attribution`. `ExtractionResult` is the
-published-model node's output shape ([ixp.md](ixp.md)), not this one's.
+Classification lands at `out('classify', ...)`. What the node emits at run time
+is a processed document, with the extracted values at `result.output`, one
+property per taxonomy field, and their page provenance under
+`result.attribution` ([Reading what it extracts](extract-document-node.md#reading-what-it-extracts)).
+The two routes embed different typings for it, though: `nodes create` embeds
+that current shape, while the SDK factory still embeds the older
+`ExtractionResult` shape — so on a factory-built flow, a read of
+`result.output` validates with an `EXPRESSION_DIAGNOSTIC` warning until the SDK
+catches up. `ExtractionResult` as a runtime shape belongs to the
+published-model node ([ixp.md](ixp.md)), not this one.
 
 ## Evidence boundary
 

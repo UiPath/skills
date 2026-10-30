@@ -2,7 +2,7 @@
 
 *Commands: `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
 
-An Extract document node (`uipath.ixp.extract-document-builder`) pulls named fields out of a document using a taxonomy it carries inline, in the `.flow` file itself. There is no trained model or IXP project behind it. A user may call it Extract v2, its name during development; Extract document is the product name and the one to use with them. This guide covers getting the node into the flow: adding it, wiring the file it reads, and validating. Designing what it extracts is the taxonomy, in [extract-document-taxonomy.md](extract-document-taxonomy.md).
+An Extract document node (`uipath.ixp.extract-document-builder`) pulls named fields out of a document using a taxonomy it carries inline, in the `.flow` file itself. There is no trained model or IXP project behind it. This guide covers getting the node into the flow: adding it, wiring the file it reads, and validating. Designing what it extracts is the taxonomy, in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 ```bash
 uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --output json
@@ -13,7 +13,7 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-The default for document extraction in a flow is a published IXP model, covered in [ixp.md](ixp.md), where the IXP project is built and deployed first and the flow then runs against it. Use the Extract document node only when the user asks for it, by either name, or is already using it: the flow holds a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or the request is about the taxonomy an Extract document node carries inline. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
+The default for document extraction in a flow is a published IXP model, covered in [ixp.md](ixp.md), where the IXP project is built and deployed first and the flow then runs against it. Use the Extract document node only when the user asks for it by name or is already using it: the flow holds a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or the request is about the taxonomy an Extract document node carries inline. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
 
 Three node families share the `uipath.ixp.` prefix and they are not interchangeable:
 
@@ -95,7 +95,7 @@ A flow that simply takes a document in needs that input declared before anything
 uip maestro flow variables create <file> invoice -d in -t file --description 'The invoice document to extract' --output json
 ```
 
-That is what makes `$vars.start.output.invoice` resolve. Declaring it on the trigger is a separate step from wiring it into the node, and a `fileRef` pointing at an input that was never declared validates as a broken expression.
+That is what makes `$vars.start.output.invoice` resolve. Declaring it on the trigger is a separate step from wiring it into the node. A `fileRef` pointing at an input that was never declared still validates, with an `EXPRESSION_DIAGNOSTIC` warning naming the missing input — treat that warning on `fileRef` as an error.
 
 Then connect the node in the graph:
 
@@ -118,7 +118,7 @@ $vars.<extract-node-id>.output.result.output
 
 The port carries a whole processed document, of which the extracted values are one part. Its top level has `version`, `type`, `result`, `taxonomy` and `metadata`. Inside `result` sit `output` (the values, keyed by field name), `attribution` (where on the page each value came from, keyed by a JSON Pointer into `output`) and `traceContext`. Reach for `result.output` when a downstream step wants the data, and for the port itself when something wants the document whole.
 
-The flow file embeds the definition it was created with, so `uip maestro flow registry get uipath.ixp.extract-document-builder --output-filter 'keys(Node.outputDefinition.output.schema.properties)' --output json` can confirm the actual output schema should that evolve over time.
+The flow file embeds the definition it was created with, so should the shape evolve, read it off the file itself: the `definitions[]` entry for this node type, at `outputDefinition.output.schema.properties`. (`registry get` answers `Node not found` for this type, since no tenant manifest carries it.)
 
 **`ExtractionResult` is the published-model node's output, not this one.** The two nodes emit different shapes, and a downstream step written against the wrong one reads a key that is not there. `ExtractionResult.ResultsDocument.Fields[]` belongs to the node in [ixp.md](ixp.md).
 
