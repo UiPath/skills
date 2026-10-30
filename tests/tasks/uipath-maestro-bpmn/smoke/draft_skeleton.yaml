@@ -18,15 +18,12 @@ reference:
   directory: .
 
 initial_prompt: |
-  Create a local BPMN project named "InvoiceIntakeSketch" for this process:
-  - Manual start with an `amount` (number) input.
-  - Record the invoice.
-  - An exclusive gateway sends invoices with `amount >= 1000` to manager
-    review and every other invoice to auto approval.
-  - Both branches finish at a single end event.
+  I need a BPMN process called "InvoiceIntakeSketch" for incoming invoices.
+  We record each one. Anything of 1000 or more needs a manager to review it,
+  and the rest go through automatic approval.
 
-  Show me the shape first; I want to approve it before you wire anything up.
-  Do not upload, publish, deploy, debug, or run anything.
+  Can you show me what it would look like before you build it? Don't upload
+  or run anything yet.
 
 success_criteria:
   - type: command_not_executed
