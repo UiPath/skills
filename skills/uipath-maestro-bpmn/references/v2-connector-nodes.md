@@ -274,6 +274,7 @@ update a record in the picked entity) **just before** you start; with none
 the run faults `102003 DebugTriggerNoMatches`. For a Data Fabric record
 event, the entity id is the picker binding's `resourceKey`:
 
+<!--skill-flavor:trigger-debug-commands:start-->
 ```bash
 uip df records insert <entity-id> --folder-key <folder-key> --body '{"<column>":"<value>"}'
 uip maestro bpmn debug <project-path> --entry-point <trigger-start-event-id>
@@ -288,6 +289,7 @@ progress lines can lag behind the run, so read where the instance is with
 `uip maestro bpmn debug-instance variables-all <instance-id>` (the instance id
 is in the debug log: `--log-level debug --log-file <file>`), and cause the
 event once the wait element shows as running.
+<!--skill-flavor:trigger-debug-commands:end-->
 
 ### A CLI without V2 nodes
 
