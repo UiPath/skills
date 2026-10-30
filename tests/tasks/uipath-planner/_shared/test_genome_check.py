@@ -98,7 +98,7 @@ def test_domain_outcome_row_fails_strict_only(tmp_path):
 
 
 def test_preamble_without_uipath_genome_fails_strict_only(tmp_path):
-    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-planner", "the build skills")
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome-builder", "the build skills")
     assert run(tmp_path, text, profile="core") == 0
     assert run(tmp_path, text, profile="strict") == 1
 
@@ -230,7 +230,7 @@ def test_skill_lists_cover_the_shipped_skills():
     shipped = {p.name for root in (REPO / "skills", REPO / "preview" / "skills") if root.is_dir()
                for p in root.iterdir() if (p / "SKILL.md").is_file()}
     names = genome_check.skills()
-    listed = set(names["build"]) | set(names["operate"])
+    listed = set(names["build"]) | set(names["operate"]) | {"uipath-genome-builder"}
     assert shipped - listed == set(), "add each new skill to VALID_SKILLS or OPERATE_SKILLS"
     assert listed - shipped == set(), "a listed skill no longer ships"
 
@@ -344,8 +344,8 @@ def test_heading_case_and_wording_variants_pass_core(tmp_path):
     assert run(tmp_path, text, profile="strict") == 1
 
 
-def test_preamble_of_a_genome_written_before_the_merge_still_passes(tmp_path):
-    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-planner", "uipath-genome")
+def test_preamble_of_a_genome_written_before_the_split_still_passes(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome-builder", "uipath-genome")
     assert run(tmp_path, text, profile="strict") == 0
 
 

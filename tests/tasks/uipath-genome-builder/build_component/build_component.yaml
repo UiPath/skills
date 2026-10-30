@@ -1,12 +1,12 @@
 task_id: skill-genome-execute-component
 description: >
-  E2E: the uipath-planner skill executes a small component genome (Daily Sales Summary — CSV exports
+  E2E: the uipath-genome-builder skill executes a small component genome (Daily Sales Summary — CSV exports
   totalled into an Excel summary, no user interface, not transactional) into an RPA project on an
   unattended run that takes every default. Grades the outcome: the one project the genome describes
   compiles (uip rpa build), it reads the three environment-dependent folders as Orchestrator assets,
   open items for the engineer, under any name outside the project, name the three folder assets,
   the genome is left unchanged, and nothing is published or deployed.
-tags: [uipath-planner, windows, e2e, mode:build, lifecycle:generate]
+tags: [uipath-genome-builder, windows, e2e, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 60
@@ -32,9 +32,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent engaged the uipath-planner skill"
-    skill_name: "uipath-planner"
-    expected_skill: "uipath-planner"
+    description: "Agent engaged the uipath-genome-builder skill"
+    skill_name: "uipath-genome-builder"
+    expected_skill: "uipath-genome-builder"
     weight: 2.0
     pass_threshold: 1.0
 

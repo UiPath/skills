@@ -1,6 +1,6 @@
 # Editing Guide — change a genome in place
 
-Content rules for what an edit writes: [genome-format-guide.md](genome-format-guide.md), and for an extracted genome [extracted-genome-guide.md](extracted-genome-guide.md). Only `edit` changes a genome; `build` reads it and never edits it, so a fix found during a build comes back here and the build re-runs. Edits are targeted and in place, never a regeneration ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)).
+Content rules for what an edit writes: [genome-format-guide.md](genome-format-guide.md), and for an extracted genome [extracted-genome-guide.md](extracted-genome-guide.md). Only `edit` changes a genome; `uipath-genome-builder` reads it and never edits it, so a fix found during a build comes back here and the build re-runs. Edits are targeted and in place, never a regeneration ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)).
 
 
 ## Read Plan
@@ -32,7 +32,7 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 | "Make it transactional" / "drop the transactional shape" | Transactional Shape (unit of work, As-is, outcomes, split options, evidence) or its stub; Platform Dependencies (the store the As-is names); Configuration Questions (retry counts) |
 | "Step X should be a business exception" | Transactional Shape outcomes table; the rule under Business Rules for step X; an acceptance criterion for the recorded reason |
 | "One row per transaction instead of one file" (change the unit of work) | Transactional Shape (Unit of work, Alternative units of work, As-is, outcomes, split options); Interface; Handoffs data passed; Platform Dependencies (store); Acceptance Criteria (duplicate and retry cases) |
-| "Split the dispatcher into its own component" / "use one queue" / "apply the REFramework" / "drop the ledger" | Not a genome edit: the split, the store, the template and the fate of the source's coordination stores are execution's configuration answers, chosen from the Split options by `build`'s split questions ([transactional-execution-guide.md § Split questions](transactional-execution-guide.md)). Edit the Transactional Shape only when what it describes changes: in an authored genome the described process itself — a new source, a new item kind, items that must now be shared — and then the As-is, the Evidence and the options; in an extracted genome its As-is or Evidence, when wrong or incomplete |
+| "Split the dispatcher into its own component" / "use one queue" / "apply the REFramework" / "drop the ledger" | Not a genome edit: the split, the store, the template and the fate of the source's coordination stores are execution's configuration answers, chosen from the Split options by `uipath-genome-builder`'s split questions (`uipath-genome-builder`'s transactional-execution-guide.md § Split questions). Edit the Transactional Shape only when what it describes changes: in an authored genome the described process itself — a new source, a new item kind, items that must now be shared — and then the As-is, the Evidence and the options; in an extracted genome its As-is or Evidence, when wrong or incomplete |
 
 ### Extracted genomes
 

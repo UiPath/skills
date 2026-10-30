@@ -1,7 +1,7 @@
 """Unit tests for execute_check.py: a setting counts only where the project reads it as an asset,
 and open items count only in the file the open-items guide describes.
 
-Run: pytest tests/tasks/uipath-planner/_shared/test_execute_check.py -v
+Run: pytest tests/tasks/uipath-genome-builder/_shared/ -v
 """
 
 import argparse

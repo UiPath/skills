@@ -69,7 +69,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 ## Skill Capability Map
 
-High-level view of what each specialist owns, for the plans `plan` and `decompose` write. **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
+High-level view of what each specialist owns, for the plans `uipath-planner`'s `plan` and `decompose` write. **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
 
 | Skill | What it owns | Handles auth? | Handles deploy? |
 |---|---|---|---|

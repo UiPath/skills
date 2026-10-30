@@ -1,8 +1,8 @@
-# Working with genomes (uipath-planner)
+# Working with genomes (uipath-planner and uipath-genome-builder)
 
-The `uipath-planner` skill's genome verbs turn a project, or an idea, into a genome: a markdown blueprint of the automation. The agent then builds the UiPath automation from it, runs it against the real applications and fixes what fails. You make a few decisions; the agent, with helper agents it starts in parallel, does the rest. Say what you want in plain words, or name the verb: `/uipath-planner extract <folder>`, `/uipath-planner author`, `/uipath-planner edit <genome>`, `/uipath-planner build <genome>`.
+`uipath-planner` turns a project, or an idea, into a genome, and `uipath-genome-builder` builds from it. A genome is a markdown blueprint of the automation; the agent builds the UiPath automation from it, runs it against the real applications and fixes what fails. You make a few decisions; the agent, with helper agents it starts in parallel, does the rest. Say what you want in plain words, or name the verb: `/uipath-planner extract <folder>`, `/uipath-planner author`, `/uipath-planner edit <genome>`, `/uipath-genome-builder build <genome>`.
 
-> The genome verbs were the `uipath-genome` skill until it merged into `uipath-planner`. A genome whose preamble still names `uipath-genome` builds unchanged.
+> Both skills were once the `uipath-genome` skill. A genome whose preamble still names `uipath-genome` builds unchanged.
 
 Use it to document an automation you run, in words people review and agents act on; to design a new one from an idea, an SOP or a meeting transcript; or to rebuild an existing automation onto the UiPath products that fit it.
 
@@ -47,7 +47,7 @@ Reading and building are checked apart, with you in between:
 
 ## How it compares
 
-| | Convert step by step | One-shot AI rewrite | Spec-first coding tools | uipath-planner genome verbs |
+| | Convert step by step | One-shot AI rewrite | Spec-first coding tools | uipath-planner + uipath-genome-builder |
 | --- | --- | --- | --- | --- |
 | Starts from the automation you have | Yes | Yes | No: specs the next change | Yes, or from an idea |
 | A plain-language spec, reviewed before the build | No | No | Yes | Yes |

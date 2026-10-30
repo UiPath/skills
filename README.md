@@ -59,7 +59,8 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-planner** | Solution planner, designer and genome skill, driven by verbs — `design` an SDD from a Process Definition Document, `plan` or `decompose` it into a multi-skill task list, `author`, `extract` or `edit` an automation genome (`*-genome.md`) and `build` the automation from it through the owning skills, including refactors and migrations. |
+| **uipath-planner** | Solution planner, designer and genome writer, driven by verbs — `design` an SDD from a Process Definition Document, `plan` or `decompose` it into a multi-skill task list, and `author`, `extract` or `edit` an automation genome (`*-genome.md`). |
+| **uipath-genome-builder** | Builds an automation from its genome (`*-genome.md`) through the owning skills — including refactors of a UiPath project and migrations from another framework — and checks genomes. |
 | **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
 
@@ -95,6 +96,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
 | `uipath-functions` | Preview |
+| `uipath-genome-builder` | Preview |
 | `uipath-governance` | Preview |
 | `uipath-human-in-the-loop` | Stable |
 | `uipath-insights` | Preview |

@@ -4,7 +4,7 @@
 <!--skill-flavor:plan-job:end-->
 
 <!--skill-flavor:plan-design-only-outputs:start-->
-1. **Plan, design and specify — never author automation code yourself.** `design`, `plan`, `decompose`, `author`, `extract` and `edit` write only SDD, plan/tasks and genome markdown, and the host plan authored in plan mode when a plan is reviewed; they NEVER write XAML, C#, Python, JSON, or project or scaffold files. `build` creates projects only through each owning skill's own journey — its mandatory reads and its commands — and writes nothing of its own beyond the hand-off folder.
+1. **Plan, design and specify — never author automation code yourself.** `design`, `plan`, `decompose`, `author`, `extract` and `edit` write only SDD, plan/tasks and genome markdown, and the host plan authored in plan mode when a plan is reviewed; they NEVER write XAML, C#, Python, JSON, or project or scaffold files. Implementation always routes to a specialist, and every genome build to `uipath-genome-builder`.
 <!--skill-flavor:plan-design-only-outputs:end-->
 
 <!--skill-flavor:plan-and-tasks-format-row:start-->

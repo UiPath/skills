@@ -1,6 +1,6 @@
 <!-- UIPATH-AUTOMATION-GENOME: process | This file is the high-level build specification for a multi-component
      UiPath automation. Each component has its own genome in the sibling folder named in Components.
-     To build it, invoke the uipath-planner skill's `build` verb: it asks the configuration questions,
+     To build it, invoke the uipath-genome-builder skill: it asks the configuration questions,
      then invokes the skills referenced in Components. Do NOT execute these steps directly, and do NOT
      start from a Components skill. To change it, invoke the uipath-planner skill. -->
 
@@ -8,7 +8,7 @@
 
 > {One-line description of the end-to-end process}
 
-> **This is a UiPath automation blueprint.** Do not execute these steps directly. Build it with the **uipath-planner** skill's `build` verb, which builds each component with the skill named in **Components**, then wires them per **Handoffs** and **Deployment**.
+> **This is a UiPath automation blueprint.** Do not execute these steps directly. Build it with the **uipath-genome-builder** skill, which builds each component with the skill named in **Components**, then wires them per **Handoffs** and **Deployment**.
 
 > Designed in: [{SDD title}]({relative path to the SDD}) *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 

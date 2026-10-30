@@ -21,7 +21,7 @@ Read whole file. Identify level from preamble comment (`component` or `process`)
 
 Required sections (component): Overview, Target Applications, Build With, Workflow, Acceptance Criteria, Complexity. Optional (may be stubs): Platform Dependencies, Interface, Configuration Questions, Business Rules, Error Handling, Source Map. Genome missing a required section is malformed: report which section and stop.
 
-Check the genome before anything is asked: `node "<SKILL_DIR>/scripts/check-genome.mjs" context "<GENOME_MD>"` reads its level, build mode, design links and the strict check in one call. A `FAIL` the build cannot work around stops execution like a missing section; the report names it as an `edit` of the genome, then a new `build`.
+Check the genome before anything is asked: `node "<SKILL_DIR>/scripts/check-genome.mjs" context "<GENOME_MD>"` reads its level, build mode, design links and the strict check in one call. A `FAIL` the build cannot work around stops execution like a missing section; the report names it as an edit for `uipath-planner`, then a new build.
 
 When the genome carries the design links ([genome-format-guide.md § Design Links](genome-format-guide.md)):
 

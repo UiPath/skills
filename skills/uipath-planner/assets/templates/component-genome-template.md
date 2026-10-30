@@ -1,5 +1,5 @@
 <!-- UIPATH-AUTOMATION-GENOME: component | This file is a build specification for one UiPath automation project.
-     To build it, invoke the uipath-planner skill's `build` verb: it asks the configuration questions,
+     To build it, invoke the uipath-genome-builder skill: it asks the configuration questions,
      then invokes the skills referenced in Build With. Do NOT execute these steps directly, and do NOT
      start from a Build With skill. To change it, invoke the uipath-planner skill. -->
 
@@ -7,7 +7,7 @@
 
 > {One-line description of what this automation does}
 
-> **This is a UiPath automation blueprint.** Do not execute these steps directly. Build it with the **uipath-planner** skill's `build` verb, which hands each part to the skill listed in **Build With** below.
+> **This is a UiPath automation blueprint.** Do not execute these steps directly. Build it with the **uipath-genome-builder** skill, which hands each part to the skill listed in **Build With** below.
 
 > Part of: {Process name} — {one line on this component's role in the process}. *(Write the process name as a markdown link to `../{process-slug}-genome.md`. Omit this line for a standalone automation.)*
 

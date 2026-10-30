@@ -63,10 +63,9 @@ export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / De
   "uipath-activity-migrator", "uipath-knowledge-bundles", "uipath-vertical-solutions",
 ]);
 const RETIRED_SKILLS = ["uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"];
-// what a genome's preamble routes its build to: uipath-planner's build verb; `uipath-genome` still matches a genome
-// written before the genome skill merged into uipath-planner (as `uipath-genome` or `uipath-genome-builder`)
-const BUILDER = "uipath-planner's build verb";
-const routesToBuilder = (s) => s.includes("uipath-planner") || s.includes("uipath-genome");
+// the skill a genome's preamble routes its build to; `uipath-genome` also matches a genome written before the split
+const BUILDER = "uipath-genome-builder";
+const routesToBuilder = (s) => s.includes("uipath-genome");
 
 const COMPONENT_SECTIONS = [
   "Overview", "Target Applications", "Build With", "Platform Dependencies", "Interface",
@@ -226,9 +225,9 @@ function checkCommon(text, level, sections, r, minCriteria) {
   else if (!text.includes("This is a UiPath automation blueprint")) r.strict("blueprint blockquote not written as the template words it");
   // format guide rule 5: the preamble routes the agent to the skill that builds the genome, not to the Build With skills
   const comment = text.match(/<!--\s*UIPATH-AUTOMATION-GENOME[\s\S]*?-->/i);
-  if (comment && !routesToBuilder(comment[0])) r.strict(`preamble comment does not name ${BUILDER} as what builds the genome`);
+  if (comment && !routesToBuilder(comment[0])) r.strict(`preamble comment does not name ${BUILDER} as the skill that builds the genome`);
   const blockquote = text.match(/^>.*UiPath automation blueprint.*$/im);
-  if (blockquote && !routesToBuilder(blockquote[0])) r.strict(`blueprint blockquote does not name ${BUILDER} as what builds the genome`);
+  if (blockquote && !routesToBuilder(blockquote[0])) r.strict(`blueprint blockquote does not name ${BUILDER} as the skill that builds the genome`);
   const pos = h2Positions(text);
   for (const s of sections) {
     if (sectionPos(pos, s) === null) r.core(`missing section '## ${s}'`);
@@ -239,7 +238,7 @@ function checkCommon(text, level, sections, r, minCriteria) {
   // Service connector key (`uipath-slack`, `uipath-salesforce-sfdc`), not a skill
   for (const heading of ["Build With", "Components"]) {
     for (const name of skillNames(sectionBody(text, heading))) {
-      if (!VALID_SKILLS.has(name) && !OPERATE_SKILLS.has(name)) r.core(`unknown skill name '${name}' in ${heading}`);
+      if (!VALID_SKILLS.has(name) && !OPERATE_SKILLS.has(name) && name !== BUILDER) r.core(`unknown skill name '${name}' in ${heading}`);
     }
   }
   for (const heading of ["Build With", "Components"]) {
