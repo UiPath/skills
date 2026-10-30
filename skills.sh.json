@@ -51,9 +51,10 @@
     },
     {
       "title": "Diagnostics & Feedback",
-      "description": "Investigate failures across any UiPath product and send bug reports or improvement suggestions to the team.",
+      "description": "Investigate failures across any UiPath product, turn trace analysis into fixes, and send bug reports or improvement suggestions to the team.",
       "skills": [
         "uipath-troubleshoot",
+        "uipath-explorer-engine",
         "uipath-feedback"
       ]
     }

@@ -1,0 +1,70 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "invoice": {
+        "type": "string",
+        "description": "The invoice text"
+      }
+    },
+    "required": [
+      "invoice"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "classification": {
+        "type": "string",
+        "description": "routine or exception"
+      },
+      "draftReply": {
+        "type": "string",
+        "description": "The reply drafted for the vendor"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are InvoiceTriage. Read the invoice, extract the vendor, amount and due date, and classify it as routine or exception. Draft a reply to the vendor and queue it for review. Flag invoices above 10,000 for review.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are InvoiceTriage. Read the invoice, extract the vendor, amount and due date, and classify it as routine or exception. Draft a reply to the vendor and queue it for review. Flag invoices above 10,000 for review."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Invoice: {{input.invoice}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Invoice: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.invoice"
+        }
+      ]
+    }
+  ],
+  "projectId": "7c1e9a52-5b0d-4f7e-9a51-2d8f3c6b1e04"
+}

@@ -19,6 +19,7 @@
 
 # Studio Web flavor overrides
 /skill-flavors/studioweb/ @astridstaicu
+/skill-flavors/studioweb/uipath-explorer-engine/ @astridstaicu @UiPath/llmops-team @RunnanJia
 /skill-flavors/studioweb/uipath-maestro-bpmn/ @astridstaicu @UiPath/maestro-cli-team
 /skill-flavors/studioweb/uipath-maestro-case/ @astridstaicu @UiPath/maestro-cli-team
 /skill-flavors/studioweb/uipath-maestro-flow/ @astridstaicu @UiPath/maestro-cli-team
@@ -241,6 +242,10 @@
 /skills/uipath-insights/ @UiPath/insights
 /tests/tasks/uipath-insights/ @UiPath/insights
 /tests/tasks/activation/uipath-insights.jsonl @UiPath/insights
+
+# Explorer Engine skill (trace analysis suggestions and their fixes)
+/skills/uipath-explorer-engine/ @UiPath/llmops-team @RunnanJia
+/tests/tasks/uipath-explorer-engine/ @UiPath/llmops-team @RunnanJia
 
 # Process Mining skill (process apps, data ingestion, dbt transformations)
 /skills/uipath-process-mining/ @UiPath/team-backendhoven
