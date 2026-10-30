@@ -721,7 +721,7 @@ headers verbatim, real newlines. A task the draft left as a summary still gets i
 fill concise defaults, keep every concrete value the draft supplied, and set `**Resolved Resource:**` to
 the draft's intended resource name — or, when it names none, the task display name; never <UNRESOLVED>
 there. Checklist items 30–33 below cover inventory parity, verbatim `=js:` preservation, and executable
-threshold encoding. What the DRAFT specifically needs repaired on the way through is the lane guide's
+threshold encoding. What the DRAFT specifically needs repaired on the way through is case-design-guide.md's
 § Resumption; the shape is here.
 
 THE DRAFT'S TASK BLOCKS ARE NOT THE FINAL'S. Measured on shipped drafts: a draft task block carries
@@ -736,7 +736,7 @@ reasoning for the task (one concrete sentence, never boilerplate), and `**Task e
 Inputs/Outputs the draft already lists.
 
 Gate — the CONFORMANCE CHECKLIST below, run against the on-disk file BEFORE the Status: ready flip, in
-every mode. No script and no interpreter: Read the written file once (the one structural Read the lane
+every mode. No script and no interpreter: Read the written file once (the one structural Read the case design path
 allows), then answer every item PASS or FAIL in the transcript, each with one verbatim quote from the
 file — the line that violates (FAIL) or the line that satisfies (PASS) — so the check is inspectable,
 never asserted. Judge structure by the ROLE and POSITION of a block (which heading level, which table,

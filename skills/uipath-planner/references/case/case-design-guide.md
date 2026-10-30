@@ -50,7 +50,7 @@ Resolve identities at design time — registry pull, per-resource cache lookups,
 
    Cache files (`~/.uip/case-resources/`): agents `agent-index.json` · API workflows `api-index.json` · Coded Functions `function-index.json` · RPA processes `process-index.json` · orchestration processes `processOrchestration-index.json` · child cases `caseManagement-index.json` · business rules `businessRule-index.json` · Action Apps `action-apps-index.json` · connector activities/triggers `typecache-activities-index.json` / `typecache-triggers-index.json` · external agents `typecache-external-agent-activities-index.json` · external automations `typecache-external-automation-activities-index.json`. IXP deployments are not in the cache: run `uip solution resources list --kind IxpDeployment --source remote --output json` (name, key, folder) and `uip ixp deployments list <ixp-project-name> --output json` (Model Name), both read-only, in the same batch.
 
-4. **The ONE batched gate — at review time.** Queued items ride the §Confirm turn as one AskUserQuestion (≤ 4 questions; overflow carries into the confirmation's follow-up), grouped by `(name, type)` with usages listed. Options per group: **Pick a match** (candidates with folder FQNs); **Resolve at build** (identity stays `<UNRESOLVED>` + a paired review item; the build emits a placeholder); **Create during build** (ONLY for empty `agent` / `api-workflow` / `business-rule` lookups — records the decision, the build executes it; the lane never scaffolds). Never pre-judge by name heuristics — the user's call. Pull unfinished when the review is ready → present with resolve-at-build on pending items; never wait.
+4. **The ONE batched gate — at review time.** Queued items ride the §Confirm turn as one AskUserQuestion (≤ 4 questions; overflow carries into the confirmation's follow-up), grouped by `(name, type)` with usages listed. Options per group: **Pick a match** (candidates with folder FQNs); **Resolve at build** (identity stays `<UNRESOLVED>` + a paired review item; the build emits a placeholder); **Create during build** (ONLY for empty `agent` / `api-workflow` / `business-rule` lookups — records the decision, the build executes it; the case design path never scaffolds). Never pre-judge by name heuristics — the user's call. Pull unfinished when the review is ready → present with resolve-at-build on pending items; never wait.
 5. **Visibility.** Every adopted identity, connection, gate decision, and deferral appears in the Case Review (Resources and Integrations + Decisions I Made) and lands in SDD Section 2 cells and the Section 4 roll-up. The per-lookup resolution record (§Resolution ledger below) is machine-only — never user-facing.
 
 **No session / failures:**
@@ -265,7 +265,7 @@ Optional, **on-request only** — never offered proactively. Self-contained loca
 
 ## Resumption
 
-A case `sdd.draft.md` at lane entry is a leftover from an on-request draft or an older run. AskUserQuestion (3 options):
+A case `sdd.draft.md` at case design entry is a leftover from an on-request draft or an older run. AskUserQuestion (3 options):
 
 | Option | Effect |
 |---|---|

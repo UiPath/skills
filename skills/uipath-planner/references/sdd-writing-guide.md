@@ -256,7 +256,7 @@ The SDD is the deliverable of `design`. **Do not generate an Implementation Plan
 Then continue:
 
 1. **`Status: draft`** (a blocking SME item) → no genome and no `plan`. The item 9 summary names the blocking items. The turn that receives the user's answers patches them into the SDD, reruns the superset check and flips it to `ready` as its last write, then ends; the genome (item 3) runs on the following turn.
-2. **A Case Management SDD** → no genome, ever: `uipath-maestro-case` builds from the SDD.
+2. **A Case Management SDD** → no genome, ever: `uipath-maestro-case` builds from the SDD. With build intent, item 4 runs `plan` on the next turn; otherwise stop.
 3. **Next turn — the genome.** Run the `author` verb on the `ready` SDD ([genome-from-sdd-guide.md](genome-from-sdd-guide.md)). It writes `<PROCESS_NAME_KEBAB>-genome.md` beside the SDD with a `Designed in:` line, checks it, and adds `| **Genome** | <path> |` to the Planner Handoff table after `Tasks file` — the only edit to the SDD. Solution scope: one process genome for the solution, `<SOLUTION_NAME_KEBAB>-genome.md` beside the root solution SDD, with the `Genome` row in the root's handoff only. The SDD's `Execution autonomy` carries into the genome: `autonomous` finishes it without follow-up rounds (genome-from-sdd-guide.md item 2). Write the genome even when `uipath-genome-builder` is not installed, and say that building from it needs `uipath-genome-builder`. The genome write is a turn boundary too: end the turn after `author`'s summary.
 4. **Turn after — `plan`, or stop.**
    The request's intent decides, never the execution mode — in both modes:
