@@ -1,0 +1,707 @@
+{
+  "uipath-activity-migrator": {
+    "allow": [],
+    "ceiling": {
+      "login status": 1,
+      "rpa activities get-default-xaml": 1,
+      "rpa build": 9,
+      "rpa execution cancel": 1,
+      "rpa instances list": 1,
+      "rpa packages install": 1,
+      "rpa packages versions": 2,
+      "rpa run": 2,
+      "rpa validate": 3
+    }
+  },
+  "uipath-admin": {
+    "allow": [],
+    "ceiling": {
+      "admin audit tenant": 2,
+      "login": 22,
+      "login status": 13,
+      "logout": 4
+    }
+  },
+  "uipath-agents": {
+    "allow": [
+      {
+        "file": "references/lowcode/capabilities/integration-service/integration-service.md",
+        "command": "is connections",
+        "reason": "Placeholder text inside a JSON example (`<connection-id from uip is connections list>`), not an instruction."
+      }
+    ],
+    "ceiling": {
+      "agent eval run": 1,
+      "agent eval run compare": 2,
+      "agent eval run list": 1,
+      "agent eval run results": 5,
+      "agent eval run start": 8,
+      "agent eval run status": 2,
+      "agent memory item": 2,
+      "agent tool": 1,
+      "agenthub mcp create": 1,
+      "codedagent": 6,
+      "codedagent add": 1,
+      "codedagent deploy": 30,
+      "codedagent dev": 18,
+      "codedagent eval": 17,
+      "codedagent init": 65,
+      "codedagent invoke": 6,
+      "codedagent list-models": 4,
+      "codedagent new": 22,
+      "codedagent pack": 1,
+      "codedagent publish": 1,
+      "codedagent pull": 8,
+      "codedagent push": 33,
+      "codedagent register": 1,
+      "codedagent review": 3,
+      "codedagent run": 47,
+      "codedagent setup": 16,
+      "context-grounding": 1,
+      "eval": 2,
+      "eval eval-set create": 2,
+      "eval eval-set delete": 1,
+      "eval eval-set get": 1,
+      "eval eval-set list": 1,
+      "eval eval-set update": 1,
+      "eval evaluation create": 4,
+      "eval evaluation delete": 1,
+      "eval evaluation get": 1,
+      "eval evaluation list": 1,
+      "eval evaluation update": 2,
+      "eval evaluator create": 2,
+      "eval evaluator delete": 1,
+      "eval evaluator get": 1,
+      "eval evaluator list": 1,
+      "eval evaluator update": 1,
+      "eval execute-and-evaluate": 6,
+      "eval run get": 1,
+      "eval run list": 2,
+      "eval run results": 2,
+      "eval schedule create": 2,
+      "eval schedule delete": 1,
+      "eval schedule get": 1,
+      "eval schedule list": 1,
+      "eval schedule pause": 1,
+      "eval schedule resume": 1,
+      "eval schedule update": 1,
+      "eval simulatable-components list": 2,
+      "function": 2,
+      "function new": 1,
+      "gov aops-policy": 1,
+      "guardrails byo-configurations": 1,
+      "login": 37,
+      "login refresh": 2,
+      "login status": 16,
+      "login tenant list": 4,
+      "login tenant set": 3,
+      "logout": 2,
+      "maestro flow": 1,
+      "solution": 2,
+      "solution pack": 7
+    }
+  },
+  "uipath-aops": {
+    "allow": [],
+    "ceiling": {
+      "cicd": 10,
+      "gov aops-policy": 4,
+      "login": 4,
+      "login status": 3,
+      "sc": 10,
+      "tools install": 5,
+      "tools list": 4,
+      "update": 2
+    }
+  },
+  "uipath-automationhub": {
+    "allow": [],
+    "ceiling": {
+      "ah": 9,
+      "ah applications": 1,
+      "ah applications list": 4,
+      "ah applications update": 2,
+      "ah auth-info get": 5,
+      "ah automations change-idea-flow": 3,
+      "ah automations create": 2,
+      "ah automations get": 5,
+      "ah automations list": 5,
+      "ah automations schema get": 3,
+      "ah automations update": 2,
+      "ah categories get": 3,
+      "ah comments": 3,
+      "ah comments create": 3,
+      "ah comments list": 3,
+      "ah components list": 2,
+      "ah documents create": 2,
+      "ah documents download": 2,
+      "ah documents list": 3,
+      "ah idea-flows list": 3,
+      "ah phases set": 3,
+      "ah users list": 3,
+      "login": 14,
+      "login tenant set": 1
+    }
+  },
+  "uipath-coded-apps": {
+    "allow": [],
+    "ceiling": {
+      "codedapp": 13,
+      "codedapp deploy": 36,
+      "codedapp init": 2,
+      "codedapp pack": 19,
+      "codedapp publish": 25,
+      "codedapp pull": 14,
+      "codedapp push": 17,
+      "function serve": 1,
+      "login": 55,
+      "login status": 14,
+      "solution pack": 1,
+      "tools install": 4,
+      "tools list": 5
+    }
+  },
+  "uipath-connector-builder": {
+    "allow": [],
+    "ceiling": {
+      "is connectors": 1,
+      "is resources run": 1,
+      "login": 5,
+      "login status": 1
+    }
+  },
+  "uipath-feedback": {
+    "allow": [],
+    "ceiling": {
+      "admin": 1,
+      "api-workflow": 1,
+      "codedapp": 1,
+      "df": 1,
+      "feedback send": 6,
+      "gov": 1,
+      "login": 1,
+      "login status": 4,
+      "maestro bpmn": 1,
+      "maestro case": 1,
+      "maestro flow": 1,
+      "rpa": 1,
+      "rpa run": 1,
+      "rpa validate": 1,
+      "solution": 1,
+      "tasks": 1,
+      "tm": 1,
+      "tools list": 1
+    }
+  },
+  "uipath-functions": {
+    "allow": [],
+    "ceiling": {
+      "codedagent new": 1,
+      "codedagent push": 1,
+      "function": 7,
+      "function init": 9,
+      "function new": 10,
+      "function pack": 9,
+      "function publish": 5,
+      "function push": 21,
+      "function run": 16,
+      "function runtime-install": 1,
+      "function serve": 12,
+      "login": 2,
+      "solution pack": 2
+    }
+  },
+  "uipath-genome": {
+    "allow": [],
+    "ceiling": {
+      "codedagent run": 1,
+      "login status": 1,
+      "maestro flow check": 1,
+      "maestro registry prepare": 1,
+      "rpa build": 2,
+      "rpa data-fabric-entities install": 1,
+      "rpa debug start": 1,
+      "rpa pack": 1,
+      "rpa packages inspect": 1,
+      "rpa run": 4,
+      "rpa uia": 6,
+      "rpa validate": 1
+    }
+  },
+  "uipath-governance": {
+    "allow": [],
+    "ceiling": {
+      "admin": 1,
+      "gov": 5,
+      "gov access-policy": 15,
+      "gov access-policy create": 7,
+      "gov access-policy delete": 5,
+      "gov access-policy evaluate": 8,
+      "gov access-policy get": 12,
+      "gov access-policy list": 12,
+      "gov access-policy update": 3,
+      "gov aops-policy": 14,
+      "gov aops-policy create": 6,
+      "gov aops-policy delete": 4,
+      "gov aops-policy deployed-policy get": 8,
+      "gov aops-policy deployed-policy list": 6,
+      "gov aops-policy deployment": 1,
+      "gov aops-policy deployment group configure": 3,
+      "gov aops-policy deployment group delete": 3,
+      "gov aops-policy deployment group get": 5,
+      "gov aops-policy deployment group list": 4,
+      "gov aops-policy deployment tenant configure": 4,
+      "gov aops-policy deployment tenant get": 10,
+      "gov aops-policy deployment tenant list": 6,
+      "gov aops-policy deployment tenant remove": 3,
+      "gov aops-policy deployment user configure": 3,
+      "gov aops-policy deployment user delete": 3,
+      "gov aops-policy deployment user get": 7,
+      "gov aops-policy deployment user list": 5,
+      "gov aops-policy get": 6,
+      "gov aops-policy license-type list": 8,
+      "gov aops-policy list": 10,
+      "gov aops-policy product get": 3,
+      "gov aops-policy product list": 9,
+      "gov aops-policy template get": 9,
+      "gov aops-policy template list": 9,
+      "gov aops-policy update": 4,
+      "gov compliance-packs": 2,
+      "gov compliance-packs catalog get": 5,
+      "gov compliance-packs catalog list": 3,
+      "gov compliance-packs state coverage": 6,
+      "gov compliance-packs state disable": 2,
+      "gov compliance-packs state enable": 5,
+      "gov compliance-packs state get": 7,
+      "gov compliance-packs state list": 3,
+      "gov compliance-packs state restore": 2,
+      "login": 50,
+      "login status": 20,
+      "login tenant list": 5,
+      "login tenant set": 3
+    }
+  },
+  "uipath-human-in-the-loop": {
+    "allow": [],
+    "ceiling": {
+      "agent": 1,
+      "codedapp pack": 1,
+      "login": 4,
+      "maestro flow hitl": 4,
+      "traces": 1
+    }
+  },
+  "uipath-insights": {
+    "allow": [],
+    "ceiling": {
+      "insights": 1,
+      "insights jobs": 4,
+      "login": 7,
+      "login status": 3,
+      "login tenant set": 2
+    }
+  },
+  "uipath-knowledge-bundles": {
+    "allow": [],
+    "ceiling": {
+      "login": 2,
+      "or kb": 4,
+      "or kb archive": 1,
+      "or kb build": 1,
+      "or kb change-proposal": 2,
+      "or kb change-proposal add-comment": 1,
+      "or kb change-proposal close": 1,
+      "or kb change-proposal create": 2,
+      "or kb change-proposal diff": 1,
+      "or kb change-proposal get": 1,
+      "or kb change-proposal list": 1,
+      "or kb change-proposal list-comments": 1,
+      "or kb change-proposal merge": 2,
+      "or kb change-proposal resolve-thread": 2,
+      "or kb change-proposal update": 1,
+      "or kb create": 2,
+      "or kb delete": 1,
+      "or kb download": 4,
+      "or kb file": 1,
+      "or kb get": 1,
+      "or kb history": 2,
+      "or kb list": 1,
+      "or kb publish": 1,
+      "or kb share": 1,
+      "or kb status": 2,
+      "or kb sync": 2,
+      "or kb update": 1,
+      "or kb versions": 2
+    }
+  },
+  "uipath-maestro-bpmn": {
+    "allow": [],
+    "ceiling": {
+      "login": 2,
+      "login status": 3,
+      "maestro bpmn": 48,
+      "maestro bpmn pack": 5,
+      "rules describe": 1,
+      "solution pack": 1
+    }
+  },
+  "uipath-maestro-case": {
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "login",
+        "reason": "Studio Web override note: the host is authenticated and there is no `uip login` here."
+      },
+      {
+        "file": "references/connector-integration.md",
+        "command": "login",
+        "reason": "Studio Web override note: the host is already signed in; there is no `uip login` to run."
+      },
+      {
+        "file": "references/registry-discovery.md",
+        "command": "login",
+        "reason": "Studio Web override note: the host is authenticated and there is no `uip login` here."
+      }
+    ],
+    "ceiling": {
+      "codedagent": 3,
+      "codedagent init": 1,
+      "login": 14,
+      "maestro case": 32,
+      "rules debug": 1,
+      "solution pack": 12
+    }
+  },
+  "uipath-maestro-flow": {
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "codedagent",
+        "reason": "Studio Web command table row saying `uip codedagent` is not available, not an instruction."
+      },
+      {
+        "file": "references/agent.md",
+        "command": "codedagent",
+        "reason": "Studio Web note that it cannot run `uip codedagent`; the agent tells the user to use a terminal."
+      },
+      {
+        "file": "references/inline-agent.md",
+        "command": "context-grounding",
+        "reason": "Studio Web note that the `uip context-grounding` bridge does not run there (no Python environment)."
+      }
+    ],
+    "ceiling": {
+      "agent tool": 2,
+      "codedagent deploy": 2,
+      "codedagent run": 1,
+      "conversational trunks": 1,
+      "login": 61,
+      "login status": 10,
+      "maestro": 1,
+      "maestro flow": 168,
+      "maestro flow eval": 82,
+      "maestro flow hitl": 6,
+      "solution pack": 3,
+      "tools update": 10
+    }
+  },
+  "uipath-mcp-servers": {
+    "allow": [],
+    "ceiling": {
+      "login": 1,
+      "mcp serve": 2
+    }
+  },
+  "uipath-planner": {
+    "allow": [],
+    "ceiling": {
+      "agent": 1,
+      "codedapp deploy": 1,
+      "codedapp init": 1,
+      "codedapp pack": 1,
+      "codedapp publish": 1,
+      "function": 1,
+      "function init": 1,
+      "function new": 1,
+      "login": 15,
+      "login status": 5,
+      "rules debug": 1,
+      "solution pack": 1
+    }
+  },
+  "uipath-platform": {
+    "allow": [
+      {
+        "file": "references/integration-service/activity-generation/runtime.md",
+        "command": "is resources",
+        "reason": "Prose in a diagram (`uip is resources reads the file …`), not a command."
+      },
+      {
+        "file": "references/licensing/diagnose/references/troubleshooting-guide.md",
+        "command": "or licenses",
+        "reason": "Tree-diagram label naming a separate surface, not a command."
+      }
+    ],
+    "ceiling": {
+      "codedagent": 1,
+      "context-grounding": 11,
+      "df entities": 1,
+      "eval": 1,
+      "eval run": 1,
+      "gov aops-policy deployed-policy": 1,
+      "llm-configuration": 1,
+      "login": 30,
+      "login status": 18,
+      "login tenant list": 3,
+      "login tenant set": 10,
+      "login which": 3,
+      "logout": 1,
+      "maestro flow": 2,
+      "mcp serve": 2,
+      "or": 1,
+      "orchestrator": 1,
+      "rpa instances list": 1,
+      "rpa studio start": 2,
+      "skills install": 1,
+      "solution pack": 5,
+      "tools": 2,
+      "tools install": 3,
+      "traces feedback": 1,
+      "traces feedback create": 3,
+      "traces feedback delete": 2,
+      "traces feedback get": 2,
+      "traces feedback list": 2,
+      "traces feedback list detailed": 3,
+      "traces feedback update": 5
+    }
+  },
+  "uipath-process-mining": {
+    "allow": [],
+    "ceiling": {
+      "login": 1
+    }
+  },
+  "uipath-review": {
+    "allow": [],
+    "ceiling": {
+      "codedagent": 2,
+      "codedagent eval": 1,
+      "codedagent init": 1,
+      "codedagent review": 20,
+      "codedapp deploy": 1,
+      "codedapp pack": 5,
+      "codedapp publish": 1,
+      "rpa analyze": 1,
+      "rpa build": 4,
+      "rpa packages install": 1,
+      "rpa run": 1,
+      "rpa validate": 11,
+      "rpa-legacy": 1,
+      "solution pack": 9
+    }
+  },
+  "uipath-rpa": {
+    "allow": [],
+    "ceiling": {
+      "login": 17,
+      "login status": 1,
+      "login which": 1,
+      "or packages": 1,
+      "rpa": 23,
+      "rpa activities find": 27,
+      "rpa activities get-default-xaml": 88,
+      "rpa analyze": 3,
+      "rpa analyzer-rules list": 2,
+      "rpa build": 22,
+      "rpa cleanup": 2,
+      "rpa data-fabric-entities": 1,
+      "rpa data-fabric-entities install": 5,
+      "rpa data-fabric-entities list": 2,
+      "rpa debug": 1,
+      "rpa debug continue": 5,
+      "rpa debug continue-ignore": 2,
+      "rpa debug continue-retry": 1,
+      "rpa debug start": 11,
+      "rpa debug start-from-here": 2,
+      "rpa debug state": 1,
+      "rpa debug step-over": 3,
+      "rpa debug test-activity": 3,
+      "rpa execution cancel": 8,
+      "rpa files diff": 2,
+      "rpa get-library-object-repository": 4,
+      "rpa get-object-repository": 5,
+      "rpa instances list": 4,
+      "rpa pack": 4,
+      "rpa packages": 1,
+      "rpa packages inspect": 16,
+      "rpa packages install": 19,
+      "rpa packages versions": 7,
+      "rpa publish": 4,
+      "rpa remote": 3,
+      "rpa remote configure": 2,
+      "rpa remote download-file": 1,
+      "rpa remote exec": 6,
+      "rpa remote start": 2,
+      "rpa remote status": 2,
+      "rpa remote stop": 2,
+      "rpa remote targets": 1,
+      "rpa remote upload-file": 1,
+      "rpa run": 42,
+      "rpa studio start": 7,
+      "rpa templates search": 5,
+      "rpa test-data add-entity": 1,
+      "rpa test-data add-queue": 2,
+      "rpa test-data add-variation": 2,
+      "rpa tm": 4,
+      "rpa tm clear-default-project": 1,
+      "rpa tm connect": 3,
+      "rpa tm set-default-project": 2,
+      "rpa tm status": 2,
+      "rpa uia": 14,
+      "rpa validate": 32,
+      "rpa workflow-examples get": 2,
+      "rpa workflow-examples list": 2,
+      "rpa-legacy": 6,
+      "rpa-legacy debug": 12,
+      "rpa-legacy find-activities": 12,
+      "rpa-legacy find-package": 6,
+      "rpa-legacy pack": 9,
+      "rpa-legacy type-definition": 9,
+      "rpa-legacy validate": 18,
+      "skills": 1,
+      "solution pack": 1,
+      "tools list": 1
+    }
+  },
+  "uipath-rules": {
+    "allow": [],
+    "ceiling": {
+      "login tenant set": 1,
+      "rules debug": 2,
+      "rules describe": 1
+    }
+  },
+  "uipath-solution": {
+    "allow": [],
+    "ceiling": {
+      "codedagent init": 1,
+      "codedapp": 1,
+      "codedapp deploy": 1,
+      "codedapp init": 4,
+      "codedapp pack": 3,
+      "codedapp publish": 3,
+      "codedapp push": 1,
+      "function init": 1,
+      "login": 6,
+      "login status": 5,
+      "login tenant set": 4,
+      "maestro flow": 1,
+      "rpa build": 2,
+      "rpa pack": 1,
+      "rpa publish": 2,
+      "solution pack": 8,
+      "solution restore": 2,
+      "tools install": 1
+    }
+  },
+  "uipath-tasks": {
+    "allow": [],
+    "ceiling": {
+      "codedapp": 1,
+      "login": 4,
+      "login status": 10,
+      "login tenant list": 1,
+      "login tenant set": 5,
+      "traces feedback": 1,
+      "traces feedback create": 1,
+      "traces feedback list": 1
+    }
+  },
+  "uipath-test": {
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "tm prompts",
+        "reason": "`uip tm prompts list|get|create` is an alternation the scanner reads as one token; the bundle runs all three."
+      }
+    ],
+    "ceiling": {
+      "login": 5,
+      "login status": 6,
+      "login tenant set": 2,
+      "rpa build": 1,
+      "rpa pack": 3,
+      "tm customfield": 2,
+      "tm defects": 1,
+      "tm migration": 1,
+      "tm migration schemas": 1,
+      "tm objectlabel": 2,
+      "tm project": 1,
+      "tm schedules": 1,
+      "tm testcases": 1
+    }
+  },
+  "uipath-troubleshoot": {
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "is",
+        "reason": "English prose (`Shell for file I/O and uip is fine.`), not a command."
+      },
+      {
+        "file": "references/products/integration-service/overview.md",
+        "command": "is connectors",
+        "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      },
+      {
+        "file": "references/products/integration-service/overview.md",
+        "command": "is connections",
+        "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      },
+      {
+        "file": "references/products/integration-service/overview.md",
+        "command": "is resources",
+        "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      },
+      {
+        "file": "references/products/integration-service/overview.md",
+        "command": "is triggers",
+        "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      }
+    ],
+    "ceiling": {
+      "codedapp": 4,
+      "codedapp deploy": 7,
+      "codedapp pack": 1,
+      "codedapp publish": 4,
+      "codedapp pull": 1,
+      "codedapp push": 1,
+      "context-grounding": 8,
+      "gov aops-policy": 1,
+      "gov aops-policy deployed-policy": 5,
+      "gov aops-policy deployed-policy get": 1,
+      "is connections": 1,
+      "llm-configuration": 1,
+      "login": 1,
+      "login status": 5,
+      "maestro": 3,
+      "maestro bpmn": 3,
+      "or": 1,
+      "rpa validate": 5,
+      "solution pack": 6
+    }
+  },
+  "uipath-vertical-solutions": {
+    "allow": [],
+    "ceiling": {
+      "login": 9,
+      "login status": 6,
+      "login tenant set": 1,
+      "vss deploy": 26,
+      "vss deploy cancel": 1,
+      "vss deploy resume": 7,
+      "vss deploy seed": 5,
+      "vss deploy status": 4
+    }
+  }
+}
