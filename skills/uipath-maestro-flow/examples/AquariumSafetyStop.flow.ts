@@ -6,7 +6,7 @@
  *
  * Generic scenario: stop an aquarium maintenance round when oxygen is too low.
  */
-import { flow, script, input, out, js, types } from '@uipath/maestro-builder-sdk';
+import { flow, script, input, out, js, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('aquarium-safety-stop')
   .name('AquariumSafetyStop')
@@ -17,10 +17,12 @@ export default flow('aquarium-safety-stop')
     'oxygenSafe',
     js`${input('oxygenMgL')} >= 6`,
     (safe) => safe
-      .step('recordSafe', script({
-        code: 'return "safe:" + $vars.start.output.tank + ":" + $vars.start.output.oxygenMgL;',
-      }))
+      .step('recordSafe', script(recordSafe))
       .return({ status: out('recordSafe') }),
     (unsafe) => unsafe.terminate('stopRound', 'Oxygen below the safe maintenance threshold'),
   )
   .build();
+
+function recordSafe($vars: FlowVars) {
+  return "safe:" + $vars.start.output.tank + ":" + $vars.start.output.oxygenMgL;
+}

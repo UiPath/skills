@@ -7,7 +7,7 @@
  * Generic scenario: reserve a map-rendering step while a festival layout is
  * still being designed.
  */
-import { flow, mock, script, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, mock, script, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('festival-map-scaffold')
   .name('FestivalMapScaffold')
@@ -15,8 +15,10 @@ export default flow('festival-map-scaffold')
   .input({ mapName: types.string })
   .output({ note: types.string })
   .step('drawLegend', mock())
-  .step('announceDraft', script({
-    code: 'return "festival map draft: " + $vars.start.output.mapName;',
-  }))
+  .step('announceDraft', script(announceDraft))
   .return({ note: out('announceDraft') })
   .build();
+
+function announceDraft($vars: FlowVars) {
+  return "festival map draft: " + $vars.start.output.mapName;
+}

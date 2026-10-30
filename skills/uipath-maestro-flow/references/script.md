@@ -68,6 +68,8 @@ It keeps the output untyped even when the body plainly returns one type.
 ## Writing the script as a function
 
 A body longer than a line is easier to get right as a TypeScript function: pass the function instead of a string, and the editor and tsc check the body like the rest of the `.flow.ts`.
+Prefer it for new scripts; the examples write every script this way.
+The string form remains right for a body that splices an `out()` reference in with `js`` `, which a function cannot do, and is what an SDK older than 6.57.0 takes.
 
 ```ts
 import { script, type FlowVars } from '@uipath/maestro-builder-sdk';
