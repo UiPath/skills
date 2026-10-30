@@ -106,7 +106,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Autonomous-mode SDD carries the ## Decisions Made block (sdd-generation-guide.md Phase 3 Step 2 item 3)"
+    description: "Autonomous-mode SDD carries the ## Decisions Made block (sdd-writing-guide.md Step 2 item 3)"
     path: "customer-support-agent-sdd.md"
     includes:
       - "Decisions Made"
@@ -115,7 +115,7 @@ success_criteria:
 
 run_limits:
   expected_turns: 16
-  # Full Phase D SDD authoring runs in one unbroken autonomous turn (read PDD +
+  # Full `design` SDD authoring runs in one unbroken autonomous turn (read PDD +
   # guides, select scope, generate §1–§18). The experiment default caps the
   # whole task at task_timeout: 1200s — that fires before the SDD lands no
   # matter how high turn_timeout is. Raise BOTH: task_timeout for the

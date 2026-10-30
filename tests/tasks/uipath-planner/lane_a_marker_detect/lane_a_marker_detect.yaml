@@ -1,8 +1,8 @@
 task_id: skill-planner-smoke-lane-a-marker-detect
 description: >
-  Entry-guard coverage in isolation: when an SDD carrying the `## Planner
-  Handoff` marker is present, the skill's entry guard must detect it and report
-  Lane A WITHOUT performing the full task derivation. Isolates marker detection
+  Verb-choice coverage in isolation: when an SDD carrying the `## Planner
+  Handoff` marker is present, the skill's § Choosing the Verb must detect it and
+  report the `plan` verb WITHOUT performing the full task derivation. Isolates marker detection
   (fast) from the heavier lane_a_task_derivation end-to-end test.
 tags: [uipath-planner, smoke, mode:build, lifecycle:discover]
 
@@ -13,18 +13,17 @@ sandbox:
 
 initial_prompt: |
   The file `inventory-sync-sdd.md` in this folder is a finished Solution Design
-  Document. Load the appropriate UiPath skill and tell me which entry-guard
-  path applies to it.
+  Document. Load the appropriate UiPath skill and tell me which of its verbs
+  applies to it.
 
   Do NOT derive tasks. Do NOT author or rewrite the SDD. Do NOT build anything.
 
-  Write exactly one line to `lane.txt`: the exact name of the lane the entry
-  guard routes this SDD to — use the name exactly as it appears in the skill
-  body.
+  Write exactly one line to `lane.txt`: the exact name of the verb the skill
+  routes this SDD to — use the name exactly as it appears in the skill body.
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent engaged the uipath-planner skill to evaluate the entry guard"
+    description: "Agent engaged the uipath-planner skill to choose the verb (SKILL.md § Choosing the Verb)"
     skill_name: "uipath-planner"
     expected_skill: "uipath-planner"
     weight: 2.0
@@ -37,11 +36,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Detected the Planner Handoff marker and reported Lane A"
+    description: "Detected the Planner Handoff marker and reported the plan verb"
     path: "lane.txt"
     includes:
-      - "Lane A"
+      - "plan"
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "lane.txt names the plan verb alone, not a lane or another verb"
+    command: "grep -qiE '^[[:space:]`*]*plan[[:space:]`*]*$' lane.txt"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

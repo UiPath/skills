@@ -1,8 +1,17 @@
-# Working with uipath-genome
+# Working with genomes (uipath-planner and uipath-genome-builder)
 
-uipath-genome turns a project, or an idea, into a genome: a markdown blueprint of the automation. The agent then builds the UiPath automation from it, runs it against the real applications and fixes what fails. You make a few decisions; the agent, with helper agents it starts in parallel, does the rest.
+`uipath-planner` writes every genome and `uipath-genome-builder` builds from it. A genome is a markdown blueprint of the automation; the agent builds the UiPath automation from it, runs it against the real applications and fixes what fails. You make a few decisions; the agent, with helper agents it starts in parallel, does the rest.
 
-Use it to document an automation you run, in words people review and agents act on; to design a new one from an idea, an SOP or a meeting transcript; or to rebuild an existing automation onto the UiPath products that fit it.
+| Skill | Verbs | What they do |
+| --- | --- | --- |
+| `uipath-planner` | `design`, `author`, `extract`, `edit`, `check` | `design` turns a PDD into an SDD and, once the SDD is ready, writes its genome beside it; `author` writes a genome from an idea, SOP or SDD; `extract` reads one from an existing project, solution or another framework's export; `edit` changes one; `check` runs the genome checker after a write |
+| `uipath-genome-builder` | `build`, `check` | `build` builds the automation the genome describes through the UiPath skills that own each part; `check` runs the same checker before a build. It never changes a genome: a correction goes back to `uipath-planner` |
+
+Say what you want in plain words, or name the verb: `/uipath-planner design <pdd>`, `/uipath-planner extract <folder>`, `/uipath-planner author`, `/uipath-planner edit <genome>`, `/uipath-genome-builder build <genome>`, `/uipath-genome-builder check <genome>`.
+
+> Both skills were once the `uipath-genome` skill. A genome whose preamble still names `uipath-genome` builds unchanged.
+
+Use it to document an automation you run, in words people review and agents act on; to design a new one from a PDD, an idea, an SOP or a meeting transcript; or to rebuild an existing automation onto the UiPath products that fit it.
 
 ## What a genome holds
 
@@ -45,7 +54,7 @@ Reading and building are checked apart, with you in between:
 
 ## How it compares
 
-| | Convert step by step | One-shot AI rewrite | Spec-first coding tools | uipath-genome |
+| | Convert step by step | One-shot AI rewrite | Spec-first coding tools | uipath-planner + uipath-genome-builder |
 | --- | --- | --- | --- | --- |
 | Starts from the automation you have | Yes | Yes | No: specs the next change | Yes, or from an idea |
 | A plain-language spec, reviewed before the build | No | No | Yes | Yes |
@@ -119,7 +128,7 @@ What that run produced:
 
 *Who does what · the five steps below*
 
-Blue boxes are your turns. Say "take the defaults" in the build request and the questions turn goes away.
+Blue boxes are your turns. Say "take the defaults" in the build request and the questions turn goes away; a genome designed from an SDD whose handoff says `Execution autonomy: autonomous` builds the same way when `uipath-planner` hands it over. Taking the defaults never writes to a tenant you did not name.
 
 ## Before you start
 
@@ -129,12 +138,13 @@ Blue boxes are your turns. Say "take the defaults" in the build request and the 
 
 ## 1 · Get a genome
 
-Say what you have. The agent writes the genome, checks it and asks what to change. Already have a genome? Go to step 2.
+Say what you have. `uipath-planner` writes the genome, checks it and asks what to change. Already have a genome? Go to step 2.
 
 | You have | Say | The agent |
 | --- | --- | --- |
+| A PDD | "Design a solution from `<pdd>`" | Writes the SDD first and asks its design questions; once the SDD is ready (no open SME items), writes its genome beside it and adds it to the SDD's handoff. A Case Management design stays an SDD |
 | A project or solution | "Extract a genome from `<folder>`" | Reads every file and asks only for related documents (PDD, SOP). For a large project it proposes working in parts and waits for your OK |
-| An idea, SOP or transcript | "Write a genome for `<idea>`" | Asks up to three rounds of questions |
+| An idea, SOP, transcript or ready SDD | "Write a genome for `<idea>`" | Asks up to three rounds of questions; from an SDD, takes what the SDD decided |
 | A UiPath project to refactor | "Refactor `<folder>`" | Extracts the genome and waits for your review, then asks the refactor questions and builds |
 
 You get one genome per project — a spec of its steps, business rules, acceptance criteria and the UiPath skill that builds each part — plus an overview genome when there are several. Ask for changes in plain words ("step 4 is wrong") and the agent edits the file.
@@ -151,7 +161,7 @@ This is your main decision point. The build follows the genome, and the agent ne
 
 ## 3 · Build
 
-Say "Build `<name>-genome.md`". The agent asks its questions first, in batches of up to four, each with a recommended answer: the genome's open values, the project location, XAML or C#, where settings live and package versions. A rebuild as it is also asks how closely to follow the source; a refactor asks its own questions first ([Rebuilding an existing automation](#rebuilding-an-existing-automation)). Then it builds without stopping.
+Say "Build `<name>-genome.md`"; `uipath-genome-builder` runs the build. It checks the genome first: a genome it cannot build from (no genome marker on the first line, a missing section, a Source Map that does not match the steps) stops with the corrections for `uipath-planner`, and smaller findings go into the completion report. A component genome the process genome links but that is not on disk is the one thing it asks about first: give its path, or the build stops with that correction for `uipath-planner`. A genome designed from an SDD takes what the SDD decided without asking again; if that SDD is not on disk, the build says so and asks those questions too. Then it asks its questions, in batches of up to four, each with a recommended answer: the genome's open values, the project location, XAML or C#, where settings live and package versions. A rebuild as it is also asks how closely to follow the source; a refactor asks its own questions first ([Rebuilding an existing automation](#rebuilding-an-existing-automation)). Then it builds without stopping.
 
 You get:
 
@@ -180,5 +190,5 @@ It re-runs until a run is clean. After each fix it re-runs what the fix touches 
 
 The run ends with two lists.
 
-- **Setup for the target environment:** `<project>-open-items.md`, beside the project folder. It is a checklist for whoever deploys: folder and robots, packages, queues and assets, machine setup (apps, browser extension, network access), and triggers last. A refactor ends it with the cutover: shadow runs compared with the source, the write test, the switch, the rollback and what to retire. Credentials list the username only; the password is entered in Orchestrator.
-- **Decisions for you:** in the completion report — criteria not yet met with the change each needs, missing source data, and corrections to the genome. Say "fix them": the agent fixes each one, re-runs what the fix touches, and undoes a fix that breaks a criterion already met. A genome correction is an edit to the genome, then a rebuild.
+- **Setup for the target environment:** `open-items.md` in the hand-off folder beside the project (one per project, plus the solution's, for several projects). It is a checklist for whoever deploys: folder and robots, packages, queues and assets, machine setup (apps, browser extension, network access), and triggers last. A refactor ends it with the cutover: shadow runs compared with the source, the write test, the switch, the rollback and what to retire. Credentials list the username only; the password is entered in Orchestrator.
+- **Decisions for you:** in the completion report — criteria not yet met with the change each needs, missing source data, and corrections to the genome. Say "fix them": the agent fixes each one, re-runs what the fix touches, and undoes a fix that breaks a criterion already met. A genome correction is an edit to the genome by `uipath-planner`, then a rebuild.

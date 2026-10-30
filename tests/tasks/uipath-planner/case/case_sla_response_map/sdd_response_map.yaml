@@ -112,7 +112,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-# The Case Design Lane gates on one Case Review approval. Without a simulator the
+# The case design path gates on one Case Review approval. Without a simulator the
 # agent has nobody to approve it and the prompt's old "do NOT call AskUserQuestion"
 # ban left it no legal way to ask, so the whole ask-walk collapsed into one thinking
 # turn: run 2026-08-31_04-15-47 spent 57.1m of 57.8m generation thinking across 20

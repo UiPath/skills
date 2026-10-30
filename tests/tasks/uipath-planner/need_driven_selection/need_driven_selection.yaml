@@ -132,7 +132,7 @@ success_criteria:
 
 run_limits:
   expected_turns: 16
-  # Full Phase D SDD authoring runs in one unbroken autonomous turn. Raise BOTH
+  # Full `design` SDD authoring runs in one unbroken autonomous turn. Raise BOTH
   # caps: task_timeout for end-to-end wall clock, turn_timeout for the long
   # authoring turn. Keep turn_timeout <= task_timeout — the orchestrator warns
   # when task_timeout is the larger of the two, because the agent's

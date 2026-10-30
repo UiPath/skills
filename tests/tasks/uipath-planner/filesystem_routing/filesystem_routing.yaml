@@ -1,6 +1,6 @@
 task_id: skill-planner-smoke-filesystem-routing
 description: >
-  Lane B filesystem-detection coverage: a vague "add a feature" request issued
+  `decompose` filesystem-detection coverage: a vague "add a feature" request issued
   inside an EXISTING single RPA project (project.json + .xaml present) must
   route to the owning specialist (uipath-rpa) — NOT trigger multi-project
   planning. Guards the planner's Non-PDD-lane filesystem routing: an existing

@@ -4,9 +4,9 @@
 The staged draft describes a lane a Compliance Officer launches by hand from the
 stage picker — the one trigger for which `user-selected-stage` IS the right rule
 — but authors it with no upstream `wait-for-user` exit, so nothing exposes the
-lane to the picker and the lane is unreachable. Finalization (sdd-generation
-rules § Logical integrity 5, § Finalization 12a) must supply the missing half of
-the pair.
+lane to the picker and the lane is unreachable. Finalization (case-design-layers-guide.md
+§ Lifecycle gates, the `wait-for-user` <-> `user-selected-stage` pairing) must supply
+the missing half of the pair.
 
 Grades authored condition tables only, never Design Rationale prose.
 """

@@ -1,0 +1,86 @@
+task_id: skill-planner-genome-extract-component
+description: >
+  Smoke: the uipath-planner skill extracts one component genome from a staged three-workflow
+  XAML project (mailbox intake, PDF field extraction, vendor validation, ERP queue handoff).
+  Gates on the genome contract (core profile): one component genome, every section, valid skill
+  names, steps and criteria, a Transactional Shape that is not the stub and names its unit of work
+  (the per-email loop that queues each invoice), a Source Map naming the three workflows, and the
+  source's business facts. The full format rules (strict profile: split options or the
+  consumer-outside line, outcome rows) are graded as an advisory criterion.
+tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# Every check calls the skill's check-genome.mjs with node through $REFERENCE_DIR (the skill's scripts
+# folder). The genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
+reference:
+  directory: ../../../../skills/uipath-planner/scripts
+
+initial_prompt: |
+  The UiPath Studio project in `InvoiceIntake/` was inherited from another team.
+  Extract a genome from it so we have a ground-truth blueprint of what it does.
+  Write the genome into the current directory. There are no other resources
+  for this process beyond the project itself. Do not run any `uip` commands.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one component genome written"
+    command: >-
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --files 1 --expect "UIPATH-AUTOMATION-GENOME: component"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Genome meets the core contract, describes a transactional flow, with a Source Map naming the three workflows"
+    command: >-
+      node $REFERENCE_DIR/check-genome.mjs component "*-genome.md" --profile core --expect uipath-rpa ERP_InvoicePosting --shape transactional --source-map Main.xaml ValidateInvoice.xaml ExtractInvoiceFields.xaml
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Business rules and configuration carry the source's thresholds and names"
+    command: >-
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --min 0.8 --expect "credit limit" "approved vendor" ERP_InvoicePosting "ap-lead@contoso.com" imap.contoso.com
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Target applications and the failure path come from the source"
+    command: >-
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --min 0.75 --expect Excel IMAP PDF Failed
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Extraction does not build or run the project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: genome meets every mechanical format rule (strict profile)"
+    command: >-
+      node $REFERENCE_DIR/check-genome.mjs component "*-genome.md" --profile strict
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

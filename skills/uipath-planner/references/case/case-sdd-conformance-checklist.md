@@ -1,8 +1,8 @@
 # Case SDD — conformance checklist
 
-The gate for `case-sdd-template.md`'s § Validation footer. The Case Design Lane runs this against the
+The gate for `case-sdd-template.md`'s § Validation footer. The case design path runs this against the
 written `sdd.md` BEFORE the `Status: ready` flip, in every mode — normally inside the one subagent
-§ Template conformance gate allows ([case-design-lane-guide.md](case-design-lane-guide.md)).
+§ Template conformance gate allows ([case-design-guide.md](case-design-guide.md)).
 
 This file is NOT part of the design reading set. Authoring reads the template for the render contract;
 only the gate reads the item list. Keeping the two apart keeps 37 items of checker detail out of the

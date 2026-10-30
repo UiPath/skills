@@ -108,12 +108,28 @@ Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution
 2. uipath-mcp-servers → register the server with asset-substituted headers
 ```
 
-## Pattern routing for PDD-driven lane
+## Pattern 7 — Build from the genome
+
+**When it applies:** the SDD's Planner Handoff names a `Genome` that exists (which SDDs get one: [sdd-writing-guide.md](sdd-writing-guide.md) § Step 3) and `uipath-genome-builder` is installed. When it is not installed, the genome stays on disk for a later build and the plan derives per-skill tasks from the SDD with the patterns below. The genome carries every component, its skill, its steps and its acceptance criteria; `uipath-genome-builder` invokes each owning skill itself, in the genome's order, so the plan does not fan out per skill.
+
+```
+1. uipath-genome-builder   → build the genome: configuration questions the SDD left open, then every component through its owning skill
+2. uipath-genome-builder   → testing (mandatory): a verdict on every acceptance criterion, built as runnable spec tests
+```
+
+<!--skill-flavor:genome-build-deploy-step:start-->
+3. **Publish and deploy — only when asked, constraint-gated.** `uipath-genome-builder` packs a process genome's solution itself as its last local gate (the packed `.uipx` is the terminal artefact of a Solution build — [design-guide.md](design-guide.md) Verb Rule 6) and writes nothing to a tenant unasked. Add a `uipath-solution` → publish, deploy task only when the SDD's §16 or the request carries a deploy hint; with no hint, drop it, as [plan-guide.md](plan-guide.md) Step 4 drops deploy steps. When Solutions (`.uipx`) are blocked for the handoff's `Delivery model` — standalone, Automation Suite older than 2.2510, or a user exclusion — the publish goes per package to Orchestrator through `uipath-platform` instead ([plan-guide.md](plan-guide.md) Step 4, deploy routing).
+<!--skill-flavor:genome-build-deploy-step:end-->
+
+The task prompt names the genome path and the SDD path and carries the line `Execution autonomy: <VALUE>` copied from the SDD's Planner Handoff — `autonomous` means the builder takes the recommended default for every configuration question and asks nothing; `interactive` means it asks its questions. It also carries the delivery-model line and the SDD's open SME items as assumptions like any task. The plan asks no UI targeting batch for Pattern 7 ([plan-guide.md](plan-guide.md) Step 5): the builder asks its own. Shared resources the SDD lists (queues, assets, connections) are created by step 1 from the genome's platform dependencies — no separate tasks. A fix the build finds in the genome is a planner `edit`, then the build again — `uipath-genome-builder` never edits the genome.
+
+## Pattern routing for `plan`
 
 When deriving tasks from an SDD, the planner picks a pattern based on the SDD's project list:
 
 | SDD shape | Pattern(s) used |
 |---|---|
+| Handoff names an existing `Genome` (never a Case Management SDD), `uipath-genome-builder` installed | Pattern 7 — checked before every row below |
 | Single RPA project, no deploy mention | Pattern: simple `uipath-rpa` build + testing |
 | Single RPA project, deploy to Orchestrator | Pattern 1 |
 | Single-host SDD with absorbed components (e.g., RPA-primary consuming an IXP model, custom connector, or API Workflow in-process) | Leaf-first: build each consumed component via its skill (`uipath-ixp` / `uipath-connector-builder` / `uipath-api-workflow`) + testing, deploy leaves, then the host project per Pattern 1 — **no orchestrator task** |

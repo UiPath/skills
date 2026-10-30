@@ -268,17 +268,17 @@ test("the built studioweb uipath-planner uses plan mode and no task tools", (t) 
 
   assert.deepEqual(plannerBodyLinesNaming(output, TASK_TOOLS), []);
   assert.deepEqual(plannerBodyLinesNaming(output, RETIRED_PLAN_TOOLS), []);
-  const laneB = readFileSync(join(output, "uipath-planner", "references", "non-pdd-lane-guide.md"), "utf8");
+  const decompose = readFileSync(join(output, "uipath-planner", "references", "decompose-guide.md"), "utf8");
   assert.ok(
-    laneB.includes("Call `EnterPlanMode` as soon as the user picks this option"),
+    decompose.includes("Call `EnterPlanMode` as soon as the user picks this option"),
     "explore-first must enter plan mode before discovery",
   );
   assert.ok(
-    laneB.includes("call `ExitPlanMode` with outcome `complete`"),
+    decompose.includes("call `ExitPlanMode` with outcome `complete`"),
     "explore-first must present the plan with ExitPlanMode",
   );
-  const laneA = readFileSync(join(output, "uipath-planner", "references", "pdd-driven-lane-guide.md"), "utf8");
-  assert.ok(laneA.includes("1. Call `EnterPlanMode`."), "Lane A interactive review must enter plan mode");
+  const plan = readFileSync(join(output, "uipath-planner", "references", "plan-guide.md"), "utf8");
+  assert.ok(plan.includes("1. Call `EnterPlanMode`."), "plan's interactive review must enter plan mode");
 });
 
 test("the default uipath-planner keeps its task tools (the guard is not vacuous)", (t) => {

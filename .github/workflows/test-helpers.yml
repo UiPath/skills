@@ -123,8 +123,9 @@ jobs:
       - name: Install pytest
         run: pip install pytest
 
+      # The genome checker tests run in the uipath-genome checker job below.
       - name: Run pytest
-        run: pytest tests/tasks/uipath-planner/ -v
+        run: pytest tests/tasks/uipath-planner/ -v --ignore=tests/tasks/uipath-planner/_shared/test_genome_check.py
 
   pytest-agents-check:
     runs-on: uipath-ubuntu-latest
@@ -220,6 +221,11 @@ jobs:
         with:
           python-version: '3.13'
 
+      # check-genome.mjs is Node: the genome tests drive it through `node`
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '20'
+
       - name: Install pytest
         run: pip install pytest
 
@@ -227,7 +233,12 @@ jobs:
       # passes the strict profile, the skill lists match skills/, and the execute
       # checks count a setting or an open item only where the skill puts it.
       - name: Run pytest
-        run: pytest tests/tasks/uipath-genome/_shared/ -v
+        run: pytest tests/tasks/uipath-planner/_shared/test_genome_check.py tests/tasks/uipath-genome-builder/_shared/ -v
+
+      # uipath-planner writes genomes and uipath-genome-builder builds them; each ships the genome core
+      # (format guides, templates, check-genome.mjs), canonical in the planner. Fails when a copy differs.
+      - name: Check the genome core is identical in both skills
+        run: node scripts/check-genome-core.mjs
 
   runtime-payload-casing-guard:
     runs-on: uipath-ubuntu-latest

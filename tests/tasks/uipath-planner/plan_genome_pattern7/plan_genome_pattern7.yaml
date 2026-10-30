@@ -1,0 +1,119 @@
+task_id: skill-planner-plan-genome-pattern7
+description: >
+  `plan` on a ready SDD whose Planner Handoff carries a `Genome` row, with the genome file beside it and
+  uipath-genome-builder installed (it ships in the plugin). The skill must pick Pattern 7: the tasks file
+  named in the handoff routes the build to `uipath-genome-builder` with the genome path and the handoff's
+  Execution autonomy, instead of per-skill `uipath-rpa` build tasks. The SDD's §16 puts deployment out of
+  scope, so no publish/deploy task is emitted. Nothing is built, and the genome is left byte-identical.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 12
+  # `plan` only derives tasks from an existing SDD; same headroom as lane_a_task_derivation.
+  task_timeout: 1800
+  turn_timeout: 1500
+
+# Stage the ready SDD and its genome into the sandbox root.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# REFERENCE_DIR holds the untouched copy of the genome for the genome-unchanged check.
+reference:
+  directory: fixtures
+
+initial_prompt: |
+  Plan the build of `daily-sales-summary-sdd.md`.
+
+  Work autonomously — don't ask me questions, and don't build anything yet.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "`plan` wrote the tasks file named in the handoff header"
+    path: "daily-sales-summary-tasks.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Pattern 7: the tasks route the build to uipath-genome-builder with the genome path"
+    path: "daily-sales-summary-tasks.md"
+    includes:
+      - "uipath-genome-builder"
+      - "daily-sales-summary-genome.md"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A task heading names uipath-genome-builder as its skill"
+    command: "grep -Eq '^#+ *Task T[0-9]+.*uipath-genome-builder' daily-sales-summary-tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No per-skill uipath-rpa build task: no task heading routes to uipath-rpa"
+    command: "test -f daily-sales-summary-tasks.md && ! grep -Eq '^#+ *Task T[0-9]+.*uipath-rpa' daily-sales-summary-tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The task carries the handoff's Execution autonomy"
+    path: "daily-sales-summary-tasks.md"
+    includes:
+      - "Execution autonomy"
+      - "autonomous"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No publish/deploy task: §16 puts deployment out of scope"
+    command: "test -f daily-sales-summary-tasks.md && ! grep -Eq '^#+ *Task T[0-9]+.*uipath-(solution|platform)' daily-sales-summary-tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "`plan` leaves the genome byte-identical"
+    command: >-
+      node -e "const fs = require('fs'), path = require('path');
+      const a = fs.readFileSync('daily-sales-summary-genome.md');
+      const b = fs.readFileSync(path.join(process.env.REFERENCE_DIR, 'daily-sales-summary-genome.md'));
+      process.exit(a.equals(b) ? 0 : 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stayed in `plan`: no .xaml or project.json authored"
+    command: "! find . \\( -name '*.xaml' -o -name 'project.json' \\) -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Planning does not scaffold, build or run a project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(init|build|run)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Planning does not publish or deploy"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(publish|deploy)'
+    weight: 1.0
+    pass_threshold: 1.0

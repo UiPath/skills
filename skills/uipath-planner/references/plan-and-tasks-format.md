@@ -2,14 +2,14 @@
 
 Format spec for the planner's two output artifacts:
 
-- `<feature>.md` — non-PDD lane plan file (combines lightweight architecture notes + task list)
-- `<process>-tasks.md` — PDD-driven lane task file (task list only; architecture lives in the SDD)
+- `<feature>.md` — `decompose` plan file (combines lightweight architecture notes + task list)
+- `<process>-tasks.md` — `plan` task file (task list only; architecture lives in the SDD)
 
 Both share the same task row schema. The difference is the prelude — `<feature>.md` carries an architecture summary; `<process>-tasks.md` does not (the SDD is the architecture).
 
 ## Header schema
 
-### Non-PDD lane (`<feature>.md`)
+### `decompose` (`<feature>.md`)
 
 ```markdown
 # <Feature Name> Implementation Plan
@@ -50,7 +50,7 @@ In `interactive` mode this section is optional — the user is available to reso
 "Scope feels large", "many tool calls used", "natural pause point", and "partial result looks usable" are NOT stop conditions. If it is not in this list, the executor continues.>
 ```
 
-### PDD-driven lane (`<process>-tasks.md`)
+### `plan` (`<process>-tasks.md`)
 
 ```markdown
 # <Process Name> — Implementation Tasks
@@ -79,7 +79,7 @@ Every task — in both file types — uses this exact structure. The fields belo
 **Skill prompt:**
 
 > <Imperative prompt that activates the specialist skill. Include exact SDD section
->  references when in PDD-driven lane. End with the anti-hallucination rule.>
+>  references when in `plan`. End with the anti-hallucination rule.>
 
 - [ ] <concrete sub-step: action + file paths / activity names / commands>
 - [ ] <concrete sub-step: expected outcome or verification>
@@ -92,7 +92,7 @@ Every task — in both file types — uses this exact structure. The fields belo
 |---|---|---|
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
 <!--skill-flavor:task-row-tool-fields:start-->
-| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The planner emits this skill in the live `TaskCreate` call. |
+| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`, `uipath-genome-builder` (Pattern 7 only: the build of a genome). The planner emits this skill in the live `TaskCreate` call. |
 | `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its TaskUpdate flips the checkbox; `human` only when the user manually edits the file. |
@@ -104,14 +104,14 @@ Every task — in both file types — uses this exact structure. The fields belo
 
 ## Anti-hallucination rule (mandatory in every Skill prompt)
 
-Append this exact line to every `Skill prompt` block, with the SDD path filled in for PDD-driven lane:
+Append this exact line to every `Skill prompt` block, with the SDD path filled in for `plan`:
 
 ```
 Use values, mappings, and structure exactly as documented in the SDD at <sdd-path>. Do not infer or guess.
 ```
 
 <!--skill-flavor:non-pdd-plan-reference:start-->
-For non-PDD lane, reference the plan file **by path** — never "this plan" (prompts are copied verbatim into `TaskCreate`):
+For `decompose`, reference the plan file **by path** — never "this plan" (prompts are copied verbatim into `TaskCreate`):
 
 ```
 Use values, mappings, and structure exactly as documented in the plan at <PLAN_FILE_PATH>. Do not infer or guess.
@@ -120,7 +120,7 @@ Use values, mappings, and structure exactly as documented in the plan at <PLAN_F
 
 ## Testing task is mandatory
 
-Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-agents`, `uipath-coded-apps`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops).
+Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-agents`, `uipath-coded-apps`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops). Under Pattern 7 the Testing task is the `uipath-genome-builder` testing task of [multi-skill-patterns-guide.md](multi-skill-patterns-guide.md) Pattern 7 step 2, not one per skill the genome names.
 
 Plans that build a **custom connector** (`uipath-connector-builder`) or an **IXP model** (`uipath-ixp`) also get a validation task per artifact — connector validate/import check, IXP model metrics review — placed immediately after that build task and **before** any consumer's build task.
 
@@ -141,7 +141,7 @@ Plans that build a **custom connector** (`uipath-connector-builder`) or an **IXP
 - [ ] **Validate:** all tests pass; record results
 ```
 
-## Regenerate logic (PDD-driven lane only)
+## Regenerate logic
 
 When the user picks "Regenerate from the SDD" on the planner's resume question, preserve completed work via identity matching.
 
@@ -213,15 +213,15 @@ The planner emits live tasks that mirror the file. Mapping rules:
 | `Blocked by:` | `addBlockedBy` (after all tasks are created) |
 | `Completed:` | `metadata.completed_by`, `metadata.completed_date` |
 
-**Rule G-8 applies (defined in [sdd-generation-guide.md](sdd-generation-guide.md) Phase 1 Step 0.5):** if any TaskCreate or TaskUpdate fails, log a single warning, continue without live tasks, and do not retry. The markdown plan / tasks file is the authoritative deliverable.
+**Rule G-8 applies (defined in [design-guide.md](design-guide.md) Phase 1 Step 0.5):** if any TaskCreate or TaskUpdate fails, log a single warning, continue without live tasks, and do not retry. The markdown plan / tasks file is the authoritative deliverable.
 
 ## Plan-mode integration
 
 Both files are valid `EnterPlanMode` payloads.
 
-- **Non-PDD lane explore-first:** call `EnterPlanMode` with the full `<feature>.md` content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
-- **PDD-driven lane interactive:** call `EnterPlanMode` with the full `<process>-tasks.md` content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
-- **Non-PDD lane simultaneous / PDD-driven autonomous:** skip `EnterPlanMode`. Emit the file as text, then immediately emit live `TaskCreate` calls.
+- **`decompose` explore-first:** call `EnterPlanMode` with the full `<feature>.md` content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
+- **`plan` interactive:** call `EnterPlanMode` with the full `<process>-tasks.md` content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
+- **`decompose` simultaneous / `plan` autonomous:** skip `EnterPlanMode`. Emit the file as text, then immediately emit live `TaskCreate` calls.
 <!--skill-flavor:live-tasks-and-plan-mode:end-->
 
 ## Quality rules (applied during self-review before saving)

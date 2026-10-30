@@ -115,15 +115,41 @@
 /skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
 /tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
 /tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
+/skills/uipath-genome-builder/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/uipath-genome-builder/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/activation/uipath-genome-builder.jsonl @danmunteanu1 @vlad-coteanu-uipath
+/skill-flavors/studioweb/uipath-genome-builder/ @astridstaicu @danmunteanu1 @vlad-coteanu-uipath
+/scripts/check-genome-core.mjs @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+# uipath-planner genome verbs (author, extract, edit) and the genome core it shares with uipath-genome-builder: the genome owners, after the planner lines above
+/skills/uipath-planner/references/author-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/genome-from-sdd-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/scenario-proposal-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/defect-verification-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/edit-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/extract-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/extracted-genome-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/extraction-parts-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/genome-format-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/parts-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/skill-mapping-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/source-frameworks-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/transactional-shape-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/uipath-source-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/assets/templates/component-genome-template.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/assets/templates/process-genome-template.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/genome-examples/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/scripts/check-genome.mjs @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/.claude/rules/uipath-planner.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria @roberts-cliff
+/.claude/rules/uipath-genome-builder.md @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/uipath-planner/author_component/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/extract_component/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/extract_solution/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/genome_from_sdd/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/test_genome_check.py @danmunteanu1 @vlad-coteanu-uipath
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
-
-# Genome skill (extract / author / execute automation blueprints)
-/skills/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
-/tests/tasks/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
-/tests/tasks/activation/uipath-genome.jsonl @danmunteanu1 @vlad-coteanu-uipath
 
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team

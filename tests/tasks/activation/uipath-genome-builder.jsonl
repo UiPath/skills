@@ -1,0 +1,13 @@
+{"id": "uipath-genome-builder-001", "prompt": "Build this genome: ./artemis-2-mission-monitor-genome.md", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-002", "prompt": "Implement the automation described in invoice-processing-genome.md", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-003", "prompt": "Execute this genome file and validate the acceptance criteria when you're done", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-004", "prompt": "Build the automation from ./invoice-processing-genome.md", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-005", "prompt": "Run the migration described in ./order-entry-genome.md", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-006", "prompt": "Execute the refactor in salesforce-accounts-and-contacts-genome.md and rebuild it on Maestro", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-007", "prompt": "Follow the blueprint in purchase-requisition-entry-genome.md and create the UiPath project", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-008", "prompt": "Implement every component listed in ./claims-genome.md, then validate the acceptance criteria", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-009", "prompt": "Take the defaults and build ./daily-sales-summary-genome.md", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-010", "prompt": "The planner handed over customer-address-sync-genome.md \u2014 build it", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-011", "prompt": "Check that ./artemis-2-mission-monitor-genome.md is a valid genome before we build it", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-012", "prompt": "Rebuild our extracted Workday test suite from ./workday-tests-genome.md as UiPath test cases", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-013", "prompt": "Validate the genome format of ./claims-genome.md after my manual edits", "expected_skill": "uipath-genome-builder"}
