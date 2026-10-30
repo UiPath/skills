@@ -274,9 +274,15 @@ Reading the result (Rule 8):
 - stdout and stderr arrive merged, and their relative order is not preserved — do not rely on line order across the two streams.
 - Exit code 0 → `Result: Success`, `hasErrors: false`.
 - Non-zero exit → `Result: Failure`, `Message` contains `Command exited with code <N>.`, and the CLI process exits 1.
+- A non-zero exit can still come with complete output: `query user` prints its table and exits 1, and PowerShell `-Command` exits 1 when its last pipeline hit an error, even one hidden by `-ErrorAction SilentlyContinue`. Read the streamed lines before deciding the command failed.
 - Timeout → `Result: Failure`, `Message` contains `Command timed out.`
 
-On a Windows robot use `cmd.exe` syntax (`&&`, `type`, `dir`, `rmdir /s /q`); run PowerShell as `powershell -NoProfile -Command "<SCRIPT>"`.
+On a Windows robot use `cmd.exe` syntax (`&&`, `type`, `dir`, `rmdir /s /q`). The `--command` text passes through two shells before it runs — your local console (Bash, PowerShell or cmd), then `cmd.exe` on the robot — and each treats quotes and special characters differently. So that it works from any console:
+
+- Put the whole value in double quotes and use only single quotes inside it. `\"` works in Bash and cmd but breaks the command in PowerShell.
+- Single quotes quote only in PowerShell (write a literal `'` as `''`). `cmd.exe` ignores them, so a path with spaces needs PowerShell.
+- For a short PowerShell command with none of ``$ % " ` | & < > ^``, put the code after `-Command` without quotes and write paths with forward slashes (example below).
+- For any other PowerShell script, write it to a local `.ps1` file with your file-writing tool, upload it with `upload-file` (§ Transfer Files) to an absolute remote path without spaces, and run `powershell -NoProfile -ExecutionPolicy Bypass -File <REMOTE_SCRIPT_PATH>`. Don't use `-EncodedCommand`: each console needs a different encoder, and error output comes back as `#< CLIXML` XML.
 
 Examples:
 
@@ -286,11 +292,11 @@ uip rpa remote exec --command "hostname && whoami" --timeout 60 \
   --project-dir "<PROJECT_DIR>" --output json
 
 # Check a directory the workflow writes to
-uip rpa remote exec --command "dir C:\\Output" --timeout 30 \
+uip rpa remote exec --command "dir C:\Output" --timeout 30 \
   --project-dir "<PROJECT_DIR>" --output json
 
 # Run a PowerShell snippet
-uip rpa remote exec --command "powershell -NoProfile -Command \"Get-ChildItem C:\\Output\"" --timeout 60 \
+uip rpa remote exec --command "powershell -NoProfile -Command Get-ChildItem 'C:/Output'" --timeout 60 \
   --project-dir "<PROJECT_DIR>" --output json
 
 # Restore a published package and run a tool from its folder

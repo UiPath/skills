@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity x:Class="Main" mc:Ignorable="sap sap2010" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:upt="clr-namespace:UiPath.Platform.Triggers;assembly=UiPath.Platform" xmlns:uwa="clr-namespace:UiPath.WorkflowEvents.Activities;assembly=UiPath.WorkflowEvents.Activities" xmlns:uwam="clr-namespace:UiPath.WorkflowEvents.Activities.Models;assembly=UiPath.WorkflowEvents.Activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="StopTriggersOutArgument" Type="OutArgument(x:Boolean)" />
+  </x:Members>
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="32">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>StudioWeb.Sdk.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Platform.Triggers</x:String>
+      <x:String>UiPath.WorkflowEvents.Activities</x:String>
+      <x:String>UiPath.Platform.Triggers.Scope</x:String>
+      <x:String>UiPath.WorkflowEvents.Activities.Models</x:String>
+      <x:String>System.Linq.Expressions</x:String>
+      <x:String>UiPath</x:String>
+      <x:String>System.Reflection</x:String>
+      <x:String>UiPath.Core.Activities.Orchestrator</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="32">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>StudioWeb.Sdk</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.ComponentModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Console</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Linq.Expressions</AssemblyReference>
+      <AssemblyReference>System.Memory</AssemblyReference>
+      <AssemblyReference>System.Net.Primitives</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Private.DataContractSerialization</AssemblyReference>
+      <AssemblyReference>System.Private.Uri</AssemblyReference>
+      <AssemblyReference>System.Reflection.DispatchProxy</AssemblyReference>
+      <AssemblyReference>System.Reflection.Metadata</AssemblyReference>
+      <AssemblyReference>System.Reflection.TypeExtensions</AssemblyReference>
+      <AssemblyReference>System.Runtime.InteropServices</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Formatters</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Primitives</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Constants</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities.Api</AssemblyReference>
+      <AssemblyReference>UiPath.Workflow</AssemblyReference>
+      <AssemblyReference>UiPath.WorkflowEvents.Activities</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence sap:VirtualizedContainerService.HintSize="1372,1417" sap2010:WorkflowViewState.IdRef="Generated_830">
+    <Sequence.Variables>
+      <x:Reference>__ReferenceID0</x:Reference>
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <upt:InterruptibleTriggerInitializer sap:VirtualizedContainerService.HintSize="1310,65" sap2010:WorkflowViewState.IdRef="Generated_701" />
+    <Parallel sap:VirtualizedContainerService.HintSize="1310,1264" sap2010:WorkflowViewState.IdRef="Generated_712">
+      <Parallel.CompletionCondition>
+        <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="StopTriggersVariable" />
+      </Parallel.CompletionCondition>
+      <Sequence sap:VirtualizedContainerService.HintSize="704,1194" sap2010:WorkflowViewState.IdRef="Generated_8011">
+        <Sequence.Variables>
+          <Variable x:TypeArguments="x:String" Name="BreakTriggerScopeVariableName">
+            <Variable.Default>
+              <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;0&quot;" />
+            </Variable.Default>
+          </Variable>
+        </Sequence.Variables>
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+        <ui:TriggerScope DisplayName="TriggerScope" sap:VirtualizedContainerService.HintSize="642,1066" sap2010:WorkflowViewState.IdRef="TriggerScope_1" SchedulingMode="Concurrent">
+          <ui:TriggerScope.Action>
+            <ActivityAction x:TypeArguments="uwam:AppRequestTriggerArgs">
+              <ActivityAction.Argument>
+                <DelegateInArgument x:TypeArguments="uwam:AppRequestTriggerArgs" Name="TriggerEventArgs" />
+              </ActivityAction.Argument>
+              <Sequence DisplayName="Action" sap:VirtualizedContainerService.HintSize="608,785" sap2010:WorkflowViewState.IdRef="Sequence_2">
+                <sap:WorkflowViewStateService.ViewState>
+                  <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                    <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                  </scg:Dictionary>
+                </sap:WorkflowViewStateService.ViewState>
+                <If sap:VirtualizedContainerService.HintSize="546,700" sap2010:WorkflowViewState.IdRef="If_1">
+                  <If.Condition>
+                    <InArgument x:TypeArguments="x:Boolean">
+                      <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="TriggerEventArgs.ConnectionWithAppLost = true" />
+                    </InArgument>
+                  </If.Condition>
+                  <If.Then>
+                    <Sequence DisplayName="Then" sap:VirtualizedContainerService.HintSize="512,341" sap2010:WorkflowViewState.IdRef="Sequence_3">
+                      <sap:WorkflowViewStateService.ViewState>
+                        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                          <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                        </scg:Dictionary>
+                      </sap:WorkflowViewStateService.ViewState>
+                      <ui:LogMessage DisplayName="Log Message" sap:VirtualizedContainerService.HintSize="450,181" sap2010:WorkflowViewState.IdRef="LogMessage_1">
+                        <ui:LogMessage.Level>
+                          <InArgument x:TypeArguments="ui:LogLevel">
+                            <VisualBasicValue x:TypeArguments="ui:LogLevel" ExpressionText="UiPath.Core.Activities.LogLevel.Error" />
+                          </InArgument>
+                        </ui:LogMessage.Level>
+                        <ui:LogMessage.Message>
+                          <InArgument x:TypeArguments="x:Object">
+                            <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;Connection lost with Apps. Invoking Stop Local Triggers.&quot;" />
+                          </InArgument>
+                        </ui:LogMessage.Message>
+                        <sap:WorkflowViewStateService.ViewState>
+                          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+                          </scg:Dictionary>
+                        </sap:WorkflowViewStateService.ViewState>
+                      </ui:LogMessage>
+                      <ui:StopTriggers DisplayName="Stop Local Triggers" sap:VirtualizedContainerService.HintSize="450,75" sap2010:WorkflowViewState.IdRef="StopTriggers_1" ShouldStop="[StopTriggersOutArgument]">
+                        <sap:WorkflowViewStateService.ViewState>
+                          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+                            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+                          </scg:Dictionary>
+                        </sap:WorkflowViewStateService.ViewState>
+                      </ui:StopTriggers>
+                    </Sequence>
+                  </If.Then>
+                  <If.Else>
+                    <Sequence DisplayName="Else" sap:VirtualizedContainerService.HintSize="512,198" sap2010:WorkflowViewState.IdRef="Sequence_4">
+                      <sap:WorkflowViewStateService.ViewState>
+                        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                          <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                        </scg:Dictionary>
+                      </sap:WorkflowViewStateService.ViewState>
+                      <uwa:HandleAppRequest DisplayName="Handle Apps Request" sap:VirtualizedContainerService.HintSize="450,113" sap2010:WorkflowViewState.IdRef="HandleAppRequest_1">
+                        <uwa:HandleAppRequest.Arguments>
+                          <InArgument x:TypeArguments="uwam:AppRequestTriggerArgs">
+                            <VisualBasicValue x:TypeArguments="uwam:AppRequestTriggerArgs" ExpressionText="TriggerEventArgs" />
+                          </InArgument>
+                        </uwa:HandleAppRequest.Arguments>
+                      </uwa:HandleAppRequest>
+                    </Sequence>
+                  </If.Else>
+                </If>
+              </Sequence>
+            </ActivityAction>
+          </ui:TriggerScope.Action>
+          <ui:TriggerScope.Triggers>
+            <scg:List x:TypeArguments="Activity" Capacity="1">
+              <uwa:AppRequestTrigger DisplayName="Apps Request Trigger" Enabled="True" sap:VirtualizedContainerService.HintSize="600,68" sap2010:WorkflowViewState.IdRef="AppRequestTrigger_1" SchedulingMode="Sequential" TriggerId="c469b871-8511-4639-b839-6b3688ad5cd6" />
+            </scg:List>
+          </ui:TriggerScope.Triggers>
+        </ui:TriggerScope>
+      </Sequence>
+      <Sequence sap:VirtualizedContainerService.HintSize="512,1194" sap2010:WorkflowViewState.IdRef="Generated_8115">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+        <ui:ListenForStopTriggers sap:VirtualizedContainerService.HintSize="450,65" sap2010:WorkflowViewState.IdRef="Generated_8216" />
+        <ui:LogMessage DisplayName="Log Message" sap:VirtualizedContainerService.HintSize="450,92" sap2010:WorkflowViewState.IdRef="LogMessage_2">
+          <ui:LogMessage.Level>
+            <InArgument x:TypeArguments="ui:LogLevel">
+              <VisualBasicValue x:TypeArguments="ui:LogLevel" ExpressionText="UiPath.Core.Activities.LogLevel.Info" />
+            </InArgument>
+          </ui:LogMessage.Level>
+          <ui:LogMessage.Message>
+            <InArgument x:TypeArguments="x:Object">
+              <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;STOP TRIGGER invoked&quot;" />
+            </InArgument>
+          </ui:LogMessage.Message>
+          <sap:WorkflowViewStateService.ViewState>
+            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+              <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+              <x:Boolean x:Key="IsPinned">False</x:Boolean>
+            </scg:Dictionary>
+          </sap:WorkflowViewStateService.ViewState>
+        </ui:LogMessage>
+        <Assign x:TypeArguments="x:Boolean" sap:VirtualizedContainerService.HintSize="450,48" sap2010:WorkflowViewState.IdRef="Assign`1_1" Value="True">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:Boolean">
+              <VariableReference x:TypeArguments="x:Boolean" sap2010:WorkflowViewState.IdRef="VariableReference`1_1">
+                <VariableReference.Variable>
+                  <Variable x:TypeArguments="x:Boolean" x:Name="__ReferenceID0" Name="StopTriggersVariable">
+                    <Variable.Default>
+                      <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="false" />
+                    </Variable.Default>
+                  </Variable>
+                </VariableReference.Variable>
+              </VariableReference>
+            </OutArgument>
+          </Assign.To>
+        </Assign>
+      </Sequence>
+    </Parallel>
+  </Sequence>
+</Activity>

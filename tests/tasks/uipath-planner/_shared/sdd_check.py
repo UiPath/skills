@@ -47,6 +47,16 @@ TASK_TYPES = {
     "wait-for-timer", "case-management", "http-request", "flow-process",
     "external-agent", "external-workflow", "document-extraction",
 }
+# The CLI declaration's other two lists (`uip maestro case task-types list`):
+# real types an SDD cannot declare, and names from other layers that are no task
+# type at all, each with the plan type meant. test_task_types.py holds both to
+# the snapshot, so a spelling is added upstream, never here first.
+STUDIO_WEB_ONLY = {"script"}
+NOT_TASK_TYPES = {
+    "connector-activity": "execute-connector-activity",
+    "connector-trigger": "wait-for-connector",
+    "wait-for-event": "wait-for-connector",
+}
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
 STAGE_ENTRY = {"case-entered", "selected-stage-completed", "selected-stage-exited",
@@ -403,8 +413,16 @@ def main() -> None:
         {t for t in re.findall(r"^\*\*Type:\*\*\s*(\S+)", text, re.M)
          if t not in ("Stage", "ExceptionStage") and t not in TASK_TYPES}
     )
-    if bad_types:
-        issues.append(f"task-type: invalid type(s): {', '.join(bad_types)}")
+    # Worded like `sdd convert`'s task-type item, so an author reads one message, and
+    # matched the same way: case, `_` and spaces fold to `-` before every lookup.
+    for t in bad_types:
+        key = re.sub(r"[\s_]+", "-", t.strip().lower())
+        if key in STUDIO_WEB_ONLY:
+            issues.append(f'task-type: declares the type "{t}", a caseplan task type an SDD may not declare. Author this task in Studio Web.')
+            continue
+        meant = NOT_TASK_TYPES.get(key) or (key if key in TASK_TYPES else None)
+        hint = f' (did you mean "{meant}"?)' if meant else ""
+        issues.append(f'task-type: declares the type "{t}"{hint}, which is not one of the {len(TASK_TYPES)} an SDD may use')
 
     # 3b. **Stage Kind:** enum — optional field; when present must be primary|secondary.
     bad_kinds = sorted(

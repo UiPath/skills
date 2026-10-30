@@ -2,8 +2,8 @@
 * @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
 
 # CI workflows and review config
-/.github/ @uipreliga @bai-uipath @akshaylive
-/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive
+/.github/ @uipreliga @bai-uipath @akshaylive @CarlesUIPath
+/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive @CarlesUIPath
 
 # Azure Pipelines (nightly FOSSA scan, release gate that signs the hooks)
 /.pipelines/ @RaduAna-Maria @gabrielavaduva
@@ -19,10 +19,15 @@
 
 # Studio Web flavor overrides
 /skill-flavors/studioweb/ @astridstaicu
+/skill-flavors/studioweb/uipath-maestro-bpmn/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-maestro-case/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-maestro-flow/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-rules/ @astridstaicu @UiPath/maestro-cli-team
 
 # preview skills
-/preview/skills/uipath-maestro-case/ @dmetzgar @tmatup
+/preview/skills/uipath-maestro-case/ @dmetzgar @tmatup @UiPath/maestro-cli-team
 /preview/skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+/preview/skills/uipath-maestro-flow @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
@@ -122,11 +127,9 @@
 
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
-# Previous Flow generation (JSON authoring), kept only because the Studio Web
-# flavor pins it (skill-flavors/studioweb/uipath-maestro-flow/.canonical).
-/classic/skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team @astridstaicu
 # Flow test tasks (general) — more specific subfolder rules below override this
 /tests/tasks/uipath-maestro-flow/ @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-maestro-flow.jsonl @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 
 # Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
 /skills/uipath-maestro-flow/references/summarize.md @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
@@ -136,6 +139,7 @@
 # Maestro BPMN skill
 /skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-maestro-bpmn.jsonl @UiPath/maestro-cli-team
 
 # Rules skill
 /skills/uipath-rules/ @UiPath/maestro-cli-team
@@ -151,8 +155,9 @@
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
-/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517
-/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517
+/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517 @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517 @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-maestro-case.jsonl @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517 @UiPath/maestro-cli-team
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash

@@ -8,9 +8,11 @@ evaluated.
 Every `eval` command takes `--path <project-dir>` — the directory holding
 `project.uiproj`.
 
+<!--skill-flavor:eval-login:start-->
 **Local `add` / `list` / `remove` edit project files and need no login.**
 Starting a run does — `uip login` first, and it needs a matching solution in
 Studio Web.
+<!--skill-flavor:eval-login:end-->
 
 Probe the installed CLI once, then let it write the JSON formats and generated
 file references rather than hand-authoring them:
@@ -130,6 +132,7 @@ have.
 
 ## Never upload as part of an eval workflow
 
+<!--skill-flavor:eval-no-upload:start-->
 **Never run `uip solution upload` automatically here. Always ask first.**
 
 `eval run start` needs the solution in Studio Web, and when it cannot resolve
@@ -152,6 +155,7 @@ passed, but recovery is browser-only, after the fact, by the user, and it does
 not undo case 1. Ask, and offer the two real options: upload now with the user's
 acknowledgement, or pass `--solution-id` and `--project-id` for an existing
 Studio Web solution and plumb them through to `eval run start`.
+<!--skill-flavor:eval-no-upload:end-->
 
 ## Confirm what was written
 
