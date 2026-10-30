@@ -31,5 +31,5 @@ uip maestro flow validate <Name>/<Name>.flow --output json
 - Use the node id `nodes create` returns; it is not derived from the operation name.
 - Agent nodes are Curated activities, so `--detail` takes no `objectName`; only Generic activities need one.
 - The node definition from the registry may say `Intsvc.AsyncAgentExecution` even for a sync agent (Snowflake Cortex on alpha, 2026-10-19). The flow still ran it as sync, from the `executionType: sync` that `nodes configure` writes into the detail (`--detail` refuses the key). Leave the service type as the CLI wrote it.
-- Then `uip solution resources refresh` and `uip maestro flow debug <Name>` ([CLI-LOOP.md](CLI-LOOP.md)).
+- To run it, `uip solution resources refresh` and `uip maestro flow debug <Name>` ([CLI-LOOP.md](CLI-LOOP.md)); ask first ([operate.md](operate.md#debug--a-real-end-to-end-run)).
 <!--skill-flavor:external-agent-cli:end-->
