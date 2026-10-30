@@ -7,7 +7,8 @@ there is no login step.
 <!--skill-flavor:operate-format:start-->
 **Never run `format` on a merged file.** In Studio Web almost every write is a
 merge into the canvas of the user. The `layout` of the original holds the
-positions of the user, and `merge` keeps them and places each added node.
+positions of the user, and `merge` keeps them and places each added node,
+moving later nodes right or down and growing containers only to fit added ones.
 `format` lays out every node again and discards them.
 
 A new `.flow` that `compile` wrote straight, with no merge, is different.
