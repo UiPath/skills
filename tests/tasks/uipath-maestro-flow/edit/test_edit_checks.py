@@ -138,6 +138,13 @@ def mutate(sandbox: Path, *changes) -> None:
     path.write_text(json.dumps(flow, indent=2))
 
 
+def test_fixture_http_is_managed_v2() -> None:
+    text = (FIXTURE / "BellevueWeather.flow").read_text()
+    weather = node(json.loads(text), "getWeather")
+    assert (weather["type"], weather["typeVersion"]) == ("core.action.http.v2", "2.3")
+    assert "Intsvc.HttpExecution" not in text
+
+
 @pytest.mark.parametrize("task", TASKS)
 def test_merged_edit_passes_both(sandbox: Path, task: str) -> None:
     mutate(sandbox, EDITS[task], renumber_edges)

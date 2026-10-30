@@ -30,51 +30,510 @@
     },
     {
       "id": "getWeather",
-      "type": "core.action.http",
-      "typeVersion": "1.2",
+      "type": "core.action.http.v2",
+      "typeVersion": "2.3",
       "display": {
         "label": "Get Bellevue Weather"
       },
-      "inputs": {
-        "mode": "manual",
-        "method": "GET",
-        "url": "https://api.open-meteo.com/v1/forecast?latitude=47.6101&longitude=-122.2015&current=temperature_2m&temperature_unit=fahrenheit",
-        "headers": {},
-        "queryParams": {},
-        "body": {
-          "type": "literal",
-          "expression": "",
-          "fieldType": "object"
-        },
-        "contentType": "application/json",
-        "timeout": "PT15M",
-        "retryCount": 0,
-        "branches": []
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Intsvc.UnifiedHttpRequest",
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-uipath-http"
+          },
+          {
+            "name": "objectName",
+            "type": "string",
+            "value": "http-request"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-uipath-http connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-uipath-http",
+                "connectorName": "HTTP Request"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ],
+        "expansion": {
+          "processLevelVariables": [
+            {
+              "id": "getWeather.output",
+              "name": "output",
+              "type": "jsonSchema",
+              "elementId": "getWeather",
+              "custom": true
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "id": "getWeather.error",
+              "name": "error",
+              "type": "jsonSchema",
+              "elementId": "getWeather",
+              "custom": true
+            }
+          ],
+          "nodes": [
+            {
+              "id": "getWeather",
+              "type": "bpmn:SubProcess",
+              "replaceOriginal": true,
+              "data": {
+                "label": "{node.data.label}",
+                "isExpanded": true,
+                "model": {
+                  "serviceType": "BPMN.Variables",
+                  "subprocessVariables": {
+                    "inputOutputs": [
+                      {
+                        "id": "response",
+                        "name": "response",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      },
+                      {
+                        "id": "error",
+                        "name": "error",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      }
+                    ]
+                  },
+                  "outputs": [
+                    {
+                      "name": "output",
+                      "type": "jsonSchema",
+                      "source": "=vars.response",
+                      "var": "getWeather.output",
+                      "custom": true
+                    },
+                    {
+                      "name": "error",
+                      "type": "jsonSchema",
+                      "source": "=vars.error",
+                      "var": "getWeather.error",
+                      "custom": true
+                    }
+                  ]
+                }
+              },
+              "nodes": [
+                {
+                  "id": "_Implicit_StartEvent_getWeather",
+                  "type": "bpmn:StartEvent",
+                  "parentId": "getWeather",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "HTTP Request Start"
+                  }
+                },
+                {
+                  "id": "_Implicit_HttpTask_getWeather",
+                  "type": "bpmn:SendTask",
+                  "parentId": "getWeather",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "propagate": {
+                    "detail": true,
+                    "retry": {
+                      "condition": "node.data.inputs.retryCount > 0",
+                      "maxRetryCount": "node.data.inputs.retryCount",
+                      "retryBackoff": "node.data.inputs.timeout",
+                      "retryBackoffDefault": "PT1S",
+                      "retryAllErrors": "true",
+                      "retryBackoffType": "Static"
+                    }
+                  },
+                  "data": {
+                    "label": "{node.data.label}",
+                    "model": {
+                      "serviceType": "Intsvc.UnifiedHttpRequest",
+                      "context": [
+                        {
+                          "name": "connectorKey",
+                          "type": "string",
+                          "value": "uipath-uipath-http"
+                        },
+                        {
+                          "name": "objectName",
+                          "type": "string",
+                          "value": "http-request"
+                        },
+                        {
+                          "name": "connection",
+                          "type": "string",
+                          "value": "<bindings.uipath-uipath-http connection>"
+                        },
+                        {
+                          "name": "folderKey",
+                          "type": "string",
+                          "value": "<bindings.FolderKey>"
+                        },
+                        {
+                          "name": "activityConfigurationVersion",
+                          "type": "string",
+                          "value": "v1"
+                        },
+                        {
+                          "name": "metadata",
+                          "body": {
+                            "telemetryData": {
+                              "connectorKey": "uipath-uipath-http",
+                              "connectorName": "HTTP Request"
+                            },
+                            "inputMetadata": {},
+                            "errorState": {
+                              "hasError": true
+                            }
+                          },
+                          "type": "json"
+                        }
+                      ],
+                      "outputs": [
+                        {
+                          "name": "response",
+                          "type": "json",
+                          "source": "=response",
+                          "var": "response",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "_Implicit_Gateway_getWeather",
+                  "type": "bpmn:ExclusiveGateway",
+                  "parentId": "getWeather",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "data": {
+                    "label": "Response branch",
+                    "defaultFlowId": "_Implicit_Edge__Implicit_Gateway_getWeather__Implicit_EndEvent_Default_getWeather"
+                  }
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "id": "_Implicit_EndEvent_{branchName}_getWeather",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "getWeather",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "{branch.name}"
+                  }
+                },
+                {
+                  "id": "_Implicit_EndEvent_Default_getWeather",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "getWeather",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Default"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_EndEvent_Failure_getWeather",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "getWeather",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Failure",
+                    "model": {
+                      "serviceType": "BPMN.Variables",
+                      "outputs": [
+                        {
+                          "name": "error",
+                          "type": "boolean",
+                          "source": "=true",
+                          "var": "error",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_BoundaryError_getWeather",
+                  "type": "bpmn:BoundaryEvent",
+                  "parentId": "getWeather",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Error",
+                    "cancelActivity": false,
+                    "attachedToId": "_Implicit_HttpTask_getWeather",
+                    "eventDefinition": {
+                      "type": "bpmn:ErrorEventDefinition",
+                      "id": "_Implicit_BoundaryError_getWeather_Error"
+                    },
+                    "model": {
+                      "outputs": [
+                        {
+                          "name": "Error",
+                          "type": "jsonSchema",
+                          "source": "=Error",
+                          "var": "response",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "edges": [
+                {
+                  "id": "_Implicit_Edge__Implicit_StartEvent_getWeather__Implicit_HttpTask_getWeather",
+                  "source": "_Implicit_StartEvent_getWeather",
+                  "target": "_Implicit_HttpTask_getWeather",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "condition": "node.data.inputs.branches.length === 0",
+                  "id": "_Implicit_Edge__Implicit_HttpTask_getWeather__Implicit_EndEvent_Default_getWeather",
+                  "source": "_Implicit_HttpTask_getWeather",
+                  "target": "_Implicit_EndEvent_Default_getWeather",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_HttpTask_getWeather__Implicit_Gateway_getWeather",
+                  "source": "_Implicit_HttpTask_getWeather",
+                  "target": "_Implicit_Gateway_getWeather",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_getWeather__Implicit_EndEvent_{branchName}_getWeather",
+                  "source": "_Implicit_Gateway_getWeather",
+                  "target": "_Implicit_EndEvent_{branchName}_getWeather",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "conditionExpression": "{branch.conditionExpression}",
+                    "label": "{branch.name}"
+                  }
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_getWeather__Implicit_EndEvent_Default_getWeather",
+                  "source": "_Implicit_Gateway_getWeather",
+                  "target": "_Implicit_EndEvent_Default_getWeather",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "label": "Default"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_Edge__Implicit_BoundaryError_getWeather__Implicit_EndEvent_Failure_getWeather",
+                  "source": "_Implicit_BoundaryError_getWeather",
+                  "target": "_Implicit_EndEvent_Failure_getWeather",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                }
+              ]
+            },
+            {
+              "id": "_Implicit_PostSubprocessGateway_getWeather",
+              "type": "bpmn:ExclusiveGateway",
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "parentId": null,
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "data": {
+                "label": "Post-Subprocess Branch"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "id": "_Implicit_Edge_getWeather__Implicit_PostSubprocessGateway_getWeather",
+              "source": "getWeather",
+              "target": "_Implicit_PostSubprocessGateway_getWeather",
+              "type": "bpmn:SequenceFlow",
+              "data": {}
+            },
+            {
+              "forEach": "node.data.inputs.branches",
+              "condition": "node.data.inputs.branches.length > 0",
+              "matchOriginalEdgeByHandle": "branch-{branch.id}",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_getWeather",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "{branch.conditionExpression}",
+                "label": "{branch.name}"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_getWeather",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "label": "Default"
+              }
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "error",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_getWeather",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "=js:vars.getWeather.error || vars.getWeather.output?.statusCode >= 400",
+                "label": "Error"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length === 0 && !hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "getWeather",
+              "type": "bpmn:SequenceFlow"
+            }
+          ]
+        }
       },
       "outputs": {
         "output": {
           "type": "object",
-          "description": "The return value of the HTTP request",
+          "description": "HTTP response object",
           "source": {
             "type": "literal",
-            "expression": "=result.response",
+            "expression": "=response",
             "fieldType": "string"
           },
           "var": "output"
         },
         "error": {
           "type": "object",
-          "description": "Error information if the HTTP request fails",
+          "description": "Error information if the node fails",
           "source": {
             "type": "literal",
-            "expression": "=result.Error",
+            "expression": "=Error",
             "fieldType": "string"
           },
-          "var": "error"
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
-      "model": {
-        "type": "bpmn:ServiceTask"
+      "inputs": {
+        "branches": [],
+        "timeout": "PT15M",
+        "retryCount": 0,
+        "detail": {
+          "connector": "uipath-uipath-http",
+          "connectionId": "ImplicitConnection",
+          "connectionResourceId": null,
+          "connectionFolderKey": null,
+          "method": "POST",
+          "endpoint": "/http-request",
+          "bodyParameters": {
+            "authentication": "manual",
+            "method": "GET",
+            "url": "https://api.open-meteo.com/v1/forecast?latitude=47.6101&longitude=-122.2015&current=temperature_2m&temperature_unit=fahrenheit",
+            "body": ""
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"http-request\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}",
+          "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+          "errorState": {
+            "issues": []
+          },
+          "telemetryData": {
+            "connectorKey": "uipath-uipath-http",
+            "connectorName": "HTTP",
+            "operationType": "create",
+            "objectName": "http-request",
+            "objectDisplayName": "HTTP Request",
+            "primaryKeyName": ""
+          }
+        }
       }
     },
     {
@@ -272,10 +731,10 @@
       }
     },
     {
-      "nodeType": "core.action.http",
-      "version": "1.2",
+      "nodeType": "core.action.http.v2",
+      "version": "2.3",
       "category": "data-operations",
-      "description": "Make API calls with branching and retry",
+      "description": "HTTP request with managed authentication",
       "tags": [
         "connector",
         "http",
@@ -296,10 +755,10 @@
             {
               "id": "input",
               "type": "target",
-              "handleType": "input"
+              "handleType": "input",
+              "label": ""
             }
-          ],
-          "visible": true
+          ]
         },
         {
           "position": "right",
@@ -316,6 +775,16 @@
               "type": "source",
               "handleType": "output",
               "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
             }
           ],
           "visible": true
@@ -326,6 +795,48 @@
       },
       "model": {
         "type": "bpmn:ServiceTask",
+        "serviceType": "Intsvc.UnifiedHttpRequest",
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-uipath-http"
+          },
+          {
+            "name": "objectName",
+            "type": "string",
+            "value": "http-request"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-uipath-http connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-uipath-http",
+                "connectorName": "HTTP Request"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ],
         "expansion": {
           "processLevelVariables": [
             {
@@ -342,13 +853,6 @@
               "type": "jsonSchema",
               "elementId": "{nodeId}",
               "custom": true
-            },
-            {
-              "condition": "!hasEdgeFromHandle('error')",
-              "id": "{nodeId}.boundaryError",
-              "name": "Error",
-              "type": "jsonSchema",
-              "elementId": "_Implicit_SubprocessBoundaryError_{nodeId}"
             }
           ],
           "nodes": [
@@ -386,7 +890,7 @@
                       "custom": true
                     },
                     {
-                      "name": "Error",
+                      "name": "error",
                       "type": "jsonSchema",
                       "source": "=vars.error",
                       "var": "{nodeId}.error",
@@ -417,6 +921,7 @@
                     "y": 0
                   },
                   "propagate": {
+                    "detail": true,
                     "retry": {
                       "condition": "node.data.inputs.retryCount > 0",
                       "maxRetryCount": "node.data.inputs.retryCount",
@@ -429,41 +934,46 @@
                   "data": {
                     "label": "{node.data.label}",
                     "model": {
-                      "serviceType": "Intsvc.HttpExecution",
-                      "version": "v1",
+                      "serviceType": "Intsvc.UnifiedHttpRequest",
                       "context": [
                         {
-                          "name": "mode",
+                          "name": "connectorKey",
                           "type": "string",
-                          "source": "node.data.inputs.mode"
+                          "value": "uipath-uipath-http"
                         },
                         {
-                          "name": "method",
+                          "name": "objectName",
                           "type": "string",
-                          "source": "node.data.inputs.method"
+                          "value": "http-request"
                         },
                         {
-                          "name": "url",
+                          "name": "connection",
                           "type": "string",
-                          "source": "node.data.inputs.url"
+                          "value": "<bindings.uipath-uipath-http connection>"
                         },
                         {
-                          "name": "headers",
-                          "type": "json",
-                          "source": "node.data.inputs.headers",
-                          "format": "json"
+                          "name": "folderKey",
+                          "type": "string",
+                          "value": "<bindings.FolderKey>"
                         },
                         {
-                          "name": "parameters",
-                          "type": "json",
-                          "source": "node.data.inputs.queryParams",
-                          "format": "json"
+                          "name": "activityConfigurationVersion",
+                          "type": "string",
+                          "value": "v1"
                         },
                         {
-                          "name": "body",
-                          "type": "json",
-                          "source": "node.data.inputs.body",
-                          "format": "json"
+                          "name": "metadata",
+                          "body": {
+                            "telemetryData": {
+                              "connectorKey": "uipath-uipath-http",
+                              "connectorName": "HTTP Request"
+                            },
+                            "inputMetadata": {},
+                            "errorState": {
+                              "hasError": true
+                            }
+                          },
+                          "type": "json"
                         }
                       ],
                       "outputs": [
@@ -476,6 +986,33 @@
                         }
                       ]
                     }
+                  }
+                },
+                {
+                  "id": "_Implicit_Gateway_{nodeId}",
+                  "type": "bpmn:ExclusiveGateway",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "data": {
+                    "label": "Response branch",
+                    "defaultFlowId": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}"
+                  }
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "id": "_Implicit_EndEvent_{branchName}_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "{branch.name}"
                   }
                 },
                 {
@@ -500,7 +1037,19 @@
                     "y": 0
                   },
                   "data": {
-                    "label": "Failure"
+                    "label": "Failure",
+                    "model": {
+                      "serviceType": "BPMN.Variables",
+                      "outputs": [
+                        {
+                          "name": "error",
+                          "type": "boolean",
+                          "source": "=true",
+                          "var": "error",
+                          "internal": true
+                        }
+                      ]
+                    }
                   }
                 },
                 {
@@ -514,6 +1063,7 @@
                   },
                   "data": {
                     "label": "Error",
+                    "cancelActivity": false,
                     "attachedToId": "_Implicit_HttpTask_{nodeId}",
                     "eventDefinition": {
                       "type": "bpmn:ErrorEventDefinition",
@@ -525,7 +1075,7 @@
                           "name": "Error",
                           "type": "jsonSchema",
                           "source": "=Error",
-                          "var": "error",
+                          "var": "response",
                           "internal": true
                         }
                       ]
@@ -542,11 +1092,42 @@
                   "data": {}
                 },
                 {
+                  "condition": "node.data.inputs.branches.length === 0",
                   "id": "_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_EndEvent_Default_{nodeId}",
                   "source": "_Implicit_HttpTask_{nodeId}",
                   "target": "_Implicit_EndEvent_Default_{nodeId}",
                   "type": "bpmn:SequenceFlow",
                   "data": {}
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_Gateway_{nodeId}",
+                  "source": "_Implicit_HttpTask_{nodeId}",
+                  "target": "_Implicit_Gateway_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_{branchName}_{nodeId}",
+                  "source": "_Implicit_Gateway_{nodeId}",
+                  "target": "_Implicit_EndEvent_{branchName}_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "conditionExpression": "{branch.conditionExpression}",
+                    "label": "{branch.name}"
+                  }
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}",
+                  "source": "_Implicit_Gateway_{nodeId}",
+                  "target": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "label": "Default"
+                  }
                 },
                 {
                   "condition": "hasEdgeFromHandle('error')",
@@ -557,34 +1138,6 @@
                   "data": {}
                 }
               ]
-            },
-            {
-              "condition": "!hasEdgeFromHandle('error')",
-              "id": "_Implicit_SubprocessBoundaryError_{nodeId}",
-              "type": "bpmn:BoundaryEvent",
-              "parentId": null,
-              "position": {
-                "x": 0,
-                "y": 0
-              },
-              "data": {
-                "label": "",
-                "attachedToId": "{nodeId}",
-                "eventDefinition": {
-                  "type": "bpmn:ErrorEventDefinition",
-                  "id": "_Implicit_SubprocessBoundaryError_{nodeId}_Error"
-                },
-                "model": {
-                  "outputs": [
-                    {
-                      "name": "Error",
-                      "type": "jsonSchema",
-                      "source": "=Error",
-                      "var": "{nodeId}.boundaryError"
-                    }
-                  ]
-                }
-              }
             },
             {
               "id": "_Implicit_PostSubprocessGateway_{nodeId}",
@@ -638,7 +1191,7 @@
               "source": "_Implicit_PostSubprocessGateway_{nodeId}",
               "type": "bpmn:SequenceFlow",
               "data": {
-                "conditionExpression": "=js:vars.{nodeId}.error != null || (vars.{nodeId}.output != null && vars.{nodeId}.output.statusCode >= 400)",
+                "conditionExpression": "=js:vars.{nodeId}.error || vars.{nodeId}.output?.statusCode >= 400",
                 "label": "Error"
               }
             },
@@ -655,60 +1208,6 @@
       "inputDefinition": {
         "type": "object",
         "properties": {
-          "mode": {
-            "type": "string"
-          },
-          "method": {
-            "type": "string",
-            "minLength": 1,
-            "errorMessage": "Method is required"
-          },
-          "url": {
-            "type": "string",
-            "minLength": 1,
-            "pattern": "^(.*\\.\\S.*|.*\\$vars.*)$",
-            "errorMessage": {
-              "minLength": "URL is required",
-              "pattern": "URL must be a valid URL or variable expression"
-            }
-          },
-          "swaggerDefinition": {
-            "type": [
-              "object",
-              "null"
-            ]
-          },
-          "authenticationType": {
-            "type": "string"
-          },
-          "application": {
-            "type": "string"
-          },
-          "connection": {
-            "type": "string"
-          },
-          "headers": {
-            "type": "object"
-          },
-          "queryParams": {
-            "type": "object"
-          },
-          "body": {
-            "type": "object"
-          },
-          "contentType": {
-            "type": "string"
-          },
-          "timeout": {
-            "type": "string",
-            "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$",
-            "errorMessage": {
-              "pattern": "Timeout must be in ISO 8601 duration format (e.g., PT15M, PT1H, P1D)"
-            }
-          },
-          "retryCount": {
-            "type": "number"
-          },
           "branches": {
             "type": "array",
             "items": {
@@ -725,53 +1224,30 @@
                 }
               }
             }
+          },
+          "timeout": {
+            "type": "string",
+            "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$",
+            "errorMessage": {
+              "pattern": "Timeout must be in ISO 8601 duration format (e.g., PT15M, PT1H, P1D)"
+            }
+          },
+          "retryCount": {
+            "type": "number"
           }
-        },
-        "required": [
-          "method",
-          "url"
-        ]
+        }
       },
       "inputDefaults": {
-        "mode": "manual",
-        "method": "GET",
-        "url": "",
-        "swaggerDefinition": null,
-        "authenticationType": "manual",
-        "application": "",
-        "connection": "",
-        "headers": {},
-        "queryParams": {},
-        "body": {},
-        "contentType": "application/json",
+        "branches": [],
         "timeout": "PT15M",
-        "retryCount": 0,
-        "branches": []
+        "retryCount": 0
       },
       "outputDefinition": {
         "output": {
           "type": "object",
           "description": "HTTP response object",
           "source": "=response",
-          "var": "output",
-          "properties": {
-            "body": {
-              "type": "object",
-              "description": "Response body content",
-              "additionalProperties": true
-            },
-            "statusCode": {
-              "type": "number",
-              "description": "HTTP status code"
-            },
-            "headers": {
-              "type": "object",
-              "description": "Response headers",
-              "additionalProperties": {
-                "type": "string"
-              }
-            }
-          }
+          "var": "output"
         },
         "error": {
           "type": "object",
@@ -815,195 +1291,48 @@
         }
       },
       "form": {
-        "id": "http-properties-v2",
+        "id": "http-v2-properties",
         "title": "HTTP Request",
         "sections": [
           {
-            "id": "implementation",
-            "title": "Implementation",
+            "id": "http-config",
+            "title": "Configuration",
             "collapsible": true,
             "defaultExpanded": true,
             "fields": [
               {
-                "name": "inputs._httpToolbar",
+                "name": "inputs.dapHttpToolbar",
                 "type": "custom",
-                "component": "http-curl-buttons",
+                "component": "dap-http-toolbar",
                 "label": ""
               },
               {
-                "name": "inputs.mode",
-                "type": "select",
-                "label": "Mode",
-                "options": [
-                  {
-                    "label": "Manual",
-                    "value": "manual"
-                  },
-                  {
-                    "label": "API definition",
-                    "value": "apiDefinition"
-                  }
-                ]
-              },
-              {
-                "name": "inputs.swaggerDefinition",
-                "type": "custom",
-                "component": "http-swagger-section",
                 "label": "",
-                "rules": [
-                  {
-                    "id": "show-swagger",
-                    "conditions": [
-                      {
-                        "when": "inputs.mode",
-                        "is": "apiDefinition"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": 196648,
+                    "svgIconUrl": "icons/0dad78c9d04c245b126d8edb4c451aa8a0d395d34731cf5702441f6284c70ccc.svg",
+                    "displayName": "HTTP Request",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.22.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Use HTTP requests to interact with APIs via the selected connector and connection configuration.",
+                    "category": "",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"}",
+                    "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-uipath-http-HTTP-Request",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "tags": [
+                      ""
+                    ]
                   }
-                ]
-              },
-              {
-                "name": "inputs.method",
-                "type": "select",
-                "label": "HTTP method",
-                "options": [
-                  {
-                    "label": "GET",
-                    "value": "GET"
-                  },
-                  {
-                    "label": "POST",
-                    "value": "POST"
-                  },
-                  {
-                    "label": "PUT",
-                    "value": "PUT"
-                  },
-                  {
-                    "label": "PATCH",
-                    "value": "PATCH"
-                  },
-                  {
-                    "label": "DELETE",
-                    "value": "DELETE"
-                  }
-                ]
-              },
-              {
-                "name": "inputs.url",
-                "type": "custom",
-                "component": "http-url-field",
-                "label": "URL",
-                "componentProps": {
-                  "expressionValidationFields": [
-                    {
-                      "expectedType": "string"
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "id": "headers",
-            "title": "Headers",
-            "collapsible": true,
-            "defaultExpanded": false,
-            "fields": [
-              {
-                "name": "inputs.headers",
-                "type": "custom",
-                "component": "key-value-editor",
-                "label": "HTTP headers",
-                "componentProps": {
-                  "keyLabel": "Header name",
-                  "valueLabel": "Header value",
-                  "keyOptions": [
-                    "Accept",
-                    "Accept-Encoding",
-                    "Accept-Language",
-                    "Authorization",
-                    "Cache-Control",
-                    "Connection",
-                    "Content-Encoding",
-                    "Content-Length",
-                    "Content-Type",
-                    "Cookie",
-                    "Host",
-                    "If-Modified-Since",
-                    "If-None-Match",
-                    "Origin",
-                    "Referer",
-                    "User-Agent",
-                    "X-Requested-With",
-                    "X-Forwarded-For",
-                    "X-Api-Key"
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "id": "parameters",
-            "title": "Query parameters",
-            "collapsible": true,
-            "defaultExpanded": false,
-            "fields": [
-              {
-                "name": "inputs.queryParams",
-                "type": "custom",
-                "component": "key-value-editor",
-                "label": "Query parameters",
-                "componentProps": {
-                  "keyLabel": "Parameter name",
-                  "valueLabel": "Parameter value"
-                }
-              }
-            ]
-          },
-          {
-            "id": "body",
-            "title": "Body",
-            "collapsible": true,
-            "defaultExpanded": false,
-            "fields": [
-              {
-                "name": "inputs.contentType",
-                "type": "select",
-                "label": "Content type",
-                "options": [
-                  {
-                    "label": "application/json",
-                    "value": "application/json"
-                  },
-                  {
-                    "label": "application/xml",
-                    "value": "application/xml"
-                  },
-                  {
-                    "label": "text/plain",
-                    "value": "text/plain"
-                  },
-                  {
-                    "label": "application/x-www-form-urlencoded",
-                    "value": "application/x-www-form-urlencoded"
-                  }
-                ]
-              },
-              {
-                "name": "inputs.body",
-                "type": "custom",
-                "component": "code-editor",
-                "label": "Body",
-                "componentProps": {
-                  "language": "javascript",
-                  "mode": "expression",
-                  "expectedType": "any",
-                  "minHeight": 150,
-                  "placeholder": "{\n  \"key\": \"value\"\n}"
                 }
               }
             ]
@@ -1042,7 +1371,7 @@
                 "name": "inputs.timeout",
                 "type": "text",
                 "label": "Timeout",
-                "description": "ISO 8601 duration format (e.g., PT15M for 15 minutes, PT1H for 1 hour)"
+                "description": "ISO 8601 duration format (for example, PT15M for 15 minutes, PT1H for 1 hour)"
               },
               {
                 "name": "inputs.retryCount",
@@ -1052,11 +1381,6 @@
               }
             ]
           }
-        ]
-      },
-      "runtimeConstraints": {
-        "exclude": [
-          "api-function"
         ]
       }
     },
@@ -1302,7 +1626,25 @@
       }
     }
   ],
-  "bindings": [],
+  "bindings": [
+    {
+      "id": "bUipathuipathhttpConnection",
+      "name": "uipath-uipath-http connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "default": "ImplicitConnection",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bUipathuipathhttpFolderKey",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "FolderKey"
+    }
+  ],
   "variables": {
     "globals": [
       {
