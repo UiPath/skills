@@ -1,0 +1,48 @@
+task_id: skill-platform-licensing-users-usage-get-self
+description: >
+  Smoke test: agent uses the uipath-platform skill to read the logged-in
+  user's own consumption. Verifies the agent uses the no-argument form of
+  `uip platform users usage get` (own usage, works for any user) instead of
+  looking itself up and passing a user, which is the admin form. CLI auth
+  failure is expected in this offline environment.
+tags: [uipath-platform, smoke, licensing, users, mode:operate, lifecycle:discover]
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
+initial_prompt: |
+  How much of my own license allowance have I used this month? I'd like to
+  see the breakdown per service as well.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  # The self form is `users usage get` followed by flags only — no positional
+  # user. A line with a user argument after `get` does not satisfy this.
+  - type: run_command
+    description: "Agent read its own usage with `uip platform users usage get` and no user argument (.uip-cmdlog shim log)"
+    command: "grep -Eq '^ *uip platform users usage get( +--[a-z-]+(=[^ ]+| +[^- ][^ ]*)?)* *$' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent did not reach for the admin-only org table to answer a question about itself"
+    command: "test -f .uip-cmdlog && ! grep -Eq '^ *uip platform users usage list' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
