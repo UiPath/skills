@@ -169,10 +169,15 @@ uip or processes delete <process-key-guid> --yes --output json
 
 ## Step 4: Start Job
 
-Start execution from a process. The process key comes from `uip or processes list`.
+Start execution from a process. Pass the process name or its key from `uip or processes list`. A name is looked up inside `--folder-path` / `--folder-key`; without a folder, the name must exist in only one folder you can read, else the CLI rejects it and lists the folders.
+
+Job runs the package version the process is set to. `jobs start` has no version option. To run another version, first run `uip or processes update-version <process-key> --package-version <version> --output json`. That changes every later job, not only the next one.
 
 ```bash
 uip or jobs start <process-key> --folder-path "Production" --output json
+
+# By process name, inside the folder
+uip or jobs start "<PROCESS_NAME>" --folder-path "Production" --output json
 
 # With input arguments and wait
 uip or jobs start <process-key> --folder-path "Production" \
