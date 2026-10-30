@@ -1,18 +1,25 @@
 ---
 name: uipath-maestro-flow
-description: "TRIGGER for `.flow` / `.flow.ts` files and UiPath Flow / Maestro Flow / Maestro Automate requests: build, edit, run, debug, fix, or evaluate a flow. Author with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`): nodes, triggers, schedules, connectors, IXP document extraction (add or list IXP models), inline agents, HITL, chat/voice flows, bindings, brownfield edits, and the check/compile/validate loop. Operate: upload, publish, deploy, debug a real run, trigger a process, job status/traces, pause/resume/cancel/retry an instance. Diagnose: faulted runs, incidents, runtime variables, why validate passed but the run failed. Evaluate: eval sets, evaluators, simulations, eval runs. Case plans (`caseplan.case` / `caseplan.json`) → uipath-maestro-case; BPMN (`.bpmn`, `.bpmn.ts`) → uipath-maestro-bpmn. DO NOT TRIGGER for raw IXP labelling or prompt tuning outside a Flow → uipath-ixp; standalone agents → uipath-agents; C#/XAML → uipath-rpa."
+description: "UiPath Maestro Flow, UiPath Flow and Maestro Automate (`.flow` / `.flow.ts` files): build, edit, run, debug, fix, or evaluate a flow. Author with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`): nodes, triggers, schedules, connectors, IXP document extraction (add or list IXP models), inline agents, HITL, chat/voice flows, bindings, brownfield edits, and the check/compile/validate loop. Operate: upload, publish, deploy, debug a real run, trigger a process, job status/traces, pause/resume/cancel/retry an instance. Diagnose: faulted runs, incidents, runtime variables, why validate passed but the run failed. Evaluate: eval sets, evaluators, simulations, eval runs. Case plans (`caseplan.case` / `caseplan.json`)→uipath-maestro-case; BPMN (`.bpmn`, `.bpmn.ts`)→uipath-maestro-bpmn. For raw IXP labelling or prompt tuning outside a Flow→uipath-ixp; standalone agents→uipath-agents; C#/XAML→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
 
 # UiPath Flow — TypeScript Builder SDK
 
-UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/maestro-builder-sdk` package.
-The SDK provides a builder API to construct a Flow graph, allowing developers to define inputs, outputs, steps, and control flow in a type-safe manner.
-The graph is "compiled" down to a Flow JSON, which is the artifact used for executing the Flow on the UiPath platform.
-An existing Flow JSON can also be decompiled back into TypeScript for editing.
+UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/maestro-builder-sdk` package. The SDK provides a builder API to construct a Flow graph, allowing developers to define inputs, outputs, steps, and control flow in a type-safe manner. The graph is "compiled" down to a Flow JSON, which is the artifact used for executing the Flow on the UiPath platform. An existing Flow JSON can also be decompiled back into TypeScript for editing.
 
-**Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It holds the critical rules this guide only summarizes, the scope gate, and the completion report the final response must follow.
+## Critical Rules
+
+1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It holds the separately numbered critical rules this list summarizes, the scope gate, and the completion report the final response must follow.
+2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types): the signature, a worked example and the node's hazards live there.
+3. Choose each node from a registry search, never a brand name.
+4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), map it to the most defensible stated value and list it under Open questions as **[REQUIRED]**.
+5. Bind every declared output on every path. `check` misses a missing one, and the run returns `undefined`.
+6. Handle an error only when the request says what should happen.
+7. Never re-run `flow debug` to look again at a failed run.
+8. Simulate every side-effecting component before running an eval set, and never `solution upload` as part of an eval workflow without asking.
+9. Run the final pass with the loop [Lifecycle](#lifecycle) picks for this workspace, after the last edit.
 
 ## Project layout
 
@@ -163,7 +170,7 @@ The quick start above shows the shape — `flow(id)`, declarations, nodes, `.ret
 
 ## Supported node types
 
-The table is the authoritative router. Before writing a node, read its `Reference`: the signature, a worked example and the node's hazards live there, not here. `Example` names the one complete flow to copy from; paths under `examples/` resolve inside this skill folder.
+The table is the authoritative router; read a node's `Reference` before writing it ([Critical Rule 2](#critical-rules)). `Example` names the one complete flow to copy from; paths under `examples/` resolve inside this skill folder.
 
 | Node or surface | Emitted node type | Builder | Reference | Example |
 |---|---|---|---|---|
@@ -224,14 +231,7 @@ The table is the authoritative router. Before writing a node, read its `Referenc
 
 ## Authoring a flow
 
-Choose each node from a registry search, never a brand name; ask when the
-request leaves a finite decision open, including an input value, range, or
-combination no stated rule covers (never fold it into a stated value; when
-the request says no one will answer (headless, CI), map it to the most
-defensible stated value and list it under Open questions as
-**[REQUIRED]**); bind every declared output on every
-path (`check` misses a missing one, and the run returns `undefined`); handle an
-error only when the request says what should happen. The rest is in
+[Critical Rules](#critical-rules) govern node choice, open decisions, outputs and errors. The rest is in
 **[`references/author.md`](references/author.md)**.
 A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
@@ -248,23 +248,19 @@ validation step. Read
 ## Diagnosing a failed run
 
 Triage in order — the debug response you already have, then incidents, runtime
-variables, the deployed artifact, and traces last. Never re-run `flow debug` to
-look again. The builder removes several classic `.flow` defects and leaves
+variables, the deployed artifact, and traces last. The builder removes several classic `.flow` defects and leaves
 others, including an expression that is really a literal. Read
 **[`references/diagnose.md`](references/diagnose.md)**.
 
 ## Evaluating a flow
 
 An inline agent does not create evaluators, eval sets, data points or
-simulations — the Flow eval CLI manages them as project files. Simulate every
-side-effecting component before running a set, and never `solution upload` as
-part of an eval workflow without asking. Read
+simulations — the Flow eval CLI manages them as project files. Read
 **[`references/evaluate.md`](references/evaluate.md)**.
 
 ## Final evidence
 
-The final pass must use the loop appropriate to the packaging mode and run after
-the last edit. Product-resource truth is live evidence: confirm plausible ids,
+Product-resource truth is live evidence: confirm plausible ids,
 argument names, scenario-named optional inputs, and warnings against the tenant.
 Static diagnostics own all mechanically checkable structure; fix their cause
 rather than copying rules back into this router.
