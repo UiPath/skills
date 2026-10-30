@@ -1,10 +1,17 @@
+---
+paths:
+  - "skills/uipath-genome-builder/**"
+  - "skill-flavors/*/uipath-genome-builder/**"
+  - "tests/tasks/uipath-genome-builder/**"
+---
+
 # uipath-genome-builder — Subject Homes
 
-Governs editing this skill; never read in a run. The skill builds automations from genomes with two verbs, on the pattern of a command-line tool: `SKILL.md` routes and holds the rules every verb shares; `references/build-guide.md` holds `build`'s own rules and read plan, and `references/execution-guide.md` its procedure. `uipath-planner` writes and changes every genome; this skill never does. Every subject is stated in full in exactly one file; every other mention is a one-line pointer to that file and section.
+Governs editing `skills/uipath-genome-builder/`; it lives here, not in the skill folder, so it never ships and never loads in a run. Paths below are relative to the skill folder. The skill builds automations from genomes with two verbs, on the pattern of a command-line tool: `SKILL.md` routes and holds the rules every verb shares; `references/build-guide.md` holds `build`'s own rules and read plan, and `references/execution-guide.md` its procedure. `uipath-planner` writes and changes every genome; this skill never does. Every subject is stated in full in exactly one file; every other mention is a one-line pointer to that file and section.
 
 ## Genome core — shared with `uipath-planner`, canonical there
 
-`references/genome-format-guide.md`, `extracted-genome-guide.md`, `transactional-shape-guide.md`, `skill-mapping-guide.md`, `uipath-source-guide.md`, `parts-guide.md`, `source-frameworks-guide.md`, `assets/templates/*-genome-template.md` and `scripts/check-genome.mjs` are copies of `uipath-planner`'s genome core. **Never edit them here**: edit the planner's copy, then run `node scripts/check-genome-core.mjs --fix` from the repository root. The rules for core files (links, verb names) are in `skills/uipath-planner/CLAUDE.md` § Genome core.
+`references/genome-format-guide.md`, `extracted-genome-guide.md`, `transactional-shape-guide.md`, `skill-mapping-guide.md`, `uipath-source-guide.md`, `parts-guide.md`, `source-frameworks-guide.md`, `assets/templates/*-genome-template.md` and `scripts/check-genome.mjs` are copies of `uipath-planner`'s genome core. **Never edit them here**: edit the planner's copy, then run `node scripts/check-genome-core.mjs --fix` from the repository root. The rules for core files (links, verb names) are in [uipath-planner.md](uipath-planner.md) § Genome core.
 
 ## Home per subject
 
@@ -36,4 +43,4 @@ Governs editing this skill; never read in a run. The skill builds automations fr
 
 1. **A build-side rule lives in this skill's guides**, a writing rule in the core or in `uipath-planner`. A guide here names a `uipath-planner` guide by skill and file name, never by a link.
 2. **Scripts are Node** (`node`, built-ins only, Node >= 20); repository tests and graders may stay Python.
-3. The remaining editing rules for the genome guides — generic first, procedures in the verb that runs them, catalogs read by section, owners named not restated — are `skills/uipath-planner/CLAUDE.md` § Rules for the genome guides; they hold here unchanged.
+3. The remaining editing rules for the genome guides — generic first, procedures in the verb that runs them, catalogs read by section, owners named not restated — are [uipath-planner.md](uipath-planner.md) § Rules for the genome guides; they hold here unchanged.

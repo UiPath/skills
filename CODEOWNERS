@@ -136,7 +136,8 @@
 /skills/uipath-planner/assets/templates/process-genome-template.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/assets/examples/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/scripts/check-genome.mjs @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
-/skills/uipath-planner/CLAUDE.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria @roberts-cliff
+/.claude/rules/uipath-planner.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria @roberts-cliff
+/.claude/rules/uipath-genome-builder.md @danmunteanu1 @vlad-coteanu-uipath
 /tests/tasks/uipath-planner/author_component/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/extract_component/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/extract_solution/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria

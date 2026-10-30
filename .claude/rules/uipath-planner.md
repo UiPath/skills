@@ -1,6 +1,13 @@
+---
+paths:
+  - "skills/uipath-planner/**"
+  - "skill-flavors/*/uipath-planner/**"
+  - "tests/tasks/uipath-planner/**"
+---
+
 # uipath-planner — Verbs and Subject Homes
 
-Governs editing this skill; never read in a run. The skill is one entry point with seven verbs, on the pattern of a command-line tool (`uipath-genome-builder` carries `build` on the same pattern): `SKILL.md` routes, each verb's guide holds its procedure, its own rules and its read plan. Every subject is stated in full in exactly one file; every other mention is a one-line pointer to that file and section. Edit the home; leave the pointers. A change touching more than the home plus its pointers is putting content in the wrong file.
+Governs editing `skills/uipath-planner/`; it lives here, not in the skill folder, so it never ships and never loads in a run. Paths below are relative to the skill folder. The skill is one entry point with seven verbs, on the pattern of a command-line tool (`uipath-genome-builder` carries `build` on the same pattern): `SKILL.md` routes, each verb's guide holds its procedure, its own rules and its read plan. Every subject is stated in full in exactly one file; every other mention is a one-line pointer to that file and section. Edit the home; leave the pointers. A change touching more than the home plus its pointers is putting content in the wrong file.
 
 ## Verbs and their homes
 

@@ -4,7 +4,7 @@
 // uipath-planner writes genomes (author, extract, edit) and uipath-genome-builder builds them (build). Each
 // skill is installed on its own and may not read the other's files, so both ship the genome core: the format
 // guides, the shared source-frameworks guide, the genome templates and the checker. The canonical copies live
-// in skills/uipath-planner/ (its CLAUDE.md § Genome core); this script names every copy that is missing or
+// in skills/uipath-planner/ (.claude/rules/uipath-planner.md § Genome core); this script names every copy that is missing or
 // differs, and --fix copies the canonical files over the builder's.
 //
 // A core file links only to other core files or to SKILL.md (both skills have one); a guide outside the core
