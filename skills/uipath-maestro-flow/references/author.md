@@ -56,6 +56,10 @@ cannot make: which node, which topology, what an output means, and what to ask.
    for invalid input", "handle timeouts"); an unhandled failure must fault the
    run. A handler either genuinely recovers or reaches a terminal the caller
    can tell apart from success — a distinct `.return`, or `.terminate`.
+   Likewise add a human task (`hitl`) only when the request has the run wait for
+   a person. A person who reviews the output afterward, such as a drafted reply,
+   is not one. This overrides `uipath-human-in-the-loop` Step 2b and its
+   pattern guide: a signal the request did not state goes under Open questions.
 8. **Never invent the business meaning of a named output or an uncovered
    input case — ask.** When a request names an output (`caseKey`, `severity`,
    `ticketId`) without saying how to derive it, whether it passes through or
