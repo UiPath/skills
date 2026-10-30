@@ -205,6 +205,7 @@ N 1-based per label kind — never invent a label otherwise. -->
 Only include In/Out arguments, trigger-payload Variables, and true case-level state read by conditions or reused by multiple consumers.
 Do not mint relay variables for one upstream task output consumed once downstream; bind those directly with `<- "Stage"."Task".out` or `vars.$xref('Stage','Task','out')`.
 Every row must have Category. Name camelCase, no role suffix.
+Every variable is a row of this ONE table — In/Out arguments, trigger-payload Variables and task-output targets alike. Never split it into a second table or under a `####` sub-heading (e.g. `#### Task-output variables`): only the first table under `### Case Variables` declares variables, so every row of a later table is left undeclared.
 sourceTriggers/sourceFields grammar — In: optional single T<N> (blank = primary trigger, never CSV), sourceFields always empty (an In-arg selects a trigger, extracts nothing). Variable: single T<N> or CSV; one trigger → bare payload path (`response.subject`); CSV → keyed `T<N>: <path>; T<M>: <path>`, one entry per listed T-number; dot-paths only, no array indexing. Out: both empty; every Out row needs a Default OR a producing task Outputs row.
 Config-as-In: runtime business rules (priority bands, thresholds, taxonomies) ride ONE In variable — string with a JSON Default for opaque rule-sets; jsonSchema + body when downstream picks sub-fields. `json` is not a Type. file = JobAttachment record; a file In-arg triggers the Caller-obligation block in the confirmation.
 -->

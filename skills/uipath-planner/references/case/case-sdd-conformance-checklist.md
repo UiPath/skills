@@ -31,7 +31,9 @@ case-design-layers-guide.md's; the cells own the shape.)
      `## Case Trigger`, `## Stages`, `## Business Rules`, `## Task Plan`, `## Resource Resolution`,
      `## Acceptance Scenarios`.
   4. The Case Variables header is literally
-     `| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |`.
+     `| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |`, and that
+     table is the section's only table: every variable, task-output targets included, is a row of it —
+     no second table and no `####` sub-heading split. Only the first table declares variables.
   5. Every `### Stage <N>:` / `### Secondary Stage:` block carries `**Type:** Stage`, `**Design Rationale:**`,
      `#### Stage Entry Conditions`, `#### Stage Exit Conditions`, `#### Tasks`; a secondary stage carries an
      explicit `**Interrupting:** Yes` or `No`, and `Yes` whenever one of its exit rows is `return-to-origin`.
