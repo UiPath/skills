@@ -68,6 +68,43 @@ because the new-node authoring contract differs. Migration requires explicit
 confirmation — see
 [references/structural-bpmn.md](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
 
+#### Keep the user's diagram
+
+A `.bpmn` that already had a `bpmndi:BPMNDiagram` when this task started
+carries the user's layout: pools, lanes, colors, box sizes, placement and arrow
+routing. `uip maestro bpmn format` deletes that diagram and draws a new one —
+it drops every pool and lane shape, re-targets the plane from the collaboration
+to the process, strips `bioc:*`/`color:*` colors and resets every size — and
+`validate` still passes afterwards, so nothing warns you. On such a file:
+
+1. Before the first write, copy the file outside the project folder, e.g.
+   `cp <file.bpmn> "$(mktemp -d)/before.bpmn"`, and keep that path.
+2. Do NOT run `uip maestro bpmn format` on it, unless the user explicitly asks
+   to re-layout or tidy the diagram.
+3. Leave every existing `BPMNShape`, `BPMNEdge` and `BPMNLabel` exactly as it
+   is — bounds, waypoints, colors, `isHorizontal` — and never change the
+   plane's `bpmnElement`.
+4. For each node you add, add one `BPMNShape` sized like the existing nodes of
+   the same kind. Put the node in the lane of the node it follows (add its
+   `bpmn:flowNodeRef` to that lane) and draw it inside that lane's bounds, in
+   free space that overlaps no other shape. If there is no room, shift every
+   shape, label and waypoint right of the insertion point by one common
+   distance and widen the pool and its lanes by that distance; never move
+   shapes one by one.
+5. For each flow you add or re-target, write only that flow's `BPMNEdge`, with
+   orthogonal waypoints from the source's edge to the target's edge.
+6. For each node or flow you delete, delete its shape or edge, and remove the
+   node's `bpmn:flowNodeRef` from its lane.
+7. After the last write, and before `validate`, run
+   [scripts/check-diagram-preserved.py](scripts/check-diagram-preserved.py):
+   `python3 "<SKILL_DIR>/scripts/check-diagram-preserved.py" "<SNAPSHOT_PATH>" <file.bpmn> --removed <REMOVED_IDS>`,
+   where `<REMOVED_IDS>` is a comma-separated list of the ids you deleted (omit
+   `--removed` when you deleted nothing). If it reports losses, restore the lost diagram entries from the snapshot and
+   run it again. Do not finish while it fails.
+
+A file this task created — an `init` scaffold or a greenfield draft — has no
+user layout yet; run `format` as rule 5 says.
+
 For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 `uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
 `uipath-maestro-case`.
@@ -99,7 +136,9 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
    the last write to the `.bpmn` and before `validate` or `refresh`, both of
-   which error on a node with no shape.
+   which error on a node with no shape. Exception: a file that already had a
+   diagram when the task started — `format` destroys the user's layout there;
+   follow [Keep the user's diagram](#keep-the-users-diagram) instead.
 6. **Declare the node type as a `<uipath:type>` child.** Every
    `uipath:activity` / `uipath:event` / `uipath:mapping` sits inside
    `<bpmn:extensionElements>` and carries
@@ -678,7 +717,11 @@ Draft mode only.
 
    It overwrites the file's `bpmndi:BPMNDiagram` in place, so the canvas
    renders the process arranged instead of stacked at the origin. Every
-   deliverable gets this, source-only drafts included. It is also a hard
+   deliverable this task created gets this, source-only drafts included. A
+   brownfield file that already had a diagram does NOT: `format` would delete
+   the user's pools, lanes, colors and layout — follow
+   [Keep the user's diagram](#keep-the-users-diagram) and run its check
+   instead. It is also a hard
    precondition for the next two steps, not a cosmetic pass: a node with no
    `BPMNShape` or a flow with no `BPMNEdge` fails `validate` with
    `MISSING_DI_SHAPE` / `MISSING_DI_EDGE`, no diagram at all fails it with

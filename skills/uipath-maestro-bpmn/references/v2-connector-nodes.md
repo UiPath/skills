@@ -251,6 +251,9 @@ uip maestro bpmn refresh <project-path>
 uip maestro bpmn validate <file.bpmn>
 ```
 
+Skip `format` on a file that already had a diagram; see
+[Keep the user's diagram](../SKILL.md#keep-the-users-diagram).
+
 `refresh` writes what Studio Web writes on save: the Connection resource for
 every connector node, an `EventTrigger` resource and its `Property` resource
 for each trigger start (without them a deployed process never gets its

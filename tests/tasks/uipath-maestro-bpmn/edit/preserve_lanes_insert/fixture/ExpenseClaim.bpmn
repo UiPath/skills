@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="ExpenseClaim_defs" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="ExpenseClaim_collab">
+    <bpmn:participant id="Participant_Claims" name="Expense Claims" processRef="ExpenseClaim" />
+  </bpmn:collaboration>
+  <bpmn:process id="ExpenseClaim" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Claims">
+      <bpmn:lane id="Lane_Employee" name="Employee">
+        <bpmn:flowNodeRef>Start_Claim</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Rework</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Automation" name="Automation">
+        <bpmn:flowNodeRef>Task_CheckPolicy</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Policy</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Manager" name="Manager">
+        <bpmn:flowNodeRef>Task_Review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Approved</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Finance" name="Finance">
+        <bpmn:flowNodeRef>Task_Pay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Archive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Paid</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Claim" name="Expense incurred">
+      <bpmn:outgoing>Flow_StartSubmit</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_Submit" name="Submit expense claim">
+      <bpmn:incoming>Flow_StartSubmit</bpmn:incoming>
+      <bpmn:outgoing>Flow_SubmitCheck</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_CheckPolicy" name="Check claim against policy">
+      <bpmn:incoming>Flow_SubmitCheck</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckGw</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Policy" name="Within policy?">
+      <bpmn:incoming>Flow_CheckGw</bpmn:incoming>
+      <bpmn:outgoing>Flow_PolicyYes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_PolicyNo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_Review" name="Manager review">
+      <bpmn:incoming>Flow_PolicyNo</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewGw</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_Approved" name="Approved?">
+      <bpmn:incoming>Flow_ReviewGw</bpmn:incoming>
+      <bpmn:outgoing>Flow_ApprovedYes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ApprovedNo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_Rework" name="Notify employee of rejection">
+      <bpmn:incoming>Flow_ApprovedNo</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReworkEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Rejected" name="Claim rejected">
+      <bpmn:incoming>Flow_ReworkEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Task_Pay" name="Pay claim">
+      <bpmn:incoming>Flow_PolicyYes</bpmn:incoming>
+      <bpmn:incoming>Flow_ApprovedYes</bpmn:incoming>
+      <bpmn:outgoing>Flow_PayArchive</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Archive" name="Archive receipts">
+      <bpmn:incoming>Flow_PayArchive</bpmn:incoming>
+      <bpmn:outgoing>Flow_ArchiveEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Paid" name="Claim paid">
+      <bpmn:incoming>Flow_ArchiveEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartSubmit" sourceRef="Start_Claim" targetRef="Task_Submit" />
+    <bpmn:sequenceFlow id="Flow_SubmitCheck" sourceRef="Task_Submit" targetRef="Task_CheckPolicy" />
+    <bpmn:sequenceFlow id="Flow_CheckGw" sourceRef="Task_CheckPolicy" targetRef="Gw_Policy" />
+    <bpmn:sequenceFlow id="Flow_PolicyYes" name="Yes" sourceRef="Gw_Policy" targetRef="Task_Pay">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_PolicyNo" name="No" sourceRef="Gw_Policy" targetRef="Task_Review">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ReviewGw" sourceRef="Task_Review" targetRef="Gw_Approved" />
+    <bpmn:sequenceFlow id="Flow_ApprovedYes" name="Yes" sourceRef="Gw_Approved" targetRef="Task_Pay">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ApprovedNo" name="No" sourceRef="Gw_Approved" targetRef="Task_Rework">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ReworkEnd" sourceRef="Task_Rework" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="Flow_PayArchive" sourceRef="Task_Pay" targetRef="Task_Archive" />
+    <bpmn:sequenceFlow id="Flow_ArchiveEnd" sourceRef="Task_Archive" targetRef="End_Paid" />
+    <bpmn:textAnnotation id="Annotation_Policy">
+      <bpmn:text>Policy limits come from the travel and expense handbook</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_Policy" sourceRef="Task_CheckPolicy" targetRef="Annotation_Policy" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="ExpenseClaim_di">
+    <bpmndi:BPMNPlane id="ExpenseClaim_plane" bpmnElement="ExpenseClaim_collab">
+      <bpmndi:BPMNShape id="Participant_Claims_di" bpmnElement="Participant_Claims" isHorizontal="true">
+        <dc:Bounds x="40" y="40" width="1400" height="720" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Employee_di" bpmnElement="Lane_Employee" isHorizontal="true">
+        <dc:Bounds x="70" y="40" width="1370" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Automation_di" bpmnElement="Lane_Automation" isHorizontal="true">
+        <dc:Bounds x="70" y="220" width="1370" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Manager_di" bpmnElement="Lane_Manager" isHorizontal="true">
+        <dc:Bounds x="70" y="400" width="1370" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Finance_di" bpmnElement="Lane_Finance" isHorizontal="true">
+        <dc:Bounds x="70" y="580" width="1370" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Claim_di" bpmnElement="Start_Claim">
+        <dc:Bounds x="132" y="112" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="106" y="155" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Submit_di" bpmnElement="Task_Submit" bioc:stroke="#2B5D8C" bioc:fill="#E8F1FB" color:background-color="#E8F1FB" color:border-color="#2B5D8C">
+        <dc:Bounds x="220" y="90" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CheckPolicy_di" bpmnElement="Task_CheckPolicy" bioc:stroke="#6B6A64" bioc:fill="#EFEEEA" color:background-color="#EFEEEA" color:border-color="#6B6A64">
+        <dc:Bounds x="400" y="270" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Policy_di" bpmnElement="Gw_Policy" isMarkerVisible="true">
+        <dc:Bounds x="585" y="285" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="574" y="261" width="72" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Review_di" bpmnElement="Task_Review" bioc:stroke="#9A5B00" bioc:fill="#FFF4E5" color:background-color="#FFF4E5" color:border-color="#9A5B00">
+        <dc:Bounds x="700" y="450" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Approved_di" bpmnElement="Gw_Approved" isMarkerVisible="true">
+        <dc:Bounds x="885" y="465" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Rework_di" bpmnElement="Task_Rework">
+        <dc:Bounds x="1000" y="90" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Rejected_di" bpmnElement="End_Rejected">
+        <dc:Bounds x="1192" y="112" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Pay_di" bpmnElement="Task_Pay" bioc:stroke="#2E7D32" bioc:fill="#E8F5E9" color:background-color="#E8F5E9" color:border-color="#2E7D32">
+        <dc:Bounds x="1000" y="630" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Archive_di" bpmnElement="Task_Archive">
+        <dc:Bounds x="1170" y="630" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Paid_di" bpmnElement="End_Paid">
+        <dc:Bounds x="1352" y="652" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Annotation_Policy_di" bpmnElement="Annotation_Policy">
+        <dc:Bounds x="400" y="232" width="220" height="30" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_StartSubmit_di" bpmnElement="Flow_StartSubmit">
+        <di:waypoint x="168" y="130" />
+        <di:waypoint x="220" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SubmitCheck_di" bpmnElement="Flow_SubmitCheck">
+        <di:waypoint x="340" y="130" />
+        <di:waypoint x="370" y="130" />
+        <di:waypoint x="370" y="310" />
+        <di:waypoint x="400" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckGw_di" bpmnElement="Flow_CheckGw">
+        <di:waypoint x="520" y="310" />
+        <di:waypoint x="585" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PolicyYes_di" bpmnElement="Flow_PolicyYes">
+        <di:waypoint x="635" y="310" />
+        <di:waypoint x="960" y="310" />
+        <di:waypoint x="960" y="650" />
+        <di:waypoint x="1000" y="650" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="780" y="292" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PolicyNo_di" bpmnElement="Flow_PolicyNo">
+        <di:waypoint x="610" y="335" />
+        <di:waypoint x="610" y="490" />
+        <di:waypoint x="700" y="490" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="618" y="410" width="16" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReviewGw_di" bpmnElement="Flow_ReviewGw">
+        <di:waypoint x="820" y="490" />
+        <di:waypoint x="885" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ApprovedYes_di" bpmnElement="Flow_ApprovedYes">
+        <di:waypoint x="910" y="515" />
+        <di:waypoint x="910" y="690" />
+        <di:waypoint x="1000" y="690" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ApprovedNo_di" bpmnElement="Flow_ApprovedNo">
+        <di:waypoint x="910" y="465" />
+        <di:waypoint x="910" y="130" />
+        <di:waypoint x="1000" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReworkEnd_di" bpmnElement="Flow_ReworkEnd">
+        <di:waypoint x="1120" y="130" />
+        <di:waypoint x="1192" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PayArchive_di" bpmnElement="Flow_PayArchive">
+        <di:waypoint x="1120" y="670" />
+        <di:waypoint x="1170" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ArchiveEnd_di" bpmnElement="Flow_ArchiveEnd">
+        <di:waypoint x="1290" y="670" />
+        <di:waypoint x="1352" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_Policy_di" bpmnElement="Association_Policy">
+        <di:waypoint x="460" y="270" />
+        <di:waypoint x="460" y="262" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

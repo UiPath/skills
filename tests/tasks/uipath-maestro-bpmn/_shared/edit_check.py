@@ -475,3 +475,93 @@ def flow_node_ids(root: ET.Element) -> set[str]:
 
 def elements_local(root: ET.Element, local_name: str) -> list[ET.Element]:
     return [el for el in root.iter() if local(el.tag) == local_name]
+
+
+# --- Diagram (bpmndi) preservation ------------------------------------------------
+# The canvas renders from the diagram, so a user's pools, lanes, colors, box sizes and
+# placement live there. Regenerating the diagram (`uip maestro bpmn format` on an
+# existing file) drops every one of them while the model still validates.
+
+_CONTAINER_KINDS = frozenset({"participant", "lane"})
+_ARTIFACT_KINDS = frozenset({"textAnnotation", "group"})
+
+
+def _kind_by_id(root: ET.Element) -> dict[str, str]:
+    return {el.attrib["id"]: local(el.tag) for el in root.iter() if el.attrib.get("id")}
+
+
+def _shapes(root: ET.Element) -> dict[str, ET.Element]:
+    return {s.attrib.get("bpmnElement", ""): s for s in root.iter() if local(s.tag) == "BPMNShape"}
+
+
+def _bounds(shape: ET.Element) -> tuple[float, float, float, float]:
+    b = next(c for c in shape if local(c.tag) == "Bounds")
+    return tuple(float(b.attrib[k]) for k in ("x", "y", "width", "height"))
+
+
+def _style(shape: ET.Element) -> tuple:
+    """Color attributes only (bioc:fill, color:background-color, ...), namespace-qualified."""
+    return tuple(sorted((k, v) for k, v in shape.attrib.items() if "color" in k))
+
+
+def _plane_target(root: ET.Element) -> str | None:
+    plane = next((e for e in root.iter() if local(e.tag) == "BPMNPlane"), None)
+    return None if plane is None else plane.attrib.get("bpmnElement")
+
+
+def assert_diagram_preserved(original: ET.Element, edited: ET.Element, removed: frozenset[str] = frozenset()) -> None:
+    """The diagram the user arranged survives the edit.
+
+    - The plane still targets the same root (collaboration stays collaboration).
+    - Every pool/lane keeps its shape, and every lane keeps the nodes it held.
+    - Annotations and groups survive in the model and on the canvas.
+    - Every surviving shape keeps its colors; every surviving node shape its size.
+    - Surviving node shapes either stay put or all move by ONE common offset (making
+      room for an insertion); an independent re-layout of everything fails.
+
+    ``removed`` lists element ids the edit was asked to delete.
+    """
+    if _plane_target(edited) != _plane_target(original):
+        fail(f"diagram plane re-targeted from {_plane_target(original)!r} to {_plane_target(edited)!r}")
+
+    kinds = _kind_by_id(original)
+    before, after = _shapes(original), _shapes(edited)
+
+    for el_id, kind in kinds.items():
+        if kind in _CONTAINER_KINDS and el_id in before and el_id not in after:
+            fail(f"{kind} {el_id!r} lost its diagram shape")
+        if kind in _ARTIFACT_KINDS and el_id not in removed:
+            if by_id(edited, el_id) is None:
+                fail(f"{kind} {el_id!r} was deleted from the model")
+            if el_id in before and el_id not in after:
+                fail(f"{kind} {el_id!r} lost its diagram shape")
+
+    edited_lanes = {
+        lane.attrib.get("id"): {(r.text or "").strip() for r in lane if local(r.tag) == "flowNodeRef"}
+        for lane in elements_local(edited, "lane")
+    }
+    for lane in elements_local(original, "lane"):
+        lane_id = lane.attrib.get("id")
+        if lane_id not in edited_lanes:
+            fail(f"lane {lane_id!r} was deleted from the model")
+        for ref in lane:
+            node = (ref.text or "").strip()
+            if local(ref.tag) == "flowNodeRef" and node not in removed and node not in edited_lanes[lane_id]:
+                fail(f"{node!r} dropped from lane {lane_id!r}")
+
+    offsets = set()
+    for el_id, shape in before.items():
+        if el_id in removed or el_id not in after:
+            continue
+        if _style(shape) != _style(after[el_id]):
+            fail(f"{el_id!r} lost or changed its colors")
+        if kinds.get(el_id) in _CONTAINER_KINDS:
+            continue  # pools and lanes may grow to fit an insertion
+        x0, y0, w0, h0 = _bounds(shape)
+        x1, y1, w1, h1 = _bounds(after[el_id])
+        if (round(w0), round(h0)) != (round(w1), round(h1)):
+            fail(f"{el_id!r} resized from {w0:g}x{h0:g} to {w1:g}x{h1:g}")
+        if (round(x0), round(y0)) != (round(x1), round(y1)):
+            offsets.add((round(x1 - x0), round(y1 - y0)))
+    if len(offsets) > 1:
+        fail(f"existing shapes were re-laid out independently ({len(offsets)} different moves)")

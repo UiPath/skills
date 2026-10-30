@@ -1,0 +1,53 @@
+task_id: skill-bpmn-edit-preserve-lanes-conditions
+description: >
+  Brownfield edit on a process the user laid out by hand (pool, four lanes,
+  colored tasks, an annotation, routed edges) whose gateway flows lack
+  conditions. Fixing the errors must not cost the user their diagram:
+  regenerating it with `uip maestro bpmn format` drops the pool and lanes,
+  re-targets the plane, strips colors and resizes every task while the model
+  still validates. Grades the conditions plus diagram preservation.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 15
+  max_turns: 60
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  `ExpenseClaim.bpmn` in the working directory has validation errors. Fix all
+  errors by adding dummy conditions (true/false) for now.
+
+  Work locally only: do not upload, publish, deploy, debug or run anything, and
+  do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "The edited BPMN file is still present"
+    path: "ExpenseClaim.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The edited process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every gateway branch has a condition, and the pool, lanes, colors, sizes and placement survived"
+    command: "python3 $REFERENCE_DIR/_shared/check_preserve_lanes_conditions.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
