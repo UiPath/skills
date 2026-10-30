@@ -449,19 +449,22 @@ def check_documents(calls: list[dict], seed: dict) -> str:
     for label, (digest, type_ids) in expected.items():
         if not digest:
             raise CheckFailed(f"seed.json has no digest for the {label}; seed_publish.py did not render it")
-        matches = [u for u in uploads if (u.get("captured") or {}).get("sha256") == digest]
-        if len(matches) != 1:
-            raise CheckFailed(f"{label}: expected one upload of the staged file's exact bytes, got {len(matches)}")
-        upload = matches[0]
+        # A rejected attempt (e.g. a 403 while a slow create is still saving) uploads
+        # nothing, so only successful uploads count, the same as for creates.
+        attempts = [u for u in uploads if (u.get("captured") or {}).get("sha256") == digest]
+        landed = [u for u in attempts if u.get("result") == "Success"]
+        if len(landed) != 1:
+            raise CheckFailed(f"{label}: expected one successful upload of the staged file's exact bytes, "
+                              f"got {len(landed)} (of {len(attempts)} attempt(s))")
+        upload = landed[0]
         if positional_after(upload, "create") != process_id:
             raise CheckFailed(f"{label} attached to {positional_after(upload, 'create')!r}, "
                               f"not the created process {process_id}")
         if flag(upload, "--document-type-id") not in type_ids:
             raise CheckFailed(f"{label} document type id {flag(upload, '--document-type-id')!r} not in {sorted(type_ids)}")
-        if upload.get("result") != "Success":
-            raise CheckFailed(f"{label} upload did not succeed on the tenant (result {upload.get('result')!r})")
-    if len(uploads) != len(expected):
-        raise CheckFailed(f"expected {len(expected)} document uploads, got {len(uploads)}")
+    successful = [u for u in uploads if u.get("result") == "Success"]
+    if len(successful) != len(expected):
+        raise CheckFailed(f"expected {len(expected)} successful document uploads, got {len(successful)}")
     return f"{', '.join(expected)} uploaded once each, byte-identical, with the right type ids"
 
 
