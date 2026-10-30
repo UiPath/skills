@@ -62,7 +62,8 @@ Private workflows compile into the package and stay invocable from the library's
 
 ### Activity identity
 
-- Activity name and class = workflow file name (`SendInvoiceNotification.xaml` → activity `SendInvoiceNotification`)
+- Activity name and class = workflow file name (`SendInvoiceNotification.xaml` → activity `SendInvoiceNotification`); a coded workflow's = its class name plus `Activity` (class `CopyFolder` → activity `CopyFolderActivity`), its properties named as [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) states
+- Argument defaults reach consumers: a XAML workflow's root-element default ([xaml/xaml-editing-catalog.md § Setting Default Values for Arguments](xaml/xaml-editing-catalog.md)) and a coded workflow's parameter default compile into the package and apply when a consumer leaves the argument unset. `packages inspect` prints no defaults, so each argument's description states its default
 - Activity namespace = library name with dots and hyphens sanitized to underscores (`Company.Email.Utilities` → namespace `Company_Email_Utilities`); the package ID and assembly keep the dotted name. Read the real namespace from `uip rpa packages inspect` on the packed `.nupkg` — never derive it
 - Property tooltip = the argument's description annotation in XAML: `sap2010:Annotation.AnnotationText` on the `x:Property`
 
@@ -143,7 +144,7 @@ Each public workflow is an API surface. Apply every rule:
 - **Never swallow errors**: no empty `Catch` blocks, no `out` boolean success flags in place of exceptions. A swallowed error returns control to a consumer whose target app is in an unknown state.
 - **Never set `ContinueOnError` inside a library** — the consumer decides failure policy.
 - **No hardcoded paths** — accept paths as arguments, or build from `UiPath.Constants.Project.Location` for files packed with the library.
-- **No embedded config or secrets** — read Orchestrator assets at the consumer level and pass them in as arguments. A credential passes as its asset's name, and the library reads it inside the scope that uses it: a `SecureString` argument fails `build` ([cli-reference.md § Analyzer errors](cli-reference.md#analyzer-errors)).
+- **No embedded config or secrets** — read Orchestrator assets at the consumer level and pass them in as arguments; a credential by its asset's name (SKILL.md Common Rule 5a).
 
 ## Versioning
 
@@ -199,6 +200,7 @@ Declare the namespace and use each public workflow as an element — property na
 
 5. **Stale design session after the dependency becomes resolvable:** `build` compiles the consumer but `validate` keeps failing with `Cannot create unknown type` for the library activity. Run `uip rpa project close --project-dir "<CONSUMER_PROJECT_DIR>"` and re-run `validate`; the next command reloads the project.
 6. **Same version repacked:** the package cache keeps the first package under an id and version and ignores a repack, so bump the library version whenever a consumer must see a change.
+7. **Dependency floor:** the consumer's version of each package the library depends on is at least the library's. A consumer pinned lower validates and builds with only a warning, `Detected package downgrade: <PACKAGE_ID> from <LIBRARY_VERSION> to <CONSUMER_VERSION>`, then fails at run time loading the library's assembly version (`Could not load file or assembly '<PACKAGE_ID>, Version=…'`). Treat that warning as an error: raise the consumer's dependency to the version it names.
 
 ## Library Patterns
 

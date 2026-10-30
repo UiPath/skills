@@ -1,6 +1,6 @@
 ---
 name: uipath-mcp-servers
-description: "UiPath Agent Gateway MCP servers (`uip agenthub mcp` / `uip agenthub mcp-tools`). Register, update, refresh tools, check connections, list, get, delete MCP servers: uipath (Orchestrator processes, agents, agentic processes, API workflows as tools), coded (published uipath-mcp Python server package), command (npx/uvx), remote (HTTP MCP URL, Relay), swagger (OpenAPI spec), platform (UiPath service operations, e.g. Test Manager); get the MCP URL a client connects to. For an agent that calls MCP tools→uipath-agents. For `uip mcp serve` (the uip CLI as an MCP server)→uipath-platform."
+description: "UiPath Agent Gateway MCP servers (`uip agenthub mcp` / `uip agenthub mcp-tools`). Register, update, refresh tools, check connections, list, get, delete MCP servers: uipath (Orchestrator processes, agents, agentic processes, API workflows as tools), coded (published uipath-mcp Python server package), command (npx/uvx), remote (HTTP MCP URL, Relay), swagger (OpenAPI spec), platform (UiPath service operations, e.g. Test Manager); set users' own connections on a remote server; get the MCP URL a client connects to. For an agent that calls MCP tools→uipath-agents. For `uip mcp serve` (the uip CLI as an MCP server)→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -15,6 +15,7 @@ Agent Gateway is Orchestrator's hub for MCP servers and A2A agents: [about](http
 - Create, update, delete, list or get an MCP server of any type ([Server Types](#server-types) says when to use each), and refresh its tools.
 - Check whether a server works: its Integration Service connection and its tools ([Checking a Server](#checking-a-server)).
 - Get the `McpUrl` an MCP client connects to.
+- List, set or delete a user's own Integration Service connection on a `remote` server ([Per-User Connections](#per-user-connections)).
 - Find the UiPath services and tool names a `platform` server can expose.
 
 **Tools — `uip agenthub mcp-tools`:**
@@ -53,12 +54,14 @@ These are the things the CLI does not advertise in `--help`.
 
 10. **Never route stored credentials around a refusal.** `mcp update` refuses to move a `remote` server to another origin (scheme, host or port), or a `swagger` server to another spec, while that would send its stored connection token or secret headers there. Follow the refusal's `Instructions` ([moving a server](references/updating-servers-guide.md#moving-a-server-to-another-host)); do not delete headers or connections to get past it without the user's consent.
 
+11. **`not_supported` is final.** `ErrorCode: not_supported` (`<OPERATION> isn't supported on the connected environment.`) means Agent Gateway on the connected environment does not offer that feature ([Automation Suite](#automation-suite)). Another attempt, folder or flag gets the same answer. Tell the user what is missing there; do not switch to another server type or environment unless they ask.
+
 ## Folder Context
 
 | Command | Folder input |
 |---------|--------------|
 | `mcp list` | one of `--folder-key`, `--folder-path`, `--all-folders`, required |
-| `mcp get`, `mcp create <TYPE>`, `mcp update` (incl. `--print-schema`, `--dry-run`), `mcp delete`, `mcp refresh-tools` | `--folder-key` or `--folder-path`, required |
+| `mcp get`, `mcp create <TYPE>`, `mcp update` (incl. `--print-schema`, `--dry-run`), `mcp delete`, `mcp refresh-tools`, `mcp-user-connections list` / `set` / `delete` (with `--mcp <SLUG>`) | `--folder-key` or `--folder-path`, required |
 | every `mcp-tools` verb that takes `--mcp` | the server's folder, required; `create-resource`, `create-raw` and `update` also take `--target-folder-key` / `--target-folder-path` for a target in another folder |
 | `mcp-tools candidates` | optional: tenant-wide without one |
 | `mcp create <TYPE> --print-schema` | none (folder flags are ignored) |
@@ -99,8 +102,8 @@ These are the things the CLI does not advertise in `--help`.
 
 - **`coded`:** `--process-key` is the process (release) `Key` GUID from `uip or processes list --folder-key <FOLDER_KEY> --process-type MCPServer --output json`, not its `ProcessKey` field (the package name). The process must be in the server's folder, and the service does not check it on create: a wrong key surfaces only when the server runs. `mcp template coded` has placeholder `processKey` / `folderKey`: replace both with GUIDs.
 - **`command`:** the service splits `arguments` on spaces, so one `--arg` value cannot contain a space.
-- **`remote` / `swagger`:** without `--use-relay` the service blocks private hosts (`URL blocked for security reasons: …`); with it, any absolute `http(s)` URL is reached through Relay (swagger: the spec download and the API calls). On `mcp update`, `--use-relay` / `--no-use-relay` switch Relay; without either the setting is kept. `--connection-id` (remote) is the GUID of an Integration Service connection whose token authenticates the calls: an OAuth connection of connector `uipath-uipath-mcp`, from `uip is connections list <CONNECTOR_KEY> --all-folders --output json` with that connector key.
-- **`swagger`:** needs the tenant's Swagger MCP feature (otherwise HTTP 404). `--header` values go with the spec download and every API call. An inline spec (`swaggerContent`) goes only in `--file` / `--body`. `--filter` is accepted but not sent. The create result includes the whole spec: filter it (`--output-filter "{Slug: Slug, McpUrl: McpUrl}"`).
+- **`remote` / `swagger`:** without `--use-relay` the service blocks private hosts (`URL blocked for security reasons: …`); with it, any absolute `http(s)` URL is reached through Relay (swagger: the spec download and the API calls). On `mcp update`, `--use-relay` / `--no-use-relay` switch Relay; without either the setting is kept. `--connection-id` (remote) is the GUID of an Integration Service connection whose token authenticates the calls: an OAuth connection of connector `uipath-uipath-mcp`, from `uip is connections list <CONNECTOR_KEY> --all-folders --refresh --output json` with that connector key. Always pass `--refresh`: without it the CLI answers from its cache, which can still show a connection's old name and state after a sign-in.
+- **`swagger`:** needs Agent Gateway's Swagger MCP feature, which [Automation Suite](#automation-suite) 26.10 does not have: without it, create and update fail with `not_supported` (Rule 11). `--header` values go with the spec download and every API call. An inline spec (`swaggerContent`) goes only in `--file` / `--body`. `--filter` is accepted but not sent. The create result includes the whole spec: filter it (`--output-filter "{Slug: Slug, McpUrl: McpUrl}"`).
 - **`platform`:**
   1. `uip agenthub platform-services list --output json` — match the user's wording to `DisplayName`; pass its `ServiceName`. Several names can share the words (`Test Manager`, `Test Manager External`, `Test Manager Performance Testing`): take the exact match, otherwise ask.
   2. `uip agenthub platform-tools list --service <SERVICE_NAME> --limit 1000 --output-filter "{Names: Items[].Name, Total: Total}" --output json` — the tool names. Unfiltered rows carry JSON Schemas and run to hundreds of KB; `--name <SUBSTR>` searches and returns full rows with `Description`. Read the `Description` of each candidate before picking tools for a request ("list test cases": `Get_test_cases`, not `Get_Automated_Test_Cases_For_Folder`), and tell the user the exact names you picked.
@@ -109,6 +112,13 @@ These are the things the CLI does not advertise in `--help`.
 
   `mcp get` shows the service as `Arguments` and the mode as `UseAllTools`. Without Platform MCP on the tenant the two lists fail with `Platform MCP is not enabled on this tenant.`, while `create platform` and a platform `mcp update` return a bare HTTP 404.
 - **`selfhosted` / `process-assistant`:** `mcp template` accepts both, but `mcp create` has no such type. A self-hosted server registers itself when the `uipath-mcp` Python runtime starts; the CLI can `list` / `get` / `delete` it and refuses `mcp update` and `refresh-tools` on it. `process-assistant` is a legacy value.
+
+## Automation Suite
+
+Agent Gateway on Automation Suite 26.10 has `uipath`, `coded`, `command`, `remote` and `platform` servers, and Integration Service connections; its `platform` services are the ones that environment lists (Rule 9). It does not have:
+
+- `swagger` servers: `mcp create swagger` and an `mcp update` of a swagger server fail with `not_supported` (Rule 11).
+- Remote A2A agents: every `uip agenthub remote-a2a-agent` command fails with `not_supported`.
 
 ## Updating Servers
 
@@ -130,9 +140,20 @@ Payload fields per type, the `uipath` tools list, masked values and moving a ser
 
 Agent Gateway's **Check connection** tests a server's Integration Service connection; **Refresh tools** tests the server itself.
 
-- **The connection:** `uip is connections ping <CONNECTION_ID> --force-refresh --output json`, with the `ConnectionId` from `mcp get` (no `ConnectionId` means the server has no connection to check). `Data.Status: "Enabled"` means it is active. Any other status fails with `Connection '<CONNECTION_ID>' is not enabled (status: <STATUS>).`; an `Expired` connection needs its owner to sign in again (`uip is connections edit <CONNECTION_ID>`, or Integration Service in the portal). Tell the user; do not create, swap or clear a connection to get past it.
-- **The server:** `refresh-tools` (Rule 7). On `remote` and `swagger`, `Refreshed` means Agent Gateway reached the server (or the spec) with its credentials and stored the tools it listed; confirm with `mcp-tools list` (Rule 5). A failure names the cause ([troubleshooting](references/troubleshooting-guide.md#refresh)). On `coded` / `command` it only starts the job. It authenticates with the caller's own per-user connection on the server when there is one, otherwise with the server's `ConnectionId`; the CLI cannot list per-user connections.
+- **The connection:** `uip is connections ping <CONNECTION_ID> --force-refresh --output json`, with the `ConnectionId` from `mcp get` (no `ConnectionId` means the server has no connection to check). `Data.Status: "Enabled"` means it is active. Any other status fails with `Connection '<CONNECTION_ID>' is not enabled (status: <STATUS>).`; an `Expired` connection needs its owner to sign in again (`uip is connections edit <CONNECTION_ID>`, or Integration Service in the portal). `This MCP connection has no stored OAuth refresh token, …` means the connection's OAuth app issues no refresh token, and signing in again alone does not fix it: the app must issue refresh tokens (a GitHub OAuth App: tick **Expire user access tokens**; other providers: grant offline access), then the owner signs in again. Until then Integration Service may disable the connection (`… temporarily disabled due to multiple unsuccessful attempts`), and `refresh-tools` fails with `Failed to retrieve authentication token from Integration Service connection`. Tell the user; do not create, swap or clear a connection to get past it.
+- **The server:** `refresh-tools` (Rule 7). On `remote` and `swagger`, `Refreshed` means Agent Gateway reached the server (or the spec) with its credentials and stored the tools it listed; confirm with `mcp-tools list` (Rule 5). A failure names the cause ([troubleshooting](references/troubleshooting-guide.md#refresh)). On `coded` / `command` it only starts the job. It authenticates with the caller's own per-user connection on the server when there is one, otherwise with the server's `ConnectionId` ([Per-User Connections](#per-user-connections) lists them).
 - `refresh-tools` is a write: on `remote` and `swagger`, a tool list that differs from the stored one in any field recreates every tool with a new id and deletes the tools' guardrails. When the user only asked to check the server, say so before running it.
+
+## Per-User Connections
+
+A `remote` server calls with its own Integration Service connection (`--connection-id`), except for a user who has a per-user connection on it: that user's calls use their own. Only `remote` servers have them, `mcp get` does not show them, and each command needs the server's folder.
+
+- `uip agenthub mcp-user-connections list --mcp <SLUG> --folder-path <FOLDER_PATH> --output json` — one row per user: `UserId`, `UserName`, `ConnectionId`, `ConnectionName`, `Status`. Needs McpServers.Edit.
+- `uip agenthub mcp-user-connections set --mcp <SLUG> --me --connection-name "<CONNECTION_NAME>" --folder-path <FOLDER_PATH> --output json` — sets or replaces one. Give the user as `--me` (the login), `--user-email <EMAIL>` or `--user-id <USER_ID>`, and the connection as `--connection-name` or `--connection-id`: exactly one of each, the form the user gave you. `--connection-name` looks among the UiPath MCP connector's connections you can see, exact name ignoring case. Your own needs Connections.Edit in the server's folder; another user's also McpServers.Edit. The connection must be Enabled.
+- `uip agenthub mcp-user-connections delete --mcp <SLUG> --user-email <EMAIL> --folder-path <FOLDER_PATH> --yes --output json` — removes one, so that user's calls use the server's connection again. Confirm with the user before passing `--yes`, as for deletes (Rule 8).
+- `set` and `delete` take `--dry-run`: it looks up the name and email and prints the plan. A real `set` succeeds only once Agent Gateway stored the connection, which must be Enabled: its result (`UserId`, `UserName`, `ConnectionId`) confirms it (Rule 5). Confirm a real `delete` with `list`.
+
+`Status`: `Active` — the connection is Enabled. `RequiresAuth` — it expired or failed, or Integration Service no longer finds it for that user: its owner re-authenticates it (`uip is connections edit <CONNECTION_ID>`, which hands back a link to finish in a browser), or `set` another. `Inactive` — the server or the connection is disabled. `Unavailable` — Agent Gateway could not reach Integration Service: list again. Errors: [troubleshooting](references/troubleshooting-guide.md#per-user-connections).
 
 ## Tools (`uip agenthub mcp-tools`)
 
@@ -159,12 +180,13 @@ Flags, defaults, target folders, `update`, `delete`, `get` and paging: [referenc
 - **`--uri moves '<SLUG>' to another origin, …`** / **`--spec-url gives '<SLUG>' a new spec, …`** (or `The payload's …` for a `--file` / `--body`) — Rule 10.
 - **`This command requires a <EXPECTED_TYPE> MCP server; <SLUG> is <TYPE>.`** — the `mcp-tools` verb does not apply to that type. On `coded` / `command` / `remote` / `swagger`, run the `NextCommand` (`refresh-tools`). On `platform`, its `NextCommand` names `mcp-tools enable` without `--name` or the folder: add both.
 - **`Platform MCP is not enabled on this tenant.`**, or HTTP 404 on `create platform` — the feature is off on this tenant: use another tenant or server type.
+- **`<OPERATION> isn't supported on the connected environment.`** (`ErrorCode: not_supported`) — the environment does not offer it (Rule 11, [Automation Suite](#automation-suite)): tell the user, do not retry.
 
 ## Reference Navigation
 
 - [references/updating-servers-guide.md](references/updating-servers-guide.md) — payload fields per type, `uipath` server updates, masked values, moving a server to another host.
 - [references/tools-guide.md](references/tools-guide.md) — `mcp-tools` on `uipath` servers (bind, update, delete, target folders) and `platform` servers (selection); listing and reading tools on any type.
-- [references/troubleshooting-guide.md](references/troubleshooting-guide.md) — every other `uip agenthub` message, with its fix.
+- [references/troubleshooting-guide.md](references/troubleshooting-guide.md) — every other `uip agenthub` message, with its fix, including per-user connections.
 
 ## What NOT to Do
 
@@ -174,3 +196,4 @@ Flags, defaults, target folders, `update`, `delete`, `get` and paging: [referenc
 - Do NOT pass `--yes` before the user confirms the delete (Rule 8).
 - Do NOT report a `coded` / `command` refresh as done when it returned `Status: "Started"` (Rule 7).
 - Do NOT copy a `--help` example without adding the folder flag it omits.
+- Do NOT retry a `not_supported` failure, or switch server type to get past it, without asking (Rule 11).

@@ -334,3 +334,440 @@ def test_new_node_on_top_of_another_fails_the_layout_check(project: Path) -> Non
 
     mutate(project, stacked)
     assert layout(project) == 1
+
+
+DOWNSTREAM_OF_CAP = ("financialPosting", "resolutionWriter", "returnResolution")
+
+
+def shift(flow: dict, node_ids, dx: int = 0, dy: int = 0) -> None:
+    for node_id in node_ids:
+        position = flow["layout"]["nodes"][node_id]["position"]
+        position.update(x=position["x"] + dx, y=position["y"] + dy)
+
+
+def make_room(flow: dict) -> None:
+    insert_cap(flow)
+    flow["layout"]["nodes"]["capCreditAmount"]["position"] = {"x": 1728, "y": -32}
+    shift(flow, DOWNSTREAM_OF_CAP, dx=192)
+
+
+def test_merge_making_room_passes_the_layout_check(project: Path) -> None:
+    mutate(project, make_room)
+    assert layout(project) == 0
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param(lambda f: shift(f, ["logCreditAmount"], dx=192), id="upstream-moved"),
+        pytest.param(lambda f: shift(f, ["returnRejection"], dx=192), id="unrelated-moved"),
+        pytest.param(lambda f: shift(f, ["returnResolution"], dx=-400), id="moved-left"),
+        pytest.param(lambda f: shift(f, ["returnResolution"], dy=-200), id="moved-up"),
+        pytest.param(lambda f: shift(f, ["financialPosting"], dx=96), id="gap-closed"),
+        pytest.param(lambda f: shift(f, ["returnResolution"], dx=-150), id="lands-on-another"),
+        pytest.param(lambda f: f["layout"]["nodes"]["financialPosting"].update(collapsed=True), id="entry-rewritten"),
+    ],
+)
+def test_layout_check_rejects_moves_merge_does_not_make(project: Path, change) -> None:
+    def moved(flow: dict) -> None:
+        make_room(flow)
+        change(flow)
+
+    mutate(project, moved)
+    assert layout(project) == 1
+
+
+def container_flow(children: dict[str, dict], loop_size: dict, after_x: int = 800) -> dict:
+    layout_nodes = {
+        "start": {"position": {"x": 0, "y": 0}, "size": {"width": 96, "height": 96}},
+        "loop": {"position": {"x": 192, "y": -112}, "size": loop_size},
+        "after": {"position": {"x": after_x, "y": 0}, "size": {"width": 96, "height": 96}},
+        "below": {"position": {"x": 256, "y": 300}, "size": {"width": 96, "height": 96}},
+    }
+    nodes = [{"id": i} for i in layout_nodes] + [{"id": i, "parentId": "loop"} for i in children]
+    chain = ["loop", *children]
+    edges = [{"sourceNodeId": "start", "targetNodeId": "loop"}, {"sourceNodeId": "loop", "targetNodeId": "after"}]
+    edges += [{"sourceNodeId": a, "targetNodeId": b} for a, b in zip(chain, chain[1:])]
+    return {"nodes": nodes, "edges": edges, "layout": {"nodes": {**layout_nodes, **children}}}
+
+
+def at(x: int, y: int = 112) -> dict:
+    return {"position": {"x": x, "y": y}, "size": {"width": 96, "height": 96}}
+
+
+ORIGINAL_BODY = {"classify": at(144), "record": at(336)}
+GROWN_BODY = {"classify": at(144), "dedupe": at(336), "record": at(528)}
+
+
+def layout_of(tmp_path: Path, original: dict, final: dict, *extra: str) -> int:
+    for name, flow in (("Original", original), ("Final", final)):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / f"{name}.flow").write_text(json.dumps(flow))
+    return preserved.main(["--aspect", "layout", "--original", str(tmp_path / "Original"), "--project", str(tmp_path / "Final"), *extra])
+
+
+def test_container_growing_for_an_added_child_passes(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow(GROWN_BODY, {"width": 768, "height": 320}, after_x=1008)
+    final["layout"]["nodes"]["below"]["position"]["y"] = 300
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_sibling_under_a_grown_container_may_move_down(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow({"classify": at(144), "dedupe": at(336, 304), "record": at(336)}, {"width": 560, "height": 496})
+    final["layout"]["nodes"]["below"]["position"]["y"] = 476
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_container_resizing_without_a_changed_child_fails(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow(ORIGINAL_BODY, {"width": 768, "height": 320})
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_container_shrinking_fails(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow({**ORIGINAL_BODY, "dedupe": at(144, 224)}, {"width": 480, "height": 320})
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_grown_container_downstream_of_an_added_node_may_move(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow(GROWN_BODY, {"width": 768, "height": 320}, after_x=1200)
+    final["nodes"].append({"id": "enrich"})
+    final["edges"] = [e for e in final["edges"] if e["sourceNodeId"] != "start"]
+    final["edges"] += [{"sourceNodeId": "start", "targetNodeId": "enrich"}, {"sourceNodeId": "enrich", "targetNodeId": "loop"}]
+    final["layout"]["nodes"]["enrich"] = at(192, 0)
+    final["layout"]["nodes"]["loop"]["position"]["x"] = 384
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_added_child_outside_its_container_fails(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    final = container_flow({**ORIGINAL_BODY, "dedupe": at(528)}, {"width": 560, "height": 320})
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_added_node_left_of_its_successor_fails(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 768, "height": 320})
+    final = container_flow({"classify": at(144), "dedupe": at(528), "record": at(336)}, {"width": 768, "height": 320})
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_moved_node_landing_on_another_fails(tmp_path: Path) -> None:
+    original = container_flow({**ORIGINAL_BODY, "aside": at(528, 224)}, {"width": 768, "height": 320})
+    final = container_flow({**GROWN_BODY, "record": at(528, 200), "aside": at(528, 224)}, {"width": 768, "height": 320})
+    for flow in (original, final):
+        flow["edges"] = [e for e in flow["edges"] if "aside" not in (e["sourceNodeId"], e["targetNodeId"])]
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def retry_flow(fetch_x: int = 192, done_x: int = 384, retry: bool = False) -> dict:
+    layout_nodes = {"start": at(0, 0), "fetch": at(fetch_x, 0), "done": at(done_x, 0)}
+    edges = [{"sourceNodeId": "start", "targetNodeId": "fetch"}]
+    if retry:
+        layout_nodes["retry"] = at(384, 0)
+        edges += [
+            {"sourceNodeId": "fetch", "targetNodeId": "retry"},
+            {"sourceNodeId": "retry", "targetNodeId": "fetch"},
+            {"sourceNodeId": "retry", "targetNodeId": "done"},
+        ]
+    else:
+        edges.append({"sourceNodeId": "fetch", "targetNodeId": "done"})
+    return {"nodes": [{"id": i} for i in layout_nodes], "edges": edges, "layout": {"nodes": layout_nodes}}
+
+
+def test_added_retry_edge_back_to_an_earlier_node_passes(tmp_path: Path) -> None:
+    assert layout_of(tmp_path, retry_flow(), retry_flow(done_x=576, retry=True)) == 0
+
+
+def test_retry_edge_does_not_let_its_target_move(tmp_path: Path) -> None:
+    assert layout_of(tmp_path, retry_flow(), retry_flow(fetch_x=240, done_x=576, retry=True)) == 1
+
+
+def test_malformed_edge_fails_instead_of_crashing(tmp_path: Path) -> None:
+    final = retry_flow()
+    final["edges"].append({"id": "broken", "sourceNodeId": "fetch"})
+    assert layout_of(tmp_path, retry_flow(), final) == 1
+
+
+def place_cap(flow: dict, x: int, y: int) -> None:
+    flow["layout"]["nodes"]["capCreditAmount"]["position"] = {"x": x, "y": y}
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param(lambda f: f["layout"]["nodes"]["returnResolution"]["position"].update(x=5000), id="shift-beyond-room"),
+        pytest.param(lambda f: shift(f, ["resolutionWriter", "returnResolution"], dy=3000), id="drop-with-no-growth"),
+        pytest.param(lambda f: place_cap(f, 1400, 150), id="added-left-of-predecessor"),
+        pytest.param(lambda f: place_cap(f, 1728, 900), id="added-rows-below-predecessor"),
+    ],
+)
+def test_layout_check_caps_room_to_what_merge_needs(project: Path, change) -> None:
+    def moved(flow: dict) -> None:
+        make_room(flow)
+        change(flow)
+
+    mutate(project, moved)
+    assert layout(project) == 1
+
+
+def test_invented_edge_gives_no_room(project: Path) -> None:
+    def invented(flow: dict) -> None:
+        make_room(flow)
+        invented_edge = {"id": "x", "sourceNodeId": "capCreditAmount", "sourcePort": "success"}
+        flow["edges"].append({**invented_edge, "targetNodeId": "returnManagerRejection", "targetPort": "input"})
+        shift(flow, ["returnManagerRejection"], dx=192)
+
+    mutate(project, invented)
+    assert layout(project) == 1
+
+
+def row_flow(positions: dict[str, tuple[int, int]], edges: list[tuple[str, str]], sticky: tuple[str, ...] = ()) -> dict:
+    nodes = [{"id": i, **({"type": "stickyNote"} if i in sticky else {})} for i in positions]
+    layout_nodes = {i: at(x, y) for i, (x, y) in positions.items()}
+    return {"nodes": nodes, "edges": [{"sourceNodeId": u, "targetNodeId": v} for u, v in edges], "layout": {"nodes": layout_nodes}}
+
+
+def test_insert_on_an_existing_retry_edge_makes_room_past_it(tmp_path: Path) -> None:
+    cycle = [("a", "b"), ("b", "c"), ("c", "d")]
+    original = row_flow({"a": (0, 0), "b": (192, 0), "c": (384, 0), "d": (576, 0)}, [*cycle, ("c", "a")])
+    final = row_flow({"a": (0, 0), "b": (192, 0), "c": (384, 0), "n": (576, 0), "d": (768, 0)}, [*cycle, ("c", "n"), ("n", "a")])
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_sticky_notes_are_left_out_of_order_and_overlap(project: Path) -> None:
+    sticky = {"id": "note", "type": "stickyNote"}
+
+    def with_note(flow: dict) -> None:
+        flow["nodes"].append(dict(sticky))
+        flow["layout"]["nodes"]["note"] = {"position": {"x": 1740, "y": -20}, "size": {"width": 96, "height": 96}}
+
+    mutate(project, lambda f: (with_note(f), make_room(f)))
+    original = project.parent / "original" / FIXTURE.name
+    shutil.copytree(FIXTURE, original)
+    mutate(original, with_note)
+    assert preserved.main(["--aspect", "layout", "--original", str(original), "--project", str(project)]) == 0
+
+
+def test_sibling_within_merge_padding_of_a_grown_container_may_move(tmp_path: Path) -> None:
+    original = container_flow(ORIGINAL_BODY, {"width": 560, "height": 320})
+    original["layout"]["nodes"]["below"]["position"]["y"] = 400
+    final = container_flow({"classify": at(144), "dedupe": at(336, 304), "record": at(336)}, {"width": 560, "height": 496})
+    final["layout"]["nodes"]["below"]["position"]["y"] = 576
+    assert layout_of(tmp_path, original, final) == 0
+
+
+def test_two_inserted_steps_make_room_for_both(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "b": (192, 0)}, [("a", "b")])
+    final = row_flow({"a": (0, 0), "n1": (192, 0), "n2": (384, 0), "b": (576, 0)}, [("a", "n1"), ("n1", "n2"), ("n2", "b")])
+    assert layout_of(tmp_path, original, final) == 0
+
+
+FORK = {"a": (0, 0), "b": (192, 0), "d": (384, 0), "c": (192, 160), "e": (192, 400), "f": (420, 110)}
+FORK_EDGES = [("a", "b"), ("b", "d"), ("a", "c")]
+
+
+def fork_insert(**moves: tuple[int, int]) -> dict:
+    positions = {**FORK, "n": (192, 0), "b": (384, 0), "d": (576, 0), "c": (384, 160), "f": (612, 110), **moves}
+    return row_flow(positions, [("a", "b"), ("b", "d"), ("a", "n"), ("n", "c")])
+
+
+def test_fork_insert_pushes_the_node_it_lands_on_and_its_downstream(tmp_path: Path) -> None:
+    assert layout_of(tmp_path, row_flow(FORK, FORK_EDGES), fork_insert()) == 0
+
+
+@pytest.mark.parametrize(
+    "moves",
+    [
+        pytest.param({"e": (384, 400)}, id="node-nothing-landed-on"),
+        pytest.param({"a": (48, 0)}, id="node-left-of-the-insertion"),
+    ],
+)
+def test_fork_insert_moves_nothing_it_did_not_push(tmp_path: Path, moves) -> None:
+    assert layout_of(tmp_path, row_flow(FORK, FORK_EDGES), fork_insert(**moves)) == 1
+
+
+def test_replacing_a_removable_node_makes_room_past_it(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "h": (192, 0), "b": (520, 0)}, [("a", "h"), ("h", "b")])
+    final = row_flow({"a": (0, 0), "n": (192, 0), "m": (384, 0), "b": (576, 0)}, [("a", "n"), ("n", "m"), ("m", "b")])
+    assert layout_of(tmp_path, original, final, "--removable-node", "h") == 0
+
+
+@pytest.mark.parametrize(
+    "z, expected",
+    [pytest.param((952, 200), 0, id="pushed"), pytest.param((1060, 330), 1, id="unplaced-node-pushes-nothing")],
+)
+def test_growth_pushes_an_author_node_and_what_it_lands_on(tmp_path: Path, z: tuple[int, int], expected: int) -> None:
+    original = row_flow({"start": (0, 0), "after": (800, 0), "w": (1000, 220)}, [("start", "loop"), ("loop", "after")])
+    original["nodes"] += [{"id": "loop"}, {"id": "classify", "parentId": "loop"}, {"id": "record", "parentId": "loop"}]
+    original["layout"]["nodes"].update(
+        loop={"position": {"x": 192, "y": -112}, "size": {"width": 560, "height": 320}}, classify=at(144), record=at(336)
+    )
+    original["edges"] += [{"sourceNodeId": "loop", "targetNodeId": "classify"}, {"sourceNodeId": "classify", "targetNodeId": "record"}]
+    final = copy.deepcopy(original)
+    final["nodes"] += [{"id": "z"}, {"id": "dedupe", "parentId": "loop"}]
+    final["edges"] = [e for e in final["edges"] if e["sourceNodeId"] != "classify"]
+    final["edges"] += [{"sourceNodeId": "classify", "targetNodeId": "dedupe"}, {"sourceNodeId": "dedupe", "targetNodeId": "record"}]
+    final["layout"]["nodes"].update(
+        loop={"position": {"x": 192, "y": -112}, "size": {"width": 752, "height": 320}},
+        record=at(528), dedupe=at(336), after=at(992, 0), w=at(1192, 220), z=at(*z),
+    )
+    assert layout_of(tmp_path, original, final) == expected
+
+
+def nested_flow(layout: dict[str, tuple[int, ...]], inserted: bool) -> dict:
+    nodes = [{"id": "s"}, {"id": "B"}, {"id": "A", "parentId": "B"}, {"id": "a1", "parentId": "A"}, {"id": "t"}]
+    edges = [("s", "B"), ("B", "t")]
+    if inserted:
+        nodes.append({"id": "n1", "parentId": "A"})
+        edges.append(("a1", "n1"))
+    boxes = {i: {"position": {"x": v[0], "y": v[1]}, "size": dict(zip(("width", "height"), v[2:] or (96, 96)))} for i, v in layout.items()}
+    return {"nodes": nodes, "edges": [{"sourceNodeId": u, "targetNodeId": v} for u, v in edges], "layout": {"nodes": boxes}}
+
+
+NESTED = {"s": (0, 0), "B": (192, 0, 560, 320), "A": (24, 24, 300, 200), "a1": (24, 24), "t": (900, 0)}
+# placeAddedNodes' own output on UiPath/builder-sdk#1501 da19d881.
+NESTED_MERGED = {**NESTED, "B": (192, 0, 624, 320), "A": (24, 24, 456, 200), "t": (964, 0), "n1": (216, 24)}
+
+
+@pytest.mark.parametrize(
+    "change, expected",
+    [
+        pytest.param({}, 0, id="as-merged"),
+        pytest.param({"t": (1900, 0)}, 1, id="sibling-pushed-past-growth"),
+        pytest.param({"B": (192, 0, 5000, 320)}, 1, id="outer-grows-past-its-body"),
+        pytest.param({"A": (24, 24, 2000, 200)}, 1, id="inner-grows-past-its-body"),
+        pytest.param({"B": (192, 0, 624, 2000)}, 1, id="grows-taller-than-its-body"),
+        pytest.param({"n1": (1000, 24)}, 1, id="added-outside-its-container"),
+    ],
+)
+def test_nested_growth_stays_within_what_the_body_needs(tmp_path: Path, change: dict, expected: int) -> None:
+    final = nested_flow({**NESTED_MERGED, **change}, inserted=True)
+    assert layout_of(tmp_path, nested_flow(NESTED, inserted=False), final) == expected
+
+
+def test_container_shrinking_around_an_added_child_fails(tmp_path: Path) -> None:
+    final = container_flow({"classify": at(144), "dedupe": at(240, 216), "record": at(336)}, {"width": 480, "height": 320})
+    assert layout_of(tmp_path, container_flow(ORIGINAL_BODY, {"width": 560, "height": 320}), final) == 1
+
+
+def test_container_growing_within_its_body_without_a_changed_child_fails(tmp_path: Path) -> None:
+    body = {"classify": at(144), "record": at(528)}
+    original = container_flow(body, {"width": 560, "height": 320}, after_x=1008)
+    assert layout_of(tmp_path, original, container_flow(body, {"width": 700, "height": 320}, after_x=1008)) == 1
+
+
+def test_two_pushed_nodes_swapping_order_in_a_row_fails(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "p": (300, 0), "q": (420, 80)}, [])
+    final = row_flow({"a": (0, 0), "n1": (192, 0), "n2": (384, 0), "p": (700, 0), "q": (500, 80)}, [("a", "n1"), ("n1", "n2")])
+    assert layout_of(tmp_path, original, final) == 1
+
+
+AGENT_INDEX = {"s": (768, -48), "agent": (960, -160), "index": (1008, 32), "next": (1344, -16)}
+
+
+def agent_flow(positions: dict[str, tuple[int, int]], edges: list[tuple[str, str]]) -> dict:
+    flow = row_flow(positions, edges)
+    flow["layout"]["nodes"]["agent"]["size"]["width"] = 288
+    return flow
+
+
+@pytest.mark.parametrize(
+    "index_x, expected",
+    # 1536 is placeAddedNodes' own output on UiPath/builder-sdk#1501 c92ecfb3.
+    [pytest.param(1536, 0, id="as-merged"), pytest.param(1736, 1, id="pushed-past-the-agent-and-the-slot")],
+)
+def test_insert_before_an_index_tucked_under_its_agent_clears_the_agent(tmp_path: Path, index_x: int, expected: int) -> None:
+    original = agent_flow(AGENT_INDEX, [("s", "agent"), ("agent", "index"), ("agent", "next")])
+    merged = {**AGENT_INDEX, "n": (1344, 32), "index": (index_x, 32), "next": (1872, -16)}
+    final = agent_flow(merged, [("s", "agent"), ("agent", "n"), ("n", "index"), ("agent", "next")])
+    assert layout_of(tmp_path, original, final) == expected
+
+
+# placeAddedNodes' own merge output on UiPath/builder-sdk#1501 2501a23c, 75a5a57c and 8a0fedc2, one case per room or row allowance it needs.
+MERGE_LAYOUTS = json.loads((HERE / "merge_layouts.json").read_text())
+
+
+@pytest.mark.parametrize("name", sorted(MERGE_LAYOUTS))
+def test_merge_output_passes_the_layout_check(name: str) -> None:
+    case = MERGE_LAYOUTS[name]
+    assert preserved.check_layout(case["original"], case["final"]) == []
+
+
+RETRY_ROW = {"a": (0, 0), "b": (192, 0), "c": (384, 0), "d": (576, 0), "e": (768, 0)}
+RETRY_ROW_EDGES = [("a", "b"), ("b", "c"), ("c", "d"), ("d", "e"), ("e", "a")]
+
+
+@pytest.mark.parametrize(
+    "dx, expected", [pytest.param(192, 0, id="insert-makes-one-slot"), pytest.param(500, 1, id="retry-split-gives-no-room")]
+)
+def test_insert_on_a_retry_edge_gives_no_room_to_the_row(tmp_path: Path, dx: int, expected: int) -> None:
+    moved = {"n": (384, 0), "c": (576 + dx - 192, 0), "d": (768 + dx - 192, 0), "e": (960 + dx - 192, 0), "m": (1152 + dx - 192, 0)}
+    edges = [("a", "b"), ("b", "n"), ("n", "c"), ("c", "d"), ("d", "e"), ("e", "m"), ("m", "a")]
+    assert layout_of(tmp_path, row_flow(RETRY_ROW, RETRY_ROW_EDGES), row_flow({**RETRY_ROW, **moved}, edges)) == expected
+
+
+@pytest.mark.parametrize("child", [pytest.param({}, id="no-layout-entry"), pytest.param({"type": "stickyNote"}, id="sticky-note")])
+def test_container_growing_around_nothing_on_the_canvas_fails(child: dict) -> None:
+    loop = {"id": "c", "type": "core.logic.loop"}
+    box_c = {"position": {"x": 0, "y": 0}, "size": {"width": 560, "height": 320}}
+    original = {"nodes": [loop], "edges": [], "layout": {"nodes": {"c": box_c}}}
+    final = copy.deepcopy(original)
+    final["nodes"].append({"id": "k", "parentId": "c", **child})
+    final["edges"].append({"sourceNodeId": "c", "targetNodeId": "k"})
+    final["layout"]["nodes"]["c"]["size"]["width"] = 700
+    if child:
+        final["layout"]["nodes"]["k"] = at(144, 96)
+    assert preserved.check_layout(original, final) != []
+
+
+def test_added_node_right_of_its_successor_on_another_row_fails(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "b": (384, 0)}, [("a", "b")])
+    final = row_flow({"a": (0, 0), "n": (600, 200), "b": (384, 0)}, [("a", "n"), ("n", "b")])
+    assert layout_of(tmp_path, original, final) == 1
+
+
+def test_node_left_of_the_insertion_gets_no_room_from_it(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "p": (500, 0), "o": (200, 100)}, [("a", "p")])
+    final = row_flow({"a": (0, 0), "p": (500, 0), "n": (692, 0), "o": (900, 100)}, [("a", "p"), ("p", "n")])
+    assert layout_of(tmp_path, original, final) == 1
+
+
+@pytest.mark.parametrize("x", [pytest.param(900, id="past-the-row"), pytest.param(480, id="between-its-successors")])
+def test_original_retry_edge_gives_an_insert_no_pass_to_point_left(tmp_path: Path, x: int) -> None:
+    row = {"s": (0, 0), "a": (192, 0), "b": (384, 0), "c": (576, 0), "z": (768, 0)}
+    retry_loop = [("s", "a"), ("b", "c"), ("c", "z"), ("c", "a")]
+    original = row_flow(row, [("a", "b"), *retry_loop])
+    final = row_flow({**row, "X": (x, 0)}, [("a", "X"), ("X", "b"), *retry_loop])
+    assert layout_of(tmp_path, original, final) == 1
+
+
+@pytest.mark.parametrize("n", [pytest.param((0, 160), id="below-its-predecessor"), pytest.param((-400, 0), id="left-of-the-row")])
+def test_insert_on_a_retry_loop_left_of_its_predecessor_fails(tmp_path: Path, n: tuple[int, int]) -> None:
+    row = {"s": (0, 0), "a": (192, 0), "b": (384, 0), "c": (576, 0)}
+    retry_loop = [("s", "a"), ("b", "c"), ("c", "a")]
+    original = row_flow(row, [("a", "b"), *retry_loop])
+    final = row_flow({**row, "n": n}, [("a", "n"), ("n", "b"), *retry_loop])
+    assert layout_of(tmp_path, original, final) == 1
+
+
+@pytest.mark.parametrize("note_x, expected", [pytest.param(1282, 0, id="with-its-node"), pytest.param(1482, 1, id="past-its-node")])
+def test_sticky_note_moves_only_with_the_node_it_covers(tmp_path: Path, note_x: int, expected: int) -> None:
+    def flow(body: dict, loop_width: int, z_x: int, note_x: int) -> dict:
+        built = container_flow(body, {"width": loop_width, "height": 320})
+        kept = [n for n in built["nodes"] if n["id"] not in ("after", "below")]
+        built["nodes"] = kept + [{"id": "z"}, {"id": "note", "type": "stickyNote"}]
+        built["edges"] = [e for e in built["edges"] if e["targetNodeId"] != "after"] + [{"sourceNodeId": "loop", "targetNodeId": "z"}]
+        layout = built["layout"]["nodes"]
+        del layout["after"], layout["below"]
+        layout["z"] = at(z_x, 0)
+        layout["note"] = {"position": {"x": note_x, "y": -20}, "size": {"width": 120, "height": 130}}
+        return built
+
+    original = flow(ORIGINAL_BODY, 560, 1100, 1090)
+    # placeAddedNodes' own output on UiPath/builder-sdk#1501 8a0fedc2: the loop grows, z moves 192 and its note with it.
+    final = flow({"classify": at(144), "dedupe": at(336), "record": at(528)}, 752, 1292, note_x)
+    assert layout_of(tmp_path, original, final) == expected

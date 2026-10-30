@@ -7,7 +7,8 @@ there is no login step.
 <!--skill-flavor:operate-format:start-->
 **Never run `format` on a merged file.** In Studio Web almost every write is a
 merge into the canvas of the user. The `layout` of the original holds the
-positions of the user, and `merge` keeps them and places each added node.
+positions of the user, and `merge` keeps them and places each added node,
+moving later nodes right or down and growing containers only to fit added ones.
 `format` lays out every node again and discards them.
 
 A new `.flow` that `compile` wrote straight, with no merge, is different.
@@ -45,18 +46,19 @@ shared-location publish does not: deploy it with `uip solution deploy run`
 
 <!--skill-flavor:operate-debug:start-->
 ```bash
-uip flow debug <Project>
+uip maestro flow debug "<Project>"
 ```
 
 `<Project>` is a project name in the open solution, not a path; it defaults to
-the open project. In Studio Web the verb is `uip flow debug`:
-`uip maestro flow debug` fails here with `FlowDebugService is not a
-constructor`. Debug runs the saved project, so there is no pack or upload step.
+the open project. Debug runs the saved project, so there is no pack or upload
+step.
 
 `flow debug` executes the flow for real: it sends the emails, posts the
-messages, calls the APIs. It is not a validation step — `validate` is. Run it
-when the request is for a flow that works; ask when the request stops at build
-or validate; and with nobody to ask, report the flow as unverified rather than
+messages, calls the APIs. It is not a validation step — `validate` is. When a
+user can answer and did not ask for the run, ask before each run, even when the
+request is for a flow that works. With nobody to ask, run it when the request is
+for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from));
+otherwise report the flow as unverified rather than
 letting a passing `validate` stand as the result. The reply is plain text:
 [CLI-LOOP.md — Reading the reply](CLI-LOOP.md#reading-the-reply).
 <!--skill-flavor:operate-debug:end-->
@@ -64,12 +66,13 @@ letting a passing `validate` stand as the result. The reply is plain text:
 <!--skill-flavor:operate-debug-wait:start-->
 - **The reply waits up to 120 s.** Pass `--timeout <seconds>` to change it,
   from 10 to 150.
-- **`TimedOut after <N>s` is not a failure.** The run continues in the host.
-  The reply has no instance id: when it gives a `Trace ID`, read the result
+- **`TimedOut after <N>s` is not a failure.** The run continues in the host,
+  and the timeout does not stop it: do not troubleshoot it, and do not re-run
+  it. The reply has no instance id: when it gives a `Trace ID`, read the result
   later with `uip traces spans get <Trace ID>`; otherwise tell the user to
-  check the run in the designer.
-- **Never start a second debug while one is running,** a timed-out one
-  included. It executes the flow again.
+  follow the run in Studio Web.
+- **Run debug again only after a fresh AskUserQuestion** that says it executes
+  the flow again, possibly while the first run is still going.
 - **Re-run only after changing the flow.** Never to re-read the reply the
   completed run already returned.
 <!--skill-flavor:operate-debug-wait:end-->
@@ -86,12 +89,12 @@ letting a passing `validate` stand as the result. The reply is plain text:
 
 <!--skill-flavor:operate-debug-inputs:start-->
 ```bash
-uip flow debug <Project> --inputs '{"numberA": 5, "numberB": 7}'
+uip maestro flow debug "<Project>" --inputs '{"numberA": 5, "numberB": 7}'
 ```
 <!--skill-flavor:operate-debug-inputs:end-->
 
 <!--skill-flavor:operate-debug-attachment:start-->
-`uip flow debug` in Studio Web cannot pass a file: it ignores `--attachment`.
+`uip maestro flow debug` in Studio Web cannot pass a file: it ignores `--attachment`.
 To run a flow with a `types.file` input, ask the user to run it from the
 designer.
 <!--skill-flavor:operate-debug-attachment:end-->
@@ -104,7 +107,7 @@ For a flow that is `content/<file>.bpmn#<triggerNodeId>`; the `content/` prefix
 is optional:
 
 ```bash
-uip flow debug <Project> --entry-point "content/<file>.bpmn#<triggerNodeId>"
+uip maestro flow debug "<Project>" --entry-point "content/<file>.bpmn#<triggerNodeId>"
 ```
 
 A wrong value fails and lists the valid paths. A bare trigger node id is not a
@@ -124,7 +127,7 @@ long reply, redirect it to a file as you start the run, then search the file:
 <!--skill-flavor:operate-debug-redirect:start-->
 ```bash
 cd /solution/<Project>
-uip flow debug <Project> > .flow-sdk/flow-debug.txt
+uip maestro flow debug "<Project>" > .flow-sdk/flow-debug.txt
 ```
 <!--skill-flavor:operate-debug-redirect:end-->
 
@@ -132,7 +135,7 @@ uip flow debug <Project> > .flow-sdk/flow-debug.txt
 Every `instance` command needs `--folder-key` (`-f`) or it is rejected before
 reaching the API. Get one from `uip or folders list --output json`, or from the
 job or process context. The instance id comes from a `job status` response or
-`instance list`. A `uip flow debug` reply in Studio Web has none.
+`instance list`. A `uip maestro flow debug` reply in Studio Web has none.
 <!--skill-flavor:operate-instance-id:end-->
 
 <!--skill-flavor:refresh-command:start-->
@@ -145,7 +148,7 @@ uip solution resources add --source remote --kind connection --cloud-key <Connec
 <!--skill-flavor:refresh-when:start-->
 Do not run `uip solution resources refresh` in Studio Web. The solution has no
 local `.uipx`, so the command fails with "no .uipx manifest found". Before
-`uip solution publish` or `uip flow debug`, list the solution's local
+`uip solution publish` or `uip maestro flow debug`, list the solution's local
 resources. Add each connection the flow uses that is not in the list. A
 connection that is not in the solution fails at run time with a binding error.
 <!--skill-flavor:refresh-when:end-->
@@ -154,3 +157,10 @@ connection that is not in the solution fails at run time with a binding error.
   Shared resources reach the run through the connections of the open solution
   (`uip solution resources add`), not through the debug folder.
 <!--skill-flavor:debug-shared-resources:end-->
+
+<!--skill-flavor:operate-debug-conversational:start-->
+**Do not debug a conversational flow here.** When the start root is a
+`conversationTrigger()` (the default root, or the one `--entry-point` names),
+tell the user to chat with it from the Studio Web designer. The host returns no
+chat link.
+<!--skill-flavor:operate-debug-conversational:end-->
