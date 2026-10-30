@@ -128,7 +128,7 @@ What that run produced:
 
 *Who does what · the five steps below*
 
-Blue boxes are your turns. Say "take the defaults" in the build request and the questions turn goes away.
+Blue boxes are your turns. Say "take the defaults" in the build request and the questions turn goes away; a genome designed from an SDD whose handoff says `Execution autonomy: autonomous` builds the same way when `uipath-planner` hands it over. Taking the defaults never writes to a tenant you did not name.
 
 ## Before you start
 
@@ -161,7 +161,7 @@ This is your main decision point. The build follows the genome, and the agent ne
 
 ## 3 · Build
 
-Say "Build `<name>-genome.md`"; `uipath-genome-builder` runs the build. It checks the genome first: a genome it cannot build from (no genome marker on the first line, a missing section, a Source Map that does not match the steps) stops with the corrections for `uipath-planner`, and smaller findings go into the completion report. Then it asks its questions, in batches of up to four, each with a recommended answer: the genome's open values, the project location, XAML or C#, where settings live and package versions. A rebuild as it is also asks how closely to follow the source; a refactor asks its own questions first ([Rebuilding an existing automation](#rebuilding-an-existing-automation)). Then it builds without stopping.
+Say "Build `<name>-genome.md`"; `uipath-genome-builder` runs the build. It checks the genome first: a genome it cannot build from (no genome marker on the first line, a missing section, a Source Map that does not match the steps) stops with the corrections for `uipath-planner`, and smaller findings go into the completion report. A component genome the process genome links but that is not on disk is the one thing it asks about first: give its path, or the build stops with that correction for `uipath-planner`. A genome designed from an SDD takes what the SDD decided without asking again; if that SDD is not on disk, the build says so and asks those questions too. Then it asks its questions, in batches of up to four, each with a recommended answer: the genome's open values, the project location, XAML or C#, where settings live and package versions. A rebuild as it is also asks how closely to follow the source; a refactor asks its own questions first ([Rebuilding an existing automation](#rebuilding-an-existing-automation)). Then it builds without stopping.
 
 You get:
 

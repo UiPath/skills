@@ -368,7 +368,10 @@ def test_context_reads_level_mode_and_shape_from_the_file(path, level, mode, tra
 
 
 def test_context_lists_a_process_genomes_components():
-    assert len(genome_check.context(PROCESS_EXAMPLE)["components"]) == 3
+    components = genome_check.context(PROCESS_EXAMPLE)["components"]
+    assert len(components) == 3
+    assert all(set(c) == {"path", "library"} and c["library"] is False for c in components)
+    assert all(Path(c["path"]).is_file() for c in components)
 
 
 def test_context_fingerprint_changes_with_any_byte(tmp_path):
@@ -399,7 +402,7 @@ def test_context_extracted_needs_a_source_map_table(tmp_path):
     assert genome_check.context(genome)["extracted"] is False
     genome.write_text(extracted(example_steps(), framework=None), encoding="utf-8")
     ctx = genome_check.context(genome)
-    assert ctx["extracted"] is True and ctx["source_framework"] is None and ctx["build_mode"] == "build"
+    assert ctx["extracted"] is True and ctx["source_framework"] is None and ctx["build_mode"] == "unknown"
 
 
 def test_context_reads_the_framework_row_of_a_process_source_map(tmp_path):
@@ -493,3 +496,73 @@ def test_duplicate_component_link_fails_strict_only(tmp_path):
     process.write_text(text.replace(rows[0], rows[0] + "\n" + rows[0].replace("| 1 ", "| 9 ", 1), 1), encoding="utf-8")
     assert genome_check.main(["process", str(process), "--skills", "uipath-rpa"]) == 0
     assert genome_check.main(["process", str(process), "--profile", "strict"]) == 1
+
+
+# context: facts of extracted parts, links and packaging
+
+def test_context_part_takes_the_framework_of_its_process_genome(tmp_path):
+    (tmp_path / "parent-genome.md").write_text(
+        "<!-- UIPATH-AUTOMATION-GENOME: process -->\n\n## Source Map\n\n| Component | Source artifact | Notes |\n|---|---|---|\n"
+        "| Source framework | Blue Prism — 7.1 | |\n", encoding="utf-8")
+    part = tmp_path / "parts" / "x-genome.md"
+    part.parent.mkdir()
+    text = extracted(example_steps(), framework=None)
+    text = text.replace("\n\n", "\n\n> Part of: [Parent](../parent-genome.md) — reads the items.\n\n", 1)
+    part.write_text(text, encoding="utf-8")
+    ctx = genome_check.context(part)
+    assert (ctx["source_framework"], ctx["build_mode"]) == ("Blue Prism", "migration")
+    (tmp_path / "parent-genome.md").unlink()
+    ctx = genome_check.context(part)
+    assert (ctx["source_framework"], ctx["build_mode"]) == (None, "unknown")
+
+
+def test_context_finds_the_marker_where_the_checks_find_it(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text("\n" + COMPONENT_EXAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+    assert genome_check.main(["component", str(genome), "--profile", "strict"]) == 0
+    ctx = genome_check.context(genome)
+    assert ctx["level"] == "component" and ctx["check"]["ok"], ctx["check"]["errors"]
+
+
+def test_one_unreadable_component_keeps_the_process_context(tmp_path):
+    root = tmp_path / "invoice-processing-genome.md"
+    root.write_text(PROCESS_EXAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+    parts = tmp_path / "invoice-processing-genome"
+    parts.mkdir()
+    for src in (EXAMPLES / "invoice-processing-genome").glob("*-genome.md"):
+        (parts / src.name).write_bytes(src.read_bytes())
+    bad = sorted(parts.glob("*-genome.md"))[0]
+    bad.write_bytes(b"\xff\xfe not utf-8")
+    ctx = genome_check.context(root)
+    assert ctx["level"] == "process" and len(ctx["components"]) == 3 and ctx["independent_packages"] is False
+    assert not ctx["check"]["ok"] and any("not valid UTF-8" in e for e in ctx["check"]["errors"])
+
+
+def test_context_resolves_designed_in_against_the_genome(tmp_path):
+    folder = tmp_path / "out"
+    folder.mkdir()
+    genome = folder / "x-genome.md"
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    genome.write_text(text.replace("\n\n", "\n\n> Designed in: [Design](../sdd/x-sdd.md)\n\n", 1), encoding="utf-8")
+    ctx = genome_check.context(genome)
+    assert ctx["designed_in_link"] == "../sdd/x-sdd.md"
+    assert Path(ctx["designed_in"]) == (tmp_path / "sdd" / "x-sdd.md").resolve()
+
+
+def test_context_reports_test_components_and_packaging(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    text = PROCESS_EXAMPLE.read_text(encoding="utf-8")
+    ctx = genome_check.context(PROCESS_EXAMPLE)
+    assert ctx["test_components"] is False and ctx["independent_packages"] is False
+    text = re.sub(r"^- \*\*Packaging:\*\*.*$", "- **Packaging:** independent packages", text, count=1, flags=re.M)
+    genome.write_text(text, encoding="utf-8")
+    assert genome_check.context(genome)["independent_packages"] is True
+    component = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    genome.write_text(re.sub(r"^1\. \*\*", "1. **Test case: ", component, count=1, flags=re.M), encoding="utf-8")
+    ctx = genome_check.context(genome)
+    assert ctx["test_components"] is True and ctx["independent_packages"] is None
+
+
+def test_preamble_names_the_builder_as_a_whole_word(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome-builder", "uipath-genome-builders")
+    assert run(tmp_path, text, profile="strict") == 1

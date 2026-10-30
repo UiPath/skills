@@ -16,23 +16,29 @@ These add to the Critical Rules in [SKILL.md](../SKILL.md).
 <!--skill-flavor:solution-terminal-artifact:start-->
 6. **The terminal artefact of a Solution build is a packed `.uipx`.** The SDD's `## Next Steps` section points the user at the `uipath-solution` skill (`uip solution init` → `project add` per project → `resources refresh` → `pack`). A bare project folder is not the deliverable. Exception: when the Constraint Gate blocks Solutions for the delivery model — standalone, Automation Suite older than 2.2510, or a user exclusion — rewrite Next Steps to per-package Orchestrator publish routed via `uipath-platform`.
 <!--skill-flavor:solution-terminal-artifact:end-->
-7. **Case Management designs.** Every case design path — conversational, build handoff from `uipath-maestro-case`, draft finalization, PDD-driven — runs [case-design-guide.md](case/case-design-guide.md), which owns the conversation, the one confirmation, and the write; the case model and its defaults live in [case-design-layers-guide.md](case/case-design-layers-guide.md) and the render contract in the case SDD template. Design time resolves identities only — never schema discovery, project scaffolding, or create-on-missing; those are build concerns, recorded as gate decisions. **Open the case design files with the Read tool, never `cat`.** **The design reading set is exactly three files** — the case design guide, the layers guide, and the case SDD template. `case-sdd-conformance-checklist.md` is NOT one of them: it belongs to the gate subagent at the end. **A design-only request (stops before `caseplan.json`) seeds `sdd.md` to disk as the FIRST tool call after the reading set**, before any design reasoning — the seed's content depends on none of it — then appends section by section. The case design guide's § Sketch bounded no-build item 0 owns the cadence. A case SDD is never turned into a genome: `uipath-maestro-case` builds from it.
-8. **Every agreed SDD becomes a genome — except a Case Management SDD.** Once the SDD is `Status: ready`, the next turn runs `author` on it ([author-guide.md](author-guide.md) Step 1b): it writes `<PROCESS_NAME_KEBAB>-genome.md` beside the SDD and adds `| **Genome** | <path> |` to the Planner Handoff after `Tasks file` — the only edit to the SDD. A `draft` SDD gets no genome until it flips to `ready`. Write the genome even when `uipath-genome-builder` is not installed; `plan` then derives per-skill tasks from the SDD, and with the builder installed it routes the build through Pattern 7. A request that only asks to design or generate an SDD still gets both files, then stops before `plan`. The sequence: [sdd-writing-guide.md](sdd-writing-guide.md) § Step 3.
+7. **Case Management designs.** Every case design path that starts from a Case Management design signal — conversational, build handoff from `uipath-maestro-case`, draft finalization — runs [case-design-guide.md](case/case-design-guide.md), which owns the conversation, the one confirmation, and the write. A PDD whose Level 1 scope comes out as Case Management stays in this guide and [sdd-writing-guide.md](sdd-writing-guide.md) — never re-routed to case-design-guide.md — and reads what § Read Plan lists for a PDD-driven case; the case model and its defaults live in [case-design-layers-guide.md](case/case-design-layers-guide.md) and the render contract in the case SDD template. Design time resolves identities only — never schema discovery, project scaffolding, or create-on-missing; those are build concerns, recorded as gate decisions. **Open the case design files with the Read tool, never `cat`.** **The case design guide's reading set is exactly three files** — the case design guide, the layers guide, and the case SDD template. `case-sdd-conformance-checklist.md` is NOT one of them: it belongs to the gate subagent at the end. **A design-only request (stops before `caseplan.json`) seeds `sdd.md` to disk as the FIRST tool call after the reading set**, before any design reasoning — the seed's content depends on none of it — then appends section by section. The case design guide's § Sketch bounded no-build item 0 owns the cadence. A case SDD is never turned into a genome: `uipath-maestro-case` builds from it.
+8. **Every agreed SDD becomes a genome — except a Case Management SDD.** Once the SDD is `Status: ready`, the next turn runs `author` on it ([genome-from-sdd-guide.md](genome-from-sdd-guide.md)): it writes `<PROCESS_NAME_KEBAB>-genome.md` beside the SDD and adds `| **Genome** | <path> |` to the Planner Handoff after `Tasks file` — the only edit to the SDD. A `draft` SDD gets no genome until it flips to `ready`. Write the genome even when `uipath-genome-builder` is not installed; `plan` then derives per-skill tasks from the SDD, and with the builder installed it routes the build through Pattern 7. A request that only asks to design or generate an SDD still gets both files, then stops before `plan`. The sequence: [sdd-writing-guide.md](sdd-writing-guide.md) § Step 3.
 9. **Write the SDD skeleton first and flip `ready` last; the SDD write is a turn boundary.** Write the skeleton — the title/header + `## Document History`, the `<!-- planner-handoff:v1 -->` marker and the `## Planner Handoff` header with `Status: draft`, the `## Decisions Made` / `## Recommended Scope` blocks, and every Phase 1 / Phase 2 section — to disk before generating any other Phase 3 section, then append each remaining section as you generate it, so a watchdog kill still leaves a gradeable file. `[SME REVIEW]` items gate the `Status: ready` flip, not the skeleton write: unresolved items carry their recorded defaults and do not block `ready`; only architecture-blocking items keep `draft`. The LAST write of `design` flips `Status` to `ready`, after the template-superset check passes. The SDD write ends the turn; the genome write (Rule 8) runs on the next turn and ends that turn too; `plan` runs on the turn after. Scope and UI answers resolved in `design` flow forward to `plan` through the SDD.
 
 ## Read Plan
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | a Case Management design signal (§ Choosing the Verb item 3, or a case scope chosen at Level 1) | [case-design-guide.md](case/case-design-guide.md) INSTEAD of this guide — its § Read Plan names the whole case reading set; read nothing else listed here |
+| start | a Case Management design signal (§ Choosing the Verb item 3) | [case-design-guide.md](case/case-design-guide.md) INSTEAD of this guide — its § Read Plan names the whole case reading set; read nothing else listed here. A PDD whose Level 1 scope comes out as Case Management is not this row: it stays here (the PDD-driven case row below) |
 | start | — | this guide whole |
 | Phase 1 Step 1 | — | [pdd-analysis-guide.md](pdd-analysis-guide.md) whole |
 | Phase 1 Step 2.5 | the primary is RPA and the prompt allows `uip` commands | [tenant-library-search-guide.md](tenant-library-search-guide.md) |
-| Phase 1 Steps 3.5–6 | — | [product-selection-guide.md](product-selection-guide.md) whole (Constraint Gate, Levels 0–2.5, per-task placement, Gap Handling, Presenting the Recommendation, Template Mapping) |
+| Phase 1 Steps 3.5–6 | — | [product-selection-guide.md](product-selection-guide.md) by named `##` sections, never whole (over 60 KB): § How selection works — four layers, § Levels of Decision, § Constraint Gate, § Level 0 — Suitability Gate, § Level 1 — Primary Scope Selection, § Level 1.5 — RPA Sub-type Selection, § Level 2 — Authoring Mode (RPA only), § Level 2.5 — Project Decomposition, § Per-task component placement (the to-be, per step), § Presenting the Recommendation, § Recommended Scope, § Project List. Grep `^## ` for the line numbers, then Read each section's line range |
+| Phase 1 Steps 4–6 | Level 1 = Solution, or the user picks "Solution (customize)" | product-selection-guide.md § Level 1.75 — Solution Composition |
+| Phase 1 Step 5 | the primary is Agents or Coded Apps and product-specific information is missing | product-selection-guide.md § Gap Handling for Agent / Coded App |
+| Phase 1 Step 6 | the project list has an RPA Master Project row | product-selection-guide.md § Queue Architecture (RPA Master Project rows only) |
+| Phase 1 Step 3.5 or Phase 2 Step 4 | an external system needs its Integration Service check, or a Level 3 add-on is in play (HITL, Integration Service, API Workflow as integrated component, reusable or shared assets) | product-selection-guide.md § Level 3 — Capability Add-ons |
+| Phase 2 Step 1 | — | product-selection-guide.md § Template Mapping |
 | Phase 1 Step 4 | whenever the Constraint Gate runs — every delivery model: Cloud is not uniform, and its variants (Public Sector, Dedicated, Test Cloud) and per-tenant entitlements can block products inside the Cloud column | [platform-availability-guide.md](platform-availability-guide.md) |
 | Phase 1 Step 4 | Level 1 = RPA, or a Solution includes RPA | [rpa-product-guide.md](rpa-product-guide.md) (Level 1.5, Level 2, Level 2.5 Part A, R-07 naming, REFramework) |
 | Phase 1 Step 2 | the source signals a non-scriptable interactive sign-in (hardware 2FA token, smart card, biometric) | [attended-reauth-pattern-guide.md](attended-reauth-pattern-guide.md) |
 | Phase 2 Step 1 | — | the SDD template(s) the Template Mapping names, in `../assets/templates/` |
+| Phase 2 Step 2 | PDD-driven case: Level 1 = Case Management from a PDD | [case-design-layers-guide.md](case/case-design-layers-guide.md) whole (the case model and its defaults); the case SDD template the Template Mapping names; [case-design-guide.md](case/case-design-guide.md) § Tenant grounding — full resolution at design time and § Template conformance gate — before `sdd.md` is written, by section only. The gate subagent reads [case-sdd-conformance-checklist.md](case/case-sdd-conformance-checklist.md), not you. No genome follows (Verb Rule 8) |
 | Phase 2 Step 2 | filling §14 Packages or its equivalent | [package-selection-guide.md](package-selection-guide.md) |
 | Phase 2 Step 2 or Phase 3 | filling RPA §4 Business Rules or BPMN §5 Gateways | [business-rules-guide.md](business-rules-guide.md) |
 | Phase 3 | Phase 2 Step 5 is approved (or skipped in autonomous mode) | [sdd-writing-guide.md](sdd-writing-guide.md) whole; its § Read Plan names Phase 3's reads |
@@ -92,9 +98,9 @@ Precedence: an explicit user-stated delivery model or a PDD signal **wins over**
 
 *Question 1 — Execution mode:*
 
-> How should I handle this SDD generation?
+> How should I handle this SDD generation? (The SDD is written this turn; its genome — the build blueprint — is written from the finished SDD on the next turn.)
 >
-> 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions, and generate the full SDD. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
+> 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions, generate the full SDD, then write its genome on the next turn. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
 > 2. **Interactive** — I will pause at each phase checkpoint (summary, architecture, final SDD) for your review before proceeding.
 
 *Question 2 — Delivery model:*
@@ -135,7 +141,10 @@ TaskCreate: subject="Write SDD skeleton to disk",        activeForm="Writing SDD
 TaskCreate: subject="Generate full SDD (Phase 3)",       activeForm="Generating SDD sections…"
 TaskCreate: subject="Resolve SME review items",          activeForm="Resolving SME review items…"
 TaskCreate: subject="Finalize SDD (Status: ready)",      activeForm="Finalizing SDD…"
+TaskCreate: subject="Write genome (next turn)",          activeForm="Writing genome…"
 ```
+
+The genome task stays `pending` when the SDD write ends the turn; the genome turn marks it `in_progress`, then `completed`. Omit it for a PDD-driven Case Management SDD, which gets no genome (Verb Rule 8).
 
 Mark each task `in_progress` when starting and `completed` when done.
 
@@ -145,7 +154,7 @@ Mark each task `in_progress` when starting and `completed` when done.
 
 > If Step 0.5 `TaskCreate` failed, silently skip every subsequent `Mark "X" as in_progress / as completed` instruction in this guide — the tasks do not exist to update, and a second warning to the user is noise.
 
-These tasks track SDD generation. Implementation tasks are owned by `plan` (task derivation), which runs after `design` writes the SDD — do NOT create implementation tasks here.
+These tasks track SDD generation. Implementation tasks are owned by `plan` (task derivation), which runs after `design` writes the SDD and its genome — do NOT create implementation tasks here.
 <!--skill-flavor:progress-tasks:end-->
 
 ### Step 1: Read the PDD

@@ -1,0 +1,3 @@
+<!--skill-flavor:genome-build-deploy-step:start-->
+3. **No pack, publish or deploy task in Studio Web.** The deliverable is the open Studio Web solution: there is no packing step, and publishing it (`uip solution publish`) is the user's call. When the SDD's §16 or the request carries a deploy hint, the closing summary tells the user to publish the open solution; `uipath-genome-builder` writes nothing to a tenant unasked. When Solutions (`.uipx`) are blocked for the handoff's `Delivery model` — standalone, Automation Suite older than 2.2510, or a user exclusion — and a deploy hint is present, add a per-package Orchestrator publish task routed to `uipath-platform` ([plan-guide.md](plan-guide.md) Step 4, deploy routing).
+<!--skill-flavor:genome-build-deploy-step:end-->

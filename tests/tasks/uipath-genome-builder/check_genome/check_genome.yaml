@@ -3,7 +3,9 @@ description: >
   Smoke: the uipath-genome-builder skill's `check` verb runs the genome checker on a component genome
   (Daily Sales Summary) whose acceptance criteria are not numbered, a strict-profile defect. Grades
   that the checker ran on the genome, that the genome is left byte-identical (a fix is uipath-planner's
-  edit, never the builder's), and that no project is scaffolded or built. No tenant, no Windows host.
+  edit, never the builder's), that no project is scaffolded or built, and (llm_judge, low weight: the
+  verdict lives only in the final message, so it has no side effect to grade) that the agent reported the
+  unnumbered acceptance criteria as a finding and routed the fix to uipath-planner. No tenant, no Windows host.
 tags: [uipath-genome-builder, smoke, mode:diagnose, lifecycle:discover]
 
 sandbox:
@@ -54,3 +56,23 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+(rpa\s+(init|run|build|debug)|solution\s+(init|publish|deploy))'
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent reported the unnumbered acceptance criteria as a finding and routed the fix to uipath-planner"
+    weight: 1.0
+    pass_threshold: 0.7
+    include_dialog: false
+    include_agent_output: true
+    prompt: |
+      Grade only the agent's last [ASSISTANT] message. A [RESULT - ...] block
+      after it repeats that message and is harness output.
+      The genome under check has acceptance criteria that are not numbered; the
+      genome checker reports that as a FAIL. Expected:
+        - the agent does not say the check passed or the genome has no findings;
+        - it names the finding (acceptance criteria not numbered);
+        - it says the fix is an edit for uipath-planner (or that the genome must be
+          changed by the planner), not a change it made itself.
+      Score 1.0 when all three hold, 0.5 when the finding is reported but the
+      routing to uipath-planner is missing, 0.0 when the agent says the check
+      passed or reports no finding. Saying the build may proceed with the finding
+      as a report item is acceptable.

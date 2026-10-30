@@ -17,7 +17,9 @@ The writing rules of [genome-format-guide.md § Writing Rules](genome-format-gui
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide, [genome-format-guide.md](genome-format-guide.md), [extracted-genome-guide.md](extracted-genome-guide.md) and [skill-mapping-guide.md](skill-mapping-guide.md) whole; the template of the level chosen; [source-frameworks-guide.md](source-frameworks-guide.md) and the source guide it names |
+| start | — | this guide, [genome-format-guide.md](genome-format-guide.md), [extracted-genome-guide.md](extracted-genome-guide.md) and [skill-mapping-guide.md](skill-mapping-guide.md) whole; the template of the level chosen |
+| start | the source is a UiPath project or solution (`project.json`, `.uipx`, `project.uiproj`, `.xaml`, `.flow`, `agent.json` and the other kinds that section lists) | [uipath-source-guide.md](uipath-source-guide.md) whole and [source-frameworks-guide.md § UiPath sources](source-frameworks-guide.md) only |
+| start | the source is another framework's export | [source-frameworks-guide.md](source-frameworks-guide.md) whole, then the pack's source guide it names |
 | from the inventory on | the inventory or a signal shows per-item work: queue items fetched or added, a loop over rows, files or mails with a per-item catch, a work list read, a framework state machine | [transactional-shape-guide.md](transactional-shape-guide.md), in the turn after the first such signal |
 | the sizing plan is stated | the extraction runs in parts | [parts-guide.md](parts-guide.md) and [extraction-parts-guide.md](extraction-parts-guide.md) |
 | the first suspected source defect | — | [defect-verification-guide.md](defect-verification-guide.md) |
@@ -26,7 +28,7 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 
 ## Source Guides
 
-A UiPath source is read with [uipath-source-guide.md](uipath-source-guide.md). Any other source is read through the framework migration pack: resolve it, select the framework row, run its script and read its source guide in full before Step 1, exactly as [source-frameworks-guide.md](source-frameworks-guide.md) states. No pack, or no row matches → stop as that section says. Do not improvise an extraction from an unknown framework.
+A UiPath source is read with [uipath-source-guide.md](uipath-source-guide.md), as [source-frameworks-guide.md § UiPath sources](source-frameworks-guide.md) states for `extract`. Any other source is read through the framework migration pack: resolve it, select the framework row, run its script and read its source guide in full before Step 1, exactly as [source-frameworks-guide.md](source-frameworks-guide.md) states. No pack, or no row matches → stop as that section says. Do not improvise an extraction from an unknown framework.
 
 ## Pipeline
 

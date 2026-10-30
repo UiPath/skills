@@ -43,7 +43,7 @@ Rules:
 - Slug: split CamelCase on capitals, lowercase, hyphens for spaces, strip other characters. "Invoice Processing" → `invoice-processing-genome.md`; "InvoiceIntake" → `invoice-intake-genome.md`; "Email Triage & Routing" → `email-triage-routing-genome.md`.
 - Extracted genomes take slug from source project or solution name; fall back to directory name.
 - Process genome components: `<process-slug>-genome/<component-slug>-genome.md`. Component slug from project name.
-- A genome authored from an SDD is written beside it, named after it: `<process-slug>-sdd.md` → `<process-slug>-genome.md`.
+- A genome authored from an SDD is written beside it, named after it: `<process-slug>-sdd.md` → `<process-slug>-genome.md`. A solution SDD gets one genome, named after its root and written beside it: `<solution-slug>-solution-sdd.md` → `<solution-slug>-genome.md`, its component genomes in `<solution-slug>-genome/`.
 
 ## Design Links
 

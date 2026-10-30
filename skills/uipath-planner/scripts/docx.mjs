@@ -100,7 +100,8 @@ function files(dir) {
 function extract(exe, [input, output = `${stem(input)}.md`]) {
   if (!isFile(input)) { err(`ERROR: input file not found: ${input}`); return 1; }
   const mediaDir = /\.md$/i.test(output) ? `${output.slice(0, -3)}-media` : `${output}-media`;
-  const code = pandoc(exe, [input, "-f", "docx", "-t", "gfm", "--wrap=none", `--extract-media=${mediaDir}`, "-o", output], input);
+  // absolute, so an input named like `-x.docx` is never read by pandoc as an option
+  const code = pandoc(exe, [resolve(input), "-f", "docx", "-t", "gfm", "--wrap=none", `--extract-media=${mediaDir}`, "-o", output], input);
   if (code) return code;
   out(`Markdown: ${output}`);
   if (!existsSync(mediaDir)) { out("Media:    none embedded"); return 0; }
@@ -123,7 +124,7 @@ function exportSdd(exe, [input, ...rest]) {
       reference = rest[++i];
     } else output = rest[i];
   }
-  const pandocArgs = [input, "-f", "gfm", "-t", "docx", "--toc", "--toc-depth=2", "-o", output];
+  const pandocArgs = [resolve(input), "-f", "gfm", "-t", "docx", "--toc", "--toc-depth=2", "-o", output];
   if (reference) {
     if (!isFile(reference)) { err(`ERROR: reference doc not found: ${reference}`); return 1; }
     pandocArgs.push(`--reference-doc=${reference}`);

@@ -5,12 +5,23 @@
 //   check-genome.mjs component <genome.md> [--profile core|strict] [--expect TOKEN ...] [--source-map TOKEN ...]
 //   check-genome.mjs process   <genome.md> [--profile core|strict] [--skills SKILL ...] [--expect TOKEN ...]
 //   check-genome.mjs tokens    <pattern>   --expect TOKEN ... [--min FRACTION] [--files N]
-//   check-genome.mjs context   <genome.md>   JSON of the facts the read plans branch on: level (from the first-line
-//                                           marker), sha256, components, extracted (a Source Map with a table,
-//                                           not a stub), source_framework and build_mode (build|refactor|migration;
-//                                           refactor when the framework names UiPath), transactional (null without
-//                                           a level or a Transactional Shape section), designed_in, and the strict
-//                                           check result
+//   check-genome.mjs context   <genome.md>   JSON of the facts the read plans branch on: level (from the preamble
+//                                           marker, found as the component and process checks find it), sha256,
+//                                           components ({path, library} per Components row of a process genome),
+//                                           test_components (a test-case group in the Components table, or a
+//                                           `Test case:` step), independent_packages (the process Deployment's
+//                                           Packaging line: true for independent packages, false for a solution,
+//                                           null when it states neither or the genome is a component), extracted
+//                                           (a Source Map with a table, not a stub), source_framework (the Source
+//                                           Map's `Source framework` row; a component with a `Part of:` line takes
+//                                           it from its process genome's Source Map) and build_mode
+//                                           (build|refactor|migration|unknown: refactor when the framework names
+//                                           UiPath, migration for another framework, unknown when the genome is
+//                                           extracted and no framework is found, build otherwise), transactional
+//                                           (null without a level or a Transactional Shape section), designed_in
+//                                           (the `Designed in:` link resolved against the genome's folder, null
+//                                           without one) with designed_in_link (the link as written), and the
+//                                           strict check result
 //   check-genome.mjs skills                 JSON of the skill names a genome may cite: build and operate
 //   check-genome.mjs -h | --help
 //   component and process also take: [--shape transactional|stub [--flows N] [--unit TOKEN ...]]
@@ -73,7 +84,7 @@ const RETIRED_SKILLS = ["uipath-rpa-workflows", "uipath-coded-workflows", "uipat
 // the skill a genome's preamble routes its build to; `uipath-genome` names it in a genome written before the split
 const BUILDER = "uipath-genome-builder";
 const LEGACY_BUILDER = "uipath-genome";
-const routesToBuilder = (s) => s.includes(LEGACY_BUILDER);
+const routesToBuilder = (s) => /\buipath-genome(?:-builder)?(?![\w-])/.test(s);
 
 const COMPONENT_SECTIONS = [
   "Overview", "Target Applications", "Build With", "Platform Dependencies", "Interface",
@@ -502,7 +513,11 @@ function checkProcess(path, a) {
   const componentErrors = [];
   for (const [link, target, isLibrary] of links.filter((_, i) => first(i))) {
     if (!existsSync(target)) r.core(`linked component genome missing on disk: ${link}`);
-    else componentErrors.push(...checkComponent(target, { ...a, expect: [], sourceMap: [] }, true, false, isLibrary));
+    else {
+      // one unreadable component file is one finding; the process genome and its other components are still checked
+      try { componentErrors.push(...checkComponent(target, { ...a, expect: [], sourceMap: [] }, true, false, isLibrary)); }
+      catch (e) { if (!(e instanceof InputError)) throw e; r.core(e.message); }
+    }
   }
   const handoffs = lines(sectionBody(text, "Handoffs")).filter((l) => l.startsWith("|"));
   if (handoffs.length < 4) r.core(`Handoffs table: ${Math.max(0, handoffs.length - 2)} rows, expected >= 2`); // header + separator + >= 2 rows
@@ -621,17 +636,39 @@ function loadInventory(path, what) {
   return data;
 }
 
-const MARKER = /<!--\s*UIPATH-AUTOMATION-GENOME:\s*(component|process)\b/i;
+// the preamble marker, matched anywhere in the file as checkCommon matches it; the first match decides the level
+const MARKER = /UIPATH-AUTOMATION-GENOME:\s*(component|process)\b/i;
 const DESIGNED_IN = /^>\s*Designed in:\s*\[[^\]]*\]\(([^)]+)\)/m;
+const PART_OF = /^>\s*Part of:[^\n]*?\]\(([^)]+-genome\.md)\)/m;
+const TEST_GROUP = /\btest[- ]case group\b/i;
+
+/** The Source Map framework of the process genome a `Part of:` line links; null when the link does not resolve. */
+function parentFramework(path, text) {
+  const m = text.match(PART_OF);
+  if (!m) return null;
+  const parent = resolvePath(dirname(path), m[1]);
+  if (!existsSync(parent)) return null;
+  try { return sourceMapFacts(read(parent)).framework; } catch (e) { if (e instanceof InputError) return null; throw e; }
+}
+
+/** true for independent packages, false for one solution, null when the Packaging line states neither. */
+function independentPackages(text) {
+  const m = sectionBody(text, "Deployment").match(/^\s*[-*]\s*\*\*Packaging:?\*\*:?([^\n]*)$/im);
+  if (!m) return null;
+  if (/\bindependent\b/i.test(m[1])) return true;
+  return /\bsolution\b/i.test(m[1]) ? false : null;
+}
 
 /** The facts every read plan branches on, read from the file once instead of re-derived by each lane. */
 export function context(path) {
   const [raw, decoded] = decode(path);
   const text = decoded.replace(/\r\n?/g, "\n");
-  const marker = text.split("\n", 1)[0].match(MARKER);
+  const marker = text.match(MARKER);
   const level = marker ? marker[1].toLowerCase() : null;
-  const { extracted, framework } = sourceMapFacts(text);
+  const { extracted, framework: own } = sourceMapFacts(text);
+  const framework = own ?? (level === "component" ? parentFramework(path, text) : null);
   const designedIn = text.match(DESIGNED_IN);
+  const links = level === "process" ? componentLinks(path, text) : [];
   const hasShape = sectionPos(h2Positions(text), "Transactional Shape") !== null;
   const a = { ...DEFAULTS, profile: "strict" };
   const errors = !level ? [] : level === "component" ? checkComponent(path, a, false) : checkProcess(path, a);
@@ -639,13 +676,18 @@ export function context(path) {
     genome: posix(path),
     sha256: createHash("sha256").update(raw).digest("hex"),
     level,
-    components: level === "process" ? componentLinks(path, text).map(([, t]) => posix(t)) : [],
+    components: links.map(([, t, library]) => ({ path: posix(t), library })),
+    test_components: !level ? null : level === "process"
+      ? tableRows(sectionBody(text, "Components"), "| #").some((row) => row.length > 2 && TEST_GROUP.test(row[2]))
+      : /^\d+\. \*\*Test case:/m.test(sectionBody(text, "Workflow")),
+    independent_packages: level === "process" ? independentPackages(text) : null,
     extracted,
     source_framework: framework,
-    build_mode: !level ? null : !framework ? "build" : /\buipath\b/i.test(framework) ? "refactor" : "migration",
+    build_mode: !level ? null : framework ? (/\buipath\b/i.test(framework) ? "refactor" : "migration") : extracted ? "unknown" : "build",
     transactional: !level || !hasShape ? null : !sectionBody(text, "Transactional Shape").trim().startsWith(STUB),
-    designed_in: designedIn ? designedIn[1] : null,
-    check: { profile: "strict", ok: Boolean(level) && !errors.length, errors: level ? errors : ["first line carries no <!-- UIPATH-AUTOMATION-GENOME: component|process marker"] },
+    designed_in: designedIn ? posix(resolvePath(dirname(path), designedIn[1])) : null,
+    designed_in_link: designedIn ? designedIn[1] : null,
+    check: { profile: "strict", ok: Boolean(level) && !errors.length, errors: level ? errors : ["the genome carries no <!-- UIPATH-AUTOMATION-GENOME: component|process marker"] },
   };
 }
 

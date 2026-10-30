@@ -9,6 +9,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](genome-format-gui
 | Phase | Condition | Read |
 |---|---|---|
 | start | — | this guide and [genome-format-guide.md](genome-format-guide.md) whole; [extracted-genome-guide.md](extracted-genome-guide.md) when `context` reports `extracted`; [transactional-shape-guide.md](transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose `transactional` is true |
+| a related resource is given | the genome is extracted and the user hands over a PDD, SOP, runbook or other resource beside the source | [extract-guide.md](extract-guide.md) Step 1 (the related-resources question) and Step 3's **Related resources** paragraph |
 | partial re-extraction | — | [extract-guide.md](extract-guide.md), [defect-verification-guide.md](defect-verification-guide.md) and the source guide, as for `extract`; [parts-guide.md](parts-guide.md) and [extraction-parts-guide.md](extraction-parts-guide.md) when the list runs in parts |
 
 Each phase's reads go out in at most three turns: turn 1 every file read whole and the heading list of every file read by section; turn 2 the sections chosen; turn 3 only what turn 2 routed to.
@@ -39,7 +40,7 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 | "This step is wrong / missing" | Workflow, then Build With, Acceptance Criteria, Source Map |
 | "Rename / reorder / remove steps" | Workflow and Source Map together, so every step still names its source objects |
 | "Drop the Source Map" | Remove section from every file — genome is being shared as a blueprint; say target and data migration will no longer be possible from it |
-| "Here is the PDD too" | [extract-guide.md](extract-guide.md) Step 3, **Related resources** |
+| "Here is the PDD too" (any related resource) | A related resource of [extract-guide.md](extract-guide.md) Step 1: read it and write what it settles as Step 3's **Related resources** paragraph states |
 | "Is this really a defect?" / "check it against the source" | Rerun both passes of [defect-verification-guide.md](defect-verification-guide.md) for that finding, and re-mark it in the body and its Source Map row by what the passes show |
 | "Fix this defect in the rebuild" / "keep the source's behaviour" | A ruling: written at the step after the source fact, cited in the defect index's Rebuild follows cell, and carried into the step's Workflow lines, criteria and Source Map row ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)) |
 | "Also translate what is not covered", or an unused part | § Partial Re-extraction with the objects of the Source Map's `Not covered` or `Unused` row the user names |

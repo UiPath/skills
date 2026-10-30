@@ -12,7 +12,7 @@ Two verbs. A genome is the markdown specification of an automation — what it d
 
 ## Setup
 
-1. **Read the genome's facts once:** `node "<SKILL_DIR>/scripts/check-genome.mjs" context "<GENOME_MD>"`. `<SKILL_DIR>` is the folder holding this file. Its JSON — `level`, `extracted`, `source_framework`, `build_mode` (`build` | `refactor` | `migration`), `transactional`, `designed_in`, `components`, `check` — answers every read-plan condition about the genome; never re-derive them from its prose, and never run the checker again for them. A `check` that is not ok is a result for the verb to act on, not a failed call. When `node` is missing or the call fails, say "Context loading did not run; I'll read the genome directly", then read its first line and sections and continue.
+1. **Read the genome's facts once:** `node "<SKILL_DIR>/scripts/check-genome.mjs" context "<GENOME_MD>"`. `<SKILL_DIR>` is the folder holding this file. Its JSON fields are: `level` (`component` | `process`, from the genome marker), `components` (a process genome's linked component genomes, each `{path, library}`), `test_components` and `independent_packages` (true, false or null, from the Deployment section's Packaging line), `extracted`, `source_framework`, `build_mode` (`build` | `refactor` | `migration` | `unknown` — `unknown` is an extracted genome whose framework was not found: read the Source Map's `Source framework` row, or ask the user which framework the source is when the row names none), `transactional`, `designed_in` (the path of the SDD the `Designed in:` line links) and `check` (the strict check: `ok` and `errors`). Never re-derive a field it emits from the genome's prose, and never run the checker again for them; a read-plan condition no field answers is read from the genome section the read plan names. A `check` that is not ok is a result for the verb to act on, not a failed call. When `node` is missing or the call fails, say "Context loading did not run; I'll read the genome directly", then read its first line and sections and continue.
 2. **Open the verb's guide** and read it whole; its § Read Plan names every other file the verb reads and when. Never work from memory of a guide.
 
 ## Verbs
@@ -40,7 +40,7 @@ Any other input is another skill's job: say which, and stop.
 node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict
 ```
 
-`build` runs it through `context` before it asks anything and sorts its findings into blocking ones and report items ([build-guide.md](references/build-guide.md) § Start). Exit 0 passes; exit 1 prints one `FAIL:` line per finding — `check` reports each finding as an edit for `uipath-planner` and stops, never fixing the genome; exit 2 is a usage error. What it checks: the script's header comment.
+`build` runs it through `context` before it asks anything and sorts its findings into blocking ones and report items ([build-guide.md § Start](references/build-guide.md)). Exit 0 passes; exit 1 prints one `FAIL:` line per finding — `check` reports each finding as an edit for `uipath-planner` and stops, never fixing the genome; exit 2 is a usage error. A hand-run check whose level argument is not the level the first-line marker names reports the marker as missing: run it again with the marker's level — that `FAIL` is not a genome finding. What it checks: the script's header comment.
 
 ## Critical Rules
 
