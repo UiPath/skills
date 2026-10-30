@@ -38,3 +38,27 @@ Not used in Studio Web: there is no `.uipx` on disk and Studio Web owns project 
 <!--skill-flavor:auth-column-note:start-->
 > **Auth column — not applicable in Studio Web.** The host injects your session on every call. `uip login` / `logout` / `auth` / `config` are not in the Studio Web CLI — never run them, and never check login state.
 <!--skill-flavor:auth-column-note:end-->
+
+<!--skill-flavor:case-debug-command:start-->
+## uip maestro case debug
+
+Debug a case in the open solution through the host. **Executes the case for real: sends emails, posts messages, calls APIs. Only run on explicit user consent.**
+
+```bash
+uip maestro case debug "<ProjectName>"
+uip maestro case debug "<ProjectName>" --inputs '{"claimId": "C-1"}'
+```
+
+| Flag | Description |
+|------|-------------|
+| `[project]` | Project name in the open solution, not a path. Defaults to the active project |
+| `-i, --inputs <json>` | Inline JSON only; `@file` is not supported |
+| `--entry-point <path>` | Entry point as `entry-points.json` spells it. Defaults to the project's default |
+| `--timeout <seconds>` | Seconds to wait for a terminal state. Default `120`, clamped to `10`-`150` |
+
+Output is plain text, not JSON: status, `Trace ID: <id>` when one was found, run logs, execution trace. Exit 1 means `Faulted` or `Failed`. `TimedOut after <N>s` also exits 1, but the run is still going in the host and the timeout does not stop it: do not troubleshoot it, and do not re-run it. Tell the user to follow the run in Studio Web. Run debug again only after a fresh AskUserQuestion that says it executes the case again, possibly while the first run is still going. Run `uip maestro case debug --help` for the host's exact surface.
+<!--skill-flavor:case-debug-command:end-->
+
+<!--skill-flavor:refresh-before-debug:start-->
+Not run in Studio Web, including before `uip maestro case debug` and where Rule 15 or an edit recipe says to run it before debug or publish: the host keeps solution resources in sync.
+<!--skill-flavor:refresh-before-debug:end-->

@@ -1,0 +1,62 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpTemplate",
+  "Data": {
+    "type": "object",
+    "required": [
+      "name",
+      "slug"
+    ],
+    "anyOf": [
+      {
+        "required": [
+          "swaggerUrl"
+        ]
+      },
+      {
+        "required": [
+          "swaggerContent"
+        ]
+      }
+    ],
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 100
+      },
+      "slug": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 50,
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "description": {
+        "type": "string",
+        "maxLength": 500
+      },
+      "version": {
+        "type": "string",
+        "maxLength": 20
+      },
+      "swaggerUrl": {
+        "type": "string",
+        "maxLength": 2000,
+        "description": "URL of the OpenAPI document. Set this or swaggerContent."
+      },
+      "swaggerContent": {
+        "type": "string",
+        "description": "The OpenAPI document as a JSON string. Used instead of swaggerUrl when both are set."
+      },
+      "headers": {
+        "type": "string",
+        "maxLength": 4000,
+        "description": "Newline-separated Name:Value lines. A value of exactly %ASSETS/<asset-name>% is replaced by that Orchestrator asset's value, from the server's folder, each time the header is sent. Sent with the spec download and every API call."
+      },
+      "useRelay": {
+        "type": "boolean",
+        "description": "Download the spec and call the API through UiPath Relay, for hosts in a private network."
+      }
+    }
+  }
+}
