@@ -8,6 +8,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.flow_check import (  # noqa: E402
+    _fail_with_capture,
     assert_flow_has_node_type,
     find_node_output_field,
     find_node_output_value,
@@ -54,15 +55,15 @@ def _assert_celsius_output(payload: dict) -> None:
     try:
         celsius = float(value)
     except (TypeError, ValueError):
-        sys.exit("FAIL: convertToCelsius output has no numeric temperatureC value")
+        _fail_with_capture("convertToCelsius output has no numeric temperatureC value")
 
     summary = find_node_output_field(payload, "summary", node_ids={"formatSummary"})
     match = re.search(r"(-?\d+(?:\.\d+)?)\s*°?C\b", summary or "", re.IGNORECASE)
     if match is None:
-        sys.exit("FAIL: formatSummary output does not include a Celsius value")
+        _fail_with_capture("formatSummary output does not include a Celsius value")
     if abs(float(match.group(1)) - celsius) > 0.2:
-        sys.exit(
-            "FAIL: formatSummary Celsius value does not match convertToCelsius output"
+        _fail_with_capture(
+            "formatSummary Celsius value does not match convertToCelsius output"
         )
 
 
