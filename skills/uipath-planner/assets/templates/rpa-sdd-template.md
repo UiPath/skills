@@ -878,7 +878,7 @@ This SDD captures architecture and decisions. To generate the implementation tas
 
 The planner will:
 
-1. Detect the `## Planner Handoff` header and read the 6 fields above.
+1. Detect the `## Planner Handoff` header and read the fields above.
 2. Parse the project list section (per the `Project list section` field) and derive a per-skill task list.
 3. Write `<PROCESS_NAME_KEBAB>-tasks.md` alongside this SDD with the task list and dependencies.
 <!--skill-flavor:planner-live-tasks:start-->

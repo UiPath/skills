@@ -1,6 +1,6 @@
 # case design path — conversational case authoring
 
-Design a Case Management SDD in conversation, then write it. `uipath-planner` is the sole author of case SDDs; every case design path runs through this lane, including a build handoff from `uipath-maestro-case` (same conversation, same user). Run three moves — **Listen**, **Sketch**, **Confirm** — and write on the accept answer. Never interrogate: decide by best assumption, disclose every decision, spend at most ONE clarifying call.
+Design a Case Management SDD in conversation, then write it. `uipath-planner` is the sole author of case SDDs; every case design signal runs through this guide, including a build handoff from `uipath-maestro-case` (same conversation, same user). Run three moves — **Listen**, **Sketch**, **Confirm** — and write on the accept answer. Never interrogate: decide by best assumption, disclose every decision, spend at most ONE clarifying call.
 
 ## Read Plan
 
@@ -139,7 +139,7 @@ Every non-verbatim value gets a source-ledger entry AND a line in the confirmati
 
 **The one clarifying call (rare).** Ask before the confirmation ONLY when: (a) no case is inferable at all (empty or contentless request), (b) the user's own inputs contradict each other on a shape-changing field, (c) the user asked to be asked, or (d) the mandatory other-path sweep found no source signal at all. Batch everything into ONE AskUserQuestion call (≤ 4 questions). An unclear answer → take the best assumption, disclose it, move on — never re-press. Everything else: assume and inform.
 
-**Red flags — you're about to over-ask.** "I should confirm the trigger type" / "review could be action or agent, better ask" / "the SLA wording is vague" — STOP: each layer's stated **Default** decides all of these; the decision line in the confirmation is the user's chance to correct. The bar for a question is *contradiction or emptiness*, not uncertainty. Equally, there is NO size gate, no "approval before creating files", no lightweight mode — the only stops in this lane are the one clarifying call (when earned), the confirmation itself (with its folded resolution gate), and the explicit-sign-off path.
+**Red flags — you're about to over-ask.** "I should confirm the trigger type" / "review could be action or agent, better ask" / "the SLA wording is vague" — STOP: each layer's stated **Default** decides all of these; the decision line in the confirmation is the user's chance to correct. The bar for a question is *contradiction or emptiness*, not uncertainty. Equally, there is NO size gate, no "approval before creating files", no lightweight mode — the only stops on this path are the one clarifying call (when earned), the confirmation itself (with its folded resolution gate), and the explicit-sign-off path.
 
 ### Confirm — the single checkpoint
 

@@ -8,7 +8,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](genome-format-gui
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide and [genome-format-guide.md](genome-format-guide.md) whole; [extracted-genome-guide.md](extracted-genome-guide.md) when `context` reports `extracted`; [transactional-shape-guide.md](transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose `transactional` is true |
+| start | — | this guide whole; [genome-format-guide.md](genome-format-guide.md) every section before § Design Links for a process genome and every section before § Process Genome Sections for a component genome (`context`'s `level`), plus § Design Links when `context` reports `designed_in`; [extracted-genome-guide.md](extracted-genome-guide.md) when `context` reports `extracted`; [transactional-shape-guide.md](transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose `transactional` is true |
 | a related resource is given | the genome is extracted and the user hands over a PDD, SOP, runbook or other resource beside the source | [extract-guide.md](extract-guide.md) Step 1 (the related-resources question) and Step 3's **Related resources** paragraph |
 | partial re-extraction | — | [extract-guide.md](extract-guide.md), [defect-verification-guide.md](defect-verification-guide.md) and the source guide, as for `extract`; [parts-guide.md](parts-guide.md) and [extraction-parts-guide.md](extraction-parts-guide.md) when the list runs in parts |
 

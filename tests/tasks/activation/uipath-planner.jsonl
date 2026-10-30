@@ -109,4 +109,3 @@
 {"id": "uipath-planner-112", "prompt": "I'm running a self-paced workshop next week for people new to UiPath agents and Maestro. Propose a couple of scenarios they could build in an afternoon with only public APIs and Excel.", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-113", "prompt": "Blueprint what the Windows-Legacy project in ./OldBot does before we rebuild it from scratch on the Windows framework", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-114", "prompt": "Turn the claims-handling PDD in ./docs/claims-pdd.md into a genome we can build from", "expected_skill": "uipath-planner"}
-{"id": "uipath-planner-115", "prompt": "Validate the genome format of ./claims-genome.md after my manual edits", "expected_skill": "uipath-planner"}

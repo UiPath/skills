@@ -1,6 +1,15 @@
 # Scenario Proposal Guide — scenarios for a goal
 
-`author` reads this guide when the input is a goal, not a process: a self-paced workshop, a demo, trying a product or an application. The planner proposes scenarios; the scenario the user picks is the description `author` continues from at [author-guide.md](author-guide.md) Step 2. What this path reads: [author-guide.md § Read Plan](author-guide.md), the rows for a goal.
+`author` reads this guide when the input is a goal, not a process: a self-paced workshop, a demo, trying a product or an application. The planner proposes scenarios; the scenario the user picks is the description `author` continues from at [author-guide.md](author-guide.md) Step 2.
+
+## Read Plan
+
+These rows add to the rows of [author-guide.md § Read Plan](author-guide.md) that hold for every input; a goal has no SDD, so that plan's Step 5 rows hold too.
+
+| Phase | Condition | Read |
+|---|---|---|
+| the input is received | — | this guide whole |
+| the products are asked (item 1) | the delivery model is known | [product-selection-guide.md § Constraint Gate](product-selection-guide.md#constraint-gate); [platform-availability-guide.md](platform-availability-guide.md) |
 
 ## Propose scenarios for a goal
 

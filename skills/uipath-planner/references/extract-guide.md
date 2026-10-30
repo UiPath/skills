@@ -17,10 +17,12 @@ The writing rules of [genome-format-guide.md § Writing Rules](genome-format-gui
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide, [genome-format-guide.md](genome-format-guide.md), [extracted-genome-guide.md](extracted-genome-guide.md) and [skill-mapping-guide.md](skill-mapping-guide.md) whole; the template of the level chosen |
+| start | — | this guide, [extracted-genome-guide.md](extracted-genome-guide.md) and [skill-mapping-guide.md](skill-mapping-guide.md) whole; [genome-format-guide.md](genome-format-guide.md) every section before § Process Genome Sections |
 | start | the source is a UiPath project or solution (`project.json`, `.uipx`, `project.uiproj`, `.xaml`, `.flow`, `agent.json` and the other kinds that section lists) | [uipath-source-guide.md](uipath-source-guide.md) whole and [source-frameworks-guide.md § UiPath sources](source-frameworks-guide.md) only |
 | start | the source is another framework's export | [source-frameworks-guide.md](source-frameworks-guide.md) whole, then the pack's source guide it names |
 | from the inventory on | the inventory or a signal shows per-item work: queue items fetched or added, a loop over rows, files or mails with a per-item catch, a work list read, a framework state machine | [transactional-shape-guide.md](transactional-shape-guide.md), in the turn after the first such signal |
+| the sizing plan is stated | — | the template of the level chosen ([component](../assets/templates/component-genome-template.md), [process](../assets/templates/process-genome-template.md)) |
+| the sizing plan is stated | a process genome | [genome-format-guide.md](genome-format-guide.md) § Process Genome Sections |
 | the sizing plan is stated | the extraction runs in parts | [parts-guide.md](parts-guide.md) and [extraction-parts-guide.md](extraction-parts-guide.md) |
 | the first suspected source defect | — | [defect-verification-guide.md](defect-verification-guide.md) |
 

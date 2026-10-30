@@ -10,3 +10,4 @@
 {"id": "uipath-genome-builder-010", "prompt": "The planner handed over customer-address-sync-genome.md \u2014 build it", "expected_skill": "uipath-genome-builder"}
 {"id": "uipath-genome-builder-011", "prompt": "Check that ./artemis-2-mission-monitor-genome.md is a valid genome before we build it", "expected_skill": "uipath-genome-builder"}
 {"id": "uipath-genome-builder-012", "prompt": "Rebuild our extracted Workday test suite from ./workday-tests-genome.md as UiPath test cases", "expected_skill": "uipath-genome-builder"}
+{"id": "uipath-genome-builder-013", "prompt": "Validate the genome format of ./claims-genome.md after my manual edits", "expected_skill": "uipath-genome-builder"}

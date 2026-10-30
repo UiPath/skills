@@ -110,7 +110,7 @@ Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution
 
 ## Pattern 7 — Build from the genome
 
-**When it applies:** the SDD's Planner Handoff names a `Genome` that exists — `design` has the planner's `author` verb write one for every `ready` SDD on the turn after the SDD, never for a Case Management SDD, which `uipath-maestro-case` builds from the SDD — and `uipath-genome-builder` is installed. When it is not installed, the genome stays on disk for a later build and the plan derives per-skill tasks from the SDD with the patterns below. The genome carries every component, its skill, its steps and its acceptance criteria; `uipath-genome-builder` invokes each owning skill itself, in the genome's order, so the plan does not fan out per skill.
+**When it applies:** the SDD's Planner Handoff names a `Genome` that exists (which SDDs get one: [sdd-writing-guide.md](sdd-writing-guide.md) § Step 3) and `uipath-genome-builder` is installed. When it is not installed, the genome stays on disk for a later build and the plan derives per-skill tasks from the SDD with the patterns below. The genome carries every component, its skill, its steps and its acceptance criteria; `uipath-genome-builder` invokes each owning skill itself, in the genome's order, so the plan does not fan out per skill.
 
 ```
 1. uipath-genome-builder   → build the genome: configuration questions the SDD left open, then every component through its owning skill

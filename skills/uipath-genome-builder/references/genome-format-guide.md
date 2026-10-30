@@ -8,7 +8,7 @@ Content rules for every genome, however produced — `uipath-planner`'s `author`
 
 1. **Choose the genome level before writing**: one buildable project is a component genome, two or more a process genome with one component genome per project — § Two Levels.
 2. **Infer complexity, never ask for it** — § Complexity.
-3. **Replication-grade detail in behavioural wording**, with no activity names, variable names, file paths or code syntax in the body — § Workflow and § Provenance.
+3. **Replication-grade detail in behavioural wording**, with no activity names, variable names, file paths or code syntax in the body (a case component's build input excepted — § Interface) — § Workflow and § Provenance.
 4. **Configuration Questions carry only the values left open** — § Configuration Questions.
 5. **Every section present, always**, with a stub line where one does not apply — § Stub Lines.
 6. **One skill per Build With row, from the mapping guide only**; operate-only skills belong under Platform Dependencies — [skill-mapping-guide.md](skill-mapping-guide.md).
@@ -45,12 +45,6 @@ Rules:
 - Process genome components: `<process-slug>-genome/<component-slug>-genome.md`. Component slug from project name.
 - A genome authored from an SDD is written beside it, named after it: `<process-slug>-sdd.md` → `<process-slug>-genome.md`. A solution SDD gets one genome, named after its root and written beside it: `<solution-slug>-solution-sdd.md` → `<solution-slug>-genome.md`, its component genomes in `<solution-slug>-genome/`.
 
-## Design Links
-
-One optional blockquote line after the blueprint blockquote (the process genome's, or a standalone component's) ties a genome to the document it derives from. It is written only when that document exists; it is never invented.
-
-- **`> Designed in: [<SDD title>](<relative path to the SDD>)`** — the genome was authored from that agreed SDD. The SDD's decisions — the split and queue design, the implementation mode, the package pins, the refactor answers — are recorded in the sections that hold them (Transactional Shape evidence, Deployment, Configuration Questions defaults) and execution reads them as answered. The genome restates the SDD's products and projects and never contradicts them; a change to them is an SDD change first.
-
 ## Section Rules
 
 ### Overview
@@ -74,7 +68,7 @@ Every Orchestrator or Integration Service resource touched: queues, assets, cred
 **Values the platform keeps per environment are assets.** A value the source platform holds outside the process and sets per environment — an environment variable, a global value — is one asset, named as the source names it, of the type its values take: Text, Integer or Bool, Secret for a secret, a credential asset for an account. When its value is open, the Configuration Question that asks it names the asset. A component whose type reads no assets keeps such a value in the variable its owning skill provides. A source's own configuration store is not such a value (§ Configuration Questions).
 
 ### Interface (component)
-Inputs, outputs, side effects. Mandatory content for a component inside a process genome (it is the contract the Handoffs table relies on). Standalone components may stub it: "Runs unattended with no arguments; outputs are the side effects listed in Workflow." Name each input and output by its contract name, without the source's direction prefix (`in_`, `out_`, `io_`): `MailboxFolder`, not `in_MailboxFolder`. A contract name that is a reserved word of Visual Basic or C#, or a .NET namespace or type name (`To`, `Sub`, `Date`, `Type`, `Object`, `System`), takes a qualifier (`ToAddresses`, `KeyDate`, `SapSystem`): the expression language is chosen at execution, and such a name breaks the expressions of one of the two. The source argument is provenance and goes to the Source Map.
+Inputs, outputs, side effects. Mandatory content for a component inside a process genome (it is the contract the Handoffs table relies on). Standalone components may stub it: "Runs unattended with no arguments; outputs are the side effects listed in Workflow." Name each input and output by its contract name, without the source's direction prefix (`in_`, `out_`, `io_`): `MailboxFolder`, not `in_MailboxFolder`. A contract name that is a reserved word of Visual Basic or C#, or a .NET namespace or type name (`To`, `Sub`, `Date`, `Type`, `Object`, `System`), takes a qualifier (`ToAddresses`, `KeyDate`, `SapSystem`): the expression language is chosen at execution, and such a name breaks the expressions of one of the two. The source argument is provenance and goes to the Source Map. A `uipath-maestro-case` component whose case a Case Management SDD designed names that SDD's path, relative to the genome, as its build input: `uipath-genome-builder` hands that SDD to `uipath-maestro-case` unchanged, and the case is built from it, never redesigned.
 
 **Library components** (a project other components consume as a package) carry, instead of the three bullets, one table per public workflow — never one table shared by several, which hides each workflow's types and directions: `Argument | Direction | Type | Description`. The Type is the one the rebuild gives the argument — a flag is a Boolean and a count a number, whatever text the source carried them in — and the description states the default and the value format (what a flag means, how a date is rendered, which side quotes a value), plus the conventions consumers rely on (naming, defaults, what a failed final check does). This table is the contract consumers are authored against before the library packs; every detail it omits becomes a question between two build groups. A workflow over the analyzer's argument cap (20) carries its optional switches and values in one options object — one In argument with its own table (`Field | Type | Default | Description`).
 
@@ -164,21 +158,6 @@ Banned: "completes successfully", "handles errors properly", and anything code-l
 | "Uses ReadPDF to process InvoiceFile" | "Given an invoice PDF, extracts vendor_name, invoice_number, line items (description, qty, unit_price), tax, and total" |
 | "SendMail sends to admin@company.com" | "When processing fails after retries, sends a notification to the configured administrator with invoice_number and failure reason" |
 
-### Process Map diagrams (process)
-One Mermaid component-view diagram (`flowchart TB`), kept under `## Process Map` after the numbered stage list, with no subheading above it. Sequence and order live in the stage list, never in the diagram.
-- **Nodes:** the automation's own components and its queues only; no people or outside systems, so no lanes. One node per queue, never a grouped node, drawn as a cylinder `[( )]` with no number. Every component node carries its number from the Components table in brackets.
-- **Trigger marks** prefix a component node: ⏰ time trigger, 🔔 queue trigger (a component that consumes a queue). A component with no mark is invoked by another component; one with several entry points carries the mark of each triggered one. A trigger is *[Inferred]* when the source holds no schedules. A short legend under the diagram names the marks and the arrows.
-- **Arrows** point the way the data or work travels; never a double-headed arrow, draw two. Solid: a component adds to a queue (component → queue), takes from or reads a queue (queue → component), or calls another component (caller → callee). Dotted: a handoff between components through a file or mail rather than a queue or a call.
-- **Layout:** wrap node labels with `<br/>` at about 34 characters per line and edge labels at about 26; never put `<br/>` in a subgraph title (a test project's components may share one subgraph). A Mermaid parse success does not catch clipped text, so render the diagram (mermaid-cli) and look at it.
-
-Mermaid cannot render BPMN 2.0 itself; when the customer wants a formal model, add a sidecar `<process-slug>-process.bpmn` authored from the Process Map (the `uipath-maestro-bpmn` skill knows the format) and link it from this section.
-
-### Handoffs (process)
-One row per edge between components: mechanism (queue item, start job, Flow invoke, event, file drop, Action Center task, a shared store one component writes and another reads when asked — a Data Fabric entity, a database table), data schema passed, and what happens when the receiving side fails. This table is the data contract; component Interface sections must agree with it. When the Transactional Shape's producer and consumer are two phases of one component that form a flow ([transactional-shape-guide.md](transactional-shape-guide.md) rule 12) exchanging items through a store (a database work table, a folder), add one row for that edge too, marked as intra-component: it is the data contract the shape cites. Every flow of the Transactional Shape cites the Handoffs row that carries its items. The table follows the Process Map diagram: no rows for people or systems the automation only reads from or acts on (the diagram omits them), a human task a component creates (an Action Center task) keeps its row because it carries a data contract, one row per queue edge naming the queue(s) by name, never "the queues", and one row per call and per file or mail handoff between components.
-
-### Deployment (process)
-Packaging (one solution vs independent packages), entry points and triggers, target folders or environments. Name the buildable projects explicitly; a library is listed with the feed it is published to, apart from the solution's projects, since it is never one of them; when test components exist, Deployment names exactly one test project and one Test Manager test set per test component.
-
 ### Complexity
 `simple | medium | complex`. Never ask the user to declare it. Component genomes: inferred from the description, PDD or SDD (the authoring lane's Step 3) or from source signals (the extraction lane's Step 5); both default to the lower level when ambiguous and escalate when later evidence demands it. Process genomes are `medium` with at most three **buildable projects** and no human lanes, otherwise `complex`; the test-case groups of the single test project count as that one project, not one component each. A human lane is a human actor whose action the process **waits on** (an approval, a task, a mailed decision); recipients of notifications are not lanes.
 
@@ -224,3 +203,28 @@ Every writing verb writes the file(s) to the working directory immediately — n
 ## Provenance
 
 The body of a genome reads as a specification, not a report: no "the project contains", no file paths in Workflow or Business Rules, no activity or variable names anywhere. Provenance lives only in the Source Map section. A message, log text or text shown to a person (a form's title, instruction or field label) the source writes is behaviour and is written in the body as the source spells it; a text that embeds a variable or activity name, a path or one of the source project's own file names is described in the body instead ("the corrupt-register message") and quoted in full in its step's Source Map row.
+
+## Process Genome Sections
+
+The section rules of the sections only a process genome has; a component genome has none of them.
+
+### Process Map diagrams (process)
+One Mermaid component-view diagram (`flowchart TB`), kept under `## Process Map` after the numbered stage list, with no subheading above it. Sequence and order live in the stage list, never in the diagram.
+- **Nodes:** the automation's own components and its queues only; no people or outside systems, so no lanes. One node per queue, never a grouped node, drawn as a cylinder `[( )]` with no number. Every component node carries its number from the Components table in brackets.
+- **Trigger marks** prefix a component node: ⏰ time trigger, 🔔 queue trigger (a component that consumes a queue). A component with no mark is invoked by another component; one with several entry points carries the mark of each triggered one. A trigger is *[Inferred]* when the source holds no schedules. A short legend under the diagram names the marks and the arrows.
+- **Arrows** point the way the data or work travels; never a double-headed arrow, draw two. Solid: a component adds to a queue (component → queue), takes from or reads a queue (queue → component), or calls another component (caller → callee). Dotted: a handoff between components through a file or mail rather than a queue or a call.
+- **Layout:** wrap node labels with `<br/>` at about 34 characters per line and edge labels at about 26; never put `<br/>` in a subgraph title (a test project's components may share one subgraph). A Mermaid parse success does not catch clipped text, so render the diagram (mermaid-cli) and look at it.
+
+Mermaid cannot render BPMN 2.0 itself; when the customer wants a formal model, add a sidecar `<process-slug>-process.bpmn` authored from the Process Map (the `uipath-maestro-bpmn` skill knows the format) and link it from this section.
+
+### Handoffs (process)
+One row per edge between components: mechanism (queue item, start job, Flow invoke, event, file drop, Action Center task, a shared store one component writes and another reads when asked — a Data Fabric entity, a database table), data schema passed, and what happens when the receiving side fails. This table is the data contract; component Interface sections must agree with it. When the Transactional Shape's producer and consumer are two phases of one component that form a flow ([transactional-shape-guide.md](transactional-shape-guide.md) rule 12) exchanging items through a store (a database work table, a folder), add one row for that edge too, marked as intra-component: it is the data contract the shape cites. Every flow of the Transactional Shape cites the Handoffs row that carries its items. The table follows the Process Map diagram: no rows for people or systems the automation only reads from or acts on (the diagram omits them), a human task a component creates (an Action Center task) keeps its row because it carries a data contract, one row per queue edge naming the queue(s) by name, never "the queues", and one row per call and per file or mail handoff between components.
+
+### Deployment (process)
+Packaging (one solution vs independent packages), entry points and triggers, target folders or environments. Name the buildable projects explicitly; a library is listed with the feed it is published to, apart from the solution's projects, since it is never one of them; when test components exist, Deployment names exactly one test project and one Test Manager test set per test component.
+
+## Design Links
+
+One optional blockquote line after the blueprint blockquote (the process genome's, or a standalone component's) ties a genome to the document it derives from. It is written only when that document exists; it is never invented.
+
+- **`> Designed in: [<SDD title>](<relative path to the SDD>)`** — the genome was authored from that agreed SDD. The SDD's decisions — the split and queue design, the implementation mode, the package pins, the refactor answers — are recorded in the sections that hold them (Transactional Shape evidence, Deployment, Configuration Questions defaults) and execution reads them as answered. The genome restates the SDD's products and projects and never contradicts them; a change to them is an SDD change first.
