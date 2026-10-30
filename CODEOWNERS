@@ -168,6 +168,11 @@
 /tests/tasks/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
 /tests/tasks/activation/uipath-connector-builder.jsonl @mukeshkumar-uipath @chandusailella @apoosarla-uipath
 
+# BYO LLM connector skill (LLM Gateway)
+/skills/uipath-byo-llm-connector/ @denispetre @vstoleru-uipath @dragosvelcea
+/tests/tasks/uipath-byo-llm-connector/ @denispetre @vstoleru-uipath @dragosvelcea
+/tests/tasks/activation/uipath-byo-llm-connector.jsonl @denispetre @vstoleru-uipath @dragosvelcea
+
 # Flow skill — node guides (away team owned)
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/connector-params.md @chandusailella @UiPath/maestro-cli-team
