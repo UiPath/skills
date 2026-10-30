@@ -132,9 +132,7 @@ node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
 
 Back up the project to `mktemp -d`, `cp` the merge output over it whole, validate it there (not the edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`.
 Source that must stay inside the project (relative sidecars): [the safe project loop](references/brownfield.md#the-safe-project-loop).
-
-**True-brownfield procedure:**
-**[`references/brownfield.md`](references/brownfield.md)**.
+**True-brownfield procedure:** **[`references/brownfield.md`](references/brownfield.md)**.
 <!--skill-flavor:sdk-editing:end-->
 
 ## Builder frame
