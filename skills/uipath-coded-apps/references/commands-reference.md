@@ -265,11 +265,11 @@ uip codedapp deploy -n my-webapp --folder-path "Finance/Invoicing"
 # Deploy with folder key
 uip codedapp deploy -n my-webapp --folder-key my-folder-key
 
-# Same deploy, key via env var — skips the --folder-key pre-check (incomplete folder lookup on accounts with very many folders)
+# Same deploy, key via env var
 UIPATH_FOLDER_KEY=my-folder-key uip codedapp deploy -n my-webapp
 ```
 
-> `--folder-key` pre-checks the key against one unpaged copy of the account's folder list, which is incomplete on accounts with very many folders. If it reports an existing folder as `not found among folders accessible to your account`, use the env-var form — see [pack-publish-deploy.md](pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
+> On `uip` older than 1.204.0 only, `--folder-key` pre-checked the key against an incomplete copy of the account's folder list and could report an existing folder as `not found among folders accessible to your account`. Current CLIs do not — see [pack-publish-deploy.md](pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
 
 **Fresh deploy output:**
 ```
