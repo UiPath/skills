@@ -1,6 +1,14 @@
 # True-brownfield decompile, edit, and merge
 
-Use this procedure when a task supplies a deployed `.flow` and no `.flow.ts`.
+Use this procedure to edit a `.flow` that already exists, unless the task
+supplied its `.flow.ts`. A `.flow.ts` an earlier turn left is not supplied: the
+canvas may have changed the `.flow` since.
+
+<!--skill-flavor:fresh-decompile-cleanup:start-->
+Decompile fresh, after removing an earlier turn's pipeline artifacts
+([The generated pipeline](#the-generated-pipeline)).
+
+<!--skill-flavor:fresh-decompile-cleanup:end-->
 Do not hand-transcribe the graph: decompile it to builder source, edit that
 source, and merge only the delta back into the original.
 
@@ -29,7 +37,7 @@ it recursively.
 PROJECT=Solution/Deployed
 CANONICAL="$PROJECT/Deployed.flow"
 WORK=.flow-work/Deployed
-mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
+rm -rf "${WORK:?}" && mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow" --no-check
@@ -156,6 +164,7 @@ source, and so do the pipeline and the by-hand loop below. Hand the edited
 itself:
 
 ```bash
+rm -rf "${WORK:?}" && mkdir -p "$WORK/candidate"
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
 flow-sdk flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL" \
@@ -208,7 +217,10 @@ silently: if `grep -q STRICT .flow-sdk/Deployed.pipeline.mjs` fails, use the
 hand loop below with `merge --strict`.
 
 Re-running it after further edits repeats only the compile and merge — the
-baseline is captured once and reused. Pass `--no-pipeline` to `decompile` when
+baseline is captured once and reused. A later turn is not a further edit: before
+its fresh decompile, remove the earlier turn's artifacts and agent sidecars:
+`[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name 'Deployed.baseline' -o -name 'Deployed.edited' -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +`.
+Pass `--no-pipeline` to `decompile` when
 you deliberately want the manual sequence instead. The pipeline writes its
 `.flow` artifacts into that `.flow-sdk/` directory (the baseline and the edited
 compile each in a directory of their own, for the agent reason above), and the
@@ -219,10 +231,30 @@ deliverable. When source must remain in the
 project for relative sidecars, use the safe project loop above.
 <!--skill-flavor:generated-pipeline:end-->
 
+## A supplied source
+
+<!--skill-flavor:supplied-source:start-->
+When the task supplied `.flow-sdk/Deployed.flow.ts`, do not decompile: it
+overwrites that source. Compile its baseline before the edit, then merge:
+
+```bash
+[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
+mkdir -p .flow-sdk/baseline .flow-sdk/edited
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow --no-check
+# Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/edited/Deployed.flow
+uip maestro flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
+  -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow
+```
+
+Install `.flow-sdk/Deployed.merged.flow` as [the same loop by hand](#the-same-loop-by-hand) says.
+<!--skill-flavor:supplied-source:end-->
+
 ## The same loop by hand
 
 <!--skill-flavor:hand-loop:start-->
 ```bash
+[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
 uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts --no-pipeline
 mkdir -p .flow-sdk/baseline .flow-sdk/edited
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow
@@ -525,8 +557,8 @@ Do not run `uip maestro flow format` on the merged file; it discards the author'
 
 Decompiled source carries that layout as a `.layout({ nodes })` block, one long-hand entry per node.
 Keep it.
-Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves.
-At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
+Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves; a container the edit grows can still push that spot aside, so keep where it lands.
+At the root, an existing node's position and size come from the original whatever the source says, except that `merge` shifts later nodes and grows a container to fit added steps; moving or resizing one in the source does nothing, so for any other change set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
 Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile,
 <!--skill-flavor:subflow-layout-sdk-upgrade:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).

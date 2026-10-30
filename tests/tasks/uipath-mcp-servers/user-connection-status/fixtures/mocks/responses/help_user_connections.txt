@@ -1,0 +1,31 @@
+                       uip agenthub mcp-user-connections                        
+Manage the per-user Integration Service connections of a remote MCP server.
+
+A user's connection is used for that user's calls instead of the server's
+own (its --connection-id).
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-user-connections [options] [command]                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ delete   Remove a user's connection from a remote MCP server.                │
+│ help     display help for command                                            │
+│ list     List the per-user connections of a remote MCP server.               │
+│ set      Set a user's connection on a remote MCP server, replacing any they  │
+│          have.                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: info)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘

@@ -558,6 +558,21 @@ head SHA. Keep that expression when editing a `concurrency:` block.
 `required-check contract guard` (in `test-helpers.yml`) fails on the first two. The
 current set, the rationale, and how to change it: [docs/REQUIRED-CHECKS.md](docs/REQUIRED-CHECKS.md).
 
+### skill-lint PR check
+
+`No new skill-lint errors` lints every same-repo PR with the internal [skill-linter](https://github.com/UiPath/skill-linter). It compares the PR with the commit it branched from and reports only what the PR adds: as annotations on the changed lines, and as one PR comment that is updated on every push. Findings already on `main` are never reported. Fork PRs are not linted, because they get no secrets.
+
+- **Phase 1 (now):** the check stays green; new errors and warnings are only reported. Later, new errors will fail it, and new warnings never will.
+- **Rule severities** live in [`.skill-lint.yaml`](.skill-lint.yaml). The check always reads it from `main`, so an edit applies once merged; the PR that edits it only checks that it loads.
+- **Silencing a finding:** add an HTML comment with a reason. Silenced findings are still listed in the PR comment for reviewers.
+
+  ```markdown
+  <!-- skill-lint-disable-next-line CODE-FENCE-LANG reason="plain console output" -->
+  ```
+
+  `skill-lint-disable-line RULE` works on the same line, and `skill-lint-disable RULE` covers the whole file.
+- **Running it locally** needs access to the internal repository: `skill-lint lint . -c .skill-lint.yaml --compare-to <checkout-of-main>`.
+
 ## Style Guide
 
 ### Markdown
