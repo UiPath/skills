@@ -248,7 +248,7 @@ Public entry-point variables have a two-layer runtime contract:
   (`elementId="<process id>"`) with the stable id used by process expressions.
   Map `=vars.<public-input-id>` to the internal id on that StartEvent. Nodes
   read only the internal id. A `uipath:input` nothing maps is never a process
-  variable, so a node reading it gets an empty value at run time:
+  variable:
 
   ```xml
   <uipath:mapping version="v1">
@@ -747,14 +747,15 @@ string), on failure in `Instructions` with the errors.
 
 - **`VARIABLE_DOES_NOT_EXIST`** — a reference with no matching declaration.
   Always a defect; fix it.
-- **`VARIABLE_NOT_SET`** and **`read but never assigned`** on a variable a node
-  reads — never expected; fix before finishing. The start event has no mapping
+- **`VARIABLE_NOT_SET`** and **`read but never assigned`** on a variable a node or
+  a flow condition reads — never expected; fix before finishing. The start event has no mapping
   for that input ([Variables](#variables)), or nothing upstream writes the
   variable. Do not scope the input to the process to silence it: that empties
   the published input contract (`entry-points.json`'s `input` becomes `[]`)
   and a `debug --inputs` run still succeeds, which hides the break. Judge
   correctness by the published contract (`entry-points.json` declares the
-  input and every output) and by a clean warning list.
+  input and every output) and no `VARIABLE_NOT_SET` or `read but never assigned`
+  left.
 
 If `validate` is unknown or runs only deploy-readiness checks, update
 the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).

@@ -133,9 +133,8 @@ Write those variables before this node: a start-event input mapping (the
 `<uipath:mapping>` on the start event in
 [the minimal file](structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples))
 or an earlier node's output.
-`validate` warning `read but never assigned` on one is never expected, unlike
-`VARIABLE_NOT_SET` on a start-event input: it means the url is empty there, so
-write the variable before this node.
+`validate` warning `read but never assigned` on one is never expected: it means
+the url is empty there, so write the variable before this node.
 
 The other keys are `authentication` (`manual` or `connector`), `method`, and
 optional `headers` and `query` objects and a `body` (sent for `POST`, `PUT`

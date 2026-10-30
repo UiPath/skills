@@ -722,7 +722,7 @@ Draft mode only.
    expected result. Report the pair once and continue; `refresh` (4f)
    succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
    it names a reference with no declaration. Fix every `VARIABLE_NOT_SET` and
-   `read but never assigned` on a variable a node reads; neither is expected.
+   `read but never assigned` on a variable a node or a flow condition reads; neither is expected.
    A declared start-event input reaches a process variable only through the
    start event's `BPMN.Variables` mapping, see
    [references/structural-bpmn.md#variables](references/structural-bpmn.md#variables).
