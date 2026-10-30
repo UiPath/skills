@@ -66,6 +66,24 @@ EMBED_LOCALE_NOTE = (
     "error."
 )
 
+# `uip login status` is answered here, not passed to the real uip, so the
+# session the agent sees does not depend on whichever account the sandbox is
+# provisioned with. The organization is the one in the portal link that the
+# unreachable-id task pastes (`/acme/DefaultTenant/`); if the two differ the
+# agent rightly reports that the link belongs to another organization.
+LOGIN_STATUS = {
+    "Result": "Success",
+    "Code": "LoginStatus",
+    "Data": {
+        "Status": "Logged in",
+        "IdentityType": "User",
+        "CredentialSource": "SavedLogin",
+        "Organization": "acme",
+        "Tenant": "DefaultTenant",
+        "BaseUrl": "https://alpha.uipath.com",
+    },
+}
+
 PORTAL_NOT_PROVISIONED = {
     "ErrorCode": "not_found",
     "Retry": "RetryWillNotFix",
@@ -539,6 +557,8 @@ def main():
         handled = handle_looker(args[2:])
         if handled is not None:
             return handled
+    if args[:2] == ["login", "status"] and not {"--help", "-h"} & set(args):
+        return emit(LOGIN_STATUS, EXIT_SUCCESS)
     real = real_uip()
     if not real:
         sys.stderr.write("uip: command not found\n")
