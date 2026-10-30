@@ -234,3 +234,32 @@ def test_run_debug_caps_retries_on_a_persistent_poll_5xx(monkeypatch, tmp_path) 
     with pytest.raises(bpmn_live.CheckFailure, match="504 Gateway Timeout"):
         bpmn_live.run_debug(tmp_path, {}, None, retry=bpmn_live.DebugRetry.TRANSIENT)
     assert calls["n"] == 2
+
+
+def test_import_exact_imports_from_the_solution_dir_without_flags(
+    monkeypatch, tmp_path
+) -> None:
+    project = tmp_path / "Proj"
+    project.mkdir()
+    bpmn = project / "p.bpmn"
+    bpmn.write_text("<x/>")
+    solution = tmp_path / "Sol"
+    calls = []
+
+    def fake_run_cli(arguments, *, timeout, log_file=None, cwd=None):
+        calls.append((arguments, cwd))
+        if arguments[2] == "init":
+            solution.mkdir()
+            (solution / "Sol.uipx").write_text("{}")
+        if arguments[3:4] == ["import"]:
+            (solution / "Proj").mkdir()
+            (solution / "Proj" / "p.bpmn").write_text("<x/>")
+        return subprocess.CompletedProcess(arguments, 0, '{"Result": "Success", "Data": {}}', "")
+
+    monkeypatch.setattr(bpmn_live, "run_cli", fake_run_cli)
+    bpmn_live.import_exact(bpmn, project, solution)
+
+    arguments, cwd = calls[-1]
+    assert arguments[-1] == str(project.resolve())
+    assert "--solution-file" not in arguments
+    assert cwd == solution

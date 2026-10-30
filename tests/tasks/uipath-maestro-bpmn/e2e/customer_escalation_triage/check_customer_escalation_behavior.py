@@ -475,7 +475,6 @@ def main() -> None:
             f"solution init produced {len(solution_files)} .uipx files in "
             f"{solution_dir}, expected exactly one"
         )
-    solution_file = solution_files[0]
     imported = run_cli(
         [
             "uip",
@@ -483,10 +482,9 @@ def main() -> None:
             "projects",
             "import",
             str(PROJECT.resolve()),
-            "--solutionFile",
-            str(solution_file),
         ],
         timeout=SOLUTION_IMPORT_TIMEOUT,
+        cwd=solution_dir,
     )
     payload_data(imported, "import exact BPMN project")
     imported_project = solution_dir / PROJECT.name
