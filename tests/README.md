@@ -149,6 +149,7 @@ tests/
 │   ├── smoke.yaml                # PR-gate smoke (Linux, docker, faster budget)
 │   ├── smoke-windows.yaml        # Windows RPA smoke (tempdir)
 │   ├── activation.yaml           # Opt-in skill-activation benchmark (early-stop)
+│   ├── autopilot-golden.yaml     # Autopilot golden scenarios — docker, Delegate, 8 replicates per model
 │   ├── skill-comparison-playbook.md      # A/B comparison playbook (research)
 │   └── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
 ├── tasks/
@@ -195,6 +196,7 @@ criteria that passed.
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
 | `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
 | `use-case-tiers.yaml` | docker | Opt-in A/B for the `uipath-agents` use-case tasks: `assisted` vs `unassisted` (lower-tier helper text stripped) | 200 | 1200s | 900s |
+| `autopilot-golden.yaml` | docker | Autopilot golden scenarios (Delegate, picked model and effort, 8 replicates per model) | task's own | 2400s | 1800s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -213,8 +215,9 @@ included. The `unassisted` variant strips the block with a regex
 `prompt_mutation`, so a higher-tier model gets only the context, the user's
 request and the closing autonomy line. Helper text is never graded, so both
 variants share the same success criteria. A task without the markers runs
-identically in both variants. The "Run Coder Eval" workflow always passes
-`-e experiments/nightly.yaml`, so run this experiment locally:
+identically in both variants. The "Run Coder Eval" workflow runs only
+`experiments/nightly.yaml` and `experiments/autopilot-golden.yaml`, so run this
+experiment locally:
 
 ```bash
 SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run \
@@ -248,6 +251,125 @@ every tenant call fails as a capability problem rather than a config one:
 ```bash
 docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
   --entrypoint bash skills-codex:latest -c 'uip login status'
+```
+
+`autopilot-golden.yaml` measures the Autopilot golden scenarios: Autopilot through
+coder-eval's built-in `delegate` agent on GPT-5.6 Luna at `xhigh` effort unless the run
+picks another model or effort, 8 replicates per task and model, in `nightly.yaml`'s docker
+sandbox, which masks the eval material from the agent. The Delegate agent takes no system
+prompt, so the experiment starts every task prompt with "You are Autopilot in Studio Web
+in an API Workflow." To run it locally,
+install the `@uipath/delegate-stdio` host, export `DELEGATE_ENV=alpha`, and sign
+Delegate in (`npx @uipath/delegate-cli login --env alpha`, or
+`DELEGATE_AUTH_TOKEN`/`DELEGATE_TENANT_ID`/`DELEGATE_ORG_ID` with the
+`DELEGATE_ORG_SLUG`/`DELEGATE_TENANT_SLUG` slugs), as coder_eval's
+`docs/agents/DELEGATE.md` describes. `--driver tempdir` runs it without the image, so
+also sign the host CLI in with `uip login` (HTTP and connector activities resolve
+through the registry) and export `SKILLS_REPO_PATH`, without which coder_eval only
+warns and loads no skills. Keep `-j` at 6 or below: 8 concurrent Delegate tasks
+starve the host's 60s init handshake. Run one `coder-eval` process at a time: a
+Delegate host started by a second process can attach to the first one's interop and
+loses its shell when the task that spawned it ends. On tempdir the agent can also read this
+repository, graders included, so a local run is a measurement rather than a hardened
+gate.
+
+In CI, dispatch **Run Coder Eval** with `task_globs`
+`tasks/uipath-api-workflow/golden/**/*.yaml`, `agent` `delegate`, `experiment`
+`autopilot-golden` and `parallelism` up to `6`. Pick the model in `autopilot_model`, which
+lists the models Autopilot's model picker offers, and the reasoning effort in
+`autopilot_effort`, `low` to `max` (default `xhigh`). Every run in the dispatch uses that
+one effort, and a model without the picked tier runs at the nearest one below it. The
+partition job refuses any other agent, any model that is not one of those options,
+windows-tagged tasks, and any task outside `tasks/uipath-api-workflow/golden/`, since the
+run passes `--include-skipped`. To compare models in one run, list several options in
+`agent_model`, comma-separated: each becomes a variant named after its model, and the
+job summary shows the per-model tables. Each model adds 8 runs of
+every task to a Linux job that stops after 330 minutes, so put at most two models in one
+run and dispatch the others as separate runs, which run in parallel. Keep it to four
+runs at once at `parallelism` 6: more can hold over 24 Salesforce fixture accounts at a
+time, and the seed then stops as INFRA. One failed replicate turns the run red, so read
+the pass rates in the summary, not the run status. coder-eval has no price for
+`gpt-6-1-sol`, `gemini-3-8-flash` or `kimi-k3`, so their cost stays blank.
+
+This repository is public, so a golden run publishes aggregates only. The job summary
+holds the comparison tables, and the GitHub artifact holds `experiment.md`,
+`experiment.json` and each `variant.json`, for 3 days. Transcripts, task results,
+`run.md` (it quotes failure messages) and the agents' workspaces go only to the
+evalboard, which is private and keeps them 14 days, and nowhere when it is not
+configured. Before anything is published, every file in the run is scrubbed of the
+run's tokens and of anything shaped like a JWT, and nothing is published while a file
+still holds one.
+
+The task containers never get the bot's refresh token.
+`.github/scripts/golden-sandbox-auth.sh` keeps it in the host's `.auth` and mounts a
+read-only copy that holds only the access token at `/.uipath-auth`, with a fresh writable
+`/.uipath` for the `uip` CLI whose `.auth` links to that copy. It re-mints every 50
+minutes, retrying a failed mint, and revokes every refresh token the run minted when the
+run ends. Only `jira_release_notes`, whose LLM judge runs inside the container, gets the
+model gateway's key, and its judge reads only each note's summary and description and
+the fixture tickets it names. The agent still works signed in, with network access, so
+dispatch these runs only against a tenant, bot user and connections kept for these
+tests: a Salesforce org that holds synthetic data only, and a Jira connection that sees
+the fixture project only.
+
+The three scenarios live under `tasks/uipath-api-workflow/golden/`: `vat_check`
+(EU VIES, no connection), `jira_release_notes` and `salesforce_expiring_contracts`.
+The last two need one Enabled connection per connector on the tenant the run signs in
+to. The Jira grader looks for exactly one in the run user's personal workspace, or, when
+the workspace has none or cannot be listed, exactly one across all folders, the order the
+skill gives the agent. The Salesforce seed writes only through exactly one Enabled
+connection in the personal workspace and stops as INFRA otherwise; the Salesforce grader
+reuses the connection the seed wrote through. Both tasks ship `skip: true` and run only with
+`--include-skipped` until that tenant has their connections:
+
+| Task | Connections | Fixture |
+|------|-------------|---------|
+| `jira_release_notes` | `uipath-atlassian-jira`, plus `uipath-openai-openai` or UiPath GenAI Activities (`uipath-uipath-airdk`) for the model call. The prompt asks for OpenAI, so without an OpenAI connection some runs stop to ask whether to use another model and fail with no project | Two epics with closed and open tickets, created once by `seed_jira_fixture.py`, which writes their keys into `fixture.json`; commit it. Grading only reads Jira |
+| `salesforce_expiring_contracts` | `uipath-salesforce-sfdc`, signed in as a dedicated test user that can create, activate and delete Accounts and Contracts, never a personal org | Created by `pre_run` and deleted by `post_run`; the grader adds one more contract before it runs the workflow |
+
+Use `--include-skipped` only on a tenant whose connections exist for these tests: the
+Salesforce task creates and deletes records in whatever org its connection signs in
+to, and the agent builds against whichever connection it finds. A Salesforce connection
+in the run user's personal workspace is the only one written to, so keep only the
+dedicated test user's there, and give every run user, CI's bot included, the test user's
+connection in its own workspace. The Jira task's
+`llm_judge` grades through `checker_context` (litellm), so a local run also needs
+`CODEX_BASE_URL` and `CODEX_API_KEY`. Scheduled runs leave skipped tasks out: flip a
+task's `skip` once the tenant those runs use has its connections. A run that ends as ERROR in `pre_run`, or a
+criterion that fails with an `INFRA:` line (grader exit 3), means a service or fixture
+was unavailable (VIES down, a missing or duplicate connection, an unseeded or changed
+Jira fixture, a Salesforce user that cannot activate Contracts, leftover Salesforce
+fixture accounts that cleanup could not delete, a workflow bound to a Salesforce
+connection other than the fixture's, a provider refusing for load or quota): re-run it
+instead of counting it against the pass rate.
+
+An agent can leave helper projects beside the one it was asked for. Each grader then
+grades a project whose inputs fit its scenario, preferably one that declares the output
+the scenario expects (`pick_workflow` in each `check_*.py`). The informational "leaves a
+single project" criterion lists the projects and marks the graded one.
+
+The Jira site and the Salesforce org are shared with other people, so the connector tasks
+change as little as they can. Neither grader runs a workflow with an activity that would
+change Jira or Salesforce or reach someone (`side_effect_tasks` in
+`golden/_shared/golden_connectors.py`): any Integration Service call but a model call or a
+read of the scenario's connector (a GET, a POST to a search endpoint in `POST_READS`, or a
+trigger), any HTTP Request, any other call, and any script or `${}` expression that calls out with
+`fetch`, `require`, `process` or the like. Such
+a workflow fails, unless the Salesforce grader finds values for declared boolean inputs
+under which none of those activities can run (`salesforce_expiring_contracts/switches.py`).
+It reads each switch and its value from the If conditions that read
+`$workflow.input.<name>`, never from the input's name, and follows the runtime's flow: a
+branch without `then: "exit"` falls through into the next one. The Jira grader only reads,
+and reports INFRA when a fixture ticket's status, summary or epic changed. The Salesforce cleanup
+deletes only Accounts named `Golden expiring contracts <token>` that its own Salesforce
+user created, at most 5 stale ones per run. The agent can edit the state file that records
+the run's own account, so cleanup and the grader touch that account only once Salesforce
+reports it under the recorded fixture name and creator. The seed stops as INFRA without creating
+anything while more than 24 are left over, so a cleanup that keeps failing cannot fill
+the org.
+
+```bash
+coder-eval run 'tasks/uipath-api-workflow/golden/**/*.yaml' -e experiments/autopilot-golden.yaml --driver tempdir --include-skipped -j 6
 ```
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`); arming is per-criterion — each `skill_triggered` criterion carries a `stop_early: {on_pass: stop}` block that ends a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.5: 0.9.5 removed `stop_when` and the run-level `run_limits.stop_early: true` master arm — both are hard errors now. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).

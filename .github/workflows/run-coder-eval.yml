@@ -3,7 +3,7 @@ name: Run Coder Eval
 # Every historical run is titled "Run Coder Eval", so the run list is a wall of
 # identical rows. Keep that prefix (it is how the workflow is recognised) and
 # append the three fields anyone actually scans for.
-run-name: Run Coder Eval · ${{ inputs.task_globs }} · ${{ inputs.agent }} · @${{ github.actor }}
+run-name: Run Coder Eval · ${{ inputs.task_globs }} · ${{ inputs.experiment == 'autopilot-golden' && format('{0} on {1} at {2}', inputs.agent, inputs.agent_model || inputs.autopilot_model, inputs.autopilot_effort) || inputs.agent }} · @${{ github.actor }}
 
 # GH-hosted runner for coder-eval against the skills task tree. Use cases:
 # single task ad-hoc, a folder, or (with explicit confirmation) the full
@@ -89,9 +89,41 @@ on:
       # variable (CLAUDE_CODE_MODEL / CODEX_MODEL / ANTIGRAVITY_MODEL) — which is
       # where the default model lives, so it stays correct whichever agent is picked.
       agent_model:
-        description: 'Model override (blank = default).'
+        description: 'Model override (blank = default). autopilot-golden: one or more comma-separated autopilot_model options to compare; blank = autopilot_model.'
         type: string
         default: ''
+      experiment:
+        description: 'Experiment. autopilot-golden needs agent delegate, task_globs tasks/uipath-api-workflow/golden/**/*.yaml; runs skipped tasks too.'
+        type: choice
+        options:
+          - nightly
+          - autopilot-golden
+        default: nightly
+      autopilot_model:
+        description: 'Autopilot model for autopilot-golden (agent_model, when set, replaces it).'
+        type: choice
+        options:
+          - gpt-5-6-luna
+          - gpt-5-6-terra
+          - gpt-5-6-sol
+          - gpt-6-luna
+          - gpt-6-1-sol
+          - claude-opus-5-5
+          - claude-sonnet-5-5
+          - claude-haiku-5-5
+          - gemini-3-8-flash
+          - kimi-k3
+        default: gpt-5-6-luna
+      autopilot_effort:
+        description: 'Autopilot reasoning effort for every autopilot-golden run.'
+        type: choice
+        options:
+          - low
+          - medium
+          - high
+          - xhigh
+          - max
+        default: xhigh
 
 # No concurrency group: this is a manual, on-demand workflow — allow any number
 # of runs (e.g. the same task across claude / codex / antigravity) at once.
@@ -116,8 +148,57 @@ jobs:
       coder_eval_version:    ${{ steps.ceref.outputs.version }}
       coder_eval_uipath_ref: ${{ steps.ceref.outputs.ref }}
       image_tag:             ${{ steps.ceref.outputs.image_tag }}
+      autopilot_models:      ${{ steps.models.outputs.autopilot_models }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - name: Resolve the Autopilot models
+        id: models
+        env:
+          EXPERIMENT:      ${{ inputs.experiment }}
+          AGENT:           ${{ inputs.agent }}
+          AGENT_MODEL:     ${{ inputs.agent_model }}
+          AUTOPILOT_MODEL: ${{ inputs.autopilot_model }}
+        run: |
+          set -euo pipefail
+          if [ "$EXPERIMENT" != "autopilot-golden" ]; then
+            if [[ "$AGENT_MODEL" == *,* ]]; then
+              echo "::error::a comma-separated agent_model needs experiment autopilot-golden"
+              exit 1
+            fi
+            exit 0
+          fi
+          if [ "$AGENT" != "delegate" ]; then
+            echo "::error::experiment autopilot-golden runs Autopilot: set agent to delegate (it is $AGENT)"
+            exit 1
+          fi
+          workflow=.github/workflows/run-coder-eval.yml
+          offered="$(sed -n '/^      autopilot_model:$/,/^ \{0,6\}[a-z_]*:$/s/^          - //p' "$workflow")"
+          if [ -z "$offered" ]; then
+            echo "::error::found no autopilot_model options in $workflow"
+            exit 1
+          fi
+          models=()
+          IFS=',' read -r -a requested <<< "${AGENT_MODEL:-$AUTOPILOT_MODEL}"
+          for id in "${requested[@]}"; do
+            id="${id//[[:space:]]/}"
+            id="$(tr '[:upper:]' '[:lower:]' <<< "${id//_/-}")"
+            [ -n "$id" ] || continue
+            if ! grep -qxF -- "$id" <<< "$offered"; then
+              echo "::error::'$id' is not an autopilot_model option: $(paste -sd ' ' - <<< "$offered")"
+              exit 1
+            fi
+            [[ " ${models[*]:-} " == *" $id "* ]] || models+=("$id")
+          done
+          if [ "${#models[@]}" -eq 0 ]; then
+            echo "::error::agent_model lists no model"
+            exit 1
+          fi
+          if [ "${#models[@]}" -gt 2 ]; then
+            echo "::warning::${#models[@]} models may not finish inside the Linux job's timeout-minutes; runs dispatched one per model run in parallel instead"
+          fi
+          echo "Autopilot models: ${models[*]}"
+          echo "autopilot_models=${models[*]}" >> "$GITHUB_OUTPUT"
 
       # Two independent knobs, resolved once here so both run jobs install the
       # same thing: the framework wheel version (tests/.coder-eval-version — the
@@ -156,6 +237,7 @@ jobs:
         env:
           INPUT_GLOBS: ${{ inputs.task_globs }}
           CONFIRMED:   ${{ inputs.confirm_large_run }}
+          EXPERIMENT:  ${{ inputs.experiment }}
         run: |
           set -euo pipefail
           if [ -z "$INPUT_GLOBS" ]; then
@@ -186,6 +268,24 @@ jobs:
           if [ "$TOTAL" -eq 0 ]; then
             echo "::error::No task files matched the provided globs"
             exit 1
+          fi
+          if [ "$EXPERIMENT" = "autopilot-golden" ] && [ "$WCOUNT" -gt 0 ]; then
+            echo "::error::experiment autopilot-golden runs on the Linux job only; drop the $WCOUNT windows-tagged task(s) from task_globs"
+            exit 1
+          fi
+          if [ "$EXPERIMENT" = "autopilot-golden" ]; then
+            outside=()
+            for f in "${LINUX[@]}"; do
+              case "/${f#./}" in
+                */./* | */../*) outside+=("$f") ;;
+                /tasks/uipath-api-workflow/golden/*) ;;
+                *) outside+=("$f") ;;
+              esac
+            done
+            if [ "${#outside[@]}" -gt 0 ]; then
+              echo "::error::experiment autopilot-golden runs only the tasks under tests/tasks/uipath-api-workflow/golden/; ${#outside[@]} matched file(s) are elsewhere, e.g. ${outside[0]}"
+              exit 1
+            fi
           fi
           if [ "$TOTAL" -gt 50 ] && [ "$CONFIRMED" != "true" ]; then
             echo "::error::Glob matches $TOTAL tasks (> 50). Tick confirm_large_run to authorize."
@@ -401,8 +501,12 @@ jobs:
           CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           CE_USERNAME:              ${{ vars.UIPATH_BOT_USERNAME }}
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
+          EXPERIMENT:               ${{ inputs.experiment }}
         run: |
           bash .github/scripts/refresh-auth.sh
+          if [ "$EXPERIMENT" = "autopilot-golden" ]; then
+            exit 0
+          fi
           # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task
           # containers (reference anti-cheat), so container-root can no longer
           # read the host-owned ~/.uipath extra_mount (mounted by
@@ -410,6 +514,20 @@ jobs:
           # the "other" bits so the mounted .auth file (mode 600) is readable —
           # mirrors coder-eval's own grant_container_access.
           chmod -R o+rwX "$HOME/.uipath"
+
+      - name: Keep the bot token fresh
+        if: inputs.experiment == 'autopilot-golden'
+        env:
+          UIPATH_URL:               https://alpha.uipath.com
+          UIPATH_ORGANIZATION_NAME: ${{ vars.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:   ${{ vars.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:       ${{ vars.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:         ${{ vars.UIPATH_TENANT_ID }}
+          CLIENT_ID:                ${{ vars.UIPATH_ROPC_CLIENT_ID }}
+          CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+          CE_USERNAME:              ${{ vars.UIPATH_BOT_USERNAME }}
+          CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
+        run: bash .github/scripts/golden-sandbox-auth.sh start
 
       # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
       # can no longer import the group-level _shared/ helper by walking up the
@@ -438,6 +556,9 @@ jobs:
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
+          EXPERIMENT:               ${{ inputs.experiment }}
+          AUTOPILOT_MODELS:         ${{ needs.partition.outputs.autopilot_models }}
+          AUTOPILOT_EFFORT:         ${{ inputs.autopilot_effort }}
           # The model when agent_model is blank: one repo variable per harness, named the
           # same as the nightly runner's, and no hardcoded fallback — an unset variable
           # fails the run (guard below) rather than evaluating a model nobody chose.
@@ -472,6 +593,10 @@ jobs:
           # Guard the empty case (e.g. a future non-dispatch trigger): the
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
+          if ! [[ "$j" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::parallelism must be a positive whole number"
+            exit 1
+          fi
 
           # Forwarded to coder-eval via the action's `env` input, which exports
           # these for that process only. A name list, so it cannot drift from the
@@ -482,8 +607,8 @@ jobs:
           env_lines=()
           for name in SKILLS_REPO_PATH API_BACKEND AWS_BEARER_TOKEN_BEDROCK AWS_REGION \
                       BEDROCK_MODEL E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
-                      TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL \
-                      CLAUDE_CODE_MODEL CODEX_MODEL ANTIGRAVITY_MODEL DELEGATE_MODEL \
+                      TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL EXPERIMENT \
+                      AUTOPILOT_MODELS AUTOPILOT_EFFORT CLAUDE_CODE_MODEL CODEX_MODEL ANTIGRAVITY_MODEL DELEGATE_MODEL \
                       CODEX_API_KEY CODEX_BASE_URL GEMINI_API_KEY; do
             env_lines+=("$name=${!name}")
           done
@@ -491,7 +616,33 @@ jobs:
           # Args appended to `coder-eval run`, ONE PER LINE, each verbatim — no
           # word splitting, no pathname expansion. That is what the delegate `-D`
           # override needs: to bash its `[...]` list is a character class.
-          args=(-e experiments/nightly.yaml)
+          experiment="${EXPERIMENT:-nightly}"
+          case "$experiment" in
+            nightly)          experiment_file=experiments/nightly.yaml ;;
+            autopilot-golden) experiment_file=experiments/autopilot-golden.yaml ;;
+            *)
+              echo "::error::unknown experiment '$EXPERIMENT'"
+              exit 1
+              ;;
+          esac
+          if [ "$experiment" = "autopilot-golden" ]; then
+            if [ -z "$AUTOPILOT_MODELS" ]; then
+              echo "::error::the partition job resolved no Autopilot model"
+              exit 1
+            fi
+            generated="$RUNNER_TEMP/autopilot-golden.models.yaml"
+            sed '/^variants:/,$d' "$experiment_file" > "$generated"
+            echo "variants:" >> "$generated"
+            for id in $AUTOPILOT_MODELS; do
+              printf '  - variant_id: %s\n    agent:\n      model: %s\n' "$id" "$id" >> "$generated"
+            done
+            echo "Autopilot models: $AUTOPILOT_MODELS, at $AUTOPILOT_EFFORT effort"
+            experiment_file="$generated"
+          fi
+          args=(-e "$experiment_file")
+          if [ "$experiment" = "autopilot-golden" ]; then
+            args+=(--include-skipped -D "agent.sdk_options.effort=$AUTOPILOT_EFFORT")
+          fi
 
           # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,
           # antigravity via GEMINI_API_KEY (SDK baked into the agent image),
@@ -520,7 +671,11 @@ jobs:
             # repo variable or the agent_model input overrides it. The inherited
             # claude default is rejected by the alpha Delegate backend, so a
             # model must always be passed.
-            model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
+            if [ "$experiment" = "autopilot-golden" ]; then
+              model=""
+            else
+              model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
+            fi
             args+=(--type delegate)
             # Alpha backend rate limits: the reference pipeline caps delegate
             # at -j 6 (eval_runner cli.py HARNESS_CONCURRENCY — at -j 20 retry
@@ -568,6 +723,9 @@ jobs:
             for knob in DELEGATE_STDIO_VERBOSE DELEGATE_STDIO_LOG_MAX_CHARS \
                         USE_LLM_GATEWAY_FOR_FIREWORKS; do
               src="${knob}_VAR"
+              if [ "$knob" = "DELEGATE_STDIO_VERBOSE" ] && [ "$experiment" = "autopilot-golden" ]; then
+                continue
+              fi
               if [ -n "${!src:-}" ]; then
                 env_lines+=("$knob=${!src}")
                 echo "delegate knob: $knob=${!src}"
@@ -579,7 +737,17 @@ jobs:
             # ROPC TTL, PROVIDED the file stays fresh. This workflow mints the token once
             # (no refresher loop like the nightly's), so runs longer than ~1h can
             # still hit token expiry on late tasks.
-            env_lines+=("DELEGATE_AUTH_TOKEN_FILE=/.uipath/.auth:$AUTH_FILE")
+            if [ "$experiment" = "autopilot-golden" ]; then
+              env_lines+=("DELEGATE_STDIO_VERBOSE=0")
+            fi
+            if [ "$experiment" = "autopilot-golden" ]; then
+              sandbox_home="${UIPATH_SANDBOX_HOME_DIR:?the refresher step exported no UIPATH_SANDBOX_HOME_DIR}"
+              sandbox_auth="${UIPATH_SANDBOX_AUTH_DIR:?the refresher step exported no UIPATH_SANDBOX_AUTH_DIR}"
+              env_lines+=("DELEGATE_AUTH_TOKEN_FILE=/.uipath-auth/.auth:$sandbox_auth/.auth")
+              args+=(-D "sandbox.docker.extra_mounts=[$sandbox_home:/.uipath:rw,$sandbox_auth:/.uipath-auth:ro]")
+            else
+              env_lines+=("DELEGATE_AUTH_TOKEN_FILE=/.uipath/.auth:$AUTH_FILE")
+            fi
             # Docker forwards only an env allowlist into the container; append
             # the delegate auth/env vars to nightly.yaml's own list (MergeField
             # append-semantics). Same list as run.py in coder_eval_uipath, less
@@ -599,7 +767,13 @@ jobs:
           fi
 
           # After the clamp, so a delegate run reports the -j it will actually use.
-          args+=(-j "$j" -v --model "$model")
+          args+=(-j "$j")
+          if [ "$experiment" != "autopilot-golden" ]; then
+            args+=(-v)
+          fi
+          if [ -n "$model" ]; then
+            args+=(--model "$model")
+          fi
 
           # Task globs are `args` entries like everything else: the action
           # promotes none of the CLI's flags to named inputs, so there is no
@@ -651,16 +825,35 @@ jobs:
           env: ${{ steps.prep.outputs.env_block }}
           run-dir: /tmp/runs
 
+      - name: Remove the golden task containers
+        if: always() && inputs.experiment == 'autopilot-golden'
+        run: |
+          [ -n "${UIPATH_SANDBOX_AUTH_DIR:-}" ] || exit 0
+          docker ps -aq | xargs -r docker inspect -f '{{.Id}}{{range .Mounts}} {{.Source}}{{end}}' 2> /dev/null \
+            | awk -v auth="$UIPATH_SANDBOX_AUTH_DIR" -v home="${UIPATH_SANDBOX_HOME_DIR:-}" \
+                '{ for (i = 2; i <= NF; i++) if ($i == auth || $i == home) { print $1; next } }' \
+            | xargs -r docker rm -f > /dev/null || true
+
+      - name: Stop the token refresher
+        if: always() && inputs.experiment == 'autopilot-golden'
+        env:
+          UIPATH_URL:             https://alpha.uipath.com
+          UIPATH_ORGANIZATION_ID: ${{ vars.UIPATH_ORG_ID }}
+          CLIENT_ID:              ${{ vars.UIPATH_ROPC_CLIENT_ID }}
+          CLIENT_SECRET:          ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+        run: bash .github/scripts/golden-sandbox-auth.sh stop
+
       - name: Fix permissions on /tmp/runs
         if: always()
         run: sudo chown -R $(id -u):$(id -g) /tmp/runs && sudo chmod -R 755 /tmp/runs 2>/dev/null || true
 
       # Strip heavy task scratch dirs before upload to keep artifact size
       # manageable. Matches smoke-skills.yml.
-      - name: Clean up artifacts (remove .venv and node_modules)
+      - name: Clean up artifacts (remove .venv, node_modules and symlinks)
         if: always()
         run: |
           find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
+          find /tmp/runs \( -type l -o -type p -o -type s -o -type b -o -type c \) -delete || true
 
       # Ported from smoke-skills.yml, which has had this since the reports
       # started carrying agent transcripts. This workflow never had it, so its
@@ -669,6 +862,7 @@ jobs:
       # and the evalboard blob — and AFTER the cleanup above, which removes tens
       # of thousands of files this walk would otherwise scan for nothing.
       - name: Redact secrets from the eval report
+        id: redact
         if: always()
         env:
           AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
@@ -678,10 +872,12 @@ jobs:
           E2E_LONG_PROCESS_KEY:      ${{ vars.E2E_LONG_PROCESS_KEY }}
           UIPATH_ROPC_CLIENT_SECRET: ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           UIPATH_BOT_PASSWORD:       ${{ secrets.UIPATH_BOT_PASSWORD }}
+          EXPERIMENT:                ${{ inputs.experiment }}
         run: |
           python - <<'PY'
           import os
           import pathlib
+          import re
 
           # Every secret this job forwards into the run, not just the ones
           # smoke-skills.yml strips. It matters more here than there: this report
@@ -709,20 +905,63 @@ jobs:
                   # garble every report that legitimately names the tenant.
                   if line.startswith("UIPATH_ACCESS_TOKEN=") and len(line) > 28:
                       values.append(line.split("=", 1)[1])
+                  elif line.startswith("UIPATH_REFRESH_TOKEN="):
+                      token = line.split("=", 1)[1].strip()
+                      if len(token) >= 20 and token != "null":
+                          values.append(token)
 
-          if not values:
+          minted = pathlib.Path(os.environ.get("RUNNER_TEMP", "")) / "token-refresher" / "minted"
+          if minted.is_file():
+              for token in minted.read_text(encoding="utf-8", errors="ignore").splitlines():
+                  token = token.strip()
+                  if len(token) >= 20 and token != "null":
+                      values.append(token)
+
+          values = sorted(set(values), key=len, reverse=True)
+
+          if os.environ.get("EXPERIMENT") != "autopilot-golden":
+              if not values:
+                  raise SystemExit(0)
+              suffixes = {".html", ".json", ".log", ".md", ".xml"}
+              for path in pathlib.Path("/tmp/runs").rglob("*"):
+                  if not path.is_file() or path.suffix not in suffixes:
+                      continue
+                  text = path.read_text(encoding="utf-8", errors="ignore")
+                  redacted = text
+                  for value in values:
+                      redacted = redacted.replace(value, "***")
+                  if redacted != text:
+                      path.write_text(redacted, encoding="utf-8")
               raise SystemExit(0)
 
-          suffixes = {".html", ".json", ".log", ".md", ".xml"}
-          for path in pathlib.Path("/tmp/runs").rglob("*"):
-              if not path.is_file() or path.suffix not in suffixes:
+          jwt = re.compile(rb"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?:\.[A-Za-z0-9_-]+)?")
+          secrets = [value.encode() for value in values]
+          entries = [pathlib.Path(root) / name for root, dirs, names in os.walk("/tmp/runs") for name in dirs + names]
+          failed = {path for path in entries if path.is_symlink() or not (path.is_dir() or path.is_file())}
+          files = [path for path in entries if path.is_file() and not path.is_symlink()]
+          for path in files:
+              try:
+                  data = path.read_bytes()
+                  scrubbed = data
+                  for secret in secrets:
+                      scrubbed = scrubbed.replace(secret, b"***")
+                  scrubbed = jwt.sub(b"***", scrubbed)
+                  if scrubbed != data:
+                      path.write_bytes(scrubbed)
+                  check = path.read_bytes()
+              except OSError:
+                  failed.add(path)
                   continue
-              text = path.read_text(encoding="utf-8", errors="ignore")
-              redacted = text
-              for value in values:
-                  redacted = redacted.replace(value, "***")
-              if redacted != text:
-                  path.write_text(redacted, encoding="utf-8")
+              if jwt.search(check) or any(secret in check for secret in secrets):
+                  failed.add(path)
+          if failed:
+              print(f"::error::{len(failed)} file(s) still hold a secret, could not be read or are not regular files, so nothing from this run is published")
+              for path in sorted(failed)[:20]:
+                  print(f"  {str(path)!r}")
+              raise SystemExit(1)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write("clean=true\n")
+          print(f"Scrubbed {len(files)} file(s); none holds a known secret or anything shaped like a JWT.")
           PY
       # ==================================================================
       # Evalboard publish. Entirely additive and entirely best-effort: every
@@ -745,7 +984,7 @@ jobs:
       # ==================================================================
 
       - name: Publish the run to evalboard
-        if: always() && env.EVALBOARD_UPLOAD_ENABLED == 'true'
+        if: always() && env.EVALBOARD_UPLOAD_ENABLED == 'true' && (inputs.experiment != 'autopilot-golden' || steps.redact.outputs.clean == 'true')
         continue-on-error: true
         env:
           # The only step in the job that sees the credential. Mirrors how the ADO
@@ -763,6 +1002,8 @@ jobs:
           AGENT:                      ${{ inputs.agent }}
           TASK_COUNT:                 ${{ needs.partition.outputs.linux_count }}
           TASK_GLOBS_INPUT:           ${{ inputs.task_globs }}
+          AUTOPILOT_MODELS:           ${{ needs.partition.outputs.autopilot_models }}
+          AUTOPILOT_EFFORT:           ${{ inputs.autopilot_effort }}
         run: |
           set -uo pipefail
           if ! command -v eval-runner > /dev/null 2>&1; then
@@ -794,7 +1035,7 @@ jobs:
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           if ! eval-runner upload "/tmp/$blob_id" \
               --adhoc \
-              --title "gha #${GITHUB_RUN_NUMBER}: ${AGENT} x ${TASK_COUNT} linux task(s) by @${GITHUB_ACTOR} - ${TASK_GLOBS_INPUT}" \
+              --title "gha #${GITHUB_RUN_NUMBER}: ${AGENT}${AUTOPILOT_MODELS:+ on ${AUTOPILOT_MODELS} at ${AUTOPILOT_EFFORT}} x ${TASK_COUNT} linux task(s) by @${GITHUB_ACTOR} - ${TASK_GLOBS_INPUT}" \
               --description "$run_url"; then
             echo "::warning::evalboard upload failed — see the log above. The GitHub artifact is unaffected."
             exit 0
@@ -842,17 +1083,25 @@ jobs:
         if: always()
         env:
           RUN_MD: ${{ steps.eval.outputs.run-md-path }}
+          EXPERIMENT: ${{ inputs.experiment }}
+          CLEAN: ${{ steps.redact.outputs.clean }}
         run: |
           set -uo pipefail
+          if [ "$EXPERIMENT" = "autopilot-golden" ]; then
+            if [ "$CLEAN" = "true" ] && [ -f /tmp/runs/experiment.md ]; then
+              head -c 100000 /tmp/runs/experiment.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 0
+          fi
           run_md="${RUN_MD:-/tmp/runs/run.md}"
           if [ -f "$run_md" ]; then
-            head -c 1000000 "$run_md" >> "$GITHUB_STEP_SUMMARY"
+            head -c 900000 "$run_md" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "_No run.md produced._" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload eval report
-        if: always()
+        if: always() && inputs.experiment != 'autopilot-golden'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: coder-eval-linux-${{ github.run_id }}
@@ -881,8 +1130,22 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Upload the aggregate eval report
+        if: always() && inputs.experiment == 'autopilot-golden' && steps.redact.outputs.clean == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: coder-eval-linux-${{ github.run_id }}
+          path: |
+            /tmp/runs/experiment.md
+            /tmp/runs/experiment.json
+            /tmp/runs/*/variant.json
+          if-no-files-found: warn
+          retention-days: 3
+
       - name: Plaintext summary + verdict
         if: always()
+        env:
+          EXPERIMENT: ${{ inputs.experiment }}
         run: |
           set -uo pipefail
           # /tmp/runs IS the run dir (--run-dir above), so its subdirectories are
@@ -896,14 +1159,30 @@ jobs:
             exit 1
           fi
           python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
-          import json, pathlib, sys
-          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
-          for r in rows:
-              print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
+          import json, os, pathlib, sys
+          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).glob('*/*/*/task.json'))]
+          if os.environ.get('EXPERIMENT') != 'autopilot-golden':
+              for r in rows:
+                  print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
           print(f"\n{ok}/{len(rows)} PASS (linux)")
           sys.exit(0 if rows and ok == len(rows) else 1)
           PY
+
+      - name: Remove the run from the runner
+        if: always()
+        env:
+          EXPERIMENT: ${{ inputs.experiment }}
+        run: |
+          sudo rm -rf /tmp/runs /tmp/*-gha-"${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" || true
+          if [ "$EXPERIMENT" = "autopilot-golden" ]; then
+            for dir in "${UIPATH_SANDBOX_HOME_DIR:-}" "${UIPATH_SANDBOX_AUTH_DIR:-}" "${RUNNER_TEMP:-}/token-refresher"; do
+              if [ -n "$dir" ] && [ "$dir" != "/token-refresher" ]; then
+                sudo rm -rf "$dir" || true
+              fi
+            done
+            rm -f "$HOME/.uipath/.auth"
+          fi
 
   run-windows:
     needs: partition
@@ -1391,6 +1670,10 @@ jobs:
                   # report that legitimately names the tenant.
                   if line.startswith("UIPATH_ACCESS_TOKEN=") and len(line) > 28:
                       values.append(line.split("=", 1)[1])
+                  elif line.startswith("UIPATH_REFRESH_TOKEN="):
+                      token = line.split("=", 1)[1].strip()
+                      if len(token) >= 20 and token != "null":
+                          values.append(token)
 
           if not values:
               raise SystemExit(0)
@@ -1439,7 +1722,7 @@ jobs:
           fi
           python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
-          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).glob('*/*/*/task.json'))]
           for r in rows:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')

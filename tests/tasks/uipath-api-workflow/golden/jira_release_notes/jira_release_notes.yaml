@@ -1,0 +1,95 @@
+task_id: skill-api-workflow-golden-jira-release-notes
+description: >
+  Autopilot golden scenario: build an API workflow that turns the closed tickets under
+  one or more Jira epics into release notes through OpenAI. Graded on the live
+  outcome, reading Jira only: check_release_notes.py runs the workflow on the two
+  fixture epics (fixture.json) and needs a list of summary-and-description notes that
+  names every closed ticket and none of the open ones; notes hardcoded at authoring
+  time fail because a run on the first epic alone must leave out the second epic's
+  tickets and the workflow file must hold no fixture ticket text, and a workflow that would
+  change Jira or send something fails without being run. An llm_judge scores whether
+  the output looks like release notes for a product feature. The prompt is the
+  scenario's wording plus the run consent a Studio Web user gives when Autopilot asks
+  before running. Skipped until the run tenant has one Jira connection and a model the workflow can call
+  (OpenAI or UiPath GenAI Activities) and fixture.json is seeded
+  (seed_jira_fixture.py); run it with --include-skipped.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, outcome-graded, connector, feature:registry]
+
+skip: true
+
+sandbox:
+  docker:
+    env_passthrough_extra:
+      - CODEX_API_KEY
+      - CODEX_BASE_URL
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Based on one or more epic tickets from Jira, I want to build release notes of relevant
+  tasks underneath. So the goal is to pull in every ticket and it's contents for each of
+  the epics. Then run them through openAI and eventually return a list of short summary
+  and description release notes.The tickets we pull from the EPIC should be in a closed
+  status. What's in progress we don't care about
+
+  You have my consent to run the workflow, signed in, to test it.
+
+success_criteria:
+  - type: run_command
+    description: "Release notes for the fixture epics name every closed ticket and none of the open ones, follow the epics passed in, and are not copied into the workflow (live Jira)"
+    command: "python3 $REFERENCE_DIR/golden/jira_release_notes/check_release_notes.py"
+    timeout: 420
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The output looks like the release notes for a product feature"
+    files: ["golden-output/release_notes.json"]
+    include_reference: false
+    prompt: |
+      golden-output/release_notes.json holds `release_notes`, the release notes an API
+      workflow returned for the closed Jira tickets under one or more epics: each
+      note's summary and description, cut to length, and the tickets it names. Next to
+      them are `closed_tickets`, the tickets it was given, and `tickets_to_leave_out`,
+      the ones that are not closed.
+
+      Score 1.0 when `release_notes` reads like the release notes for a product
+      feature: entries with a short summary and a description written for the people
+      who use the product, covering the closed tickets and none of the tickets to
+      leave out.
+      Score 0.5 when it is recognisably release notes but entries repeat the raw ticket
+      text, or one closed ticket is missing.
+      Score 0.0 when `release_notes` is null or empty, is not release notes, or
+      includes a ticket to leave out.
+    weight: 5.0
+    pass_threshold: 0.7
+
+  - type: run_command
+    description: "Informational: the project passes static validation"
+    command: 'WF=$(python3 $REFERENCE_DIR/golden/_shared/graded_workflow.py jira_release_notes); test -n "$WF" && uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Informational: reaches Jira and a model (OpenAI or UiPath GenAI Activities) through their Integration Service connectors"
+    command: 'WF=$(python3 $REFERENCE_DIR/golden/_shared/graded_workflow.py jira_release_notes); test -n "$WF" && grep -q "uipath-atlassian-jira" "$WF" && grep -Eq "uipath-openai-openai|uipath-uipath-airdk" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Informational: leaves a single project (otherwise the output lists them and marks the graded one)"
+    command: "python3 $REFERENCE_DIR/golden/_shared/graded_workflow.py jira_release_notes --single"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 24
+  max_turns: 80

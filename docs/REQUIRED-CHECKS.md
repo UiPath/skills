@@ -157,6 +157,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `maestro-bpmn checker unit tests` | `test-helpers.yml` |
 | `maestro-case checker unit tests` | `test-helpers.yml` |
 | `uipath-agents checker unit tests` | `test-helpers.yml` |
+| `uipath-api-workflow checker unit tests` | `test-helpers.yml` |
 | `uipath-review checker unit tests` | `test-helpers.yml` |
 | `uipath-planner checker unit tests` | `test-helpers.yml` |
 | `uipath-coded-apps checker unit tests` | `test-helpers.yml` |

@@ -17,14 +17,15 @@ from pathlib import Path
 RESPONSE_LINE = re.compile(r'Response task evaluated successfully for "[^"]*": (\{.*\})\s*$')
 
 
-def run_row(workflow_path, inputs, timeout=120):
+def run_row(workflow_path, inputs, timeout=120, no_auth=True):
     """Return (ok, raw_output, error). `ok` is False when the run itself failed."""
     with tempfile.NamedTemporaryFile(suffix=".log", delete=False) as handle:
         log_path = handle.name
     cmd = [
         "uip", "api-workflow", "run", str(workflow_path),
         "--input-arguments", json.dumps(inputs),
-        "--no-auth", "--output", "json", "--log-level", "debug", "--log-file", log_path,
+        *(["--no-auth"] if no_auth else []),
+        "--output", "json", "--log-level", "debug", "--log-file", log_path,
     ]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
