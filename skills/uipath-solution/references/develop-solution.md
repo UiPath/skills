@@ -46,7 +46,7 @@ Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live insid
 
 ## Step 2: Add Existing Projects
 
-> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Python Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. JS/TS Coded Functions have no `init` — their `uipath.json` functions map is the registration marker (`entry-points.json` is generated at pack). Registration without these creates an incomplete solution entry.
+> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Python Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. JS/TS Coded Functions have no `init` — their `uipath.json` functions map is the registration marker (`entry-points.json` is generated at pack). Registration without these creates an incomplete solution entry. To create such a project from the solution root, run `uip function new <NAME> -l py` or `uip codedagent new <NAME>` there — from a directory holding a `.uipx` both create `<NAME>/` — then `cd <NAME>` for `init`; a coded agent's `new` additionally needs its framework package in the active venv first (see `uipath-agents`).
 
 Register a project that already lives inside the solution directory. An RPA project `uip rpa init` creates there is registered by its creation, unless `--skip-solution-registration` kept it out.
 
