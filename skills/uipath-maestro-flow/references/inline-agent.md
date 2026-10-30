@@ -92,7 +92,9 @@ Tool signatures:
 
 - `{ kind: 'builtin', tool: 'analyzefiles' | 'summarize' | 'batchtransform', ... }`
 - `{ kind: 'connector', connector, operation, connection, folder, version?, object?, name?, description? }`
-- `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
+- `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro' | 'function', key, name, folderPath, description?, inputs?, returns? }`;
+  each `inputs` argument is a bare type (the model fills it) or `{ type, prompt | value | variable }`
+  ([agent-resources.md](agent-resources.md#process-tool-arguments))
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
 
 For a sibling project of this solution, a `process` / `agent` / `api` /
