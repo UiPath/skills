@@ -27,7 +27,7 @@ A UiPath project is its own raw form. No inventory script renders it: extraction
    A generic connector activity (`isactr:ConnectorActivity`) names its connector, object, operation, path and page size only inside that compressed configuration (base64 of gzip JSON). Print them, one line per activity in file order, leaving out the schema it also holds:
 
    ```bash
-   python3 -c "import base64,gzip,json,re,sys; [print(json.dumps({k: v for k, v in json.loads(gzip.decompress(base64.b64decode(m))).items() if k != 'FieldsContainer'})) for m in re.findall(r'Configuration=\"(H4sI[^\"]+)\"', open(sys.argv[1], encoding='utf-8').read())]" "<XAML_FILE>"
+   node -e "const fs=require('fs'),zlib=require('zlib');for(const m of fs.readFileSync(process.argv[1],'utf8').matchAll(/Configuration=\"(H4sI[^\"]+)\"/g)){const c=JSON.parse(zlib.gunzipSync(Buffer.from(m[1],'base64')));delete c.FieldsContainer;console.log(JSON.stringify(c))}" "<XAML_FILE>"
    ```
 
 5. **Object Repository** by its node files, never its descriptors: every node folder under `.objects/` holds `.type` (`Library`, `App`, `AppVersion`, `Screen`, `Element`) and `.metadata` (JSON: `Name`, `Id`, `Reference`) — application, screen and element names for Target Applications, counts for the Source Map.

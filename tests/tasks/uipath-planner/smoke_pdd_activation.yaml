@@ -5,7 +5,7 @@ description: >
   § Setup). Verifies activation only — no PDD analysis, no SDD generation. The
   agent echoes the three phase names the design guide defines, which cannot be
   fabricated without loading the skill and its verb guide.
-tags: [uipath-planner, smoke, lifecycle:generate]
+tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 4

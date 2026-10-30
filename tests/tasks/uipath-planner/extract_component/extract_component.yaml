@@ -1,4 +1,4 @@
-task_id: skill-genome-extract-component
+task_id: skill-planner-genome-extract-component
 description: >
   Smoke: the uipath-planner skill extracts one component genome from a staged three-workflow
   XAML project (mailbox intake, PDF field extraction, vendor validation, ERP queue handoff).
@@ -6,9 +6,7 @@ description: >
   names, steps and criteria, a Transactional Shape that is not the stub and names its unit of work
   (the per-email loop that queues each invoice), a Source Map naming the three workflows, and the
   source's business facts. The full format rules (strict profile: split options or the
-  consumer-outside line, outcome rows) are graded as an advisory criterion. Tagged windows only so the Windows smoke
-  workflow runs it: the Linux smoke workflow skips every skill that owns a windows-tagged task
-  (execute_component), so without the tag no PR would run it.
+  consumer-outside line, outcome rows) are graded as an advisory criterion.
 tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
 
 sandbox:
@@ -16,9 +14,8 @@ sandbox:
     - type: template_dir
       path: fixtures
 
-# run_command goes through cmd.exe on Windows, so every check calls the skill's check-genome.mjs
-# through `python -c` and reads REFERENCE_DIR (the skill's scripts folder) from the environment. The
-# genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
+# Every check calls the skill's check-genome.mjs with node through $REFERENCE_DIR (the skill's scripts
+# folder). The genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
 reference:
   directory: ../../../../skills/uipath-planner/scripts
 
@@ -39,9 +36,7 @@ success_criteria:
   - type: run_command
     description: "Exactly one component genome written"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'), 'tokens', '*-genome.md',
-      '--files', '1', '--expect', 'UIPATH-AUTOMATION-GENOME: component']))"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --files 1 --expect "UIPATH-AUTOMATION-GENOME: component"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0
@@ -50,10 +45,7 @@ success_criteria:
   - type: run_command
     description: "Genome meets the core contract, describes a transactional flow, with a Source Map naming the three workflows"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'), 'component', '*-genome.md',
-      '--profile', 'core', '--expect', 'uipath-rpa', 'ERP_InvoicePosting', '--shape', 'transactional',
-      '--source-map', 'Main.xaml', 'ValidateInvoice.xaml', 'ExtractInvoiceFields.xaml']))"
+      node $REFERENCE_DIR/check-genome.mjs component "*-genome.md" --profile core --expect uipath-rpa ERP_InvoicePosting --shape transactional --source-map Main.xaml ValidateInvoice.xaml ExtractInvoiceFields.xaml
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -62,10 +54,7 @@ success_criteria:
   - type: run_command
     description: "Business rules and configuration carry the source's thresholds and names"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'), 'tokens', '*-genome.md',
-      '--min', '0.8', '--expect', 'credit limit', 'approved vendor', 'ERP_InvoicePosting',
-      'ap-lead@contoso.com', 'imap.contoso.com']))"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --min 0.8 --expect "credit limit" "approved vendor" ERP_InvoicePosting "ap-lead@contoso.com" imap.contoso.com
     timeout: 60
     expected_exit_code: 0
     weight: 2.0
@@ -74,9 +63,7 @@ success_criteria:
   - type: run_command
     description: "Target applications and the failure path come from the source"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'), 'tokens', '*-genome.md',
-      '--min', '0.75', '--expect', 'Excel', 'IMAP', 'PDF', 'Failed']))"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --min 0.75 --expect Excel IMAP PDF Failed
     timeout: 60
     expected_exit_code: 0
     weight: 1.0
@@ -92,9 +79,7 @@ success_criteria:
   - type: run_command
     description: "Advisory: genome meets every mechanical format rule (strict profile)"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'), 'component', '*-genome.md',
-      '--profile', 'strict']))"
+      node $REFERENCE_DIR/check-genome.mjs component "*-genome.md" --profile strict
     timeout: 60
     expected_exit_code: 0
     weight: 1.0

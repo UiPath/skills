@@ -13,7 +13,7 @@ Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-
 
 **Content.** Every step the target environment needs, whether or not this run did it in its own tenant — a queue, asset or trigger the run created there does not exist in the target tenant. Derive the steps from the genome's Platform Dependencies and Target Applications, the configuration answers and the projects built. Each file has one section per kind of setup, in this order, so that nothing a trigger starts runs before its setup exists. **Access, Package and deployment, Assets, Others and Triggers are always present** and read "None." when empty. **Every other UiPath service the automation uses gets a section of its own, named after the service**, after Package and deployment and before Others — one per service the Platform Dependencies name, whatever it is (Queues, Storage Buckets, Integration Service, Data Fabric, Action Center, Document Understanding, Test Manager, Context Grounding, …); a service the automation does not use has no section. A refactor's solution file ends with a Cutover section after Triggers ([refactor-guide.md § Cutover](refactor-guide.md)). The template shows the common ones:
 
-``markdown
+````markdown
 # Open items: <project or solution> in <target environment>
 
 Complete these steps in order in the target Orchestrator before the automation's first run. Tick each box when the step is done.
@@ -113,7 +113,7 @@ Create the triggers last: once a trigger is on, the automation starts running.
   - Type: <Time | Queue>
   - When it starts: <the schedule in words — the days and the time | when new items arrive in the queue `<QueueName>`>
   - Robots: at most <n> at a time
-``
+````
 
 Rules:
 

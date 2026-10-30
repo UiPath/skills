@@ -1,4 +1,4 @@
-task_id: skill-genome-extract-solution
+task_id: skill-planner-genome-extract-solution
 description: >
   E2E: the uipath-planner skill extracts a process genome plus one component genome per project
   from a staged three-project solution (Flow orchestrator → RPA intake robot → API workflow ERP

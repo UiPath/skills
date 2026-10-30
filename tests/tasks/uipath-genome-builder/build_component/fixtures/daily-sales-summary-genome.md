@@ -94,12 +94,12 @@ Not transactional: the run is one unit of work — it succeeds when the summary 
 
 ## Acceptance Criteria
 
-- [ ] Given two exports with lines for regions North and South, the summary has one row per region and currency with the line count and the total of the lines at or above the minimum amount.
-- [ ] Given a line whose Amount is below the minimum amount, that line is left out of its region's total and line count.
-- [ ] When the input folder holds no CSV file, the job log says no exports arrived and no workbook is written.
-- [ ] When an export lacks its Amount column, the run stops with a message naming the file, and every export is still in the input folder.
-- [ ] After a successful run, the workbook named for the business date is in the output folder and the input folder holds no CSV file.
-- [ ] A file in the input folder that does not end in `.csv` is neither read nor moved.
+1. Given two exports with lines for regions North and South, the summary has one row per region and currency with the line count and the total of the lines at or above the minimum amount.
+2. Given a line whose Amount is below the minimum amount, that line is left out of its region's total and line count.
+3. When the input folder holds no CSV file, the job log says no exports arrived and no workbook is written.
+4. When an export lacks its Amount column, the run stops with a message naming the file, and every export is still in the input folder.
+5. After a successful run, the workbook named for the business date is in the output folder and the input folder holds no CSV file.
+6. A file in the input folder that does not end in `.csv` is neither read nor moved.
 
 ## Complexity
 

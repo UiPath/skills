@@ -6,7 +6,7 @@
 
 A UiPath source (`.uipx`, `project.json`, `project.uiproj`, `.xaml`/`.cs`, `.flow`, `.bpmn`, `caseplan.case`, `caseplan.json`, `agent.json`, `Workflow.json`, `uipath.json`) is read with [uipath-source-guide.md](uipath-source-guide.md):
 
-- **`extract`** reads it whole, deployed state included. A `.bpmn` here is an existing process project to document; a BPMN model handed over as the design to build from is `design`'s input.
+- **`extract`** reads it whole, deployed state included. A `.bpmn` here is an existing process project to document; a BPMN model handed over as the design to build from is input to `uipath-planner`'s `design`, not a source.
 - **`build`** reads only its § UI Target Locators and § Test Data, with `uipath-genome-builder`'s source-migration-guide.md § Migration preflight step 4, `uipath-genome-builder`'s ui-target-migration-guide.md § UI targets and `uipath-genome-builder`'s ui-verification-guide.md: its UI targets are carried over, not translated.
 
 ## Other frameworks — the framework migration pack

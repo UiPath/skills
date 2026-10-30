@@ -1,0 +1,56 @@
+task_id: skill-genome-builder-check
+description: >
+  Smoke: the uipath-genome-builder skill's `check` verb runs the genome checker on a component genome
+  (Daily Sales Summary) whose acceptance criteria are not numbered, a strict-profile defect. Grades
+  that the checker ran on the genome, that the genome is left byte-identical (a fix is uipath-planner's
+  edit, never the builder's), and that no project is scaffolded or built. No tenant, no Windows host.
+tags: [uipath-genome-builder, smoke, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# run_command goes through cmd.exe on Windows, so the check calls _shared/execute_check.py through
+# `python -c` and reads REFERENCE_DIR from the environment. REFERENCE_DIR (..) also holds the
+# untouched copy of the genome under check_genome/fixtures/.
+reference:
+  directory: ..
+
+initial_prompt: |
+  Is the genome in `daily-sales-summary-genome.md` ready to build? Check it; do not build anything yet.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome-builder skill"
+    skill_name: "uipath-genome-builder"
+    expected_skill: "uipath-genome-builder"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the genome checker on the genome"
+    tool_name: "Bash"
+    command_pattern: 'check-genome\.mjs"?\s+(component|context)\s+"?[^\s"]*daily-sales-summary-genome\.md'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The check leaves the genome unchanged"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'genome-unchanged',
+      'daily-sales-summary-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'check_genome', 'fixtures', 'daily-sales-summary-genome.md')]))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Checking a genome does not scaffold, build or run a project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa\s+(init|run|build|debug)|solution\s+(init|publish|deploy))'
+    weight: 1.0
+    pass_threshold: 1.0

@@ -12,7 +12,7 @@ The input need not be a formal PDD. **Any artifact that describes a business pro
 | **Confluence / wiki / SharePoint page** | user exports (→ md/pdf) or pastes it; or `WebFetch` a reachable page; a session-connected Atlassian / Glean / Microsoft-365 connector also works (best-effort) | often an SOP or process write-up |
 | **BPMN model** (`.bpmn` XML, Signavio/Camunda export, or a diagram image) | `Read` the XML/text directly, or Read the diagram image | already a process map — mine its tasks, gateways, events, lanes; it often encodes the *to-be* |
 | **Meeting / Zoom transcript** | `Read` the text file or pasted content; or a session-connected transcript connector (best-effort) | least structured — expect heavy gaps |
-| **SOP / work instructions / requirements doc / email thread** | per its file format (`Read` / `docx-extract`) | scope varies |
+| **SOP / work instructions / requirements doc / email thread** | per its file format (`Read` / `docx.mjs extract`) | scope varies |
 
 **Less-structured sources need more elicitation.** A formal PDD is near-complete; a transcript or a thin wiki page is not — run heavier Phase 1 gap-detection and `AskUserQuestion` to fill missing steps, applications, exceptions, rules, and the to-be. Never invent business rules; flag gaps `[SME REVIEW]`.
 
@@ -23,10 +23,10 @@ The input need not be a formal PDD. **Any artifact that describes a business pro
 | Markdown (`.md`) | `Read` | Read the file directly. | Easiest — structure already parseable. |
 | Plain text (`.txt`) | `Read` | Read the file directly (same as Markdown). | No conversion. For a very large file, use `Read` offset/limit or the size strategy in [design-guide.md Step 1](design-guide.md#step-1-read-the-pdd). |
 | PDF (`.pdf`) | `Read` | Use the `pages` parameter, in chunks of up to 20 pages. | Text is extracted; screenshots and scanned/image-only pages render as images — Read them visually (see "Handling Screenshots"). |
-| Word (`.docx`) | `Bash` → `scripts/docx-extract.sh` (pandoc) | Do NOT Read directly — convert first (see [design-guide.md Step 1](design-guide.md#step-1-read-the-pdd)), then Read the markdown + extracted media. | Complex tables may extract as raw HTML `<table>` — parse them. **Legacy `.doc`** (binary) is not supported by pandoc — ask the user to save as `.docx`/PDF or paste the content. |
+| Word (`.docx`) | `Bash` → `node "<SKILL_DIR>/scripts/docx.mjs" extract "<PDD_FILE_PATH>"` (pandoc) | Do NOT Read directly — convert first (see [design-guide.md Step 1](design-guide.md#step-1-read-the-pdd)), then Read the markdown + extracted media. | Complex tables may extract as raw HTML `<table>` — parse them. **Legacy `.doc`** (binary) is not supported by pandoc — ask the user to save as `.docx`/PDF or paste the content. |
 | Pasted text | (conversation) | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
 
-File-based ingestion needs only **`Read`** (Markdown, `.txt`, PDF, images/media) and **`Bash`** (runs `docx-extract.sh` → pandoc for `.docx`); remote pages use **`WebFetch`** — all three are in the skill's `allowed-tools`. Session-connected MCP connectors (Atlassian / Glean / Microsoft 365 / transcript) are best-effort extras — when absent, ask the user to export or paste the content.
+File-based ingestion needs only **`Read`** (Markdown, `.txt`, PDF, images/media) and **`Bash`** (runs `node … docx.mjs extract` → pandoc for `.docx`); remote pages use **`WebFetch`** — all three are in the skill's `allowed-tools`. Session-connected MCP connectors (Atlassian / Glean / Microsoft 365 / transcript) are best-effort extras — when absent, ask the user to export or paste the content.
 
 ## Handling Screenshots
 

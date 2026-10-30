@@ -13,7 +13,7 @@ Governs editing `skills/uipath-planner/`; it lives here, not in the skill folder
 
 | Verb | Entry guide | Former name |
 |---|---|---|
-| `design` | `references/design-guide.md`; Case Management: `references/case/case-design-guide.md` | Phase D (with the Case Design Lane); `sdd-generation-guide.md`, `case-design-lane-guide.md` |
+| `design` | `references/design-guide.md`, then `references/sdd-writing-guide.md` for the SDD write; Case Management: `references/case/case-design-guide.md` | Phase D (with the Case Design Lane); `sdd-generation-guide.md`, `case-design-lane-guide.md` |
 | `plan` | `references/plan-guide.md` | Lane A — PDD-driven; `pdd-driven-lane-guide.md` |
 | `decompose` | `references/decompose-guide.md` | Lane B — Non-PDD; `non-pdd-lane-guide.md` |
 | `author` | `references/author-guide.md` | `uipath-genome` Author mode; `authoring-guide.md` |
@@ -24,7 +24,7 @@ Governs editing `skills/uipath-planner/`; it lives here, not in the skill folder
 
 1. **A new verb** gets a row in `SKILL.md` § Verbs, a line in § Choosing the Verb, its edges in § Chaining, an entry guide with § Verb Rules and § Read Plan, and a row here.
 2. **A rule every verb obeys** goes in `SKILL.md` § Critical Rules; **a rule one verb obeys** goes in that verb guide's § Verb Rules; **a rule every genome write obeys** goes in `genome-format-guide.md` § Writing Rules. Never state one in two of these.
-3. **Scripts are Node** (`node`, built-ins only, Node >= 20): users install the skills through the Node-based `uip` CLI, so `node` is present where `python3`, `bash` or `pwsh` may not be. Repository tests and graders may stay Python.
+3. **Scripts are Node** (`node`, built-ins only, Node >= 20): users install the skills through the Node-based `uip` CLI, so `node` is present where `python3`, `bash` or `pwsh` may not be. Repository unit tests may stay Python; task graders call the Node scripts directly with `node`.
 4. **The skill ships genome templates, never worked examples.** The known-good genomes live with the tests (`tests/tasks/uipath-planner/_shared/genome-examples/`), where every one must pass the strict profile. An A/B eval on 2026-10-30 (`author_component`, `extract_component`, `genome_from_sdd`, 3 repeats each) showed the same pass rate on every criterion without them; `author` used about 15% more tokens. Put an example back in the skill only with an eval showing it fixes a regression.
 5. **The genome owners own** the genome verbs (`author`, `extract`, `edit`), their guides, the genome core, the checker and the genome tests, and `uipath-genome-builder`; the planner owners own `design`, `plan`, `decompose` and their guides (`CODEOWNERS`).
 
@@ -41,14 +41,15 @@ Governs editing `skills/uipath-planner/`; it lives here, not in the skill folder
 
 | Subject | Home |
 |---|---|
-| The three phases of `design`, its checkpoints, the skeleton write, SME resolution, the superset check and the `ready` flip; the SDD-only design of a migration or refactor | `references/design-guide.md` |
+| The phases of `design` and its checkpoints | `references/design-guide.md` |
+| The SDD write (Phase 3): the skeleton write, SME resolution, the superset check, Word delivery and the `ready` flip | `references/sdd-writing-guide.md` |
 | The case design conversation, its one confirmation and its write; the case model and its defaults | `references/case/case-design-guide.md`; `references/case/case-design-layers-guide.md` |
 | PDD extraction in any format | `references/pdd-analysis-guide.md` |
 | Product scope, the Constraint Gate and the levels; platform availability | `references/product-selection-guide.md`; `references/platform-availability-guide.md` |
 | Task derivation from an SDD, Pattern 7 (build from a genome) | `references/plan-guide.md`; `references/multi-skill-patterns-guide.md` |
 | A plan without an SDD | `references/decompose-guide.md` |
 | Plan and tasks file format | `references/plan-and-tasks-format.md` |
-| Which specialist owns what (for plans) | `references/skill-mapping-guide.md` § Skill Capability Map |
+| Which specialist owns what (for plans) | `references/skill-capability-map-guide.md` |
 
 ## Home per subject — genome verbs
 
@@ -63,7 +64,7 @@ Governs editing `skills/uipath-planner/`; it lives here, not in the skill folder
 | Transactional Shape: the unit-of-work test and its granularity (alternative unit of work), flows versus nested levels (the two tests of rule 12), producer and consumer roles and the Type-cell role word, queue-vs-direct choice, per-item state a queue cannot hold and the record store beside it, the three outcomes and the conditional Postponed row, step groups, two-level sources folded into one unit of work, configuration split, traceability, one Recommendation verdict, stub | `references/transactional-shape-guide.md` |
 | Extraction pipeline, the questions of its first message (related resources, unused parts, subagents), sizing and the reading plan with what unused parts are, evidence policy for blanket screen captures, completing and checking Source Map | `references/extract-guide.md` |
 | Verifying a suspected source defect: the two passes, the classification table, vendor-settled semantics, verdicts from subagents, writing while verdicts are out | `references/defect-verification-guide.md` |
-| Authoring steps, scenario proposals for a goal, platform-capability suggestions, bounded follow-ups | `references/author-guide.md` |
+| Authoring steps, the genome of a ready SDD (the second half of `design`), scenario proposals for a goal, platform-capability suggestions, bounded follow-ups | `references/author-guide.md` |
 | Edit requests and what each updates, for any genome and for extracted genomes; the check after every edit; partial re-extraction | `references/edit-guide.md` |
 | Build With skill names, decision tree, operate-only skills, common combinations by shape | `references/skill-mapping-guide.md` |
 | Work in parts in `extract` or `build`: the orchestrator, shared decisions before fan-out, the brief and its rulings, a ledger per part with its Resume block, resuming, per-part read plans, forks (when, fork or fresh subagent, what a fork does, review), returns as verdicts checked against the disk, one owner per shared artifact, the Subagents question with its defaults (the parts' model per mode, the cap of four at once) | `references/parts-guide.md` |

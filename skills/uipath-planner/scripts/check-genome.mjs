@@ -6,10 +6,13 @@
 //   check-genome.mjs process   <genome.md> [--profile core|strict] [--skills SKILL ...] [--expect TOKEN ...]
 //   check-genome.mjs tokens    <pattern>   --expect TOKEN ... [--min FRACTION] [--files N]
 //   check-genome.mjs context   <genome.md>   JSON of the facts the read plans branch on: level (from the first-line
-//                                           marker), sha256, components, source framework and build mode
-//                                           (build|refactor|migration), transactional, Designed in, Map binding,
-//                                           and the strict check result
+//                                           marker), sha256, components, extracted (a Source Map with a table,
+//                                           not a stub), source_framework and build_mode (build|refactor|migration;
+//                                           refactor when the framework names UiPath), transactional (null without
+//                                           a level or a Transactional Shape section), designed_in, and the strict
+//                                           check result
 //   check-genome.mjs skills                 JSON of the skill names a genome may cite: build and operate
+//   check-genome.mjs -h | --help
 //   component and process also take: [--shape transactional|stub [--flows N] [--unit TOKEN ...]]
 //                                    [--shape-checks gate|advisory]  advisory: Transactional Shape findings
 //                                    are graded by the strict profile only (a task that tests something else)
@@ -29,7 +32,8 @@
 //           and default, bold step names, numbered acceptance criteria, the As-is table, exactly the outcome
 //           rows rule 4 allows, split options named by letter with only their Requires and Changes cells,
 //           complete for every unit and alternative unit, retry and consecutive-failure stop; step table cells
-//           holding references only.
+//           holding references only; no H2 heading twice; no component genome linked twice; the `Source framework`
+//           row in the Source Map of a process or standalone component genome.
 //
 // Export check (--processes and --recordsets, both required together):
 //   --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
@@ -42,6 +46,9 @@
 // <genome.md> and <pattern> may be a quoted glob ("*-genome.md"): the file name is the agent's choice, only the
 // -genome.md suffix is a contract. component and process need exactly one match; tokens searches every match,
 // case-sensitively, like a file_contains criterion.
+//
+// Options take `--flag value` or `--flag=value`. Input files are read as strict UTF-8; a missing, unreadable or
+// invalid input file is a FAIL line.
 //
 // Exit 0 when every check passes; exit 1 with one line per failure; exit 2 on a usage error.
 
@@ -63,9 +70,10 @@ export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / De
   "uipath-activity-migrator", "uipath-knowledge-bundles", "uipath-vertical-solutions",
 ]);
 const RETIRED_SKILLS = ["uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"];
-// the skill a genome's preamble routes its build to; `uipath-genome` also matches a genome written before the split
+// the skill a genome's preamble routes its build to; `uipath-genome` names it in a genome written before the split
 const BUILDER = "uipath-genome-builder";
-const routesToBuilder = (s) => s.includes("uipath-genome");
+const LEGACY_BUILDER = "uipath-genome";
+const routesToBuilder = (s) => s.includes(LEGACY_BUILDER);
 
 const COMPONENT_SECTIONS = [
   "Overview", "Target Applications", "Build With", "Platform Dependencies", "Interface",
@@ -125,7 +133,16 @@ class Report {
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const lines = (s) => s.split("\n");
 const repr = (list) => `[${list.map((x) => `'${x}'`).join(", ")}]`; // a list as the findings have always printed it
-const read = (path) => readFileSync(path, "utf-8").replace(/\r\n?/g, "\n");
+/** A file the checker cannot read: missing, unreadable or not UTF-8. Printed as a FAIL line, never a stack trace. */
+class InputError extends Error {}
+const UTF8 = new TextDecoder("utf-8", { fatal: true });
+/** [bytes, text] of a file, decoded as strict UTF-8. */
+function decode(path) {
+  let raw;
+  try { raw = readFileSync(path); } catch (e) { throw new InputError(`${posix(String(path))}: cannot be read (${e.code ?? e.message})`); }
+  try { return [raw, UTF8.decode(raw)]; } catch { throw new InputError(`${posix(String(path))}: not valid UTF-8`); }
+}
+const read = (path) => decode(path)[1].replace(/\r\n?/g, "\n");
 const posix = (p) => p.replace(/\\/g, "/");
 
 function h2Positions(text) {
@@ -149,6 +166,20 @@ export function sectionBody(text, heading) {
 function complexityOf(text) {
   const m = sectionBody(text, "Complexity").match(/\b(simple|medium|complex)\b/i);
   return m ? m[1].toLowerCase() : null;
+}
+
+/** {extracted, framework}: a Source Map holding a table is an extracted genome's; its `Source framework` row, in
+ * any of its tables (`| Row |` in a component, `| Component |` in a process), names the framework. */
+export function sourceMapFacts(text) {
+  const rows = lines(sectionBody(text, "Source Map")).filter((l) => l.trim().startsWith("|")).map(cells);
+  const row = rows.find((c) => c.length > 1 && c[0].replace(/\*/g, "").trim().toLowerCase() === "source framework");
+  return { extracted: rows.length > 0, hasFrameworkRow: Boolean(row), framework: row ? row[1].split("—")[0].trim() || null : null };
+}
+
+/** strict: a process or standalone component genome's Source Map names its framework; a part inherits it. */
+function checkSourceFramework(text, r) {
+  const { extracted, hasFrameworkRow } = sourceMapFacts(text);
+  if (extracted && !hasFrameworkRow) r.strict("Source Map has no 'Source framework' row");
 }
 
 const bodyWithoutSourceMap = (text) => text.split(/^## Source Map\s*$/m)[0];
@@ -229,6 +260,8 @@ function checkCommon(text, level, sections, r, minCriteria) {
   const blockquote = text.match(/^>.*UiPath automation blueprint.*$/im);
   if (blockquote && !routesToBuilder(blockquote[0])) r.strict(`blueprint blockquote does not name ${BUILDER} as the skill that builds the genome`);
   const pos = h2Positions(text);
+  const headings = [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim());
+  for (const h of new Set(headings.filter((h, i) => headings.indexOf(h) !== i))) r.strict(`heading '## ${h}' appears more than once`);
   for (const s of sections) {
     if (sectionPos(pos, s) === null) r.core(`missing section '## ${s}'`);
     else if (!pos.has(s)) r.strict(`section '## ${s}' present under a longer or differently cased heading`);
@@ -238,7 +271,7 @@ function checkCommon(text, level, sections, r, minCriteria) {
   // Service connector key (`uipath-slack`, `uipath-salesforce-sfdc`), not a skill
   for (const heading of ["Build With", "Components"]) {
     for (const name of skillNames(sectionBody(text, heading))) {
-      if (!VALID_SKILLS.has(name) && !OPERATE_SKILLS.has(name) && name !== BUILDER) r.core(`unknown skill name '${name}' in ${heading}`);
+      if (!VALID_SKILLS.has(name) && !OPERATE_SKILLS.has(name) && name !== BUILDER && name !== LEGACY_BUILDER) r.core(`unknown skill name '${name}' in ${heading}`);
     }
   }
   for (const heading of ["Build With", "Components"]) {
@@ -439,6 +472,7 @@ function checkComponent(path, a, partOf, shape = true, library = false) {
     for (const tok of a.sourceMap) if (!sm.includes(tok)) r.core(`Source Map does not mention '${tok}'`);
   }
   checkStepsTable(text, r);
+  if (!partOf && !text.includes("Part of:")) checkSourceFramework(text, r);
   if (partOf && !text.includes("Part of:")) r.strict("component inside a process genome lacks the 'Part of:' line");
   checkTransactional(text, "component", r, partOf);
   if (a.shape && shape) checkShapeAssertion(text, a.shape, a.flows, a.unit, r);
@@ -461,8 +495,12 @@ function checkProcess(path, a) {
   }
   const links = componentLinks(path, text);
   if (!links.length) r.core("Components table links no component genome");
+  const targets = links.map(([, t]) => posix(t).toLowerCase());
+  const first = (i) => targets.indexOf(targets[i]) === i;
+  for (const [link] of links.filter((_, i) => !first(i))) r.strict(`Components table links ${link} more than once`);
+  checkSourceFramework(text, r);
   const componentErrors = [];
-  for (const [link, target, isLibrary] of links) {
+  for (const [link, target, isLibrary] of links.filter((_, i) => first(i))) {
     if (!existsSync(target)) r.core(`linked component genome missing on disk: ${link}`);
     else componentErrors.push(...checkComponent(target, { ...a, expect: [], sourceMap: [] }, true, false, isLibrary));
   }
@@ -571,27 +609,30 @@ function checkTokens(paths, tokens, minimum, files) {
 }
 
 function loadInventory(path, what) {
-  const data = JSON.parse(readFileSync(path, "utf-8"));
+  if (!existsSync(path)) throw new InputError(`${posix(path)}: the ${what} file does not exist`);
+  let data;
+  try { data = JSON.parse(decode(path)[1]); } catch (e) {
+    if (e instanceof InputError) throw e;
+    throw new InputError(`${posix(path)}: the ${what} is not valid JSON (${e.message})`);
+  }
   if (!Array.isArray(data) || !data.every((x) => x && typeof x === "object" && "id" in x && "name" in x)) {
-    process.stderr.write(`FAIL: ${path}: the ${what} is a list of objects with 'id' and 'name' (regenerate it with the source guide's script)\n`);
-    process.exit(1);
+    throw new InputError(`${posix(path)}: the ${what} is a list of objects with 'id' and 'name' (regenerate it with the source guide's script)`);
   }
   return data;
 }
 
 const MARKER = /<!--\s*UIPATH-AUTOMATION-GENOME:\s*(component|process)\b/i;
 const DESIGNED_IN = /^>\s*Designed in:\s*\[[^\]]*\]\(([^)]+)\)/m;
-const MAP_BINDING = /^>\s*Map binding:\s*(\S+)/m;
 
 /** The facts every read plan branches on, read from the file once instead of re-derived by each lane. */
 export function context(path) {
-  const raw = readFileSync(path);
-  const text = raw.toString("utf-8").replace(/\r\n?/g, "\n");
+  const [raw, decoded] = decode(path);
+  const text = decoded.replace(/\r\n?/g, "\n");
   const marker = text.split("\n", 1)[0].match(MARKER);
   const level = marker ? marker[1].toLowerCase() : null;
-  const frameworkRow = tableRows(sectionBody(text, "Source Map"), "| Row |").find((row) => row.length && row[0].toLowerCase() === "source framework");
-  const framework = frameworkRow && frameworkRow.length > 1 ? frameworkRow[1].split("—")[0].trim() : null;
-  const designedIn = text.match(DESIGNED_IN), binding = text.match(MAP_BINDING);
+  const { extracted, framework } = sourceMapFacts(text);
+  const designedIn = text.match(DESIGNED_IN);
+  const hasShape = sectionPos(h2Positions(text), "Transactional Shape") !== null;
   const a = { ...DEFAULTS, profile: "strict" };
   const errors = !level ? [] : level === "component" ? checkComponent(path, a, false) : checkProcess(path, a);
   return {
@@ -599,12 +640,11 @@ export function context(path) {
     sha256: createHash("sha256").update(raw).digest("hex"),
     level,
     components: level === "process" ? componentLinks(path, text).map(([, t]) => posix(t)) : [],
-    extracted: framework !== null,
+    extracted,
     source_framework: framework,
-    build_mode: !level ? null : !framework ? "build" : framework.toLowerCase().startsWith("uipath") ? "refactor" : "migration",
-    transactional: !sectionBody(text, "Transactional Shape").trim().startsWith(STUB),
+    build_mode: !level ? null : !framework ? "build" : /\buipath\b/i.test(framework) ? "refactor" : "migration",
+    transactional: !level || !hasShape ? null : !sectionBody(text, "Transactional Shape").trim().startsWith(STUB),
     designed_in: designedIn ? designedIn[1] : null,
-    map_binding: binding ? binding[1] : null,
     check: { profile: "strict", ok: Boolean(level) && !errors.length, errors: level ? errors : ["first line carries no <!-- UIPATH-AUTOMATION-GENOME: component|process marker"] },
   };
 }
@@ -612,6 +652,17 @@ export function context(path) {
 // --- command line -------------------------------------------------------------------------------
 
 const USAGE = "usage: check-genome.mjs {component,process,tokens} <genome> [options] | context <genome> | skills";
+const HELP = `${USAGE}
+
+  component|process <genome>  check a genome: [--profile core|strict] [--expect TOKEN ...] [--source-map TOKEN ...]
+                              [--skills SKILL ...] [--shape transactional|stub] [--flows N] [--unit TOKEN ...]
+                              [--shape-checks gate|advisory] [--min-steps N] [--min-criteria N]
+                              [--processes <inventory.json> --recordsets <recordsets.json>]
+  tokens <pattern>            --expect TOKEN ... [--min FRACTION] [--files N]
+  context <genome>            JSON of the facts the read plans branch on
+  skills                      JSON of the skill names a genome may cite
+
+Options take '--flag value' or '--flag=value'. Exit 0 pass, 1 failures, 2 usage error.`;
 const LIST = { "--expect": "expect", "--source-map": "sourceMap", "--skills": "skills", "--unit": "unit" };
 const VALUE = {
   "--profile": ["profile", ["core", "strict"]], "--shape": ["shape", ["transactional", "stub"]],
@@ -626,17 +677,29 @@ function parse(argv) {
   const a = { ...DEFAULTS, expect: [], sourceMap: [], skills: [], unit: [] };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
+    let arg = argv[i], inline = null;
+    const eq = arg.startsWith("--") ? arg.indexOf("=") : -1;
+    if (eq > 2) [arg, inline] = [arg.slice(0, eq), arg.slice(eq + 1)];
     if (arg in LIST) {
-      while (i + 1 < argv.length && !argv[i + 1].startsWith("-")) a[LIST[arg]].push(argv[++i]);
+      if (inline !== null) a[LIST[arg]].push(inline);
+      else while (i + 1 < argv.length && !argv[i + 1].startsWith("-")) a[LIST[arg]].push(argv[++i]);
+      if (!a[LIST[arg]].length) throw new UsageError(`argument ${arg}: expected at least one argument`);
     } else if (arg in VALUE) {
       const [key, kind] = VALUE[arg];
-      if (i + 1 >= argv.length) throw new UsageError(`argument ${arg}: expected one argument`);
-      const value = argv[++i];
-      if (Array.isArray(kind) && !kind.includes(value)) throw new UsageError(`argument ${arg}: invalid choice: '${value}'`);
-      const number = kind === "int" ? Number.parseInt(value, 10) : kind === "float" ? Number.parseFloat(value) : null;
-      if (number !== null && Number.isNaN(number)) throw new UsageError(`argument ${arg}: invalid ${kind} value: '${value}'`);
+      if (inline === null && i + 1 >= argv.length) throw new UsageError(`argument ${arg}: expected one argument`);
+      const value = inline ?? argv[++i];
+      if (Array.isArray(kind) && !kind.includes(value)) throw new UsageError(`argument ${arg}: invalid choice: '${value}' (choose from ${kind.join(", ")})`);
+      let number = null;
+      if (kind === "int") {
+        if (!/^[+-]?\d+$/.test(value.trim())) throw new UsageError(`argument ${arg}: invalid int value: '${value}'`);
+        number = Number.parseInt(value, 10);
+      } else if (kind === "float") {
+        number = value.trim() === "" ? Number.NaN : Number(value);
+        if (!Number.isFinite(number)) throw new UsageError(`argument ${arg}: invalid float value: '${value}'`);
+      }
       a[key] = number ?? value;
+    } else if (inline !== null) {
+      throw new UsageError(`unrecognized arguments: ${argv[i]}`);
     } else if (arg.startsWith("-") && arg.length > 1) {
       throw new UsageError(`unrecognized arguments: ${arg}`);
     } else positional.push(arg);
@@ -649,6 +712,20 @@ function parse(argv) {
 }
 
 export function main(argv = process.argv.slice(2), out = (s) => process.stdout.write(`${s}\n`)) {
+  try {
+    return run(argv, out);
+  } catch (e) {
+    if (!(e instanceof InputError)) throw e;
+    out(`FAIL: ${e.message}`);
+    return 1;
+  }
+}
+
+function run(argv, out) {
+  if (argv.includes("-h") || argv.includes("--help")) {
+    out(HELP);
+    return 0;
+  }
   if (argv[0] === "skills") {
     out(JSON.stringify({ build: [...VALID_SKILLS].sort(), operate: [...OPERATE_SKILLS].sort() }, null, 2));
     return 0;

@@ -5,7 +5,7 @@ description: >
   no AskUserQuestion. The agent echoes the verbs the skill defines, which
   appear verbatim in SKILL.md § Verbs and cannot be fabricated without loading
   the skill.
-tags: [uipath-planner, smoke, lifecycle:plan]
+tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 4

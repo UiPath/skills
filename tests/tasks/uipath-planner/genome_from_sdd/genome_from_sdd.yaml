@@ -1,8 +1,8 @@
 task_id: skill-planner-genome-from-sdd
 description: >
   Smoke: the uipath-planner skill's `author` verb writes the genome of a ready SDD it produced for a
-  sheet-to-web-client process worked by a pool of robots. The SDD proposes a dispatcher and a performer
-  over one queue; the genome describes them as one component whose Transactional Shape holds one flow
+  sheet-to-web-client process worked by a pool of robots. The SDD's project list holds a dispatcher and a
+  performer over one queue, the split it chose for one flow; the genome describes them as one component whose Transactional Shape holds one flow
   over a sheet row. Gates on the genome contract (core profile), on that Transactional Shape, on the
   genome's `Designed in:` line naming the SDD, on the SDD's gaps reaching the genome as `*[Inferred]*`,
   and on the SDD gaining its `Genome` handoff row while staying ready. The full format rules (strict
@@ -14,10 +14,8 @@ sandbox:
     - type: template_dir
       path: fixtures
 
-# run_command goes through cmd.exe on Windows, so every check calls the skill's check-genome.mjs
-# through `python -c` (the grader wrapper; the checker itself is Node) and reads REFERENCE_DIR (the planner's scripts folder, which holds its copy of
-# the shared checker) from the environment. The genome's file name is the agent's choice: the checker
-# resolves "*-genome.md" itself.
+# Every check calls the skill's check-genome.mjs with node through $REFERENCE_DIR (the skill's scripts
+# folder). The genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
 reference:
   directory: ../../../../skills/uipath-planner/scripts
 
@@ -38,9 +36,7 @@ success_criteria:
   - type: run_command
     description: "Exactly one component genome written"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'),
-      'tokens', '*-genome.md', '--files', '1', '--expect', 'UIPATH-AUTOMATION-GENOME: component']))"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --files 1 --expect "UIPATH-AUTOMATION-GENOME: component"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0
@@ -49,10 +45,7 @@ success_criteria:
   - type: run_command
     description: "Genome meets the core contract and describes one flow whose unit of work is a row"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'),
-      'component', '*-genome.md', '--profile', 'core', '--expect', 'uipath-rpa', 'Dynamics 365',
-      '--shape', 'transactional', '--flows', '1', '--unit', 'row']))"
+      node $REFERENCE_DIR/check-genome.mjs component "*-genome.md" --profile core --expect uipath-rpa "Dynamics 365" --shape transactional --flows 1 --unit row
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -61,9 +54,7 @@ success_criteria:
   - type: run_command
     description: "The genome's Designed in line names the SDD it was authored from"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'),
-      'tokens', '*-genome.md', '--expect', 'Designed in:', 'customer-address-sync-sdd.md']))"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --expect "Designed in:" customer-address-sync-sdd.md
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
@@ -72,9 +63,7 @@ success_criteria:
   - type: run_command
     description: "The SDD's open gaps reach the genome as inferred lines"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'),
-      'tokens', '*-genome.md', '--expect', '*[Inferred]*']))"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --expect "*[Inferred]*"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
@@ -83,10 +72,7 @@ success_criteria:
   - type: run_command
     description: "Business rules, schedule, assets and notification target come from the SDD"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'),
-      'tokens', '*-genome.md', '--min', '0.8', '--expect', 'postcode', '07:00', 'requester',
-      'customer number', 'CRM_Robot_Login']))"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --min 0.8 --expect postcode 07:00 requester "customer number" CRM_Robot_Login
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
@@ -96,8 +82,8 @@ success_criteria:
   - type: run_command
     description: "The SDD stays ready and gains its Genome handoff row"
     command: >-
-      python -c "import sys; t = open('customer-address-sync-sdd.md', encoding='utf-8').read();
-      sys.exit(0 if '| **Status** | ready |' in t and '**Genome**' in t else 1)"
+      node -e "const t = require('fs').readFileSync('customer-address-sync-sdd.md', 'utf8');
+      process.exit(t.includes('| **Status** | ready |') && t.includes('**Genome**') ? 0 : 1)"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -113,9 +99,7 @@ success_criteria:
   - type: run_command
     description: "Advisory: the genome meets every mechanical format rule (strict profile)"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'),
-      'component', '*-genome.md', '--profile', 'strict']))"
+      node $REFERENCE_DIR/check-genome.mjs component "*-genome.md" --profile strict
     timeout: 60
     expected_exit_code: 0
     weight: 1.0

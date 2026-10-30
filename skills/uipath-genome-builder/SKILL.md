@@ -1,7 +1,7 @@
 ---
 name: uipath-genome-builder
-description: "UiPath genome builder: BUILD an existing automation genome (`*-genome.md`) — build, implement or run the migration or refactor it describes — through the owning skills, and CHECK one. Configuration questions, a build per component through its skill, a verdict per acceptance criterion, open items and cutover; a genome extracted from a UiPath project is a refactor, one from another framework's export a migration (UI targets and test data migrated, characterization tests, run modes, comparison). Write, draft, author, edit, extract or document a genome, or turn an idea, SOP, PDD or SDD into one→uipath-planner (it writes every genome; never write or change one here). Build without a genome→that artifact's skill. Legacy activity upgrade in place→uipath-activity-migrator. Quality review→uipath-review."
-when_to_use: "User points at an existing *-genome.md (or a file whose first line is `<!-- UIPATH-AUTOMATION-GENOME`) and asks to build, execute, implement, follow or check it, or uipath-planner hands over a genome it wrote for a build, a migration or a refactor. Not for writing, drafting or editing a genome — that is uipath-planner."
+description: "UiPath genome builder (`*-genome.md`): always invoke to build a genome file, before any skill it names. BUILD, implement or run the migration or refactor a genome describes through the owning skills; its `check` verb is the gate before a build. Configuration questions, a build per component through its skill, a verdict per acceptance criterion, open items and cutover; a genome extracted from a UiPath project is a refactor, one from another framework's export a migration (UI targets and test data migrated, characterization tests, run modes, comparison). Write, draft, author, edit, extract or document a genome, or turn an idea, SOP, PDD or SDD into one→uipath-planner (it writes every genome; never write or change one here). Build without a genome→that artifact's skill. Legacy activity upgrade in place→uipath-activity-migrator. Quality review→uipath-review."
+when_to_use: "User points at an existing *-genome.md (or a file whose first line is `<!-- UIPATH-AUTOMATION-GENOME`) and asks to build, execute, implement or follow it, or whether it is ready to build; or uipath-planner hands over a genome it wrote for a build, a migration or a refactor. A genome whose preamble names `uipath-genome` (written before the skill split) builds here too. Not for writing, drafting or editing a genome — that is uipath-planner."
 argument-hint: "[build | check] <genome.md>"
 user-invocable: true
 ---
@@ -12,7 +12,7 @@ Two verbs. A genome is the markdown specification of an automation — what it d
 
 ## Setup
 
-1. **Read the genome's facts once:** `node "<SKILL_DIR>/scripts/check-genome.mjs" context "<GENOME_MD>"`. `<SKILL_DIR>` is the folder holding this file. Its JSON — `level`, `build_mode` (`build` | `refactor` | `migration`), `transactional`, `designed_in`, `map_binding`, `components`, `check` — answers every read-plan condition about the genome; never re-derive them from its prose. When `node` is missing or the call fails, say "Context loading did not run; I'll read the genome directly", then read its first line and sections and continue.
+1. **Read the genome's facts once:** `node "<SKILL_DIR>/scripts/check-genome.mjs" context "<GENOME_MD>"`. `<SKILL_DIR>` is the folder holding this file. Its JSON — `level`, `extracted`, `source_framework`, `build_mode` (`build` | `refactor` | `migration`), `transactional`, `designed_in`, `components`, `check` — answers every read-plan condition about the genome; never re-derive them from its prose, and never run the checker again for them. A `check` that is not ok is a result for the verb to act on, not a failed call. When `node` is missing or the call fails, say "Context loading did not run; I'll read the genome directly", then read its first line and sections and continue.
 2. **Open the verb's guide** and read it whole; its § Read Plan names every other file the verb reads and when. Never work from memory of a guide.
 
 ## Verbs
@@ -40,7 +40,7 @@ Any other input is another skill's job: say which, and stop.
 node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict
 ```
 
-`build` runs it through `context` before it asks anything. Exit 0 passes; exit 1 prints one `FAIL:` line per finding — a genome the build cannot work around is malformed: report each finding as an edit for `uipath-planner` and stop; exit 2 is a usage error. What it checks: the script's header comment.
+`build` runs it through `context` before it asks anything and sorts its findings into blocking ones and report items ([build-guide.md](references/build-guide.md) § Start). Exit 0 passes; exit 1 prints one `FAIL:` line per finding — `check` reports each finding as an edit for `uipath-planner` and stops, never fixing the genome; exit 2 is a usage error. What it checks: the script's header comment.
 
 ## Critical Rules
 
@@ -48,8 +48,8 @@ Each rule names its subject and the guide that states it in full; [build-guide.m
 
 1. **Choose the verb first** (§ Choosing the Verb) and run § Setup before anything else.
 2. **The build never edits the genome** — not even a one-line fix the user names. A gap in the genome goes into the report and back to `uipath-planner` as an edit, then the build runs again.
-3. **Never skip the configuration questions**, waived only by an explicit "take the defaults" in the current request; what the genome's SDD already decided is answered, not asked — [build-guide.md](references/build-guide.md) rules 1–2.
-4. **Build through the owning skill, verifiably**, never by writing a project outside its journey — [build-guide.md](references/build-guide.md) rule 4.
+3. **Never skip the configuration questions** — [build-guide.md](references/build-guide.md) rules 1–2.
+4. **Build through the owning skill, verifiably** — [build-guide.md](references/build-guide.md) rule 4.
 5. **Nothing reaches a tenant unasked** — [build-guide.md](references/build-guide.md) rule 12.
 
 ## Anti-patterns

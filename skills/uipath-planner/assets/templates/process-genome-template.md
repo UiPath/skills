@@ -12,8 +12,6 @@
 
 > Designed in: [{SDD title}]({relative path to the SDD}) *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 
-> Map binding: {snapshot id} *(Only when the genome derives from a Map of Work snapshot; omit otherwise. Each step, rule, exception and decision a record holds then ends with its record id in square brackets.)*
-
 ## Overview
 
 {2-4 paragraphs: business process, why it is automated, who owns it, volumes and cadence, what "done" means end to end.}

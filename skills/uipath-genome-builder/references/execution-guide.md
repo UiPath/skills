@@ -1,6 +1,6 @@
 # Execution Guide — build an automation from a genome
 
-Genome says *what* to build; build skills know *how*. Execution reads genome, collects configuration answers, builds skill group by skill group through owning skills, wires pieces, checks result against acceptance criteria. Genome is read-only throughout: spec fixes are a separate authoring or extraction edit, then re-execution. Companion guides open only when their condition holds, and the build's only once the configuration answers exist ([build-guide.md § Read Plan](build-guide.md)).
+Genome says *what* to build; build skills know *how*. Execution reads genome, collects configuration answers, builds skill group by skill group through owning skills, wires pieces, checks result against acceptance criteria. Genome is read-only throughout: spec fixes are a `uipath-planner` edit, then a new build. Companion guides open only when their condition holds, and the build's only once the configuration answers exist ([build-guide.md § Read Plan](build-guide.md)).
 
 **Done when** — execution is finished only when all of these hold; a passing build alone is not the end:
 
@@ -11,7 +11,6 @@ Genome says *what* to build; build skills know *how*. Execution reads genome, co
 5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written in the hand-off folder (§ 3.4).
 6. A migration with UI targets has its live checks written, and, where the Live application answer names a reachable application, its live healing pass done (§ 2.2b).
 7. A refactor also meets [refactor-guide.md § Done](refactor-guide.md).
-8. A genome with a `Map binding:` line has its proposed changeset handed over or reported (§ 3.6).
 
 ## Phase 1 — Parse and configure
 
@@ -21,12 +20,11 @@ Read whole file. Identify level from preamble comment (`component` or `process`)
 
 Required sections (component): Overview, Target Applications, Build With, Workflow, Acceptance Criteria, Complexity. Optional (may be stubs): Platform Dependencies, Interface, Configuration Questions, Business Rules, Error Handling, Source Map. Genome missing a required section is malformed: report which section and stop.
 
-Check the genome before anything is asked: `node "<SKILL_DIR>/scripts/check-genome.mjs" context "<GENOME_MD>"` reads its level, build mode, design links and the strict check in one call. A `FAIL` the build cannot work around stops execution like a missing section; the report names it as an edit for `uipath-planner`, then a new build.
+The genome is checked before anything is asked, by the `context` call [SKILL.md § Setup](../SKILL.md) already ran: reuse that JSON (level, build mode, the `Designed in:` link, the strict check) and never run the checker again for it. A `FAIL` the build cannot work around ([build-guide.md](build-guide.md) § Start names which) stops execution like a missing section; the report names it as an edit for `uipath-planner`, then a new build.
 
-When the genome carries the design links ([genome-format-guide.md § Design Links](genome-format-guide.md)):
+When the genome carries a design link ([genome-format-guide.md § Design Links](genome-format-guide.md)):
 
 - **`Designed in:`** — read the SDD's Planner Handoff and project list. The SDD's delivery model is a constraint on every build step, and its project list is the project list of § 1.4 — in a refactor it is the target choice, so [refactor-guide.md § Choosing the target](refactor-guide.md) is not run again. What the SDD decided — the split and queue design, the implementation mode, the package pins, the refactor answers — is answered: § 1.3 states it in the Configuration Answers as `(from the SDD)` and does not ask it again; the scaffolding and environment questions the SDD leaves open are asked as usual. The build never reads the SDD's PDD.
-- **`Map binding:`** — the build runs against that snapshot and records it in the completion report. When the Cartographer MCP is available, the cited record ids are resolved through it, and a record's wording decides where it and the genome disagree; the report names each disagreement. Without the MCP, the genome's wording holds and the report says the binding was not resolved.
 
 ### 1.2 Preflight discovery
 
@@ -273,7 +271,6 @@ The README is the completion report. It is written for a reader who has this fol
 - Tests: per test case, `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` (`parity/`).
 - Test data and Data Fabric: <n> seed records, <variation files> filled from source rows, <n> credential assets declared; <entity, …> <created and loaded | created | open items> | none.
 - Refactor: <the line of refactor-guide.md § Done> | not a refactor.
-- Changeset: <snapshot id> — <n> links, <m> deviations, <k> additional changes — <proposed through the Cartographer MCP | listed in § Decisions, MCP not available> | no Map binding (§ 3.6).
 - Before the first run: <n> setup steps (`open-items.md`).
 
 ## Next steps
@@ -314,8 +311,8 @@ The README is the completion report. It is written for a reader who has this fol
 What each section holds:
 
 1. **Decisions:** every choice the build made that the genome leaves open — the split per flow (`Flow <N> (<components>) — option <A|B|C> — <materialised projects and their roles, runners per project>; unit <item> (<the genome's | alternative: reason>); store <one queue per unit: <names> [+ record store: <entity or table>] | in-process | + kept coordination stores: <names>>; template <REFramework <queue|direct> | plain> per consumer project; coordination folded: <what became what>; exits exercised per consumer project: …; as-is was <one sentence>`), the libraries folded into a project, the orchestrator's rulings, the user's rulings on source defects, the guards on settings (§ 1.3 rule 8) and the analyzer errors accepted. A ruling that changes what the genome says is offered as a genome edit.
-2. **Differences from the genome:** the genome deviations the groups reported, each for an extraction edit, with what the build followed ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4).
-3. **Expected failures on a live run:** the criteria Met (static) that the source's own data or defect fails on a live run (§ 3.1), the placeholder targets, and, as not built, the objects of the Source Map's `Not covered` row — building them is an extraction edit, then re-execution.
+2. **Differences from the genome:** the genome deviations the groups reported, each for a `uipath-planner` edit, with what the build followed ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4).
+3. **Expected failures on a live run:** the criteria Met (static) that the source's own data or defect fails on a live run (§ 3.1), the placeholder targets, and, as not built, the objects of the Source Map's `Not covered` row — building them is a `uipath-planner` edit (re-extraction), then a new build.
 3a. **Rulings still owed:** the questions raised after the configuration answers that the user has not answered, each with the default in place and what changes if the answer differs.
 4. **Data the build's runs changed:** each change a run made in a target system or a store, with how to undo it; nothing is undone unasked.
 5. **Files:** every file of the folder with what it holds, and the working folder that stays with the build.
@@ -329,16 +326,6 @@ Execution ends by writing, in the hand-off folder (§ 3.3), what the target envi
 ### 3.5 Integration review
 
 After every project of a process genome is built, and before the report, a reviewer who built none of them reads the projects against each other, read-only: each Handoffs row's mechanism and names, queue names, the argument contract at every invoke (names, directions, types) and the configuration keys and assets the projects share. It writes `integration-check.md` in the hand-off folder (§ 3.3): each finding with the projects and files it spans, its severity, and what became of it. A finding is fixed by the project's owner and the touched files re-validated, or recorded unresolved in `integration-check.md` and the README's Expected failures; none is dropped. The README counts the findings and links the file.
-
-### 3.6 Back to the Map of Work
-
-When the genome carries a `Map binding:` line, the build proposes what it implemented and never edits the Map. The Cartographer MCP owns the Map's schema and its changeset shape; this verb names what goes in and lets the MCP write it:
-
-1. **Implementation links** — per built step: its record ids, and the project and the workflow, flow or node that implements it.
-2. **Deviations** — each place the build differs from a cited record (a criterion Partial or Not Met, a user ruling, a platform limit), with its reason.
-3. **Additional changes** found while building that no record holds.
-
-With the MCP available, hand these to it as a proposed changeset for the bound snapshot; the process owner merges it, and during a cutover the merge carries both links, the retiring one and the new one. Without the MCP, the completion report lists them, and nothing is written into a Map folder.
 
 ## Anti-patterns
 

@@ -112,7 +112,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Autonomous-mode SDD carries the ## Decisions Made block (design-guide.md Phase 3 Step 2 item 3)"
+    description: "Autonomous-mode SDD carries the ## Decisions Made block (sdd-writing-guide.md Step 2 item 3)"
     path: "payment-reconciliation-sdd.md"
     includes:
       - "Decisions Made"
@@ -120,7 +120,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "SDD with unresolved [SME REVIEW] items carries the ## Action Required block (design-guide.md Phase 3 Step 2 item 4)"
+    description: "SDD with unresolved [SME REVIEW] items carries the ## Action Required block (sdd-writing-guide.md Step 2 item 4)"
     path: "payment-reconciliation-sdd.md"
     includes:
       - "Action Required"

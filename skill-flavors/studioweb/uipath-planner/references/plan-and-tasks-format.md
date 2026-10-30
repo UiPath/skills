@@ -8,7 +8,7 @@
 <!--skill-flavor:task-row-tool-fields:end-->
 
 <!--skill-flavor:non-pdd-plan-reference:start-->
-For the non-PDD lane, never write "this plan". In the simultaneous approach, reference the plan file **by path** — a resumed task must be able to find it:
+For `decompose`, never write "this plan". In the simultaneous approach, reference the plan file **by path** — a resumed task must be able to find it:
 
 ```
 Use values, mappings, and structure exactly as documented in the plan at <PLAN_FILE_PATH>. Do not infer or guess.
@@ -22,7 +22,7 @@ Use values, mappings, and structure exactly as documented in the approved plan. 
 <!--skill-flavor:non-pdd-plan-reference:end-->
 
 <!--skill-flavor:regenerate-emit:start-->
-8. Continue at the lane's review step (PDD-driven lane Step 8)
+8. Continue at the verb's review step (`plan` Step 8)
 <!--skill-flavor:regenerate-emit:end-->
 
 <!--skill-flavor:live-tasks-and-plan-mode:start-->
@@ -30,9 +30,9 @@ Use values, mappings, and structure exactly as documented in the approved plan. 
 
 Studio Web has no task-creation tool. A plan the user reviews goes through the host's plan mode, and the host derives the live task list from the approved plan. Create no tasks yourself; later progress on that list is an edit to the host's task-list file, made as the host's own task-list skill describes.
 
-- **Non-PDD lane explore-first:** call `EnterPlanMode` as soon as the user picks the approach, before any discovery. Discover read-only, author the host plan, then call `ExitPlanMode` with outcome `complete`. Approval → the host derives the task list and execution starts.
-- **PDD-driven lane interactive:** write `<process>-tasks.md` (Step 7), call `EnterPlanMode`, author the host plan from it, then call `ExitPlanMode` with outcome `complete`. Approval → the host derives the task list.
-- **Non-PDD lane simultaneous / PDD-driven autonomous:** no plan mode. Emit the file as text; the main agent works its tasks in order.
+- **`decompose` explore-first:** call `EnterPlanMode` as soon as the user picks the approach, before any discovery. Discover read-only, author the host plan, then call `ExitPlanMode` with outcome `complete`. Approval → the host derives the task list and execution starts.
+- **`plan` interactive:** write `<process>-tasks.md` (Step 7), call `EnterPlanMode`, author the host plan from it, then call `ExitPlanMode` with outcome `complete`. Approval → the host derives the task list.
+- **`decompose` simultaneous / `plan` autonomous:** no plan mode. Emit the file as text; the main agent works its tasks in order.
 
 A rejection keeps plan mode active — revise and call `ExitPlanMode` again. If the user asks to stop planning, call `ExitPlanMode` with outcome `abandon`. While plan mode is active, the only files you may write are the host's two plan files.
 

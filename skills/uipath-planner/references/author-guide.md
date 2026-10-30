@@ -2,14 +2,14 @@
 
 The `author` verb writes a genome — the coding-agent spec `uipath-genome-builder` builds from — when no source automation exists. Input: a free-form description, an SOP or transcript, a PDD, a change proposal's TO-BE, an agreed SDD, or a goal the planner proposes scenarios for. User describes or picks; the planner infers, selects the products, fills UiPath specifics, writes. Content rules and templates: [genome-format-guide.md](genome-format-guide.md).
 
-`author` never builds: the written genome goes to `uipath-genome-builder` (Step 9).
+`author` never builds: the written genome goes to `uipath-genome-builder` (Step 9). Every `design` that writes an SDD other than Case Management is followed by `author` on that SDD once it is `Status: ready`: the next turn runs Step 1b and writes the genome beside the SDD.
 
 ## Verb Rules
 
 The writing rules of [genome-format-guide.md § Writing Rules](genome-format-guide.md) and the Critical Rules in [SKILL.md](../SKILL.md) apply; `author` adds:
 
-1. **Every authored genome runs the planner's product selection** (Step 5): Constraint Gate, platform availability, Maestro disambiguation, Integration Service reuse and tenant library search.
-2. **An agreed SDD is the design, not a draft** (Step 1b): what it decided is recorded in the genome, never reopened. A Case Management SDD is never authored into a genome.
+1. **Every authored genome rests on the planner's product selection.** Without an SDD, Step 5 runs it: Constraint Gate, platform availability, Maestro disambiguation, Integration Service reuse and tenant library search. From an agreed SDD, the genome takes the selection the SDD already made and passed through the Constraint Gate, and never re-runs it (Step 1b).
+2. **An agreed SDD is the design, not a draft** (Step 1b): what it decided is recorded in the genome, never reopened. Every ready SDD except a Case Management SDD gets its genome; a Case Management SDD is never authored into a genome, and a `draft` SDD gets none until it is `ready`.
 3. **Follow-ups are bounded** (Step 6): one round for the largest gaps, then write.
 
 ## Read Plan
@@ -17,11 +17,14 @@ The writing rules of [genome-format-guide.md § Writing Rules](genome-format-gui
 | Phase | Condition | Read |
 |---|---|---|
 | start | — | this guide, [genome-format-guide.md](genome-format-guide.md) and [skill-mapping-guide.md](skill-mapping-guide.md) whole; the template of the level chosen ([component](../assets/templates/component-genome-template.md), [process](../assets/templates/process-genome-template.md)) |
-| products are selected | — | the [product-selection-guide.md](product-selection-guide.md) sections Step 5 names; [platform-availability-guide.md](platform-availability-guide.md) |
-| the input is a PDD | — | [pdd-analysis-guide.md](pdd-analysis-guide.md) by section — every section except § Accepted process-knowledge sources and § Gap Detection Checklist; the genome's gaps follow genome-format-guide.md |
-| the unit of work is assessed | the description iterates over items | [transactional-shape-guide.md](transactional-shape-guide.md) |
+| the input is received | the input is an agreed SDD (Step 1b) | the SDD whole, with every per-project SDD a solution SDD lists; [transactional-shape-guide.md](transactional-shape-guide.md) only when the SDD has a queue or a per-item loop. Nothing else: product-selection-guide.md, platform-availability-guide.md and pdd-analysis-guide.md stay closed, because the SDD decided what they decide |
+| the input is received | the input is a goal (Step 1a) and the delivery model is known | [product-selection-guide.md § Constraint Gate](product-selection-guide.md#constraint-gate); [platform-availability-guide.md](platform-availability-guide.md) |
+| the input is received | the input is a PDD | [pdd-analysis-guide.md](pdd-analysis-guide.md) by section — every section except § Accepted process-knowledge sources and § Gap Detection Checklist; the genome's gaps follow genome-format-guide.md |
+| products are selected (Step 5) | no SDD | [product-selection-guide.md](product-selection-guide.md) § Constraint Gate and § Per-task component placement, opened by name (no heading list); [platform-availability-guide.md](platform-availability-guide.md); § Maestro disambiguation — BPMN vs Flow vs Case only when the genome has two or more components or a coordinator; § Integration Service only when a step acts on a SaaS system |
+| products are selected (Step 5) | no SDD, a step repeats behaviour a deployed library may already hold, and the tenant is reachable | [tenant-library-search-guide.md](tenant-library-search-guide.md) |
+| the unit of work is assessed | no SDD, and the description iterates over items | [transactional-shape-guide.md](transactional-shape-guide.md) |
 
-Each phase's reads go out in at most three turns: turn 1 every file read whole and the heading list of every file read by section; turn 2 the sections chosen; turn 3 only what turn 2 routed to.
+Each phase's reads go out in at most three turns: turn 1 every file read whole, every section this plan names, and the heading list of every other file read by section; turn 2 the sections chosen; turn 3 only what turn 2 routed to.
 
 ## Step 1 — Receive the input
 
@@ -54,20 +57,23 @@ Accept anything from one sentence to several pages. Do not ask the user to elabo
 
 ## Step 1b — Author from an agreed SDD
 
-The SDD decided the architecture; the genome restates it as the coding-agent spec and adds what only the genome holds (replication-grade substeps, composite UI contracts, the configuration questions, numbered acceptance criteria).
+The second half of every `design` except Case Management: once the SDD is `Status: ready`, the next turn runs this step on it. A request that hands over an agreed SDD runs it the same way. The SDD decided the architecture; the genome restates it as the coding-agent spec and adds what only the genome holds (replication-grade substeps, composite UI contracts, the configuration questions, numbered acceptance criteria).
 
-1. **Read the SDD whole**, with its Planner Handoff, and for a solution SDD every per-project SDD it lists.
-2. **The SDD's products and projects are the genome's.** Its project list sets the level (Step 2) and the Build With / Components rows; Steps 3–5 never re-select a product the SDD placed. Its delivery model holds for every row.
+1. **Read the SDD whole**, with its Planner Handoff, and for a solution SDD every per-project SDD it lists. Then stop without writing when either holds:
+   - **A Case Management SDD** — its Planner Handoff has a `Build handoff` row instead of `Tasks file`. It never becomes a genome: say that `uipath-maestro-case` builds from the SDD itself.
+   - **A `draft` SDD** — `Status: draft`, with blocking SME items. Name the blocking items; the genome is written once the SDD is `ready`.
+2. **The SDD's products and projects are the genome's.** Its project list sets the level (Step 2) and the Build With / Components rows; Steps 3–5 never re-select a product the SDD placed. Its delivery model holds for every row. Two projects that are the producer and the consumer of one flow — a dispatcher that adds items to a queue and a performer that works them — are one `uipath-rpa` component: they are the split the SDD chose for that flow ([skill-mapping-guide.md](skill-mapping-guide.md) rule 3), recorded as item 3 states, never two components.
 3. **The SDD's decisions are recorded, not reopened.** The split and queue design, the implementation mode, the package pins and, for a refactor, the refactor answers go into the sections that hold them (Transactional Shape evidence, Deployment, Configuration Questions defaults), so `uipath-genome-builder` reads them as answered.
 4. **Gaps carry over.** Every `[SME REVIEW]` or `[DEFAULT]` item of the SDD that touches a section is written there with `*[Inferred]*` and the item's wording; Step 6 asks nothing the SDD already left to an SME.
-5. **The SDD is never edited by this lane.** A contradiction between the SDD and what the genome needs is named when edits are offered (Step 8).
-6. **Name the genome after the SDD** (`<PROCESS_NAME_KEBAB>-genome.md` beside the SDD) and record it in the SDD's Planner Handoff as `| **Genome** | <path> |` after `Tasks file`.
+5. **Apart from the `Genome` handoff row (item 6), the SDD is never edited.** A contradiction between the SDD and what the genome needs is named when edits are offered (Step 8).
+6. **Name the genome after the SDD** (`<PROCESS_NAME_KEBAB>-genome.md` beside the SDD), write the `Designed in:` line ([genome-format-guide.md § Design Links](genome-format-guide.md)), and record the genome in the SDD's Planner Handoff as `| **Genome** | <path> |` after `Tasks file`.
+7. **The genome write is a turn boundary.** What follows it is [SKILL.md](../SKILL.md) § Chaining's: a request that asked only for the design stops here.
 
 Continue at Step 2.
 
 ## Step 2 — Choose the level
 
-Count the buildable projects the description implies and apply [genome-format-guide.md § Two Levels](genome-format-guide.md). Process-genome signals: "end-to-end", "across departments", "the flow kicks off the robot then the agent", "human approval for days", separate schedules or triggers for different parts, more than one deployable unit named.
+Count the buildable projects the description implies and apply [genome-format-guide.md § Two Levels](genome-format-guide.md). From an SDD the count is its project list, with a dispatcher and its performer counted as one project (Step 1b item 2): an SDD whose list holds one project, or one dispatcher and its performer, is a component genome. Process-genome signals for a description: "end-to-end", "across departments", "the flow kicks off the robot then the agent", "human approval for days", separate schedules or triggers for different parts, more than one deployable unit named.
 
 ## Step 3 — Infer complexity
 
@@ -92,7 +98,7 @@ From the description, extract: target applications, human actors, workflow steps
 
 ## Step 5 — Select the products
 
-Every authored genome runs the planner's product selection, so a genome never names a product the customer's platform cannot run. With an SDD (Step 1b) this step only checks the SDD's rows; without one it places them:
+Without an SDD, this step runs the planner's product selection, so a genome never names a product the customer's platform cannot run. With an SDD (Step 1b) skip it: the SDD's rows stand as `design` selected them and passed them through the Constraint Gate. Without one, place them:
 
 1. **Constraint Gate** — [product-selection-guide.md § Constraint Gate](product-selection-guide.md#constraint-gate), with the delivery model from [platform-availability-guide.md](platform-availability-guide.md). Ask the delivery model only when the request, the PDD or the SDD does not state it; a prototype on an unknown tenant takes Automation Cloud as its default, written as `*[Inferred]*` in Deployment.
 2. **Per-step placement** — [product-selection-guide.md § Per-task component placement](product-selection-guide.md#per-task-component-placement-the-to-be-per-step); orchestration through [§ Maestro disambiguation](product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case).
@@ -134,11 +140,11 @@ Interface by component type ([genome-format-guide.md § Interface](genome-format
 Write the file named by the slug rule ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)), then check it:
 
 ```bash
-python3 "<SKILL_DIR>/scripts/check-genome.py" <process|component> "<GENOME_MD>" --profile strict
+node "<SKILL_DIR>/scripts/check-genome.mjs" <process|component> "<GENOME_MD>" --profile strict
 ```
 
-Use `python` on Windows. A process genome takes the checker to every component genome it links. Fix every `FAIL` line and run it again, at most three rounds, then offer edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)), naming what is left. Edits: [edit-guide.md](edit-guide.md).
+A process genome takes the checker to every component genome it links. Fix every `FAIL` line and run it again, at most three rounds, then offer edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)), naming what is left. Edits: [edit-guide.md](edit-guide.md).
 
 ## Step 9 — Hand the genome to the build
 
-When the request asks for a build ("build", "implement", "create the automation"), hand the written genome path to `uipath-genome-builder` on the next turn, once the user's edits are in; an unattended run hands it over straight away. `author` never writes a workflow file. When `uipath-genome-builder` is not installed, stop after Step 8 and say that the build needs it.
+When the request asks for a build ("build", "implement", "create the automation"), hand the written genome path to `uipath-genome-builder` on the next turn, once the user's edits are in; an unattended run hands it over straight away. `author` never writes a workflow file. When `uipath-genome-builder` is not installed, stop after Step 8 and say that the build needs it. A genome written from an SDD (Step 1b) reaches the build through `plan` instead, which routes it to `uipath-genome-builder` (Pattern 7) or, without it, derives the per-skill tasks from the SDD.

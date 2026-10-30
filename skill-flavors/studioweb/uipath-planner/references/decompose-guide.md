@@ -15,7 +15,7 @@
 <!--skill-flavor:approach-behavior:end-->
 
 <!--skill-flavor:write-plan-target:start-->
-Compose the plan per the schema in [plan-and-tasks-format.md → Non-PDD lane](plan-and-tasks-format.md#non-pdd-lane-featuremd). Plan body holds the task list with the same task row schema as `plan`. Where it goes depends on Q1:
+Compose the plan per the schema in [plan-and-tasks-format.md → `decompose`](plan-and-tasks-format.md#decompose-featuremd). Plan body holds the task list with the same task row schema as `plan`. Where it goes depends on Q1:
 
 - **Explore first, then plan:** author it inside plan mode as the host plan — at the paths the plan-mode context names, in the format its plan-authoring contract sets, mapped per [plan-and-tasks-format.md → Plan-mode integration](plan-and-tasks-format.md#plan-mode-integration). Do NOT write `<feature>.md` or anything under `docs/plans/`; skip Save location below.
 - **Explore, plan, and execute simultaneously:** write `<feature>.md` per Save location below. **Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of that file (mirroring `plan`'s embedded SDD path); a bare "this plan" leaves a resumed task with no way to find its values.
@@ -31,7 +31,7 @@ Simultaneous approach only (an explore-first plan lives in the host plan files) 
 
 <!--skill-flavor:resume-choices:start-->
 Option 1: read the existing plan → continue from its first task not marked `[x]`; the file's checkboxes are the task state → done.
-Option 2: parse the request fresh, run identity-matching against the old file (preserve completed work), write the new plan, then present it per Step 6. Same regenerate algorithm as `plan` — see [plan-and-tasks-format.md → Regenerate logic](plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
+Option 2: parse the request fresh, run identity-matching against the old file (preserve completed work), write the new plan, then present it per Step 6. Same regenerate algorithm as `plan` — see [plan-and-tasks-format.md → Regenerate logic](plan-and-tasks-format.md#regenerate-logic).
 <!--skill-flavor:resume-choices:end-->
 
 <!--skill-flavor:present-plan:start-->

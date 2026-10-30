@@ -14,6 +14,18 @@ These add to the Critical Rules in [SKILL.md](../SKILL.md).
 2. **A single-project request leaves here** at Step 2: the specialist is loaded directly, no plan is written.
 3. **Testing is mandatory — one Testing task per generation skill**, routed to that specialist's testing references; never describe the procedure inline.
 
+## Read Plan
+
+| Phase | Condition | Read |
+|---|---|---|
+| start | — | this guide whole |
+| Step 1 sub-step 3 | — | [multi-skill-patterns-guide.md](multi-skill-patterns-guide.md) whole; [skill-capability-map-guide.md](skill-capability-map-guide.md) whole |
+| Step 1 sub-step 4 | no filesystem signal or explicit naming decides the project type | [product-selection-guide.md](product-selection-guide.md) § Level 1 — Primary Scope Selection and § Maestro disambiguation |
+| Step 1 sub-step 5 | the delivery model must be resolved, or a delivery-gated product is a candidate | [design-guide.md](design-guide.md) § Step 0 (the preflight host table); [product-selection-guide.md](product-selection-guide.md) § Constraint Gate; [platform-availability-guide.md](platform-availability-guide.md) |
+| Step 3 | a generation skill is in the plan | [product-selection-guide.md](product-selection-guide.md) § How selection works — four layers (Packaging) |
+| Step 3 | a question is asked | [plan-guide.md](plan-guide.md) § Step 5 (the question phrasing rules; the UI questions Step 4 asks when the plan includes UI automation) |
+| Step 5 | — | [plan-and-tasks-format.md](plan-and-tasks-format.md) whole |
+
 ## Step 1 — Detect before asking (no prompts)
 
 All sub-steps are non-interactive. Run them first; their outputs drive the Step 2 exit and the Step 3 skip rules.
@@ -47,7 +59,7 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
 
    No signals → greenfield request (the normal planning-phase case); project type comes from sub-step 4 inference.
 
-3. **Multi-skill classification** — check the request against the named patterns in [multi-skill-patterns-guide.md](multi-skill-patterns-guide.md) ("build"+"deploy", "build"+"verify", one product depending on another). Record the matched pattern, if any.
+3. **Multi-skill classification** — check the request against the named patterns in [multi-skill-patterns-guide.md](multi-skill-patterns-guide.md) ("build"+"deploy", "build"+"verify", one product depending on another), and the owner of each part against [skill-capability-map-guide.md](skill-capability-map-guide.md) (its "Handles deploy?" column decides whether a deploy task goes to a separate skill). Record the matched pattern, if any.
 
 4. **Product/project-type inference — need-driven, not keyword.** When no filesystem signal or explicit naming decides it, type the request with the [Product Selection Guide → Level 1](product-selection-guide.md#level-1--primary-scope-selection) need bullets, not surface keywords:
    - Explicit naming still wins ("xaml workflow", "coded workflow", ".cs file", "low-code") → record `Project type: XAML` or `Project type: C# coded`.
@@ -60,7 +72,7 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
 
 ## Step 2 — Single-skill exit (stop `decompose`)
 
-If Step 1 resolves the request to **one project owned end-to-end by one specialist** — even when it bundles inline HITL / script / connector nodes or its own solution wrapper (author sub-steps, per the Skip paragraph in SKILL.md) — **stop `decompose`**:
+If Step 1 resolves the request to **one project owned end-to-end by one specialist** — even when it bundles inline HITL / script / connector nodes or its own solution wrapper (author sub-steps, per SKILL.md § Choosing the Verb item 8) — **stop `decompose`**:
 
 <!--skill-flavor:single-skill-exit-no-plan:start-->
 1. Do NOT write a plan file. Do NOT emit `TaskCreate` calls. Do NOT ask the Step 3 batch.
@@ -150,7 +162,7 @@ Record the answers in the plan header AND summarize them in the relevant task's 
 ## Step 5 — Write the plan
 
 <!--skill-flavor:write-plan-target:start-->
-Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → Non-PDD lane](plan-and-tasks-format.md#non-pdd-lane-featuremd). Plan body holds the task list with the same task row schema as `plan`.
+Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → `decompose`](plan-and-tasks-format.md#decompose-featuremd). Plan body holds the task list with the same task row schema as `plan`.
 
 **Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of the file written below (mirroring `plan`'s embedded SDD path). `TaskCreate` copies prompts verbatim; a bare "this plan" leaves a resumed task with no way to find its values.
 <!--skill-flavor:write-plan-target:end-->
@@ -190,7 +202,7 @@ If a plan file already exists at the target path, ask the user via `AskUserQuest
 
 <!--skill-flavor:resume-choices:start-->
 Option 1: read existing plan → recreate live `TaskCreate` calls with status preserved → done.
-Option 2: parse the request fresh, run identity-matching against the old file (preserve completed work), write the new plan, emit live tasks. Same regenerate algorithm as `plan` — see [plan-and-tasks-format.md → Regenerate logic](plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
+Option 2: parse the request fresh, run identity-matching against the old file (preserve completed work), write the new plan, emit live tasks. Same regenerate algorithm as `plan` — see [plan-and-tasks-format.md → Regenerate logic](plan-and-tasks-format.md#regenerate-logic).
 <!--skill-flavor:resume-choices:end-->
 
 ## Step 6 — Present the plan

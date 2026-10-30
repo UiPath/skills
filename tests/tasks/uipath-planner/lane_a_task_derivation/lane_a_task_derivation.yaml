@@ -15,7 +15,7 @@ run_limits:
   task_timeout: 1800
   turn_timeout: 1500
 
-# Stage the ready-made SDD into the sandbox root. The skill's entry guard reads
+# Stage the ready-made SDD into the sandbox root. The skill's § Choosing the Verb reads
 # its `## Planner Handoff` marker and routes to `plan`.
 sandbox:
   template_sources:

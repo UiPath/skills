@@ -2,7 +2,6 @@
 
 Content rules for what an edit writes: [genome-format-guide.md](genome-format-guide.md), and for an extracted genome [extracted-genome-guide.md](extracted-genome-guide.md). Only `edit` changes a genome; `uipath-genome-builder` reads it and never edits it, so a fix found during a build comes back here and the build re-runs. Edits are targeted and in place, never a regeneration ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)).
 
-
 ## Read Plan
 
 The writing rules of [genome-format-guide.md § Writing Rules](genome-format-guide.md) apply to every edit.
@@ -28,7 +27,6 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 | "Merge these two components" / "split this one" | Adjust Components, Handoffs, component files; re-check Interface agreement |
 | "Scenario X signs in as persona Y" | Platform Dependencies (credential asset for Y), test component's row schema (asset name per row), Configuration Questions |
 | "Remove the inferred flags" | Delete every `*[Inferred]*` — user confirmed the content |
-| "The Map says X" / "the process owner confirmed rule Y" / a changeset on the change proposal | A genome with a `Map binding:` line: regenerate the parts the Map and the SDD hold from the record, through the Cartographer MCP, keyed by step number and record id; the genome's own content is kept. A person's edit to a Map-held part is not made here — it goes back as a comment or a changeset on the change proposal ([genome-format-guide.md § Design Links](genome-format-guide.md)) |
 | "Make it transactional" / "drop the transactional shape" | Transactional Shape (unit of work, As-is, outcomes, split options, evidence) or its stub; Platform Dependencies (the store the As-is names); Configuration Questions (retry counts) |
 | "Step X should be a business exception" | Transactional Shape outcomes table; the rule under Business Rules for step X; an acceptance criterion for the recorded reason |
 | "One row per transaction instead of one file" (change the unit of work) | Transactional Shape (Unit of work, Alternative units of work, As-is, outcomes, split options); Interface; Handoffs data passed; Platform Dependencies (store); Acceptance Criteria (duplicate and retry cases) |
@@ -52,10 +50,10 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 After every edit, run the check again before answering:
 
 ```bash
-python3 "<SKILL_DIR>/scripts/check-genome.py" <process|component> "<GENOME_MD>" --profile strict
+node "<SKILL_DIR>/scripts/check-genome.mjs" <process|component> "<GENOME_MD>" --profile strict
 ```
 
-Use `python` on Windows. A process genome takes the checker to every component genome it links. An extracted genome takes the checks [extract-guide.md](extract-guide.md) Step 6b runs against its source. Fix every `FAIL` line and run it again, at most three rounds, then name what is left.
+A process genome takes the checker to every component genome it links. An extracted genome takes the checks [extract-guide.md](extract-guide.md) Step 6b runs against its source. Fix every `FAIL` line and run it again, at most three rounds, then name what is left.
 
 ## Partial Re-extraction
 

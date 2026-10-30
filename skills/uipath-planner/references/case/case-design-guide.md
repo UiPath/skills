@@ -2,13 +2,17 @@
 
 Design a Case Management SDD in conversation, then write it. `uipath-planner` is the sole author of case SDDs; every case design path runs through this lane, including a build handoff from `uipath-maestro-case` (same conversation, same user). Run three moves — **Listen**, **Sketch**, **Confirm** — and write on the accept answer. Never interrogate: decide by best assumption, disclose every decision, spend at most ONE clarifying call.
 
+## Read Plan
+
 Case knowledge is split three ways. Read all three to begin, in parallel, **at most once per session**:
 
-| File | Owns |
-|---|---|
-| this file | the conversation: entry, tenant grounding, authoring policy, the one confirmation, the write |
-| [case-design-layers-guide.md](case-design-layers-guide.md) | the case model and every design **Default** — skeleton, gates, data, SLAs, naming, the closure checklist |
-| [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md) | the render contract — skeleton, cell rules inline, validation footer |
+| Phase | Condition | Read |
+|---|---|---|
+| start | every case design path except draft finalization | this file — the conversation: entry, tenant grounding, authoring policy, the one confirmation, the write |
+| start | every case design path except draft finalization | [case-design-layers-guide.md](case-design-layers-guide.md) — the case model and every design **Default**: skeleton, gates, data, SLAs, naming, the closure checklist |
+| start | every case design path except draft finalization | [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md) — the render contract: skeleton, cell rules inline, validation footer |
+| start | draft finalization | the read budget below, never the layers guide |
+| template conformance gate | — | nothing yourself: the gate subagent reads [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) |
 
 That is the COMPLETE design reading set. Do NOT read the generic `design` references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Open all three with the Read tool, never `cat`. Everything after the SDD (caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
 
@@ -203,7 +207,7 @@ Structured gap escalations — a field could not be fully resolved but the build
 
 ### Template conformance gate — before `sdd.md` is written
 
-The template's § Validation footer is the contract and the 37-item [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) is the gate (document skeleton, per-block markers, closed enums and gate pairings, data closure, liveness, forbidden summary-only sections). Skeleton head: `## Document History`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker, then `## Table of Contents` — the universal planner scaffold (Rule 5); the case body follows. Run it against the **written file, before the `Status: ready` flip** — every mode: one structural Read, then every item answered PASS or FAIL in the transcript with a verbatim quote from the file, judged by block role and position rather than wording. No script and no interpreter is involved. This is a render check, not a second design review; on failure, rewrite from the model and template — never a summary SDD, even if a later `caseplan.json` would validate.
+The template's § Validation footer is the contract and the 37-item [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) is the gate (document skeleton, per-block markers, closed enums and gate pairings, data closure, liveness, forbidden summary-only sections). Skeleton head: `## Document History`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker, then `## Table of Contents` — the universal planner scaffold ([design-guide.md](../design-guide.md) § Verb Rules 3); the case body follows. Run it against the **written file, before the `Status: ready` flip** — every mode: one structural Read, then every item answered PASS or FAIL in the transcript with a verbatim quote from the file, judged by block role and position rather than wording. No script and no interpreter is involved. This is a render check, not a second design review; on failure, rewrite from the model and template — never a summary SDD, even if a later `caseplan.json` would validate.
 
 **Run the checklist in ONE subagent when the `Agent` tool is available.** The walk is 37 read-only items against a file already on disk: it returns a verdict, it does not design, so it does not belong in the authoring context. Spawn a single subagent, hand it the written SDD path and [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) — that file, not the template — and require it to return the PASS/FAIL table with one verbatim quote per item and nothing else. The checklist lives outside the template precisely so the authoring turn never loads it; do not read it yourself to "check first". The parent applies every repair Edit itself and owns the ready flip — a subagent never edits the SDD, never designs, and is never spawned per item or per family. This is the ONE subagent the case design path allows; every other spawn stays forbidden. When the `Agent` tool is unavailable, walk the same 35 items inline in the transcript — same items, same evidence requirement, but NOT the same cost. Inline the walk is the most expensive thing in the turn: budget it as the dominant cost, keep the repair Edits targeted, and never re-answer an item that already passed.
 

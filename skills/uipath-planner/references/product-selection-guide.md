@@ -579,7 +579,7 @@ For RPA projects in the Solution, use the RPA template once per RPA *group* — 
 The solution overview SDD includes:
 
 1. Solution Overview (objective, business context)
-2. Planner Handoff — solution-level handoff header with `Project SDD role: root`, `Solution ID: <SOLUTION_NAME_KEBAB>`, `Solution root SDD: <its own filename>`, and the canonical `Tasks file: <SOLUTION_NAME_KEBAB>-tasks.md` (the ONE tasks file every child also names), plus cross-project ordering notes (integrated components built before their consumers) for `plan` to consume. Position 2 keeps the header inside the first ~50 lines the Entry Guard reads — do not move it lower. Do not include a task list here — `plan` owns task generation.
+2. Planner Handoff — solution-level handoff header with `Project SDD role: root`, `Solution ID: <SOLUTION_NAME_KEBAB>`, `Solution root SDD: <its own filename>`, and the canonical `Tasks file: <SOLUTION_NAME_KEBAB>-tasks.md` (the ONE tasks file every child also names), plus cross-project ordering notes (integrated components built before their consumers) for `plan` to consume. Position 2 keeps the header inside the first ~50 lines § Choosing the Verb reads — do not move it lower. Do not include a task list here — `plan` owns task generation.
 3. Project Inventory — the unified project list from Level 2.5 Part B
 4. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
 5. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
@@ -643,7 +643,7 @@ Emit this block as the Phase 1 summary content:
 **Decomposition signals matched:** <LIST_MATCHED_SIGNALS_PER_RPA_PROCESS_PROJECT_OR_N/A>
 ```
 
-**Durable home.** This block is conversation output at the Phase 1 checkpoint, but the `## Recommended Scope` lines (`Recommendation:`, `Delivery model:`, `Blocked by platform:`) must also survive into the SDD — every template hosts a `## Recommended Scope` section between `## Decisions Made` and `## Action Required`, emitted in BOTH execution modes (Phase 3 Step 2 item 3). Autonomous mode skips the checkpoint presentation, so the SDD copy is the only durable record of the Constraint Gate outcome.
+**Durable home.** This block is conversation output at the Phase 1 checkpoint, but the `## Recommended Scope` lines (`Recommendation:`, `Delivery model:`, `Blocked by platform:`) must also survive into the SDD — every template hosts a `## Recommended Scope` section between `## Decisions Made` and `## Action Required`, emitted in BOTH execution modes ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 3). Autonomous mode skips the checkpoint presentation, so the SDD copy is the only durable record of the Constraint Gate outcome.
 
 ### Confirmation question
 

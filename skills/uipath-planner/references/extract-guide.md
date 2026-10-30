@@ -28,10 +28,6 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 
 A UiPath source is read with [uipath-source-guide.md](uipath-source-guide.md). Any other source is read through the framework migration pack: resolve it, select the framework row, run its script and read its source guide in full before Step 1, exactly as [source-frameworks-guide.md](source-frameworks-guide.md) states. No pack, or no row matches → stop as that section says. Do not improvise an extraction from an unknown framework.
 
-## Estate Assessment
-
-A request to size an estate of automations ("how big is our Blue Prism estate", "which of these 40 processes should migrate first") runs Steps 1–2 and the sizing of Step 5 per automation, and **writes no genome**. Per automation, report: framework, component count, workflow and object counts, the sizing class, the deployed state where it is readable (runs in the job history, triggers, the processes sharing its queues, assets and libraries), and its wave dependencies (a shared library or queue migrates with or before its consumers). An automation with no runs in its job history is named for retirement, never sized for migration. Present one table, ordered by dependency then size; an extraction of the automations the user picks follows as a separate request.
-
 ## Pipeline
 
 ### Step 1 — Detect
@@ -156,7 +152,7 @@ Fill every row [extracted-genome-guide.md § Source Map](extracted-genome-guide.
 Check the genome before offering edits. Run the source guide's inventory into a scratch folder **outside the genome's folder** (a temp directory, or one deleted after the check), then:
 
 ```bash
-python3 "<SKILL_DIR>/scripts/check-genome.py" <process|component> "<GENOME_MD>" --profile strict --processes "<PROCESS_INVENTORY>" --recordsets "<RECORDSET_LIST>"
+node "<SKILL_DIR>/scripts/check-genome.mjs" <process|component> "<GENOME_MD>" --profile strict --processes "<PROCESS_INVENTORY>" --recordsets "<RECORDSET_LIST>"
 ```
 
 Pass the process genome, which takes the checker to every component genome through the Components table, or a standalone component genome. It checks the format rules, and each step table against the export: every source object and data set resolves to an object of that name, every Workflow step has exactly one row, and a library step built from a copy the built roots do not reach is flagged. It prints one `FAIL` line per miss and exits 1 while one remains. Fix every miss and run it again, at most three rounds; what is left after the third is named when edits are offered (Step 7). `uipath-genome-builder` runs the same check at preflight and meets every gap left.
@@ -165,27 +161,16 @@ A UiPath source has no inventory script: run the check without `--processes` and
 
 Before writing Configuration Questions, sort every literal and configuration key in the working notes as open or fixed per [genome-format-guide.md § Configuration Questions](genome-format-guide.md). An open value becomes a question; a fixed value is written in the step, rule or handler that uses it. A question that only its default can answer is a fixed value.
 
-### Step 6c — Seed or check the Map of Work
-
-Only when the Cartographer MCP is available and the request asks for a Map, or a Map of this automation already exists. The Cartographer MCP owns the Map's schema and the projection between a genome and Map records; this lane never writes a Map file and never encodes a record's fields.
-
-1. **No Map yet** → hand the checked genome to the MCP to seed the AS-IS: the body becomes AS-IS records, the step table the seeded provenance and the retiring implementation links; `*[Inferred]*` lines become CONFIRM items, the `Not covered` row GAP items, resource discrepancies CONFLICT items. There is one extraction engine: the MCP builds the records from this genome, never by re-reading the source.
-2. **A Map exists** → the extraction is a divergence check: hand the genome to the MCP for comparison against the bound snapshot, and name every DRIFT and GAP item it returns when edits are offered. The Map is compared, never overwritten.
-3. **Write the binding** the MCP returns into the genome: the `Map binding:` line and the record id on each step, rule, exception and decision ([genome-format-guide.md § Design Links](genome-format-guide.md)); then run the Step 6b check again.
-
-MCP not available → skip this step; the genome stands alone and holds everything the build needs, and a Map can be seeded from it later.
-
 ### Step 7 — Write and offer edits
 
-Write all files, each named by the slug rule ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)), then, once every verdict on a suspected source defect is edited in and Step 6b's check has run, ask "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). With it, name every source defect whose rebuild behaviour is the user's to rule on, and every detail left open by an intent the rebuild must follow ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)); a ruling given is written in as that section says. When the Source Map has a `Not covered` or `Unused` row, name its objects too: a build of the genome leaves them out unless they are translated now. When Step 6c seeded a Map, name its open items as the intent the process owner confirms. Edits: [edit-guide.md](edit-guide.md).
+Write all files, each named by the slug rule ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)), then, once every verdict on a suspected source defect is edited in and Step 6b's check has run, ask "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). With it, name every source defect whose rebuild behaviour is the user's to rule on, and every detail left open by an intent the rebuild must follow ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)); a ruling given is written in as that section says. When the Source Map has a `Not covered` or `Unused` row, name its objects too: a build of the genome leaves them out unless they are translated now. Edits: [edit-guide.md](edit-guide.md).
 
 ### Step 8 — Hand the genome to `uipath-genome-builder`
 
 A refactor or migration request continues from the written genome in the same session; no PDD is needed:
 
-1. **With a Map** (Step 6c), the SDD comes first: write it from the genome and the Map with no PDD ([design-guide.md § SDD-only design](design-guide.md#sdd-only-design-migration-and-refactor)); it records the refactor answers and the design the CoE signs, and its path goes into the genome's `Designed in:` line.
-2. **Then hand the genome path to `uipath-genome-builder`** once the user's edits are in; an unattended run hands it over without asking. Building a genome extracted from a UiPath source is a refactor there.
-3. **`uipath-genome-builder` not installed** → stop after Step 7 and say that the build needs it.
+1. **Hand the genome path to `uipath-genome-builder`** once the user's edits are in; an unattended run hands it over without asking. Building a genome extracted from a UiPath source is a refactor there.
+2. **`uipath-genome-builder` not installed** → stop after Step 7 and say that the build needs it.
 
 A documentation request ends at Step 7: the genome is the as-built record. A governance SDD or a Word ASDD can be written from it on request (`design`, with the genome as the process-knowledge source).
 

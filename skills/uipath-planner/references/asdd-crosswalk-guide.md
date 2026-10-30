@@ -11,7 +11,7 @@ The markdown SDD this skill writes is the **agent-first** artifact: implementati
    Stop and wait for the path. Do not assume or invent the official section layout.
 
 2. **Read the template's section structure:**
-   - `.docx` → run `bash <SKILL_DIR>/scripts/docx-extract.sh "<TEMPLATE>.docx"` and take the heading list (the **Contents** page lists the numbered sections).
+   - `.docx` → run `node "<SKILL_DIR>/scripts/docx.mjs" extract "<TEMPLATE>.docx"` and take the heading list from the markdown it writes (the **Contents** page lists the numbered sections).
    - `.md` → read the headings directly.
 
    Match against the standard layout in the crosswalk below. The user's file wins on any naming or ordering difference — follow its sections.
@@ -25,8 +25,10 @@ The markdown SDD this skill writes is the **agent-first** artifact: implementati
 5. **Assemble** the matched + computed content into the template's section order, then convert:
 
    ```bash
-   bash <SKILL_DIR>/scripts/sdd-to-docx.sh "<ASSEMBLED>.md" --reference-doc "<TEMPLATE>.docx"
+   node "<SKILL_DIR>/scripts/docx.mjs" export "<ASSEMBLED>.md" --reference-doc "<TEMPLATE>.docx"
    ```
+
+   Exit codes, both verbs: 0 done; 1 usage error or a file not found — fix the path and re-run; 2 pandoc missing — relay the install command it prints; 3 conversion failed — report it and deliver the assembled markdown.
 
 ## Default crosswalk — standard UiPath SDD/ASDD template
 

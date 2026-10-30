@@ -1,17 +1,14 @@
-task_id: skill-genome-author-component
+task_id: skill-planner-genome-author-component
 description: >
   Smoke: the uipath-planner skill authors one component genome from a described sheet-to-web-client
   process worked by a pool of robots. Gates on the genome contract (core profile) and on the
   Transactional Shape it must describe: one flow whose unit of work is a sheet row. The full format
   rules (strict profile: outcome rows, split options per unit, retry and consecutive-failure stop,
-  configuration question kinds) are graded as an advisory criterion. Tagged windows only so the
-  Windows smoke workflow runs it: the Linux smoke workflow skips every skill that owns a
-  windows-tagged task (execute_component), so without the tag no PR would run it.
+  configuration question kinds) are graded as an advisory criterion.
 tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
 
-# run_command goes through cmd.exe on Windows, so every check calls the skill's check-genome.mjs
-# through `python -c` and reads REFERENCE_DIR (the skill's scripts folder) from the environment. The
-# genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
+# Every check calls the skill's check-genome.mjs with node through $REFERENCE_DIR (the skill's scripts
+# folder). The genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
 reference:
   directory: ../../../../skills/uipath-planner/scripts
 
@@ -44,9 +41,7 @@ success_criteria:
   - type: run_command
     description: "Exactly one component genome written"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'), 'tokens', '*-genome.md',
-      '--files', '1', '--expect', 'UIPATH-AUTOMATION-GENOME: component']))"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --files 1 --expect "UIPATH-AUTOMATION-GENOME: component"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0
@@ -55,10 +50,7 @@ success_criteria:
   - type: run_command
     description: "Genome meets the core contract and describes one flow whose unit of work is a row"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'), 'component', '*-genome.md',
-      '--profile', 'core', '--expect', 'uipath-rpa', 'Dynamics 365',
-      '--shape', 'transactional', '--flows', '1', '--unit', 'row']))"
+      node $REFERENCE_DIR/check-genome.mjs component "*-genome.md" --profile core --expect uipath-rpa "Dynamics 365" --shape transactional --flows 1 --unit row
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -67,9 +59,7 @@ success_criteria:
   - type: run_command
     description: "Business rules, schedule and notification target come from the description"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'), 'tokens', '*-genome.md',
-      '--min', '0.75', '--expect', 'postcode', '07:00', 'requester', 'customer number']))"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --min 0.75 --expect postcode 07:00 requester "customer number"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
@@ -85,9 +75,7 @@ success_criteria:
   - type: run_command
     description: "Advisory: genome meets every mechanical format rule (strict profile)"
     command: >-
-      python -c "import os, subprocess, sys; sys.exit(subprocess.call(['node',
-      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.mjs'), 'component', '*-genome.md',
-      '--profile', 'strict']))"
+      node $REFERENCE_DIR/check-genome.mjs component "*-genome.md" --profile strict
     timeout: 60
     expected_exit_code: 0
     weight: 1.0

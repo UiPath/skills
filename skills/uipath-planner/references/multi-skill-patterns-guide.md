@@ -110,17 +110,17 @@ Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution
 
 ## Pattern 7 — Build from the genome
 
-**When it applies:** the SDD's Planner Handoff names a `Genome` that exists — written only when the user asked to build the design from a genome, and never for a Case Management SDD, which `uipath-maestro-case` builds from the SDD — and `uipath-genome-builder` is installed. The genome carries every component, its skill, its steps and its acceptance criteria; `uipath-genome-builder` invokes each owning skill itself, in the genome's order, so the plan does not fan out per skill.
+**When it applies:** the SDD's Planner Handoff names a `Genome` that exists — `design` has the planner's `author` verb write one for every `ready` SDD on the turn after the SDD, never for a Case Management SDD, which `uipath-maestro-case` builds from the SDD — and `uipath-genome-builder` is installed. When it is not installed, the genome stays on disk for a later build and the plan derives per-skill tasks from the SDD with the patterns below. The genome carries every component, its skill, its steps and its acceptance criteria; `uipath-genome-builder` invokes each owning skill itself, in the genome's order, so the plan does not fan out per skill.
 
 ```
 1. uipath-genome-builder   → build the genome: configuration questions the SDD left open, then every component through its owning skill
-2. uipath-genome-builder   → testing (mandatory): a verdict on every acceptance criterion, built as runnable spec tests; for a migration, the parallel run against the source
+2. uipath-genome-builder   → testing (mandatory): a verdict on every acceptance criterion, built as runnable spec tests
 3. uipath-solution → pack, publish, deploy (constraint-gated as below)
 ```
 
-The task prompt names the genome path and the SDD path; it carries the delivery-model line and the SDD's open SME items as assumptions like any task. Shared resources the SDD lists (queues, assets, connections) are created by step 1 from the genome's platform dependencies — no separate tasks. When the handoff names a `Map`, step 1 ends with a proposed changeset for the process owner to merge; the plan adds no task for the merge. A fix the build finds in the genome is a planner `edit`, then the build again — `uipath-genome-builder` never edits the genome.
+The task prompt names the genome path and the SDD path; it carries the delivery-model line and the SDD's open SME items as assumptions like any task. Shared resources the SDD lists (queues, assets, connections) are created by step 1 from the genome's platform dependencies — no separate tasks. A fix the build finds in the genome is a planner `edit`, then the build again — `uipath-genome-builder` never edits the genome.
 
-## Pattern routing for PDD-driven lane
+## Pattern routing for `plan`
 
 When deriving tasks from an SDD, the planner picks a pattern based on the SDD's project list:
 

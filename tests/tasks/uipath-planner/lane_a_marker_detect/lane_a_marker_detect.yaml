@@ -23,7 +23,7 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent engaged the uipath-planner skill to evaluate the entry guard"
+    description: "Agent engaged the uipath-planner skill to choose the verb (SKILL.md § Choosing the Verb)"
     skill_name: "uipath-planner"
     expected_skill: "uipath-planner"
     weight: 2.0

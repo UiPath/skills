@@ -13,8 +13,6 @@
 
 > Designed in: [{SDD title}]({relative path to the SDD}) *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 
-> Map binding: {snapshot id} *(Only when the genome derives from a Map of Work snapshot; omit otherwise. Each step, rule, exception and decision a record holds then ends with its record id in square brackets.)*
-
 ## Overview
 
 {1-3 paragraphs: purpose, business problem, who it is for, what triggers it.}

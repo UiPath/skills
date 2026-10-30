@@ -38,7 +38,7 @@
 <!--
 EMIT THIS BLOCK ONLY when Execution autonomy: autonomous.
 Skip entirely in interactive mode (decisions were checkpoint-reviewed).
-See design-guide.md Phase 3 Step 2 item 3 for the format spec.
+See sdd-writing-guide.md Step 2 item 3 for the format spec.
 Non-RPA scope: rows collapse to scope + product-specific Level-1.5-equivalent.
 -->
 ## Decisions Made
@@ -69,7 +69,7 @@ Constraint Gate outcome. See product-selection-guide.md → Summary block for th
 <!--
 EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
 Skip entirely when no review items are open.
-See design-guide.md Phase 3 Step 2 item 4 for the format spec.
+See sdd-writing-guide.md Step 2 item 4 for the format spec.
 -->
 ## Action Required — SME Review Items
 

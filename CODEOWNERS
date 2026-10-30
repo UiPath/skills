@@ -118,6 +118,7 @@
 /skills/uipath-genome-builder/ @danmunteanu1 @vlad-coteanu-uipath
 /tests/tasks/uipath-genome-builder/ @danmunteanu1 @vlad-coteanu-uipath
 /tests/tasks/activation/uipath-genome-builder.jsonl @danmunteanu1 @vlad-coteanu-uipath
+/skill-flavors/studioweb/uipath-genome-builder/ @astridstaicu @danmunteanu1 @vlad-coteanu-uipath
 /scripts/check-genome-core.mjs @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 # uipath-planner genome verbs (author, extract, edit) and the genome core it shares with uipath-genome-builder: the genome owners, after the planner lines above
 /skills/uipath-planner/references/author-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
@@ -142,14 +143,11 @@
 /tests/tasks/uipath-planner/extract_component/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/extract_solution/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/genome_from_sdd/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
-/tests/tasks/uipath-planner/sdd_only_migration/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/_shared/test_genome_check.py @danmunteanu1 @vlad-coteanu-uipath
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
-
-# Genome skill (extract / author / execute automation blueprints)
 
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team

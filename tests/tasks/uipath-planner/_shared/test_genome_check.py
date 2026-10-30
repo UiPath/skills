@@ -1,5 +1,5 @@
 """Unit tests for the skill's scripts/check-genome.mjs, the checker the genome tasks grade with:
-the skill's own worked examples pass the strict profile, a format slip fails strict but not core,
+the known-good genomes kept with the tests pass the strict profile, a format slip fails strict but not core,
 and a broken contract fails core. The checker is Node (users need no Python); these tests drive it
 through `node`, so the CI job needs Node >= 20 on the runner.
 
@@ -271,12 +271,14 @@ def test_split_option_cell_holds_its_letter_only(tmp_path):
 STEP_ROW = "| {n} | `Step_{n}` ({pid}, lines 1–9) | {data} | 0 | |"
 
 
-def extracted(steps: int, rows: list[str] | None = None) -> str:
+def extracted(steps: int, rows: list[str] | None = None, framework: str | None = "UiPath — Studio 26.0") -> str:
     """The component example as an extracted genome: its Source Map with a step table of one row per step."""
     text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
     rows = rows if rows is not None else [STEP_ROW.format(n=n, pid=100 + n, data="none") for n in range(1, steps + 1)]
     table = "| Step | Source objects | Data sets | Captures | Notes |\n|---|---|---|---|---|\n" + "\n".join(rows)
-    return text.rstrip() + "\n\n## Source Map\n\n| Row | Source artifact | Notes |\n|---|---|---|\n| Dead code | none | |\n\n### Steps\n\n" + table + "\n"
+    framework_row = f"| Source framework | {framework} | |\n" if framework else ""
+    return (text.rstrip() + "\n\n## Source Map\n\n| Row | Source artifact | Notes |\n|---|---|---|\n" + framework_row
+            + "| Dead code | none | |\n\n### Steps\n\n" + table + "\n")
 
 
 def example_steps() -> int:
@@ -352,7 +354,6 @@ def test_preamble_of_a_genome_written_before_the_split_still_passes(tmp_path):
 # context: the facts the read plans branch on, read once from the file
 
 SALESFORCE_EXAMPLE = EXAMPLES / "salesforce-accounts-and-contacts-genome.md"
-MAP_BOUND_FIXTURE = REPO / "tests" / "tasks" / "uipath-planner" / "sdd_only_migration" / "fixtures" / "invoice-intake-genome.md"
 
 
 @pytest.mark.parametrize("path, level, mode, transactional", [
@@ -368,10 +369,6 @@ def test_context_reads_level_mode_and_shape_from_the_file(path, level, mode, tra
 
 def test_context_lists_a_process_genomes_components():
     assert len(genome_check.context(PROCESS_EXAMPLE)["components"]) == 3
-
-
-def test_context_reads_the_map_binding():
-    assert genome_check.context(MAP_BOUND_FIXTURE)["map_binding"]
 
 
 def test_context_fingerprint_changes_with_any_byte(tmp_path):
@@ -392,3 +389,107 @@ def test_context_without_marker_fails_the_check(tmp_path):
 def test_context_cli_prints_json(capsys):
     assert genome_check.main(["context", str(COMPONENT_EXAMPLE)]) == 0
     assert json.loads(capsys.readouterr().out)["level"] == "component"
+
+
+# context: extracted, framework and shape facts
+
+def test_context_extracted_needs_a_source_map_table(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text(COMPONENT_EXAMPLE.read_text(encoding="utf-8").rstrip() + "\n\n## Source Map\n\n*Extraction only.*\n", encoding="utf-8")
+    assert genome_check.context(genome)["extracted"] is False
+    genome.write_text(extracted(example_steps(), framework=None), encoding="utf-8")
+    ctx = genome_check.context(genome)
+    assert ctx["extracted"] is True and ctx["source_framework"] is None and ctx["build_mode"] == "build"
+
+
+def test_context_reads_the_framework_row_of_a_process_source_map(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").rstrip()
+    genome = tmp_path / "x-genome.md"
+    genome.write_text(text + "\n\n## Source Map\n\n| Component | Source artifact | Notes |\n|---|---|---|\n| Source framework | Blue Prism — 7.1 | |\n", encoding="utf-8")
+    assert (genome_check.context(genome)["source_framework"], genome_check.context(genome)["build_mode"]) == ("Blue Prism", "migration")
+
+
+def test_context_build_mode_is_refactor_when_the_framework_names_uipath(tmp_path):
+    text = SALESFORCE_EXAMPLE.read_text(encoding="utf-8").replace("| Source framework | UiPath —", "| Source framework | Studio (UiPath) —", 1)
+    genome = tmp_path / "x-genome.md"
+    genome.write_text(text, encoding="utf-8")
+    assert genome_check.context(genome)["build_mode"] == "refactor"
+
+
+def test_context_transactional_is_null_without_level_or_section(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text("# not a genome\n", encoding="utf-8")
+    assert genome_check.context(genome)["transactional"] is None
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    start, end = text.index("## Transactional Shape"), text.index("## Acceptance Criteria")
+    genome.write_text(text[:start] + text[end:], encoding="utf-8")
+    assert genome_check.context(genome)["transactional"] is None
+
+
+def test_source_map_without_framework_row_fails_strict_only(tmp_path):
+    n = example_steps()
+    assert run(tmp_path, extracted(n, framework=None), profile="core") == 0
+    assert run(tmp_path, extracted(n, framework=None), profile="strict") == 1
+    assert run(tmp_path, extracted(n), profile="strict") == 0
+
+
+# command line
+
+def test_flag_equals_value_is_accepted(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    assert run(tmp_path, text, extra=["--shape=transactional", "--unit=requisition", "--flows=1"]) == 0
+    target = tmp_path / "sample-genome.md"
+    assert genome_check.main(["component", str(target), "--profile=strict"]) == 0
+
+
+def test_help_prints_usage_and_exits_zero():
+    for flag in ("-h", "--help"):
+        r = node(flag)
+        assert r.returncode == 0 and "usage:" in r.stdout
+
+
+@pytest.mark.parametrize("bad", [["--flows", "1.5"], ["--flows=x"], ["--min-steps", "3x"], ["--min", "abc"], ["--files", ""]])
+def test_numbers_are_validated_strictly(bad):
+    assert node("component", str(COMPONENT_EXAMPLE), *bad).returncode == 2
+
+
+def test_missing_inventory_is_a_fail_line(tmp_path):
+    r = node("component", str(COMPONENT_EXAMPLE), "--processes", str(tmp_path / "no.json"), "--recordsets", str(tmp_path / "no2.json"))
+    assert r.returncode == 1 and r.stdout.startswith("FAIL:") and "Error" not in r.stderr
+
+
+def test_invalid_utf8_is_a_fail_line(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_bytes(COMPONENT_EXAMPLE.read_bytes() + b"\n\xff\xfe broken\n")
+    for argv in (["component", str(genome)], ["context", str(genome)]):
+        r = node(*argv)
+        assert r.returncode == 1 and "FAIL:" in r.stdout and "not valid UTF-8" in r.stdout and "Error" not in r.stderr
+
+
+def test_legacy_builder_name_is_a_known_skill(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("## Platform Dependencies", "Built through `uipath-genome`.\n\n## Platform Dependencies", 1)
+    target = tmp_path / "sample-genome.md"
+    target.write_text(text, encoding="utf-8")
+    assert "unknown skill name 'uipath-genome'" not in node("component", str(target)).stdout
+    assert run(tmp_path, text, profile="core") == 0
+
+
+def test_duplicate_heading_fails_strict_only(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").rstrip() + "\n\n## Tags\n\nagain\n"
+    assert run(tmp_path, text, profile="core") == 0
+    assert run(tmp_path, text, profile="strict") == 1
+
+
+def test_duplicate_component_link_fails_strict_only(tmp_path):
+    folder = PROCESS_EXAMPLE.with_suffix("")
+    copy = tmp_path / folder.name
+    copy.mkdir()
+    for f in folder.glob("*-genome.md"):
+        (copy / f.name).write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+    text = PROCESS_EXAMPLE.read_text(encoding="utf-8")
+    rows = [l for l in text.splitlines() if l.startswith("| 1 ") and "-genome.md)" in l]
+    assert rows, "the process example's first component row"
+    process = tmp_path / PROCESS_EXAMPLE.name
+    process.write_text(text.replace(rows[0], rows[0] + "\n" + rows[0].replace("| 1 ", "| 9 ", 1), 1), encoding="utf-8")
+    assert genome_check.main(["process", str(process), "--skills", "uipath-rpa"]) == 0
+    assert genome_check.main(["process", str(process), "--profile", "strict"]) == 1

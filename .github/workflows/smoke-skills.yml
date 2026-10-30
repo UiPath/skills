@@ -126,7 +126,7 @@ jobs:
           WINDOWS_TASKS=$(grep -rEl '^tags:.*\bwindows\b' tests/tasks/ 2>/dev/null | sort -u)
           # A skill is skipped whole only when it owns a Windows-tagged *smoke*
           # task: this workflow runs `--tags smoke`, so a Windows-only e2e task
-          # (uipath-planner's genome build) must not take the skill's Linux
+          # (uipath-genome-builder's build_component) must not take the skill's Linux
           # smoke tasks down with it. Each Windows task file stays excluded on
           # its own through WINDOWS_TASKS.
           WINDOWS_SKILLS=$(for f in $WINDOWS_TASKS; do grep -qE '^tags:.*\bsmoke\b' "$f" && echo "$f"; done \
