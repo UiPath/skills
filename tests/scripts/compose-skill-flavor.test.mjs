@@ -29,6 +29,8 @@ import {
   createAllVariants,
   createCompositionPlan,
   createDefaultPlan,
+  isPrivateWorkingPath,
+  isWorkingDocument,
   materializeComposition,
   packageName,
   packAllVariants,
@@ -38,6 +40,7 @@ import {
   restoreRootDefaultPackage,
   stripMarkerBoundaries,
   treeFileBytes,
+  verifyTarball,
 } from "../../scripts/compose-skill-flavor.mjs";
 import { selectSkillPackage } from "../../scripts/select-skill-package.mjs";
 
@@ -1501,7 +1504,7 @@ test("root npm pack emits one marker-free default package and restores canonical
     `Before.\n\n${block("host", "Canonical default guidance.")}\nAfter.\n`,
   );
   addSkill(repo, "uipath-pass-through");
-  writeOverride(
+  const studio = writeOverride(
     repo,
     "studioweb",
     "uipath-example/SKILL.md",
@@ -1854,4 +1857,168 @@ test("recovery preserves unexpected overlay edits while restoring canonical sour
     ),
     /Unexpected edit during packaging/,
   );
+});
+
+test("working documents never reach a plan, a built tree, or a packaged path", (t) => {
+  const repo = fixtureRepo(t);
+  const skill = addSkill(repo, "uipath-example", block("host", "Canonical default guidance."));
+  // The two shapes that carry withheld or customer-identifying material: the
+  // provenance map, and a reinstatement spec for a strategy held out of a release.
+  writeFileSync(join(skill, "CASE-MEMO-MAP.md"), "account | ticket\n");
+  writeFileSync(join(skill, "PA-LOCATIONS.md"), "# Reinstating PA\n");
+  // An invented name: the rule is the suffix, not a list of the two that exist
+  // today, so a reinstatement spec written next year is excluded on arrival.
+  writeFileSync(join(skill, "FOO-LOCATIONS.md"), "# Reinstating FOO\n");
+  mkdirSync(join(skill, "references"), { recursive: true });
+  writeFileSync(join(skill, "references", "CS-LOCATIONS.md"), "# Reinstating CS\n");
+  writeFileSync(join(skill, "references", "guide.md"), "Shipped guidance.\n");
+  const studio = writeOverride(
+    repo,
+    "studioweb",
+    "uipath-example/SKILL.md",
+    block("host", "Studio Web guidance."),
+  );
+
+  const withheld = ["CASE-MEMO-MAP.md", "PA-LOCATIONS.md", "FOO-LOCATIONS.md", "CS-LOCATIONS.md"];
+  const plans = [
+    ["default", createDefaultPlan(repo)],
+    ["studioweb", createCompositionPlan(repo, studio)],
+  ];
+  for (const [label, plan] of plans) {
+    const paths = plan.files.map((file) => file.relativePath);
+    assert.ok(
+      paths.some((relativePath) => relativePath.endsWith("uipath-example/references/guide.md")),
+      `${label} plan must still carry the shipped reference`,
+    );
+    for (const name of withheld) {
+      assert.ok(
+        !paths.some((relativePath) => basename(relativePath) === name),
+        `${label} plan leaked ${name}`,
+      );
+    }
+  }
+
+  const output = join(repo, "build", "default");
+  materializeComposition(plans[0][1], output);
+  const built = [...treeFileBytes(output).keys()];
+  for (const name of withheld) {
+    assert.ok(!built.some((relativePath) => basename(relativePath) === name), `built tree leaked ${name}`);
+  }
+});
+
+test("this repository packages no memo and composes away every working document", () => {
+  // Guards the real tree, not a fixture. Two different mechanisms, both of which
+  // have leaked before:
+  //   - memo sources are kept out of the repository entirely, because npm's
+  //     `files` allowlist overrides .gitignore — being untracked is not enough;
+  //   - working documents may live under skills/, but the composer must strip
+  //     them, since every package is built from a plan.
+  const manifest = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"));
+  const memos = [];
+  const walk = (absolute, relativePath) => {
+    if (!existsSync(absolute)) return;
+    if (!statSync(absolute).isDirectory()) {
+      if (/(^|\/)memos\//.test(relativePath)) memos.push(relativePath);
+      return;
+    }
+    if (basename(absolute) === "node_modules") return;
+    for (const entry of readdirSync(absolute)) walk(join(absolute, entry), `${relativePath}/${entry}`);
+  };
+  for (const entry of manifest.files) walk(join(REPO_ROOT, entry), entry);
+  assert.deepEqual(memos, [], "packaged paths must not carry memo sources");
+
+  const leaked = createDefaultPlan(REPO_ROOT)
+    .files.map((file) => file.relativePath)
+    .filter((relativePath) => isWorkingDocument(basename(relativePath)));
+  assert.deepEqual(leaked, [], "the default plan must compose away every working document");
+});
+
+test("a pack on a machine that still holds memo sources ships none of them", (t) => {
+  // `assets` is a whole-root `files` entry copied wholesale, so memo sources
+  // under it are invisible to the skill plan: .gitignore does not stop a pack,
+  // and nothing else looked at them. Keeping them out of the repository is the
+  // first line; this is the second, and it has to fail closed on a machine that
+  // still has a copy.
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example");
+  addPackageManifest(repo);
+  mkdirSync(join(repo, "assets", "memos"), { recursive: true });
+  writeFileSync(join(repo, "assets", "memos", "2026-04-engagement.pdf"), "%PDF-1.4 fixture\n");
+  writeFileSync(join(repo, "assets", "memos", "notes.md"), "Acme Corp · TICKET-4821\n");
+
+  const packages = withNpmCache(repo, () => packAllVariants(repo));
+  for (const { variant, tarball } of packages) {
+    const names = [...readTarballEntries(tarball).keys()];
+    assert.ok(
+      names.includes("package/assets/shared.txt") || variant !== DEFAULT_VARIANT,
+      `${variant} must still carry its ordinary assets`,
+    );
+    assert.deepEqual(
+      names.filter((name) => /(^|\/)memos\//.test(name)),
+      [],
+      `${variant} tarball shipped memo sources`,
+    );
+  }
+});
+
+test("verifyTarball throws when a tarball carries private working material", (t) => {
+  // The scenario Joe named: a future refactor of the canonical walk stops
+  // excluding these, so they are in the staged package AND the tarball and the
+  // tree comparison passes. verifyTarball is then the only thing left, and it
+  // has to throw rather than trust whatever produced the staged directory.
+  const repo = fixtureRepo(t);
+  const name = "@uipath/skills";
+  const version = "1.2.3";
+
+  const stage = (extra) => {
+    const packageDir = mkdtempSync(join(tmpdir(), "skill-flavor-verify-"));
+    t.after(() => rmSync(packageDir, { recursive: true, force: true }));
+    const root = join(packageDir, "package");
+    mkdirSync(join(root, "skills", "uipath-example"), { recursive: true });
+    writeFileSync(
+      join(root, "package.json"),
+      `${JSON.stringify({ name, version, files: ["skills"] }, null, 2)}\n`,
+    );
+    writeFileSync(
+      join(root, "skills", "uipath-example", "SKILL.md"),
+      entrypoint("uipath-example"),
+    );
+    for (const [relativePath, body] of extra) {
+      const target = join(root, ...relativePath.split("/"));
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, body);
+    }
+    const tarball = join(packageDir, "package.tgz");
+    const tar =
+      process.platform === "win32"
+        ? join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe")
+        : "tar";
+    const result = spawnSync(tar, ["-czf", tarball, "-C", packageDir, "package"], {
+      encoding: "utf8",
+      // bsdtar on macOS writes AppleDouble `._*` members otherwise, which are
+      // not in the staged directory and would fail the tree comparison before
+      // the denylist is ever reached.
+      env: { ...process.env, COPYFILE_DISABLE: "1" },
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    return { tarball, root };
+  };
+
+  // Control: the same tarball without the offending file must verify, or the
+  // assertions below would pass for the wrong reason.
+  const clean = stage([]);
+  verifyTarball(clean.tarball, clean.root, name, version);
+
+  for (const relativePath of [
+    "skills/uipath-example/FOO-LOCATIONS.md",
+    "skills/uipath-example/CASE-MEMO-MAP.md",
+    "assets/memos/2026-04-engagement.pdf",
+  ]) {
+    const dirty = stage([[relativePath, "withheld\n"]]);
+    assert.throws(
+      () => verifyTarball(dirty.tarball, dirty.root, name, version),
+      /source-only paths/,
+      `${relativePath} must be rejected by verifyTarball`,
+    );
+  }
 });
