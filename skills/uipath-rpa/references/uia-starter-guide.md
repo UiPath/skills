@@ -1,6 +1,6 @@
 # UIA Starter Guide
 
-Read this file from the top THROUGH § Runtime Selector Failure Recovery before any UI-automation work (Rule 7), then STOP — the § Conditional Policies marker below it gates two sections read only when their condition applies. Then:
+Read this file from the top THROUGH § UIA Prerequisites before any UI-automation work (Rule 7), then STOP — the § Conditional Policies marker below it gates three sections read only when their condition applies. Then:
 
 1. **Verify prerequisites** — minimum package version and upgrade-consent rules: [§ UIA Prerequisites](#uia-prerequisites) below. If the package cannot be installed, use the [Placeholder-Selector Stub Pattern](#placeholder-selector-stub-pattern) below.
 2. **Read the UIA package's core guide IN FULL** — `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`. It owns the shared UIA law — window baseline, the mandatory target-generation gate, terminology, common pitfalls, control-specific interaction, reading values — and its § Documentation routes to everything else, including the per-mode authoring guides. **Before authoring UIA activities, additionally read your mode's authoring guide IN FULL** (XAML or coded, routed from § Documentation) — during capture-only phases neither mode guide is needed yet. The core guide ships with the package: if the package is installed but the file is absent, the installed version predates it — treat as below the minimum version (§ UIA Prerequisites).
@@ -40,6 +40,10 @@ uip rpa packages install --packages 'id=UiPath.UIAutomation.Activities,version=<
 Omit `,version=<MIN_VERSION>` to resolve the latest compatible build (at or above `<MIN_VERSION>`).
 
 ---
+
+## Conditional Policies — read when the condition applies
+
+**Do NOT read past this marker in the initial read.** Read [§ Running UI Automation Workflows](#running-ui-automation-workflows) IN FULL, with its profiling and selector-recovery subsections, before the first run or debug of a UIA workflow. Read [§ Placeholder-Selector Stub Pattern](#placeholder-selector-stub-pattern) IN FULL the moment a workflow must ship WITHOUT live app access (app not installed, no GUI, capture deferred, or the UIA package cannot be installed — Rule 7a fallback); a migration's recorded targets are not stubs (Rule 7). Read [§ Object Repository as a Published UI Library](#object-repository-as-a-published-ui-library) IN FULL when the task involves publishing or consuming shared Object Repository descriptors.
 
 ## Running UI Automation Workflows
 
@@ -87,12 +91,6 @@ When a workflow fails at runtime with a selector error:
 Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
 
 **Recovery circuit breaker — two attempts per element.** When the SAME element fails at runtime after two recovery cycles, do not run a third: elements that keep failing recovery typically remount (dialogs, popups, re-rendered panes), and selector hardening cannot converge on them. Re-route that one element instead: re-run the capture flow for it with the CV/semantic fallback enabled (the capture flow's fallback chain owns the mechanics), re-link, and continue the run loop. Count attempts per element, not per run — three failures of one element across runs is the same signal.
-
----
-
-## Conditional Policies — read when the condition applies
-
-**Do NOT read past this marker in the initial read.** Read [§ Placeholder-Selector Stub Pattern](#placeholder-selector-stub-pattern) IN FULL the moment a workflow must ship WITHOUT live app access (app not installed, no GUI, capture deferred, or the UIA package cannot be installed — Rule 7a fallback). Read [§ Object Repository as a Published UI Library](#object-repository-as-a-published-ui-library) IN FULL when the task involves publishing or consuming shared Object Repository descriptors.
 
 ## Placeholder-Selector Stub Pattern
 

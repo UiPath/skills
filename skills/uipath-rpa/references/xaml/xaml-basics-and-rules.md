@@ -5,7 +5,7 @@ UiPath workflow XAML concepts and the Discovery → Generate/Edit → Validate &
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
 
-**Read contract (Rule 22):** read this file in full, with no prior lookup, in the same assistant turn as the other T1 reads (cards and pitfalls heading list). For per-operation/activity catalogs (§ Common Editing Operations, § XAML Reference Examples), Grep `^###` in [xaml-editing-catalog.md](xaml-editing-catalog.md) and Read only matching entries; if unsure, read it.
+**Read contract (Rule 22):** read this file in full, with no prior lookup, in the same assistant turn as the other T1 reads (card and pitfalls heading lists). For per-operation/activity catalogs (§ Common Editing Operations, § XAML Reference Examples), Grep `^###` in [xaml-editing-catalog.md](xaml-editing-catalog.md) and Read only matching entries; if unsure, read it.
 
 ## Critical Rules — XAML (Rules 16–21a, 24, 25)
 
@@ -194,7 +194,7 @@ Use generic IS `ConnectorActivity` with a typed operation typeId by default (for
 
 ### Phase 2: Generate or Edit
 
-**UI Automation — Target Configuration Gate (MANDATORY).** Before writing any XAML with UI activities: the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Every UI element target MUST be configured through the `uia-configure-target` skill flow — the guide mandates the target-capture orchestration reference to read IN FULL first. **NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
+**UI Automation — Target Configuration Gate (MANDATORY).** Before writing any XAML with UI activities: the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Every UI element target MUST be configured through the `uia-configure-target` skill flow — the guide mandates the target-capture orchestration reference to read IN FULL first — except a migration's recorded targets (Rule 7). **NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
 
 For CREATE, do not Read scaffolded `Main.xaml`; the wholesale `Write` replaces it. Put required data files (`mkdir` and sample inputs) in the same assistant message. Author the complete workflow in one `Write` (SKILL.md Rule 18 — every activity sourced card → memory → discovery triple), then gate in Phase 3; follow [§ XAML File Anatomy](#xaml-file-anatomy), using folder conventions and descriptive filenames. For EDIT, always Read first and use `Edit` with exact, unique `old_string` matches.
 **For CREATE requests:** Use the `Write` tool to create the `.xaml` file per [§ XAML File Anatomy](#xaml-file-anatomy). Infer the file path from folder conventions; use descriptive filenames.
@@ -219,14 +219,14 @@ Report created/edited file path, brief description, key activities/logic, instal
 ### Anti-Patterns
 
 - NEVER design sprawling monoliths; split logic into invoked files ([../environment-setup.md § Designing for Reuse](../environment-setup.md#designing-for-reuse)); Rule 18 still requires one complete workflow per batch.
-- NEVER manually craft UI selectors outside `uia-configure-target`.
+- NEVER manually craft UI selectors outside `uia-configure-target`, except a migration's recorded targets (Rule 7).
 - NEVER guess properties, types, or configurations; never ignore conditional property groups.
 - NEVER use a `workflow-examples get` key not returned by `list`.
 - NEVER ask for a provider before checking project signals.
 - NEVER retry failing CLI commands without diagnosing the root cause.
 - NEVER use connector activities without checking connection existence.
 - NEVER generate full XAML without a sourced starter per activity: card/pattern-card entry, validated memory snippet, or `activities get-default-xaml` (precedence: SKILL.md Rule 21).
-- NEVER assume a mutation succeeded; run `uip rpa validate` AND `uip rpa build` after every mutation.
+- NEVER assume a mutation succeeded; it counts only once the gate's per-file `uip rpa validate` and project `uip rpa build` are clean (Rule 18).
 - NEVER treat `validate` “no diagnostics found” as final; run `build` next.
 - NEVER skip environment readiness; verify the project opens and restores cleanly ([environment-setup.md](../environment-setup.md)).
 
@@ -385,9 +385,9 @@ For card containers copy [common-activity-card.md](../common-activity-card.md); 
 
 Do not reformat/re-indent an entire file. Modify only the needed section with `Edit`, using exact `old_string` matches.
 
-### Validate After Every Change
+### Validate Every Changed File
 
-Run `uip rpa validate` after every XAML modification; do not batch edits without validation.
+Run `uip rpa validate` on every file a change touched before anything builds on it; files written in one turn are validated together in the gate's one sequential chain (Rule 18).
 
 ## Property Binding: Attributes vs Child Elements
 
