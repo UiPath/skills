@@ -83,8 +83,8 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install pytest
-        run: pip install pytest pyyaml
+      - name: Install pytest dependencies
+        run: pip install pytest pyyaml jmespath
 
       - name: Run pytest
         run: pytest tests/tasks/uipath-maestro-case/ -v
