@@ -181,10 +181,10 @@ def test_flows_line_is_strict_only(check):
 
 
 def test_template_placeholder_in_the_shape_fails_strict(check):
-    text = COMPONENT.replace("**Flows:**", "**Flows:** {flow name}", 1)
+    text = COMPONENT.replace("**Flows:** Flow 1 — requisition row", "**Flows:** Flow 1 — {unit}", 1)
     rc, out = check(text, profile="strict")
     assert rc == 1
-    assert "leaves a template placeholder unfilled" in out
+    assert "leaves a template placeholder unfilled: — {unit}" in out
 
 
 def test_component_in_a_process_needs_role_and_pointer(check):
