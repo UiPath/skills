@@ -161,7 +161,7 @@ You get:
 
 ## 4 · Check, run and fix
 
-**Prepare:** open the app in a test environment, sign in, and keep off the mouse and keyboard: the agent takes over the screen, so a VM or a spare machine works best. Tell it which window or URL it may use and what it must never close.
+**Prepare:** open the app in a test environment, sign in, and keep off the mouse and keyboard: the agent takes over the screen, so a VM or a spare machine works best. Tell it which window or URL it may use and what it must never close. [Live healing pass](live-healing-pass.md) lists what else to tell it, what to ask before the first run, how to question a failure and what the final report must say.
 
 **Check the targets.** Say "Go through `<app>` and check every Object Repository element against its screens; fix what doesn't match." The agent drives the app without saving anything: it opens pages, menus and lists, types to show a popup, then cancels. It repairs each selector that doesn't match and lists the elements it could not reach. Some screens only appear with data the workflows pull from other systems, such as a record an upstream feed creates; the live run checks those.
 
