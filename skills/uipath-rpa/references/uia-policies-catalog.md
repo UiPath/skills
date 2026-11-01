@@ -10,7 +10,7 @@ This skill's conditional UIA policies, one entry each. Read by entry, never end-
 
 ## Running UI Automation Workflows
 
-**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection. The command returns as soon as that happens — `DebugState: "Suspended"` with the exception and locals in `DebugDetails` — so act on the response instead of waiting for the run to end (see [debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless)).
+**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection. The command returns as soon as that happens — `DebugState: "Suspended"` with the exception and locals in `DebugDetails` — so act on the response instead of waiting for the run to end. A UI activity's fault suspends the session too when a Try Catch of the workflow handles the fault: continue such a fault to its Catch, since it is no selector failure (see [debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless)).
 
 **Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
