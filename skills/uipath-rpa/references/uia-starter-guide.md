@@ -13,4 +13,4 @@ Prerequisites are below. The skill's other UIA policies — running and debuggin
 
 **Required package:** `UiPath.UIAutomation.Activities` — minimum version (`<MIN_VERSION>`): **`26.10.4`**, a stable release on the official UiPath NuGet feed. The `uip rpa uia` CLI, the package docs, and the UIA skills require `<MIN_VERSION>` or newer — before any UIA work, check the installed version in `project.json` under `dependencies`. Do not hardcode the version from memory; this section is the only source of truth.
 
-Install or upgrade the package through the version question in SKILL.md § Resolving Packages & Activity Docs, Step 1, which offers only versions at or above `<MIN_VERSION>`.
+Install or upgrade the package through the version question in SKILL.md § Resolving Packages & Activity Docs, Step 1, offering only versions at or above `<MIN_VERSION>`.
