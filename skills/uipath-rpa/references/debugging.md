@@ -87,7 +87,7 @@ On the headless backend, debugging is a synchronous request/response loop: **eve
 | `DebugState` | Meaning | What to do next |
 |---|---|---|
 | `Paused` | Stopped at a breakpoint or after a step/break. `DebugDetails` carries the current activity (name, id, workflow file) and a snapshot of in-scope variables, arguments, and properties | Inspect `DebugDetails`, then `step-over` / `step-into` / `step-out` / `continue`, or `execution cancel` |
-| `Suspended` | Stopped on an exception the workflow does not handle, or on a UI Automation activity's fault even inside a Try Catch that handles it; other activities' handled faults never suspend. The session is still alive, and `errorMessage` calls the exception unhandled either way. `DebugDetails` carries the exception type, message, faulting activity, and locals | `continue` to propagate the exception — to the Catch that handles it, so a fault the workflow tolerates (an optional element that is absent) is continued, not repaired — `continue-retry` to re-run the faulted activity, `continue-ignore` to skip it, or `execution cancel` |
+| `Suspended` | Stopped on an exception; the session is still alive. A suspension does not mean the workflow leaves the exception unhandled: the debugger hooks every activity its parent schedules without a fault handler (each child of a Sequence or an If, the root of an invoked workflow; not the activity placed directly in a Try Catch's Try) and suspends when a fault leaves a hooked activity, even when a Try Catch or Retry Scope above will handle it — once per hooked level the fault climbs, and at each failed Retry Scope attempt. `errorMessage` calls the exception unhandled every time. `DebugDetails` carries the exception type, message, the activity the fault is leaving, and locals | Look in the workflow for a Try Catch with a Catch for the exception's type or a base type, or a Retry Scope, around that activity. If one handles it, `continue` until the run reaches it: a fault the workflow tolerates (an optional element that is absent) is continued, not repaired. Otherwise `continue` propagates the exception and the run fails, `continue-retry` re-runs the faulted activity, `continue-ignore` skips it, and `execution cancel` ends the session |
 | `Completed` | The run finished. The response is the normal run result (§ Output Format) | Read the run result; the session is gone |
 | `Running` | The wait timed out before a stable state was reached — execution is still going | Poll with `debug state`, send `debug break` to pause at the next activity, or `execution cancel` |
 | `None` | No debug session is active | Start one with `debug start` |
@@ -209,7 +209,7 @@ A clean `run`, then the same workflow under `debug start`:
 
 **On Helm the workflow's log output is not in the envelope.** `Log Message` activities and system traces stream to stdout as `[Level] message` lines *above* the JSON envelope, live, while the run executes. That is where a logged value is read back to confirm runtime behavior — do not strip those lines. Output arguments are read from `output`, from the workflow's own log lines, or from artifacts the workflow wrote.
 
-> **The outer `Result` reports the CLI invocation, NOT the workflow.** On Helm it is `ValidationError` for an unknown flag or a filter that failed to evaluate; `Failure` **for a `run` whose workflow faulted, failed validation, or named a missing entry point** (`Message` holds the `Data` fields JSON-encoded, `hasErrors: true`) and for a project directory that cannot be opened or an executor that is still busy (`Message` holds `{"success": false, "errorMessage": "…"}`); and `Success` for every `debug start` that reached the runtime — including one suspended on an exception. **Never treat `Result: "Success"` as a passing run.**
+> **The outer `Result` reports the CLI invocation, NOT the workflow.** On Helm it is `ValidationError` for an unknown flag or a filter that failed to evaluate; `Failure` **for a `run` or `debug continue` whose workflow faulted, failed validation, or named a missing entry point** (`Message` holds the `Data` fields JSON-encoded, `hasErrors: true`) and for a project directory that cannot be opened or an executor that is still busy (`Message` holds `{"success": false, "errorMessage": "…"}`); and `Success` for every `debug start` that reached the runtime — including one suspended on an exception. **Never treat `Result: "Success"` as a passing run.**
 >
 > **Helm verdict: a run passed only when `Data.hasErrors` is `false` AND `Data.errorMessage` is `null` AND `Data.debugState` is `null` or `"Completed"`.** All three are required: a suspended debug session reports `hasErrors: false` with `debugState: "Suspended"` and guidance in `errorMessage`; a completed failure reports `hasErrors: true` with the chain in `errorMessage`.
 >
@@ -357,7 +357,7 @@ uip rpa execution cancel --output json
 
 ### 4. Exception Investigation
 
-When a debug session stops on an exception (which ones: [The stable-state debug loop](#the-stable-state-debug-loop-headless)), the command that was running returns `DebugState: "Suspended"` — the session is alive and waiting for your decision. `DebugDetails` carries the exception type, message, faulting activity, and a locals snapshot.
+When a debug session stops on an exception, the command that was running returns `DebugState: "Suspended"` — the session is alive and waiting for your decision. Which exceptions suspend and what `DebugDetails` carries: [The stable-state debug loop](#the-stable-state-debug-loop-headless).
 
 ```bash
 # Start debugging — if an exception fires, the response comes back Suspended
@@ -375,7 +375,7 @@ uip rpa debug continue-retry --output json
 # Option B: Ignore the exception and continue past it (pauses at the next activity)
 uip rpa debug continue-ignore --output json
 
-# Option C: Propagate the exception (to the Catch that handles it; with none, the run fails: Completed with hasErrors: true)
+# Option C: Propagate the exception (to the next suspension or the handler that catches it; with none, the run fails — envelope in § Output Format)
 uip rpa debug continue --output json
 
 # Option D: Cancel and fix the root cause
