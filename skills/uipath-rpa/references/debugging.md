@@ -190,12 +190,12 @@ A clean `run`, then the same workflow under `debug start`:
 [Information] Sum: 10
 [Information] <PROJECT_NAME> execution ended in: 00:00:00
 { "Result": "Success", "Code": "ToolResult",
-  "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null } }
+  "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null, "errorScope": null } }
 ```
 
 ```json
 { "Result": "Success", "Code": "ToolResult",
-  "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": "Completed", "debugDetails": null } }
+  "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": "Completed", "debugDetails": null, "errorScope": null } }
 ```
 
 | Field | Type | Meaning |
@@ -206,6 +206,7 @@ A clean `run`, then the same workflow under `debug start`:
 | `debugState` | `string?` | Debug sessions only (`null` on plain `run`): `Paused` (breakpoint), `Suspended` (exception), `Running` (`debug state` polled mid-run), `Completed`, or `None` (`debug state` with no session). See [The stable-state debug loop](#the-stable-state-debug-loop-headless). |
 | `debugDetails` | `string?` | Debug sessions only: JSON snapshot for the state — `Activity`, `ActivityId`, `WorkflowFile`, `CurrentActivity` and locals when `Paused`; `ExceptionType`, `Message`, `Activity`, `CurrentActivity` and locals when `Suspended`; `""` while `Running`; `null` otherwise. |
 | `profiling` | `object?` | `null` unless `--profiling` was passed on a start command; then `{"outputDirectory": "<absolute path>"}` — the run's `*.uistat` and screenshot folder (verifies UI automation correctness and workflow performance). See [Profiling Workflow Performance](#profiling-workflow-performance). |
+| `errorScope` | `string?` | Set only when the pre-run validation failed, and names whose errors they are: `"target"` — the file passed to `--file-path`; `"dependency"` — a workflow that file invokes; `"project"` — the run could not be narrowed to the file and the workflows it invokes, so the whole project was validated and the errors may sit in files the run never reaches. `null` otherwise. |
 
 **On Helm the workflow's log output is not in the envelope.** `Log Message` activities and system traces stream to stdout as `[Level] message` lines *above* the JSON envelope, live, while the run executes. That is where a logged value is read back to confirm runtime behavior — do not strip those lines. Output arguments are read from `output`, from the workflow's own log lines, or from artifacts the workflow wrote.
 
