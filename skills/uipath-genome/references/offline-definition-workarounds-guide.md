@@ -109,7 +109,7 @@ The error names the attribute, but the attribute is valid: keep it, because the 
 Linked target after step 4 (C# project):
 
 ```xml
-<uix:TargetAnchorable … Reference="<ELEMENT_REFERENCE_ID>" ScopeSelectorArgument="&lt;wnd app='saplogon.exe' cls='SAP_FRONTEND_SESSION' /&gt;" SearchSteps="Selector" Version="V6">
+<uix:TargetAnchorable … Reference="<ELEMENT_REFERENCE_ID>" ScopeSelectorArgument="&lt;wnd app='saplogon.exe' cls='SAP_FRONTEND_SESSION' title='…' /&gt;" SearchSteps="Selector" Version="V6">
   <uix:TargetAnchorable.FullSelectorArgument>
     <InArgument x:TypeArguments="x:String">
       <CSharpValue x:TypeArguments="x:String">$"&lt;sap id='usr/…/tbl…' tableRow='{Row}' tableCol='1' /&gt;"</CSharpValue>
