@@ -1,0 +1,45 @@
+task_id: skill-rules-smoke-return-disposition-names
+description: >
+  Repro for MST-17466. Agent authors a ~15-row return-disposition decision table
+  from the prose policy that, in Studio Web Autopilot, produced <annotationEntry>
+  rows with no <annotation> column (the designer then refuses the table). Grades
+  that every rule is named through exactly one declared annotation column.
+tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Business Rules project named RiskRules with this rule:
+
+  Create a return disposition rule. Inputs: category, daysSinceDelivery, loyaltyTier (None/Silver/Gold/Platinum), returnReason, itemCondition. Outputs: disposition, refundMethod, goodsDisposition, decisionReason. Perishable/grocery/gift card/final sale are not returnable. Damaged on arrival or wrong item: refund immediately. Standard window 30 days, Gold/Platinum 45 days, for electronics, apparel/footwear and home goods. Unopened electronics approved, opened electronics inspected. Apparel approved only unworn with tags; worn declined. Home goods accepted in any condition. Anything else escalates to the duty manager. Use FIRST hit policy and document each rule.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One <annotation> column is declared and every rule carries exactly one non-empty annotationEntry"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py names"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
