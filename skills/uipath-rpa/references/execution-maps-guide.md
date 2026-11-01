@@ -25,6 +25,7 @@ A clean `validate` + `build` does not prove runtime behavior. Silent failures th
 
 - Run `templates search` before `init` (Rule 2) only when the user names a template or domain pattern; use its result, including an `AskUserQuestion`, to choose `--template-package-id`.
 - Ask the Rule 2a framework/language question when the request has no signal.
+- Ask the package version question (SKILL.md § Resolving Packages & Activity Docs, Step 1) before `packages install`. On an existing project, ask it once `packages versions` has returned, since it depends on the installed and available versions. On a greenfield project every needed package is absent: ask it in T1 beside the `init` chain, naming the options (latest stable, latest prerelease), and take their numbers from that chain's `packages versions` output.
 - Keep every `AskUserQuestion` and consent gate sequential.
 - Keep UIA state advances and indication sequential (see [execution-journeys-catalog.md § Journey: UIA capture + build](execution-journeys-catalog.md#journey-uia-capture--build-xaml)); capture screens require real application state.
 

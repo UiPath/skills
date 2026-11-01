@@ -4,7 +4,7 @@ This skill must work against every future version of `UiPath.UIAutomation.Activi
 
 ## Boundary
 
-**Stays in `skills/uipath-rpa/`:** policy this skill owns — UIA prerequisites/version gating and upgrade consent plus the other skill-side UIA policies in `references/uia-starter-guide.md` (UIA prerequisites) and `references/uia-policies-catalog.md` (run/debug orchestration, placeholder-stub deliverable pattern, UI Library publishing), critical rules, and pointers into the package docs.
+**Stays in `skills/uipath-rpa/`:** policy this skill owns — the UIA minimum version and its gating plus the other skill-side UIA policies in `references/uia-starter-guide.md` (UIA prerequisites) and `references/uia-policies-catalog.md` (run/debug orchestration, placeholder-stub deliverable pattern, UI Library publishing), critical rules, and pointers into the package docs.
 
 **Lives in the UIA package docs** (ships to `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`): the UIA authoring guide (`ui-automation-guide.md` — window baseline, capture orchestration, pitfalls, control-specific interaction, coded/XAML patterns), target-capture orchestration and `uia-configure-target` invocation modes (`references/uia-configure-target-guide.md`), single-purpose task recipes, CLI subcommand syntax, skill invocation arguments, internal procedure step numbers, artifact filenames, bash blocks invoking `uip rpa uia ...`, flag tables, troubleshooting entries.
 
@@ -56,7 +56,7 @@ Describe capability at the category level and route to UIA docs for concrete syn
 | Single-purpose CLI task recipe (window baseline, input methods, advancing UI state, …) | UIA package: `docs/references/<purpose>-guide.md`, listed with a purpose description in `docs/overview.md` § References |
 | Skill invocation guide for callers | UIA package: `docs/references/<skill>-guide.md` (`uia-configure-target-guide.md`) — skills ship no USAGE.md |
 | Skill internal procedure | UIA package: `docs/skills/<skill>/SKILL.md` — the only file under `docs/skills/<skill>/` |
-| uipath-rpa-owned UIA policy (prerequisites/consent, run/debug orchestration, stub deliverables, UI Library publishing) | `skills/uipath-rpa/references/` with pointers to package docs for concrete syntax |
+| uipath-rpa-owned UIA policy (minimum version, run/debug orchestration, stub deliverables, UI Library publishing) | `skills/uipath-rpa/references/` with pointers to package docs for concrete syntax |
 
 New UIA docs go into the UIA package's source repo under `UiPath.UIAutomation.Activities.Package/docs/`. When the package is installed in a project, these docs land at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
