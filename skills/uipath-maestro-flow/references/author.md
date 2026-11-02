@@ -173,6 +173,13 @@ nodes, not patterns.
 4. A threshold the request leaves out is an open question (rule 8): ask, or
    headless, use the guide's value and list it as **[REQUIRED]**.
 
+## Variable types
+
+Inputs, outputs and vars take one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`.
+
+- `float`, `double`, `date`, `datetime` and `jsonSchema` are Case-only. The Flow builder refuses them: a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build. Write a date as `types.string` and a decimal as `types.number`.
+- `types.integer` builds and packs as an integer, but Workbench does not offer it, so prefer `types.number`.
+
 ## Anti-patterns
 
 - **Never replace a registered connector with `mock()` or a script because it
