@@ -188,6 +188,10 @@
 /skills/uipath-maestro-flow/references/ixp.md @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
 
+# Extract document — the node and the taxonomy it carries inline
+/skills/uipath-maestro-flow/references/extract-document-node.md @UiPath/communications-mining @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/extract-document-taxonomy.md @UiPath/communications-mining @UiPath/maestro-cli-team
+
 # Chat — inline conversational agent node + the conversation trigger and message nodes
 /skills/uipath-maestro-flow/references/conversational.md @UiPath/jarvis @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/conversational/ @UiPath/jarvis @UiPath/maestro-cli-team

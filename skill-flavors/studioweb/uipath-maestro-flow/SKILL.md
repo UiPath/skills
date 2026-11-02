@@ -39,6 +39,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 | --- | --- |
 | `uip maestro flow check`, `compile`, `decompile`, `merge` | Work, inside the page. `decompile` writes no pipeline helper. `merge` takes only `--original`, `--baseline`, `--strict` and `-o`. `check` refuses a compiled `.flow`: use `validate`. |
 | `uip maestro flow validate`, `format` | Work. Never `format` a merged file. |
+| `uip maestro flow nodes …`, `edges …`, `variables …` | Work: they edit the target `.flow` in place; the canvas reloads the open file. |
 | `uip maestro flow registry get`, `search`, `list`, `pull` | Work: the product node registry. |
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
 | `uip maestro registry pull` | Answered by the CLI, with no effect: it confirms the library of the session, ignores its options, and writes no `./connectors/<key>.ts` modules. |
@@ -46,7 +47,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip solution resources add`, `list` | Work. |
 | `uip solution resources refresh` | Fails: no local `.uipx`. Add connections with `resources add` ([the connector loop](#the-connector-loop-in-studio-web), step 7). |
 | `uip solution publish`, `uip solution deploy run` | Work. Studio Web packages and signs in for `publish`. |
-| `uip flow debug <Project>` | Works: a real run. `uip maestro flow debug` fails here, so read every `uip maestro flow debug` in the references as `uip flow debug`. |
+| `uip maestro flow debug "<Project>"` | Works: a real run of the saved project. `<Project>` is a project name, not a path. |
 | `uip solution pack`, `upload`, `init` | Not available. Studio Web owns the solution. |
 | `uip login` | Not available. You are already signed in to the tenant of the user. |
 | `npm`, `node`, the `flow-sdk` bin, `uv`, `uip codedagent` | Not available. Studio Web cannot create a coded agent. |
@@ -55,14 +56,14 @@ When a reference tells you to run a command that is not available, use the Studi
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
-Integrations with non-UiPath systems use connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector. `"total": 0` is a miss and means `http()` (not for an external agent: see the table). For document extraction or another tenant capability (agent, process), run the `uip maestro flow registry search` of that family ([`references/ixp.md`](references/ixp.md), [`references/agent.md`](references/agent.md)). A `script()` that returns fixed values is never a stand-in for that step, and `mock()` only marks a capability that the search proved absent.
+Integrations with non-UiPath systems use connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector. `"total": 0` is a miss and means `http()` (not for an external agent: see the table). For another tenant capability (agent, process), run the `uip maestro flow registry search` of that family ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); the Extract document node only when asked for by name or already in the flow ([`references/extract-document-node.md`](references/extract-document-node.md)). A `script()` that returns fixed values is never a stand-in for that step, and `mock()` only marks a capability that the search proved absent.
 
 ### The connector loop in Studio Web
 
 Run each command from the project folder `/solution/<Project>`. `prepare` writes `.flow-sdk/connectors-local/<key>.ts` and `.flow-sdk/bindings.json` there.
 
 1. **Describe the operation:** `uip maestro registry describe <node-type> --output plain`. The page gives the inputs, outputs, lookup fields and the code to write.
-2. **Choose the connection:** `uip is connections list <connector-key> --all-folders --output json`. When more than one connection is `Enabled`, ask the user which one to use. Then pass `--connection-id <id>` to `prepare`. `prepare` refuses a connection in state `Failed`.
+2. **Choose the connection:** `uip is connections list <connector-key> --all-folders --output json`. When more than one connection is `Enabled`, ask the user which one to use. Then pass `--connection-id <id>` to `prepare`, and report it ([completion output](references/author.md#completion-output) item 5). `prepare` refuses a connection in state `Failed`.
 3. **Prepare the action:** `uip maestro registry prepare <connector-key> --action <action>`. For each lookup field, add `--resolve <field>:<key|name>=<value>`. Then run it again with `-f <field>=<value>` for all of those fields. The hints of `prepare` give the exact next command: run it.
 4. **Author with the prepared descriptor**, as the `next:` lines of `prepare` show. The import path is relative to the draft in `.flow-sdk/`:
 
@@ -84,7 +85,7 @@ Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRe
 <!--skill-flavor:sdk-connector-discovery:end-->
 
 <!--skill-flavor:sdk-lifecycle:start-->
-Every change — a new flow or an edit — is the same round trip through the target `.flow` ([Project layout](#project-layout)). The merge keeps what the SDK does not model (canvas layout, positions, sidecars) as the user left it. Run it from the project folder:
+Every change — a new flow or an edit — is the same round trip through the target `.flow` ([Project layout](#project-layout)). Merge keeps what the SDK does not model (layout, sidecars); leave nodes it moves where it put them. Run it from the project folder:
 
 ```bash
 cd /solution/<Project>
@@ -102,6 +103,8 @@ uip maestro flow merge .flow-sdk/edited/<Name>.flow --original <Name>.flow --bas
 uip maestro flow validate <Name>.flow --output json
 ```
 
+**A flow holding an Extract document node skips this round trip** — its baseline compile fails on that node; use the direct commands instead ([`references/extract-document-node.md`](references/extract-document-node.md)).
+
 Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If `validate` fails, fix the source and run steps 2 to 4 again. To undo the merge, copy `.flow-sdk/original/<Name>.flow` back over the target.
 
 - **Always finish with the merge into the target.** About 400 ms after a write, the canvas reloads the open file. Never run `format` on the merged file: it lays out the canvas of the user again.
@@ -111,7 +114,7 @@ Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` a
 - **If the baseline compile refuses a decompiled connector input**, stop and tell the user (UiPath/builder-sdk#1402).
 - **A flow with connectors** needs each connection in the solution after the merge ([the connector loop](#the-connector-loop-in-studio-web), step 7).
 
-Run the flow only for a stated runtime-behavior claim. `uip flow debug <Project>` is a real run. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not start another. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.
+Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>"` is a real run: ask per references/operate.md. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.
 <!--skill-flavor:sdk-lifecycle:end-->
 
 <!--skill-flavor:sdk-editing:start-->
@@ -137,8 +140,8 @@ Debug, publish, deploy, trigger, inspect a job, and drive an instance's
 lifecycle. You are already signed in to the tenant of the user. Before every
 publish or debug, make sure each connection is in the solution; never run
 `uip solution resources refresh` here. Run the flow
-with `uip flow debug <Project>`; `uip maestro flow debug` fails in this host.
+with `uip maestro flow debug "<Project>"`.
 Publish the open solution with `uip solution publish` (the destination is the
-user's choice). `flow debug` is a REAL run, not a validation step. Read
+user's choice). `flow debug` is a REAL run, not a validation step: ask first, as it says. Read
 **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:sdk-operate:end-->

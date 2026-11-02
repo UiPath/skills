@@ -32,8 +32,8 @@ SDK verbs run in the page — see
 <!--skill-flavor:product-cli-scaffold:end-->
 
 <!--skill-flavor:debug-flags:start-->
-In Studio Web the verb is `uip flow debug <Project>`. `<Project>` is a project
-name in the open solution, not a path; it defaults to the open project.
+In Studio Web the verb is `uip maestro flow debug "<Project>"`. `<Project>` is a
+project name in the open solution, not a path; it defaults to the open project.
 Each connection must be in the solution first. A `500` at `prepare-custom-debug` is
 transient: retry once. These are the flags the host takes:
 
@@ -74,7 +74,7 @@ take. Do not re-run the flow to read the reply again.
 For example, a direct-input claim:
 
 ```bash
-uip flow debug <Project> --inputs '{"name":"value"}'
+uip maestro flow debug "<Project>" --inputs '{"name":"value"}'
 ```
 
 `Successful` on line 1 is evidence for the product-runtime path; a bare exit

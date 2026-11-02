@@ -36,41 +36,22 @@ Build order follows the table unless **Handoffs** requires otherwise.
 1. **{Stage}** — {component #}: {what happens}; exits when {condition}.
 2. **{Stage}** — {component #}: …
 
-BPMN-style process view — one lane per actor or system; circles are start and end events, rectangles tasks (prefixed with the component number), diamonds gateways, dashed arrows message or data flows across lanes.
+The components, their triggers and the queues.
 
 ```mermaid
 flowchart TB
-  subgraph L1["{Automation lane}"]
-    S(("Start: {trigger}")) --> T1["[1] {task}"]
-    T1 --> G1{"{decision}?"}
-    G1 -- yes --> T2["[2] {task}"]
-    G1 -- no --> E1((("{outcome}")))
-    T2 --> E2((("{outcome}")))
-  end
-  subgraph L2["{Human actor lane}"]
-    H1["{human task}"]
-  end
-  subgraph L3["{System lane}"]
-    X1["{system event or record}"]
-  end
-  T1 -.->|"{data passed}"| X1
-  T2 -.->|"{request}"| H1
-  H1 -.->|"{decision}"| T2
+  C1["⏰ [1] {Component}<br/>{what it does, wrapped at about<br/>34 characters}"]
+  Q1[("{Queue name}<br/>{what its items are}")]
+  C2["🔔 [2] {Component}<br/>{what it does}"]
+  C3["[3] {Component}<br/>{what it does}"]
+  C4["[4] {Component}<br/>{what it does}"]
+  C1 -->|"{adds items}"| Q1
+  Q1 -->|"{takes items}"| C2
+  C2 -->|"{call}"| C3
+  C3 -.->|"{file or mail passed}"| C4
 ```
 
-Component view — build-time dependencies only; never mix them into the process view:
-
-```mermaid
-flowchart LR
-  subgraph SOL["Solution: {name}"]
-    C1["[1] {Component}"]
-    C2["[2] {Component}"]
-  end
-  C2 --> C1
-  C1 -.->|"{data passed}"| C2
-  RES["{shared platform resource}"]
-  C1 & C2 --- RES
-```
+Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file or mail.
 
 *When the customer needs a formal model, add a BPMN 2.0 sidecar `{process-slug}-process.bpmn` authored from this Process Map with `uipath-maestro-bpmn`, and link it here.*
 
@@ -152,7 +133,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | {alternative unit} | C | … | {…} |
 
 **Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
-**Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
+**Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
 **Traceability:** {per-item record and where it lands; the upstream reference a chained item carries; screenshot on system exception; run summary; which component reports on them}.
 
 ### Flow 2 — {…}
@@ -191,7 +172,8 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Source framework | {framework name as SKILL.md § Source Frameworks spells it} {version the export states} | |
 | Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
 | {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {ambiguity or unresolved reference} |
-| Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because nothing reaches it, or the request named others} |
+| Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because nothing reaches it and the Unused parts answer kept to what runs, or the request named others} |
+| Unused | {workflows, pages and helpers no caller invokes that the Unused parts answer left out — `{Name}` ({id})} | {what each does} |
 | Excluded / unreachable | {objects the source guide excludes; dead code, superseded copies, objects reached only through disabled calls — by name} | {why} |
 | Inventory | {processes, windows, controls (n without a locator), recordsets, rows, credential accounts} | {counts the inventory script reported; execution re-derives the catalogs from the export} |
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |

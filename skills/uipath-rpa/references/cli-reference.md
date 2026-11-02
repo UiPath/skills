@@ -76,7 +76,7 @@ Both return `{Result, Code, Data}`. Identify the backend from `Data`:
 
 | Backend | `Data` keys | Workflow `Log Message` output |
 |---|---|---|
-| Headless Studio (Helm) | `output` (serialized output arguments, `"{}"` if none), `hasErrors`, `errorMessage`, `profiling`, `debugState`, `debugDetails` | stdout lines such as `[Information] …` and `[Error] …` above the JSON envelope; none in `Data` |
+| Headless Studio (Helm) | `output` (serialized output arguments, `"{}"` if none), `hasErrors`, `errorMessage`, `profiling`, `debugState`, `debugDetails`, `errorScope` | stdout lines such as `[Information] …` and `[Error] …` above the JSON envelope; none in `Data` |
 | Studio Desktop | `output` (completion status `"Session ended"`), `errors` array, `logEntries` array of `{source, level, message}` where `source` is `Compile` or `Debug`, and `debugState` (`"Completed"` on completion; absent if the file could not open) | `Data.logEntries`; nothing above the envelope |
 
 Field meanings are in [debugging.md § Output Format](debugging.md#output-format).
@@ -101,7 +101,7 @@ Helm:
 [Information] Sum: 10
 [Information] <PROJECT_NAME> execution ended in: 00:00:00
 { "Result": "Success", "Code": "ToolResult", "Data": {
-    "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null } }
+    "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null, "errorScope": null } }
 ```
 
 Studio Desktop (same command, project open in Studio):
@@ -162,7 +162,7 @@ Validate reads the entity types the project last generated. After a Data Fabric 
 
 `uip rpa packages install` is the canonical dependency operation; do not hand-edit `project.json`, and there is no `add-dependency` verb. Repeat `--packages` with comma-joined `key=value` fields (`--packages 'id=<PackageId>,version=<Version>'` or `--packages id=<PackageId>`); discover remaining flags with `uip rpa packages install --help`.
 
-Omit `version` to resolve the latest compatible version; pin only for known compatibility constraints. Discover versions with `uip rpa packages versions --package-id <Id> --include-prerelease`; default to `--include-prerelease`, since preview activity packages often contain the freshest surface and `.local/docs`. Inform the user and offer upgrades; never force them. For a missing package, verify the exact ID with `activities find` or `.local/docs`. For feed/network errors, check Studio NuGet feed configuration.
+Omitting `version` resolves the latest compatible version; choose the version with the question in SKILL.md § Resolving Packages & Activity Docs, Step 1. For a missing package, verify the exact ID with `activities find` or `.local/docs`. For feed/network errors, check Studio NuGet feed configuration.
 
 Remove unused dependencies with `uip rpa cleanup "<PROJECT_DIR>" --skip-imports --output json`; use `--dry-run` first and inspect `Data.UnusedItems`. Without `--skip-imports`, cleanup also removes unused namespace imports and resaves every workflow. No verb removes one named dependency.
 
@@ -189,7 +189,7 @@ Read the project repository before authoring UI Automation to reuse existing tar
 
 ## Commands -- Data Fabric Entities
 
-Data Fabric entities in the Orchestrator tenant's Data Service must be installed into the RPA project before typed arguments, `UiPath.DataService.Activities`, test-data bindings, or generated entity types can be used. Installation writes `.entities/` and compiles a strongly typed assembly. Under `uip rpa data-fabric-entities`, discover exact flags with `--help`:
+Data Fabric entities in the Orchestrator tenant's Data Service must be installed into the RPA project before typed arguments, `UiPath.DataService.Activities`, test-data bindings, or generated entity types can be used. Installation writes `.entities/` and compiles a strongly typed assembly. `.entities/EntitiesStore.json` holds the definitions of every entity the tenant's Data Service exposes, the installed ones marked, and the tenant's URL, and `pack` ships it in the package. Before publishing such a package outside the tenant (another tenant's feed, a public feed), tell the user it carries every tenant entity definition and the tenant URL. Under `uip rpa data-fabric-entities`, discover exact flags with `--help`:
 
 1. **List:** show entities installed in the project and available in the tenant, each with `installed`; run before installing to select names or verify bindings.
 2. **Install:** apply an add/remove delta. Dependencies expand automatically; server-deleted entities are dropped. Final selection is `(installed ∪ add) − remove`; empty selection uninstalls the manifest.
@@ -289,6 +289,16 @@ Per-file `validate` loads the target through the workflow designer and compiles 
 
 `build` compiles every workflow, including untouched/unvalidated files, and applies analyzer rules and packaging. A project can therefore have clean edited files but fail on another file.
 
+Neither per-file nor project `validate` checks an Invoke Workflow File's arguments against the invoked workflow; `build` does:
+
+| Defect | `validate` | `build` |
+|---|---|---|
+| Extra argument (a key the invoked workflow does not declare) | not reported | `SY-USG-016` Error: `Extra argument '<name>' not found in invoked workflow.` |
+| Argument type mismatch | not reported | `SY-USG-016` Error: `Type mismatch for argument '<name>': imported type '<type>', target type '<type>'.` |
+| Missing argument (an argument of the invoked workflow left unbound) | not reported | `SY-USG-015` Warning: `Missing argument '<name>' for the invoked workflow.` — the build passes |
+
+When a step starts invoking another workflow (a helper split into its parts, a callee whose arguments changed), build the project before calling the step done. Check a missing In argument by hand: it builds, and the invoked workflow runs with the argument's default.
+
 Neither phase catches an attribute-form expression on `InArgument<Object>`: `Message="calcResult"` becomes a literal, so validation/build/run can succeed while logging `calcResult`. Inspect smoke-test output; see [§ Smoke Test](#smoke-test) and [xaml/csharp-activity-binding-guide.md § C# Expression Pitfalls](xaml/csharp-activity-binding-guide.md#c-expression-pitfalls).
 
 ### Analyzer errors
@@ -305,7 +315,7 @@ Error-severity analyzer rules fail `analyze`, `build`, and `pack`; per-file `val
 
 ### Expected non-defect warnings
 
-`build` prints `[WARN]` lines for enabled analyzer rules. These are **not** build failures and do not gate delivery (§ Validation Iteration Loop, Rule 6). Recurring ones that are correct-by-design and must not be "fixed": `<activity> does not have the verification feature enabled` (no matching enabled rule; `VerifyOptions` is deliberately off by default; add only when requested, per the UIA package guide's § Execution Verification Policy); `Your organization requires your project to have an Automation Hub URL defined` (`ST-USG-034`, organization governance resolved by the project owner in Project Settings); and `<name> display name is defined many times. Current allowed threshold is 1` (`ST-NMG-004`, cosmetic; fix while authoring, since repeated identical steps need distinct names). For an unfamiliar warning rule ID, run `analyzer-rules list --scope <scope>` only when it blocks an acceptance criterion.
+`build` prints `[WARN]` lines for enabled analyzer rules. These are **not** build failures and do not gate delivery (§ Validation Iteration Loop, Rule 6). Recurring ones that are correct-by-design and must not be "fixed": `<activity> does not have the verification feature enabled` (no matching enabled rule; `VerifyOptions` is deliberately off by default; add only when requested, per the UIA package guide's § Execution Verification Policy); `Your organization requires your project to have an Automation Hub URL defined` (`ST-USG-034`, organization governance resolved by the project owner in Project Settings); `<name> display name is defined many times. Current allowed threshold is 1` (`ST-NMG-004`, cosmetic; fix while authoring, since repeated identical steps need distinct names — unless the names are dictated, the user's or a migrated source's kept by request, where it is expected); and `Potential infinite loop detected in Flowchart <name> starting with activity <node>` (`ST-REL-006`), which every Flowchart with a back link raises, a bounded retry included: check that each cycle has a counter or a state change that ends it, then leave it. For an unfamiliar warning rule ID, run `analyzer-rules list --scope <scope>` only when it blocks an acceptance criterion.
 
 ## Smoke Test
 
