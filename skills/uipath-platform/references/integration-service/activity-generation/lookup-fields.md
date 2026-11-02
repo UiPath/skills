@@ -45,12 +45,12 @@ The procedure, per lookup field:
    **Some lookups make no vendor call.** A field whose choices come from the
    *connection* rather than the vendor needs a lookup script that makes **zero**
    `intsvc.http` calls and computes the array from
-   `context.connectionConfiguration`. Slack's token picker is the example: it
+   `intsvc.connectionConfig.get`. Slack's token picker is the example: it
    returns `[{name:'Bot',value:'bot'}, …]` by reading which tokens the connection
    holds. Recognise these by the question they answer — "which of the things this
    connection is configured with?" rather than "which of the things the vendor
-   has?" — and note the redaction rule: secrets are stripped from
-   `connectionConfiguration`, so derive from a non-secret key (a scope list, a
+   has?" — and note the redaction rule: a secret key returns an opaque
+   reference, not its value, so derive from a non-secret key (a scope list, a
    base URL), never from a token value.
 2. **Else generate it** as `List<Entities>.js` (see [example-list-action.js.txt](example-list-action.js.txt)) —
    same naming style as a main action, since its base name is its `scriptRef`:
@@ -121,8 +121,8 @@ The procedure, per lookup field:
    # filter for name === "sanjeet-test" → its id
    ```
    One call returns one page. If the target is not in it, run again with the
-   vendor's paging parameter passed as an input (e.g. `--body '{"cursor":"…"}'`
-   for a script that forwards `cursor`), until the vendor stops returning one.
+   previous response's `elements-next-page-token` header as
+   `--query "nextPage=<token>"`, until `elements-has-more` is `false`.
 4. **Pass the ID as the main action's input.** Main-action ID inputs are
    always vendor-canonical IDs.
 

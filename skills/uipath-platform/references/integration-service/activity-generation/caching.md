@@ -23,16 +23,26 @@ if (describe.status !== 200) throw new Error(`describe ${name} failed: ${describ
 export const cache = { ttl: 900 };
 
 async function execute(context) {
-  const { limit, cursor } = context.request.body ?? {};
-  const listed = await intsvc.http({ method: "GET", url: "/users.list", query: { limit, cursor } });
-  if (listed.status !== 200 || listed.body.ok === false) throw new Error(`users.list failed: ${listed.status} ${listed.body.error ?? ""}`);
-  listed.body = listed.body.members;
+  const { types = "public_channel" } = context.request?.query ?? {};
+  const page = intsvc.decodePageToken(context.request?.query?.nextPage) ?? {};
+  const pageSize = Number(page.pageSize ?? 200);
+  const cursor = page.next;
+
+  const query = { types, exclude_archived: "true", limit: pageSize };
+  if (cursor) query.cursor = cursor;
+
+  const listed = await intsvc.http({ method: "GET", url: "/conversations.list", query });
+  if (listed.status !== 200 || !listed.body?.ok) throw new Error(`conversations.list failed: ${listed.status} ${listed.body?.error ?? ""}`);
+
+  const next = listed.body.response_metadata?.next_cursor || "";
+  listed.body = (listed.body.channels ?? []).map((c) => ({ id: c.id, name: c.name, is_private: c.is_private }));
+  intsvc.setPaginationHeaders(listed, { current: cursor, next, pageSize, hasMore: next !== "" });
   return listed;
 }
 ```
 
-A hit makes no vendor call and costs nothing against the script's call or egress budget.
-The runtime proxy's `docs/intsvc-sdk.md` §3a is the live contract for limits and
+A hit makes no vendor call and costs nothing against the script's call or egress budget
+(response bytes still count). The runtime proxy's `docs/intsvc-sdk.md` §3a is the live contract for limits and
 metrics; follow it where this page differs.
 
 ## Which layer
@@ -68,6 +78,8 @@ cond ? { ttl } : undefined` leaves the call uncached.
   not stored, and a Layer A read after the write goes live.
 - A run that threw, or ended in a `script_*` error. Nothing from it is stored.
 - A streamed, download or oversized (over 8 MiB) body.
+- A vendor answer with `Cache-Control: no-store` or `private`; `ttl` cannot override it.
+  The runtime never infers caching from the vendor's headers.
 
 **A returned `ok: false` body is cached**, because the run completed and the answer was
 2xx. Throw on every vendor-reported failure, as Slack's `ok: false` above, so it is not
@@ -81,10 +93,12 @@ or a header; a header you set but do not mean to vary on splits the cache, so le
 off. A call carrying `authorization`, `cookie`, `range` or a conditional header is not
 cached.
 
-A Layer B key is the connection, the script and connector versions, and the inbound
-method, path, query and body. It does **not** include inbound headers, so a script with
-`export const cache` gets no `context.request.headers`: do not write one that varies on
-them.
+A Layer B key is the connection, the connector and script versions, and the inbound
+query (without `cache_data`) and body. Each page has its own entry, because the page
+token is in the query. Editing the script or publishing the connector ends its entries;
+there is nothing to version. The key does **not** include inbound headers, so a script
+with `export const cache` gets no `context.request.headers`: do not write one that varies
+on them.
 
 Nothing about the credential is in either key, so the connection's cache is dropped when
 Udon invalidates it on re-auth, edit or delete. Correctness after a re-auth depends on
@@ -118,13 +132,63 @@ same rules. Every finding fails; there is no ignore list.
 If `cache-not-shared` fires, either add `cache` to the other scripts that make the read,
 or cache this script's answer with `export const cache = { ttl }`.
 
+The CLI also warns, without failing validation. Fix these too: the runtime makes each
+harmless, but the cache is not doing what the script says.
+
+| warning | means |
+|---|---|
+| `answer-cache-on-write` | `export const cache` in a script that writes; such runs are never stored |
+| `answer-cache-reads-headers` | an `export const cache` script reads `context.request.headers`, which are removed |
+| `cache-ttl-capped` | a literal `ttl` above `172800` s, the proxy's 48 h cap |
+
+## Worked example: Slack
+
+**List channels** caches its whole answer (Layer B above); only this script lists
+channels, so the Slack call inside it carries no `cache`.
+
+**Send a message to a user by email** is a write, so it has no `export const cache`. Its
+email lookup is a read that every Slack script resolving a user by email makes, so it
+carries `cache` in each of them:
+
+```js
+async function execute(context) {
+  const { email, text } = context.request?.body ?? {};
+  if (!email || !text) throw new Error("email and text are required");
+
+  const user = await intsvc.http({ method: "GET", url: "/users.lookupByEmail", query: { email }, cache: { ttl: 86400 } });
+  if (!user.body?.ok) throw new Error(`users.lookupByEmail failed: ${user.body?.error}`);
+
+  const dm = await intsvc.http({ method: "POST", url: "/conversations.open", body: { users: user.body.user.id } });
+  if (!dm.body?.ok) throw new Error(`conversations.open failed: ${dm.body?.error}`);
+
+  const sent = await intsvc.http({ method: "POST", url: "/chat.postMessage", body: { channel: dm.body.channel.id, text } });
+  if (!sent.body?.ok) throw new Error(`chat.postMessage failed: ${sent.body?.error}`);
+
+  sent.body = { channel: sent.body.channel, ts: sent.body.ts, user: user.body.user.id };
+  return sent;
+}
+```
+
+| call | answer cache | lookup | vendor calls |
+|---|---|---|---|
+| ListChannels, first time | miss, script runs | none | 1 |
+| ListChannels again within the hour | hit, script does not run | none | 0 |
+| ListChannels with `types=private_channel` | miss, different query | none | 1 |
+| SendMessageToUser to Alice, first time | not declared | miss | 3 |
+| SendMessageToUser to Alice again | not declared | hit | 2 |
+| Any other script that looks up Alice by email | not declared | hit, same entry | one fewer |
+
+Salesforce follows the same shape: `cache` on the describe that lists, writes and
+metadata discovery all make; `export const cache` on object discovery.
+
 ## Testing
 
 - **While iterating, run with `--no-cache`** so nothing work-in-progress is stored.
   `--refresh` is not a substitute: it still replaces the entry with the new answer.
 - **Once the script is right, test the caching** with `--inline-script` or
   `--script-ref`: run the same call twice (the second is a hit), then once with
-  `--refresh`.
+  `--refresh`. Confirm a hit from the vendor's own request count, not from the
+  response, which looks the same.
 - **Only a miss costs budget**: its `intsvc.http` calls count against the 4-call run
   budget; a hit costs none.
 - **Say in the report** which reads or answers are cached, with the layer and `ttl`.
