@@ -55,6 +55,8 @@ resources:
 stages:
   # FOSSA blocks stable promotions only. A new transitive-dependency finding
   # holding up a preview costs a release line; holding up `latest` is the point.
+  # publish.yml applies the same rule to the whole gate: a failed run blocks
+  # `latest` and only warns on `preview`.
   # The nightly scan in .pipelines/security.yml is unchanged and still advisory.
   - template: jobs/ci.security.fossa.yml
     parameters:
