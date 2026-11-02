@@ -16,7 +16,7 @@
  *
  * Generic scenario: a smart doorbell posts to a webhook; the flow logs who rang.
  */
-import { flow, script, onEvent, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, script, onEvent, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('doorbell-log')
   .name('DoorbellLog')
@@ -32,14 +32,14 @@ export default flow('doorbell-log')
 
   // `request_body` is TEXT — parse it, and handle a body that is not JSON, since
   // a webhook's body is whatever the caller sent.
-  .step('readPing', script({
-    code: `
-      var raw = $vars.start.output.request_body;
-      var who = "unknown";
-      try { who = JSON.parse(raw).visitor || "unknown"; } catch (e) { who = "unparseable"; }
-      return { entry: "doorbell: " + who + " rang" };
-    `,
-  }))
+  .step('readPing', script(readPing))
   .return({ entry: out('readPing', 'entry') })
 
   .build();
+
+function readPing($vars: FlowVars) {
+  var raw = $vars.start.output.request_body;
+  var who = "unknown";
+  try { who = JSON.parse(raw).visitor || "unknown"; } catch (e) { who = "unparseable"; }
+  return { entry: "doorbell: " + who + " rang" };
+}
