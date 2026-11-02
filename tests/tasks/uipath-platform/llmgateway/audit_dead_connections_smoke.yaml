@@ -33,11 +33,10 @@ success_criteria:
   - type: command_executed
     description: "Agent filtered output for non-Enabled connection state"
     tool_name: "Bash"
-    # The filter must compare the field `ConnectionState` (exact case, as the CLI returns it) with `!=` against `Enabled`,
-    # as the audit recipe in byo-connections.md does (`[?ConnectionState!='Enabled']`). A misspelt field or value
-    # evaluates to null, and `null != 'Enabled'` is true for every row, i.e. it filters nothing. An expression rooted at `Data`
-    # (`Data[...]`, `Data.x`, also `$'Data[...]'`) is rejected: the CLI already applies the filter to `Data`, so that root returns no rows (skills #3388).
-    command_pattern: '--output-filter(?:\s+|=)(?![\s"''`\\$]*(?:@\.)?(?i:data)\b)(?:\\?(["''])(?:(?!\1).)*?|[^\s|;&]*?)(?<!\w)ConnectionState\s*!=\s*["''`\\]*Enabled\b'
+    # An --output-filter expression starting with [ (not rooted at Data) that compares ConnectionState (exact case)
+    # with != to the string 'Enabled' (quotes or backticks), as byo-connections.md teaches. A misspelt field, or
+    # "Enabled" (a field name in JMESPath), is null, and null != 'Enabled' is true for every row: it filters nothing.
+    command_pattern: '--output-filter[\s="''$\\]*\[[^;|\n]*?\bConnectionState\s*!=\s*\\?[''`]Enabled\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
