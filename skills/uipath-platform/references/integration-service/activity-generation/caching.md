@@ -110,9 +110,9 @@ that call being deployed; until it is, an entry can outlive a re-auth for its TT
 |---|---|---|
 | `cache_data=uncache` on the inbound request | `--refresh` | skips the read in both layers and stores the new answer |
 
-`cache_data` is removed before the script sees `context.request.query`. Inline scripts
-(`--inline-script`) cache like published ones, in their own namespace per caller; with
-no caller identity the cache is off for that run.
+`cache_data` is removed before the script sees `context.request.query`. **Inline scripts
+(`--inline-script`) are never cached**: both layers skip them, so every run calls the
+vendor. Only a published script (`--script-ref`) is cached.
 
 ## Checked before you publish
 
@@ -185,11 +185,9 @@ metadata discovery all make; `export const cache` on object discovery.
 
 ## Testing
 
-- **While editing a script**, its whole-answer (Layer B) entry is never reused, because
-  the script digest is in the key. Vendor-call (`cache`) entries are keyed on the
-  request, so run with `--refresh` to re-fetch them.
-- **Once the script is right, test the caching** with `--inline-script` or
-  `--script-ref`: run the same call twice (the second is a hit), then once with
+- **While editing a script**, run it with `--inline-script`. Nothing is cached for an
+  inline script, so every run is live and `--refresh` is not needed.
+- **Once the script is published, test the caching** with `--script-ref`: run the same call twice (the second is a hit), then once with
   `--refresh`. Confirm a hit from the vendor's own request count, not from the
   response, which looks the same.
 - **Only a miss costs budget**: its `intsvc.http` calls count against the 4-call run
