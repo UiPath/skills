@@ -4,8 +4,12 @@ The complete default tree is published as **`@uipath/skills`**, versioned in loc
 
 > **Release gate.** Every npmjs publish (`preview`, `latest`) waits for the
 > Azure DevOps release gate (`.pipelines/release-gate.yml`), which runs the
-> blocking per-release FOSSA scan. A gate failure stops the publish — there is
-> no ungated fallback. `dev` builds on GitHub Packages skip the gate, and
+> per-release FOSSA scan. For `latest` the gate blocks: a FOSSA finding or a
+> failed gate run stops the publish, and there is no ungated fallback. For
+> `preview` it is advisory: findings pass with a warning in Azure DevOps, and
+> a failed gate run (in practice the gate's own infrastructure) leaves a
+> warning on the publish run while the preview still publishes. `dev` builds
+> on GitHub Packages skip the gate, and
 > flavor packages ship no `hooks/` at all. Package integrity on npmjs is the
 > `--provenance` attestation; the hooks are Node scripts (`hooks/*.mjs`) and
 > carry no per-file signature (the retired PowerShell hooks were
