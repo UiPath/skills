@@ -4,7 +4,7 @@ All skill documentation and agent-facing prose in this repo MUST follow these ru
 
 ## 1. Prose Compression
 
-Strip every word that does not carry information. Drop articles. Fragments OK. Short synonyms. Technical terms exact.
+Strip every word that does not carry information. Drop articles. Fragments OK. Short synonyms, except for technical and depended-on terms (see What to Keep).
 
 Pattern: `[thing] [action] [reason]. [next step].`
 
@@ -20,7 +20,7 @@ Pattern: `[thing] [action] [reason]. [next step].`
 | **Redundant context** | "as mentioned above", "as we discussed", "note that" | Delete |
 | **Weak verbs** | "perform a validation" → "validate", "make a determination" → "determine", "do an installation" → "install" | Use direct verb |
 | **Subject padding** | "You should run", "You need to check", "You can use", "You'll want to" | Lead with verb: "Run", "Check", "Use" |
-| **Repeated facts** | The same fact stated in several places | State it once in full and link to it from the others — never several terse paraphrases |
+| **Repeated facts** | The same CLI flag explained in SKILL.md and two references | State it once in full and link to it from the others — never several terse paraphrases |
 
 ### What to Keep
 
