@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-28T00:14:32Z",
-  "cli_commit": "eb0e589194f3f7d56683a5ddf58767603a11f0f8",
+  "generated_at": "2026-11-02T22:57:15Z",
+  "cli_commit": "fd01261d0a5511dc9c33c20c64aaec094b3415a1",
   "verbs": [
     "admin audit org events",
     "admin audit org exclusions create",
@@ -433,6 +433,8 @@
     "flow nodes delete",
     "flow nodes list",
     "flow nodes remove",
+    "flow nodes schema get",
+    "flow nodes schema set",
     "flow pack",
     "flow process get",
     "flow process list",
@@ -623,6 +625,7 @@
     "llm-configuration byo-connections list",
     "llm-configuration byo-connections list-product-configs",
     "llm-configuration byo-connections update",
+    "maestro bpmn debug",
     "maestro bpmn debug-instances breakpoints",
     "maestro bpmn debug-instances cancel",
     "maestro bpmn debug-instances continue",
@@ -657,6 +660,7 @@
     "maestro bpmn instances variables-set",
     "maestro bpmn jobs status",
     "maestro bpmn jobs traces",
+    "maestro bpmn pack",
     "maestro bpmn process get",
     "maestro bpmn process list",
     "maestro bpmn process publish",
@@ -851,6 +855,8 @@
     "maestro flow nodes delete",
     "maestro flow nodes list",
     "maestro flow nodes remove",
+    "maestro flow nodes schema get",
+    "maestro flow nodes schema set",
     "maestro flow pack",
     "maestro flow process get",
     "maestro flow process list",
@@ -1364,7 +1370,11 @@
   "unavailable": {
     "case debug": "debug runs the case against a live Orchestrator runtime through the Node-only debug service",
     "case pack": "pack builds the project's .nupkg with the Node-only packager",
+    "flow debug": "debug runs the flow against a live Orchestrator runtime through the Node-only debug service",
+    "maestro bpmn debug": "debug runs the process against a live Orchestrator runtime through the Node-only debug service",
+    "maestro bpmn pack": "pack builds the project's .nupkg with the Node-only packager",
     "maestro case debug": "debug runs the case against a live Orchestrator runtime through the Node-only debug service",
-    "maestro case pack": "pack builds the project's .nupkg with the Node-only packager"
+    "maestro case pack": "pack builds the project's .nupkg with the Node-only packager",
+    "maestro flow debug": "debug runs the flow against a live Orchestrator runtime through the Node-only debug service"
   }
 }
