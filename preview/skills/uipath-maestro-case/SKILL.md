@@ -118,7 +118,9 @@ nothing about the connector. To use another library, set
 both resolve against the same one.
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
-API workflow, Coded Function, or sub-case; never fabricate a name or folder. A destination's
+API workflow, Coded Function, or sub-case; never fabricate a name or folder.
+An unresolved connector is `.unresolved('connector')` or
+`.unresolved('wait-for-connector')`; never pick a real connector to stand in. A destination's
 `selected-stage-completed` entry does not imply a source `exitToStage` hand-off.
 
 ## Evidence boundary
