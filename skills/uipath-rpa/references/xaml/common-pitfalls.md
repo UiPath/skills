@@ -105,9 +105,8 @@ Some properties are only required when another property has a specific value:
 
 ## Input Method Constraints (UIAutomation)
 
-- Set the input method with `InteractionMode`: `NInteractionMode` on `NApplicationCard`, `NChildInteractionMode` on child activities (default `SameAsCard`).
-- Type Into's `Text` can hold special-key codes (`[k(enter)]` presses Enter; `[d(ctrl)]a[u(ctrl)]` is Ctrl+A). With `Simulate` they are not pressed but typed as literal text, and no error is raised; use `HardwareEvents` or `DebuggerApi` when `Text` holds special keys.
-- Choosing a method: `DebuggerApi` for Chrome and Edge; `Simulate` for Firefox, Java and SAP GUI, and as the first try for other apps (verify the result, its failures are silent); `HardwareEvents` when `Simulate` has no effect or the target needs real key events (the window must be in the foreground); `WindowMessages` (Windows only) when `Simulate` has no effect and the window must stay in the background. If the installed package ships `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/input-methods-guide.md`, it has the full switch triggers.
+- Type Into's `Text` can hold special-key codes (`[k(enter)]` presses Enter; `[d(ctrl)]a[u(ctrl)]` is Ctrl+A). They cannot be typed with `InteractionMode` `Simulate`, set on the activity or inherited from its card: validation fails with `Cannot type special keys using Simulate Input mode.`, and codes that reach `Text` from a variable fail the run with the same message. Use `HardwareEvents`, or `DebuggerApi` in Chrome and Edge.
+- Choosing a method per application: the Input Methods task guide, routed from `ui-automation-guide.md` § Documentation.
 
 ## NKeyboardShortcuts: `Shortcuts` vs `ShortcutsArgument`
 
