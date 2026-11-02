@@ -50,15 +50,13 @@ uip maestro flow debug "<Project>" --inputs '{}'
 ```
 
 `<Project>` is a project name in the open solution, not a path; it defaults to
-the open project. Debug runs the saved project, so there is no pack or upload
-step.
+the open project. Debug runs the saved copy of the flow open in the designer,
+so there is no pack or upload step. To run another flow of the project, ask the
+user to open it in the Explorer first.
 
 **Always pass `--inputs`:** the flow's input values as JSON, or `'{}'` when the
 flow takes none. Without it, Studio Web opens its Debug configuration dialog by
 default, and the run waits for the user to click **Save & Debug**.
-
-**Debug runs the flow open in the designer.** To run another flow of the
-project, ask the user to open it in the Explorer first.
 
 `flow debug` executes the flow for real: it sends the emails, posts the
 messages, calls the APIs. It is not a validation step — `validate` is. When a
@@ -116,7 +114,7 @@ For a flow that is `content/<file>.bpmn#<triggerNodeId>`; the `content/` prefix
 is optional:
 
 ```bash
-uip maestro flow debug "<Project>" --entry-point "content/<file>.bpmn#<triggerNodeId>"
+uip maestro flow debug "<Project>" --entry-point "content/<file>.bpmn#<triggerNodeId>" --inputs '{}'
 ```
 
 A wrong value fails and lists the valid paths. A bare trigger node id is not a
