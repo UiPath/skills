@@ -105,7 +105,7 @@ Some properties are only required when another property has a specific value:
 
 ## Input Method Constraints (UIAutomation)
 
-- Type Into's `Text` can hold special-key codes (`[k(enter)]` presses Enter; `[d(ctrl)]a[u(ctrl)]` is Ctrl+A). They cannot be typed with `InteractionMode` `Simulate`, set on the activity or inherited from its card: validation fails with `Cannot type special keys using Simulate Input mode.`, and codes that reach `Text` from a variable fail the run with the same message. Use `HardwareEvents`, or `DebuggerApi` in Chrome and Edge.
+- Type Into's `Text` can hold special-key codes (`[k(enter)]` presses Enter; `[d(ctrl)]a[u(ctrl)]` is Ctrl+A). They cannot be typed with `InteractionMode` `Simulate`, set on the activity or inherited from its card: validation fails, and codes that reach `Text` from a variable fail the run. Use `HardwareEvents`, or `DebuggerApi` in Chrome and Edge.
 - Choosing a method per application: the Input Methods task guide, routed from `ui-automation-guide.md` § Documentation.
 
 ## NKeyboardShortcuts: `Shortcuts` vs `ShortcutsArgument`
@@ -501,7 +501,7 @@ Skipping both produces `Cannot create unknown type` at `build`.
 | Click | `ClickType` | `Single` | Single click (not double) |
 | Click | `MouseButton` | `Left` | Left mouse button |
 | Click | `AlterIfDisabled` | `False` | When selected, the activity executes the action even if the target element is disabled. Does not apply if the input mode is Hardware Events |
-| UI Automation activities | `Timeout` | `30` seconds, a double (Check App State: `5`) | The amount of time (in seconds) to wait for the operation to be performed before generating an error. Check App State: the time to wait for the element to appear or disappear |
+| UI Automation activities | `Timeout` | `30` seconds, a double | The amount of time (in seconds) to wait for the operation to be performed before generating an error. Default and meaning vary by activity: check the activity's doc, `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/<Activity>.md` |
 | UI Automation activities | `DelayBefore` | `0.2` seconds | Delay before action |
 | UI Automation activities | `DelayAfter` | `0.3` seconds | Delay after action; classic activities' millisecond values: [legacy/selector-guide.md](../legacy/selector-guide.md) |
 | ExtractData | `DelayBetweenPagesMS` | `300`ms | Between pagination clicks |
