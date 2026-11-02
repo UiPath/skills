@@ -7,8 +7,10 @@ description: >
 
   Graded by asking the CLI about the final `.flow`: `nodes list` for the node
   types, so a node that a later compile from builder-SDK source drops counts as
-  missing, and `flow validate`, which also rejects a `fileRef` that is not a
-  `$vars` reference. The taxonomy is not graded here: writing it needs
+  missing; `variables list` for the declared file input; and `flow validate`,
+  which rejects a `fileRef` that is not a `$vars` reference. An undeclared
+  `fileRef` target still validates with an `EXPRESSION_DIAGNOSTIC` warning on
+  `inputs.fileRef`, so that warning fails the check. The taxonomy is not graded here: writing it needs
   `nodes schema set`, which the taxonomy tasks cover.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
@@ -59,6 +61,17 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "variables list reports a file input declared on InvoiceReader.flow"
+    command: >-
+      f=$(find . -name InvoiceReader.flow -not -path '*/node_modules/*' | head -1);
+      [ -n "$f" ] &&
+      [ "$(uip maestro flow variables list "$f" --output plain --output-filter "length(Variables[?Type=='file' && Direction=='in'])")" -ge 1 ]
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: command_not_executed
     description: "Agent did not start an IXP project for a node that needs none"
     tool_name: "Bash"
@@ -67,10 +80,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro flow validate passes on InvoiceReader.flow, including a $vars fileRef"
+    description: "uip maestro flow validate passes on InvoiceReader.flow with no warning on fileRef"
     command: >-
       f=$(find . -name InvoiceReader.flow -not -path '*/node_modules/*' | head -1);
-      [ -n "$f" ] && uip maestro flow validate "$f" --output json
+      [ -n "$f" ] && out=$(uip maestro flow validate "$f" --output json) &&
+      ! printf '%s' "$out" | grep -q 'inputs.fileRef\] \[EXPRESSION_DIAGNOSTIC'
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
