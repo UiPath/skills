@@ -1,6 +1,6 @@
 ---
 name: uipath-byo-llm-connector
-description: "UiPath BYO LLM custom connector for the LLM Gateway / AI Trust Layer, end to end via the uip CLI: build an Integration Service connector that bridges what a UiPath product sends (OpenAI chat-completions/responses/embeddings, Gemini, Bedrock Invoke/Converse, Anthropic Messages) to a customer or in-house LLM endpoint with pre/post-request hooks, zip it, import + publish it, create the test connection, run the product's compatibility probes through `uip llm-configuration byo-connections`, fix and re-probe until they pass, then create the runtime connection and save the configuration. For generic IS connector authoring (non-LLM)→uipath-connector-builder; for a BYO config on a built-in vendor connector (OpenAI, Azure OpenAI, Bedrock, Vertex)→uipath-platform."
+description: "UiPath BYO LLM custom connector for the LLM Gateway / AI Trust Layer, end to end via the uip CLI: build an Integration Service connector that bridges what a UiPath product sends (OpenAI chat-completions/responses/embeddings, Gemini, Bedrock Invoke/Converse, Anthropic Messages) to a customer or in-house LLM endpoint with pre/post-request hooks, zip it, import it, connect the draft with a builder test connection (the Connector Builder's Add connection), run the product's compatibility probes through `uip llm-configuration byo-connections`, fix, re-import and re-probe until they pass, then publish, create the runtime connection and save the configuration. For generic IS connector authoring (non-LLM)→uipath-connector-builder; for a BYO config on a built-in vendor connector (OpenAI, Azure OpenAI, Bedrock, Vertex)→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -14,14 +14,14 @@ UiPath product ──(API flavor body)──▶ LLM Gateway ──▶ Integratio
         └─ your connector: preRequest hook → vendor endpoint → postRequest hook
 ```
 
-Everything here runs through `uip`: `uip is connectors builder` (author on disk), `uip is connectors import` and `publish` (tenant), `uip is connections` (credentials), `uip llm-configuration byo-connections` (probe + save).
+Everything here runs through `uip`: `uip is connectors builder` (author on disk), `uip is connectors import` and `publish` (tenant), `uip is connectors test-connection` (connect the draft), `uip is connections` (the runtime connection), `uip llm-configuration byo-connections` (probe + save).
 
 ## When to Use This Skill
 
 - A customer wants a UiPath product (Agents, Autopilot, a feature listed by `list-product-configs`) to use an LLM endpoint that no built-in BYO connector covers.
 - Building, publishing, or fixing a custom connector whose BYO configuration fails validation (`isAvailable: false` / `isCompatible: false`).
 - Porting an existing custom-connector zip or an AI Gateway template to a new vendor, or re-publishing one after a hook fix.
-- Creating the test and runtime Integration Service connections for a custom LLM connector and registering the BYO configuration on them.
+- Testing a custom LLM connector before publishing it (the builder's test connection), then creating the runtime connection and registering the BYO configuration on it.
 
 ## Critical Rules
 
@@ -32,10 +32,10 @@ Everything here runs through `uip`: `uip is connectors builder` (author on disk)
 5. **Credentials enter only through the connection form.** API keys, client secrets and tokens are typed by the user into the Integration Service connection page (`AuthUrl`). Never put one in a hook, an `element.json` default, a CLI argument, a file, or the chat. Never send a credential in a query string or path (`vendorType: "query"`/`"path"`, or in `request_vendor_path`) — full request URLs are recorded in telemetry. Headers or a form-encoded token body only.
 6. **Hooks never log or echo content.** No `console.log`, no prompt, completion, header or token in an error message, `response_error_message`, or `connection_identity`. Return the vendor's error status and a fixed message instead.
 7. **Log in and check the session before any tenant step.** `uip login status --output json` → `Data.Status` must be `"Logged in"` (the envelope says `Success` even when the session expired). The user needs the **OrganizationAdmin** role for AI Trust Layer to probe or save a configuration.
-8. **Connections use the published `custom-…` key; the runtime one lives in a shared folder.** `publish` returns `PublishedKey` (`design-` → `custom-`); `uip is connections create` with the `design-…` key fails. `create` puts the connection in the creator's **Personal** workspace: the gateway can use it there, but only its creator can manage it — so the runtime connection is created in the shared folder from the Integration Service web UI (see [references/connections-guide.md](references/connections-guide.md)).
-9. **Every re-publish needs a higher version.** Bump `element-metadata.json:latestVersion` (or `publish --version`) before each `publish`; the server rejects an equal version. A fix is live only after `import` + `publish --wait` returns `SUCCESS`.
-10. **Probing saves a configuration.** `byo-connections create` and `update` run the product probes and save only when every model passes; there is no dry run. Probe with `--no-enabled` so a passing test configuration never serves traffic, and ask the user before deleting a configuration (`byo-connections delete --force`) or a connection (`uip is connections delete --yes`).
-11. **Stop after three failed probes on the same reason.** Read the reason, change one thing, re-publish, re-probe. After three attempts on one reason, stop and show the user the probe summary and the hook — do not keep guessing.
+8. **Test the draft; publish once the probes pass.** `uip is connectors test-connection create` is the Connector Builder's Add connection button: it connects the imported design connector, and that connection runs whatever was last imported — a fix is one `import` away, with no version bump and no publish. It belongs to the draft: `uip is connections` never lists it and only its creator sees it. The runtime connection is made on the **published** `custom-…` key (`PublishedKey` from `publish`) in the shared folder, from the Integration Service web UI — `uip is connections create` cannot pick a folder (see [references/connections-guide.md](references/connections-guide.md)).
+9. **Every publish needs a higher version.** Bump `element-metadata.json:latestVersion` (or `publish --version`) before each `publish`; the server rejects an equal version. While testing, only re-import.
+10. **Probing saves a configuration.** `byo-connections create` and `update` run the product probes and save only when every model passes; there is no dry run. Probe with `--no-enabled` so a passing test configuration never serves traffic, and ask the user before deleting a configuration (`byo-connections delete --force`) or a connection (`test-connection delete --yes`, `uip is connections delete --yes`).
+11. **Stop after three failed probes on the same reason.** Read the reason, change one thing, re-import, re-probe. After three attempts on one reason, stop and show the user the probe summary and the hook — do not keep guessing.
 12. **Git Bash on Windows: disable path conversion first.** `export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'` before any builder command, or `/v1/chat/completions` is rewritten to a Windows path that validates, publishes, and then 404s.
 
 ## Workflow
@@ -109,30 +109,29 @@ zip -r <CONNECTOR_DIR>.zip <CONNECTOR_DIR>/app/element -x '*.DS_Store'          
 tar -a -c -f <CONNECTOR_DIR>.zip <CONNECTOR_DIR>/app/element                                     # Windows 10+
 ```
 
-### 5. Import and publish
+### 5. Import
 
 ```bash
 uip is connectors import --connector-dir <CONNECTOR_DIR> --output json           # create-or-update by key
-uip is connectors publish --connector-dir <CONNECTOR_DIR> --wait --output json   # Data.Status == "SUCCESS"; note Data.PublishedKey
 ```
 
-The `builder` commands find the connector from `<WORK_DIR>`; `import` and `publish` look only at the current directory and above, so pass `--connector-dir` (the `RepoName` folder `init` printed). A `FAILURE` status or a non-zero exit stops the workflow: read the message, fix, bump `latestVersion`, re-import, re-publish.
+The `builder` commands find the connector from `<WORK_DIR>`; `import`, `test-connection` and `publish` look only at the current directory and above, so pass `--connector-dir` (the `RepoName` folder `init` printed). Do not publish yet: the draft is tested first.
 
-### 6. Create the test connection
+### 6. Create the test connection on the draft
 
 ```bash
-uip is connections create <PUBLISHED_KEY> --no-wait --output json      # Data.AuthUrl, Data.SessionId
+uip is connectors test-connection create --connector-dir <CONNECTOR_DIR> \
+  --name '<CONNECTOR_NAME> test' --no-wait --output json
 ```
 
-Give the user `AuthUrl` and ask them to open it, enter the vendor credentials, and confirm when done. Then find the connection, confirm its state and folder, and ping it:
+- `Code: "TestConnectionCreated"` — a connector without authentication is connected at once; take `Data.ConnectionId`.
+- `Code: "TestConnectionAuthorizationPending"` — give the user `Data.AuthUrl`, ask them to open it, enter the vendor credentials (a sandbox key is fine) and confirm when done. Then confirm the connection with the `Data.ConnectionId` from `create` exists:
 
 ```bash
-uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json
-uip or folders list --output json                        # the connection's FolderKey: Type Personal or Standard
-uip is connections ping <CONNECTION_ID> --output json
+uip is connectors test-connection list --connector-dir <CONNECTOR_DIR> --output json   # Data.Connections[].ConnectionId
 ```
 
-Details, which folder a connection lands in, and credential rotation: [references/connections-guide.md](references/connections-guide.md).
+The connection belongs to the draft, so `uip is connections list` and `ping` do not see it; the probe is its test. Details and credential changes: [references/connections-guide.md](references/connections-guide.md).
 
 ### 7. Probe with the product's own probes
 
@@ -144,11 +143,25 @@ uip llm-configuration byo-connections create --product <PRODUCT> --feature <FEAT
   --llm-name <CATALOG_MODEL> --llm-identifier <VENDOR_MODEL_ID> --output json
 ```
 
-Use repeated `--mapping '…,connector-type=Custom,connector-template=CustomAiGateway'` for `AllModels` / `AnyModel` features. Exit 0 with every model `isAvailable: true` and `isCompatible: true` is a pass. Otherwise read `unavailabilityReason` / `incompatibilityReason` / `vendorRawResponse` and fix per [references/probes-guide.md](references/probes-guide.md). After a fix is published, re-probe the same configuration with `update <ID>` and the same mapping (or re-run `create` if the failed one was never saved).
+Use repeated `--mapping '…,connector-type=Custom,connector-template=CustomAiGateway'` for `AllModels` / `AnyModel` features. Exit 0 with every model `isAvailable: true` and `isCompatible: true` is a pass. Otherwise read `unavailabilityReason` / `incompatibilityReason` / `vendorRawResponse` and fix per [references/probes-guide.md](references/probes-guide.md). After a fix, `builder validate` and `import` again — the test connection runs the new import — and re-probe the same configuration with `update <ID>` and the same mapping (or re-run `create` if the failed one was never saved).
 
-### 8. Runtime connection and the real configuration
+### 8. Publish
 
-The test connection usually holds the builder's own or a sandbox key. Ask the user which credentials production uses and have them create the runtime connection from Integration Service in the web UI, in the shared folder the product will use (`uip is connections create` cannot pick a folder). Find its id with step 6's `list`, then point the configuration at it and enable it:
+Only once every model passes on the test connection:
+
+```bash
+uip is connectors publish --connector-dir <CONNECTOR_DIR> --wait --output json   # Data.Status == "SUCCESS"; note Data.PublishedKey
+```
+
+A `FAILURE` status or a non-zero exit stops the workflow: read the message, fix, bump `latestVersion`, re-import, re-publish.
+
+### 9. Runtime connection and the real configuration
+
+The test connection usually holds the builder's own or a sandbox key. Ask the user which credentials production uses and have them create the runtime connection from Integration Service in the web UI, on the published connector (`<PUBLISHED_KEY>`), in the shared folder the product will use (`uip is connections create` cannot pick a folder). Find its id, then point the configuration at it and enable it:
+
+```bash
+uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json    # Id, State, FolderKey
+```
 
 ```bash
 uip llm-configuration byo-connections update <CONFIG_ID> \
@@ -158,7 +171,7 @@ uip llm-configuration byo-connections update <CONFIG_ID> \
   --llm-name <CATALOG_MODEL> --llm-identifier <VENDOR_MODEL_ID> --output json
 ```
 
-`update` re-runs the probes against the runtime connection. Finish with `byo-connections get <CONFIG_ID> --force-refresh --output json`, and ask before deleting the test connection (`uip is connections delete <TEST_CONNECTION_ID> --yes`). Report: connector key + version, flavor, the connections (id, folder), the configuration id, the probe verdict, and any limitation (streaming, unsupported parameters).
+`update` re-runs the probes against the runtime connection, which runs the published version. Finish with `byo-connections get <CONFIG_ID> --force-refresh --output json`, and ask before deleting the test connection (`uip is connectors test-connection delete <TEST_CONNECTION_ID> --connector-dir <CONNECTOR_DIR> --yes`). Report: connector key + version, flavor, the connections (id, folder), the configuration id, the probe verdict, and any limitation (streaming, unsupported parameters).
 
 ## Command Map
 
@@ -170,8 +183,10 @@ uip llm-configuration byo-connections
 uip is connectors builder                                # author on disk (see Workflow 2–4)
   init | activity create | activity hook create | auth set | auth system create
   state query <ptr> | state patch <ptr> --value-file | inspect | validate
-uip is connectors import | publish --wait (both --connector-dir <dir>) | publish-status <id> | get <key>
-uip is connections create <custom-key> --no-wait | list <key> --all-folders | ping <id> | edit <id> --no-wait | delete <id> --yes
+uip is connectors import | publish --wait | publish-status <id> | get <key>       # import/publish: --connector-dir <dir>
+uip is connectors test-connection                        # the draft's connection, --connector-dir <dir>
+  create --no-wait | list | delete <connection-id> --yes
+uip is connections list <custom-key> --all-folders | ping <id> | edit <id> --no-wait | delete <id> --yes
 uip or folders list                                      # folder Type (Personal vs Standard)
 ```
 
@@ -182,7 +197,7 @@ uip or folders list                                      # folder Type (Personal
 | Which path, tag, template and auth a flavor needs; porting a template or zip; the pre-publish checklist | [references/connector-contract-guide.md](references/connector-contract-guide.md) |
 | Hook runtime, variables, URL/model rewrites, token exchange, streaming, error handling | [references/hook-authoring-guide.md](references/hook-authoring-guide.md) |
 | Translating between OpenAI, Gemini, Anthropic and Bedrock bodies (messages, tools, usage, finish reasons, media) | [references/format-mapping-guide.md](references/format-mapping-guide.md) |
-| Test vs runtime connections, connection folders, credential rotation | [references/connections-guide.md](references/connections-guide.md) |
+| The draft's test connection vs the runtime connection, folders, credential rotation | [references/connections-guide.md](references/connections-guide.md) |
 | Reading a probe verdict and fixing each failure reason | [references/probes-guide.md](references/probes-guide.md) |
 
 For general connector authoring depth (every auth type, `state patch` semantics, system resources), the `uipath-connector-builder` skill covers the builder; this skill carries everything a BYO LLM connector needs on its own.
@@ -194,8 +209,8 @@ For general connector authoring depth (every auth type, `state patch` semantics,
 3. Registering `--connector-type Custom` without `--connector-template` — the probe fails inside the gateway (Rule 2).
 4. Translating a streamed response in a postRequest hook — it never runs on a stream (Rule 4).
 5. Asking the user to paste an API key into the chat, or baking one into `element.json` as a default (Rule 5).
-6. Creating the connection with the `design-…` key, or leaving the runtime connection in a Personal workspace, where only its creator can manage it (Rule 8).
-7. Re-publishing without bumping `latestVersion`, then probing the old version (Rule 9).
+6. Publishing a version per fix to test it, instead of re-importing and re-probing the draft's test connection; or leaving the runtime connection in a Personal workspace, where only its creator can manage it (Rule 8).
+7. Re-publishing without bumping `latestVersion` (Rule 9).
 8. Probing with `--enabled`, so a passing test configuration starts serving the product (Rule 10).
 9. Logging the prompt or the vendor response "to debug" from a hook (Rule 6).
 10. Reporting done on "publish succeeded" without a passing probe on the runtime connection.

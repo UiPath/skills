@@ -37,13 +37,13 @@ The verdict is keyed by catalog model (`validation.<model>` on success; in the f
 
 | `unavailabilityReason` | Likely cause | Fix |
 |---|---|---|
-| `IntegrationServiceConfigurationNotFound` | Wrong connection id, or a deleted connection | Re-list the connection with `--all-folders --refresh` and use its `Id` ([connections-guide.md](connections-guide.md)) |
+| `IntegrationServiceConfigurationNotFound` | Wrong connection id, or a deleted connection | Re-list it — `test-connection list` for the test connection, `uip is connections list <PUBLISHED_KEY> --all-folders --refresh` for the runtime one — and use its id ([connections-guide.md](connections-guide.md)) |
 | `IntegrationServiceConfigurationNotEnabled` | Connection disabled or its authorization expired | `uip is connections edit <ID>` and re-enter the fields |
 | `IntegrationServiceMissingAttributes` | The connection lacks a required field | Re-create the connection with every `pre` field filled |
-| `IntegrationServiceUnreachable` | Integration Service error, or the connector version is not published | `publish-status`, then retry |
+| `IntegrationServiceUnreachable` | Integration Service error; on the runtime connection, a version that is not published yet | `publish-status`, then retry |
 | `VendorAuthFailed` (401) | Wrong key, wrong header name, missing `Bearer ` prefix, expired token | Fix the auth config or the token-exchange hooks; re-enter the key |
 | `VendorPermissionDenied` (403) | Key valid but not allowed this model or endpoint | The customer grants access; nothing to fix in the connector |
-| `VendorModelNotFound` (404) | **The resource path does not match the flavor** (Integration Service answers 404 for an unknown path) — or the vendor does not know `--llm-identifier` | Check the paths against [connector-contract-guide.md](connector-contract-guide.md) first, then the model id and the hook's model mapping |
+| `VendorModelNotFound` (404) | **The resource path does not match the flavor** (Integration Service answers 404 for an unknown path) — or the vendor does not know `--llm-identifier`. With `vendorRawResponse` "Invalid Element Instance Id provided.", the connection no longer exists (a deleted test connection) | Check the paths against [connector-contract-guide.md](connector-contract-guide.md) first, then the model id and the hook's model mapping; for the instance-id message, create the test connection again |
 | `VendorInvalidRequest` (400) | The preRequest hook sends a body the vendor rejects (unknown field, wrong types, missing required field such as Anthropic `max_tokens`) | Read `vendorRawResponse`; fix the request mapping; test it with the harness |
 | `VendorRateLimitExceeded` (429) | Vendor quota | Wait and re-probe; not a connector defect |
 | `VendorInternalFailure`, `VendorGatewayFailure`, `VendorServiceUnavailable`, `VendorDefault5xxFailure` | Vendor outage — or a hook that throws (an exception in a hook surfaces as a 5xx) | Run both hooks through the harness on the probe's body shape; then retry |
@@ -65,9 +65,10 @@ The verdict is keyed by catalog model (`validation.<model>` on success; in the f
 ## The fix loop
 
 1. Change one thing — the hook or config entry the reason points at. Re-run the harness.
-2. Bump `element-metadata.json:latestVersion`.
-3. `uip is connectors builder validate --output json`, then `import`, then `publish --wait` (must reach `SUCCESS`).
-4. Re-probe: the same `update <CONFIG_ID>` (or `create` if nothing was saved).
-5. Three failures on the same reason → stop and show the user the verdict and the hook.
+2. `uip is connectors builder validate --output json`, then `import`. The draft's test connection runs the new import at once: no version bump, no publish.
+3. Re-probe: the same `update <CONFIG_ID>` (or `create` if nothing was saved).
+4. Three failures on the same reason → stop and show the user the verdict and the hook.
+
+Publish only when every model passes; a fix found later, on the runtime connection, needs the version bump and `publish --wait` as well.
 
 A product can add probes over time. A configuration that passed once can fail on a later `update`; read the new reason the same way.

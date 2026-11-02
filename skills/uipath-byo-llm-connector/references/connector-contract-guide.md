@@ -84,7 +84,7 @@ Do not import the reference itself: AI Gateway templates share one key (`design-
 
 ## Pre-publish checklist
 
-Run after `builder validate` passes, before `import`:
+Run after `builder validate` passes, before the first `import` (the version check again before `publish`):
 
 1. **Paths** — every path in the flavor's row exists as a resource `path` with method `POST` (`builder inspect --output json`, `ResourceSummary`). No vendor-only path was used as the resource path.
 2. **Tag** — `element-metadata.json:tags` contains the flavor's tag.
