@@ -305,8 +305,9 @@ overwrites that source. Compile its baseline before the edit, then merge:
 ```bash
 [ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
 mkdir -p .flow-sdk/baseline .flow-sdk/edited
-uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow --no-check
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
+uip maestro flow check .flow-sdk/Deployed.flow.ts --source --baseline Deployed.flow
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/edited/Deployed.flow
 uip maestro flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
   -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow
