@@ -51,7 +51,7 @@ Every turn resends the whole context: a reference read early is paid again on ev
 | Execute | build | an export was resolved | the migration reads of § Source Frameworks |
 | Execute | build | a group builds UI activities, extracted genome or not | [ui-verification-guide.md](references/ui-verification-guide.md) |
 | Execute | build | the genome has test components, extracted or not | [test-execution-guide.md](references/test-execution-guide.md) |
-| Execute | build | a group is planned in parts, runs through subagents or forks, or resumes after a pause or a compaction | parts-guide.md and [execution-parts-guide.md](references/execution-parts-guide.md) |
+| Execute | build | a group is planned in parts, runs through subagents, or resumes after a pause or a compaction | parts-guide.md and [execution-parts-guide.md](references/execution-parts-guide.md) |
 | Execute | build | the Live application answer names a reachable application | [live-application-guide.md](references/live-application-guide.md), before the target spec is written |
 | Execute | build | a group uses a doc or a tool [package-doc-errata-guide.md](references/package-doc-errata-guide.md) corrects | that doc's row, read with the doc, and the § Tools rows for the tools a group builds with |
 | Execute | build | a Build With row names a retired skill or one the host lacks | skill-mapping-guide.md |
