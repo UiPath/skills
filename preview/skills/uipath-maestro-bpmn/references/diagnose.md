@@ -19,8 +19,8 @@ rejected, and the mocked harness answers them with an error too.
 > migrate and cursor movement are Operate actions ([operate.md](operate.md)) and
 > need the user's explicit decision after the root cause is known.
 >
-> **Folder context.** Every `uip maestro bpmn instance` subcommand and
-> `incident get` require `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`; without
+> **Folder context.** Every `uip maestro bpmn instance` subcommand,
+> `processes incidents` and `incident get` require `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`; without
 > it the command is rejected before it reaches the API.
 >
 > **The CLI is the diagnostic interface.** Read with the `uip maestro bpmn` commands below, always with `--output json`.
@@ -57,7 +57,7 @@ downstream cancellation noise.
 uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn incident summary --output json                      # across instances
-uip maestro bpmn processes incidents <PROCESS_KEY> --output json     # one process, all runs
+uip maestro bpmn processes incidents <PROCESS_KEY> --folder-key <FOLDER_KEY> --output json  # one process, all runs
 ```
 
 ## Step 3 — inspect runtime variables
@@ -230,7 +230,7 @@ uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --out
 uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn incident summary --output json
-uip maestro bpmn processes incidents <PROCESS_KEY> --output json
+uip maestro bpmn processes incidents <PROCESS_KEY> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json

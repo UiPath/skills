@@ -79,7 +79,9 @@ uip maestro bpmn process run <PROCESS_KEY> --folder-key <FOLDER_KEY> --release-k
 ```
 
 `get` also requires `--feed-id`; `run` requires `--release-key`.
-Take `processKey`, `releaseKey`, `feedId`, and `folderKey` from the `process list` entry for the process.
+Take `<FOLDER_KEY>` from the user, or the `Key` of `uip or folders list --output json`.
+From the `process list` entry take `<RELEASE_KEY>` (`releaseKey`) and `<FEED_ID>` (`feedId`).
+`<PROCESS_KEY>` is `<processKey>:<processVersion>` from that entry, for example `MyProcess:1.0.0`.
 Add `--feed-id` or `--robot-ids` to `process run` only when the user provides them or the list entry identifies them.
 
 ## Job and instance inspection
