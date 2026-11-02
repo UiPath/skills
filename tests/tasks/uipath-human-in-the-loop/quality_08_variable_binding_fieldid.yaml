@@ -61,17 +61,25 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Checks 4-6 look only inside a script node's code (the JSON "script" string), so the
+  # HITL field definitions ("variable": "vars.legalApproval") and End-node mappings do not count.
+  # A field-id read is `.approved` / `.reviewcomments` anywhere in script code: this accepts
+  # $vars.<id>.output.approved and the alias idiom the skill teaches
+  # (const output = $vars.<id>.output; output.approved). Any `.legalApproval` / `.legalNotes` in
+  # script code fails check 6, including the global alias $vars.legalApproval (SKILL.md rule 10).
+  # Known gaps: destructuring and bracket access are not accepted; `.approved` on an unrelated
+  # object, or names in a code comment, still count.
   - type: run_command
-    description: "Downstream script reads output.approved by field ID (the `.output.approved` form, or through a local alias of $vars.<id>.output, or by destructuring)"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --regex '(?:\\.output\\.approved|(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[])[\\s\\S]*?(?:(?<![\\w$.])|(?<=\\\\[nt]))\\1\\.approved\\b|\\{(?:[^{}]*,)?(?:\\s|\\\\[nrt])*approved(?=(?:\\s|\\\\[nrt])*[,}:=])[^{}]*\\}\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[]))'"
+    description: "Downstream script reads the field ID .approved (e.g. $vars.<id>.output.approved, or output.approved after const output = $vars.<id>.output)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --regex '\"script\"\\s*:\\s*\"(?:[^\"\\\\]|\\\\.)*?\\.approved\\b'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Downstream script reads output.reviewcomments by field ID (the `.output.reviewcomments` form, or through a local alias of $vars.<id>.output, or by destructuring)"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --regex '(?:\\.output\\.reviewcomments|(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[])[\\s\\S]*?(?:(?<![\\w$.])|(?<=\\\\[nt]))\\1\\.reviewcomments\\b|\\{(?:[^{}]*,)?(?:\\s|\\\\[nrt])*reviewcomments(?=(?:\\s|\\\\[nrt])*[,}:=])[^{}]*\\}\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[]))'"
+    description: "Downstream script reads the field ID .reviewcomments (directly or through a local alias of $vars.<id>.output)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --regex '\"script\"\\s*:\\s*\"(?:[^\"\\\\]|\\\\.)*?\\.reviewcomments\\b'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -81,8 +89,8 @@ success_criteria:
   # the ContractReview flow was read, and the forbidden pattern is absent —
   # a missing or unreadable flow can never score these points.
   - type: run_command
-    description: "Script does NOT reference output by variable name (.output.legalApproval / .output.legalNotes, directly, through an alias, or by destructuring)"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --absent-regex '(?:\\.output\\.(?:legalApproval|legalNotes)|(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[])[\\s\\S]*?(?:(?<![\\w$.])|(?<=\\\\[nt]))\\1\\.(?:legalApproval|legalNotes)\\b|\\{(?:[^{}]*,)?(?:\\s|\\\\[nrt])*(?:legalApproval|legalNotes)(?=(?:\\s|\\\\[nrt])*[,}:=])[^{}]*\\}\\s*=\\s*\\$vars\\.[A-Za-z0-9_-]+\\.output(?![\\w$.\\[]))'"
+    description: "Script code does not read by variable name (.legalApproval / .legalNotes, including the global $vars.legalApproval)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --absent-regex '\"script\"\\s*:\\s*\"(?:[^\"\\\\]|\\\\.)*?\\.(?:legalApproval|legalNotes)\\b'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
