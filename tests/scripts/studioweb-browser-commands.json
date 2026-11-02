@@ -224,7 +224,7 @@
       "rpa pack": 1,
       "rpa packages inspect": 1,
       "rpa run": 4,
-      "rpa uia": 6,
+      "rpa uia": 7,
       "rpa validate": 1
     }
   },
@@ -401,6 +401,7 @@
       "maestro flow": 168,
       "maestro flow eval": 82,
       "maestro flow hitl": 6,
+      "maestro flow nodes": 8,
       "solution pack": 3,
       "tools update": 10
     }
@@ -408,6 +409,7 @@
   "uipath-mcp-servers": {
     "allow": [],
     "ceiling": {
+      "agenthub": 5,
       "login": 1,
       "mcp serve": 2
     }
@@ -546,7 +548,7 @@
       "rpa remote stop": 2,
       "rpa remote targets": 1,
       "rpa remote upload-file": 1,
-      "rpa run": 42,
+      "rpa run": 44,
       "rpa studio start": 7,
       "rpa templates search": 5,
       "rpa test-data add-entity": 1,
@@ -627,7 +629,7 @@
     ],
     "ceiling": {
       "login": 5,
-      "login status": 6,
+      "login status": 9,
       "login tenant set": 2,
       "rpa build": 1,
       "rpa pack": 3,
