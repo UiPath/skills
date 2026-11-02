@@ -13,8 +13,9 @@ copy.
 
 <!--skill-flavor:local-gates:start-->
 Studio Web does not use these gates. Its loop is
-[SKILL.md — Lifecycle](../SKILL.md#lifecycle): `check --source`, each `prepare`
-it names, `compile` into `.flow-sdk/edited/`, `merge` into the target `.flow`,
+[SKILL.md — Lifecycle](../SKILL.md#lifecycle): `check --source --baseline`
+against the canvas copy, each `prepare` it names, `compile` into
+`.flow-sdk/edited/`, `merge` into the target `.flow`,
 then `validate`. There is no compiled-artifact `check`; `validate` is that rung.
 
 Warnings require deliberate review; whether one blocks a release comes from the
