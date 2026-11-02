@@ -64,9 +64,10 @@
 - **No Node globals in the sandbox**: `Buffer`, `btoa`/`atob`,
   `TextEncoder`/`TextDecoder` are absent (`JSON` and `Uint8Array` are present).
   Anything needing base64 cannot be written in a script.
-- **Cache reads, never writes, and iterate with `--no-cache`.** A vendor read that
+- **Cache reads, never writes, and re-fetch with `--refresh`.** A vendor read that
   several scripts make takes `cache: { ttl }` on `intsvc.http` in each of them; a
   script cached on its own takes `export const cache = { ttl }`. Throw on any vendor
-  failure (a 2xx `ok: false` too), or a returned failure is cached. Run
-  work-in-progress with `--no-cache`, and fix `uip is connectors builder validate`
-  cache findings before publishing ([caching.md](caching.md)).
+  failure (a 2xx `ok: false` too), or a returned failure is cached. While you edit a
+  script its whole-answer entry is never reused; use `--refresh` to re-fetch a vendor
+  read. Fix `uip is connectors builder validate` cache findings before publishing
+  ([caching.md](caching.md)).
