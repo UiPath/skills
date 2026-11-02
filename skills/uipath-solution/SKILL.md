@@ -143,7 +143,9 @@ Debugging is not deploying. "Debug the solution", "run it", and "test it end to 
 <!--skill-flavor:debug-process-row:start-->
    | `Process` (RPA) | `uip rpa debug start --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json` | `uipath-rpa` |
 <!--skill-flavor:debug-process-row:end-->
+<!--skill-flavor:debug-api-row:start-->
    | `Api` | `uip api-workflow run "<PROJECT_DIR>/Workflow.json" --output json` | `uipath-api-workflow` |
+<!--skill-flavor:debug-api-row:end-->
 
    For any other `Type`, use the owning skill's run or debug command.
 6. **Handle failures.** If the debug command fails, report its error and stop. Do not fall back to `pack` → `publish` → `deploy run`, even when the debug backend returns a server error.
