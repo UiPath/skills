@@ -64,9 +64,10 @@ uip or triggers create --type time \
   --job-priority Normal --output json
 ```
 
-`triggers create` does not take `--folder-path` / `--folder-key` — the
-folder is derived from the release the trigger is bound to. Same for all
-three trigger types.
+The folder is inferred from `--release-key`. Pass `--folder-path` or
+`--folder-key` as well when your identity has only a folder-level role (for
+example an external app), because it can't look the process up tenant-wide.
+Same for all three trigger types.
 
 `--time-zone` takes an IANA time zone ID (e.g. `UTC`, `Europe/Bucharest`, `America/Los_Angeles`).
 
@@ -77,7 +78,7 @@ Additional options:
 - `--input-arguments <json>` — JSON-encoded input arguments map.
 - `--target <spec>` (repeatable) — pin the trigger to one or more specific runtime targets. Format: `'machine=<machine-guid>,user=<user-guid>,session=<session-id>'`. Any combination is allowed in `dynamic` mapping mode (default), but `session` requires `machine`. Repeat the flag for multiple targets.
 - `--mapping-mode <dynamic|strict>` — validation rule for `--target`. `dynamic` (default) lets you pass any mix of machine/user/session. `strict` requires both `machine` and `user` on every target — use this when the folder has "Enable account-machine mappings" turned on.
-- `--run-as-me` — run jobs under the trigger creator's identity instead of resolving an unattended robot from the folder.
+- `--run-as-me` — run jobs under the trigger creator's identity instead of resolving an unattended robot from the folder. It needs a personal robot configured for that user; without one the call fails with HTTP 409 "Cannot find a personal robot configured".
 - `--resume-on-same-context` — resume suspended jobs on the same machine that originally ran them.
 - `--calendar-key <guid>` — calendar to consult for excluded days (holidays). From `uip or calendars list`.
 
@@ -95,6 +96,8 @@ uip or triggers create --type queue \
 ```
 
 Additional options: `--items-per-job` (default 1), `--activate-on-complete` (re-trigger on job completion).
+
+> **On a Maestro Flow process, a queue trigger starts the job without the item.** The Flow's trigger output is `null`, so the Flow (or a Coded Function it calls) must take the next item from the queue itself and set its result. The trigger fires only for items added after it is enabled.
 
 ### API Trigger
 

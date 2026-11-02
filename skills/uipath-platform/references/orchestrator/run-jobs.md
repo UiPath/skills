@@ -97,7 +97,7 @@ Key options:
 | `--environment-variables <pairs>` | Default environment variables — newline-separated `KEY=VALUE` pairs, **not** JSON (merged with per-job env) |
 | `--tags <list>` | Comma-separated tags for filtering |
 | `--hidden-for-attended` / `--visible-for-attended` | Toggle visibility to attended robot users |
-| `--auto-create-triggers` / `--no-auto-create-triggers` | Auto-create connected triggers on deploy |
+| `--auto-create-triggers` / `--no-auto-create-triggers` | Auto-create connected triggers on deploy. Creates none for a Maestro Flow process; add its trigger with `uip or triggers create` |
 | `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <bucket-key>`) | Job retention policy. `--retention-period` must be 1-180 (validated client-side). `Archive` requires `--retention-bucket`. |
 | `--stale-retention-period <days>` + `--stale-retention-action <Delete\|Archive\|None>` (+ `--stale-retention-bucket <bucket-key>`) | Stale-job retention policy. `Archive` requires both `--stale-retention-bucket` and an explicit `--stale-retention-period` (Delete/None default to 180 days); a period without an action is rejected. |
 
