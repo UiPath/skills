@@ -47,7 +47,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip solution resources add`, `list` | Work. |
 | `uip solution resources refresh` | Fails: no local `.uipx`. Add connections with `resources add` ([the connector loop](#the-connector-loop-in-studio-web), step 7). |
 | `uip solution publish`, `uip solution deploy run` | Work. Studio Web packages and signs in for `publish`. |
-| `uip maestro flow debug "<Project>"` | Works: a real run of the saved project. `<Project>` is a project name, not a path. |
+| `uip maestro flow debug "<Project>" --inputs '{}'` | Works: a real run of the saved flow open in the designer. `<Project>` is a project name, not a path. Always pass `--inputs`, or the run waits on the Debug configuration dialog. |
 | `uip solution pack`, `upload`, `init` | Not available. Studio Web owns the solution. |
 | `uip login` | Not available. You are already signed in to the tenant of the user. |
 | `npm`, `node`, the `flow-sdk` bin, `uv`, `uip codedagent` | Not available. Studio Web cannot create a coded agent. |
@@ -114,7 +114,7 @@ Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` a
 - **If the baseline compile refuses a decompiled connector input**, stop and tell the user (UiPath/builder-sdk#1402).
 - **A flow with connectors** needs each connection in the solution after the merge ([the connector loop](#the-connector-loop-in-studio-web), step 7).
 
-Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>"` is a real run: ask per references/operate.md. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.
+Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>" --inputs '{}'` is a real run: ask per references/operate.md. Always pass `--inputs` (the flow's inputs, or `'{}'`). The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it. When the reply says Studio Web may be waiting for Save & Debug, ask the user to click it. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.
 <!--skill-flavor:sdk-lifecycle:end-->
 
 <!--skill-flavor:sdk-editing:start-->
@@ -140,7 +140,7 @@ Debug, publish, deploy, trigger, inspect a job, and drive an instance's
 lifecycle. You are already signed in to the tenant of the user. Before every
 publish or debug, make sure each connection is in the solution; never run
 `uip solution resources refresh` here. Run the flow
-with `uip maestro flow debug "<Project>"`.
+with `uip maestro flow debug "<Project>" --inputs '{}'`.
 Publish the open solution with `uip solution publish` (the destination is the
 user's choice). `flow debug` is a REAL run, not a validation step: ask first, as it says. Read
 **[`references/operate.md`](references/operate.md)**.
