@@ -40,6 +40,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Case, stages, and completion | `casePlan`, `stage`, `completeWhen` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts` |
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
+| A task's outputs, and reading them from a later task or gate | `outputs` (key = the field's own name keeps the output on the task, with no case variable); `taskOutput('<stage>', '<task>', '<output>')`, or the SDD's `vars.$xref(...)` as written (SDK after 6.67.1) | [TaskBuilder, taskOutput](#api-index) | — |
 | Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Business events an outside system sends to a running case | `businessEvent`, `rule('api-event', { businessEvent })` (SDK 6.47.0+) | [CaseBuilder, Rules](#api-index) | — |
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
