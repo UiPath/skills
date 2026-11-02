@@ -93,10 +93,10 @@ or a header; a header you set but do not mean to vary on splits the cache, so le
 off. A call carrying `authorization`, `cookie`, `range` or a conditional header is not
 cached.
 
-A Layer B key is the connection, the connector and script versions, and the inbound
+A Layer B key is the connection, the script's digest (a hash of its source), and the inbound
 query (without `cache_data`) and body. Each page has its own entry, because the page
-token is in the query. Editing the script or publishing the connector ends its entries;
-there is nothing to version. The key does **not** include inbound headers, so a script
+token is in the query. A publish that changes the script changes its digest, so its old
+entries are never read again; there is nothing to version. The key does **not** include inbound headers, so a script
 with `export const cache` gets no `context.request.headers`: do not write one that varies
 on them.
 
