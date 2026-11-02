@@ -1,14 +1,16 @@
 # Verticals
 
-Each Vertical Solution installs different things. One file per vertical lists its packages, the values a deploy asks for, what must exist before the first deploy, how to set up a deployed solution, and the tenant and folder access the deploy needs.
+Each Vertical Solution installs different things. One file per vertical explains its packages: the values a deploy asks for, what must exist before the first deploy, how to set up a deployed solution, and the tenant and folder access the deploy needs.
 
-| Vertical | File | Packages |
-|----------|------|----------|
-| FINS (Financial Services) | [fins-guide.md](fins-guide.md) | `fins.qaqc-uipath`, `fins.loan-setup` |
+Which verticals and packages a tenant can deploy comes from `uip vss deploy packages --output json`, not from these files. A file only adds notes for the packages it names. A new or renamed package is deployable without a change here.
+
+| Vertical | `Vertical` in the list | File | Packages with notes |
+|----------|------------------------|------|---------------------|
+| FINS (Financial Services) | `fins` | [fins-guide.md](fins-guide.md) | `fins.qaqc-uipath`, `fins.loan-setup` |
 
 ## Check a user against a vertical
 
-1. Find the vertical's file from the package name in the table above. When the package is not listed, no access list exists for it yet: say so, and fall back to the per-step table in [access-troubleshooting-guide.md](../access-troubleshooting-guide.md).
+1. Find the vertical's file from the package name in the table above. When the package has no notes, no access list exists for it yet: say so, and fall back to the per-step table in [access-troubleshooting-guide.md](../access-troubleshooting-guide.md).
 2. Read the user's live permissions. Reading them needs the Roles and Users view permissions. When that is refused, follow the `403` case in [Check the Access](../../SKILL.md#check-the-access):
 
    ```bash
@@ -23,9 +25,9 @@ Each Vertical Solution installs different things. One file per vertical lists it
 
 ## Add a vertical
 
-The skill works for a vertical with no file, but it can only ask the user for the package name and fall back to the general access table. A file makes the deploy guided. When a vertical onboards, its team adds one in a pull request to this skill:
+The skill deploys a vertical with no file: `uip vss deploy packages` lists its packages, and the dry run names the values. A file adds what the service cannot say: what each value means, what must exist first, the access list, and the setup after a deploy. When a vertical onboards, its team adds one in a pull request to this skill:
 
-1. **Packages.** Run `uip vss deploy` at a terminal, pick the vertical, and note each package's name as the picker lists it. Stop at the next question.
+1. **Packages.** Run `uip vss deploy packages --vertical <VERTICAL> --output json` and note each `PackageName`, and the `Vertical` value for the table above.
 2. **Values.** For each package, run the dry run without `--yes`:
 
    ```bash

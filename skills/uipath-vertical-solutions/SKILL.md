@@ -34,7 +34,7 @@ Assume the user has never deployed a solution. You do the work: run the commands
 4. **`cancel` does not roll back.** `uip vss deploy cancel <JOB_ID> --yes` stops the job. Steps already applied stay applied.
 5. **Copy filled-in seed CSVs out first.** Every watched deploy or resume that succeeds writes the seed templates again, also with `--no-seed`, and replaces the CSVs in `./seeding/<PACKAGE_NAME>`.
 6. **Do not change access without being asked.** Reading roles and permissions is fine. Assigning roles or editing a role or user changes the tenant: say what you would change and wait for the user to agree.
-7. **Find answers with commands, not by digging.** Do not read the CLI source, call the service's API by hand, or search the disk for solution zips. The service deploys from its own feed. The vertical files and the dry run (step 5) give you everything else.
+7. **Find answers with commands, not by digging.** Do not read the CLI source, call the service's API by hand, or search the disk for solution zips. The service deploys from its own feed. `uip vss deploy packages` lists what it offers (step 2); the vertical files and the dry run (step 5) give you everything else.
 8. **Never pass `--yes` before the user says yes.** Run the deploy without `--yes` first: it checks everything and stops before it sends anything. Show the summary from step 6 and pass `--yes` only after the user agrees. The same holds for `seed --yes`.
 9. **Pass `--no-interactive` and `--output json` to every `uip vss deploy` command you run.** `--no-interactive` keeps it from waiting on a prompt you cannot answer. Read `Result`, `Code`, `Data` and, on a failure, `Message` and `Instructions`.
 
@@ -59,12 +59,26 @@ uip login status --output json
 
 ### 2. Pick the vertical, then the solution
 
+Look at the `Commands` in the `uip vss deploy --help` output from step 1. When `packages` is not among them, the CLI is older: do not run it, and go straight to the fallback at the end of this step. When it is, read what this tenant can deploy:
+
+```bash
+uip vss deploy packages --output json
+```
+
+`Data` has one row per package: `Vertical`, `PackageName`, and `DisplayName` and `LatestVersion` when the service sends them. This list is the only source for which verticals and packages exist. The vertical files do not decide it: a package can be on the list with no file, and a file can name a package this tenant does not have.
+
 Ask one question at a time, and skip any the user already answered.
 
-1. **Which vertical.** A *vertical* is the industry the solution is built for, such as FINS (Financial Services). When the user has not named one, list the verticals in [verticals-guide.md](references/verticals/verticals-guide.md) by their full name and ask which. Offer "another vertical" too: the service can have verticals this skill has no file for yet.
-2. **Which solution.** Open the vertical's file, list its packages by their display name, and ask which. Use the exact `--package-name` from the file.
+1. **Which vertical.** A *vertical* is the industry the solution is built for, such as FINS (Financial Services). List the `Vertical` values from the list, by the full name in [verticals-guide.md](references/verticals/verticals-guide.md) when it has one (`fins` is FINS (Financial Services)), and ask which. When the list has one vertical, name it and go on to the solution question in the same message.
+2. **Which solution.** List that vertical's packages and ask which. Name each one by the display name in the vertical's file when the file has that package, else by `DisplayName`, else by `PackageName`. Pass the exact `PackageName` to `--package-name`.
 
-When the user names something the files do not list (another vertical, or a package not in the file), ask them for the package name, or have them run `uip vss deploy` in their own terminal: it lists the verticals and their packages to pick from, and they can stop once they have the name.
+Then:
+
+- **The user names a vertical or package the list does not have.** Tell them this tenant cannot deploy it: the service does not offer it here. Name what it does offer. It may be on another tenant (`uip login tenant set <TENANT_NAME>`, then list again), or not published yet. Do not guess a package name.
+- **The list fails with a login error** (`Result: AuthenticationError`) → handle it as in step 1. **Any other failure** → say what failed and use the fallback below.
+- **The package has no vertical file.** Go on. The dry run in step 3 names each value the deploy needs. Ask for each one by its name, and say this skill has no notes on what it means. Skip the vertical's access list and setup steps: the skill has none for it.
+
+**Fallback, when `packages` is not in the help or the list fails.** Ask which vertical first, as its own question: list the verticals in [verticals-guide.md](references/verticals/verticals-guide.md) by their full name, and always offer "another vertical" too, even when the guide has only one. Once the user picks a vertical with a file, list the packages in it. For anything else, ask the user for the package name, or have them run `uip vss deploy` in their own terminal: it lists the verticals and packages to pick from, and they can stop once they have the name. Say that updating the CLI (run the installer again) lets you list the packages yourself.
 
 ### 3. New install or upgrade
 
@@ -207,7 +221,7 @@ Follow [access-troubleshooting-guide.md](references/access-troubleshooting-guide
 
 | File | Read when |
 |------|-----------|
-| [references/verticals/verticals-guide.md](references/verticals/verticals-guide.md) | Picking a vertical, checking a user against a vertical's access list, or adding a vertical |
+| [references/verticals/verticals-guide.md](references/verticals/verticals-guide.md) | A vertical's full name, checking a user against a vertical's access list, or adding a vertical |
 | [references/verticals/fins-guide.md](references/verticals/fins-guide.md) | FINS packages, the values they ask for, what must exist before the first deploy, how to set up a deployed solution, and their access lists |
 | [references/upgrade-guide.md](references/upgrade-guide.md) | Upgrading or downgrading an installed deployment |
 | [references/access-troubleshooting-guide.md](references/access-troubleshooting-guide.md) | A deploy step is refused, a role read returns `403`, or granting access after the user agrees |

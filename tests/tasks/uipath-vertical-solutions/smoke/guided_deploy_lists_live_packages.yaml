@@ -1,0 +1,124 @@
+task_id: skill-vss-guided-deploy-lists-live-packages
+description: >
+  Smoke: a request to deploy a vertical the skill has no guide file for.
+  When `uip vss deploy --help` lists `packages`, the skill must read the
+  tenant's live list with `uip vss deploy packages` and offer that
+  vertical's packages, not ask the user for a package name or send them to
+  another terminal. Offline: `uip` is a record_cli mock, so criteria grade
+  the recorded invocations.
+tags: [uipath-vertical-solutions, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 20
+
+sandbox:
+  record_cli:
+    - tool: uip
+      # Fallback for anything no rule claims (e.g. `uip --version`).
+      exit_code: 0
+      stdout: "1.208.0\n"
+      responses:
+        - when:
+            verb: "login status"
+          stdout: >-
+            {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
+            "Identity":"deployer@example.com","IdentityType":"User",
+            "Organization":"example-org","Tenant":"DefaultTenant"}}
+
+        - when:
+            verb: "vss deploy"
+            flags:
+              help: {present: true, aliases: ["h"]}
+          stdout: |
+            Usage: uip vss deploy [options] [command]
+            Commands:
+              cancel     Cancel a deploy job.
+              packages   List the Vertical Solution packages this tenant can deploy, by vertical.
+              resume     Resume a paused or failed deploy job from its last checkpoint.
+              seed       Load Data Fabric records from the local seed workspace.
+              status     Show the status and step checkpoints of a deploy job.
+
+        - when:
+            verb: "vss deploy packages"
+          stdout: >-
+            {"Result":"Success","Code":"VerticalSolutionPackages","Data":[
+            {"Vertical":"fins","PackageName":"fins.loan-setup","DisplayName":"fins.loan-setup","LatestVersion":"2610.205.1"},
+            {"Vertical":"fins","PackageName":"fins.qaqc-uipath","DisplayName":"fins.qaqc-uipath","LatestVersion":"2610.205.1"},
+            {"Vertical":"fincrime","PackageName":"fincrime.aml-screening","DisplayName":"AML Screening","LatestVersion":"1.0.0"},
+            {"Vertical":"fincrime","PackageName":"fincrime.kyc-refresh","DisplayName":"KYC Refresh","LatestVersion":"1.1.0"}]}
+
+        - when:
+            verb: "vss"
+          exit_code: 1
+          stderr: "uip (mock): not connected to the Vertical Solutions service in this offline smoke sandbox.\n"
+
+        - when:
+            verb: "or"
+          exit_code: 1
+          stderr: "uip (mock): not connected to a tenant in this offline smoke sandbox.\n"
+
+initial_prompt: |
+  Deploy a FinCrime vertical solution.
+
+  This session has one turn: when you need an answer from me, ask your
+  question and end your turn. The `uip` CLI is a mock here and is not
+  connected to a live tenant; run each command once and do not retry.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-vertical-solutions skill"
+    skill_name: "uipath-vertical-solutions"
+    expected_skill: "uipath-vertical-solutions"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Read the tenant's live package list with uip vss deploy packages"
+    verb: "vss deploy packages"
+    tool: "uip"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Never passed --yes to uip vss deploy (Critical Rule 8)"
+    verb: "vss deploy"
+    tool: "uip"
+    flags:
+      "yes": {present: true, aliases: ["y"]}
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did not guess a package or start a dry run before the user picked the solution"
+    verb: "vss deploy"
+    tool: "uip"
+    flags:
+      package-name: {present: true}
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Offered the FinCrime packages from the live list"
+    include_agent_output: true
+    prompt: |
+      The user asked to deploy a FinCrime vertical solution. The CLI's
+      package list showed two FinCrime packages: "AML Screening"
+      (fincrime.aml-screening) and "KYC Refresh" (fincrime.kyc-refresh).
+
+      Score 1.0 if the agent's final message asks which of those two FinCrime
+      packages to deploy, naming both (by display name or package name).
+
+      Score 0.5 if it names only one of them, or asks which vertical again
+      without listing the FinCrime packages.
+
+      Score 0.0 if it asks the user to type or find the package name, tells
+      them to run `uip vss deploy` in another terminal, says it has no guide
+      for FinCrime and cannot list its packages, lists FINS packages as the
+      choice, or says it deployed something.
+    weight: 2.0
+    pass_threshold: 0.8
