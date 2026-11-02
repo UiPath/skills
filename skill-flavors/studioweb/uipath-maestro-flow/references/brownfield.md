@@ -11,7 +11,7 @@ Never write or patch the `.flow` yourself. Merge renumbers every edge
 its normal output, not drift to undo. The changes to act on are the
 [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
-Validate the target `.flow`, not `.flow-sdk/edited/`: that folder holds only
+Validate the target `.flow`, not `/tmp/flow-draft/<Project>/<Name>/edited/`: that folder holds only
 the agent files merge changed. If validate fails, copy
 `.flow-sdk/original/<Name>.flow` back over the target, fix the source, and
 merge again.
