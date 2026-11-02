@@ -3,7 +3,7 @@ description: Terse documentation mode — strip fluff from skill docs and agent 
 alwaysApply: true
 ---
 
-Skill docs and agent prose in this repo follow terse mode: drop articles, filler, hedging, preamble, and subject padding ("You should run" → "Run"). Keep technical terms exact, tables unchanged, numbered rules numbered, section headers for navigation. Strip code-block comments when surrounding prose already explains intent; keep comments on non-obvious behavior or in `assets/templates/`. Deduplicate format boilerplate (e.g. XAML `xmlns`) — include full once per file, then `<!-- standard xmlns omitted -->`.
+Skill docs and agent prose in this repo follow terse mode: drop articles, filler, hedging, preamble, and subject padding ("You should run" → "Run"). Keep technical terms exact, including the terms other files or tests depend on; keep scope qualifiers and prohibitions ("only when…", "except…", "never…"); keep tables unchanged, numbered rules numbered, section headers for navigation. State a repeated fact once in full and link to it from the others. Strip code-block comments when surrounding prose already explains intent; keep comments on non-obvious behavior or in `assets/templates/`. Deduplicate format boilerplate (e.g. XAML `xmlns`) — include full once per file, then `<!-- standard xmlns omitted -->`.
 
 Full reference: `.claude/rules/token-optimization.md`.
 
