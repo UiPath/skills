@@ -7,7 +7,8 @@ there is no login step.
 <!--skill-flavor:operate-format:start-->
 **Never run `format` on a merged file.** In Studio Web almost every write is a
 merge into the canvas of the user. The `layout` of the original holds the
-positions of the user, and `merge` keeps them and places each added node.
+positions of the user, and `merge` keeps them and places each added node,
+moving later nodes right or down and growing containers only to fit added ones.
 `format` lays out every node again and discards them.
 
 A new `.flow` that `compile` wrote straight, with no merge, is different.
@@ -53,9 +54,11 @@ the open project. Debug runs the saved project, so there is no pack or upload
 step.
 
 `flow debug` executes the flow for real: it sends the emails, posts the
-messages, calls the APIs. It is not a validation step — `validate` is. Run it
-when the request is for a flow that works; ask when the request stops at build
-or validate; and with nobody to ask, report the flow as unverified rather than
+messages, calls the APIs. It is not a validation step — `validate` is. When a
+user can answer and did not ask for the run, ask before each run, even when the
+request is for a flow that works. With nobody to ask, run it when the request is
+for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from));
+otherwise report the flow as unverified rather than
 letting a passing `validate` stand as the result. The reply is plain text:
 [CLI-LOOP.md — Reading the reply](CLI-LOOP.md#reading-the-reply).
 <!--skill-flavor:operate-debug:end-->
