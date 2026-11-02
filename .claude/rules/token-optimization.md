@@ -6,7 +6,7 @@ All skill documentation and agent-facing prose in this repo MUST follow these ru
 
 Compression is NOT uniform. A/B evidence (internal July 2026 rollback; external compliance testing where merging 8 safety bullets into 3 equivalent sentences dropped rule-following from 3/3 to 1/3, and shorthand like `python=venv` was ignored outright): compressing RULES breaks compliance; compressing enumerations does not.
 
-| Compress aggressively (60–70%) | Keep full sentences (trim 10–20% max) |
+| Compress aggressively (60–70%) | Keep full sentences |
 |---|---|
 | Enumerations, file-path lists, link lists | Critical Rules and any numbered rule text |
 | Tool/feature/keyword tables | Action patterns ("do X, then Y, never Z") |
