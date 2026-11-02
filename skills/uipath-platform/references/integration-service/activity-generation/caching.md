@@ -109,7 +109,6 @@ that call being deployed; until it is, an entry can outlive a re-auth for its TT
 | input | CLI flag | effect |
 |---|---|---|
 | `cache_data=uncache` on the inbound request | `--refresh` | skips the read in both layers and stores the new answer |
-| `cache_data=bypass` on the inbound request | `--no-cache` | neither reads nor stores, in both layers |
 
 `cache_data` is removed before the script sees `context.request.query`. Inline scripts
 (`--inline-script`) cache like published ones, in their own namespace per caller; with
@@ -123,7 +122,6 @@ same rules. Every finding fails; there is no ignore list.
 
 | rule | fails when |
 |---|---|
-| `cache-for-removed` | an `intsvc.http` call still uses the old per-call cache option; use `cache: { ttl }` |
 | `cache-shape` | `cache` has a key other than `ttl`, no `ttl`, or a literal `ttl` that is not a positive number; `export const cache` is not an object literal |
 | `cache-on-write` | `cache` on a method other than GET, HEAD, OPTIONS, or a POST with `read: true` |
 | `cache-not-shared` | a call with `cache` has a non-literal `method`, a `url` that is not a literal or template, or its method + url template is cached in fewer than two script files |
@@ -183,8 +181,9 @@ metadata discovery all make; `export const cache` on object discovery.
 
 ## Testing
 
-- **While iterating, run with `--no-cache`** so nothing work-in-progress is stored.
-  `--refresh` is not a substitute: it still replaces the entry with the new answer.
+- **While editing a script**, its whole-answer (Layer B) entry is never reused, because
+  the script digest is in the key. Vendor-call (`cache`) entries are keyed on the
+  request, so run with `--refresh` to re-fetch them.
 - **Once the script is right, test the caching** with `--inline-script` or
   `--script-ref`: run the same call twice (the second is a hit), then once with
   `--refresh`. Confirm a hit from the vendor's own request count, not from the
