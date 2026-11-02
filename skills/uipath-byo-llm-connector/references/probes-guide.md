@@ -37,7 +37,7 @@ The verdict is keyed by catalog model (`validation.<model>` on success; in the f
 
 | `unavailabilityReason` | Likely cause | Fix |
 |---|---|---|
-| `IntegrationServiceConfigurationNotFound` | Wrong connection id; deleted connection; connection in a Personal workspace; `--folder-key` is not the connection's folder | Re-list the connection; move it to the shared folder ([connections-guide.md](connections-guide.md)) |
+| `IntegrationServiceConfigurationNotFound` | Wrong connection id, or a deleted connection | Re-list the connection with `--all-folders --refresh` and use its `Id` ([connections-guide.md](connections-guide.md)) |
 | `IntegrationServiceConfigurationNotEnabled` | Connection disabled or its authorization expired | `uip is connections edit <ID>` and re-enter the fields |
 | `IntegrationServiceMissingAttributes` | The connection lacks a required field | Re-create the connection with every `pre` field filled |
 | `IntegrationServiceUnreachable` | Integration Service error, or the connector version is not published | `publish-status`, then retry |

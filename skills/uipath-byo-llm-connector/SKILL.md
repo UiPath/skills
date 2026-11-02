@@ -32,7 +32,7 @@ Everything here runs through `uip`: `uip is connectors builder` (author on disk)
 5. **Credentials enter only through the connection form.** API keys, client secrets and tokens are typed by the user into the Integration Service connection page (`AuthUrl`). Never put one in a hook, an `element.json` default, a CLI argument, a file, or the chat. Never send a credential in a query string or path (`vendorType: "query"`/`"path"`, or in `request_vendor_path`) — full request URLs are recorded in telemetry. Headers or a form-encoded token body only.
 6. **Hooks never log or echo content.** No `console.log`, no prompt, completion, header or token in an error message, `response_error_message`, or `connection_identity`. Return the vendor's error status and a fixed message instead.
 7. **Log in and check the session before any tenant step.** `uip login status --output json` → `Data.Status` must be `"Logged in"` (the envelope says `Success` even when the session expired). The user needs the **OrganizationAdmin** role for AI Trust Layer to probe or save a configuration.
-8. **Connections use the published `custom-…` key, live in a shared folder.** `publish` returns `PublishedKey` (`design-` → `custom-`); `uip is connections create` with the `design-…` key fails. The gateway reads connections with its own service identity, which cannot see a **Personal** workspace folder — a connection there probes as unavailable. Check the connection's folder before probing (see [references/connections-guide.md](references/connections-guide.md)).
+8. **Connections use the published `custom-…` key; the runtime one lives in a shared folder.** `publish` returns `PublishedKey` (`design-` → `custom-`); `uip is connections create` with the `design-…` key fails. `create` puts the connection in the creator's **Personal** workspace: the gateway can use it there, but only its creator can manage it — so the runtime connection is created in the shared folder from the Integration Service web UI (see [references/connections-guide.md](references/connections-guide.md)).
 9. **Every re-publish needs a higher version.** Bump `element-metadata.json:latestVersion` (or `publish --version`) before each `publish`; the server rejects an equal version. A fix is live only after `import` + `publish --wait` returns `SUCCESS`.
 10. **Probing saves a configuration.** `byo-connections create` and `update` run the product probes and save only when every model passes; there is no dry run. Probe with `--no-enabled` so a passing test configuration never serves traffic, and ask the user before deleting a configuration (`byo-connections delete --force`) or a connection (`uip is connections delete --yes`).
 11. **Stop after three failed probes on the same reason.** Read the reason, change one thing, re-publish, re-probe. After three attempts on one reason, stop and show the user the probe summary and the hook — do not keep guessing.
@@ -128,11 +128,11 @@ Give the user `AuthUrl` and ask them to open it, enter the vendor credentials, a
 
 ```bash
 uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json
-uip or folders list --output json                        # the connection's FolderKey must not be Type: Personal
+uip or folders list --output json                        # the connection's FolderKey: Type Personal or Standard
 uip is connections ping <CONNECTION_ID> --output json
 ```
 
-Details, the Personal-folder trap, and credential rotation: [references/connections-guide.md](references/connections-guide.md).
+Details, which folder a connection lands in, and credential rotation: [references/connections-guide.md](references/connections-guide.md).
 
 ### 7. Probe with the product's own probes
 
@@ -148,7 +148,7 @@ Use repeated `--mapping '…,connector-type=Custom,connector-template=CustomAiGa
 
 ### 8. Runtime connection and the real configuration
 
-The test connection usually holds the builder's own or a sandbox key. Ask the user which credentials production uses, create the runtime connection the same way (step 6) in the shared folder the product will use, then point the configuration at it and enable it:
+The test connection usually holds the builder's own or a sandbox key. Ask the user which credentials production uses and have them create the runtime connection from Integration Service in the web UI, in the shared folder the product will use (`uip is connections create` cannot pick a folder). Find its id with step 6's `list`, then point the configuration at it and enable it:
 
 ```bash
 uip llm-configuration byo-connections update <CONFIG_ID> \
@@ -182,7 +182,7 @@ uip or folders list                                      # folder Type (Personal
 | Which path, tag, template and auth a flavor needs; porting a template or zip; the pre-publish checklist | [references/connector-contract-guide.md](references/connector-contract-guide.md) |
 | Hook runtime, variables, URL/model rewrites, token exchange, streaming, error handling | [references/hook-authoring-guide.md](references/hook-authoring-guide.md) |
 | Translating between OpenAI, Gemini, Anthropic and Bedrock bodies (messages, tools, usage, finish reasons, media) | [references/format-mapping-guide.md](references/format-mapping-guide.md) |
-| Test vs runtime connections, the Personal-folder trap, credential rotation | [references/connections-guide.md](references/connections-guide.md) |
+| Test vs runtime connections, connection folders, credential rotation | [references/connections-guide.md](references/connections-guide.md) |
 | Reading a probe verdict and fixing each failure reason | [references/probes-guide.md](references/probes-guide.md) |
 
 For general connector authoring depth (every auth type, `state patch` semantics, system resources), the `uipath-connector-builder` skill covers the builder; this skill carries everything a BYO LLM connector needs on its own.
@@ -194,7 +194,7 @@ For general connector authoring depth (every auth type, `state patch` semantics,
 3. Registering `--connector-type Custom` without `--connector-template` — the probe fails inside the gateway (Rule 2).
 4. Translating a streamed response in a postRequest hook — it never runs on a stream (Rule 4).
 5. Asking the user to paste an API key into the chat, or baking one into `element.json` as a default (Rule 5).
-6. Creating the connection with the `design-…` key, or leaving it in a Personal workspace (Rule 8).
+6. Creating the connection with the `design-…` key, or leaving the runtime connection in a Personal workspace, where only its creator can manage it (Rule 8).
 7. Re-publishing without bumping `latestVersion`, then probing the old version (Rule 9).
 8. Probing with `--enabled`, so a passing test configuration starts serving the product (Rule 10).
 9. Logging the prompt or the vendor response "to debug" from a hook (Rule 6).

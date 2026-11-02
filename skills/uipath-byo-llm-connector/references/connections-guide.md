@@ -8,7 +8,7 @@ An Integration Service connection is one set of vendor credentials on a publishe
 |---|---|---|
 | Purpose | Probe the connector while it is being built and fixed | Serve the product once the configuration is enabled |
 | Credentials | A sandbox key, or the builder's own | The credentials production must use — ask the user |
-| Folder | A shared folder (the gateway cannot read a Personal one) | The shared folder the configuration names in `--folder-key` |
+| Folder | Wherever `create` put it (the creator's Personal workspace is fine) | The shared folder the configuration names in `--folder-key`, so other admins can manage it |
 | Lifetime | Delete when the runtime connection passes (ask first) | Kept; rotate with `edit` |
 
 Use one connection for both only when the user says the same credentials serve production.
@@ -31,17 +31,15 @@ uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json
 
 Take the new entry's `Id` (the `--connection-id` for the BYO configuration), and check `State` is `Enabled`.
 
-## The Personal-folder trap
+## Which folder the connection lands in
 
-`uip is connections create` has no folder option; the connection lands in the default scope, which on most tenants is the creating user's **Personal workspace**. The gateway resolves BYO connections with its own service identity, which cannot read a Personal workspace, so a probe against such a connection reports it unavailable (`IntegrationServiceConfigurationNotFound`) even though `ping` succeeds for the user.
-
-Check before probing:
+`uip is connections create` has no folder option; the connection lands in the creating user's **Personal workspace**. The gateway still reaches it — it calls Integration Service with its own service identity and addresses the connection by id, so the probe and the product's calls work — but only its creator can see, edit, or rotate it.
 
 ```bash
-uip or folders list --output json        # find the connection's FolderKey; its Type must not be Personal
+uip or folders list --output json        # the connection's FolderKey: Type Personal or Standard
 ```
 
-If the connection is in a Personal workspace, ask the user to create it in the shared folder instead — from Integration Service in the web UI, with that folder selected — and continue with that connection's id. Use the same folder for `--folder-key` on the BYO configuration.
+That is fine for the test connection. For the runtime connection, which other admins must be able to manage, ask the user to create it from Integration Service in the web UI with the shared folder selected, and continue with that connection's id. Use the same folder for `--folder-key` on the BYO configuration.
 
 ## Check that it works
 
