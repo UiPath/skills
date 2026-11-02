@@ -15,6 +15,9 @@ run_limits:
   expected_turns: 17
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code conversational agent "BoardAssistantAgent" that helps
   users triage their work through a chat interface. To do that it must read the
@@ -89,7 +92,7 @@ success_criteria:
 
   - type: run_command
     description: "Client-side tool resource shape (type=clientSide lowercase, referenceKey null, location, folderPath, both schemas)"
-    command: "python3 $TASK_DIR/check_client_side_tool.py"
+    command: "python3 $REFERENCE_DIR/check_client_side_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

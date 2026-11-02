@@ -15,6 +15,9 @@ run_limits:
   max_turns: 50
   turn_timeout: 1200
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code conversational agent "ReviewAgent" that walks users
   through reviewing a proposed change. Before it treats a change as settled, the
@@ -63,7 +66,7 @@ success_criteria:
 
   - type: run_command
     description: "Client-side tool present, correctly shaped, and its outputSchema models the user's decision"
-    command: "python3 $TASK_DIR/check_conversational_client_side_tool.py"
+    command: "python3 $REFERENCE_DIR/check_conversational_client_side_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

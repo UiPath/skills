@@ -1,6 +1,6 @@
 # Client-Side Tool Capability
 
-> **Conversational agents only.** Client-side tools require a surface that implements the UiPath conversation protocol (TypeScript SDK, Instance Management, iFrame embedding). Autonomous agents have no client surface at runtime, so client-side tools cannot execute — do not add them to autonomous agents.
+> **Conversational agents only.** Client-side tools require a surface that implements the UiPath conversation TypeScript SDK protocol. Autonomous agents have no client surface at runtime, so client-side tools cannot execute — do not add them to autonomous agents.
 
 Tools the agent **calls** but the **client executes**. Per the [product documentation](https://docs.uipath.com/agents/automation-cloud/latest/user-guide/tools-client-side), the runtime pauses, delegates the tool call to the client surface, and resumes once the client returns a result.
 
@@ -89,23 +89,7 @@ From the docs, a tool that reads tasks from a project board:
 }
 ```
 
-### Keywords the pre-built form renders
-
-Not covered by the docs; taken from the form renderer shipped in `@uipath/ui-widgets-conversational-agent-chat` (`AgentSchemaForm`). Useful when the `outputSchema` will be filled in by a person rather than a handler.
-
-Field types: `string`, `number`, `integer`, `boolean`, `array`, `object`.
-
-| Keyword | Effect |
-|---|---|
-| `title` | Field label |
-| `description` | Helper text |
-| `enum` | Choice list showing the raw values |
-| `oneOf` with `const` + `title` | Choice list with display labels distinct from stored values |
-| `default` | Pre-filled value |
-| `format` | `date`, `date-time`, `time`, `email` |
-| `minimum` / `maximum` | Numeric bounds |
-| `properties` / `items` | Nested groups, repeatable rows |
-| `required` | Blocks submit until filled |
+Standard JSON Schema keywords (`title`, `description`, `enum`, `oneOf`, `default`, `format`, `required`, etc.) are supported. Useful when the `outputSchema` will be filled in by a person — e.g. the default form experience in out-of-the-box UiPath chat UIs, including iFrame embedding.
 
 ## Walkthrough
 
@@ -149,4 +133,5 @@ From the docs:
 ## References
 
 - [Client-side tools](https://docs.uipath.com/agents/automation-cloud/latest/user-guide/tools-client-side) — product documentation, source of truth
+- [TypeScript SDK — client-side tools](https://uipath.github.io/uipath-typescript/conversational-agent/#client-side-tools) — client surface implementation (registering handlers, executing tool calls)
 - [../../prompting/agent-prompting-guide.md](../../prompting/agent-prompting-guide.md) — writing the Tools slot
