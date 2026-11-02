@@ -422,6 +422,16 @@ To print every script that way, pass `--scripts string`: `uip maestro flow decom
 
 Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lists `ScriptValue`); an older SDK's decompile prints every script as `script({ code })`.
 
+## A Case-only variable type: retype it once
+
+A `.flow` written by Studio Web or an older SDK can carry a global typed `date`, `datetime`, `float`, `double` or `jsonSchema`.
+`decompile` keeps that type as written and warns: `flow-decompile: warning: variable "<id>" has type "date", a Case type Flow does not model ... declare it as types.string.`
+The kept `types.date` does not compile: it is a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build.
+
+Fix it in the same round as your edit: in the `.flow.ts`, change that one declaration to the type the warning names, then compile and merge as usual.
+For example, `.input({ due: types.date })` becomes `.input({ due: types.string })`.
+The merged `.flow` then carries the new type (`"type": "string"`). That is no runtime change for `date`/`datetime`, which Flow packaging already wrote as a plain string; [variable types](author.md#variable-types) lists the replacement for each type.
+
 ## The file's schema version comes back out
 
 `decompile` emits `.schemaVersion("<the file's version>")` as the first line of
