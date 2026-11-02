@@ -39,8 +39,10 @@ uip maestro flow validate Flow/Flow.flow --output json
 
 ## The loop
 
+<!--skill-flavor:extract-find-flow:start-->
 0. **Find the flow.** Everything here edits a `.flow` on disk. When the user describes a flow they are already building and none exists locally, they may be referring to one
 that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
+<!--skill-flavor:extract-find-flow:end-->
 1. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This is what makes `$vars.start.output.invoice` resolve, so it comes before the node that reads it.
 2. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`.
 3. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
@@ -55,7 +57,9 @@ The feature is new and tenant-gated, so not every tenant has it yet. Nothing in 
 
 ## Adding the node
 
+<!--skill-flavor:extract-sdk-mixing:start-->
 **These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project initialised with `--sdk-source` generates its `.flow` from a `.flow.ts` by compiling, and the next compile overwrites whatever `nodes create` and `nodes schema set` wrote. Check for a `.flow-sdk/` directory before starting. Where one exists, build the Extract document flow in a separate project without source and keep to the CLI — the SDK's `dynamicExtract()` is not the route here ([document-pipeline.md](document-pipeline.md) explains its limits). Do not alternate between the two and re-apply the CLI edits after each compile.
+<!--skill-flavor:extract-sdk-mixing:end-->
 
 `--label` sets the canvas name and seeds the node id. Give it a name that says which document and which fields, not "Extract" — a flow with two extraction nodes is common, and the label is what the user reads on the canvas and in a trace. Run `uip maestro flow nodes list <file> --output json` afterwards to get the id that was minted; later commands address the node by that id.
 
@@ -183,7 +187,9 @@ Before that fault the node may appear to succeed: the element completes in a fra
 
 The Studio Web save is what provisions the processor; extraction works from then on. Do not synthesise a `processorKey`, and do not copy one from another node — it names a different taxonomy.
 
+<!--skill-flavor:extract-after-save:start-->
 One thing to expect on the way back. Saving in Studio Web may convert the node to the processor variant (`uipath.ixp.processor.<key>`), which is a different node type from the one that was created. Pull the solution down again before editing it further, so a later CLI write does not overwrite what Studio Web wrote — and where the pulled node is the processor variant, `nodes schema set` refuses it, and the taxonomy is edited in Studio Web from then on.
+<!--skill-flavor:extract-after-save:end-->
 
 ## When Extract document is not available
 

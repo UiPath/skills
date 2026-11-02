@@ -53,7 +53,7 @@ STUDIOWEB_OVERRIDE = os.path.join(_REPO, "skill-flavors", "studioweb", "uipath-m
 # Whole file. Set at the #3718 trim (265 lines, 27,606 bytes, ~10.8K tok) with
 # ~5% byte headroom; the line cap is looser on purpose (see above). Re-set
 # after #4040 and #4101 (29,219 bytes, ~11.4K tok) with ~5% headroom.
-MAX_BYTES = 30_700
+MAX_BYTES = 31_200  # re-set for the Extract document node in the studioweb flavor (30,985)
 MAX_LINES = 320
 
 # Per H2, ported from flow-builder-sdk skill-router-docs.test.ts.
@@ -74,7 +74,7 @@ SECTION_BUDGETS = {
 # Project layout, and the in-page round trip in Lifecycle, so those two get
 # their own budgets: the size when it first shipped (9,118 and 3,028) plus ~5%.
 # The whole-file caps hold.
-STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_600, "Lifecycle": 3_200}
+STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_600, "Lifecycle": 3_450}  # Lifecycle re-set for the Extract document round-trip exception (3,411)
 
 BYTES_PER_TOKEN = 2.56
 

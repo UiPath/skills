@@ -39,6 +39,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 | --- | --- |
 | `uip maestro flow check`, `compile`, `decompile`, `merge` | Work, inside the page. `decompile` writes no pipeline helper. `merge` takes only `--original`, `--baseline`, `--strict` and `-o`. `check` refuses a compiled `.flow`: use `validate`. |
 | `uip maestro flow validate`, `format` | Work. Never `format` a merged file. |
+| `uip maestro flow nodes …`, `edges …`, `variables …` | Work: they edit the target `.flow` in place; the canvas reloads the open file. |
 | `uip maestro flow registry get`, `search`, `list`, `pull` | Work: the product node registry. |
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
 | `uip maestro registry pull` | Answered by the CLI, with no effect: it confirms the library of the session, ignores its options, and writes no `./connectors/<key>.ts` modules. |
@@ -55,7 +56,7 @@ When a reference tells you to run a command that is not available, use the Studi
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
-Integrations with non-UiPath systems use connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector. `"total": 0` is a miss and means `http()` (not for an external agent: see the table). For document extraction or another tenant capability (agent, process), run the `uip maestro flow registry search` of that family ([`references/ixp.md`](references/ixp.md), [`references/agent.md`](references/agent.md)). A `script()` that returns fixed values is never a stand-in for that step, and `mock()` only marks a capability that the search proved absent.
+Integrations with non-UiPath systems use connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector. `"total": 0` is a miss and means `http()` (not for an external agent: see the table). For another tenant capability (agent, process), run the `uip maestro flow registry search` of that family ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); the Extract document node only when asked for by name or already in the flow ([`references/extract-document-node.md`](references/extract-document-node.md)). A `script()` that returns fixed values is never a stand-in for that step, and `mock()` only marks a capability that the search proved absent.
 
 ### The connector loop in Studio Web
 
@@ -101,6 +102,8 @@ uip maestro flow merge .flow-sdk/edited/<Name>.flow --original <Name>.flow --bas
 # 4. The product's own static check on the file the canvas shows
 uip maestro flow validate <Name>.flow --output json
 ```
+
+**A flow holding an Extract document node skips this round trip** — its baseline compile fails on that node; use the direct commands instead ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
 Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If `validate` fails, fix the source and run steps 2 to 4 again. To undo the merge, copy `.flow-sdk/original/<Name>.flow` back over the target.
 

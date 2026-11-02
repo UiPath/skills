@@ -17,6 +17,7 @@ This guide assumes the node already exists. Adding it, wiring `fileRef`, when it
 
 ## Starting from a flow in Studio Web
 
+<!--skill-flavor:extract-brownfield:start-->
 Users can start off with a flow in Studio Web, and ask you to continue working on it. You should then work on a local copy: pull it down, edit it, push it back.
 
 Pulling it down requires the flow's solution id, and where that comes from depends on what the user has already said.
@@ -31,24 +32,25 @@ If the user has not mentioned Studio Web at all, but no local `.flow` turns up, 
 
 Then pull it down:
 
-<!--skill-flavor:extract-pull-login:start-->
 ```bash
 uip login status --output json
 uip solution download <solution-id>
 ```
 
 The download writes a directory named after the id, with the flow project inside it, and every command in this guide runs against the `.flow` in that project. Where login has expired, say so and ask the user to log in with `uip login`.
-<!--skill-flavor:extract-pull-login:end-->
 
 Push the finished taxonomy back with `uip solution upload` from the downloaded solution's root, so the flow they opened in Studio Web is updated with the changes, and tell them where to find it.
+<!--skill-flavor:extract-brownfield:end-->
 
 ### The documents uploaded to the node
 
+<!--skill-flavor:extract-eval-files-path:start-->
 Sample documents a user uploaded through Studio Web come down with the solution, under the flow project:
 
 ```
 <Project>/evals/<dataset-id>/eval-files/
 ```
+<!--skill-flavor:extract-eval-files-path:end-->
 
 The dataset directory is a GUID, so list `evals/` rather than guessing it. These are the documents to design the taxonomy from, and reading them needs one step first.
 
@@ -87,7 +89,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 
 ## The loop
 
-1. **Collect the samples.** Documents uploaded through Studio Web come down with the solution and need decoding first ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). Otherwise ask which documents are representative if the user has not said. Prefer variety over volume — a handful covering the layouts that differ tells you more than twenty of the same one.
+1. **Collect the samples.** Documents the user uploaded through Studio Web live under the flow project and need decoding first ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). Otherwise ask which documents are representative if the user has not said. Prefer variety over volume — a handful covering the layouts that differ tells you more than twenty of the same one.
 2. **Read them.** One full `Read` per decoded document returns text and image for both digital and scanned files, so no PDF tooling is needed.
 3. **Design the taxonomy** against the rules below and write it to a JSON file.
 4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.
