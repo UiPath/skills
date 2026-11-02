@@ -32,16 +32,16 @@ edge, outside the sandbox.
 ```js
 context = {
   request: { body, query, headers },  // the INBOUND call — data to read
-  connectionConfiguration,            // the connection's NON-SECRET config (base.url, …)
   connectionId, connectorKey,
 }
 ```
 
 Inputs arrive on `context.request.body`, already decoded. There is no typed input
 parameter and `context.request` carries **no `method`/`url`** — the script names
-its own vendor target. Connection settings are read off
-`context.connectionConfiguration?.['key']`; secrets are stripped before the
-script sees them.
+its own vendor target. Connection settings are not on `context`: read a
+connection setting with `intsvc.connectionConfig.get('key')`. A non-secret key
+(`base.url`) returns its value; a secret key returns an opaque reference you can
+place in a call but not read.
 
 ## The `intsvc` surface
 
@@ -49,7 +49,10 @@ script sees them.
 |---|---|---|
 | `intsvc.http(request)` | brokered egress | one credential-injected, egress-guarded vendor call. Costs one of the 4 per-request calls |
 
-There are no pagination helpers: the runtime carries no page token in or out.
+`intsvc.setPaginationHeaders(result, { current, next, pageSize, hasMore })` writes the `elements-has-more` and `elements-next-page-token` headers on a list result, and `intsvc.decodePageToken(text)` reads the token the caller echoes back as `request.query.nextPage` (`null` when absent or garbled). Both are synchronous and cost no call budget.
+
+Caching is not a call of its own: it is `cache: { ttl }` on `intsvc.http` and an
+`export const cache = { ttl }` declaration on the script, both in [caching.md](caching.md).
 
 ### `intsvc.http` — request and response
 
@@ -77,11 +80,12 @@ intsvc.http({ method, url, query?, headers?, body?, read?, cache? })   // → { 
 ### One page per invocation
 
 A list script returns **one page** — the page the vendor answers with for the
-query it was given. Pagination is not handled by the runtime: no token travels in
-or out, and nothing concatenates pages. If a caller needs a later page, the
-script has to accept the vendor's own paging parameter (`cursor`, `offset`,
-`page`) as an input and pass it through in `query`. A script that walks the
-cursor itself in a loop exhausts the 4-call budget on a large tenant, so do not.
+query it was given. The runtime never concatenates pages. To hand the caller the
+next one, put the vendor's cursor in the token with `intsvc.setPaginationHeaders`
+(set `result.body` to the page first); the caller echoes the token as
+`request.query.nextPage`, and `intsvc.decodePageToken` gives the cursor back. A script
+that walks the cursor itself in a loop exhausts the 4-call budget on a large tenant,
+so do not.
 
 ## Reading the response
 
