@@ -71,6 +71,34 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   a `value`; without one `check` warns (`HITL_RECIPIENT_NO_USER`). The warning
   needs `@uipath/maestro-builder-sdk` 6.61.1 or later; an older SDK does not
   warn, so no warning there does not mean the assignee is fine.
+- **A quick form sent to a group is often not one a person can act on.**
+  `flow validate` and the run itself report nothing in either case:
+  - If Action Center can't resolve the group when it creates the task (for
+    example, the group has no role in the task's folder), the task is still
+    created, but `Unassigned`, and the group's members never see it.
+  - If it resolves, the task is assigned to "All users in group"
+    (`TaskAssignmentCriteria: "AllUsers"`). Every member sees it under Pending,
+    but the Action Center web UI opens a quick form assigned that way
+    read-only: Approve and Reject are disabled and there is no Claim button.
+    A quick form is editable only for the one user it is assigned to
+    (observed on Action Center 26.10).
+
+  When any member of a group should be able to approve, route the task to one
+  person (for example `uip tasks assign <TASK_ID> --user <EMAIL>`), or leave it
+  `Unassigned` (`uip tasks unassign <TASK_ID>`) so a member picks it up with
+  **Assign to self**. After the first run, read the task with
+  `uip tasks get <TASK_ID> --output json` and check `Status`,
+  `TaskAssignmentCriteria` and `AssignedToUser` before you report it ready.
+- **The robot that runs the Flow job creates and assigns the task.** If that
+  identity lacks `TaskAssignment.Create` (Action Assignments → Create) in the
+  task's folder, the task is created `Unassigned` even for a single-user
+  assignee, with no incident and no error in the run. Assigning it explicitly
+  as that identity returns `2415` "You do not have the required permissions to
+  change the assignee of the action". The Automation User role doesn't include
+  the permission. Have a folder admin give the robot a role that does: where
+  custom roles aren't available, Automation Developer is the smallest built-in
+  role with it. `uip function run` and other local tests run as you, so they
+  don't show the gap; check the task after the first deployed run.
 - `labels` is one comma-separated string, shown in Action Center.
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
@@ -99,6 +127,10 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   except a type copied from a bound Flow variable (`'string[]'`,
   `'string | null'`), which decompiles to the type it resolves to (`'array'`,
   `'string'`).
+  To show a date the reviewer only reads, use `'string'`, not `'date'`. A
+  `'date'` input bound to a date-only value (ISO 8601, no time) makes the
+  Action Center task page fail to open: it shows "An unexpected error has
+  occured. Please try again later (Invalid time value)".
 - A picker field uses a choice-control spelling, with its choices in `options`
   (`{ id, value, label }` each, all three required): `'singleSelect'` and
   `'enum'` are a single-choice dropdown (a `string` answer), `'multiSelect'` a

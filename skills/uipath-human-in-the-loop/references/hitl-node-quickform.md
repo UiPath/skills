@@ -91,6 +91,8 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 
 **Supported field types:** `string`, `number`, `boolean`, `date`, `file`
 
+> **Display-only dates go in a `string` field.** An `input` field of type `date` bound to a date-only value (ISO 8601, no time) stops the Action Center task page from opening: "An unexpected error has occured. Please try again later (Invalid time value)". Keep `date` for dates the reviewer enters.
+
 **Design rules:**
 - Input fields: everything the human needs to decide — IDs, amounts, context; bind to upstream node output via `binding`
 - Output fields: only what downstream nodes actually use; set `required: true` for mandatory outputs
@@ -184,6 +186,13 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 **Required fields:** `id`, `type`, `typeVersion`. Position goes in the top-level `layout.nodes` object (keyed by node id), not on the node itself.
 
 **Node ID rule:** camelCase from the label, strip non-alphanumeric, append `1` (increment to `2`, `3`... until unique among existing node IDs). Example: `"Invoice Review"` → `invoiceReview1`.
+
+**Check the assignee after the first run.** Neither `flow validate` nor the run reports any of these:
+- A group that Action Center can't resolve in the task's folder (for example, one with no role there) leaves the task `Unassigned`, and its members never see it.
+- A group that resolves gets "All users in group" (`TaskAssignmentCriteria: "AllUsers"`), and the Action Center web UI opens the quick form read-only for every member (observed on Action Center 26.10). Route the task to one person (`uip tasks assign <TASK_ID> --user <EMAIL>`), or leave it `Unassigned` so a member picks it up with **Assign to self**.
+- If the robot that runs the Flow lacks `TaskAssignment.Create` in the task's folder, even a single-user task is created `Unassigned`, and an explicit assignment as the robot returns `2415`. Automation User doesn't include the permission; Automation Developer is the smallest built-in role that does. Local tests run as you and don't show this.
+
+Read the task with `uip tasks get <TASK_ID> --output json` and check `Status`, `TaskAssignmentCriteria` and `AssignedToUser` before reporting it ready.
 
 ---
 
