@@ -2,22 +2,19 @@
 
 All skill documentation and agent-facing prose in this repo MUST follow these rules. Technical accuracy stays. Fluff dies.
 
-## 0. Compression Boundary — what may be compressed
+## 0. Gated Compression — no fixed cap
 
-Compression is NOT uniform. A/B evidence (internal July 2026 rollback; external compliance testing where merging 8 safety bullets into 3 equivalent sentences dropped rule-following from 3/3 to 1/3, and shorthand like `python=venv` was ignored outright): compressing RULES breaks compliance; compressing enumerations does not.
+No text has a fixed compression limit. Any of it, rules included, may be compressed as far as the change stays verified:
 
-| Compress aggressively (60–70%) | Keep full sentences |
-|---|---|
-| Enumerations, file-path lists, link lists | Critical Rules and any numbered rule text |
-| Tool/feature/keyword tables | Action patterns ("do X, then Y, never Z") |
-| Section intros, table surrounds | Scope qualifiers ("only when…", "except…") |
-| Repeated statements → state once fully + pointers | Rationale/example blocks inside rules — redundancy in safety rules is reinforcement, not waste |
+1. **Tests:** the tasks that exercise the changed file pass as often as on the original. Compare both on the same tasks, and re-run a task that flips with more seeds before trusting it.
+2. **Meaning:** every fact, scope qualifier ("only when…", "except…"), prohibition, domain term and rule rationale in the original survives somewhere in the skill. Check the diff for each.
+3. **Untested text:** a file no task exercises cannot be verified. Leave it unchanged, or add tasks first.
 
 Duplication is the preferred target over wording: the same fact stated in N places compresses to ONE full statement + N pointers — never to N terse paraphrases.
 
 ## 1. Prose Compression
 
-Strip every word that does not carry information — within the § 0 boundary: rules and action patterns keep full sentences. Drop articles. Fragments OK. Short synonyms. Technical terms exact.
+Strip every word that does not carry information; § 0 decides how far a change may go. Drop articles. Fragments OK. Short synonyms. Technical terms exact.
 
 Pattern: `[thing] [action] [reason]. [next step].`
 
