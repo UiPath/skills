@@ -110,9 +110,10 @@ same rules. Every finding fails; there is no ignore list.
 | rule | fails when |
 |---|---|
 | `cache-for-removed` | an `intsvc.http` call still uses the old per-call cache option; use `cache: { ttl }` |
-| `cache-shape` | `cache` has a key other than `ttl`, no `ttl`, or a literal `ttl` of 0 or less; `export const cache` is not an object literal |
+| `cache-shape` | `cache` has a key other than `ttl`, no `ttl`, or a literal `ttl` that is not a positive number; `export const cache` is not an object literal |
 | `cache-on-write` | `cache` on a method other than GET, HEAD, OPTIONS, or a POST with `read: true` |
-| `cache-not-shared` | a call with `cache` has a `url` that is not a literal or template, or its method + url template is cached in fewer than two script files |
+| `cache-not-shared` | a call with `cache` has a non-literal `method`, a `url` that is not a literal or template, or its method + url template is cached in fewer than two script files |
+| `script-parse` | a v4 script does not parse, so its cache use cannot be checked |
 
 If `cache-not-shared` fires, either add `cache` to the other scripts that make the read,
 or cache this script's answer with `export const cache = { ttl }`.
