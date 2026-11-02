@@ -1,0 +1,239 @@
+task_id: skill-test-testcaselog-manual-record-e2e
+description: >
+  End-to-end: the agent records a manual test result from scratch and reads it
+  back. It opens a fresh manual execution for a test case, begins the case's
+  log, closes it with an outcome, and confirms Test Manager reports that outcome.
+  Exercises the write side of `uip tm testcaselog` — `start` and `finish` — plus
+  the fact that `finish` needs all three of `--result`, `--has-error` and
+  `--executed-by`, and that `--executed-by` is an email (not the UUID `assign`
+  takes). There is no `executions create`, so the agent must reach for a manual
+  run to open the execution `start` needs.
+
+  Concurrency: two model variants share the CLAIM project, so the agent opens
+  its OWN per-run STAMPED execution and every lifecycle step is graded on the
+  agent's own emitted command (per-run isolated). pre_run seeds only the
+  immutable test case and sweeps only earlier-day executions, so a concurrent
+  run's work is never touched. The stored-state confirmation is isolated too:
+  pre_run snapshots the existing EVFX-TCLOGMR executions into
+  `baseline_executions.txt` (sandbox cwd) and the oracle credits only a Passed
+  log on an execution opened after that snapshot, so a historical pass in the
+  namespace cannot false-pass this run.
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 48
+  turn_timeout: 1200
+  task_timeout: 1800
+
+# The test case is the only immutable seed (create-if-absent, never deleted).
+# The agent opens its own stamped execution, so there is no fixed-name artifact
+# to collide on. pre_run bounds growth by deleting only earlier-day executions,
+# found via the task's own logs (ad-hoc-set executions are invisible to
+# `executions list`); a concurrent run's today-stamped execution is spared.
+pre_run:
+  - timeout: 300
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys, datetime
+      P = "CLAIM"
+      CASE = "EVFX-TCLOGMR-TC1"
+      SEARCH = "EVFX-TCLOGMR-TC"
+      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:400]} err={err[:250]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      def has_verb(*words):
+          return subprocess.run(["uip", *words, "--help"],
+                               capture_output=True, text=True).returncode == 0
+
+      for words in (["tm", "testcases", "run"],
+                    ["tm", "testcaselog", "start"],
+                    ["tm", "testcaselog", "finish"],
+                    ["tm", "testcaselog", "get"]):
+          if not has_verb(*words):
+              fail(f"this CLI has no 'uip {' '.join(words)}' - needs the "
+                   f"release carrying the test case log verbs")
+
+      # Case - create if absent, never delete.
+      tc = by_name("case.find", "testcases", CASE)
+      if not tc:
+          call("case.create", "tm", "testcases", "create", "--project-key", P,
+               "--name", CASE)
+          tc = by_name("case.refind", "testcases", CASE)
+      if not tc:
+          fail(f"could not create or find {CASE}")
+      if not tc.get("Id"):
+          fail(f"{CASE} has no id")
+
+      # Sweep only EARLIER-DAY executions. Group the task's own logs by execution
+      # and delete one only when every log on it was last touched before today,
+      # so a concurrent run's today-stamped execution is spared.
+      d = call("sweep.list", "tm", "testcaselog", "list", "--project-key", P,
+               "--search", SEARCH, "--limit", "200")
+      by_exec = {}
+      for l in (d.get("Data") or []):
+          eid = l.get("TestExecutionId")
+          if not eid:
+              continue
+          by_exec.setdefault(eid, []).append((l.get("Updated") or "")[:10])
+      stale = [eid for eid, days in by_exec.items()
+               if days and all(x and x < today for x in days)]
+      # `executions delete` ships with the executions PR, not this one, so sweep
+      # only when present. Per-run STAMPED execution names make the sweep
+      # optional: a missing verb leaves earlier runs behind but never collides.
+      if has_verb("tm", "executions", "delete"):
+          for eid in stale:
+              call(f"sweep.del.{eid[:8]}", "tm", "executions", "delete",
+                   "--execution-id", eid, "--project-key", P, "--yes")
+
+      # Fixture handoff: snapshot the EVFX-TCLOGMR executions that already exist
+      # (re-read AFTER the sweep so deleted ones drop out), written to the
+      # sandbox cwd pre_run, the agent and the grader share. The agent opens its
+      # OWN stamped execution during the run, so pre_run cannot know that id in
+      # advance, and a log row carries no run name while the ad-hoc executions
+      # are invisible to `executions list` — so the oracle isolates THIS run by
+      # crediting only a Passed log on an execution NOT in this baseline. A
+      # historical pass (or a prior run's execution) is in the baseline and
+      # cannot satisfy the grade; only a result recorded THIS cycle can.
+      d2 = call("baseline", "tm", "testcaselog", "list", "--project-key", P,
+                "--search", SEARCH, "--limit", "200")
+      baseline = sorted({l.get("TestExecutionId")
+                         for l in (d2.get("Data") or [])
+                         if l.get("TestExecutionId")})
+      with open("baseline_executions.txt", "w", encoding="utf-8") as fh:
+          fh.write("\n".join(baseline))
+
+      print(f"FIXTURE: ready case={CASE!r} swept={len(stale)} "
+            f"baseline={len(baseline)}", flush=True)
+      EOF
+
+initial_prompt: |
+  I ran the test case "EVFX-TCLOGMR-TC1" in my UiPath Test Manager project CLAIM
+  by hand, outside any automation, and it passed. I need that result recorded in
+  Test Manager as a brand-new manual run of just that case.
+
+  Name the run "EVFX-TCLOGMR-<STAMP>-RUN", where <STAMP> is the current UTC date
+  and time as YYYYMMDD-HHMMSS plus 6 random lowercase hex characters you generate
+  once for this session — another session may record a run at the same moment, so
+  the random part keeps this one yours.
+
+  Open that manual run for the case, begin the case's log in it, and close it out
+  as passed (I ran it, my email is tester@uipath.com). Then read the log back and
+  confirm Test Manager now reports it as passed. No need to check back with me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0
+
+  - type: command_executed
+    # `start` needs an --execution-id and there is no `executions create`, so the
+    # agent must open a manual execution with a run. Graded on the manual run
+    # being opened for the case.
+    description: "Agent opened a manual execution for the case (`testcases run ... --execution-type manual`)"
+    command_pattern: 'uip\s+tm\s+testcases?\s+run\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-type\s+manual)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent began the case's log (`testcaselog start --execution-id ... --test-case-id ...`)"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+start\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-case-id\s+\S)'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    # The write: `finish` needs --result AND --has-error AND --executed-by, and
+    # --executed-by is an email. An agent that drops any of the three is refused.
+    description: "Agent closed the log with a result (`testcaselog finish` with --result, --has-error, --executed-by)"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--has-error\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--executed-by\s+\S)'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the log back to confirm (`testcaselog get` or `latest`)"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+(get|latest)\b'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Low-weight confirmation that a manual result actually landed on THIS run,
+  # not a historical pass. Reads the fixture-handoff baseline and credits only a
+  # Passed log whose execution was opened AFTER the baseline was taken — so a
+  # pre-existing passed log in the namespace cannot satisfy it. Under
+  # concurrency a sibling variant's fresh execution also qualifies, which is the
+  # safe direction for a tolerant check; the per-run `finish`/`get` command
+  # criteria above carry the differentiating grade.
+  - type: run_command
+    description: "A Passed EVFX-TCLOGMR log lands on an execution opened during THIS run, not a historical pass"
+    command: |
+      python3 -c "
+      import json, subprocess
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      try:
+          baseline = {x for x in open('baseline_executions.txt',
+                                      encoding='utf-8').read().split() if x}
+      except FileNotFoundError:
+          baseline = None
+      assert baseline is not None, (
+          'fixture handoff missing: baseline_executions.txt was not written')
+      logs = uip('tm','testcaselog','list','--project-key','CLAIM',
+                 '--search','EVFX-TCLOGMR-TC','--limit','200').get('Data') or []
+      passed_execs = sorted({l.get('TestExecutionId') for l in logs
+                             if l.get('Result') == 'Passed'})
+      fresh = [l for l in logs
+               if l.get('Result') == 'Passed'
+               and l.get('TestExecutionId') not in baseline]
+      assert fresh, (
+          'no NEW EVFX-TCLOGMR execution carries a Passed log (only historical '
+          f'passes); baseline={len(baseline)} execs, passed_execs={passed_execs}')
+      "
+    timeout: 150
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not reach past the CLI to the test case log REST route"
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*testcaselogs?\b'
+    tool_name: "Bash"
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

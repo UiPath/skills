@@ -1,0 +1,187 @@
+{
+ "Result": "Success",
+ "Code": "AopsPolicyList",
+ "Data": {
+  "TotalCount": 13,
+  "Result": [
+   {
+    "Name": "Runtime Access And Behavior Controls (4)",
+    "Identifier": "00000000-0000-4000-8000-000000000010",
+    "Description": "ISO/IEC 42001:2023 — Robot runtime governance policy (UIAutomation boundaries)",
+    "Priority": 1,
+    "Availability": 365,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "Runtime Access And Behavior Controls (3)",
+    "Identifier": "00000000-0000-4000-8000-000000000011",
+    "Description": "ISO/IEC 42001:2023 — Robot runtime governance policy (UIAutomation boundaries)",
+    "Priority": 2,
+    "Availability": 365,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "Runtime Access And Behavior Controls (2)",
+    "Identifier": "00000000-0000-4000-8000-000000000012",
+    "Description": "ISO/IEC 42001:2023 — Robot runtime governance policy (UIAutomation boundaries)",
+    "Priority": 3,
+    "Availability": 365,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "Runtime Access And Behavior Controls (1)",
+    "Identifier": "00000000-0000-4000-8000-000000000013",
+    "Description": "ISO/IEC 42001:2023 — Robot runtime governance policy (UIAutomation boundaries)",
+    "Priority": 4,
+    "Availability": 365,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "Runtime Access And Behavior Controls",
+    "Identifier": "00000000-0000-4000-8000-000000000014",
+    "Description": "ISO/IEC 42001:2023 — Robot runtime governance policy (UIAutomation boundaries)",
+    "Priority": 5,
+    "Availability": 365,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 A.6.2.8 Traceability - Robot",
+    "Identifier": "00000000-0000-4000-8000-000000000015",
+    "Priority": 6,
+    "Availability": 30,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO42001 Robot AppUrl Restrictions Draft",
+    "Identifier": "00000000-0000-4000-8000-000000000016",
+    "Description": "Draft Robot RT-UIA-001 app/url allowlist policy with SKIP placeholders for ISO 42001 control setup.",
+    "Priority": 7,
+    "Availability": 30,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO42001 Robot App URL Restrictions",
+    "Identifier": "00000000-0000-4000-8000-000000000017",
+    "Priority": 8,
+    "Availability": 30,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 Robot App URL Restrictions - Scoped",
+    "Identifier": "00000000-0000-4000-8000-000000000018",
+    "Description": "ISO 42001 intended-use settings for robot application and URL restrictions; organization-specific lists remain to be configured. Extended with A.6.2.8 traceability settings (trace retention).",
+    "Priority": 9,
+    "Availability": 30,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "test-robot",
+    "Identifier": "00000000-0000-4000-8000-000000000019",
+    "Priority": 10,
+    "Availability": 30,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 - Robot URL/App Restrictions (A.9.4)",
+    "Identifier": "00000000-0000-4000-8000-00000000001a",
+    "Priority": 11,
+    "Availability": 30,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 A.6.2.8 Traceability - Robot - scoped",
+    "Identifier": "00000000-0000-4000-8000-00000000001b",
+    "Description": "Traceability-only ISO 42001 partial apply for robot trace retention.",
+    "Priority": 12,
+    "Availability": 30,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 A.9.4 - Robot URL and Application Restrictions",
+    "Identifier": "00000000-0000-4000-8000-000000000001",
+    "Description": "Restricts which URLs and applications robots (Runtime Analyzer RT-UIA-001, Healing Agent HA-UIA-001/002) are allowed to automate, per ISO/IEC 42001:2023 clause A.9.4. Allow/block list values pending org input.",
+    "Priority": 13,
+    "Availability": 30,
+    "Product": {
+     "Name": "Robot",
+     "Label": "Robot",
+     "IsRestricted": false,
+     "IsCloud": false,
+     "IsRemote": false
+    }
+   }
+  ]
+ }
+}

@@ -211,7 +211,7 @@ Read the name and key from the corresponding Solution resource file. `Data.Solut
 
 ## Response shape and field rules
 
-Both Http and IntSvc outputs are envelopes: `{ statusCode, statusText, headers, ok, request, content, vendorProcessingTimeMs }`. Read payloads under `.content`; IntSvc list payloads may be arrays directly, not `.content.value[]`. Inspect `optionalConfiguration.fieldsContainer.outputJsonSchema`: `type: "object"` means a single item; `type: "array"` means a list. Local CLI may return `content` as a JSON string while cloud returns a parsed value; normalize defensively in scripts. Use optional chaining and log the full output once if the expected shape is absent.
+Both Http and IntSvc outputs are envelopes: `{ statusCode, statusText, headers, ok, request, content, vendorProcessingTimeMs }`, plus `page` on a paged IntSvc list ([paging](#paging-list-and-search-results)). Read payloads under `.content`; IntSvc list payloads may be arrays directly, not `.content.value[]`. Inspect `optionalConfiguration.fieldsContainer.outputJsonSchema`: `type: "object"` means a single item; `type: "array"` means a list. Local CLI may return `content` as a JSON string while cloud returns a parsed value; normalize defensively in scripts. Use optional chaining and log the full output once if the expected shape is absent.
 
 ### Rule (a) — flat dotted keys
 
@@ -228,6 +228,20 @@ Use `Data.SlotKey` for the activity key in `do` and `Data.ExportBucketKey` for `
 ### Rule (d) — use the full endpoint
 
 Use the IS Elements endpoint, which may include a hub prefix. `/<objectName>` is only a degraded fallback when `IsEnrichmentAvailable` is false; re-stub after IS access returns or inspect `uip is resources describe`.
+
+## Paging list and search results
+
+IntSvc list and search activities that take a `nextPage` parameter return one page per call. Studio Web hides `nextPage` and page size from users and offers "Max records" instead; do the same where the runtime allows it:
+
+1. **Let the runtime page a GET.** When the stub's `with.method` is `GET` and `.content` is an array, add `"maximumRecordsReturned": -1` to the stub's `with` object, next to `queryParameters`, and keep every other stub field as emitted. `-1` fetches every record into one list, so use it when the query bounds the result; a positive number caps the total. The stub does not emit the field and `--inputs` drops it, so add it by hand, as a literal number: the runtime does not evaluate an expression there, and a value it cannot parse turns paging off. The runtime requests the pages itself and returns one list in `.content`. For any other method it only truncates the first page to the cap, so loop instead.
+2. **Otherwise loop on `.page`.** Loop when the method is not `GET` or when each page needs its own processing, and leave `maximumRecordsReturned` unset on that activity: runtime paging or truncation removes the paging headers, so `.page` disappears. After each call, read `$context.outputs.<ExportBucketKey>.page`, which is `{ hasMorePages, nextPageToken }`. The runtime adds it when the response has both paging headers, `.content` is an array, and the token is not the end-of-results cursor; `hasMorePages` mirrors the `elements-has-more` header. Pass `page.nextPageToken` as the next call's `queryParameters.nextPage` (`uip api-workflow registry stub <activity-type-id> --connection-id <uuid> --inputs '{"nextPage":"${$context.variables.nextPage}"}' --output json` puts the reference in place), and stop when `.page` is absent or `page.hasMorePages` is false. If `.content` is not an array, there is no `.page`: send `headers['elements-next-page-token']` and stop when `headers['elements-has-more']` is not `"true"`.
+3. **Never decide on the raw `elements-next-page-token` header.** It is present on every page, including the last, where it decodes to `providerNextPage: "DONE"`. Sending it back returns the first page again or empty pages, so a loop on header presence never ends.
+4. **Do not stop on a short page.** Vendors may return fewer items than the page size while more remain.
+5. **Cap a manual loop.** Keep a page cap in the `doWhile` condition. When the loop ends with the cap reached and more pages remaining, fail the run with a clear error instead of returning partial data.
+
+The Studio Web designer manages `nextPage` itself and can drop it from the activity when it saves. It keeps `maximumRecordsReturned` only on List operations that take `nextPage`, where it shows "Max records"; `uip is resources describe` lists an object's operations. In a workflow edited in Studio Web, prefer `maximumRecordsReturned`, and after a designer save check that the paging field is still on the activity.
+
+Manual loop shape: [control-flow-patterns.md](control-flow-patterns.md#11-paging-a-connector-list-or-search).
 
 ## Multipart endpoints
 
@@ -255,6 +269,7 @@ Use exact schema names, flat dotted keys, bare literals or real `${$context...}`
 - Do not read IntSvc output at the root; use `.content` and `Data.ExportBucketKey`.
 - Do not nest connector fields or wrap connector literals as `${'literal'}`.
 - Do not remove `multipartParameters` from multipart operations.
+- Do not hand-roll paging on the `elements-next-page-token` header or stop on a short page; set `maximumRecordsReturned` on a GET list, or loop on `.page` until it is absent or `hasMorePages` is false.
 - Do not leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` or any `<REPLACE_WITH_*>` placeholder in a generated workflow; stop and ask the user if no working UUID or URL is available.
 - Do not skip the required-field cross-check.
 

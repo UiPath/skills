@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """pre_run: mint this run's reference token and stage the token-bearing fixtures.
 
-Renders every `*-template.<ext>` in the sandbox to `<name>.<ext>` with `{{RUN_TOKEN}}`
+Renders every `*-template.<ext>` in the sandbox (any depth, so a corpus can stage
+one folder per document set) to `<name>.<ext>` with `{{RUN_TOKEN}}`
 replaced by a fresh token, removes the templates, and records the token plus each
 rendered file's sha256 in `seed.json` for the graders.
 
@@ -39,14 +40,17 @@ def render(template_path: str, token: str) -> tuple[str, str]:
     rendered = body.replace(PLACEHOLDER, token)
     stem, ext = os.path.splitext(template_path)
     target = stem[: -len(TEMPLATE_MARKER)] + ext
-    with open(target, "w", encoding="utf-8") as handle:
-        handle.write(rendered)
+    data = rendered.encode("utf-8")
+    # Bytes, not text mode: the digest must match what the recorder hashes on upload,
+    # and text mode would rewrite newlines on Windows.
+    with open(target, "wb") as handle:
+        handle.write(data)
     os.remove(template_path)
-    return target, hashlib.sha256(rendered.encode("utf-8")).hexdigest()
+    return target, hashlib.sha256(data).hexdigest()
 
 
 def main() -> int:
-    templates = sorted(p for p in glob.glob(f"*{TEMPLATE_MARKER}.*") if os.path.isfile(p))
+    templates = sorted(p for p in glob.glob(f"**/*{TEMPLATE_MARKER}.*", recursive=True) if os.path.isfile(p))
     if not templates:
         sys.exit("seed_publish: no *-template.* fixtures in the sandbox")
 

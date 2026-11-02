@@ -123,6 +123,7 @@ from _shared.bpmn_check import (  # noqa: E402
     has_type,
     order_by,
     parse_bpmn,
+    query_parameters,
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -300,7 +301,8 @@ def node_representation(task: ET.Element) -> tuple[list, str]:
 
     `text` is the Flow-style lowercase search blob for the nine-condition
     filter check, and carries ONLY what Flow's `node_filter_text` carried: the
-    VALUE of a filter-bearing input (FILTER_TEXT_NAMES -- Flow read
+    VALUE of a filter-bearing input or V2 `queryParameters` key
+    (FILTER_TEXT_NAMES -- Flow read
     `queryParameters.queryExpression`), plus the structured FilterBuilder
     leaves dumped back to text if a savedFilterTrees.queryExpression tree is
     found in any JSON-shaped input. Both representations are searched together,
@@ -315,7 +317,7 @@ def node_representation(task: ET.Element) -> tuple[list, str]:
     inputs = all_inputs(task)
     pairs: list = [(inp.attrib.get("name") or "", input_val(inp)) for inp in inputs]
     text_parts: list[str] = []
-    for name, value in pairs:
+    for name, value in pairs + list(query_parameters(task).items()):
         if name.lower() not in FILTER_TEXT_NAMES:
             continue
         if BINDING_VALUE_RE.match(value or ""):

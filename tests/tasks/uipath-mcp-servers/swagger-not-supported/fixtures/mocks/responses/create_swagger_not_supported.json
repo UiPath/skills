@@ -1,0 +1,11 @@
+{
+  "Result": "Failure",
+  "Code": "AgentHubMcpCreate",
+  "ErrorCode": "not_supported",
+  "Message": "The swagger MCP server type isn't supported on the connected environment.",
+  "Instructions": "Agent Gateway on the connected environment does not offer swagger MCP servers. Register the API as another MCP server type (`uip agenthub mcp create --help`), or run the command against an environment that offers swagger MCP servers.",
+  "Retry": "RetryWillNotFix",
+  "Context": {
+    "HttpStatus": 404
+  }
+}

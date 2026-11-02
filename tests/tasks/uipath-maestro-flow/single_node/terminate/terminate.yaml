@@ -14,6 +14,7 @@ sandbox:
 run_limits:
   expected_turns: 27
   turn_timeout: 1200
+  task_timeout: 2100
 
 reference:
   directory: ../..

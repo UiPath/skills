@@ -1,72 +1,54 @@
 # XAML Editing Catalog
 
-Per-operation and per-activity catalogs for XAML authoring: editing operations (arguments, variables, imports, assembly references, expressions, resource types) and complete reference workflows. Split out of [xaml-basics-and-rules.md](xaml-basics-and-rules.md) so that file is a plain full read (Rule 22) with no marker to locate first.
+Per-operation and per-activity catalogs for XAML authoring: editing operations (arguments, variables, imports, assembly references, global variables, expressions, resource types) and complete reference workflows. Split out of [xaml-basics-and-rules.md](xaml-basics-and-rules.md) so that file is a plain full read (Rule 22) with no marker to locate first.
 
-**Read contract — per entry, never end-to-end:** Grep `^###` on this file to list the entries with line numbers, then Read ONLY the entries matching the operation or activity at hand. Unsure whether an entry applies → read it. Reading this file top to bottom is the mistake the split removed.
+**Read contract — per entry, never end-to-end:** Grep `^###` on this file to list entries with line numbers, then Read ONLY entries matching the operation or activity at hand. If unsure whether an entry applies, read it. Do not read this file top to bottom.
 
 ## Common Editing Operations
 
-Common operations for editing and managing workflow XAML files.
-
 ### Adding Arguments (In/Out/InOut)
 
-Add `x:Property` elements inside the `<x:Members>` block:
+Add `x:Property` elements inside `<x:Members>` with `InArgument`, `OutArgument`, or `InOutArgument`; prefix names `in_`, `out_`, or `io_`:
 
 ```xml
 <x:Members>
-  <!-- In argument (input to workflow) -->
   <x:Property Name="in_CustomerName" Type="InArgument(x:String)" />
-  <!-- Out argument (output from workflow) -->
   <x:Property Name="out_ProcessedCount" Type="OutArgument(x:Int32)" />
-  <!-- InOut argument (both input and output) -->
   <x:Property Name="io_DataTable" Type="InOutArgument(scg:List(x:String))" />
 </x:Members>
 ```
 
-Argument naming convention: `in_`, `out_`, `io_` prefixes.
+### Setting Default Values for Arguments
 
-#### Setting Default Values for Arguments
-
-Defaults go on the root `<Activity>` element using the canonical .NET Workflow Foundation self-namespace syntax:
+Put defaults on the root `<Activity>` using both canonical self-namespace parts:
 
 ```xml
-<Activity x:Class="TestCase"
-          xmlns:this="clr-namespace:"
-          this:TestCase.in_FileName="report.pdf"
-          xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
-          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <x:Members>
-    <x:Property Name="in_FileName" Type="InArgument(x:String)" />
-  </x:Members>
+<Activity x:Class="TestCase" xmlns:this="clr-namespace:" this:TestCase.in_FileName="report.pdf" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members><x:Property Name="in_FileName" Type="InArgument(x:String)" /></x:Members>
 </Activity>
 ```
 
-Two parts are mandatory:
-
-1. **`xmlns:this="clr-namespace:"`** — the empty `clr-namespace:` is what makes `this:` resolve to the class declared by `x:Class`.
-2. **`this:<ClassName>.<argName>="<value>"`** — the attribute name MUST be qualified with `this:` AND the class name; bare `<argName>="<value>"` is rejected.
-
-The default is baked into the compiled assembly at build time as a `Literal<T>` expression in the generated class's constructor. At runtime, when the workflow is invoked without that argument supplied (e.g. `uip rpa run` without `--input-arguments`), the literal is used.
+`xmlns:this="clr-namespace:"` resolves `this:` to `x:Class`; `this:<ClassName>.<argName>="<value>"` is required. A bare `<argName>="<value>"` is rejected. The default compiles as a `Literal<T>` in the generated constructor and is used when invocation supplies no value (for example, `uip rpa run` without `--input-arguments`).
 
 **Three default-value forms that DO NOT work** — every one of them is rejected by the XAML loader. Authoring agents have repeatedly tried these and lost time to confusing errors — don't:
 
 | Bad form | Error |
 |---|---|
-| `<Activity in_FileName="...">` (no `xmlns:this`, no class qualifier) | `member (in_FileName) is not supported by DynamicActivity` |
+| `<Activity in_FileName="...">` (no `xmlns:this` or class qualifier) | `member (in_FileName) is not supported by DynamicActivity` |
 | `<x:Property Name="in_FileName" ...><InArgument>...</InArgument></x:Property>` | `DynamicActivityProperty does not have a content property` |
 | `<x:Property.Value>...</x:Property.Value>` | `x:Property member (Value) is not supported by DynamicActivityProperty` |
 
-If you must accept an empty string as a sentinel ("user didn't provide one") and substitute a literal anyway, use a ternary inside each `CSharpValue`/`VisualBasicValue` consumer of the argument:
+If an empty string is a replacement sentinel, put a ternary in each `CSharpValue`/`VisualBasicValue`, e.g.:
 
 ```xml
 <CSharpValue x:TypeArguments="x:String">string.IsNullOrEmpty(in_FileName) ? "report.pdf" : in_FileName</CSharpValue>
 ```
 
-But the root-attribute default above is the cleaner answer — use it first.
+Prefer the root-attribute default first.
 
 ### Adding Variables
 
-Add `Variable` elements inside the workflow container's `.Variables` block:
+Put `Variable` elements in the containing activity's `.Variables` block; scope is that activity (Sequence, Flowchart, etc.):
 
 ```xml
 <Sequence.Variables>
@@ -76,12 +58,7 @@ Add `Variable` elements inside the workflow container's `.Variables` block:
 </Sequence.Variables>
 ```
 
-Variables are scoped to their containing activity (Sequence, Flowchart, etc.).
-
-**IMPORTANT — `x:` and `s:` are XML namespace aliases, not separate type systems.**
-`x:String` and `s:String` both refer to `System.String`; the prefix only determines which namespace schema resolves the name. The `x:` XAML language schema registers a small fixed set of types (`x:String`, `x:Int32`, `x:Int64`, `x:Double`, `x:Boolean`, `x:Byte`, `x:Single`, `x:Decimal`, `x:Char`, `x:Object`, `x:TimeSpan`). Any other CLR type — including `DateTime`, `DateTimeOffset`, `Guid`, etc. — is not registered in that schema and must be reached through `s:` (`xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"`).
-Using `x:DateTime` or `x:DateTimeOffset` produces `Cannot create unknown type` at load time.
-See `common-pitfalls.md` → *"Invalid Use of `x:` Prefix for Non-Builtin CLR Types"* for the full list and examples.
+`x:` and `s:` are aliases, not separate type systems: `x:String` and `s:String` both mean `System.String`. The `x:` schema registers only `x:String`, `x:Int32`, `x:Int64`, `x:Double`, `x:Boolean`, `x:Byte`, `x:Single`, `x:Decimal`, `x:Char`, `x:Object`, and `x:TimeSpan`. Other CLR types, including `DateTime`, `DateTimeOffset`, and `Guid`, require `s:` with `xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"`; `x:DateTime` and `x:DateTimeOffset` produce `Cannot create unknown type`. See `common-pitfalls.md` → *"Invalid Use of `x:` Prefix for Non-Builtin CLR Types"*.
 
 ### Adding Namespace Imports
 
@@ -102,67 +79,76 @@ Add `<AssemblyReference>` entries:
 <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
 ```
 
+### Global Variables
+
+Project-wide variables and constants live in `.project/globalVariables.json`, one entry each. A workflow reads them without declaring them, which makes them the channel for state no argument carries, such as the configuration an execution template loads ([testing-guide.md § Execution Templates](../testing-guide.md#execution-templates)).
+
+```json
+[
+  {
+    "Constant": false,
+    "Name": "<NAME>",
+    "TypeFullyQualifiedName": "<ASSEMBLY_QUALIFIED_TYPE>",
+    "UnresolvedTypeFullyQualifiedName": null,
+    "Expression": null,
+    "IsLiteral": false
+  }
+]
+```
+
+`TypeFullyQualifiedName` is the assembly-qualified type name, as Studio writes it for a variable of that type. A constant has `"Constant": true` and its value as an expression in `Expression` (`"\"00:20:00\""` for a text constant).
+
+- **VB expressions** read both by name: `<NAME>("Key")`, `TimeSpan.Parse(<CONSTANT>)`.
+- **C# expressions** qualify them: `GlobalVariables.<NAME>["Key"]` with `GlobalVariablesNamespace` among the namespace imports, `GlobalConstants.<CONSTANT>` with `GlobalConstantsNamespace` ([§ Adding Namespace Imports](#adding-namespace-imports)).
+
 ### Expressions
 
 #### C# Expressions (`expressionLanguage: CSharp`)
 
-Applies to XAML workflow files in projects whose `project.json` has `expressionLanguage: CSharp`. These rules govern expressions inside XAML — they are unrelated to coded workflows (`.cs` files), which are plain C# and do not use `CSharpValue` / `CSharpReference` elements.
+These rules apply to XAML projects whose `project.json` has `expressionLanguage: CSharp`, not coded workflows (`.cs`), which use plain C# and not `CSharpValue`/`CSharpReference`.
 
-Expressions use explicit `<CSharpValue>` (for read/evaluate) or `<CSharpReference>` (for write/lvalue) elements inside `<InArgument>` / `<OutArgument>`:
+Use explicit `<CSharpValue>` for reads/evaluation and `<CSharpReference>` for writes/lvalues inside `<InArgument>`/`<OutArgument>`:
+
 ```xml
 <Assign DisplayName="Set Name">
-  <Assign.To>
-    <OutArgument x:TypeArguments="x:String">
-      <CSharpReference x:TypeArguments="x:String">fullName</CSharpReference>
-    </OutArgument>
-  </Assign.To>
-  <Assign.Value>
-    <InArgument x:TypeArguments="x:String">
-      <CSharpValue x:TypeArguments="x:String">firstName + " " + lastName</CSharpValue>
-    </InArgument>
-  </Assign.Value>
+  <Assign.To><OutArgument x:TypeArguments="x:String"><CSharpReference x:TypeArguments="x:String">fullName</CSharpReference></OutArgument></Assign.To>
+  <Assign.Value><InArgument x:TypeArguments="x:String"><CSharpValue x:TypeArguments="x:String">firstName + " " + lastName</CSharpValue></InArgument></Assign.Value>
 </Assign>
 ```
 
-**Important**: Do NOT use `[bracket]` shorthand for expressions. Brackets create `VisualBasicValue` nodes at deserialization time, causing validation failures for C#-only syntax (`null`, `?.`, `??`, `typeof()`, etc.).
+Do not use `[bracket]` shorthand: it creates `VisualBasicValue` nodes during deserialization and causes validation failures for C#-only syntax (`null`, `?.`, `??`, `typeof()`, etc.). Each C# expression is a lambda expression tree and supports no statements, `out var` (`TryParse`), optional-argument overloads (`CS0854`), or calls into coded source-file types ([common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](common-pitfalls.md)). If a transform outgrows one expression, escalate per [data-manipulation-guide.md § Exception](../data-manipulation-guide.md): Invoke Code, or a coded workflow via Invoke Workflow File.
 
-**Expression-tree limits**: each C# expression compiles as a lambda expression tree — no statements, no `out var` (`TryParse`), no optional-argument overloads (`CS0854`), and no calls into the project's coded source file types ([common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](common-pitfalls.md)). When a transform outgrows single expressions, escalate per [data-manipulation-guide.md § Exception](../data-manipulation-guide.md) — Invoke Code, or a coded workflow via Invoke Workflow File.
+For `InArgument<T>`/`OutArgument<T>` attribute bindings in C# XAML, non-literal attributes (for example `Message="variableName"` or `Text="&quot;Hello &quot; + name"`) are not evaluated as expressions. They may remain literal and validate, build, and run with the wrong value, or fail deserialization if the type rejects them. Use `<CSharpValue>`/`<CSharpReference>` for anything other than a plain literal. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md), including § C# Expression Pitfalls.
 
-**Stronger rule for attribute-form bindings on `InArgument<T>` / `OutArgument<T>`:** in XAML projects with `expressionLanguage: CSharp`, any **non-literal** attribute value (`Message="variableName"`, `Text="&quot;Hello &quot; + name"`) is not evaluated as an expression. Where the property type accepts a string the text survives as a literal and the workflow validates, builds, and runs with the wrong value and no error; where it does not, the file fails to deserialize. Use `<CSharpValue>` / `<CSharpReference>` child elements for anything that isn't a plain literal. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) (includes § C# Expression Pitfalls).
-
-**Safe attribute-form values** (no expression evaluator involved, type converter handles them directly):
-- Literal strings on `InArgument<String>`: `Text="Book trip"`, `DisplayName="Open file"`
-- Enums: `Level="Info"`, `ClickType="Single"`, `MouseButton="Left"`
-- Numbers, booleans, `{x:Null}`
-- `TimeSpan` literals: `Duration="00:00:02"`
-
-**For activity-specific recipes** (`LogMessage.Message` as `InArgument<Object>`, `NGetText.TextString` as `OutArgument<String>`, `StartProcess.FileName` with composed paths, `Assign`, `If.Condition`, etc.), see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md). That file is the canonical lookup for the binding form per common activity property.
+Safe attribute values use no expression evaluator: literal strings on `InArgument<String>` (`Text="Book trip"`, `DisplayName="Open file"`), enums (`Level="Info"`, `ClickType="Single"`, `MouseButton="Left"`), numbers, booleans, `{x:Null}`, and `TimeSpan` literals (`Duration="00:00:02"`). For activity-specific recipes (`LogMessage.Message` as `InArgument<Object>`, `NGetText.TextString` as `OutArgument<String>`, `StartProcess.FileName` with composed paths, `Assign`, `If.Condition`, etc.), use [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md), the canonical lookup for each property.
 
 #### VB Expressions (`expressionLanguage: VisualBasic`)
-Expressions use VB syntax with `[bracket]` shorthand (VB is the default deserialization target for brackets):
+
+Use VB syntax and `[bracket]` shorthand, the default deserialization target:
+
 ```xml
 <InArgument x:TypeArguments="x:String">[firstName & " " & lastName]</InArgument>
 ```
 
-**Check `project.json` `expressionLanguage` field to determine which syntax to use.**
+Check `project.json`'s `expressionLanguage` before choosing syntax.
 
 ### Resource Types (IResource / ILocalResource)
 
-Some activity properties accept `IResource` or `ILocalResource` types instead of plain strings for file inputs. These are part of UiPath's resource abstraction model:
+Some file inputs require resource abstractions rather than strings:
 
 | Type | Description | When Used |
-|------|-------------|-----------|
-| `IResource` | Generic resource (local file, remote file, cloud attachment) | Activities that accept any file source |
-| `ILocalResource` | Local file on disk (has `LocalPath` property) | Activities that need a file on the local filesystem |
-| `IRemoteResource` | Remote resource with a URI and a local copy | Cloud/API-sourced files |
+|---|---|---|
+| `IResource` | Generic resource (local file, remote file, cloud attachment) | Activities accepting any file source |
+| `ILocalResource` | Local disk file with `LocalPath` | Activities requiring a local filesystem file |
+| `IRemoteResource` | Remote resource with a URI and local copy | Cloud/API-sourced files |
 
-**In XAML**, resource-typed properties are set via expressions that create the resource — `LocalResource.FromPath(filePath)` or the Path Exists activity. Both approaches, the XAML forms, and the required `UiPath.Platform.ResourceHandling` namespace: [common-pitfalls.md § IResource / ILocalResource](common-pitfalls.md#iresource--ilocalresource--string-path-conversion).
+Set resource-typed properties with expressions that create the resource—`LocalResource.FromPath(filePath)` or the Path Exists activity. For both XAML forms and the required `UiPath.Platform.ResourceHandling` namespace, see [common-pitfalls.md § IResource / ILocalResource](common-pitfalls.md#iresource--ilocalresource--string-path-conversion).
 
-**Activity Storage**: Some activities use a bucket-based storage system (`.storage/` folder in the project). Resources stored at design-time in `.storage/.runtime/<bucket>/` are packed into the published NuPkg and available at runtime. This is managed automatically — you don't need to edit storage resources directly in XAML.
+Some activities use bucket storage (`.storage/`). Design-time resources in `.storage/.runtime/<bucket>/` are packed into the published NuPkg and available at runtime; do not edit storage resources directly in XAML.
 
 ## XAML Reference Examples
 
-Complete workflow examples demonstrating proper XAML structure and patterns.
+Complete workflow patterns demonstrating XAML structure and activity configuration.
 
 ### Example 1: Basic Activities (LogMessage, If/Else, Assign)
 
@@ -333,5 +319,4 @@ Shows a package-based activity with `ConnectionId` for Integration Service.
 
 ### Example 3: Integration Service `ConnectorActivity`
 
-The generic IS `ConnectorActivity` pattern — activity shape, worked example, editing rules, JIT-generated assemblies: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md).
-
+For the generic IS `ConnectorActivity` shape, worked example, editing rules, and JIT-generated assemblies, use [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md).

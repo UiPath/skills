@@ -5,7 +5,7 @@ UiPath workflow XAML concepts and the Discovery → Generate/Edit → Validate &
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
 
-**Read contract (Rule 22):** read this file in full, with no prior lookup, in the same assistant turn as the other T1 reads (cards and pitfalls heading list). For per-operation/activity catalogs (§ Common Editing Operations, § XAML Reference Examples), Grep `^###` in [xaml-editing-catalog.md](xaml-editing-catalog.md) and Read only matching entries; if unsure, read it.
+**Read contract (Rule 22):** read this file in full, with no prior lookup, in the same assistant turn as the other T1 reads (card and pitfalls heading lists). For per-operation/activity catalogs (§ Common Editing Operations, § XAML Reference Examples), Grep `^###` in [xaml-editing-catalog.md](xaml-editing-catalog.md) and Read only matching entries; if unsure, read it.
 
 ## Critical Rules — XAML (Rules 16–21a, 24, 25)
 
@@ -19,7 +19,7 @@ Mandatory for all XAML authoring and editing. Cited as "Rule N" across this skil
 21. **[XAML] Read `<Activity>.md` before `activities get-default-xaml` for every activity not on the common-activity card.**
     - **Card activities/patterns:** consult [common-activity-card.md](../common-activity-card.md) and [common-pattern-card.md](../common-pattern-card.md) as lookups: Grep `^### ` for line-numbered entries, then Read matching entries (each ends at the next `###`). Read a card end-to-end only when the plan needs more than 5 entries. On a hit, author from that entry alone: skip `activities find`, `activities get-default-xaml`, and per-activity MD. Precedence is card → agent memory ([execution-maps-guide.md § Cross-session memory](../execution-maps-guide.md#cross-session-memory)) → full triple. Memory substitutes only for the triple; `validate`/`build` still gate.
     - **Other activities:** run `activities find` for the class name; read `<Activity>.md` first and make a required/use-case-relevant property checklist; run `activities get-default-xaml`; diff the checklist against the starter and add missing properties. An empty checklist means you skipped step 2, go back.
-    - **Doc order:** primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md`; fallback `../activity-docs/<PackageId>/<closest-version>/<Activity>.md` for older versions when `.local/docs` is empty. `UiPath.UIAutomation.Activities` has no bundled fallback: `.local/docs` after installation is its sole source. If absent, do not hunt for a bundled copy; follow Rule 7a (install with consent per [uia-starter-guide.md § UIA Prerequisites](../uia-starter-guide.md)), or use the Placeholder-Selector Stub Pattern in [uia-starter-guide.md](../uia-starter-guide.md).
+    - **Doc order:** primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md`; fallback `../activity-docs/<PackageId>/<closest-version>/<Activity>.md` for older versions when `.local/docs` is empty. `UiPath.UIAutomation.Activities` has no bundled fallback: `.local/docs` after installation is its sole source. If absent, do not hunt for a bundled copy; follow Rule 7a (install through the version question, SKILL.md § Resolving Packages & Activity Docs, Step 1), or use [uia-policies-catalog.md § Placeholder-Selector Stub Pattern](../uia-policies-catalog.md).
     - **Triggers:** if the class ends in `Trigger`, namespace contains `.Triggers`, or the description mentions “starts a job”, “Monitor Events”, or “Trigger Scope”, also read the bundled `../activity-docs/<PackageId>/<closest-version>/activities/<Activity>.md` **and** the package's bundled `overview.md`. Sparse auto-generated trigger docs omit placement guidance (entry-point vs. `ui:TriggerScope`), deployment context, and namespace/assembly gotchas; use Common Rule 12 (SKILL.md) and [trigger-pattern-guide.md](../trigger-pattern-guide.md).
     - **Skip-tax:** `get-default-xaml` omits type-default properties. For `NGetText` the starter is literally `<uix:NGetText HealingAgentBehavior="SameAsCard" />` with zero output properties; `NGetText.Value="..."` is unknown, while the output member is `TextString`. This causes `Cannot set unknown member` and blocks Object Repository linking. For `NTypeInto`, 2 of 20 properties are hidden.
     - The card is the only allowlist; do not add activities to it by personal judgment. Full procedure: § Activity Property Surface in this file.
@@ -46,7 +46,7 @@ Mandatory for all XAML authoring and editing. Cited as "Rule N" across this skil
 | Flowchart | [canvas-layout-guide.md](canvas-layout-guide.md), § Flowchart Structure & Wiring then § Flowchart Layout |
 | StateMachine | § State Machine here → [canvas-layout-guide.md § State Machine Layout](canvas-layout-guide.md#4-state-machine-layout) |
 | Create/edit Long Running Workflow (ProcessDiagram) | [long-running-workflow-guide.md](long-running-workflow-guide.md) → [canvas-layout-guide.md](canvas-layout-guide.md) |
-| Multi-screen UIA XAML | Package guide § Multi-Screen Authoring (from core guide § Documentation, Rule 7); default author-once-after-capture with one `validate`+`build` gate (Rule 18), interleave per screen only for long captures (5+ screens); [execution-maps-guide.md § Journey: UIA capture + build](../execution-maps-guide.md#journey-uia-capture--build-xaml) |
+| Multi-screen UIA XAML | Package guide § Multi-Screen Authoring (from core guide § Documentation, Rule 7); default author-once-after-capture with one `validate`+`build` gate (Rule 18), interleave per screen only for long captures (5+ screens); [execution-journeys-catalog.md § Journey: UIA capture + build](../execution-journeys-catalog.md#journey-uia-capture--build-xaml) |
 | Data Fabric entities | [activity-docs overview](../activity-docs/UiPath.DataService.Activities/overview.md) |
 | Data Fabric filters | [data-service-filter-builder-guide.md](../activity-docs/UiPath.DataService.Activities/guides/data-service-filter-builder-guide.md) → [QueryEntityRecords](../activity-docs/UiPath.DataService.Activities/activities/QueryEntityRecords.md) |
 | IS connector | [is-connector-xaml-guide.md](../is-connector-xaml-guide.md) — includes connector discovery + connection lifecycle |
@@ -88,7 +88,7 @@ Check `expressionLanguage` in `project.json`. VB.NET uses `[brackets]`; C# uses 
 - [canvas-layout-guide.md](canvas-layout-guide.md): Flowchart vocabulary/wiring, forbidden nested chain, Flowchart/State Machine/LRW ViewState.
 - [long-running-workflow-guide.md](long-running-workflow-guide.md): LRW dependency, nodes, gateways, suspend/resume.
 - [jit-custom-types-schema.md](jit-custom-types-schema.md): JIT custom types.
-- [../reframework-guide.md](../reframework-guide.md): REFramework modes, SetTransactionStatus queue guard, Config.xlsx trap.
+- [../reframework-guide.md](../reframework-guide.md): REFramework modes, configuration file per template, SetTransactionStatus queue guard.
 - [../data-manipulation-guide.md](../data-manipulation-guide.md): DataTable LINQ, strings, RegEx, DateTime, conversion, collections, JSON; VB/C#.
 - [../error-handling-guide.md](../error-handling-guide.md): exception taxonomy, Try/Catch, Retry Scope, Global Exception Handler, transaction boundaries and retry ownership.
 - [../library-authoring-guide.md](../library-authoring-guide.md): reusable-library contract, layout sidecar, error contract, SemVer, pack/publish.
@@ -122,9 +122,8 @@ Read: file_path="{projectRoot}/project.json"
 Determine location conventions, names, similar workflows, VB/C# (`expressionLanguage`), packages, and reusable connections/credentials/objects.
 
 #### Step 1.2: Discover Activity Documentation (Primary Source)
-**Read `<Activity>.md` BEFORE `activities get-default-xaml`, every time, even for activities that look simple.** The doc is the property surface; the CLI starter is not — see [§ Activity Property Surface](#activity-property-surface-and-starter-xaml) for the skip-tax and the full per-activity procedure.
 
-Read `<Activity>.md` before `activities get-default-xaml`, every time, even for activities that look simple, except the Rule 21/21a card path; see [§ Activity Property Surface](#activity-property-surface-and-starter-xaml). Installed docs are at `{projectRoot}/.local/docs/packages/{PackageId}/` and exist only for installed packages and typically only for newer package versions; if unavailable, install/update the package, prefer minor/patch over major jumps (for example 23.x → 26.x may deprecate activities), then use `skills/uipath-rpa/references/activity-docs/<PackageId>/<closest-version>/` or Steps 1.4-1.7. Package docs contain `overview.md`, `activities/{ActivitySimpleClassName}.md`, and `coded/` (ignore `coded/` for XAML). Activity docs contain Header → Metadata → Properties (Input, Output, Conditional groups, Common) → Valid Configurations → Enum Reference → XAML Examples → Notes.
+Read `<Activity>.md` before `activities get-default-xaml`, every time, even for activities that look simple, except the Rule 21/21a card path: the doc is the property surface, the CLI starter is not; see [§ Activity Property Surface](#activity-property-surface-and-starter-xaml) for the skip-tax and the full per-activity procedure. Installed docs are at `{projectRoot}/.local/docs/packages/{PackageId}/` and exist only for installed packages and typically only for newer package versions; if unavailable, install or upgrade the package (SKILL.md § Resolving Packages & Activity Docs, Step 1), then use `skills/uipath-rpa/references/activity-docs/<PackageId>/<closest-version>/` or Steps 1.4-1.7. Package docs contain `overview.md`, `activities/{ActivitySimpleClassName}.md`, and `coded/` (ignore `coded/` for XAML). Activity docs contain Header → Metadata → Properties (Input, Output, Conditional groups, Common) → Valid Configurations → Enum Reference → XAML Examples → Notes.
 
 | Situation | Action |
 |---|---|
@@ -194,7 +193,7 @@ Use generic IS `ConnectorActivity` with a typed operation typeId by default (for
 
 ### Phase 2: Generate or Edit
 
-**UI Automation — Target Configuration Gate (MANDATORY).** Before writing any XAML with UI activities: the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Every UI element target MUST be configured through the `uia-configure-target` skill flow — the guide mandates the target-capture orchestration reference to read IN FULL first. **NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
+**UI Automation — Target Configuration Gate (MANDATORY).** Before writing any XAML with UI activities: the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Every UI element target MUST be configured through the `uia-configure-target` skill flow — the guide mandates the target-capture orchestration reference to read IN FULL first — except a migration's recorded targets (Rule 7). **NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
 
 For CREATE, do not Read scaffolded `Main.xaml`; the wholesale `Write` replaces it. Put required data files (`mkdir` and sample inputs) in the same assistant message. Author the complete workflow in one `Write` (SKILL.md Rule 18 — every activity sourced card → memory → discovery triple), then gate in Phase 3; follow [§ XAML File Anatomy](#xaml-file-anatomy), using folder conventions and descriptive filenames. For EDIT, always Read first and use `Edit` with exact, unique `old_string` matches.
 **For CREATE requests:** Use the `Write` tool to create the `.xaml` file per [§ XAML File Anatomy](#xaml-file-anatomy). Infer the file path from folder conventions; use descriptive filenames.
@@ -203,14 +202,14 @@ For CREATE, do not Read scaffolded `Main.xaml`; the wholesale `Write` replaces i
 
 **MUST** repeat until both `validate` and `build` report 0 errors, with at most 5 fix attempts per loop; then stop and present remaining errors. Before the first fix iteration, read [../cli-reference.md § Validation Iteration Loop](../cli-reference.md#validation-iteration-loop).
 
-Run one Bash call, chaining phases with `&&` so a `validate` failure stops before `build` and the pass path costs one turn, never one turn per command (the journey map's gate row in [execution-maps-guide.md](../execution-maps-guide.md)):
+Run one Bash call, chaining phases with `&&` so a `validate` failure stops before `build` and the pass path costs one turn, never one turn per command (the journey's gate row in [execution-journeys-catalog.md](../execution-journeys-catalog.md)):
 ```bash
 uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --project-dir "<PROJECT_DIR>" --output json \
   && uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 `--file-path` must be **relative to the project directory**. Clean `validate` is only half-done; clean `build` exits the loop. For observable outputs, finish with one `uip rpa run --skip-build` and inspect outputs ([execution-maps-guide.md § Gate ≠ runtime proof](../execution-maps-guide.md#gate--runtime-proof)).
 
-Fix in order: (1) Package—install/update and make docs available; (2) Structure—use [§ XAML File Anatomy](#xaml-file-anatomy) and [§ XAML Safety Rules](#xaml-safety-rules); (3) Type—check docs, types, enum values, and [jit-custom-types-schema.md](jit-custom-types-schema.md); (4) Activity Properties—read docs for properties, conditional groups, valid configurations, and use starter XAML as fallback; watch OverloadGroup conflicts; (5) Logic—match expression language; for UIA run `debug start` and follow [../uia-starter-guide.md § Running UI Automation Workflows](../uia-starter-guide.md). When stuck, defer minor configuration details to the user; use InvokeCode only as a last resort.
+Fix in order: (1) Package—install/update and make docs available; (2) Structure—use [§ XAML File Anatomy](#xaml-file-anatomy) and [§ XAML Safety Rules](#xaml-safety-rules); (3) Type—check docs, types, enum values, and [jit-custom-types-schema.md](jit-custom-types-schema.md); (4) Activity Properties—read docs for properties, conditional groups, valid configurations, and use starter XAML as fallback; watch OverloadGroup conflicts; (5) Logic—match expression language; for UIA run `debug start` and follow [../uia-policies-catalog.md § Running UI Automation Workflows](../uia-policies-catalog.md). When stuck, defer minor configuration details to the user; use InvokeCode only as a last resort.
 
 ### Phase 4: Response
 
@@ -219,20 +218,20 @@ Report created/edited file path, brief description, key activities/logic, instal
 ### Anti-Patterns
 
 - NEVER design sprawling monoliths; split logic into invoked files ([../environment-setup.md § Designing for Reuse](../environment-setup.md#designing-for-reuse)); Rule 18 still requires one complete workflow per batch.
-- NEVER manually craft UI selectors outside `uia-configure-target`.
+- NEVER manually craft UI selectors outside `uia-configure-target`, except a migration's recorded targets (Rule 7).
 - NEVER guess properties, types, or configurations; never ignore conditional property groups.
 - NEVER use a `workflow-examples get` key not returned by `list`.
 - NEVER ask for a provider before checking project signals.
 - NEVER retry failing CLI commands without diagnosing the root cause.
 - NEVER use connector activities without checking connection existence.
 - NEVER generate full XAML without a sourced starter per activity: card/pattern-card entry, validated memory snippet, or `activities get-default-xaml` (precedence: SKILL.md Rule 21).
-- NEVER assume a mutation succeeded; run `uip rpa validate` AND `uip rpa build` after every mutation.
+- NEVER assume a mutation succeeded; it counts only once the gate's per-file `uip rpa validate` and project `uip rpa build` are clean (Rule 18).
 - NEVER treat `validate` “no diagnostics found” as final; run `build` next.
 - NEVER skip environment readiness; verify the project opens and restores cleanly ([environment-setup.md](../environment-setup.md)).
 
 ## XAML File Anatomy
 
-Every workflow root follows this structure. `x:Class` equals the file’s project-relative path without `.xaml`, with separators replaced by underscores: `MyWorkflow.xaml` → `MyWorkflow`; `Workflows/SendEmail.xaml` → `Workflows_SendEmail`. Dots such as `Workflows.SendEmail` cause *"Invalid ActivityBuilder name … Suggested name …"*.
+Every workflow root follows this structure. `x:Class` equals the file’s project-relative path without `.xaml`, with separators replaced by underscores: `MyWorkflow.xaml` → `MyWorkflow`; `Workflows/SendEmail.xaml` → `Workflows_SendEmail`. Dots such as `Workflows.SendEmail` cause *"Invalid ActivityBuilder name … Suggested name …"*. In a C# project the root also carries `sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#"`, as `init` writes it in `Main.xaml`: Studio opens a root without it as VisualBasic and refuses the file, while `validate` and `build`, which compile in the project's language, pass it.
 
 ```xml
 <Activity mc:Ignorable="sap sap2010 sads" x:Class="FolderName_FileName"
@@ -385,9 +384,9 @@ For card containers copy [common-activity-card.md](../common-activity-card.md); 
 
 Do not reformat/re-indent an entire file. Modify only the needed section with `Edit`, using exact `old_string` matches.
 
-### Validate After Every Change
+### Validate Every Changed File
 
-Run `uip rpa validate` after every XAML modification; do not batch edits without validation.
+Run `uip rpa validate` on every file a change touched before anything builds on it; files written in one turn are validated together in the gate's one sequential chain (Rule 18).
 
 ## Property Binding: Attributes vs Child Elements
 

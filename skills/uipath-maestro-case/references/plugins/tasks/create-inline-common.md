@@ -2,7 +2,7 @@
 
 Kind-agnostic rule text for building a missing resource inline at the [Rule 18 gate](../../registry-discovery.md#must-confirm-before-placeholder-fallback). Orchestration (gate, select, § 1c build-dedup, parallel build, sequential register, rediscover/verify/bind) lives in [registry-discovery.md § Create-on-Missing](../../registry-discovery.md#create-on-missing-build-and-rediscovery); this file holds the per-type steps every creatable type shares. Per-type deltas — the Step 2 builder brief, build-kind choice, debug-provisioning behavior, § 3b adopt tokens — live in each type's `planning.md` § Creating-inline section, which points here.
 
-**Plugging in a new creatable type** (RPA, agentic process, …): add a "Creating a `<type>` inline" section to the type's `planning.md` that points to this file for Steps 1/1b/3/Failure and supplies only the deltas: a Step 2 brief, a `resourceSubType` row in the [§ Step 3 table](#step-3--binding-invariants), debug-provisioning behavior, and § 3b adopt tokens. The § Step 3 table row is the only edit needed in this file.
+**Plugging in a new creatable type** (RPA, agentic process, …): add a "Creating a `<type>` inline" section to the type's `planning.md` that points to this file for Steps 1/1b/3/Failure and supplies only the deltas: a Step 2 brief, a `resource` / `resourceSubType` row in the [§ Step 3 table](#step-3--binding-invariants), debug-provisioning behavior, and § 3b adopt tokens. The § Step 3 table row is the only edit needed in this file.
 
 ## Step 1 — Compute the pinned I/O contract
 
@@ -36,17 +36,18 @@ Rules:
 
 ## Step 3 — Binding invariants
 
-After the sibling is built, registered, and verified (orchestration §), bind the task by name+folder: two bindings `resource:"process"`, `resourceSubType` per the table below, shared `resourceKey="solution_folder.<Name>"`; `name` default `<Name>`, **`folderPath` default `""` (empty string)**. The sibling ships **inside** the solution `.uipx` (registered as a sibling project), so it co-deploys with the case when the solution is published (Phase 5 `uip solution upload`); it is **not** published separately to the tenant.
+After the sibling is built, registered, and verified (orchestration §), bind the task by name+folder: two bindings with `resource` and `resourceSubType` per the table below, shared `resourceKey="solution_folder.<Name>"`; `name` default `<Name>`, **`folderPath` default `""` (empty string)**. The sibling ships **inside** the solution `.uipx` (registered as a sibling project), so it co-deploys with the case when the solution is published (Phase 5 `uip solution upload`); it is **not** published separately to the tenant.
 
-| Type | `resourceSubType` |
-|------|-------------------|
-| agent | `Agent` |
-| api-workflow | `Api` |
-| *(future: rpa, agentic process — added with their legs)* | |
+| Type | `resource` | `resourceSubType` |
+|------|------------|-------------------|
+| agent | `process` | `Agent` |
+| api-workflow | `process` | `Api` |
+| business-rule | `BusinessRule` | *(omit)* |
+| *(future: rpa, agentic process — added with their legs)* | | |
 
 > **`folderPath` is `""`, NOT the `solution_folder` sentinel — this is load-bearing.** The runtime `data.folderPath` (which resolves to this binding's `default`) is the folder the case engine starts the sibling job in. An empty string means **"the case's own (co-located) folder"** — and since the sibling co-deploys into that same folder, the resource resolves. The `solution_folder` string is a **resource-identity sentinel** that belongs ONLY on the identity side: the `resourceKey` (`solution_folder.<Name>`), the `resources/solution_folder/…` declaration path, and `bindings_v2.json` — BOTH its `key` AND its `value.folderPath.defaultValue` (the bindings_v2 identity folderPath is `"solution_folder"`, deliberately NOT a mirror of the caseplan runtime `""` — do not generate it from the caseplan default; see [bindings-v2-sync.md](../../bindings-v2-sync.md)) — NEVER as the caseplan runtime `folderPath` binding default. Authoring `folderPath: "solution_folder"` passes `validate` but fails at **invocation** with `folder not exist` (no Orchestrator folder is literally named `solution_folder`). So `folderPath` (`""`) and `resourceKey` (`solution_folder.<Name>`) are deliberately **decoupled** — do not derive one from the other for an inline sibling.
 
-> **Resolution (deploy PROVISIONS the sibling; provisioning ≠ invocation).** Deploy resolves the resource-identity layer end-to-end: a local-only sibling (not in the tenant) co-deploys with the case at `uip solution deploy run` and is **provisioned into the solution's Orchestrator folder** (e.g. `Shared/<Solution> N`), becoming a real resource there. It needs **no** `debug_overwrites` mapping for that (that maps pre-existing tenant resources; `resources refresh` skips in-solution siblings, `Skipped: already in solution`). **But provisioning ≠ invocation:** at runtime the deployed case starts the sibling using its baked-in `data.folderPath`, so that value MUST be `""` (co-located). **Prerequisites:** (1) the sibling registered in the `.uipx` before deploy/debug; (2) the case `folderPath` binding `default` = `""`. `validate` checks neither — it accepts `solution_folder` and `""` alike. **Whether `uip maestro case debug` provisions the sibling is per-type** (e.g. agent siblings resolve in debug; Api siblings do NOT — incident `170007`, full-deploy-only runtime verification) — see each type's § Step 3.
+> **Resolution (deploy PROVISIONS the sibling; provisioning ≠ invocation).** Deploy resolves the resource-identity layer end-to-end: a local-only sibling (not in the tenant) co-deploys with the case at `uip solution deploy run` and is **provisioned into the solution's Orchestrator folder** (e.g. `Shared/<Solution> N`), becoming a real resource there. It needs **no** `debug_overwrites` mapping for that (that maps pre-existing tenant resources; `resources refresh` skips in-solution siblings, `Skipped: already in solution`). **But provisioning ≠ invocation:** at runtime the deployed case starts the sibling using its baked-in `data.folderPath`, so that value MUST be `""` (co-located). **Prerequisites:** (1) the sibling registered in the `.uipx` before deploy/debug; (2) the case `folderPath` binding `default` = `""`. `validate` checks neither — it accepts `solution_folder` and `""` alike. **`uip maestro case debug` provisions no in-solution sibling** — agent and Api siblings fault with incident `170007`, BusinessRules siblings with `300400`; runtime verification is full-deploy-only for every type — see each type's § Step 3.
 
 ## Failure — surface and re-prompt, never stall
 

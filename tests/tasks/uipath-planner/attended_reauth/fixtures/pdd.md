@@ -1,4 +1,4 @@
-# Process Design Document: VAT Return Submission
+# Process Definition Document: VAT Return Submission
 
 ## Process Overview
 - **Process Name:** VAT Return Submission

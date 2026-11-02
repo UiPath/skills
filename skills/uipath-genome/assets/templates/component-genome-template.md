@@ -41,11 +41,11 @@
 - **Outputs:** {values, files, records, or events it produces — name, type, consumer}
 - **Side effects:** {external state it changes — records created, emails sent, files moved}
 
-{Library component: replace the bullets with one table per public workflow — `Argument | Direction | Type | Description` — and the conventions consumers rely on. Test component: list the per-scenario row schema (≤ ~20 fields) and, separately, the constants held in a configuration workflow; credentials as asset names only.}
+{Library component: replace the bullets with one table per public workflow — `Argument | Direction | Type | Description` — and the conventions consumers rely on. Test component: list the per-scenario row schema (≤ ~20 fields) and, separately, the constants held in the project's configuration; credentials as asset names only.}
 
 ## Configuration Questions
 
-{Questions to answer before building. Extracted genomes ask only the values the source leaves open, with the source value as the default — a value bound to the environment (host, mailbox, recipient, path or share, queue, asset or credential name) is always open; every value the source fixes stays in the section where it acts (format guide § Configuration Questions). Authored genome whose Transactional Shape is not the stub: one constant asks the item retry count and the consecutive-failure stop (format guide § Transactional Shape rule 4). Each question names its kind — setting or constant (format guide § Configuration Questions).}
+{Questions to answer before building. Extracted genomes ask only the values the source leaves open, with the source value as the default — a value bound to the environment (host, mailbox, recipient, path or share, queue, asset or credential name) is always open; every value the source fixes stays in the section where it acts (format guide § Configuration Questions). Authored genome whose Transactional Shape is not the stub: one constant asks the item retry count and the consecutive-failure stop (transactional shape guide rule 4). Each question names its kind — setting or constant (format guide § Configuration Questions).}
 
 1. {Question}? ({setting | constant}; default: {value})
 2. {Question}? ({setting | constant}; default: {value})
@@ -104,7 +104,7 @@
 | Item kinds | {one kind, or several routed inside the consumer — what differs} |
 | Step groups | once per run: steps {n}; per item: steps {p–q}; at the end: steps {r} |
 
-Outcomes — these rows, whatever the source calls its per-item results (approved, rejected, skipped are Success or a Business exception; format guide § Transactional Shape rule 4):
+Outcomes — these rows, whatever the source calls its per-item results (approved, rejected, skipped are Success or a Business exception; transactional shape guide rule 4):
 
 | Outcome | When | Effect |
 |---|---|---|
@@ -112,7 +112,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Business exception | Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
-**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (format guide § Transactional Shape rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
+**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|
@@ -124,7 +124,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | {alternative unit} | C | … | {…} |
 
 **Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
-**Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
+**Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
 **Traceability:** {per-item record and where it lands; screenshot on system exception; run summary}.
 
 *Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's; a {Flow, API workflow, agent} that works its items itself}."*
@@ -153,7 +153,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
-*A component of a process genome inherits the Source framework, Source export, Inventory, Not covered and Related resources rows from the process genome; a standalone component genome carries them itself.*
+*A component of a process genome inherits the Source framework, Source export, Inventory, Not covered, Unused and Related resources rows from the process genome; a standalone component genome carries them itself.*
 
 ### Steps
 
@@ -161,4 +161,4 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 |------|----------------|-----------|----------|-------|
 | {N} | `{Name}` ({id}[, {locator}]); … — the primary object first; a UiPath source: `{Folder/Workflow.xaml}` | `{Name}` ({id}); … or none | {n} | {callers, callees that are steps of their own, lines, quirks} |
 
-*One row per Workflow step, keyed by its number (format guide § Source Map, the step table).*
+*One row per Workflow step, keyed by its number (extracted genome guide § Source Map, the step table).*

@@ -1,0 +1,41 @@
+name: Governance compliance-pack tests
+
+# Advisory, not a required check: this is deliberately NOT a job in
+# test-helpers.yml, where every job must be required (see
+# tests/scripts/test_required_checks_contract.py). Because nothing waits on it,
+# a `paths:` filter cannot block a merge, and it is reliable here: the suite
+# under test reads only files inside the compliance-pack folder (the uip shim,
+# its fixtures, the task YAMLs and _setup/tenant_lock.py).
+on:
+  pull_request:
+    paths:
+      - 'tests/tasks/uipath-governance/compliance-pack/**'
+      - '.github/workflows/governance-compliance-pack-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest-compliance-pack:
+    runs-on: uipath-ubuntu-latest
+    name: governance compliance-pack shim and lock unit tests
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest pyyaml
+
+      # Keeps the shim, its recorded fixtures, the graders and the live e2e's
+      # tenant lock from drifting apart unnoticed.
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-governance/compliance-pack/ -v

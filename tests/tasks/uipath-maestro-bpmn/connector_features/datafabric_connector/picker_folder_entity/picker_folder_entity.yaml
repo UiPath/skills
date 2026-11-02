@@ -1,0 +1,72 @@
+task_id: skill-bpmn-datafabric-folder-entity-picker
+description: >
+  A BPMN process with a Data Service "Create Entity Record (Preview)"
+  connector task on a folder entity. The entity is a solution-resource picker
+  (folderEntityName), so the agent must describe the activity with the entity
+  on the picker for the CLI to resolve it, then build a process that
+  validates.
+tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice, "feature:entities", data-fabric]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 1800
+  task_timeout: 2400
+
+reference:
+  directory: ../../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_folder_entity.py" "_setup/skill_picker_eval_entity.entity.json"'
+    timeout: 120
+
+initial_prompt: |
+  Build a UiPath Maestro BPMN process with a manual start and a single Data
+  Service connector task that creates a record in a Data Fabric folder entity:
+
+  * Connector: uipath-uipath-dataservice (use the tenant's Data Fabric connection)
+  * Activity: "Create Entity Record (Preview)" (object CreateEntityRecord_V3)
+  * Entity scope: folder
+  * Entity: the folder entity named "SkillPickerEvalEntity" in the Shared folder
+
+  Find the entity's input fields from the connector before you wire the task,
+  and set its "title" field to "PickerTest". Finish with the process passing
+  `uip maestro bpmn validate`. Do NOT run debug. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Before starting, load the uipath-maestro-bpmn skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent resolved the entity on the folderEntityName picker (describe -f, or the V2 element's --input-details)"
+    tool_name: "Bash"
+    command_pattern: '(?:uip\s+is\s+resources\s+describe(?:(?!uip\s)[^&;|])*CreateEntityRecord_V3(?:(?!uip\s)[^&;|])*folderEntityName=["'']?SkillPickerEvalEntity|uip\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution(?:(?!uip\s)[^&;|])*--input-details(?:(?!uip\s)[^&;|])*SkillPickerEvalEntity)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final .bpmn passes `uip maestro bpmn validate`"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The connector task picks the recorded entity on folderEntityName and sets title to PickerTest"
+    command: "python3 $REFERENCE_DIR/_shared/check_df_picker_folder_entity.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

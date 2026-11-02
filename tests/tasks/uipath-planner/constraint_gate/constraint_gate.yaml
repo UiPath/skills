@@ -23,7 +23,7 @@ run_limits:
   turn_timeout: 2700
 
 initial_prompt: |
-  Analyze the Process Design Document below and generate a Solution Design
+  Analyze the Process Definition Document below and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.
 
   For any [SME REVIEW] items, use the defaults and proceed.
@@ -36,7 +36,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Purchase Request Approval
+  # Process Definition Document: Purchase Request Approval
 
   ## 1. Introduction
   - **Process Name:** Purchase Request Approval

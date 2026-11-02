@@ -183,6 +183,22 @@
         "The SDD stores design rationale for stage kind/routing, task type/activation/sequencing, and SLA behavior instead of leaving the reasons only in chat",
         "caseplan.case preserves the SDD rationale on the matching stage, task, condition, and SLA elements"
       ]
+    },
+    {
+      "id": 15,
+      "prompt": "Build a case from this approved sdd.md. Its Notify task posts to Slack through a connector activity. (On this tenant, `uip maestro case registry pull` exits 0 but lists every typecache-* type in Data.Errors with `catalog search failed: 500` from Studio Web TypeCache.)",
+      "expected_output": "Skill reads the pull's Data.Errors, treats the connector catalog as unavailable, writes placeholders for the connector task and any event trigger, finishes with validate passing, and reports the TypeCache failure as an environment gap",
+      "expectations": [
+        "Reads Data.Errors after registry pull and recognises the typecache-* rows as the connector catalog being unavailable, even though the pull exited 0 with Result Success",
+        "Does not run registry pull again and does not retry on the 5xx; does not ask the Rule 18 empty-lookup gate for it",
+        "Skips the connector pipeline (no get-connection, no case spec) for every connector task, connector trigger and connector-bound rule",
+        "Writes `<UNRESOLVED: connector catalog unavailable (TypeCache 500)>` in tasks/registry-resolved.json and emits the existing placeholder shapes (connector task data: {}, event trigger placeholder node, condition-rule stub)",
+        "Never leaves the flat {name, value} connector inputs sdd convert emitted — validate must not report CASE_MGMT_CONNECTOR_INPUT_FLATTENED",
+        "Resolves every non-connector resource as usual from the types the pull did sync",
+        "The build ends with placeholders and `uip maestro case validate --strict --sdd sdd.md` passes",
+        "The completion report lists the failure under environment gaps with the HTTP status, the Studio Web TypeCache Search/Catalog endpoint and the time — not as a build defect — and tells the user to re-pull when the service recovers",
+        "Says in one business-language line, as soon as it is detected, that the connector catalog is unavailable, and continues"
+      ]
     }
   ]
 }

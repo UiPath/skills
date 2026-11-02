@@ -18,6 +18,22 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 2. **`https://uipath.github.io/uipath-python/core/guardrails/`**
    Extract: built-in validator names, entity types per validator, available actions, execution stage constraints.
 
+> **If your fetch tool saved a page to a file instead of returning its text, do not read that file top to bottom.** Both pages are long, and paging through them in chunks exhausts the turn budget before the agent file is edited. Extract only what this task needs in two greps, then write the code:
+>
+> 1. **Index grep.** You do not know the exact class names yet — list the page's headings and class declarations to learn their spellings:
+>
+>    ```bash
+>    grep -n -E '^#+ |^class ' "<SAVED_PAGE_FILE>"
+>    ```
+>
+> 2. **Targeted grep.** Pull the sections for the symbols this task needs (the middleware, validator, and action class names, plus the entity enum). Match case-insensitively on the validator's name stem so a catalog id like `pii_detection` still hits the class name whatever its casing:
+>
+>    ```bash
+>    grep -in -A12 -E '<SYMBOL_OR_STEM_1>|<SYMBOL_OR_STEM_2>' "<SAVED_PAGE_FILE>"
+>    ```
+>
+> Grep again only for a symbol these two did not return. If the saved file is raw HTML rather than markdown (the index grep returns nothing), grep the class-name stems case-insensitively anyway — do not fall back to paging through the file.
+
 **Use the fetched content as the sole source of truth.** Never rely on memory for:
 - Which middleware classes exist
 - Which scopes or stages a guardrail supports

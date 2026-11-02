@@ -1,0 +1,22 @@
+{"id": "bluemountain-denials-management", "documents": "its PDD is `corpus/bluemountain-denials-management/pdd.md`"}
+{"id": "claim-file-request", "documents": "its PDD is `corpus/claim-file-request/pdd.md`"}
+{"id": "client-portfolio-reporting", "documents": "its PDD is `corpus/client-portfolio-reporting/pdd.md` and its process map is `corpus/client-portfolio-reporting/process-map.bpmn`"}
+{"id": "commercial-credit-evaluation", "documents": "its PDD is `corpus/commercial-credit-evaluation/pdd.md`"}
+{"id": "commercial-loan-origination", "documents": "its PDD is `corpus/commercial-loan-origination/pdd.md`"}
+{"id": "connectivity-service-termination", "documents": "its PDD is `corpus/connectivity-service-termination/pdd.md` and its process map is `corpus/connectivity-service-termination/process-map.bpmn`"}
+{"id": "elara-claims-stp", "documents": "its PDD is `corpus/elara-claims-stp/pdd.md` and its process map is `corpus/elara-claims-stp/process-map.bpmn`"}
+{"id": "it-incident-management", "documents": "its PDD is `corpus/it-incident-management/pdd.md`"}
+{"id": "koremed-prescription-intake", "documents": "its PDD is `corpus/koremed-prescription-intake/pdd.md`"}
+{"id": "lease-termination", "documents": "its PDD is `corpus/lease-termination/pdd.md`"}
+{"id": "madriltrust-aml-investigation", "documents": "its PDD is `corpus/madriltrust-aml-investigation/pdd.md`"}
+{"id": "medicaid-referral-authorization", "documents": "its PDD is `corpus/medicaid-referral-authorization/pdd.md`"}
+{"id": "medical-image-requisition", "documents": "its PDD is `corpus/medical-image-requisition/pdd.md`"}
+{"id": "mobile-order-to-activation", "documents": "its PDD is `corpus/mobile-order-to-activation/pdd.md` and its process map is `corpus/mobile-order-to-activation/process-map.bpmn`"}
+{"id": "nordvik-client-onboarding", "documents": "its PDD is `corpus/nordvik-client-onboarding/pdd.md`"}
+{"id": "sakura-appointment-confirmation", "documents": "its PDD is `corpus/sakura-appointment-confirmation/pdd.md`"}
+{"id": "sales-command-center", "documents": "its PDD is `corpus/sales-command-center/pdd.md` and its process map is `corpus/sales-command-center/process-map.bpmn`"}
+{"id": "sdd-appointment-confirmation-batch", "documents": "its PDD is `corpus/sdd-appointment-confirmation-batch/pdd.md` and its SDD is `corpus/sdd-appointment-confirmation-batch/sdd.md`"}
+{"id": "sdd-commercial-credit-evaluation", "documents": "its PDD is `corpus/sdd-commercial-credit-evaluation/pdd.md` and its SDD is `corpus/sdd-commercial-credit-evaluation/sdd.md`"}
+{"id": "shenzhen-regulatory-reporting", "documents": "its PDD is `corpus/shenzhen-regulatory-reporting/pdd.md`"}
+{"id": "tristar-prior-auth", "documents": "its PDD is `corpus/tristar-prior-auth/pdd.md` and its process map is `corpus/tristar-prior-auth/process-map.bpmn`"}
+{"id": "vastnet-fault-remediation", "documents": "its PDD is `corpus/vastnet-fault-remediation/pdd.md` and its process map is `corpus/vastnet-fault-remediation/process-map.bpmn`"}

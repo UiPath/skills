@@ -14,12 +14,18 @@ pii_detection in agent.json with correct structure:
   - action.$actionType == "block"
   - selector.scopes uses PascalCase values
   - id is UUID-shaped
+  - inputSchema declares a job-attachment field (the uploaded statement)
+  - validatorParameters contains the enum parameter "detectionScope" with
+    value "Both" — the user asked for the typed text AND the uploaded file
 """
 
 import json
 import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+from _shared.file_guardrail_assertions import require_detection_scope, require_job_attachment_input
 
 ROOT = Path(os.getcwd()) / "PiiGuardSol" / "PiiSafeAgent"
 AGENT = ROOT / "agent.json"
@@ -44,8 +50,11 @@ def find_param(params: list, param_id: str) -> dict | None:
     return None
 
 
+
 def main() -> None:
     agent = load(AGENT)
+
+    require_job_attachment_input(agent, "statement")
 
     # --- guardrails array exists ---
     guardrails = agent.get("guardrails")
@@ -160,6 +169,8 @@ def main() -> None:
                 f"got {thresholds_value!r}"
             )
         print(f"OK: entityThresholds = {thresholds_value} (map-enum)")
+
+    require_detection_scope(params, "Both", "the user asked for both the typed text and the uploaded file")
 
     print("OK: PII detection builtInValidator guardrail is valid")
 

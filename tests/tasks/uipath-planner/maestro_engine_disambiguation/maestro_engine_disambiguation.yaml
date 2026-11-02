@@ -7,7 +7,7 @@ description: >
   use the Maestro BPMN template, not Flow (plain pipeline) or Case.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 initial_prompt: |
-  Analyze the following Process Design Document and generate a Solution Design
+  Analyze the following Process Definition Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints. Assume
   UiPath Automation Cloud as the delivery model.
 
@@ -18,7 +18,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Vendor Onboarding Orchestration
+  # Process Definition Document: Vendor Onboarding Orchestration
 
   ## Process Overview
   - **Process Name:** Vendor Onboarding Orchestration

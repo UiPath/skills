@@ -1,0 +1,296 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "processClaims",
+   "type": "core.logic.loop",
+   "inputs": {
+    "collection": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.claims",
+     "fieldType": "array"
+    },
+    "parallel": false,
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "analyzeClaim",
+   "type": "uipath.agent.autonomous",
+   "parentId": "processClaims",
+   "inputs": {
+    "source": "08501776-4069-45be-a360-441e01f4359e",
+    "agentInputVariables": [
+     {
+      "id": "processClaims__currentItem",
+      "type": "string",
+      "binding": "=js:$vars.processClaims.currentItem"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "decision",
+      "type": "string"
+     },
+     {
+      "id": "confidence",
+      "type": "number"
+     },
+     {
+      "id": "rationale",
+      "type": "string"
+     }
+    ],
+    "errorHandlingEnabled": true
+   }
+  },
+  {
+   "id": "recordFailed",
+   "type": "core.action.script",
+   "parentId": "processClaims",
+   "inputs": {
+    "script": "return { claim: $vars.processClaims.currentItem, status: 'failed', error: String($vars.analyzeClaim.error && $vars.analyzeClaim.error.message) };"
+   }
+  },
+  {
+   "id": "confidenceGate",
+   "type": "core.logic.decision",
+   "parentId": "processClaims",
+   "inputs": {
+    "trueLabel": "True",
+    "falseLabel": "False",
+    "expression": "$vars.analyzeClaim.output.confidence >= 0.8"
+   }
+  },
+  {
+   "id": "applyDecision",
+   "type": "core.logic.mock",
+   "parentId": "processClaims",
+   "inputs": {}
+  },
+  {
+   "id": "recordApplied",
+   "type": "core.action.script",
+   "parentId": "processClaims",
+   "inputs": {
+    "script": "return { claim: $vars.processClaims.currentItem, status: 'applied', decision: $vars.analyzeClaim.output.decision, confidence: $vars.analyzeClaim.output.confidence, rationale: $vars.analyzeClaim.output.rationale, route: $vars.route };"
+   }
+  },
+  {
+   "id": "reviewDecision",
+   "type": "uipath.human-in-the-loop.quick-form",
+   "parentId": "processClaims",
+   "inputs": {
+    "title": "Review low-confidence claim decision",
+    "priority": "Medium",
+    "recipient": {
+     "channels": [
+      "Email",
+      "ActionCenter"
+     ],
+     "connections": {},
+     "assignee": {
+      "type": "group"
+     }
+    },
+    "schema": {
+     "schemaId": "4f5880ca-4091-535e-818c-20cce1cbcc99",
+     "fields": [
+      {
+       "id": "claim",
+       "label": "Claim",
+       "type": "object",
+       "direction": "input",
+       "binding": "vars.processClaims.currentItem"
+      },
+      {
+       "id": "decision",
+       "label": "Agent decision",
+       "type": "string",
+       "direction": "input",
+       "binding": "vars.analyzeClaim.output.decision"
+      },
+      {
+       "id": "confidence",
+       "label": "Agent confidence (0-1)",
+       "type": "number",
+       "direction": "input",
+       "binding": "vars.analyzeClaim.output.confidence"
+      },
+      {
+       "id": "rationale",
+       "label": "Agent rationale",
+       "type": "string",
+       "direction": "input",
+       "binding": "vars.analyzeClaim.output.rationale"
+      }
+     ],
+     "outcomes": [
+      {
+       "id": "approve",
+       "name": "Approve",
+       "type": "string",
+       "isPrimary": true,
+       "action": "Continue"
+      },
+      {
+       "id": "reject",
+       "name": "Reject",
+       "type": "string",
+       "isPrimary": false,
+       "action": "Continue"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "markReviewed",
+   "type": "core.action.script",
+   "parentId": "processClaims",
+   "inputs": {
+    "script": "return 'human-approved';"
+   }
+  },
+  {
+   "id": "recordSkipped",
+   "type": "core.action.script",
+   "parentId": "processClaims",
+   "inputs": {
+    "script": "return { claim: $vars.processClaims.currentItem, status: 'skipped', decision: $vars.analyzeClaim.output.decision, confidence: $vars.analyzeClaim.output.confidence, rationale: $vars.analyzeClaim.output.rationale, route: 'human-rejected' };"
+   }
+  },
+  {
+   "id": "collectResults",
+   "type": "core.action.script",
+   "inputs": {
+    "script": "var items = $vars.processClaims.output || [];\nreturn items.map(function (e) {\n  if (!e) return null;\n  var keys = ['recordApplied', 'recordSkipped', 'recordFailed'];\n  for (var i = 0; i < keys.length; i++) {\n    var s = e[keys[i]];\n    if (s && s.output) return s.output;\n  }\n  return e;\n});"
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "processClaims",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "processClaims",
+   "sourcePort": "start",
+   "targetNodeId": "analyzeClaim",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "analyzeClaim",
+   "sourcePort": "error",
+   "targetNodeId": "recordFailed",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "recordFailed",
+   "sourcePort": "success",
+   "targetNodeId": "processClaims",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "analyzeClaim",
+   "sourcePort": "success",
+   "targetNodeId": "confidenceGate",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "confidenceGate",
+   "sourcePort": "true",
+   "targetNodeId": "applyDecision",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "applyDecision",
+   "sourcePort": "output",
+   "targetNodeId": "recordApplied",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "confidenceGate",
+   "sourcePort": "false",
+   "targetNodeId": "reviewDecision",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "reviewDecision",
+   "sourcePort": "outcome-approve",
+   "targetNodeId": "markReviewed",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "reviewDecision",
+   "sourcePort": "outcome-reject",
+   "targetNodeId": "recordSkipped",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "recordSkipped",
+   "sourcePort": "success",
+   "targetNodeId": "processClaims",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "recordApplied",
+   "sourcePort": "success",
+   "targetNodeId": "processClaims",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "processClaims",
+   "sourcePort": "success",
+   "targetNodeId": "collectResults",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "collectResults",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "markReviewed",
+   "sourcePort": "success",
+   "targetNodeId": "applyDecision",
+   "targetPort": "input"
+  }
+ ],
+ "variables": {
+  "variableUpdates": {
+   "analyzeClaim": [
+    {
+     "variableId": "route",
+     "expression": {
+      "type": "jsExpression",
+      "expression": "\"auto\"",
+      "fieldType": "string"
+     }
+    }
+   ],
+   "markReviewed": [
+    {
+     "variableId": "route",
+     "expression": {
+      "type": "jsExpression",
+      "expression": "\"human-approved\"",
+      "fieldType": "string"
+     }
+    }
+   ]
+  }
+ }
+}

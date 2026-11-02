@@ -1,0 +1,17 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "d0ce3b67-22d4-4b59-be8b-8daae596fb43",
+  "Projects": [
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "DownloadVendorInvoice/project.uiproj",
+      "Id": "4ff0cdce-b1bc-4ad4-9837-aeeb15ea7fd9"
+    },
+    {
+      "Type": "Agent",
+      "ProjectRelativePath": "VendorInquiryAgent/project.uiproj",
+      "Id": "d0be05c3-8a43-487f-b63b-aea1eb4815dd"
+    }
+  ]
+}

@@ -201,7 +201,9 @@ To accept or return a file, declare the field as `$ref: "#/definitions/job-attac
 
 `{{input.<file-field>}}` in a message template renders **metadata only** (ID, FullName, MimeType, Metadata). The agent does not see file contents from this token. To read contents, configure a file-handling built-in tool (e.g. `analyze-attachments`) — see [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md).
 
-Output side: declare an output field the same way; the agent emits a `job-attachment` describing a file it produced.
+Output side: declare an output field the same way; the agent emits a `job-attachment` describing a file it produced (the Create File built-in tool writes it — see [capabilities/built-in-tools/create-file.md](capabilities/built-in-tools/create-file.md)).
+
+Guardrails inspect these files independently of the prompt: a built-in validator with `detectionScope: "Files"` or `"Both"` evaluates attached input files (Agent · Pre) and produced output files (Agent · Post). See [capabilities/guardrails/files-guide.md](capabilities/guardrails/files-guide.md).
 
 ### Top-level fields (do not modify)
 

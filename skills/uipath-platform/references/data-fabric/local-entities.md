@@ -206,6 +206,7 @@ does not exist, so the run fails. See
 [/uipath:uipath-maestro-flow — data-fabric.md](../../../uipath-maestro-flow/references/data-fabric.md#an-entity-the-solution-authors-itself).
 
 <!--skill-flavor:flow-sdk-local-entity-keys:end-->
+<!--skill-flavor:flow-sdk-json-entity-node:start-->
 **Hand-written `.flow` JSON:**
 
 1. Author the node with `entityConfig.entityName` set to the entity.
@@ -229,6 +230,7 @@ the keys on the spot:
 uip maestro flow node add <Project>.flow core.datafabric.read \
   --input '{"entityConfig":{"entityName":"Product","resultMode":"multiple"}}'
 ```
+<!--skill-flavor:flow-sdk-json-entity-node:end-->
 
 **Why this matters, and why a missing binding is hard to diagnose:** a node
 carrying only `entityName` serializes to a bare tenant-scoped

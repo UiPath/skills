@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_FutureClientPortfolioReporting" targetNamespace="https://uipath.com/business-analysis/future-client-portfolio-reporting">
+  <bpmn:collaboration id="Collaboration_FutureClientPortfolioReporting">
+    <bpmn:participant id="Participant_FutureClientPortfolioReporting" name="Future Client Portfolio Reporting" processRef="Process_FutureClientPortfolioReporting" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_FutureClientPortfolioReporting" name="Future Client Portfolio Reporting {{RUN_TOKEN}}" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_FutureReportingTeams">
+      <bpmn:lane id="Lane_Operations" name="Investment Operations"><bpmn:flowNodeRef>Start_ReportingWork</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_PrepareData</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_PortfolioDataComplete</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_ResolvePortfolioData</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_MarketDataCurrent</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_UseCachedData</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_AddDelayedDisclosure</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_Advisor" name="Financial Advisor"><bpmn:flowNodeRef>Task_DraftInsights</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_ReviewInsights</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_RecordEditAudit</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_CorrectContent</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_Research" name="Research Desk Strategist"><bpmn:flowNodeRef>Task_CurateResearch</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_ValidateResearch</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_Compliance" name="Compliance Analyst"><bpmn:flowNodeRef>Task_InitialComplianceCheck</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_ReviewCompliance</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_ComplianceClear</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_Supervision" name="Supervisory Principal"><bpmn:flowNodeRef>Task_FinalApproval</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_ClientService" name="Client Service Associate"><bpmn:flowNodeRef>Task_DeliverReport</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_DeliverySuccessful</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_RetryAlternateChannel</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_FollowUpDelivery</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_LogRetention</bpmn:flowNodeRef><bpmn:flowNodeRef>Event_WaitAcknowledgment</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_AcknowledgmentReceived</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_FollowUpAcknowledgment</bpmn:flowNodeRef><bpmn:flowNodeRef>End_ReportCompleted</bpmn:flowNodeRef></bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_ReportingWork" name="Start reporting work" />
+    <bpmn:serviceTask id="Task_PrepareData" name="Prepare and validate data" />
+    <bpmn:exclusiveGateway id="Gateway_PortfolioDataComplete" name="Portfolio data complete?" default="Flow_PortfolioDataYes_ToMarketGateway" />
+    <bpmn:manualTask id="Task_ResolvePortfolioData" name="Resolve portfolio data issue" />
+    <bpmn:exclusiveGateway id="Gateway_MarketDataCurrent" name="Market data current?" default="Flow_MarketDataYes_ToDraftInsights" />
+    <bpmn:serviceTask id="Task_UseCachedData" name="Use cached market data" />
+    <bpmn:serviceTask id="Task_AddDelayedDisclosure" name="Add delayed-data disclosure" />
+    <bpmn:serviceTask id="Task_DraftInsights" name="Draft personalized insights" />
+    <bpmn:userTask id="Task_ReviewInsights" name="Review and edit insights" />
+    <bpmn:serviceTask id="Task_RecordEditAudit" name="Record insight edit audit" />
+    <bpmn:serviceTask id="Task_CurateResearch" name="Curate research commentary" />
+    <bpmn:userTask id="Task_ValidateResearch" name="Validate research commentary" />
+    <bpmn:businessRuleTask id="Task_InitialComplianceCheck" name="Run initial compliance check" />
+    <bpmn:userTask id="Task_ReviewCompliance" name="Review compliance findings" />
+    <bpmn:exclusiveGateway id="Gateway_ComplianceClear" name="Compliance clear?" default="Flow_ComplianceClear_ToApproval" />
+    <bpmn:userTask id="Task_CorrectContent" name="Correct report content" />
+    <bpmn:userTask id="Task_FinalApproval" name="Provide final approval" />
+    <bpmn:serviceTask id="Task_DeliverReport" name="Deliver through portal and email" />
+    <bpmn:exclusiveGateway id="Gateway_DeliverySuccessful" name="Delivery successful?" default="Flow_DeliverySuccess_ToRetention" />
+    <bpmn:serviceTask id="Task_RetryAlternateChannel" name="Retry alternate delivery channel" />
+    <bpmn:userTask id="Task_FollowUpDelivery" name="Follow up on delivery" />
+    <bpmn:serviceTask id="Task_LogRetention" name="Log delivery and retain package" />
+    <bpmn:intermediateCatchEvent id="Event_WaitAcknowledgment" name="Wait seven days for acknowledgment"><bpmn:timerEventDefinition><bpmn:timeDuration>P7D</bpmn:timeDuration></bpmn:timerEventDefinition></bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gateway_AcknowledgmentReceived" name="Acknowledgment received?" default="Flow_AcknowledgmentNo_ToFollowUp" />
+    <bpmn:userTask id="Task_FollowUpAcknowledgment" name="Follow up on acknowledgment" />
+    <bpmn:endEvent id="End_ReportCompleted" name="Report completed" />
+    <bpmn:sequenceFlow id="Flow_Start_ToPrepare" sourceRef="Start_ReportingWork" targetRef="Task_PrepareData" />
+    <bpmn:sequenceFlow id="Flow_Prepare_ToPortfolioGateway" sourceRef="Task_PrepareData" targetRef="Gateway_PortfolioDataComplete" />
+    <bpmn:sequenceFlow id="Flow_PortfolioDataYes_ToMarketGateway" name="Yes" sourceRef="Gateway_PortfolioDataComplete" targetRef="Gateway_MarketDataCurrent" />
+    <bpmn:sequenceFlow id="Flow_PortfolioDataNo_ToResolve" name="No" sourceRef="Gateway_PortfolioDataComplete" targetRef="Task_ResolvePortfolioData" />
+    <bpmn:sequenceFlow id="Flow_Resolve_ToPrepare" sourceRef="Task_ResolvePortfolioData" targetRef="Task_PrepareData" />
+    <bpmn:sequenceFlow id="Flow_MarketDataYes_ToDraftInsights" name="Yes" sourceRef="Gateway_MarketDataCurrent" targetRef="Task_DraftInsights" />
+    <bpmn:sequenceFlow id="Flow_MarketDataNo_ToCached" name="No" sourceRef="Gateway_MarketDataCurrent" targetRef="Task_UseCachedData" />
+    <bpmn:sequenceFlow id="Flow_Cached_ToDisclosure" sourceRef="Task_UseCachedData" targetRef="Task_AddDelayedDisclosure" />
+    <bpmn:sequenceFlow id="Flow_Disclosure_ToDraftInsights" sourceRef="Task_AddDelayedDisclosure" targetRef="Task_DraftInsights" />
+    <bpmn:sequenceFlow id="Flow_Draft_ToReview" sourceRef="Task_DraftInsights" targetRef="Task_ReviewInsights" />
+    <bpmn:sequenceFlow id="Flow_Review_ToAudit" sourceRef="Task_ReviewInsights" targetRef="Task_RecordEditAudit" />
+    <bpmn:sequenceFlow id="Flow_Audit_ToCurateResearch" sourceRef="Task_RecordEditAudit" targetRef="Task_CurateResearch" />
+    <bpmn:sequenceFlow id="Flow_Curate_ToValidateResearch" sourceRef="Task_CurateResearch" targetRef="Task_ValidateResearch" />
+    <bpmn:sequenceFlow id="Flow_ValidateResearch_ToInitialCheck" sourceRef="Task_ValidateResearch" targetRef="Task_InitialComplianceCheck" />
+    <bpmn:sequenceFlow id="Flow_InitialCheck_ToComplianceReview" sourceRef="Task_InitialComplianceCheck" targetRef="Task_ReviewCompliance" />
+    <bpmn:sequenceFlow id="Flow_ComplianceReview_ToGateway" sourceRef="Task_ReviewCompliance" targetRef="Gateway_ComplianceClear" />
+    <bpmn:sequenceFlow id="Flow_ComplianceClear_ToApproval" name="Yes" sourceRef="Gateway_ComplianceClear" targetRef="Task_FinalApproval" />
+    <bpmn:sequenceFlow id="Flow_ComplianceNotClear_ToCorrection" name="No" sourceRef="Gateway_ComplianceClear" targetRef="Task_CorrectContent" />
+    <bpmn:sequenceFlow id="Flow_Correction_ToInitialCheck" sourceRef="Task_CorrectContent" targetRef="Task_InitialComplianceCheck" />
+    <bpmn:sequenceFlow id="Flow_Approval_ToDelivery" sourceRef="Task_FinalApproval" targetRef="Task_DeliverReport" />
+    <bpmn:sequenceFlow id="Flow_Delivery_ToGateway" sourceRef="Task_DeliverReport" targetRef="Gateway_DeliverySuccessful" />
+    <bpmn:sequenceFlow id="Flow_DeliverySuccess_ToRetention" name="Yes" sourceRef="Gateway_DeliverySuccessful" targetRef="Task_LogRetention" />
+    <bpmn:sequenceFlow id="Flow_DeliveryFailure_ToRetry" name="No" sourceRef="Gateway_DeliverySuccessful" targetRef="Task_RetryAlternateChannel" />
+    <bpmn:sequenceFlow id="Flow_Retry_ToFollowUp" sourceRef="Task_RetryAlternateChannel" targetRef="Task_FollowUpDelivery" />
+    <bpmn:sequenceFlow id="Flow_FollowUpDelivery_ToRetention" sourceRef="Task_FollowUpDelivery" targetRef="Task_LogRetention" />
+    <bpmn:sequenceFlow id="Flow_Retention_ToWait" sourceRef="Task_LogRetention" targetRef="Event_WaitAcknowledgment" />
+    <bpmn:sequenceFlow id="Flow_Wait_ToAcknowledgmentGateway" sourceRef="Event_WaitAcknowledgment" targetRef="Gateway_AcknowledgmentReceived" />
+    <bpmn:sequenceFlow id="Flow_AcknowledgmentYes_ToEnd" name="Yes" sourceRef="Gateway_AcknowledgmentReceived" targetRef="End_ReportCompleted" />
+    <bpmn:sequenceFlow id="Flow_AcknowledgmentNo_ToFollowUp" name="No" sourceRef="Gateway_AcknowledgmentReceived" targetRef="Task_FollowUpAcknowledgment" />
+    <bpmn:sequenceFlow id="Flow_FollowUpAcknowledgment_ToEnd" sourceRef="Task_FollowUpAcknowledgment" targetRef="End_ReportCompleted" />
+  </bpmn:process>
+</bpmn:definitions>

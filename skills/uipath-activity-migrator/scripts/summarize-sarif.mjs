@@ -40,7 +40,7 @@ const STEP_RULES = new Set(['ERROR', 'WARNING']);
 // --ignore-missing-dependencies: the run went on, and the workflows that use the package will not compile.
 const RESTORE_ISSUES = new Set(['RESTORE-MISSING-PACKAGE', 'RESTORE-INCOMPATIBLE-PACKAGE', 'RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED']);
 // Activity- or workflow-scoped extension rules: an error there means one activity was left classic, not a failed run.
-const isActivityScoped = (id) => /^UIAUTOMATION-(ACTIVITY|WORKFLOW)-/.test(id) || id.endsWith('-ACTIVITY-MIGRATION');
+const isActivityScoped = (id) => /^UIAUTOMATION-(ACTIVITY|WORKFLOW)-/.test(id) || id.endsWith('-ACTIVITY-MIGRATION') || id === 'UNSUPPORTED-MICROSOFT-ACTIVITY';
 // The tool's own stop rule (UpgradeContext.HasCriticalError): an error-level result with no file location.
 // A per-file error never stops the run; the workflow is skipped by the remaining steps and copied unchanged.
 const isCritical = (id, lvl, file) => lvl === 'error' && !file && !isActivityScoped(id);
@@ -122,12 +122,22 @@ const msgOf = (r) => {
 const propsOf = (r) => r.properties || {};
 const activityOf = (r) => {
   const p = propsOf(r);
-  return p.sourceActivity || p.activityType || p.destinationActivity || '';
+  // The Microsoft.Activities.Extensions extension stamps no activity properties; its unsupported-activity
+  // result names the activity type in the message only ("Found N instance(s) of unsupported activity X").
+  return p.sourceActivity || p.activityType || p.destinationActivity || (msgOf(r).match(/unsupported activity (\S+)/) || [])[1] || '';
 };
 const familyOf = (id) => {
   if (!id) return 'other';
   if (STEP_RULES.has(id)) return 'step';
   if (id.startsWith('UIAUTOMATION-')) return 'uia';
+  // Microsoft.Activities.Extensions extension: one …-SUCCESS result per rewritten activity, one UNSUPPORTED-… error per
+  // unsupported activity type (the workflow is then copied unchanged), one namespace note per file, two package notes.
+  if (id === 'MICROSOFT-ACTIVITY-MIGRATION-SUCCESS' || id === 'UNSUPPORTED-MICROSOFT-ACTIVITY') return 'productivity';
+  if (id === 'MICROSOFT-ACTIVITIES-EXTENSIONS-PACKAGE-REMOVAL' || id === 'ADD-OR-UPDATE-UIPATH-SYSTEM') return 'package';
+  if (id === 'MICROSOFT-NAMESPACE-UPDATE') return 'core';
+  // Mail and GSuite extensions: the config-file load note and the extension's own summary line (no file; arrives
+  // without a level). Project-level information, never a finding.
+  if (id === 'LOAD-USER-CONFIGURATION' || id === 'GENERAL-REPORTING') return 'core';
   if (id.endsWith('-ACTIVITY-MIGRATION')) return 'productivity';
   if (id.endsWith('-PACKAGE-UPGRADE') || id.endsWith('-PACKAGE-MIGRATION')) return 'package';
   if (CORE_PREFIXES.some((p) => id.startsWith(p))) return 'core';
@@ -208,7 +218,8 @@ for (const r of results) {
   if (critical) hasCriticalError = true;
   if (id.startsWith('WORKFLOW-VALIDATION') || id === 'WORKFLOW-COMPILATION-ERROR') sawValidation = true;
   if (id === 'PROJECT-FRAMEWORK-UPDATE') frameworkChanged = true;
-  if (id === 'RESTORE-PACKAGE-UPGRADE' || id.endsWith('-PACKAGE-UPGRADE') || id.endsWith('-PACKAGE-MIGRATION')) {
+  if (id === 'RESTORE-PACKAGE-UPGRADE' || id.endsWith('-PACKAGE-UPGRADE') || id.endsWith('-PACKAGE-MIGRATION')
+    || id === 'MICROSOFT-ACTIVITIES-EXTENSIONS-PACKAGE-REMOVAL' || id === 'ADD-OR-UPDATE-UIPATH-SYSTEM') {
     packages.push(entry.message);
     if (!recordPackage(entry.message)) unparsedPackages.push(entry.message);
   }
@@ -247,11 +258,16 @@ for (const r of results) {
       uia.workflow.push(entry);
     }
   } else if (fam === 'productivity') {
-    // One result per activity carries the outcome: error = left classic; note = clean. A warning means the activity
-    // was rewritten with a caveat the message states (typically an unset ConnectionId). It is counted here as
-    // migrated AND as needing attention, like a UIA activity with a warning. Owner decision pending (Mail and
-    // GSuite package owners): the tool's own GENERAL-REPORTING line counts the same activity as "partially
-    // successful", not "successful"; if that is the intended reading, move the warning case to notMigrated.
+    // One result per activity carries the outcome. error = not migrated, the classic activity left in place (Mail: the
+    // Outlook trigger; Microsoft.Activities.Extensions: one unsupported activity type, its workflow copied unchanged);
+    // it lands under needs attention: the UIA extension reports its leftovers at note or warning level as benign (they
+    // compile and run as classic, which is what the left-classic count is reserved for), whereas these extensions report
+    // theirs at error level and count them as failed, and the Mail and Microsoft guides require them named in the
+    // report. Anything else = rewritten; a result
+    // carrying [PostMigration Action Required] (25.10.1 emits these at note level) or a warning-level caveat is counted
+    // as migrated AND as needing attention, like a UIA activity with a warning. Decided 2026-10-21 (kept over the tool's
+    // own GENERAL-REPORTING split into "successful" and "partially successful"): migrated equals the number of modern
+    // activities in the output and the per-file SARIF counts the tests grade; the caveat lives under needs attention.
     if (lvl === 'error') productivity.notMigrated.push(entry);
     else {
       productivity.migrated += 1;

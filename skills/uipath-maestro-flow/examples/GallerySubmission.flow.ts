@@ -14,7 +14,7 @@
  * Generic scenario (an art-gallery submission going to a curator) so it teaches
  * the human-task shape rather than a task answer.
  */
-import { flow, hitl, script, input, out, v, lit, types } from '@uipath/maestro-builder-sdk';
+import { flow, hitl, script, input, out, v, lit, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('gallery-submission')
   .name('GallerySubmission')
@@ -32,9 +32,7 @@ export default flow('gallery-submission')
   .var('curatorReply', types.string)
 
   // A derived fact for the curator to judge by, rather than raw dimensions.
-  .step('wallSpace', script({
-    code: 'return Math.round(($vars.start.output.widthCm * $vars.start.output.heightCm) / 100) + " dm2 of wall";',
-  }))
+  .step('wallSpace', script(wallSpace))
 
   // One arm per button. Each assigns the shared variables; the single return reads them.
   .stepSwitch('curate', hitl({
@@ -52,7 +50,7 @@ export default flow('gallery-submission')
       value: 'Accept',
       body: (b) => b.step(
         'hang',
-        script({ code: 'return "accepted for the spring wall: " + $vars.curate.output.note;' }),
+        script(hang),
         { updates: { decision: lit('Accept'), curatorReply: out('hang') } },
       ),
     },
@@ -60,7 +58,7 @@ export default flow('gallery-submission')
       value: 'Decline',
       body: (b) => b.step(
         'returnPiece',
-        script({ code: 'return "returned to artist: " + $vars.curate.output.note;' }),
+        script(returnPiece),
         { updates: { decision: lit('Decline'), curatorReply: out('returnPiece') } },
       ),
     },
@@ -69,3 +67,15 @@ export default flow('gallery-submission')
   .return({ outcome: v('decision'), note: v('curatorReply') })
 
   .build();
+
+function wallSpace($vars: FlowVars) {
+  return Math.round(($vars.start.output.widthCm * $vars.start.output.heightCm) / 100) + " dm2 of wall";
+}
+
+function hang($vars: FlowVars) {
+  return "accepted for the spring wall: " + $vars.curate.output.note;
+}
+
+function returnPiece($vars: FlowVars) {
+  return "returned to artist: " + $vars.curate.output.note;
+}

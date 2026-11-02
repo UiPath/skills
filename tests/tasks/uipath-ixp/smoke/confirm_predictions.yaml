@@ -1,9 +1,9 @@
 task_id: skill-ixp-confirm-predictions-smoke
 description: >
   Smoke: agent reviews predictions and picks the right verdict per
-  field — correct → `confirm --fields`; OCR-mangled → `confirm
-  --corrections` (Rule 8); wrong-field prediction → left
-  unannotated (Rule 10 — agent reviews, doesn't extract).
+  field — correct → `confirm --fields`; misread digits or wrong-field
+  prediction → left unannotated (Rules 8, 10 — agent reviews, doesn't
+  extract).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -13,9 +13,11 @@ run_limits:
   expected_turns: 6
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   Review the IXP model's predictions for document `doc-abc-123` on
@@ -48,46 +50,75 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # The version lookahead rides on the confirm criteria themselves, not a
-  # criterion of its own: a standalone pin assertion passes on one pinned
-  # call while the others go out bare (Rule 18).
-  - type: file_matches_regex
+  # The version pin rides on the confirm criteria themselves, not a criterion
+  # of its own: a standalone pin assertion passes on one pinned call while the
+  # others go out bare (Rule 18).
+  - type: cli_called
     description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields and the reviewed -m/--model-version (Critical Rule 18)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))\s+.*--fields)[^\r\n]*$
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
+    flags:
+      fields: {present: true, aliases: ["f"]}
+      model-version: {equals: "7", aliases: ["m"]}
     weight: 4.0
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  - type: cli_called
     description: "f-001 (cleanly-correct Invoice Number) confirmed on a version-pinned call"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-001).*)[^\r\n]*$
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
+    flags:
+      fields: {contains: "f-001", aliases: ["f"]}
+      model-version: {equals: "7", aliases: ["m"]}
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  - type: cli_called
     description: "f-002 (cleanly-correct Invoice Date) confirmed on a version-pinned call"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-002).*)[^\r\n]*$
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
+    flags:
+      fields: {contains: "f-002", aliases: ["f"]}
+      model-version: {equals: "7", aliases: ["m"]}
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  # Guards carry `aliases` and no positional: on a max_count 0 guard, a
+  # predicate that silently matches nothing passes on the call it forbids.
+  - type: cli_called
     description: "Agent did NOT confirm f-004 (wrong-field prediction must be skipped)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?\s+.*--fields\s+\S*f-004(?:,|\s|$))[^\r\n]*$
-    must_match: false
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    flags:
+      fields: {contains: "f-004", aliases: ["f"]}
+    min_count: 0
+    max_count: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_matches_regex
-    description: "--corrections carries the OCR-mangled field's corrected value, on a version-pinned call"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--corrections\s+[^\r\n]*f-003[^\r\n]*\$?12,?000\.00).*)[^\r\n]*$
+  - type: cli_called
+    description: "Agent did NOT confirm f-003 (misread Total must be left unannotated)"
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    flags:
+      fields: {contains: "f-003", aliases: ["f"]}
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The prompt flags f-003 as an OCR misread; writing the page's value over it
+  # is manual extraction, whichever field it targets.
+  - type: cli_called
+    description: "Agent did NOT use --corrections (Critical Rules 8, 9)"
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    flags:
+      corrections: {present: true, aliases: ["c"]}
+    min_count: 0
+    max_count: 0
     weight: 2.0
     pass_threshold: 1.0

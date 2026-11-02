@@ -1,0 +1,76 @@
+task_id: skill-case-single-business-rule
+description: >
+  Build a Case Management project from an sdd.md whose only task is a
+  business-rule, inside a staged solution that already holds the rule as an
+  in-solution sibling: the CreditRisk rules project (decision RiskDecision,
+  creditScore >= 700 -> LOW_RISK, else HIGH_RISK). No rule is deployed on the
+  tenant, so the tenant index has no match; the skill must find the sibling
+  with `registry search --local` before the empty-lookup gate (#3863) and bind
+  it with resourceKey solution_folder.CreditRisk and an empty folderPath.
+  Validates the case, then runs `uip maestro case debug` on the solution and
+  requires the case and the rule task's own execution to complete. Case debug
+  reports element executions, not variable values, so the band is not graded.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry, path-to-ga]
+max_iterations: 1
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  The solution in ./BusinessRuleSingleCase already contains the business rule
+  project CreditRisk. Add a UiPath Case Management project named
+  "BusinessRuleSingleCase" to that same solution, built from the approved
+  `sdd.md` in this folder. Do not create a second solution, and do not change
+  the CreditRisk rule.
+
+  Treat all build gates as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish
+  with `uip maestro case validate` passing on the resulting case plan.
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated case plan"
+    command: "p=$(ls BusinessRuleSingleCase/BusinessRuleSingleCase/caseplan.case BusinessRuleSingleCase/BusinessRuleSingleCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The case project sits in the staged solution beside the rule; no second solution was created"
+    command: "test $(find . -name '*.uipx' -not -path '*/.venv/*' | wc -l) -eq 1 && test -f BusinessRuleSingleCase/CreditRisk/entry-points.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The business-rule task binds the in-solution CreditRisk rule, wires creditScore in and RiskDecision.riskBand out, and debug completes with the rule task executed"
+    command: "python3 $REFERENCE_DIR/_shared/check_business_rule_case.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

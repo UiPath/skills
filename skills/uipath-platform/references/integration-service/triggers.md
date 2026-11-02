@@ -13,6 +13,7 @@ Triggers are event-based activities that fire when something happens in an exter
   - [`parameters[]` — event-parameter input fields](#parameters--event-parameter-input-fields)
 - [Object Name Resolution](#object-name-resolution)
 - [Trigger Metadata (Describe)](#trigger-metadata-describe)
+  - [Parent-field-driven fields and solution-resource pickers](#parent-field-driven-fields-and-solution-resource-pickers)
 - [CRUD vs Non-CRUD Triggers](#crud-vs-non-crud-triggers)
 - [Response Fields](#response-fields)
 - [Building Filter Trees from filterFields](#building-filter-trees-from-filterfields)
@@ -27,6 +28,7 @@ Triggers are event-based activities that fire when something happens in an exter
 [ ] 1. List trigger activities  →  pick one  →  note its **Operation**
 [ ] 2. If Operation is CREATED/UPDATED/DELETED  →  get objects  →  resolve object name (ask user if unclear)
 [ ] 3. Describe the resolved object + operation  →  field metadata
+       (object has an api action in Design.Actions[] reading a parameter → pass it with -f; see Parent-field-driven fields)
 ```
 
 **Decision point at step 2**: CREATED, UPDATED, and DELETED operations require an intermediate "objects" step. For other trigger operations, skip to step 3 using the activity's **ObjectName**.
@@ -91,6 +93,29 @@ Returns field definitions with names, types, and descriptions. Always requests `
 - `<object-name>` comes from [Object Name Resolution](#object-name-resolution) above
 - Always pass `--connection-id` — without it, results omit custom/connection-specific fields
 - The returned fields are the **source of truth** for the trigger's field metadata. Use them verbatim — do not guess field names
+
+### Parent-field-driven fields and solution-resource pickers
+
+Some trigger objects load their fields only once a parent field is set — e.g. a Data Fabric entity trigger reads the entity's fields when the entity is picked. Spot them in the `triggers objects` response: the object's `Design.Actions[]` holds an `api`-type action whose `Rules[].RefFieldName` names a parameter. When that parameter's `Design` carries `SolutionResourceKind` (e.g. `"entity"`), it is a **solution-resource picker**.
+
+Pass the parent values with `-f`, as on [`is resources describe`](resources.md#solution-resource-pickers) — for a picker, the resource **name**, plus `--solution-folder` for a resource in a local solution:
+
+```bash
+# Data Fabric entity trigger: folderEntityName is an entity picker (entityScope=folder shows it)
+uip is triggers describe uipath-uipath-dataservice "<OPERATION>" "<object-name>" \
+  --connection-id "<id>" \
+  -f entityScope=folder \
+  -f folderEntityName="<entity-name>" \
+  --solution-folder <solution-dir> \
+  --output json
+# → OutputFields / FilterFields now list the entity's fields
+```
+
+- The CLI runs the action the `-f` fields satisfy (`--action <name>` when several match) and merges the fields it returns. Without `-f`, such a trigger describes to its base fields only (often just `Id`) — that is not its real schema.
+- Lookup order and failures (`invalid_argument` + `Data.Candidates`, `not_found`) are as on [resources describe](resources.md#solution-resource-pickers). Do not drop the picker and retry — the action needs it.
+- `-f` needs `--connection-id`; `--action` and `--solution-folder` need `-f`. The result is never cached.
+
+When authoring the trigger, put the same values in the `queryParameters` bucket (the picker's `type` is `query`) and run inside the solution: `uip maestro case spec --type trigger --solution-folder <dir> --input-details '{"queryParameters":{...}}'` resolves the picker the same way and lists the loaded fields in `outputs.responseFields`. For Flow, see `uipath-maestro-flow`.
 
 ---
 

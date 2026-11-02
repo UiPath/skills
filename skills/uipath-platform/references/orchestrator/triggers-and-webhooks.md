@@ -37,7 +37,7 @@ The CLI uses `--type` to select the trigger kind. Defaults to `time` if omitted.
 | Weekdays 9 AM | `0 0 9 ? * MON-FRI` | `0 9 * * 1-5` |
 | Every 30 min | `0 0/30 * * * ?` | `*/30 * * * *` |
 
-**RuntimeType values**: `Serverless`, `Unattended`, `Headless`, `NonProduction`, `AgentService`
+**RuntimeType values**: `Serverless`, `Unattended`, `Headless`, `NonProduction`, `AgentService`, and `Flow`. `Flow` is the runtime `triggers get` reports for a trigger on a Maestro flow process, whichever one it was created with; `create` and `update` accept it for time and queue triggers, so the value `get` prints can be passed back. API triggers do not take it.
 
 ---
 

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceValidationAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "0b7b5585-e974-4305-b7c2-05900e28a3c3",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoiceValidationAgent"
+    },
+    "locks": [],
+    "key": "e37ee31d-d3ee-49b5-8023-89cea7b6e0a7",
+    "files": []
+  }
+}

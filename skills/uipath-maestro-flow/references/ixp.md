@@ -30,11 +30,13 @@ Asking WHICH models exist ("what document extractors can I add?") is read-only Q
 They are not build requests.
 One search answers them:
 
+<!--skill-flavor:ixp-list-commands:start-->
 ```bash
 uip login status --output json      # without login, tenant IxP nodes are hidden
 uip maestro flow registry pull --force
 uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
 ```
+<!--skill-flavor:ixp-list-commands:end-->
 
 Each `Data[]` entry is one published model (a.k.a. runtime project) visible to the flow registry on this tenant.
 Present `DisplayName`, `NodeType` and `Version` as a table, and stop.
@@ -44,7 +46,9 @@ Rules for the listing path:
 - **Do NOT call `registry get` on the search hits.** The search result already carries every field the answer needs. `registry get` resolves ONE node's authoring identity, so running it per hit turns a one-second answer into a call per published model — measured at 80 calls and 127 seconds on a tenant with 40 of them. Fan it out only when authoring a specific node, and then for that node alone.
 - **Do NOT scaffold a solution, run `uip maestro flow init`, or write a `.flow.ts` or `.flow` file.** Listing is read-only Q&A.
 - **Do NOT mock.** If `Data: []`, answer directly that no IxP models are published on this tenant. The `mock()` fallback is for build-time planning, not for listing-time Q&A.
+<!--skill-flavor:ixp-no-login:start-->
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
+<!--skill-flavor:ixp-no-login:end-->
 - **Do NOT search by `runtime`, `document extractor`, `extractor`, or `IXP` (uppercase).** These return empty results or agent-tool variants, not extraction nodes. Use `uipath.ixp` (lowercase) only.
 - **Do NOT switch to the `uipath-ixp` skill.** `uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro.
 - **Do NOT use `uip maestro flow process list` or any Orchestrator folder iteration.** `flow process list` enumerates deployed flow process instances, not published models.

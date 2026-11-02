@@ -1,0 +1,13 @@
+FABRIKAM CLOUD PAYROLL - BUSINESS CONTINUITY PLAN (summary)
+Version 3.2, approved 2026-03-02
+
+1. Scope
+Payroll calculation, payslip delivery and tax filing services.
+
+2. Recovery objectives
+Payroll calculation service: RTO 8 hours, RPO 15 minutes.
+Payslip portal: RTO 24 hours, RPO 1 hour.
+
+3. Testing
+A full regional failover test was last performed on 2026-02-18 and met all
+objectives except the payslip portal, which recovered in 27 hours.

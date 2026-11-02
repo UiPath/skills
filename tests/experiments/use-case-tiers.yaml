@@ -1,0 +1,80 @@
+experiment_id: skill-tests-use-case-tiers
+description: >
+  Opt-in A/B for the uipath-agents use-case tasks (tasks/uipath-agents/lowcode/use_cases/):
+  the same tasks with and without the "helper information" meant only for lower-tier
+  models. Defaults mirror nightly.yaml (docker, tenant auth) minus its Maestro
+  preview-SDK pre_run, which agent tasks don't use; keep them in sync.
+
+# Use-case prompts carry their lower-tier helper text between
+#   <!-- helper:start -->  …  <!-- helper:end -->
+# Every other experiment sends the prompt unchanged (helper included). `unassisted`
+# strips the block so higher-tier models get only the context, the user's request and
+# the closing autonomy line. A task without the markers is unaffected by either variant.
+#
+#   coder-eval run tasks/uipath-agents/lowcode/use_cases/*/*.yaml -e experiments/use-case-tiers.yaml
+#
+# Pass the model as a CLI flag, as with nightly.yaml; each variant can also pin one via
+# `agent: {model: ...}` when comparing a lower-tier and a higher-tier model in one run.
+
+defaults:
+  run_limits:
+    max_turns: 200
+    task_timeout: 1200
+    turn_timeout: 900
+
+  sandbox:
+    driver: docker
+    docker:
+      image: skills-image:latest
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - MAESTRO_FLOW_SDK_SETUP
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - E2E_PROCESS_KEY
+        - E2E_LONG_PROCESS_KEY
+        - CODEX_API_KEY
+        - CODEX_BASE_URL
+      extra_mounts:
+        - ~/.uipath:/.uipath:rw
+
+  agent:
+    # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.
+    permission_mode: acceptEdits
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+    plugins:
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+    ignore_patterns: []
+
+  checker_context:
+    api_route:
+      route: litellm
+      model: gpt-5.6-luna
+      params:
+        api_version: "2024-05-01"
+        num_retries: 5
+      env_params:
+        api_base: CODEX_BASE_URL
+        api_key: CODEX_API_KEY
+
+  post_run:
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: assisted
+  - variant_id: unassisted
+    prompt_mutations:
+      - type: replace
+        regex: true
+        pattern: '(?s)\s*<!-- helper:start -->.*?<!-- helper:end -->'
+        replacement: ""

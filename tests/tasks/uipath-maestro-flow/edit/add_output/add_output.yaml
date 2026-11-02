@@ -5,11 +5,14 @@ task_id: skill-flow-add-output
 description: >
   Add a "location" field to the end node outputs in the BellevueWeather flow.
   Exercises modifying node output mappings.
+  Graded offline too: the edit must come out of the skill's decompile/merge
+  loop (a hand-edited .flow fails) and leave the rest of the flow unchanged.
 tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node]
 
 run_limits:
   expected_turns: 11
   turn_timeout: 1200
+  task_timeout: 2100
 
 sandbox:
   template_sources:
@@ -55,6 +58,23 @@ success_criteria:
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  # ── Brownfield edit ───────────────────────────────────────────────────
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile/merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every node but the two End nodes, and every edge, variable and definition, is unchanged"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather --changed-node endNiceDay --changed-node endBringJacket"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
 post_run:

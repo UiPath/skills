@@ -1,0 +1,23 @@
+{
+ "name_contains": "Morning Appointment Confirmation and Reminder Batch",
+ "documents": {
+  "pdd": "corpus/sdd-appointment-confirmation-batch/pdd.md",
+  "sdd": "corpus/sdd-appointment-confirmation-batch/sdd.md"
+ },
+ "systems": {
+  "DK-Medical": [
+   "dk-medical",
+   "dk medical"
+  ],
+  "NTT Docomo Business SMS Gateway": [
+   "docomo"
+  ]
+ },
+ "optional_systems": {
+  "Reminder log": [
+   "reminder log",
+   "reminder history"
+  ]
+ },
+ "allow_other_category": true
+}

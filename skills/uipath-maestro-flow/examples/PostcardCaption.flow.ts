@@ -15,7 +15,7 @@
  *
  * Generic scenario: draft a short caption for a travel postcard.
  */
-import { flow, inlineAgent, script, out, input, types } from '@uipath/maestro-builder-sdk';
+import { flow, inlineAgent, script, out, input, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('postcard-caption')
   .name('PostcardCaption')
@@ -36,9 +36,11 @@ export default flow('postcard-caption')
 
   // Reads only the agent's own declared returns — the one contract a local run
   // can honestly assert.
-  .step('render', script({
-    code: 'return "[" + String($vars.write.output.tone) + "] " + String($vars.write.output.caption);',
-  }))
+  .step('render', script(render))
   .return({ caption: out('render') })
 
   .build();
+
+function render($vars: FlowVars) {
+  return "[" + String($vars.write.output.tone) + "] " + String($vars.write.output.caption);
+}

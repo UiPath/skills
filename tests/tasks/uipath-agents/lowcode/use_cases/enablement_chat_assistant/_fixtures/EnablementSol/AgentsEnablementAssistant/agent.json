@@ -1,0 +1,44 @@
+{
+  "version": "1.2.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "conversational-v1",
+    "maxIterations": 8,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": true,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful agentic assistant.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a helpful agentic assistant."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "",
+      "contentTokens": []
+    }
+  ],
+  "projectId": "02bb220b-eacb-4855-b9d8-3d82325fce03"
+}

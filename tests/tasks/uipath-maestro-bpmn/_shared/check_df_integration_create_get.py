@@ -44,7 +44,8 @@ Checks performed:
      carrying an expansionLevel input or an Id filter).
   4. The union of expansionLevel values read off those retrieval nodes covers
      {1, 2, 3} -- from an input named `expansionLevel` at any depth under the
-     activity, or a body JSON key of the same name.
+     activity, a body JSON key of the same name, or a key of a V2 element's
+     `target="queryParameters"` JSON input.
 
 Assertion map (Flow -> BPMN):
   F check_integration_create_get.py:35  creates >= 2                     -> `creates < 2` check
@@ -55,6 +56,7 @@ Assertion map (Flow -> BPMN):
   T                                     entity name anywhere in inputs   -> mentions_entity()
   T                                     GETBYID/GET(List) equivalence    -> is_retrieval_node() List/GET branch
   T                                     expression/body JSON at any depth -> expansion_level() query-or-body read
+  T                                     V2 queryParameters JSON input     -> expansion_level() query_parameters() read
   DROPPED  require_no_private_connector_values  (not in Flow grader)
   DROPPED  require_sequence_integrity            (not in Flow grader; `validate` criterion covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow grader; `validate` criterion covers structure)
@@ -77,6 +79,7 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
+    query_parameters,
 )
 
 ENTITY = "FlowCodeEvalEntity"
@@ -94,6 +97,7 @@ REQUIRED_EXPANSION = {1, 2, 3}
 _CREATE_OP_RE = re.compile(r"^create$", re.IGNORECASE)
 _RETRIEVE_OP_RE = re.compile(r"^retrieve$", re.IGNORECASE)
 _LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
+ID_FILTER_KEYS = ("where", "filter", "queryexpression")
 
 
 def node_inputs(task: ET.Element) -> list[ET.Element]:
@@ -117,12 +121,9 @@ def expansion_level(task: ET.Element) -> int | None:
         raw = inp.attrib.get("value")
         if raw is None:
             raw = (inp.text or "").strip()
-        try:
-            return int(raw)
-        except (TypeError, ValueError):
-            match = re.search(r"\d+", raw or "")
-            if match:
-                return int(match.group())
+        level = _level(raw)
+        if level is not None:
+            return level
     # Or a key inside the single `target="body"` JSON blob.
     for inp in node_inputs(task):
         if inp.attrib.get("name") != "body" or inp.attrib.get("target") != "body":
@@ -139,7 +140,17 @@ def expansion_level(task: ET.Element) -> int | None:
                 return int(body["expansionLevel"])
             except (TypeError, ValueError):
                 return None
-    return None
+    # Or a key of a V2 element's `target="queryParameters"` JSON input.
+    return _level(query_parameters(task).get("expansionLevel"))
+
+
+def _level(raw: str | None) -> int | None:
+    """``"2"``, ``"2.0"`` and ``"=js:2"`` all read as 2."""
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        match = re.search(r"\d+", raw or "")
+        return int(match.group()) if match else None
 
 
 def connector_nodes(root: ET.Element) -> list[ET.Element]:
@@ -152,7 +163,8 @@ def connector_nodes(root: ET.Element) -> list[ET.Element]:
 
 
 def has_id_filter(task: ET.Element) -> bool:
-    """An `id` input at any target, or a `where`/`filter` input mentioning Id.
+    """An `id` input at any target, or a `where`/`filter`/`queryExpression` input mentioning Id,
+    or the same key in a V2 element's `target="queryParameters"` JSON input.
 
     Covers a Retrieve-by-Id done through List/GET: either a direct `id` query
     param, or a `where` expression filtering on the Id field (the shape a real
@@ -162,11 +174,14 @@ def has_id_filter(task: ET.Element) -> bool:
         name = (inp.attrib.get("name") or "").lower()
         if name == "id":
             return True
-        if name in ("where", "filter"):
+        if name in ID_FILTER_KEYS:
             text = (inp.attrib.get("value") or "") + (inp.text or "")
             if re.search(r"\bid\b", text, re.IGNORECASE):
                 return True
-    return False
+    params = {key.lower(): value for key, value in query_parameters(task).items()}
+    if "id" in params:
+        return True
+    return any(re.search(r"\bid\b", params.get(key, ""), re.IGNORECASE) for key in ID_FILTER_KEYS)
 
 
 def is_generic_entity_object(object_name: str, entity: str) -> bool:

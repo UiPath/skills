@@ -1,0 +1,412 @@
+{
+  "Result": "Success",
+  "Code": "ConnectorTaskSpec",
+  "Data": {
+    "SpecVersion": 1,
+    "Identity": {
+      "Target": "activity",
+      "UiPathActivityTypeId": "1dea7eb3-2abf-3720-b92b-d4c2eb063584",
+      "ConnectorKey": "uipath-snowflake-cortex",
+      "ConnectorName": "Snowflake Cortex",
+      "ConnectorVersion": "1.4.0",
+      "ObjectName": "databases::schemas::agents::run",
+      "ObjectDisplayName": "Interact Agent",
+      "TypecacheEntry": {
+        "isAppActivity": false,
+        "packageId": 210934,
+        "svgIconUrl": "icons/36d79ec46d4fcba8b7d45eb777b8b9c5d65f14e8d596a437c5d76296a153ee9d.svg",
+        "displayName": "Interact Agent",
+        "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.35.0.0, Culture=neutral, PublicKeyToken=null",
+        "description": "Sends a user query to the Cortex Agent object and returns its response as a stream of events.",
+        "category": "",
+        "activityColor": "#E56D5C",
+        "configuration": "{\"connectorKey\":\"uipath-snowflake-cortex\",\"objectName\":\"databases::schemas::agents::run\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"AgentExecution\"}",
+        "uiPathActivityTypeId": "1dea7eb3-2abf-3720-b92b-d4c2eb063584",
+        "isExperimental": false,
+        "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-snowflake-cortex-Interact-Agent",
+        "isEnabled": true,
+        "targetPlatform": "CrossPlatform",
+        "isAdvanced": false,
+        "isRestricted": false,
+        "hasWpfOnlyDesigner": false,
+        "tags": [
+          ""
+        ]
+      }
+    },
+    "Operation": {
+      "Name": "POST",
+      "Verb": "create",
+      "Description": "Create a Databases {database} schemas {schema} agents {name} run",
+      "HttpMethod": "POST",
+      "Path": "/databases/{database}/schemas/{schema}/agents/{name}/run"
+    },
+    "Connection": {
+      "Id": "7a1e5c3d-0000-4000-8000-0000000000c1",
+      "Name": "Snowflake Cortex",
+      "FolderKey": "7a1e5c3d-0000-4000-8000-0000000000f1",
+      "ElementInstanceId": 353235,
+      "ByoaConnection": false,
+      "PollingIntervalMinutes": 5,
+      "SupportedAuths": []
+    },
+    "Inputs": {
+      "PathParameters": [
+        {
+          "Name": "schema",
+          "DisplayName": "Schema",
+          "Description": "Schema name",
+          "DataType": "string",
+          "Required": true,
+          "Reference": {
+            "ObjectName": "databases::schemas",
+            "LookupValue": "name",
+            "LookupNames": [
+              "name"
+            ],
+            "DiscoverCommand": "uip is resources run list uipath-snowflake-cortex databases::schemas --connection-id 7a1e5c3d-0000-4000-8000-0000000000c1"
+          }
+        },
+        {
+          "Name": "database",
+          "DisplayName": "Database",
+          "Description": "Database Name",
+          "DataType": "string",
+          "Required": true,
+          "Reference": {
+            "ObjectName": "System",
+            "LookupValue": "name",
+            "LookupNames": [
+              "name"
+            ],
+            "DiscoverCommand": "uip is resources run list uipath-snowflake-cortex System --connection-id 7a1e5c3d-0000-4000-8000-0000000000c1"
+          }
+        },
+        {
+          "Name": "name",
+          "DisplayName": "Agent Name",
+          "Description": "Name of the Agent",
+          "DataType": "string",
+          "Required": true,
+          "Reference": {
+            "ObjectName": "databases::schemas::agents",
+            "LookupValue": "name",
+            "LookupNames": [
+              "name"
+            ],
+            "DiscoverCommand": "uip is resources run list uipath-snowflake-cortex databases::schemas::agents --connection-id 7a1e5c3d-0000-4000-8000-0000000000c1"
+          }
+        }
+      ],
+      "QueryParameters": [],
+      "BodyFields": [
+        {
+          "Name": "thread_id",
+          "DisplayName": "Thread id",
+          "Description": "The thread identifier for the conversation.",
+          "DataType": "string",
+          "Type": "string",
+          "Required": false
+        },
+        {
+          "Name": "parent_message_id",
+          "DisplayName": "Parent message id",
+          "Description": "The message ID from which this run should begin.",
+          "DataType": "string",
+          "Type": "string",
+          "Required": false
+        },
+        {
+          "Name": "prompt",
+          "DisplayName": "Prompt",
+          "Description": "The initial text or query provided to generate a response.",
+          "DataType": "string",
+          "Type": "string",
+          "Required": true
+        }
+      ],
+      "Multipart": null,
+      "EventParameters": []
+    },
+    "Outputs": {
+      "ResponseFields": [
+        {
+          "Name": "text",
+          "DisplayName": "Agent action text",
+          "Description": "The text content associated with the agent action.",
+          "DataType": "string",
+          "Type": "string",
+          "Required": false
+        },
+        {
+          "Name": "type",
+          "DisplayName": "Agent action type",
+          "Description": "The type or category of the agent action being performed.",
+          "DataType": "string",
+          "Type": "string",
+          "Required": false
+        }
+      ],
+      "Pagination": null
+    },
+    "EssentialConfiguration": {
+      "essentialConfiguration": {
+        "connectorVersion": "1.9.1",
+        "executionType": "sync",
+        "scriptRef": null,
+        "customFieldsRequestDetails": null,
+        "instanceParameters": {
+          "connectorKey": "uipath-snowflake-cortex",
+          "objectName": "databases::schemas::agents::run",
+          "httpMethod": "POST",
+          "activityType": "Curated",
+          "version": "1.0.0",
+          "supportsStreaming": false,
+          "subType": "AgentExecution"
+        },
+        "objectName": "databases::schemas::agents::run",
+        "operation": "create",
+        "packageVersion": "1.0.0",
+        "httpMethod": "POST",
+        "path": "/databases/{database}/schemas/{schema}/agents/{name}/run",
+        "unifiedTypesCompatible": true,
+        "savedJitInputFieldId": "in_databases_sub_schemas_sub_agents_sub_run"
+      }
+    },
+    "References": [
+      {
+        "ObjectName": "databases::schemas",
+        "LookupValue": "name",
+        "LookupNames": [
+          "name"
+        ],
+        "DiscoverCommand": "uip is resources run list uipath-snowflake-cortex databases::schemas --connection-id 7a1e5c3d-0000-4000-8000-0000000000c1",
+        "ConsumedBy": "pathParameters.schema"
+      },
+      {
+        "ObjectName": "System",
+        "LookupValue": "name",
+        "LookupNames": [
+          "name"
+        ],
+        "DiscoverCommand": "uip is resources run list uipath-snowflake-cortex System --connection-id 7a1e5c3d-0000-4000-8000-0000000000c1",
+        "ConsumedBy": "pathParameters.database"
+      },
+      {
+        "ObjectName": "databases::schemas::agents",
+        "LookupValue": "name",
+        "LookupNames": [
+          "name"
+        ],
+        "DiscoverCommand": "uip is resources run list uipath-snowflake-cortex databases::schemas::agents --connection-id 7a1e5c3d-0000-4000-8000-0000000000c1",
+        "ConsumedBy": "pathParameters.name"
+      }
+    ],
+    "Diagnostics": {
+      "Fetched": [
+        "TypeCache(typecache-external-agent-activities)",
+        "fetchConnectionInfo",
+        "fetchConnectorMetadata"
+      ],
+      "Fallbacks": [],
+      "Timestamp": "2026-10-16T00:00:00.000Z"
+    },
+    "CaseShape": {
+      "inputs": [
+        {
+          "name": "pathParameters",
+          "type": "json",
+          "target": "pathParameters",
+          "body": {
+            "database": "SALES_DB",
+            "schema": "PUBLIC",
+            "name": "SALES_AGENT"
+          }
+        },
+        {
+          "name": "queryParameters",
+          "type": "json",
+          "target": "queryParameters",
+          "body": {}
+        },
+        {
+          "name": "body",
+          "type": "json",
+          "target": "body",
+          "body": {
+            "prompt": "Summarize the open sales pipeline in one sentence."
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "response",
+          "displayName": "Response",
+          "type": "jsonSchema",
+          "source": "=response",
+          "body": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "text": {
+                "title": "Agent action text",
+                "type": "string"
+              },
+              "type": {
+                "title": "Agent action type",
+                "type": "string"
+              }
+            },
+            "definitions": {}
+          }
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "_jsonSchema": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "status": {
+                "type": "number"
+              },
+              "element": {
+                "type": "string"
+              }
+            }
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "status": {
+                "type": "number"
+              },
+              "element": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "context": [
+        {
+          "name": "connectorKey",
+          "type": "string",
+          "value": "uipath-snowflake-cortex"
+        },
+        {
+          "name": "connection",
+          "type": "string",
+          "value": "=bindings.{{CONN_BINDING_ID}}"
+        },
+        {
+          "name": "resourceKey",
+          "type": "string",
+          "value": "7a1e5c3d-0000-4000-8000-0000000000c1"
+        },
+        {
+          "name": "folderKey",
+          "type": "string",
+          "value": "=bindings.{{FOLDER_BINDING_ID}}"
+        },
+        {
+          "name": "objectName",
+          "type": "string",
+          "value": "databases::schemas::agents::run"
+        },
+        {
+          "name": "method",
+          "type": "string",
+          "value": "POST"
+        },
+        {
+          "name": "path",
+          "type": "string",
+          "value": "/databases/{database}/schemas/{schema}/agents/{name}/run"
+        },
+        {
+          "name": "executionType",
+          "type": "string",
+          "value": "sync"
+        },
+        {
+          "name": "metadata",
+          "type": "json",
+          "body": {
+            "activityPropertyConfiguration": {
+              "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.9.1\",\"executionType\":\"sync\",\"scriptRef\":null,\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"uipath-snowflake-cortex\",\"objectName\":\"databases::schemas::agents::run\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"AgentExecution\"},\"objectName\":\"databases::schemas::agents::run\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/databases/{database}/schemas/{schema}/agents/{name}/run\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_databases_sub_schemas_sub_agents_sub_run\"}}",
+              "uiPathActivityTypeId": "1dea7eb3-2abf-3720-b92b-d4c2eb063584",
+              "errorState": {
+                "issues": []
+              },
+              "executionType": "sync"
+            },
+            "activityMetadata": {
+              "activity": {
+                "isAppActivity": false,
+                "packageId": 210934,
+                "svgIconUrl": "icons/36d79ec46d4fcba8b7d45eb777b8b9c5d65f14e8d596a437c5d76296a153ee9d.svg",
+                "displayName": "Interact Agent",
+                "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.35.0.0, Culture=neutral, PublicKeyToken=null",
+                "description": "Sends a user query to the Cortex Agent object and returns its response as a stream of events.",
+                "category": "Snowflake Cortex",
+                "activityColor": "#E56D5C",
+                "configuration": "{\"connectorKey\":\"uipath-snowflake-cortex\",\"objectName\":\"databases::schemas::agents::run\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"AgentExecution\"}",
+                "uiPathActivityTypeId": "1dea7eb3-2abf-3720-b92b-d4c2eb063584",
+                "isExperimental": false,
+                "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-snowflake-cortex-Interact-Agent",
+                "isEnabled": true,
+                "targetPlatform": "CrossPlatform",
+                "isAdvanced": false,
+                "isRestricted": false,
+                "hasWpfOnlyDesigner": false,
+                "tags": [
+                  ""
+                ]
+              }
+            },
+            "inputMetadata": {},
+            "telemetryData": {
+              "connectorKey": "uipath-snowflake-cortex",
+              "connectorName": "Snowflake Cortex",
+              "operationType": "create",
+              "objectName": "databases::schemas::agents::run",
+              "objectDisplayName": "Interact Agent",
+              "primaryKeyName": ""
+            }
+          }
+        },
+        {
+          "name": "activityConfigurationVersion",
+          "type": "string",
+          "value": "v2"
+        }
+      ]
+    }
+  }
+}

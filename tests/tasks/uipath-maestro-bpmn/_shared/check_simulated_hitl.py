@@ -172,6 +172,7 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_uipath_extension,
     parse_bpmn,
+    tag_case_hint,
     text_content,
 )
 
@@ -348,7 +349,7 @@ def downstream_field_reference(root: ET.Element, var_name: str, field_name: str)
 def require_hitl(root: ET.Element) -> list[ET.Element]:
     tasks = hitl_tasks(root)
     if not tasks:
-        fail("need a bpmn:userTask carrying an Actions.HITL uipath:activity shell")
+        fail("need a bpmn:userTask carrying an Actions.HITL uipath:activity shell" + tag_case_hint(root, "userTask"))
     return tasks
 
 

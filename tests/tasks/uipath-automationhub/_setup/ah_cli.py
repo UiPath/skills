@@ -131,11 +131,21 @@ def uip_env() -> dict:
     return env
 
 
-def uip_json(args: list[str], timeout: int = 180) -> dict:
-    """Run `uip <args> --output json` and return the response envelope."""
+def uip_json(args: list[str], timeout: int = 50) -> dict:
+    """Run `uip <args> --output json` and return the response envelope.
+
+    A hang or a missing CLI comes back as a non-Success envelope, never an exception,
+    so each caller's `succeeded()` check reports it with the TENANT NOT READY marker.
+    The 50 s default keeps preflight's five calls inside its 300 s pre_run budget.
+    """
     env = uip_env()
-    proc = subprocess.run(["uip", *args, "--output", "json"],
-                          capture_output=True, text=True, timeout=timeout, env=env)
+    try:
+        proc = subprocess.run(["uip", *args, "--output", "json"],
+                              capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired:
+        return {"Result": "Timeout", "Message": f"uip {' '.join(args)} gave no answer in {timeout} s"}
+    except OSError as exc:
+        return {"Result": "ExecError", "Message": f"could not run uip: {exc}"}
     envelope = parse_envelope(proc.stdout)
     if envelope is None:
         return {"Result": "ParseError", "exit_code": proc.returncode,

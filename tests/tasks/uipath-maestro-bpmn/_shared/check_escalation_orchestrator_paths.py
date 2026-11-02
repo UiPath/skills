@@ -21,7 +21,8 @@ Assertion map (Flow -> BPMN):
       -> assert_error_handlers(): boundary errorEventDefinition on each Slack sendTask reaches a connector-free,
          acyclic, terminating path
   F check_escalation_orchestrator_paths.py:145  assert_connector_send_identity(SLACK_KEY, "user", ...)
-      -> assert_send_identity(): every Slack sendTask carries target=query name=send_as value=user
+      -> assert_send_identity(): every Slack sendTask carries exactly one send_as=user, a V1 input or a V2
+         queryParameters key
   F check_escalation_orchestrator_paths.py:55   assert_named_equals(payload, name, expected, ...)
       -> public_value_present(): normalized value present among root Globals leaves + non-classifier element Outputs
          leaves, input echoes (input_echo_ids) excluded from both except for caseKey, which the
@@ -76,6 +77,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -85,15 +87,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))  # tests/tasks/uipath-maestro-bpmn/
 
 from _shared import graph  # noqa: E402
-from _shared.bpmn_check import NS, attr, elements, resolve_project  # noqa: E402
+from _shared.bpmn_check import NS, attr, elements, query_values, resolve_project  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     COMPLETED_STATUSES,
     CheckFailure,
-    UIPATH_NS,
     VARIABLES_ALL_TIMEOUT,
     connector_context,
     element_output_records,
+    fetch_incidents,
     get_ci,
     import_exact,
     index_runtime_connectors,
@@ -124,6 +126,7 @@ NAMED_OUTPUT_FIELDS = CLASSIFICATION_FIELDS + ("caseKey",)
 LIVE_RUN_DIR = Path("escalation-orchestrator-live")
 DEBUG_TIMEOUT_SECONDS = 300  # literal on the run_debug call below -- the budget guard reads this statically
 _SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
+INCIDENT_DETAIL_CHARS = 1500
 
 
 @dataclass(frozen=True)
@@ -189,16 +192,12 @@ def assert_send_identity(process: ET.Element, slack_ids: tuple[str, ...]) -> Non
     for element in process.iter():
         if element.attrib.get("id") not in slack_ids:
             continue
-        sends_as = [
-            item.attrib.get("value")
-            for item in element.iter(q(UIPATH_NS, "input"))
-            if item.attrib.get("name") == "send_as"
-        ]
+        sends_as = query_values(element, "send_as")
         if sends_as != [SLACK_SEND_AS]:
             bad.append((element.attrib.get("id"), sends_as))
     if bad:
         raise CheckFailure(
-            f"Slack sendTask(s) do not carry exactly one send_as input with "
+            f"Slack sendTask(s) do not carry exactly one send_as query parameter with "
             f"value {SLACK_SEND_AS!r}: {bad}; the prompt requires sending as the "
             "requested identity"
         )
@@ -356,9 +355,27 @@ def is_classifier_output(record, expected: dict) -> bool:
     )
 
 
+def slack_miss_detail(slack_ids: tuple[str, ...], executions: list, instance_id: str) -> str:
+    states = [
+        f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
+        for item in executions
+        if isinstance(item, dict) and get_ci(item, "ElementId") in slack_ids
+    ]
+    detail = f"Slack sendTask states: {states}" if states else "no Slack sendTask reached"
+
+    try:
+        incidents, raw = fetch_incidents(instance_id)
+    except (CheckFailure, subprocess.TimeoutExpired) as error:
+        return f"{detail}; incidents unavailable: {error}"
+
+    if incidents is None:
+        return f"{detail}; incidents response has an unknown shape: {json.dumps(raw)[:INCIDENT_DETAIL_CHARS]}"
+    if incidents:
+        detail += f"; incidents: {json.dumps(incidents)[:INCIDENT_DETAIL_CHARS]}"
+    return detail
+
+
 def assert_slack_posted(variables_data, fired_slack_ids: set, case: dict) -> None:
-    if not fired_slack_ids:
-        raise CheckFailure(f"{case['name']}: no Slack sendTask executed; expected a real Slack post")
     outputs = element_output_records(variables_data, tuple(fired_slack_ids))
     matched = None
     for output in outputs:
@@ -460,6 +477,9 @@ def verify_case(contract: Contract, imported_project: Path, case: dict) -> dict:
             raise CheckFailure(f"{case['name']}: no public output carries {field}={expected_value!r}")
 
     if case.get("expect_slack"):
+        if not fired_slack:
+            detail = slack_miss_detail(contract.slack_ids, executions, _instance_id)
+            raise CheckFailure(f"{case['name']}: no Slack sendTask completed ({detail}); expected a real Slack post")
         assert_slack_posted(variables_data, fired_slack, case)
 
     print(

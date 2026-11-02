@@ -1,0 +1,18 @@
+FABRIKAM CLOUD PAYROLL, INC.
+SOC 2 TYPE II REPORT  -  Review period: 1 January 2026 to 30 June 2026
+Independent Service Auditor: Litware Assurance LLP
+
+Section 3 - Description of the System
+3.4 Data protection
+Customer payroll data is stored in managed database services in two regions.
+All data at rest is encrypted using AES-256 with keys held in a cloud HSM-backed
+key management service. Keys are rotated every 12 months.
+
+Section 4 - Tests of Controls and Results
+CC6.1  Logical access is restricted to authorized personnel.   No exceptions noted.
+CC6.7  Data in transit is encrypted with TLS 1.2 or higher.     No exceptions noted.
+CC7.2  Security events are monitored and investigated.
+       Exception noted: for 2 of 25 sampled alerts, investigation was not
+       documented within the 24-hour target defined in the incident procedure.
+       Management response: alert triage was moved to an on-call rotation in May 2026.
+CC9.2  Vendor risk is assessed annually.                         No exceptions noted.

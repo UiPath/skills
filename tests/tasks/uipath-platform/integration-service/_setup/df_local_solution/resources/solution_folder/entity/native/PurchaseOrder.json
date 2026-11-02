@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "key": "0f0e0d0c-0000-4000-8000-00000000e501",
+    "name": "PurchaseOrder",
+    "kind": "entity",
+    "type": "native",
+    "apiVersion": "dataservice.uipath.com/v2",
+    "dependencies": [
+      {
+        "kind": "ChoiceSet",
+        "name": "OrderStatus"
+      }
+    ],
+    "isOverridable": true,
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "resourceJson": "{\"Name\": \"PurchaseOrder\", \"DisplayName\": \"PurchaseOrder\", \"EntityType\": \"Entity\", \"Fields\": [{\"Name\": \"orderNumber\", \"DisplayName\": \"orderNumber\", \"SqlType\": {\"Name\": \"NVARCHAR\"}, \"IsSystemField\": false, \"IsRequired\": true}, {\"Name\": \"amount\", \"DisplayName\": \"amount\", \"SqlType\": {\"Name\": \"DECIMAL\"}, \"IsSystemField\": false, \"IsRequired\": false}, {\"Name\": \"status\", \"DisplayName\": \"status\", \"SqlType\": {\"Name\": \"INT\"}, \"IsSystemField\": false, \"IsRequired\": false, \"ReferenceChoiceSet\": {\"Name\": \"OrderStatus\"}, \"FieldDisplayType\": \"ChoiceSetSingle\"}]}",
+      "name": "PurchaseOrder",
+      "displayName": "PurchaseOrder",
+      "description": ""
+    }
+  }
+}

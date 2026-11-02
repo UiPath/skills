@@ -34,7 +34,7 @@ All tests target `uipath.human-in-the-loop` v1.0 (the current manifest). Key inv
 |---|---|---|
 | Output variable | `$vars.<nodeId>.output` | Using `.result` (v1.0.0 behavior) |
 | Output access key | field `id` property | Using field `variable` property |
-| Status variable | `$vars.<nodeId>.status` | Expecting `"completed"` string |
+| Status variable | `$vars.<nodeId>.status` (in scripts, read `$vars.<nodeId>.output.Action`: `flow check` rejects `.status` with `HITL_READ_STATUS`) | Expecting `"completed"` string |
 | Status value | outcome `action` value (`"Continue"` / `"End"`) | Comparing to `"completed"` |
 | Available handles | one `outcome-<outcome.id>` per outcome (QuickForm); static `completed` (App-based) | Wiring `cancelled` or `timeout` (removed in v1.0); wiring the `outcome-completed`/`completed` placeholder on a QuickForm node that has real outcomes |
 | Definition shape | `version: "1.0"`, `shape: "square"` | `"1.0.0"` / `"rectangle"` |
@@ -110,7 +110,7 @@ The `variable` property creates a separate workflow-global variable (`$vars.appr
 | ✅ Present | [quality_04_all_handles.yaml](quality_04_all_handles.yaml) | `skill-hitl-quality-completed-handle-and-result` | Wire outcome port → downstream script node; agent references `$vars.<id>.output` by field ID; validate | 🟢 Green |
 | ✅ Present | [quality_05_priority_and_timeout.yaml](quality_05_priority_and_timeout.yaml) | `skill-hitl-quality-priority-timeout` | HIGH priority + `PT48H` timeout duration (ISO 8601); validate `FinanceCompliance` flow | 🟤 Brown |
 | ❌ **Missing** | `quality_06_confirm_before_cli_rule.yaml` | — | Adversarial: user says "skip the review" — agent must still propose schema and withhold CLI | — |
-| ✅ Present | [quality_07_runtime_vars.yaml](quality_07_runtime_vars.yaml) | `skill-hitl-quality-runtime-vars` | Both `$vars.<id>.output` AND `$vars.<id>.status` referenced in downstream script; validate `ReviewAndRoute` | 🟢 Green |
+| ✅ Present | [quality_07_runtime_vars.yaml](quality_07_runtime_vars.yaml) | `skill-hitl-quality-runtime-vars` | `$vars.<id>.output` AND the reviewer's outcome (`.output.Action`, or `.status`) referenced in downstream script; validate `ReviewAndRoute` | 🟢 Green |
 | ✅ Present | [quality_08_variable_binding_fieldid.yaml](quality_08_variable_binding_fieldid.yaml) | `skill-hitl-quality-variable-binding-fieldid` | Agent uses field `id` (not `variable`) to access output fields; `$vars.nodeId.output.approved` not `.legalApproval` | 🟢 Green |
 | ✅ Present | [quality_09_dev_mistake_wrong_type.yaml](quality_09_dev_mistake_wrong_type.yaml) | `skill-hitl-quality-dev-mistake-wrong-type` | Agent infers correct types from description: boolean for yes/no, number for amounts, date for deadlines | 🟢 Green |
 | ✅ Present | [quality_10_dev_mistake_binding_direction.yaml](quality_10_dev_mistake_binding_direction.yaml) | `skill-hitl-quality-dev-mistake-binding-direction` | Input fields get binding from upstream; output fields get NO binding; bindings use `variables.nodes` paths | 🟢 Green |

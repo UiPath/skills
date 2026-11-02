@@ -40,3 +40,7 @@ non-answer from it says nothing about where you can publish. Use the bare
 
 <!--skill-flavor:upload-tabs:start-->
 <!--skill-flavor:upload-tabs:end-->
+
+<!--skill-flavor:tests-upload:start-->
+Studio Web publishes a solution without its Tests project, and its Publish project command serves App and RPA Workflow projects only, so a deploy installs no testing process for a Tests project: tell the user so. The Node CLI can add one: a solution it packs carries the Tests package, which `uip or packages upload "<TESTS_NUPKG_PATH>" --folder-path "<FOLDER_PATH>" --output json` uploads to the deployment folder's feed.
+<!--skill-flavor:tests-upload:end-->

@@ -86,6 +86,15 @@ def test_external_consumer_line_replaces_split_options(tmp_path):
     assert run(tmp_path, text, profile="core") == 0
 
 
+def test_a_value_pattern_is_no_template_placeholder(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    at = text.index("**Unit of work:**")
+    pattern = text[:at] + "Items are tagged `{kind};{region}` and {region}/{unit}, referenced `{item}_{date}` and INV-{n}.\n\n" + text[at:]
+    assert run(tmp_path, pattern, profile="strict") == 0
+    for leftover in ("Items are tagged {status, tags, fields, output}.", "Each item is recorded as done with {result}."):
+        assert run(tmp_path, text[:at] + leftover + "\n\n" + text[at:], profile="strict") == 1
+
+
 def test_process_example_core_with_skills():
     assert genome_check.main(["process", str(PROCESS_EXAMPLE), "--skills", "uipath-rpa", "uipath-agents"]) == 0
 

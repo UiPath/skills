@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "APInboxTriageAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "da98e437-b806-4505-abdb-733c466c4f86",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "APInboxTriageAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "APInboxTriageAgent",
+      "package": {
+        "key": "650b2fdc-7f9a-45ff-8a73-a6717732de69"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "d3ab5701-3a9a-4ff0-ab94-e21e8dfa0c88",
+    "files": []
+  }
+}

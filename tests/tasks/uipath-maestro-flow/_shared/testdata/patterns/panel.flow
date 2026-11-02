@@ -1,0 +1,175 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "legal",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "268067f4-14f5-4a54-bcc6-46ac05b65404",
+    "agentInputVariables": [
+     {
+      "id": "start__output__doc",
+      "type": "string",
+      "binding": "=js:$vars.start.output.doc"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "findings",
+      "type": "string"
+     },
+     {
+      "id": "severity",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "finance",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "86fde11b-c258-4873-a988-b747cc3a7fd7",
+    "agentInputVariables": [
+     {
+      "id": "start__output__doc",
+      "type": "string",
+      "binding": "=js:$vars.start.output.doc"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "findings",
+      "type": "string"
+     },
+     {
+      "id": "severity",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ops",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "06ff0d45-24a5-474d-b5db-147de1d59fe5",
+    "agentInputVariables": [
+     {
+      "id": "start__output__doc",
+      "type": "string",
+      "binding": "=js:$vars.start.output.doc"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "findings",
+      "type": "string"
+     },
+     {
+      "id": "severity",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "joinPerspectives",
+   "type": "core.logic.merge",
+   "inputs": {}
+  },
+  {
+   "id": "synthesize",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "d7a3898d-b6a0-4b1f-b98e-c0f97c50210f",
+    "agentInputVariables": [
+     {
+      "id": "legal__output",
+      "type": "string",
+      "binding": "=js:$vars.legal.output"
+     },
+     {
+      "id": "finance__output",
+      "type": "string",
+      "binding": "=js:$vars.finance.output"
+     },
+     {
+      "id": "ops__output",
+      "type": "string",
+      "binding": "=js:$vars.ops.output"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "recommendation",
+      "type": "string"
+     },
+     {
+      "id": "conflicts",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "legal",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "finance",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "ops",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "legal",
+   "sourcePort": "success",
+   "targetNodeId": "joinPerspectives",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "finance",
+   "sourcePort": "success",
+   "targetNodeId": "joinPerspectives",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "ops",
+   "sourcePort": "success",
+   "targetNodeId": "joinPerspectives",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "joinPerspectives",
+   "sourcePort": "output",
+   "targetNodeId": "synthesize",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "synthesize",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ]
+}

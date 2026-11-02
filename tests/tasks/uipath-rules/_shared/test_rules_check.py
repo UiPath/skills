@@ -207,3 +207,36 @@ class TestProject:
         _, root = rc.load_rule(project)
         with pytest.raises(SystemExit):
             rc.check_input_data(root, {"age": "number"})
+
+    def test_fixture_rules_are_named(self, project):
+        _, root = rc.load_rule(project)
+        rc.check_named_rules(rc.table_of(root))
+
+    @pytest.mark.parametrize("annotation", ["<annotationEntry><text>  </text></annotationEntry>", ""])
+    def test_unnamed_rule_fails(self, project, annotation):
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8")
+        start = text.index("<annotationEntry>")
+        end = text.index("</annotationEntry>", start) + len("</annotationEntry>")
+        path.write_text(text[:start] + annotation + text[end:], encoding="utf-8")
+        _, root = rc.load_rule(project)
+        with pytest.raises(SystemExit):
+            rc.check_named_rules(rc.table_of(root))
+
+    @pytest.mark.parametrize("entry", ["inputEntry", "outputEntry"])
+    def test_rule_missing_an_entry_fails(self, project, entry):
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8")
+        start = text.index(f"<{entry}")
+        end = text.index(f"</{entry}>", start) + len(f"</{entry}>")
+        path.write_text(text[:start] + text[end:], encoding="utf-8")
+        _, root = rc.load_rule(project)
+        with pytest.raises(SystemExit):
+            rc.check_named_rules(rc.table_of(root))
+
+    def test_annotation_entries_without_a_column_fail(self, project):
+        path = dmn_of(project)
+        path.write_text(path.read_text(encoding="utf-8").replace('<annotation name="Annotation" />', ""), encoding="utf-8")
+        _, root = rc.load_rule(project)
+        with pytest.raises(SystemExit):
+            rc.check_named_rules(rc.table_of(root))

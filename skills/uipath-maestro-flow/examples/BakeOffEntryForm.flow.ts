@@ -10,7 +10,7 @@
  *
  * No local rung renders a form; supply the values with `--input` when running.
  */
-import { flow, formTrigger, script, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, formTrigger, script, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('bake-off-entry-form')
   .name('BakeOffEntryForm')
@@ -18,10 +18,10 @@ export default flow('bake-off-entry-form')
   .input({ bakerName: types.string, category: types.string, servings: types.number })
   .output({ confirmation: types.string })
   .trigger(formTrigger())
-  .step('confirmEntry', script({
-    code:
-      'return $vars.start.output.bakerName + " entered " + $vars.start.output.category'
-      + ' + " with " + String($vars.start.output.servings) + " servings";',
-  }))
+  .step('confirmEntry', script(confirmEntry))
   .return({ confirmation: out('confirmEntry') })
   .build();
+
+function confirmEntry($vars: FlowVars) {
+  return $vars.start.output.bakerName + " entered " + $vars.start.output.category + " with " + String($vars.start.output.servings) + " servings";
+}

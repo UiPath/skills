@@ -1,0 +1,110 @@
+task_id: skill-agent-usecase-dispute-multi-agent
+description: >
+  Use-case pattern "agentic pipeline of narrow agents" (the shape agents take
+  inside Maestro processes: classify → decide → draft), built as a
+  supervisor agent that calls two single-purpose agents in the same
+  solution. Greenfield: the prompt names neither the solution nor the agents,
+  so the checker locates them by role. Graded on the final project only: one
+  solution with three agents, the coordinator's two solution-internal agent
+  tools whose schemas match the child agents, tool-free child agents with
+  their own contracts, read-only `uip agent validate` on every agent, and an
+  LLM judge on the coordinator's system prompt (copied to .grading/ by the
+  checker). Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code]
+
+run_limits:
+  expected_turns: 50
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  You are a coding agent running in Studio Web and want to build low-code
+  UiPath Agents.
+
+  Build a solution with 3 agents. One agent classifies disputes by reading
+  the customer's message and invoice and returns `disputeType` (pricing,
+  duplicate_charge, tax, service_not_received or other) and customer
+  sentiment (positive, neutral, negative or angry). Another agent reads the
+  first agent's output and drafts a reply for the customer. The second
+  agent's output needs to contain a subject and a body. Angry customers get
+  an apology.
+  And a third agent coordinates the other two. It takes the customer's
+  message and invoice, gets the classification from the classifier agent,
+  decides a resolution, and then asks the other agent to write the reply. It
+  returns `disputeType`, `sentiment`, `proposedResolution`, `replySubject`
+  and `replyBody`.
+
+  Rules: a duplicate charge gets a refund of the duplicate; a pricing dispute
+  gets a credit for the difference when the invoiced price is above the
+  contract price otherwise, explain the price; tax disputes and service not
+  received go to a billing specialist; anything else gets a request for more
+  details.
+
+  <!-- helper:start -->
+  The classifier and the drafter will be reused in other processes, so keep
+  them as separate agents that the coordinator calls rather than one big
+  prompt.
+  <!-- helper:end -->
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "All three final agents pass read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/dispute_multi_agent/check_dispute_multi_agent.py --validate"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Must run before llm_judge: it copies the coordinator (found by role) to .grading/.
+  - type: run_command
+    description: "One solution, three agents found by role; coordinator calls both children as solution agent tools with matching schemas; children are tool-free with their own contracts"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/dispute_multi_agent/check_dispute_multi_agent.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: coordinator prompt orchestrates classify → decide → draft and encodes the resolution rules"
+    files: [".grading/coordinator-agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code coordinator agent
+      that calls two other agents as tools (a dispute classifier and a reply
+      drafter). Read `.grading/coordinator-agent.json` and
+      grade ONLY the `content` of the `messages[]` entry whose
+      `role == "system"`. Ignore schemas, settings, resources and the user
+      message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Orchestration order — call the classifier first, decide the
+            resolution from its result, then call the drafter; each tool is
+            called once per dispute.
+        R2. Delegation — the coordinator must not classify the dispute or
+            write the reply itself; it passes the customer message, invoice
+            details, classification and chosen resolution to the right tool
+            and returns the tools' results in its output fields.
+        R3. Resolution rules — duplicate charge → refund of the duplicate;
+            pricing → credit for the difference only when the invoiced price
+            exceeds the contract price, otherwise explain the price; tax and
+            service-not-received → billing specialist; other → ask for more
+            details.
+        R4. Failure handling — says what to do if a tool call fails or
+            returns an unusable result (e.g. fall back to "other" /
+            specialist hand-off, never fabricate a classification or reply).
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.

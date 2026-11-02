@@ -47,7 +47,7 @@ the cell is optional, note the provenance, and move on. -->
 
 ## Table of Contents
 
-1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables
+1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables, Business Events
 2. [Stages & Tasks](#section-2-stages--tasks)
    - [Stage <N>: <STAGE_NAME>](#stage-n-stage_name) — <N> tasks
    - [Secondary Stage: <SECONDARY_STAGE_NAME>](#secondary-stage-secondary_stage_name) — <N> tasks
@@ -191,7 +191,7 @@ Configuration cell = user intent in business terms (`Record created`, `Email rec
 <!-- WHEN + Marks Case Complete pairing is schema-constrained: Yes normally uses `required-stages-completed`;
 selected-stage rules are for non-completing exits (alternate dispositions: Withdrawn / Rejected /
 Cancelled — required when the case has ≥1 secondary stage, else high review item `Alt-disposition exits
-missing`). ≥1 Yes row always. Display Name defaulting (every condition table in this SDD): carry the
+missing`). `api-event("<Name>")` is legal with either Marks value (§ Business Events). ≥1 Yes row always. Display Name defaulting (every condition table in this SDD): carry the
 author's value verbatim; blank → `Entry Rule {N}` / `Complete Rule {N}` / `Exit Rule {N}` by table kind,
 N 1-based per label kind — never invent a label otherwise. -->
 
@@ -219,6 +219,24 @@ Config-as-In: runtime business rules (priority bands, thresholds, taxonomies) ri
 > `{"employeeName":"Test Employee","amount":125.5}` becomes
 > `"{\"employeeName\":\"Test Employee\",\"amount\":125.5}"`. Same for numbers and booleans — `"5"`,
 > `"true"`, not `5` or `true`. Leave the cell blank for no default; `file` defaults must be blank.
+
+### Business Events
+
+<!-- Section only when ≥1 condition row's WHEN is `api-event("<Name>")`; omit otherwise. A business
+event is a named signal an outside caller sends to a running case through the case API; each row
+becomes one `metadata.businessEvents[]` entry. Name is the exact text every `api-event("…")` cell
+quotes — a WHEN that quotes an undeclared Name is not resolved. Names are unique (on a duplicate the
+first row wins). Payload is a JSON Schema object for the event body, in one code span, or `—` when the
+event carries no body. Description is optional.
+Where `api-event` may stand: Stage Entry, Stage Exit (either Marks value), Task Entry and Case Exit
+(either Marks value). Never on a task whose Entry Conditions also hold `runs-sequentially`, and never
+in Case Triggers — a case is not started by a business event. The Case Designer offers business events
+only when the `canvas-enableCaseEventSender` feature flag is on for the tenant; when the user has not
+confirmed it, add a medium review item `Business events need canvas-enableCaseEventSender`. -->
+
+| Name | Description | Payload |
+|------|-------------|---------|
+| <event name, exactly as api-event cells quote it> | <what the event signals, or —> | <`{"type":"object","properties":{…}}` or —> |
 
 ---
 
@@ -280,13 +298,13 @@ an SLA lane names the SLA, the response, and why it interrupts or not. -->
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| <case-entered \| selected-stage-completed("StageName") \| selected-stage-exited("StageName") \| user-selected-stage \| wait-for-connector \| sla-status-change("<SLA target>","<SLA Title>") for a breach \| sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>") for at-risk> | <conditionExpression or —> | <Yes \| No> | <label or —> |
+| <case-entered \| selected-stage-completed("StageName") \| selected-stage-exited("StageName") \| user-selected-stage \| wait-for-connector \| api-event("<Business Event Name>") \| sla-status-change("<SLA target>","<SLA Title>") for a breach \| sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>") for at-risk> | <conditionExpression or —> | <Yes \| No> | <label or —> |
 
 #### Stage Exit Conditions
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
-| <required-tasks-completed \| wait-for-connector \| selected-tasks-completed("TaskName")> | <conditionExpression or —> | <exit-only \| return-to-origin \| wait-for-user> | <Yes \| No> | <label or —> |
+| <required-tasks-completed \| wait-for-connector \| selected-tasks-completed("TaskName") \| api-event("<Business Event Name>")> | <conditionExpression or —> | <exit-only \| return-to-origin \| wait-for-user> | <Yes \| No> | <label or —> |
 
 #### Stage SLA
 
@@ -320,7 +338,7 @@ the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| flow-process \| document-extraction \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -333,7 +351,7 @@ the exact stage display name — never the case name. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| <current-stage-entered \| selected-tasks-completed("TaskA", "TaskB") \| wait-for-connector \| adhoc \| runs-sequentially> | <conditionExpression or —> | <label or —> |
+| <current-stage-entered \| selected-tasks-completed("TaskA", "TaskB") \| wait-for-connector \| api-event("<Business Event Name>") \| adhoc \| runs-sequentially> | <conditionExpression or —> | <label or —> |
 
 **Task envelope**
 
@@ -378,7 +396,7 @@ from whatever supplied them, never re-cased or convention-converted, and never r
 several action tasks is sanctioned only when each task carries a distinct actionType dispatch value AND
 its fields ⊆ the app schema (code-switched app); otherwise it is the substitute-app defect. -->
 
-###### Connector Task Detail (type: `wait-for-connector` or `execute-connector-activity`)
+###### Connector Task Detail (type: `wait-for-connector`, `execute-connector-activity`, `external-agent` or `external-workflow`)
 
 **Connector:** <connector name> · **Connector Key:** <connectorKey>
 **Connection:** <connection instance name or Tenant default> · **Connection ID:** <connectionId or <UNRESOLVED>>
@@ -389,7 +407,11 @@ its fields ⊆ the app schema (code-switched app); otherwise it is the substitut
 **Trigger / Event:** <trigger display name for wait-for-connector, or —>
 
 <!-- Missing Connection ID / Activity Type ID → high review item. Inputs `Field` verbatim to the IS
-activity schema. Operation Configuration carries through as =jsonString: only here. -->
+activity schema. Operation Configuration carries through as =jsonString: only here. A solution-resource
+picker (a Data Fabric entity) is an Inputs row holding the resource name; when that name can exist in
+more than one folder, add a `<picker>_folderKey` row with the folder key (and `entityScope` = `folder`).
+The task's own outputs are `response` and `Error`; a later task reads a field as
+`"<Stage>"."<Task>".response.<field>`. -->
 
 **Inputs:**
 
@@ -401,7 +423,7 @@ activity schema. Operation Configuration carries through as =jsonString: only he
 
 | Field | Binding / Value |
 |-------|------------------|
-| <schema field name> | -> <case variable> |
+| response.<field> | -> <case variable> |
 | — | <case variable> = <literal, =js:expression, or =js:vars.X.Y> |
 
 ###### Timer Task Detail (type: `wait-for-timer`)
@@ -409,6 +431,52 @@ activity schema. Operation Configuration carries through as =jsonString: only he
 **Timer:** <timeDuration (relative) \| timeDate (absolute) \| timeCycle>
 **Value:** <ISO 8601 expression, date expression, or variable expression — NEVER <UNRESOLVED>: a timer cannot fire without it; block approval>
 **Business Calendar:** <calendar name or —>
+
+###### HTTP Request Task Detail (type: `http-request`)
+
+**Method:** <GET \| POST \| PUT \| PATCH \| DELETE>
+**URL:** <absolute URL; a path relative to the connector's base URL when Connector Key and Connection ID are set (convert stores it as the request path)>
+**Headers:** <JSON object in backticks, e.g. `{"Accept": "application/json"}`, or —; never a credential — authenticate with Connector Key + Connection ID>
+**Query:** <JSON object in backticks, or —>
+**Body:** <JSON literal in backticks, an `=` expression, or —>
+**Connector Key:** <connector whose connection authenticates the call, or — for a direct request>
+**Connection ID:** <tenant connection id, or <UNRESOLVED>; only with Connector Key>
+
+Outputs are the response's `code`, `headers` and `body`, plus `Error`.
+
+###### Document Extraction Task Detail (type: `document-extraction`)
+
+<!-- Runs a deployed IXP model on one file. All five lines come from read-only tenant lookups:
+`uip solution resources list --kind IxpDeployment --source remote --output json` gives the
+deployment's Name (IXP Deployment), Key (Deployment Key), Folder (Folder Path) and FolderKey
+(Folder Key); `uip ixp deployments list <ixp-project-name> --output json` gives its DeploymentName
+(Model Name) on the row whose DeploymentTitle is that Name. Model Name is the deployment's name,
+never the IXP project's. A deployment not found yet → `<UNRESOLVED>` on Deployment Key and Folder Key
++ high review item. Inputs take only `fileRef` (the file, e.g. `=vars.invoiceFile`, required) and
+`pageRange` (optional). The outputs are fixed: `output` (the IXP result, `ExtractionResult` and
+`Taxonomy`) and `error`. Read the result downstream as `"<Stage>"."<Task>".output` and omit the
+Outputs table; an arrow row (`| output | -> extraction |`) needs a `jsonSchema` case variable with a
+body schema. No document-extraction deployment for the documents →
+the model build routes to `uipath-ixp` (Section 4 § IXP / Document Understanding Models). -->
+
+**IXP Deployment:** <deployment name as the solution lists it (DeploymentTitle)>
+**Model Name:** <the deployment's DeploymentName, e.g. `<name>-<hash>-ixp`>
+**Folder Path:** <folder the deployment is deployed to>
+**Deployment Key:** <solution resource Key, or <UNRESOLVED>>
+**Folder Key:** <deployment FolderKey, or <UNRESOLVED>>
+
+**Inputs:**
+
+| Field | Type | Binding |
+|-------|------|---------|
+| fileRef | file | <=vars.X holding the document> |
+| pageRange | string | <page range, or omit the row> |
+
+**Outputs:**
+
+| Field | Binding / Value |
+|-------|------------------|
+| output | -> <jsonSchema case variable, or omit this table> |
 
 ###### Child Case Task Detail (type: `case-management`)
 
@@ -479,9 +547,26 @@ runtime metadata (agent prompts, package versions, endpoints) stays out of the S
 
 ### Personas
 
-| Persona | Stage Scope | Permissions | Description |
-|---------|-------------|-------------|-------------|
-| <persona name> | <comma-separated stage names, or All> | <View, Act, Reassign, etc.> | <description of this persona's role> |
+<!-- Each row becomes a case role (`metadata.caseRoles[]`) at `uip maestro case sdd convert`, and a
+     role resource carrying these permissions at `uip solution pack`. The cells are read, not interpreted:
+     Scope is `Case` or `Stages`; Stages lists exact stage display names from Section 2 (`—` for a
+     `Case` persona); Permissions lists permission keys only, comma-separated, from this set —
+     View, Create, Edit, Close, Reopen, Assign, ManageSLA, RunAdhocTasks, SelectStage, ViewSummary,
+     LogsView, TasksView, TasksCreate, TasksEdit, TasksDelete, TaskAssignmentView, TaskAssignmentCreate,
+     TaskAssignmentEdit, TaskAssignmentDelete, TaskSelfAssignmentCreate, TaskSelfAssignmentEdit,
+     TaskSelfAssignmentDelete. A `Stages` persona may hold only View, Assign, ManageSLA and
+     RunAdhocTasks. Assign and the Tasks* / TaskAssignment* / TaskSelfAssignment* keys are published
+     by the Case Designer only when a tenant flag is on (off by default): convert writes them as
+     stated and reports each as a `case-role` item naming the flag, so grant them only when the
+     target tenant has the flag. Names are unique, at most 64 characters, with none of < > " % ; & '. Description
+     is required (at most 500 characters) and ships as the role's description. A condition on the
+     persona ("loans > $5M only") is not a permission: write it in Notes and encode it as a guarded
+     cell on the owning task (checklist rule 32). A cell convert cannot map is reported as a
+     `case-role` Unresolved item, never guessed at. -->
+
+| Persona | Scope | Stages | Permissions | Description | Notes |
+|---------|-------|--------|-------------|-------------|-------|
+| <persona name> | <Case \| Stages> | <comma-separated stage display names, or —> | <permission keys, comma-separated> | <what this persona does> | <conditions or prose; not read> |
 
 ### Process App Views
 
@@ -547,7 +632,7 @@ Rule: case-design-layers-guide.md § Layer 3 (External names). -->
 
 | Agent | Service Type | Endpoint | Modeled As | Used By Tasks |
 |-------|-------------|----------|------------|---------------|
-| <agent name> | <CrewAI \| Salesforce \| Databricks \| Custom \| ...> | <endpoint URL or reference> | <api-workflow \| execute-connector-activity> | <task names> |
+| <agent name> | <CrewAI \| Salesforce \| Databricks \| Custom \| ...> | <endpoint URL or reference> | <external-agent \| external-workflow \| api-workflow> | <task names> |
 
 ### IXP / Document Understanding Models
 
@@ -662,7 +747,7 @@ ship a summary SDD (top-level headings like ## Source / ## Case Objective / ## S
 build-mode/path narration) even if a later caseplan.json would validate — rewrite from the model and
 this template.
 
-CONFORMANCE CHECKLIST — 35 items in 10 families, held in
+CONFORMANCE CHECKLIST — 37 items in 10 families, held in
 references/case/case-sdd-conformance-checklist.md. Items 30–33 apply only when finalizing a draft.
 The gate reads that file; authoring does not — the cell rules above are the render contract and are
 COMPLETE, and nothing outside this template states a shape rule they do not. (Design semantics — which

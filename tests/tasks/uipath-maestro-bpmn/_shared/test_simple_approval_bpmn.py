@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from check_simple_approval_bpmn import (  # noqa: E402
     NS,
     corresponds,
+    start_agent_jobs,
     variable,
     variable_by_id,
     variables_mapping,
@@ -35,6 +36,26 @@ def _node(payload: str) -> ET.Element:
         f'<bpmn:task xmlns:bpmn="{NS["bpmn"]}" '
         f'xmlns:uipath="{NS["uipath"]}" id="Task_1">{payload}</bpmn:task>'
     )
+
+
+def _start_agent_job(type_version: str) -> ET.Element:
+    return ET.fromstring(
+        f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}" '
+        f'xmlns:uipath="{NS["uipath"]}"><bpmn:process>'
+        '<bpmn:serviceTask id="Task_1"><bpmn:extensionElements>'
+        '<uipath:activity version="v1">'
+        f'<uipath:type value="Orchestrator.StartAgentJob" version="{type_version}" />'
+        "</uipath:activity></bpmn:extensionElements></bpmn:serviceTask>"
+        "</bpmn:process></bpmn:definitions>"
+    )
+
+
+def test_start_agent_jobs_accepts_v2() -> None:
+    assert start_agent_jobs(_start_agent_job("v2"))
+
+
+def test_start_agent_jobs_rejects_v1() -> None:
+    assert not start_agent_jobs(_start_agent_job("v1"))
 
 
 def test_variable_matches_on_kind_and_name() -> None:

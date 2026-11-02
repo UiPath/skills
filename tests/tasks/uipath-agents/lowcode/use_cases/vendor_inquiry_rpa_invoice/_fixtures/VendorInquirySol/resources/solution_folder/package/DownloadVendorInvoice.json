@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DownloadVendorInvoice",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4ff0cdce-b1bc-4ad4-9837-aeeb15ea7fd9",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "DownloadVendorInvoice"
+    },
+    "locks": [],
+    "key": "78151e0f-ae96-4c37-a128-1fa3553d40e9",
+    "files": []
+  }
+}

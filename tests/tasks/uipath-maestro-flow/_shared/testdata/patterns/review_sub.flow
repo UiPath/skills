@@ -1,0 +1,228 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "eachClaim",
+   "type": "core.logic.loop",
+   "inputs": {
+    "collection": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.claims",
+     "fieldType": "array"
+    },
+    "parallel": false,
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "decide",
+   "type": "uipath.agent.autonomous",
+   "parentId": "eachClaim",
+   "inputs": {
+    "source": "607c8400-bf1d-4f14-81be-4198dcaaef24",
+    "agentInputVariables": [
+     {
+      "id": "eachClaim__currentItem",
+      "type": "string",
+      "binding": "=js:$vars.eachClaim.currentItem"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "decision",
+      "type": "string"
+     },
+     {
+      "id": "confidence",
+      "type": "number"
+     }
+    ],
+    "errorHandlingEnabled": true
+   }
+  },
+  {
+   "id": "reviewAndApply",
+   "type": "core.subflow",
+   "parentId": "eachClaim",
+   "inputs": {
+    "decision": {
+     "type": "jsExpression",
+     "expression": "$vars.decide.output.decision",
+     "fieldType": "string"
+    },
+    "confidence": {
+     "type": "jsExpression",
+     "expression": "$vars.decide.output.confidence",
+     "fieldType": "number"
+    }
+   }
+  },
+  {
+   "id": "end3",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "eachClaim",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "eachClaim",
+   "sourcePort": "start",
+   "targetNodeId": "decide",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "decide",
+   "sourcePort": "error",
+   "targetNodeId": "eachClaim",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "decide",
+   "sourcePort": "success",
+   "targetNodeId": "reviewAndApply",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "reviewAndApply",
+   "sourcePort": "output",
+   "targetNodeId": "eachClaim",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "eachClaim",
+   "sourcePort": "success",
+   "targetNodeId": "end3",
+   "targetPort": "input"
+  }
+ ],
+ "subflows": {
+  "reviewAndApply": {
+   "nodes": [
+    {
+     "id": "reviewAndApplyStart",
+     "type": "core.trigger.manual",
+     "inputs": {}
+    },
+    {
+     "id": "lowConfidence",
+     "type": "core.logic.decision",
+     "inputs": {
+      "trueLabel": "True",
+      "falseLabel": "False",
+      "expression": "$vars.reviewAndApplyStart.output.confidence < 0.8"
+     }
+    },
+    {
+     "id": "reviewDecision",
+     "type": "uipath.human-in-the-loop",
+     "inputs": {
+      "type": "quick",
+      "title": "Review",
+      "priority": "Low",
+      "recipient": {
+       "channels": [
+        "Email",
+        "ActionCenter"
+       ],
+       "connections": {},
+       "assignee": {
+        "type": "group"
+       }
+      },
+      "schema": {
+       "schemaId": "89f851d5-3b03-581d-ba48-ed503af4b506",
+       "fields": [
+        {
+         "id": "decision",
+         "label": "decision",
+         "type": "string",
+         "direction": "input",
+         "binding": "vars.reviewAndApplyStart.output.decision"
+        }
+       ],
+       "outcomes": [
+        {
+         "id": "approve",
+         "name": "Approve",
+         "type": "string",
+         "isPrimary": true,
+         "action": "Continue"
+        },
+        {
+         "id": "reject",
+         "name": "Reject",
+         "type": "string",
+         "isPrimary": false,
+         "action": "Continue"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "id": "end",
+     "type": "core.control.end",
+     "inputs": {}
+    },
+    {
+     "id": "applyDecision",
+     "type": "core.logic.mock",
+     "inputs": {}
+    },
+    {
+     "id": "end2",
+     "type": "core.control.end",
+     "inputs": {}
+    }
+   ],
+   "edges": [
+    {
+     "sourceNodeId": "reviewAndApplyStart",
+     "sourcePort": "output",
+     "targetNodeId": "lowConfidence",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "lowConfidence",
+     "sourcePort": "true",
+     "targetNodeId": "reviewDecision",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "reviewDecision",
+     "sourcePort": "outcome-reject",
+     "targetNodeId": "end",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "lowConfidence",
+     "sourcePort": "false",
+     "targetNodeId": "applyDecision",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "applyDecision",
+     "sourcePort": "output",
+     "targetNodeId": "end2",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "reviewDecision",
+     "sourcePort": "outcome-approve",
+     "targetNodeId": "applyDecision",
+     "targetPort": "input"
+    }
+   ]
+  }
+ }
+}

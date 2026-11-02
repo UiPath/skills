@@ -14,15 +14,19 @@ Complete reference for all `uip codedapp` subcommands.
 
 Push local source code to Studio Web. Uploads the build output directory and optionally imports referenced resources.
 
-If no project ID is provided, the command **interactively prompts** to create a new Coded App project. The newly created `UIPATH_PROJECT_ID` is saved to `.env`.
+If no project ID is provided, the command prompts to create a new Studio Web solution with a Coded App project inside it, or to use an existing solution. For a new solution it asks for the solution name and the project name, both defaulting to the current folder name. Pass `--solution-name` and `--project-name` to create the solution without prompts, which you must do when you cannot answer prompts. The new `UIPATH_PROJECT_ID` is saved to `.env`.
+
+The two name flags only apply when no project ID is set. If one is set by `--project-id`, `UIPATH_PROJECT_ID`, or `.env`, push fails instead of pushing into that project.
 
 ```bash
-uip codedapp push [project-id] [options]
+uip codedapp push [options]
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `[project-id]` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var |
+| `--project-id <id>` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var or `.env` |
+| `--solution-name <name>` | Name of the Studio Web solution to create when no project ID is set | Prompted |
+| `--project-name <name>` | Name of the Coded App project to create when no project ID is set | Prompted |
 | `--build-dir <dir>` | Build output directory | `dist` |
 | `--ignore-resources` | Skip importing referenced resources | `false` |
 | `--base-url <url>` | UiPath base URL | From `uip login` session |
@@ -37,20 +41,24 @@ uip codedapp push [project-id] [options]
 uip codedapp push
 
 # Push with explicit project ID
-uip codedapp push my-project-id
+uip codedapp push --project-id <project-id>
 
 # Push a custom build directory
-uip codedapp push my-project-id --build-dir build
+uip codedapp push --project-id <project-id> --build-dir build
 
 # Push without importing resources
 uip codedapp push --ignore-resources
+
+# First push: create a named solution and project without prompts
+uip codedapp push --solution-name "Product Announcements" --project-name "Announcements Portal"
 ```
 
 **Auto-create project flow:**
 ```
-? No project ID found. Create a new Coded App project? (Y/n)
-? Enter a name for the new Coded App: my-webapp
-✔ Created coded app project "my-webapp" with ID: abc-123-def
+? No project ID found. Would you like to create a new solution or use an existing one? Create a new solution
+? Enter a name for the new solution (the Studio Web container for your app and its resources): Product Announcements
+? Enter a name for the new Coded App (the app end users open): Announcements Portal
+✔ Created solution "Product Announcements" with coded app project "Announcements Portal" (ID: abc-123-def)
   Saved UIPATH_PROJECT_ID to .env
 ```
 
@@ -65,12 +73,12 @@ uip codedapp push --ignore-resources
 Pull project files from Studio Web to your local machine.
 
 ```bash
-uip codedapp pull [project-id] [options]
+uip codedapp pull [options]
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `[project-id]` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var |
+| `--project-id <id>` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var or `.env` |
 | `--overwrite` | Allow overwriting existing local files without prompting | `false` |
 | `--target-dir <dir>` | Local directory to write pulled files | Current directory |
 | `--base-url <url>` | UiPath base URL | From `uip login` session |
@@ -85,10 +93,10 @@ uip codedapp pull [project-id] [options]
 uip codedapp pull
 
 # Pull with explicit project ID
-uip codedapp pull my-project-id
+uip codedapp pull --project-id <project-id>
 
 # Pull to a specific directory
-uip codedapp pull my-project-id --target-dir ./my-app
+uip codedapp pull --project-id <project-id> --target-dir ./my-app
 
 # Pull and overwrite without prompting
 uip codedapp pull --overwrite

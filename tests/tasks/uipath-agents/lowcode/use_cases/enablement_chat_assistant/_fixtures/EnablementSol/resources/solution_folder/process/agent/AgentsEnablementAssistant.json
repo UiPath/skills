@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AgentsEnablementAssistant",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a4e726d4-07a6-4702-b9a7-ba7f56084784",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "AgentsEnablementAssistant"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "AgentsEnablementAssistant",
+      "package": {
+        "key": "4787622f-d208-4c46-af2d-d44b62921b0a"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "02dadc9f-9654-4b50-b830-400b174be792",
+    "files": []
+  }
+}

@@ -1,0 +1,21 @@
+date,cardholderId,merchant,description,amount,currency
+2026-09-01,E1042,Delta Air Lines,Flight BOS-ORD client workshop,486.20,USD
+2026-09-02,E1042,Hilton Chicago,Hotel 2 nights client workshop,612.00,USD
+2026-09-03,E1107,Uber,Ride to customer site,38.75,USD
+2026-09-03,E1107,Sweetgreen,Team lunch 4 people,92.40,USD
+2026-09-04,E1213,Atlassian,Jira Software cloud subscription,1450.00,USD
+2026-09-05,E1213,GitHub,GitHub Enterprise seats,5250.00,USD
+2026-09-08,E1301,Staples,Printer paper and toner,214.66,USD
+2026-09-09,E1301,Amazon Business,Ergonomic keyboards x3,267.00,USD
+2026-09-10,E1042,Deloitte Consulting,Tax advisory retainer September,7800.00,USD
+2026-09-11,E1188,The Capital Grille,Client dinner 3 people,318.90,USD
+2026-09-12,E1188,SQ *BLUE BOTTLE,Coffee,9.25,USD
+2026-09-15,E1213,Zoom Video,Zoom Business annual,1999.00,USD
+2026-09-16,E1107,Marriott Denver,Hotel 1 night conference,289.00,USD
+2026-09-17,E1301,PAYPAL *XJ77QK,Online purchase,145.00,USD
+2026-09-18,E1042,Hertz,Car rental 3 days,402.18,USD
+2026-09-19,E1188,Baker McKenzie,Contract review legal fees,4200.00,USD
+2026-09-22,E1213,Slack Technologies,Slack Pro monthly,780.00,USD
+2026-09-23,E1301,Office Depot,Desk chairs x2,689.98,USD
+2026-09-24,E1107,DoorDash,Late dinner during release,46.10,USD
+2026-09-26,E1188,AMZN Mktp US,Misc,58.43,USD

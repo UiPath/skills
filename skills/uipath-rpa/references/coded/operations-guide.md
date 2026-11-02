@@ -29,7 +29,7 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 - Is this a test project? (create test cases with Given/When/Then structure, optionally add Before/After hooks)
 - See [../environment-setup.md § Designing Project Structure](../environment-setup.md#designing-project-structure) for guidelines
 
-**4. Add required dependencies to `project.json`** based on the Service-to-Package mapping. Edit the existing `project.json` — do NOT rewrite the entire file.
+**4. Install required dependencies** per [§ Add a Dependency](#add-a-dependency), based on the Service-to-Package mapping.
 
 **5. Add `.cs` workflow / test case / source files:**
 - Generate `.cs` files (workflows, test cases, source files) — respect the four Error-severity coded analyzer rules while authoring: [§ Coded Workflow Analyzer Rules](#coded-workflow-analyzer-rules)
@@ -390,7 +390,7 @@ namespace MyProjectName
 
 **Workflow order:** Configure ALL missing targets FIRST, then write the workflow code using real descriptor paths.
 
-The UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first — target configuration rules, indication fallback, and multi-step UI flows live in the target-capture orchestration reference it mandates. Runtime selector recovery: [uia-starter-guide.md § Runtime Selector Failure Recovery](../uia-starter-guide.md).
+The UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first — target configuration rules, indication fallback, and multi-step UI flows live in the target-capture orchestration reference it mandates. Runtime selector recovery: [uia-policies-catalog.md § Runtime Selector Failure Recovery](../uia-policies-catalog.md).
 
 **Key reminders:**
 - Add `using <ProjectNamespace>.ObjectRepository;` to any file referencing `Descriptors.*`
@@ -406,24 +406,13 @@ The UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.A
 Canonical CLI: `uip rpa packages install`. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command** — agents that try it get `error: unknown command 'add-dependency'`. See [cli-reference.md § packages install](../cli-reference.md).
 
 **Steps:**
-1. Read `project.json` to check existing dependencies — skip packages already at the desired version.
+1. Choose each version with the question in SKILL.md § Resolving Packages & Activity Docs, Step 1.
 2. Run:
    ```bash
    uip rpa packages install --project-dir "<PROJECT_DIR>" --packages 'id=<PACKAGE_ID>,version=<VERSION>' --output json
    ```
-   Omit `,version=<VERSION>` to resolve the latest compatible. Pin a version only when there is a known compatibility constraint (see pinned versions below). The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
+   The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
 3. Only install packages the project actually needs.
-
-**Pinned versions for UiPath activity packages (current v25.x):**
-- `UiPath.System.Activities` → `25.12.2` — system activities (assets, queues, credentials)
-- `UiPath.Testing.Activities` → `25.10.2` — testing and assertions. Pin this exact patch — `25.10.0` and `25.10.1` synthesize a bootloader under `.local/install/` that references `UiPath.Robot.Activities.Api` and breaks the build with CS0234.
-- `UiPath.UIAutomation.Activities` → `25.10.21` — UI automation
-- `UiPath.Excel.Activities` → `3.3.1` — Excel automation
-- `UiPath.Word.Activities` → `2.3.1` — Word automation
-- `UiPath.Presentations.Activities` → `2.3.1` — PowerPoint automation
-- `UiPath.Mail.Activities` → `2.5.10` — Mail automation
-- `UiPath.MicrosoftOffice365.Activities` → `3.6.10` — Microsoft 365 (Graph API: mail, calendar, Excel cloud, OneDrive, SharePoint)
-- `UiPath.GSuite.Activities` → `3.6.10` — Google Workspace (Gmail, Calendar, Drive, Sheets, Docs)
 
 **Third-party NuGet packages:** same CLI — pass the public NuGet package ID as `id`. See [codedworkflow-reference.md § Third-Party NuGet Packages](codedworkflow-reference.md#third-party-nuget-packages).
 
@@ -690,7 +679,7 @@ C) <user-driven approach>
 | **Service property not available** | Missing package dependency | Install the required package via `uip rpa packages install --project-dir "<PROJECT_DIR>" --packages id=<PACKAGE_ID> --output json` (no `add-dependency` command exists; do not hand-edit `project.json`) |
 | **Timeout** | Studio took too long to start. First headless call on a cold NuGet cache can take 30–90 s. | Increase timeout: `--timeout 600` |
 | **"Target name 'X' is not part of the current screen"** | Element descriptor used on wrong screen handle | Use the `UiTargetApp` handle from `Open`/`Attach` for the screen that owns the element |
-| **"Cannot select item. It was not found among existing items"** | The `Item` value doesn't match any option (wrong text/casing) — not a control-type limitation | Read the control's `items` attribute via the interact CLI (SelectItem usage guide, routed from the UIA package guide § Documentation) and pass one of those values verbatim. `SelectItem` drives any control whose `items` lists options (any UI stack); use `TypeInto` only for type-ahead combos or controls with no `items`. |
+| **"Cannot select item. It was not found among existing items"** | The `Item` value doesn't match any option (wrong text/casing) — not a control-type limitation | Read the control's `items` attribute via the interact CLI (SelectItem usage guide, routed from the UIA package guide § Documentation) and pass one of those values verbatim. `SelectItem` drives any control whose `items` lists options (any UI stack), and some whose `items` stays empty while closed; use `TypeInto` only for type-ahead combos or controls the usage guide's probe finds not select-drivable. |
 | **`packages inspect` cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
 | **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa init` instead of writing `project.json` manually |
 | **`CS0103` on an Execute default parameter value** | Default values are copied verbatim into the generated `*+Activity.cs` wrapper, where class consts/fields are out of scope | Use self-contained compile-time literals as defaults (`"output"`, `2`, `null`) — never a reference to a const, static, or member |

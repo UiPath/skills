@@ -105,7 +105,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add DataFabric entity-set context | [capabilities/context/datafabric.md](capabilities/context/datafabric.md) | |
 | Add a memory space or seed memory items | [capabilities/memory/memory.md](capabilities/memory/memory.md) | |
 | Add an Action Center escalation (HITL) | [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md) | |
-| Add guardrails (PII, harmful content, custom rules) | [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) | |
+| Add guardrails (PII, harmful content, custom rules) | [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) | [capabilities/guardrails/files-guide.md](capabilities/guardrails/files-guide.md) for attached or produced files |
 | Embed an autonomous agent inline in a flow | [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) | |
 | Set up Orchestrator resources | Tell the user to use the `uipath-platform` skill | |
 | Wire agent into a flow | Tell the user to use the `uipath-maestro-flow` skill | |

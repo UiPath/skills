@@ -187,8 +187,8 @@ Key options:
   - **10K character cap on job arguments.** Orchestrator caps serialized input/output arguments at 10,240 characters for classic `StartJob` runs; an oversized output is silently dropped (the consuming workflow receives `null`, the job still reports Successful). `StartAgentJob` (agent runs) is not subject to the same cap in practice. Robot 2025.10.1+ removes the cap entirely ("Support for large input and output arguments"). If you hit it: pass big payloads via a storage bucket / queue item reference, or upgrade the Robot.
 - `--attachment <[name=]path>` — upload one or more files and attach them to the job. Repeat the flag for multiple. Pair with `--attachment-id <guid>` to reuse an attachment that was previously uploaded. An attachment does not fill a file argument: pass the file argument as an attachment reference in `--input-arguments` — `{"<ARGUMENT>": {"ID": "<ATTACHMENT_ID>", "FullName": "<FILE_NAME>"}}` — with `--attachment-id <ATTACHMENT_ID>`.
 - `--runtime-type <type>` — `Unattended`, `Headless`, `NonProduction`, `AgentService`, or `Serverless`. Picks the runtime kind the scheduler will use.
-- `--strategy <strategy>` — one of `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (use `--user-keys` / `--machine-keys`), or `JobsCount`. Validated client-side. `--jobs-count` must be a whole number greater than 0.
-- `--user-keys <guids>` / `--machine-keys <guids>` — comma-separated GUIDs to pin the job to specific identities. With `--strategy ModernJobsCount` they restrict the candidate pool; with `Specific` they're required.
+- `--strategy <strategy>` — one of `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (run on the robots of the users in `--user-keys`; it needs `--user-keys`, and it takes no `--jobs-count` or `--machine-keys`), or `JobsCount`. Validated client-side: `Specific` without `--user-keys`, or with `--machine-keys`, is refused before any call. `--jobs-count` must be a whole number greater than 0.
+- `--user-keys <guids>` / `--machine-keys <guids>` — comma-separated GUIDs to pin the job to specific identities. With `--strategy ModernJobsCount` they restrict the candidate pool. With `Specific`, `--user-keys` is required and `--machine-keys` is refused.
 - `--healing-agent` — enable Autopilot for Robots (Healing Agent) just for this job, regardless of the process-level `--healing-agent` setting on `processes update`. Useful for one-off self-healing without flipping the process default.
 - `--reference <text>` — user-set reference (free-form string) attached to the job. Useful for correlation with external systems.
 - `--environment-variables <pairs>` — per-job environment variables as newline-separated `KEY=VALUE` pairs (same shape as the process-level flag, **not** JSON). Merged on top of folder-/process-level env. Malformed lines are rejected before the job is submitted.
@@ -199,7 +199,7 @@ Key options:
 
 ## Step 5: Monitor Job
 
-Check job status. `jobs get` is cross-folder -- no `--folder-path` needed:
+Check job status. `jobs get` is cross-folder -- no `--folder-path` needed. Pass `--folder-path` or `--folder-key` to require the job to be in that folder (it fails with `not_found` naming the folder otherwise), for example in a script that follows up a folder-scoped `jobs list`:
 
 ```bash
 # Get a specific job by key
@@ -227,7 +227,7 @@ uip or jobs logs <job-key> --level Error --output json    # Error logs only
 uip or jobs logs <job-key> --export --destination ./logs.csv  # Export to CSV file
 ```
 
-`--export` writes a CSV file instead of terminal output. Combine with `--destination` (or `-d`) to set the file path. Logs are cross-folder -- no `--folder-path` required.
+`--export` writes a CSV file instead of terminal output. Combine with `--destination` (or `-d`) to set the file path. Logs are cross-folder -- no `--folder-path` required; `--folder-path` / `--folder-key` are optional and, as on `jobs get`, require the job to be in that folder.
 
 > **`--export` spends a daily quota.** It calls the RobotLogs Export endpoint, which is limited to 100 requests per day per tenant and shared with everyone on the tenant. To read or diagnose logs, use `--output json` (optionally `--level Error`). Export only when the user asks for a CSV file. See [api-limits.md](api-limits.md).
 

@@ -58,6 +58,12 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+  - type: skill_triggered
+    description: "Advisory: agent engaged the uipath-maestro-flow skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    weight: 0.0
+    pass_threshold: 0.0
 post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 120

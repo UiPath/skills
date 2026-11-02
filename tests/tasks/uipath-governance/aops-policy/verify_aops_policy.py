@@ -22,9 +22,8 @@ Each mode asserts an end state only the intended operation can produce:
            form data survived. `aops-policy update` is a full replace — omitting
            --availability or --input clears those fields — so a careless call
            shows up here.
-  absent   the pre-seeded identifier is gone: `get` returns a 404 (aops deletes
-           for real, unlike access-policy's soft delete) and a name search
-           returns nothing. A do-nothing agent cannot make a seeded id vanish.
+  absent   the pre-seeded identifier is gone: `get` returns a 404 and a name
+           search returns nothing. A do-nothing agent cannot make a seeded id vanish.
   payload  a policy the agent authored is read back and every field's value is
            checked against the product's own form-data blueprint: no key dropped,
            every field's JSON type preserved (bool stays bool, number stays

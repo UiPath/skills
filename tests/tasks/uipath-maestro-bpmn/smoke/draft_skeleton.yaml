@@ -1,0 +1,52 @@
+task_id: skill-bpmn-smoke-draft-skeleton
+description: >
+  Draft-mode smoke eval: the user asks to see the shape first, so the agent
+  builds a phase 2 skeleton (bare bpmn:task boxes, real gateway and flows,
+  generated DI) without any registry call, validates it, and stops at the
+  approval gate instead of wiring real nodes. The request forbids upload, so
+  the agent must show the shape locally.
+tags: [uipath-maestro-bpmn, smoke, "mode:build"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+sandbox:
+  python: {}
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Create a local BPMN project named "InvoiceIntakeSketch" for this process:
+  - Manual start with an `amount` (number) input.
+  - Record the invoice.
+  - An exclusive gateway sends invoices with `amount >= 1000` to manager
+    review and every other invoice to auto approval.
+  - Both branches finish at a single end event.
+
+  Show me the shape first; I want to approve it before you wire anything up.
+  Do not upload, publish, deploy, debug, or run anything.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent made no registry calls before the shape was approved"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|list|search|get)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Skeleton has bare task boxes, a real conditioned gateway, full DI, project metadata, and validates with zero errors"
+    command: "python3 $REFERENCE_DIR/check_draft_skeleton.py InvoiceIntakeSketch"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

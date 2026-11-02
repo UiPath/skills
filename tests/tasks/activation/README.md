@@ -65,5 +65,5 @@ dataset yet). Skill positives target user **intent** (the
 task a prompt is asking for), not exact CLI surface, so coverage stays valid
 while a Preview skill's commands are still in flux. Narrower-scope skills hold
 fewer rows than 50 without padding (e.g. `uipath-ixp` at 30,
-`uipath-automation-discovery` at 32, `uipath-feedback` at 26, `uipath-tasks` at
+`uipath-feedback` at 26, `uipath-tasks` at
 34) — the file stops at the highest count quality sustains.

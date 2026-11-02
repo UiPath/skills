@@ -1,0 +1,27 @@
+[
+  {
+    "requesterEmail": "maria.chen@example.com",
+    "title": "Can't log in to SAP after password reset",
+    "description": "Since this morning SAP says my account is locked. I reset my password yesterday. I need it for month-end close today."
+  },
+  {
+    "requesterEmail": "ops-floor3@example.com",
+    "title": "Whole 3rd floor has no network",
+    "description": "None of the 40 people on floor 3 can reach the network or VPN since 9:10. Wired and Wi-Fi both down. Order processing has stopped."
+  },
+  {
+    "requesterEmail": "j.okafor@example.com",
+    "title": "Laptop battery swelling",
+    "description": "My laptop's trackpad is lifting and the case is bulging near the battery. It still works but it gets hot."
+  },
+  {
+    "requesterEmail": "lena.weber@example.com",
+    "title": "Need Figma installed",
+    "description": "Could I get Figma installed on my machine? Not urgent, it's for a side project next month."
+  },
+  {
+    "requesterEmail": "t.nguyen@example.com",
+    "title": "Excel crashes when opening the forecast model",
+    "description": "Excel closes every time I open forecast_v7.xlsx. Other files open fine. Started after last night's update."
+  }
+]

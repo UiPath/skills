@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "--help",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list",
+      "file": "or_folders_list.json"
+    },
+    {
+      "match": "is connections ping 6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01",
+      "file": "is_connections_ping_expired.json",
+      "exit_code": 1
+    },
+    {
+      "match": "is connections list",
+      "file": "is_connections_list.json"
+    },
+    {
+      "match": "agenthub mcp list",
+      "file": "agenthub_mcp_list.json"
+    },
+    {
+      "match": "--dry-run",
+      "file": "refresh_tools_dryrun.json"
+    },
+    {
+      "match": "agenthub mcp refresh-tools mock-connected-mcp",
+      "file": "refresh_tools_failed.json",
+      "exit_code": 1
+    },
+    {
+      "match": "agenthub mcp-tools list",
+      "file": "agenthub_mcp_tools_list.json"
+    },
+    {
+      "match": "agenthub mcp get mock-connected-mcp",
+      "file": "mcp_get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

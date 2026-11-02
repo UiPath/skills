@@ -37,7 +37,7 @@ from pathlib import Path
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "_setup"))  # local escalation_is (which also wires up _shared)
 import escalation_is  # noqa: E402
-from _shared import bpmn_live  # noqa: E402
+from _shared import bpmn_check, bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     CheckFailure,
@@ -216,15 +216,11 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
     for element in process.iter():
         if element.attrib.get("id") not in slack_ids:
             continue
-        sends_as = [
-            item.attrib.get("value")
-            for item in element.iter(q(UIPATH_NS, "input"))
-            if item.attrib.get("name") == "send_as"
-        ]
+        sends_as = bpmn_check.query_values(element, "send_as")
         if sends_as != [SLACK_SEND_AS]:
             raise CheckFailure(
                 f"Slack node {element.attrib.get('id')!r} must carry exactly "
-                f"one send_as input with value {SLACK_SEND_AS!r}, found "
+                f"one send_as query parameter with value {SLACK_SEND_AS!r}, found "
                 f"{sends_as!r}"
             )
 

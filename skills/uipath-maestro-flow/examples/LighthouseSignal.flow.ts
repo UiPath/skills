@@ -7,7 +7,7 @@
  *
  * Generic scenario: read a lighthouse signal and pause before recording it.
  */
-import { flow, http, delay, script, input, out, tmpl, types } from '@uipath/maestro-builder-sdk';
+import { flow, http, delay, script, input, out, tmpl, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('lighthouse-signal')
   .name('LighthouseSignal')
@@ -21,10 +21,10 @@ export default flow('lighthouse-signal')
     returns: { signal: 'string' },
   }))
   .step('cooldown', delay({ duration: 'PT2S' }))
-  .step('recordSignal', script({
-    code:
-      'return "station " + $vars.start.output.station + ": "'
-      + ' + String($vars.readSignal.output.body.signal || "unknown");',
-  }))
+  .step('recordSignal', script(recordSignal))
   .return({ report: out('recordSignal') })
   .build();
+
+function recordSignal($vars: FlowVars) {
+  return "station " + $vars.start.output.station + ": " + String($vars.readSignal.output.body.signal || "unknown");
+}

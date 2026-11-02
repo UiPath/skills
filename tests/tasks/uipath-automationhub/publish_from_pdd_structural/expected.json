@@ -1,0 +1,15 @@
+{
+ "name_contains": "Retail Account Onboarding",
+ "documents": {
+  "pdd": "pdd-retail-account-onboarding.md",
+  "process_map": "process-map-retail-account-onboarding.bpmn"
+ },
+ "systems": {
+  "Microsoft Dynamics 365": [],
+  "Signicat": [],
+  "Trapets": [],
+  "Scrive": [],
+  "Temenos T24": []
+ },
+ "out_of_scope": ["Avaloq"]
+}

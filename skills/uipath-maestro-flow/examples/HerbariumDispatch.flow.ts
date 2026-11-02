@@ -27,8 +27,10 @@ export default flow('herbarium-dispatch')
     reference: 'HERB-204',
     priority: 'Normal',
   }))
-  .step('recordDispatch', script({
-    code: 'return "catalogued specimen HERB-204";',
-  }))
+  .step('recordDispatch', script(recordDispatch))
   .return({ receipt: out('recordDispatch') })
   .build();
+
+function recordDispatch() {
+  return "catalogued specimen HERB-204";
+}

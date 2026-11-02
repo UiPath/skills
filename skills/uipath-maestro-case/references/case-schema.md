@@ -143,7 +143,7 @@ Entry point. Written by the triggers plugin at T02. Exactly one per case (single
   "data": {
     "typeVersion": "1.0.0",
     "display": { "label": "Start" },
-    "inputs": { "serviceType": "None" }
+    "inputs": { "serviceType": "None", "entryPointId": "<entry-points.json uniqueId>" }
   }
 }
 ```
@@ -156,13 +156,14 @@ No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Tri
 |-------|------|-------------|
 | `typeVersion` | string | Manifest type version — literal `"1.0.0"`. |
 | `display` | `{ label?, icon? }` ? | Presentation. `display.label` is the trigger's display name (was `data.label` pre-v24). |
-| `inputs` | object? | Runtime config bag (passthrough). Holds `serviceType` plus per-kind fields. Absent on a manual trigger. |
+| `inputs` | object? | Runtime config bag (passthrough). Holds `serviceType`, `entryPointId` and per-kind fields. Always write it, including on a manual trigger (`serviceType: "None"`). Older schemas may omit it on a manual trigger, so accept that form when reading. |
 | `description` | string? | Free-text description — stays at `data.description` (only `label` moved to `display`). |
+
+> **`data.inputs.entryPointId` (every trigger kind).** Set it to the `uniqueId` of this trigger's `entry-points.json` entry — the Case Designer pairs node and entry through this field; if it is missing, the first open mints a new one and rewrites the entry's `uniqueId`. `validate --strict` reports a missing or mismatched value as `STRICT_TRIGGER_ENTRY_POINT_ID`. `uip maestro case init` scaffolds `trigger_1` with it already set: when you rewrite `trigger_1`'s `data.inputs`, keep the scaffolded value. For a new trigger, mint the `uniqueId` once and write the same GUID to both files.
 
 `data.inputs.serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"timer"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
 
-> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.inputs` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
-
+> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.inputs` carries `serviceType`, `entryPointId` and a one-entry `context[]` holding `objectName` (the SDD Source, which `sdd convert` emits; keep it). It carries no `metadata`, `inputs[]`, `outputs[]` or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
 ### b) Stage Node — `"case-management:Stage"`
 
 Workflow stage. Contains tasks. Covers BOTH primary and secondary stages — discriminated by `data.stageType` (see §2c for the secondary variant). A primary stage omits `stageType`; a secondary stage sets `data.stageType: "secondary"`.
@@ -243,22 +244,23 @@ Free-floating annotation node. Ignored at execution time; surfaced only in the a
 
 ```json
 {
-  "id": "<shortId>",
+  "id": "StickyNote_aBcDeF",
   "type": "case-management:StickyNote",
-  "position": { "x": 400, "y": 400 },
   "data": {
-    "label": "Note",
+    "parentElement": { "id": "root", "type": "case-management:root" },
     "color": "yellow",
     "content": "Reminder: confirm SLA with ops before publishing."
   }
 }
 ```
 
+No `position`, `style`, `width`, `height` or `measured` (Rule 19): the Case Designer places and sizes an unpositioned note when it opens the case.
+
 | Field | Type | Description |
 |-------|------|-------------|
-| `data.label` | string? | Display label |
-| `data.color` | string? | Sticky note color |
-| `data.content` | string? | Note body |
+| `data.parentElement` | object | Always the case root, `{ "id": "root", "type": "case-management:root" }` |
+| `data.color` | string? | One of `blue`, `green`, `yellow`, `pink`, `white`; omit for the designer default |
+| `data.content` | string? | Note body; inline markdown renders |
 
 ---
 
@@ -524,10 +526,13 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `business-rule` | `plugins/tasks/business-rule/` |
 | `case-management` | `plugins/tasks/case-management/` |
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
+| `flow-process` | `plugins/tasks/flow-process/` |
+| `http-request` | `plugins/tasks/http-request/` |
+| `document-extraction` | `plugins/tasks/document-extraction/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
+| `external-agent` | `plugins/tasks/connector-activity/` (External agents and automations) |
+| `external-workflow` | `plugins/tasks/connector-activity/` (External agents and automations) |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
-
-> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.case` (SKILL.md Rule 17).
 
 ---
 

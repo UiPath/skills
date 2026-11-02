@@ -13,7 +13,7 @@ description: >
   because a case can complete while notifying nobody (the Outlook connector's
   `saveAsDraft` defaults to true, which drafts the message instead of sending it —
   structural grading passes that, outcome grading correctly fails it).
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:setup, shape:multi-node, connector, feature:activities, feature:write-back]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:setup, shape:multi-node, connector, feature:activities, feature:write-back, path-to-ga]
 sandbox:
   template_sources:
     - type: template_dir
@@ -32,8 +32,10 @@ run_limits:
 # base list in sync with experiments/default.yaml.
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+# `..` so the graders can import the shared debug-failure helper from
+# `_shared/case_check.py`; the grader commands below carry the task folder.
 reference:
-  directory: .
+  directory: ..
 
 pre_run:
   - command: "python3 _setup/seed_outcome.py"
@@ -96,7 +98,7 @@ success_criteria:
   # and the next criterion started a SECOND debug run. Margin is the fix.
   - type: run_command
     description: "case executes: uip solution resources refresh then uip maestro case debug reaches finalStatus=Completed"
-    command: "python3 $REFERENCE_DIR/check_case_ran.py"
+    command: "python3 $REFERENCE_DIR/e2e_outcome_external/check_case_ran.py"
     timeout: 2400
     expected_exit_code: 0
     weight: 2.0
@@ -105,7 +107,7 @@ success_criteria:
   # THE OUTCOMES — measured in the third-party systems.
   - type: run_command
     description: "OUTCOME — the approver was notified: an email carrying this run's reference is present in the sandbox mailbox, as measured via Microsoft Graph"
-    command: "python3 $REFERENCE_DIR/check_outcome_email.py"
+    command: "python3 $REFERENCE_DIR/e2e_outcome_external/check_outcome_email.py"
     timeout: 1800
     expected_exit_code: 0
     weight: 4.0
@@ -113,7 +115,7 @@ success_criteria:
 
   - type: run_command
     description: "OUTCOME — the audit record was filed: a Jira issue carrying this run's reference exists in the audit project, as measured via the Atlassian REST API"
-    command: "python3 $REFERENCE_DIR/check_outcome_jira.py"
+    command: "python3 $REFERENCE_DIR/e2e_outcome_external/check_outcome_jira.py"
     timeout: 1800
     expected_exit_code: 0
     weight: 4.0

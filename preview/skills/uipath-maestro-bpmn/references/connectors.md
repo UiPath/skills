@@ -61,6 +61,7 @@ A usage error saying no library is cached means `uip maestro registry pull` firs
 - `connection` and `folder` are symbolic names resolved through `bindings.json`, never ids pasted inline. The folder binding is the connection's companion — see [Connections and bindings](bpmn-runtime.md#connectors-and-bindings).
 - A field that takes an **id** takes a `lookup()`, not a pasted value. §3 resolves it.
 - An `=`-expression is left alone; a plain string is checked against the field's declared type.
+- The response lands in `outputVar` (default `<id>_response`) and the failure in `errorVar` (default `<id>_Error`); `outputs: { poCount: { source: '=response.length', name: 'POCount', type: 'integer' } }` adds a mapped output row per extra variable, each declared by the task like the two standard ones. These are what a decompiled import's `.connector()` calls carry, so an edit keeps the variables the process already reads.
 
 Authoring never waits on discovery beyond §1.
 Write the node from the task's own words and let `check` tell you what is missing.
@@ -105,25 +106,41 @@ The shipped library covers roughly 150 connectors.
 A tenant can serve more, and `compile` says so:
 
 ```
-connector not in library: uipath.connector.uipath-uipath-testmanager.create-v2-attachment-upload.
-Connector "uipath-uipath-testmanager" is present but carries no "…".
+connector not in library: uipath.connector.uipath-uipath-testmanager.create-test-set.
 ```
 
-Two routes, in order:
+**`uip maestro registry prepare <key> --action <name>` resolves it through the live connection and writes an overlay the compiler reads** — one call per operation, the action named the way the connector's activity catalog spells it in kebab case (`uip is activities list <key> --output json` lists the names: `CreateTestSet` → `create-test-set`, `GetAssignedTestCasesForTestSet` → `get-assigned-test-cases-for-test-set`).
+This covers a connector the Flow node catalog does not carry at all (Test Manager is one): when `registry search <key>` answers nothing, `prepare` refreshes the local catalog copy once (`uip maestro flow registry pull --force`, since a stale copy answers nothing for any connector) and, if it still serves nothing, reads Integration Service itself, the activity catalog for the identity and `is resources describe` for the path, parameters and fields, and says so:
 
-1. **`uip maestro registry prepare <key> --action <name>`** — it resolves the operation through the live connection and writes an overlay the compiler reads, which is the whole point of the overlay.
-2. **A hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`**, when prepare cannot reach it. Take the identity from the registry, never from the connector's OpenAPI document:
+```
+  source: Integration Service activity CreateTestSet (TestSet POST) — the Flow node catalog, refreshed with `uip maestro flow registry pull --force`, serves no node for uipath-uipath-testmanager, so this operation compiles in BPMN only (a Flow step or agent tool needs the registry's node definition).
+prepare-connector: uipath.connector.uipath-uipath-testmanager.create-test-set → connectors-local/ (overlay + …, 1 variant(s), 3 input field(s))
+prepare-connector: next: .connector("<id>", "uipath-uipath-testmanager", "create-test-set", { ProjectId: /* string, required */, name: /* string, required */ }, { connection: "testmanager", folder: "shared" })
+```
+
+Author the call it prints; `bpmn check` then holds the inputs to the operation's real contract (a Test Manager update is a JSON-patch body, `path` and `value`, not the record's columns, and `execute-test-set` takes `testSetId`, `executionType` and `asyncMode`), and `compile` emits the task the platform matches on: `objectName` and `method` from the catalog, the path and its `target="path"` rows from the describe.
+On a Flow project such an entry is refused (`CONNECTOR_NO_FLOW_DEFINITION`); if the source line says the pull failed, run `uip maestro flow registry pull --force` yourself and re-run `prepare` before trusting that the catalog lacks the connector.
+
+An action `prepare` cannot find is refused with the activities Integration Service does list, as action ids; re-run with one of them.
+It never asks Integration Service for a connector the catalog does serve: a misspelt action on Jira gets the catalog's closest action.
+
+Only when `prepare` cannot reach the tenant at all, fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`** — and only on evidence gathered while the tenant was reachable: the commands below are the same tenant reads `prepare` makes, so they fail for the same reason.
+Use a connection id, an activity row and a `registry get` template saved from an earlier session (or carried in the task), never a guess; with none of those, connector authoring waits for access, because an invented identity validates and dispatches to nothing.
+The identity comes from the catalog, never from the connector's OpenAPI document:
 
 ```bash
 uip is connections list <connector-key> --all-folders --output json      # the connection id
-uip is activities list <connector-key> --output json                     # Name + ObjectName + IsCurated
+uip is activities list <connector-key> --output json                     # Name + ObjectName + MethodName + IsCurated
 uip maestro bpmn registry get Intsvc.ActivityExecution \
-    --connection-id <id> --object-name <ObjectName> --output json        # the node template
+    --connection-id <id> --object-name <ObjectName> --operation <Verb> --output json   # the node template, with the describe
 ```
 
-`objectName` is the **registry's** object (`UploadAttachment`, `TestSet`), and `operation` is its CRUD verb (`Create`, `List`, `Retrieve`, `Delete`).
+`objectName` is the **catalog's** object (`UploadAttachment`, `TestSet`) and `method` its verb (`POST`, `GETBYID`, `PATCH`, `DELETE`).
 Neither is the connector's REST slug.
 A node carrying `objectName="v2::attachment::upload"` validates and then dispatches to nothing — the platform matches on the curated pair, and so do the graders that compare against a real export.
+`check` holds a hand-filled task to the catalog (`INTSVC_*`), which `validate` does not; fix what it reports.
+A `{param}` in the path needs `inputs: { pathParameters: { <param>: … } }` or a `target: 'path'` row; a bare `inputs: { <param> }` lands in the body.
+For a generic record verb (`Create Record`, `Delete Record`), the catalog row's `N/A` is not the answer: `objectName` is the object you pick from `uip is resources list <key> --connection-id <id> --output json`, `method` is the catalog's **Integration Service method** for that verb (`GETBYID` for a single record (Retrieve), `GET` for a list, `POST` to create, `PATCH`/`PUT` to update, `DELETE`), not the HTTP verb (both retrieval and listing travel as HTTP GET; the platform matches on `GETBYID` vs `GET`), and `path` comes from `uip is resources describe <key> <object> --operation <Verb> --connection-id <id> --output json`.
 
 ## 5. Data Fabric is not this
 
@@ -136,7 +153,8 @@ See [Connections and bindings](bpmn-runtime.md#connectors-and-bindings) and `exa
 `.eventTrigger(id, connector, event, opts)` starts the process on a connector event; `.waitForEvent(id, connector, event, opts)` pauses one mid-flow.
 Both resolve against the same library and both take the same `connection` / `folder` bindings.
 
-- `filter` is the subscription's **scope** — the connector's own event parameters, e.g. `{ parentFolderId: '<mail folder id>' }` for Outlook `email-received`. Omitting it subscribes to everything the connection can see, which `check` reports as `EVENT_NO_SCOPE` and names the parameters the operation declares.
+- `filter` is the subscription's **scope**: the connector's own event parameters, e.g. `{ parentFolderId: lookup('uipath-microsoft-outlook365', 'email-received', 'parentFolderId').by('displayName', 'Inbox') }` for Outlook `email-received`. Omitting it subscribes to everything the connection can see, which `check` reports as `EVENT_NO_SCOPE` and names the parameters the operation declares.
+  Same rule as §2: a scope value that is an **id** (a mail folder, a channel, a workspace) takes a `lookup()`, never a pasted value; §3 resolves it (`--action email-received`).
 - `object` names what a **generic** event watches — `record-created` and its kin on Data Fabric, Salesforce, ServiceNow, Jira. Such an entry carries no default, so without it the node emits `objectName: ""`, validates, and watches nothing. `check` reports `EVENT_GENERIC_NO_OBJECT`. A curated event has its object built in and refuses one (`EVENT_OBJECT_NOT_GENERIC`).
 
 ```bash

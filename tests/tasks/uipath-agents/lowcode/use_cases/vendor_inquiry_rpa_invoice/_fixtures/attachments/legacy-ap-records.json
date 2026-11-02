@@ -1,0 +1,20 @@
+[
+  {
+    "invoiceNumber": "INV-48213",
+    "vendorName": "Globex Logistics",
+    "archivedFile": "invoices/INV-48213.pdf",
+    "status": "approved_for_payment"
+  },
+  {
+    "invoiceNumber": "INV-48390",
+    "vendorName": "Globex Logistics",
+    "archivedFile": "invoices/INV-48390.pdf",
+    "status": "on_hold_missing_po"
+  },
+  {
+    "invoiceNumber": "INV-49001",
+    "vendorName": "Initech Office Services",
+    "archivedFile": null,
+    "status": "not_in_archive"
+  }
+]

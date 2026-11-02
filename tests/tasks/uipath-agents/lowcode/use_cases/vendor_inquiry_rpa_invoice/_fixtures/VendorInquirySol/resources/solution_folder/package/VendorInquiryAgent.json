@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "VendorInquiryAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d0be05c3-8a43-487f-b63b-aea1eb4815dd",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "VendorInquiryAgent"
+    },
+    "locks": [],
+    "key": "86a4ef8f-59ed-4d9e-9db3-e2ec9bb5845e",
+    "files": []
+  }
+}

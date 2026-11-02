@@ -1,0 +1,6 @@
+{
+  "ProjectType": "Process",
+  "Name": "APMailboxInvoiceBot",
+  "Description": null,
+  "MainFile": "Main.xaml"
+}

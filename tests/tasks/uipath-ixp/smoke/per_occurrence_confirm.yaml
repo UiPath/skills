@@ -6,9 +6,9 @@ description: >
   confirm the matching ones in ONE `--group + --updates` call — NOT one
   `--occurrence` call per row (Rule 17: the first write renumbers the group,
   so every later index would need a fresh read), NOT plain `--fields`
-  (confirms every occurrence) and NOT `--corrections` (the bad row isn't
-  OCR-mangled, it's simply absent, so it must be left unconfirmed). Locks
-  in Critical Rules 8, 12, 17 and 18.
+  (confirms every occurrence), and never writes values of its own over the
+  invented row (it must be left unconfirmed). Locks in Critical Rules 8, 12,
+  17 and 18.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -33,9 +33,7 @@ initial_prompt: |
   - "Steel bolts", Qty 200, Total $400 — matches a line on the invoice.
   - "Copper wire", Qty 50, Total $150 — matches a line on the invoice.
   - "Premium freight surcharge", Qty 1, Total $9,999 — there is NO such
-    line anywhere on the invoice; the model invented this row. Its values
-    are not a garbled reading of a real line, so this is NOT an OCR fix —
-    the row simply does not exist on the document.
+    line anywhere on the invoice; the model invented this row.
   - "Pallet wrap", Qty 12, Total $36 — matches a line on the invoice.
 
   `get-predictions` reports these extractions are from ModelVersion 7.
@@ -87,10 +85,10 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Anti-pattern: the invented row is not OCR-mangled, so --corrections is
-  # the wrong tool (Critical Rule 8) — it must be left unconfirmed.
+  # Anti-pattern: writing values over the invented row is manual extraction
+  # (Critical Rules 8, 9) — it must be left unconfirmed.
   - type: file_matches_regex
-    description: "Agent did NOT use --corrections to 'fix' the invented row"
+    description: "Agent did NOT use --corrections to write values over the invented row"
     path: "mocks/calls.log"
     pattern: >-
       (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-7["']?.*--corrections)[^\r\n]*$

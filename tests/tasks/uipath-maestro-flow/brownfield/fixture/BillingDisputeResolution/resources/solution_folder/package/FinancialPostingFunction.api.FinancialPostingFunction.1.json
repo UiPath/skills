@@ -1,0 +1,32 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "FinancialPostingFunction.api.FinancialPostingFunction.1",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": "FinancialPostingFunction.api.FinancialPostingFunction.1.1.0.0.nupkg",
+      "fileReference": "FinancialPostingFunction.api.FinancialPostingFunction.1_1.0.0",
+      "name": "FinancialPostingFunction.api.FinancialPostingFunction.1"
+    },
+    "locks": [],
+    "key": "FinancialPostingFunction.api.FinancialPostingFunction.1:1.0.0",
+    "files": [
+      {
+        "key": "FinancialPostingFunction.api.FinancialPostingFunction.1_1.0.0",
+        "name": "FinancialPostingFunction.api.FinancialPostingFunction.1.1.0.0.nupkg",
+        "url": "https://alpha.uipath.com/codereval/DefaultTenant/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.DownloadPackage(key='FinancialPostingFunction.api.FinancialPostingFunction.1:1.0.0')?feedId=001c61d7-2108-4130-b7ff-198c88ecbf79",
+        "kind": "Package",
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

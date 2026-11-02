@@ -92,11 +92,32 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Published work is addressed by name and folder. Queue items require a folder;
   live execution is the evidence that the resource exists and is runnable.
 
+<!-- RULE:bpmn.orchestrator.business-rule -->
+- A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.
+  The builder writes the version, the `BusinessRule` bindings and the `output`/`Error` rows; do not add them. The result is keyed by decision name: a column reads `=result.<Decision>.<column>`, as in `outputs: { tier: '=result.Eligibility.tier' }` or `vars.<id>_businessRuleResponse.Eligibility.tier` downstream, never `=result.tier` or `=response.tier`. `uip rules describe <name> --folder-path <folder> --output json` lists the deployed rule's decisions and columns; only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
+  `releaseKey` is refused: a rule is never addressed by a process key.
+
 <!-- RULE:bpmn.runtime.metadata -->
 - `metadata.*` values are empty in local `flow-debug`. Use literals or `vars.*`
   when an offline behavior check must observe the value.
 
 ## Human task outcomes
+
+<!-- RULE:bpmn.hitl.inline-form-default -->
+- Unless the request names a deployed Action App, write a human task as an inline form: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`.
+  The form travels in the `.bpmn`, so nothing on the tenant has to exist; `app` is for a named, deployed app, and an app id the tenant does not have fails `uip maestro bpmn validate` with `MISSING_BINDING` / `MISSING_RESOURCE`.
+  Never swap a human task for a plain `.task()` to get past that — use the form.
+- A field is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back).
+  The call refuses a form that breaks any of these:
+  - Every field id is a plain identifier that is not a reserved word: `reviewNote`, not `review-note` or `default`.
+  - No field is called `Action`; that is the outcome picked.
+  - Outcome ids are unique, including derived ones: `Needs review` and `Needs-review` collide.
+  - Each variable has one writer: two answers never share a `variable`, and an `outputs` key is never an answer's variable (a field named `decision` beside `outputs: { decision: '=Action' }` is refused).
+  - A picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) has `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
+- The cloud engine takes the inline-form path only on a tenant with its quick-form flag on.
+  With the flag off, the run fails at the human task with a HITL incident: `170004` "Invalid input for the HITL task" on current engines, or `170015` "No app … found" on engines from before mid-September 2026.
+  Then tell the user to enable the quick-form flag on the tenant, or to name a deployed Action App for `app`; do not fall back to `.task()`.
+- Studio Web's "Edit Schema" canvas does not open for an inline form.
 
 <!-- RULE:bpmn.hitl.output-map -->
 - Map any decision used by later routing through `outputs`; the typed platform
@@ -162,10 +183,14 @@ binding half, which is the same for every connector-backed node.
 - A connector's path and query parameters are one `uipath:input` row each, under
   the library's own parameter name and tagged `target="path"` / `target="query"`;
   the request body is the one json `target="body"` row. `.connector()` and
-  `.dataService()` write that. Through `.activity()`, an undeclared scalar input is
-  written as a `type="string"` attribute and a structured one as a json body, the
-  key as its target; when a row's target is not its name — a query parameter — spell
-  it out with `inputRows: [{ name, type, target, value }]` instead of `inputs`.
+  `.dataService()` write that. Through `.activity()`, a request field goes in
+  `inputs: { field: value }` and is folded into the body row (`inputs: { script }`
+  on a JDBC query becomes `{"script": …}` in the body); a path or query parameter is
+  spelled out with `inputRows: [{ name, type, target, value }]`, **with its `target`**.
+  `inputRows`, when present, replaces `inputs`: spell the body row too,
+  `{ name: 'body', type: 'json', target: 'body', body: { script } }`, or the request
+  fields are silently dropped. A row without `target` is never sent; `check` refuses it
+  (`CONNECTOR_INPUT_ROW_NO_TARGET`).
 
 ## Registry extension types
 
@@ -220,6 +245,12 @@ binding half, which is the same for every connector-backed node.
 - `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in `flowMode('sequence')`, and prints why each region it left flat stayed flat; the lifted source is written only after it has been compiled and its graph verified identical to the flat form's. The flow ids the constructs imply are KEPT: each is pinned back with `.flowIds([{ source, target, id }])`, emitted once at the top of the chain, so the recompiled artifact carries the ids it arrived with. This is what makes the lift safe for brownfield editing — `uip maestro bpmn merge` keys every process child by id with no filter for kind, so renaming a flow made the merge treat it as new, delete the original along with its `BPMNEdge`, and leave an untouched gateway's `default` naming an id that no longer exists (`MISSING_CONDITION_EXPRESSION` at validate). Measured on a three-flow fixture, a no-edit round trip now merges back byte-identical. `--keep-flow-ids` confines the lift to regions whose ids already match the derived form, for source with no pin table.
   A flow id that is not `Flow_<source>_<target>` keeps its region flat; the graph, its ids and `merge` are unaffected either way, so the choice is about the source you read and edit, not the artifact.
 
+<!-- RULE:bpmn.brownfield.connector-lift -->
+- Whenever a library opens (`--library <dir>`, else the `registry pull` cache, with `--connectors-local <dir>` as the prepared overlay on top), `bpmn decompile` LIFTS an `Intsvc.ActivityExecution` task the library can name into the `.connector(key, action, inputs, { connection, folder, outputVar, errorVar, outputs })` call an author writes, and keeps the rest as the verbatim `.activity()` with `contextVerbatim` and a `metadata` blob, printing the reason for each (`decompile: connectors — lifted 6 to .connector(); verbatim: Activity_mrv8tl (body field "Status" is not in the library …)`).
+  A lift is written only after that one call has been compiled on its own and its task compared with the original, so a lift that lost an input or picked the wrong action is refused per element, not approximated.
+  The lifted form is the one to copy when adding a connector task to an import. What stays verbatim: a body field the static library does not declare (a Data Fabric update's entity columns; `registry prepare` loads them), a `connection` that is not a `=bindings.<id>` reference, a designer row with an attribute no option spells. A lifted task's variables keep the file's own `jsonSchema` declaration as an explicit `.vars([…])` entry rather than a row the call no longer has.
+  A lifted task's canvas metadata is regenerated on compile, so a no-edit decompile, compile and merge is not byte-identical for those tasks; `--connectors verbatim` keeps every task as written, for a byte-identical brownfield edit. `examples/InvoiceApproval.bpmn.ts` shows both forms side by side.
+
 <!-- RULE:bpmn.brownfield.unused-bindings -->
 - `bpmn decompile` DROPS a binding nothing references, and names what it dropped. The
   designer writes a binding pair every time a resource is picked and collects none of
@@ -252,12 +283,17 @@ binding half, which is the same for every connector-backed node.
   `operate.json` use the bare filename; `entry-points.json` adds `#<start-id>`;
   `package-descriptor.json` uses a top-level `content` array.
 
-  Before `.startEvent('<start-id>')`, declare
-  `.metadata({ entryPointId: '<uuid>' })` — a GUID, the one `bpmn init` assigned
-  and `decompile` carried into the seed, or a fresh `crypto.randomUUID()`; `validate`
-  refuses any other value (`Root start event uipath:entryPointId value … must be a
-  GUID`), and `check` reports it first. Compilation puts that value on the root
-  start event, which is what the package generator uses to discover the entry point. Then generate the files from the built BPMN:
+  Every root start event compiles with a `uipath:entryPointId`: the one you set, else a
+  stable GUID the SDK derives from the process and start-event ids (the same on every
+  compile and machine; it changes if the process or start id changes, so when renaming
+  either in a deployed process, pin the old id). `refresh` reads it from the BPMN to
+  write `entry-points.json`, so nothing is required before `.startEvent('<start-id>')`.
+  To keep the id `bpmn init` assigned, decompile the stub it wrote (the id is carried
+  into the seed) or declare `.metadata({ entryPointId: '<uuid>' })`; a second root start
+  takes its own on the event (`.startEvent(id, { entryPointId })`), and `false` writes
+  none. A value you set must be a
+  GUID — `validate` refuses any other (`Root start event uipath:entryPointId value …
+  must be a GUID`), and `check` reports `ENTRYPOINT_ID_NOT_GUID` first. Then generate the files from the built BPMN:
 
   ```sh
   uip maestro bpmn refresh <project-dir> --output json   # `Demo/` here; needs its project.uiproj
@@ -284,8 +320,11 @@ binding half, which is the same for every connector-backed node.
 
   Inspect every generated metadata file against this contract. In particular,
   `entry-points.json.entryPoints` must be non-empty and reference the built BPMN
-  plus its start id. If it is empty, do not hand-write the JSON: add/fix the
-  builder's `.metadata({ entryPointId: ... })`, rebuild, and rerun `refresh`.
+  plus its start id. If it is empty, do not hand-write the JSON: the BPMN was not
+  compiled by the SDK and its root start event has no `uipath:entryPointId`; fix the
+  source, rebuild, and rerun `refresh`. `refresh` refusing with `Expected one
+  uipath:entryPointId on root manual start event` means an `entryPointId: false` on that
+  start (from decompiling an id-less import): delete it and rebuild.
 
 <!-- RULE:bpmn.layout.separate -->
 - Compile emits semantic XML. Run `uip maestro bpmn format` only when a canvas

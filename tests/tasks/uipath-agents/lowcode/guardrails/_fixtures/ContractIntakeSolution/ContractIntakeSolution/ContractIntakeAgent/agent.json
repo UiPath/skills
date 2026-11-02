@@ -1,0 +1,113 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-opus-4-6-v1",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 15,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "contractFile": {
+        "$ref": "#/definitions/job-attachment",
+        "description": "The uploaded contract to review (PDF or text)"
+      },
+      "requesterNotes": {
+        "type": "string",
+        "description": "Free-text notes from the requester about the contract"
+      }
+    },
+    "required": [
+      "contractFile"
+    ],
+    "definitions": {
+      "job-attachment": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "string",
+            "description": "Orchestrator attachment key"
+          },
+          "FullName": {
+            "type": "string",
+            "description": "File name"
+          },
+          "MimeType": {
+            "type": "string",
+            "description": "MIME type, e.g. \"application/pdf\", \"image/png\""
+          },
+          "Metadata": {
+            "type": "object",
+            "description": "Dictionary<string, string> of metadata",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ID"
+        ],
+        "x-uipath-resource-kind": "JobAttachment"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "summary": {
+        "type": "string",
+        "description": "Plain-language summary of the contract"
+      },
+      "riskLevel": {
+        "type": "string",
+        "description": "Low, Medium or High"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Contract Intake Agent. You only learn what a contract contains by reading it with the Analyze Files tool, so always call Analyze Files on the uploaded contract before you answer, passing the contract in attachments. Never judge a contract by its file name. Return a plain-language summary and a risk level (Low, Medium or High).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Contract Intake Agent. You only learn what a contract contains by reading it with the Analyze Files tool, so always call Analyze Files on the uploaded contract before you answer, passing the contract in attachments. Never judge a contract by its file name. Return a plain-language summary and a risk level (Low, Medium or High)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Review this contract.\n\nContract: {{input.contractFile}}\nRequester notes: {{input.requesterNotes}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Review this contract.\n\nContract: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.contractFile"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRequester notes: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.requesterNotes"
+        }
+      ]
+    }
+  ],
+  "guardrails": [],
+  "projectId": "6f1c2a0e-5b7d-4c7e-9a3f-2d8e1b4c7a01"
+}

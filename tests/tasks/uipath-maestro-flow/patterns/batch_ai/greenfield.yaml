@@ -1,0 +1,58 @@
+task_id: skill-flow-pattern-batch-ai
+description: >
+  A list of invoices is enriched one by one by an agent and summarized at the
+  end. Grades the per-item agent inside a loop, failure isolation per item, and
+  a synthesis agent that reads the loop's results. The prompt never names the
+  pattern.
+  Validate-only by design: failure isolation and synthesis wiring are graph
+  properties; a run adds an agent call per item and grades answer quality, not
+  topology.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, node:loop]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 80
+  turn_timeout: 900
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Flow project named "InvoiceEnrichment". The flow takes a list
+  of invoices as input (`invoices`, each with `id` and `vendor`). An AI agent
+  looks at each invoice and writes a one-line enrichment note for it. One invoice
+  failing must not stop the others. After every invoice has been processed, an
+  AI agent writes one summary of the whole batch that lists any invoices that
+  failed. Return the summary as the output `summary`.
+
+  Registry reads are fine, but do NOT pack, deploy, or upload. The task is NOT
+  complete until `uip maestro flow validate` passes on the generated flow.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A per-item agent in a loop with its failure isolated, then a synthesis agent over the loop's results"
+    command: "python3 $REFERENCE_DIR/patterns/batch_ai/check_greenfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

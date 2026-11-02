@@ -1,0 +1,71 @@
+task_id: skill-mcp-servers-swagger-not-supported
+description: |
+  Ask for a swagger-type Agent Gateway MCP server on an environment that does not offer swagger servers (as on Automation Suite 26.10): `mcp create swagger` fails with `ErrorCode: not_supported`. Exercises Rule 11 and the Automation Suite section: the agent reports that swagger servers aren't available there, does not keep retrying, and does not register the API as another server type on its own. Graded from the uip mock's call log, plus an LLM judge on the answer. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Expose the public Swagger Petstore API as MCP tools in AgentHub.
+  Register a swagger-type MCP server named Petstore (slug petstore-mcp) in the
+  Shared folder from https://petstore3.swagger.io/api/v3/openapi.json.
+success_criteria:
+- type: command_executed
+  description: Agent tried to create the swagger server
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp\s+create\s+swagger\b(?![^\n]*--(dry-run|help|print-schema))'
+  min_count: 1
+  weight: 1.5
+- type: command_not_executed
+  description: Agent did NOT register the API as another server type on its own
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp\s+create\s+(uipath|coded|command|remote|platform)\b(?![^\n]*--(dry-run|help|print-schema))'
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT keep retrying the swagger create (at most two real attempts)
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp\s+create\s+swagger\b(?![^\n]*--(dry-run|help|print-schema))'
+  max_count: 2
+  weight: 1.5
+- type: command_not_executed
+  description: Agent did NOT log in again (not_supported is not an auth failure)
+  tool_name: Bash
+  command_pattern: 'uip\s+(login|auth\s+login)\b'
+  weight: 1.0
+- type: llm_judge
+  description: The answer says swagger MCP servers aren't available on the connected environment
+  weight: 2.0
+  pass_threshold: 0.7
+  include_reference: false
+  include_dialog: true
+  include_agent_output: true
+  prompt: |
+    The CLI answered the swagger create with ErrorCode not_supported: Agent
+    Gateway on the connected environment does not offer swagger MCP servers
+    (as on Automation Suite 26.10). Nothing was created. Grade the agent's
+    final answer to the user:
+
+      1.0  Says no server was created because the connected environment does
+           not offer swagger MCP servers, and leaves the next step to the user
+           (for example asks, or offers another server type or environment as
+           an option) without doing it.
+      0.7  Says swagger servers aren't supported there, but is vague about
+           what the user can do next.
+      0.3  Blames something else first (permissions, the folder, the spec, a
+           transient error) or suggests retrying the same create.
+      0.0  Says the server was created, or reports that it registered the API
+           as another server type.
+
+    Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+run_limits: {max_turns: 40}

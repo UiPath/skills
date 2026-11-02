@@ -1,6 +1,6 @@
 # Local Metadata Regeneration
 
-Use this guide when BPMN source changed and local package metadata must be refreshed or verified: after binding a connection, or before packaging, upload, debug, publish, or deploy.
+Use this guide when BPMN source changed and local package metadata must be refreshed or verified: after binding a connection, or before packaging, upload, debug, publish, or deploy. Not for a timer or V1 trigger-start draft: a timer or V1 connector start alone has no entry point, so `refresh` fails; skip it ([SKILL.md](../../SKILL.md) step 3). A V2 connector trigger start is an entry point, so a draft with one runs `refresh`.
 
 **Do NOT apply it to an Integration Service draft or boundary handoff.** When the user asked for a local BPMN draft that hands connector enrichment to the CLI (a request that only says to validate is not one), `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` stay CLI-owned — do not hand-author or pre-generate them. Author only the `.bpmn` source shape plus a `.md` notes file **inside the project directory** naming the CLI-owned blockers. The regeneration workflow below reaches such a project only once its connectors are enriched.
 
@@ -27,6 +27,10 @@ into the supported BPMN contract.
 > `connection`). `update-metadata` is **deprecated** and never materializes
 > connection bindings, so a trigger regenerated with it passes `validate` but
 > faults at runtime with a null connection (error 102010).
+> For V2 connector nodes it also writes the `EventTrigger` and `Property`
+> resources of each trigger start and the resources their pickers bound, and
+> makes each V2 trigger start an entry point — see
+> [v2-connector-nodes.md](../v2-connector-nodes.md#3-refresh-validate-debug).
 
 `uip maestro bpmn refresh <project-path>` writes the
 same shape `uip maestro bpmn init` scaffolds, and `uip maestro bpmn pack`
@@ -94,7 +98,9 @@ Do not derive metadata from stale package files first. Use existing generated fi
    ```
 
    `refresh` materializes `Intsvc.*` connection bindings (including triggers)
-   and validates before writing. It needs `project.uiproj` — without one it
+   and validates before writing. It needs a root entry point: a manual start
+   or a V2 connector trigger start. A timer or V1 connector start alone has
+   no entry point, so `refresh` fails, and such a draft never reaches this step. It needs `project.uiproj` — without one it
    exits `BpmnRefreshFailed` / `RetryWillNotFix`; for a bare `.bpmn`, write the
    two-key `project.uiproj` first. `Data.WrittenFiles` names the files that were
    stale and `Data.UnchangedFiles` the ones already current, so a drift answer

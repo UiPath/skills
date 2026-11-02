@@ -1,0 +1,93 @@
+task_id: skill-case-edit-designer-stale-bindings
+description: >
+  Brownfield edit of a Studio Web pull whose bindings_v2.json lags the plan, as
+  a Designer save leaves it: the Designer rewrites bindings_v2.json on publish
+  and debug, but a save rewrites it only when an entry point, a file name or
+  the BPMN changed, so a task added in the canvas can be missing from it, and
+  packing ships the file as it is (PO.Frontend develop 6e9f81386,
+  CanvasModelProvider / PackagingFileCreator; observed on an alpha Designer
+  save, 2026-10-15). Reuses the designer_saved_plan fixture, with the RPA
+  Workflow resource removed from bindings_v2.json before the run. The edit
+  itself touches no binding, so only the brownfield pull rule makes the agent
+  run `uip maestro case bindings sync`; graded on the sidecar matching the
+  plan afterwards. Local only; nothing is uploaded or debugged.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../designer_saved_plan/fixtures
+
+pre_run:
+  - command: "python3 -c \"import json; p='ExpenseDesignerSaved/CMGoldenExpense/bindings_v2.json'; d=json.load(open(p)); n=len(d['resources']); d['resources']=[r for r in d['resources'] if not str(r.get('key','')).endswith('.RPA Workflow')]; assert len(d['resources'])==n-1, 'fixture drift: RPA Workflow resource not found'; json.dump(d, open(p,'w'), indent=2)\""
+    timeout: 30
+
+initial_prompt: |
+  The case solution in ./ExpenseDesignerSaved was just pulled from Studio Web,
+  so the local copy is current: edit it locally and don't pull it again. It is
+  the expense-reporting case, project CMGoldenExpense.
+
+  Change the task "Wait for timer - S5" in the stage "Stage 5 - connector
+  entry" so it waits 15 minutes instead of 10 seconds. Leave everything else in
+  the case as it is, and leave the project ready to publish.
+
+  Do NOT run `uip maestro case debug`, and do not upload or publish. Do NOT ask
+  for approval, confirmation, or feedback. Finish with `uip maestro case
+  validate` passing on the case.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: json_check
+    description: "The edit landed: Wait for timer - S5 waits 15 minutes, and no task was added or removed"
+    path: "ExpenseDesignerSaved/CMGoldenExpense/caseplan.case"
+    assertions:
+      - expression: "nodes[].data.tasks[][] | [?displayName=='Wait for timer - S5'].data.timeDuration | [0]"
+        operator: equals
+        expected: "PT15M"
+      - expression: "length(nodes[].data.tasks[][])"
+        operator: equals
+        expected: 15
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "bindings_v2.json carries the RPA Workflow resource again, regenerated from the plan rather than left as the Designer saved it"
+    path: "ExpenseDesignerSaved/CMGoldenExpense/bindings_v2.json"
+    assertions:
+      - expression: "length(resources[?ends_with(key, '.RPA Workflow')])"
+        operator: equals
+        expected: 1
+      - expression: "length(resources)"
+        operator: equals
+        expected: 8
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "validate --strict passes and no longer reports the sidecar as stale"
+    command: "uip maestro case validate ExpenseDesignerSaved/CMGoldenExpense/caseplan.case --strict --output json | python3 -c \"import json,sys; d=json.load(sys.stdin); codes=[i.get('Code') for i in (d.get('Data') or {}).get('Issues') or []]; sys.exit(0 if d.get('Result')=='Success' and 'STRICT_BINDINGS_SIDECAR_STALE' not in codes else 1)\""
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing uploaded, published, or debugged"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(publish|upload|deploy)|maestro\s+case\s+debug)\b(?!\s+--help)'
+    weight: 2.0
+    pass_threshold: 1.0

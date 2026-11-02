@@ -52,10 +52,31 @@ uip admin groups update <GROUP_ID> --name "<NEW_NAME>" --output json
 
 ## Pagination for Members
 
+`members list` returns **one page, 50 entries by default, with no indication that
+more exist**. A group with 80 members looks like a group with 50.
+
 ```bash
 uip admin groups members list <GROUP_ID> --limit 50 --offset 0 --output json
 uip admin groups members list <GROUP_ID> --limit 50 --offset 50 --output json
 ```
+
+Keep raising `--offset` by `--limit` until a page comes back short or empty.
+
+### Never conclude non-membership from a `members list` page
+
+A user missing from a page is **not** evidence they are not in the group — they may
+be on a page you did not fetch. This has already caused an outage: an agent read one
+page, decided an admin account was not an admin, and “fixed” it with `members add`
++ `members revoke`, removing access the account genuinely had.
+
+Resolve membership from the account side instead — one call, no paging:
+
+```bash
+uip admin users list --search "<email>" --output json   # read GroupIDs on the match
+```
+
+If `GroupIDs` contains the group id, the user is a member. And whatever the answer,
+changing it is not a remedy for an authorization error — see Critical Rule 34.
 
 ## Error Handling
 

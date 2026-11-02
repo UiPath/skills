@@ -1,0 +1,182 @@
+task_id: skill-test-prompts-library-setup-integration
+description: >
+  Integration test: agent uses the uipath-test skill to set up a project's
+  prompt library from a request naming two prompts, one of which already
+  exists. Prompt names are not unique and the CLI has no prompt update or
+  delete, so the agent must look the existing one up (`prompts get`/`list`)
+  and not create a duplicate, then create the missing evaluation prompt from
+  a multi-line guidelines file with the right mode of use
+  (EvaluateRequirementQuality). The prompt does not say either exists. Graded
+  on the live library. pre_run creates a throwaway `EVFX-PROMPTSET-*` project
+  per run (key in project-key.txt) holding the user-defined prompt
+  "Checkout edge cases", writes release-audit.md, and sweeps orphans stamped
+  more than 6 hours ago; post_run deletes the project, the only way to remove
+  prompts.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, outcome-graded]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-PROMPTSET-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:400]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      # Orphan sweep: delete only EVFX-PROMPTSET-* projects stamped more than
+      # 6 hours ago, so a concurrent run keeps its own.
+      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          nm, key = p.get("Name") or "", p.get("ProjectKey")
+          if not key or not nm.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(nm[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "project", "delete", "--project-key", key, "--yes")
+
+      key = "EVPS" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create {name}")
+      with open("project-key.txt", "w") as f:
+          f.write(key + "\n")
+      need(call("tm", "prompts", "create", "--project-key", key,
+                "--name", "Checkout edge cases",
+                "--mode-of-use", "GenerateTestsFromRequirement",
+                "--guidelines", "Cover an empty cart, a declined card and an expired coupon."),
+           "seed Checkout edge cases")
+      with open("release-audit.md", "w") as f:
+          f.write("Before each release, check the requirement for:\n"
+                  "- measurable acceptance criteria\n"
+                  "- a rollback path\n"
+                  "- the data it changes and who may change it\n")
+      print(f"SEEDED {name} ({key}) with prompt 'Checkout edge cases'; wrote release-audit.md")
+      PYEOF
+    timeout: 180
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  My Test Manager project's key is in project-key.txt. Set up its prompt
+  library for the team: we need "Checkout edge cases" for generating test cases
+  from requirements (guidelines: "Cover an empty cart, a declined card and an
+  expired coupon."), and "Release audit" for evaluating requirement quality,
+  with the guidelines in release-audit.md. Write the id of each of the two
+  prompts to prompt-ids.json as {"<prompt name>": "<id>"}.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent looked prompts up with `uip tm prompts get` or `list`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+prompts\s+(get|list)\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a prompt with `uip tm prompts create`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+prompts\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "'Checkout edge cases' was not duplicated: still exactly one prompt with that name"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      r = subprocess.run(["uip", "tm", "prompts", "list", "--project-key", key,
+                          "--filter", "Checkout edge", "--limit", "100", "--output", "json"],
+                         capture_output=True, text=True)
+      out = json.loads(r.stdout[r.stdout.index("{"):])
+      rows = [p for p in out.get("Data") or [] if p.get("Name") == "Checkout edge cases"]
+      print("Checkout edge cases rows:", len(rows))
+      sys.exit(0 if out.get("Result") == "Success" and len(rows) == 1 else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one UserDefined 'Release audit' prompt, mode EvaluateRequirementQuality, guidelines equal to release-audit.md"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      want = " ".join(open("release-audit.md").read().split())
+      r = subprocess.run(["uip", "tm", "prompts", "list", "--project-key", key,
+                          "--filter", "Release audit", "--limit", "100", "--output", "json"],
+                         capture_output=True, text=True)
+      out = json.loads(r.stdout[r.stdout.index("{"):])
+      rows = [p for p in out.get("Data") or [] if p.get("Name") == "Release audit"]
+      print([(p.get("ModeOfUse"), p.get("PromptType"), p.get("Guidelines")) for p in rows])
+      ok = (len(rows) == 1
+            and rows[0].get("ModeOfUse") == "EvaluateRequirementQuality"
+            and rows[0].get("PromptType") == "UserDefined"
+            and " ".join((rows[0].get("Guidelines") or "").split()) == want)
+      sys.exit(0 if ok else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "prompt-ids.json maps both names to their live prompt ids"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      got = json.load(open("prompt-ids.json"))
+      r = subprocess.run(["uip", "tm", "prompts", "list", "--project-key", key,
+                          "--limit", "100", "--output", "json"], capture_output=True, text=True)
+      rows = json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      live = {}
+      for p in rows:
+          live.setdefault(p.get("Name"), set()).add(p.get("Id"))
+      print("file:", got)
+      ok = all(got.get(n) in live.get(n, set()) for n in ("Checkout edge cases", "Release audit"))
+      sys.exit(0 if ok else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

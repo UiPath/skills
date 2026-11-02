@@ -160,6 +160,10 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Marks Stage Complete |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
   #### Tasks
   | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
   |---|---------|-----------|------|----------|---------------|---------|-----|
@@ -221,7 +225,7 @@ initial_prompt: |
 
   ### Stage 3: Done (`done`)
   **Type:** Stage
-  **Description:** Terminal stage receiving Finalize's exit-only route.
+  **Description:** Terminal stage, entered when Finalize completes.
   **Required for Case Completion:** Yes
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |

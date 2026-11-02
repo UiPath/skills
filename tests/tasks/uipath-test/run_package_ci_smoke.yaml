@@ -1,0 +1,114 @@
+# Needs `uip tm run --type package` (UiPath/cli#4845, in `@uipath/cli@dev` and
+# every release after it) and a tenant set up as in fixtures/README.md
+# (Run-package fixtures); on any other tenant pre_run exits TENANT NOT READY.
+task_id: skill-test-run-package-ci-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to run every test in a package
+  already uploaded to Orchestrator, the way a CI step would, with
+  `uip tm run --type package`. The package is the cross-platform
+  `TestCase_CrossPlatform_VB_Tests` (one test that passes), so the folder's
+  serverless robot runs it to the end. pre_run checks the tenant can run it
+  (TENANT NOT READY otherwise), uploads the package when missing, seeds a throwaway `EVFX-RUNPKG-*` project per run, and post_run deletes it,
+  which also removes the execution and the hidden test set the command
+  creates. Graded on the JUnit report on disk and on the tenant: the report's
+  execution id must be a Finished execution in the seeded project, so a
+  hand-written report fails, and every test in it must read as passed. Also
+  grades the single complete command, with a `--timeout` inside the CI
+  step's budget, and guards against the hand-built chain (link-package →
+  testsets create → testsets run → wait → result download) it replaces.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25
+  turn_timeout: 900
+  task_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+# The script checks the tenant can run the package (folder, runtime) and exits
+# TENANT NOT READY when it cannot, uploads the package from _setup/packages/
+# when the folder feed lacks it, and seeds the throwaway project.
+pre_run:
+  - command: >-
+      python3 _setup/run_package_fixture.py seed --folder uipath-test-folder-feed
+      --package TestCase_CrossPlatform_VB_Tests --nupkg TestCase_CrossPlatform_VB_Tests.1.0.0.nupkg
+      --prefix EVFX-RUNPKG- --key-prefix EVRP
+    timeout: 240
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  CI just uploaded the test package "TestCase_CrossPlatform_VB_Tests" to the
+  Orchestrator folder "uipath-test-folder-feed". Run all of its tests in my
+  Test Manager project (its key is in project-key.txt in this folder), retry
+  failed ones once, and write the JUnit report to results/junit.xml. This CI
+  step is killed after 10 minutes. Tell me how many tests passed.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "One complete `tm run --type package` command: package, folder, project, one retry, a --timeout within the 10-minute budget"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+tm\s+run\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--type[\s=]+package\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--package-name[\s=]+["\x27]?TestCase_CrossPlatform_VB_Tests\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--package-version[\s=]+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-(?:path[\s=]+["\x27]?uipath-test-folder-feed|key[\s=]+\S))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(?:key|id)[\s=]+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--max-retries[\s=]+1\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--timeout[\s=]+["\x27]?(?:[1-9]\d?|[1-5]\d\d|600)\b)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "A JUnit report with a <testsuite> is at results/junit.xml"
+    path: "results/junit.xml"
+    includes:
+      - "<testsuite "
+      - "<testcase "
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The report's execution id is a Finished execution in the seeded project (a hand-written report fails), and every test in it passed"
+    command: |
+      python3 - <<'PYEOF'
+      import json, re, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      xml = open("results/junit.xml").read()
+      m = re.search(r'<testsuite\b[^>]*\bid="([0-9a-fA-F-]{36})"', xml)
+      if not m:
+          print("no <testsuite id> in results/junit.xml"); sys.exit(1)
+      r = subprocess.run(["uip", "tm", "executions", "list", "--project-key", key,
+                          "--output", "json"], capture_output=True, text=True)
+      rows = json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      hit = [e for e in rows if (e.get("Id") or "").lower() == m.group(1).lower()]
+      status = hit[0].get("Status") if hit else "not in project"
+      # A <testcase> with no <skipped>, <failure> or <error> child is a pass.
+      cases = re.findall(r'<testcase\b(.*?)(?=<testcase\b|</testsuite>)', xml, re.S)
+      bad = [c for c in cases if re.search(r'<(skipped|failure|error)\b', c)]
+      print("report execution:", m.group(1), "->", status,
+            "| testcases:", len(cases), "not passed:", len(bad))
+      sys.exit(0 if status == "Finished" and cases and not bad else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not hand-build the run with testsets create / testcases link-package"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+(testsets\s+create|testcases\s+link-package)'
+    weight: 1.5
+    pass_threshold: 1.0

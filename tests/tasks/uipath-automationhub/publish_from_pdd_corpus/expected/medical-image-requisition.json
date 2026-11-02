@@ -1,0 +1,29 @@
+{
+ "name_contains": "Medical Image Requisition Intake and Case Management",
+ "documents": {
+  "pdd": "corpus/medical-image-requisition/pdd.md"
+ },
+ "systems": {
+  "MEDITECH": [],
+  "Change Healthcare PACS": [
+   "change healthcare",
+   "pacs"
+  ]
+ },
+ "optional_systems": {
+  "Fax platform": [
+   "fax"
+  ],
+  "UiPath case application": [
+   "case application",
+   "case management"
+  ],
+  "Location-search capability": [
+   "location"
+  ],
+  "UiPath Document Understanding": [
+   "document understanding"
+  ]
+ },
+ "allow_other_category": true
+}

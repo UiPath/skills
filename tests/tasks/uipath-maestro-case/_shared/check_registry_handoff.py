@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.case_check import registry_audit_entries  # noqa: E402
+from _shared.case_check import read_registry_cache, registry_audit_entries  # noqa: E402
 
 
 def g(obj, *names, default=None):
@@ -54,7 +54,6 @@ assert len(entries) == len(EXPECTED), (
     f"expected one fresh audit entry per SDD task, got {len(entries)}"
 )
 
-cache_root = Path.home() / ".uip" / "case-resources"
 
 for name, expected in EXPECTED.items():
     matching_entries = [
@@ -102,7 +101,7 @@ for name, expected in EXPECTED.items():
         f"(selected keys: {sorted(selected)[:8]})"
     )
 
-    cached_resources = load_json(cache_root / expected["cache_file"])
+    cached_resources = read_registry_cache(expected["cache_file"])
     exact_matches = [
         resource
         for resource in cached_resources

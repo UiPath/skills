@@ -16,8 +16,10 @@ Before any debug or process run:
 
 ## Debug - controlled Studio Web run
 
+<!--skill-flavor:debug-intro:start-->
 Use debug when the user wants to upload a local BPMN project to Studio Web and run a debug session with full Studio Web
 visibility.
+<!--skill-flavor:debug-intro:end-->
 
 <!--skill-flavor:local-debug-solution:start-->
 For local project debug, prefer a solution context so generated resources,
@@ -32,6 +34,7 @@ cd <SolutionName> && uip maestro bpmn debug <ProjectDirName> --output json
 ```
 <!--skill-flavor:local-debug-solution:end-->
 
+<!--skill-flavor:debug-command-usage:start-->
 ```bash
 uip maestro bpmn debug [project-path] --output json
 ```
@@ -63,6 +66,7 @@ If Studio Web URL is not returned, print `Studio Web URL: <not returned by CLI>`
 > right after the debug run. Match returned keys case-insensitively
 > (`finalStatus`/`FinalStatus`, `instanceId`/`InstanceId`, `elementExecutions`/
 > `ElementExecutions`) — the CLI's JSON key casing varies by version.
+<!--skill-flavor:debug-command-usage:end-->
 
 ## Process run - deployed process
 
@@ -94,6 +98,7 @@ Use traces only when status, incidents, variables, and deployed BPMN correlation
 uip maestro bpmn job traces <JOB_KEY> --output json
 ```
 
+<!--skill-flavor:debug-instance-inspection:start-->
 For debug instances, prefer the `debug-instance` inspection commands when
 standard deployed-instance commands do not have debug-session context. Use the
 identifiers returned by the debug command as the source of truth.
@@ -103,6 +108,7 @@ uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
 ```
+<!--skill-flavor:debug-instance-inspection:end-->
 
 ## Execution summary
 

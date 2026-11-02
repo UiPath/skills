@@ -1,0 +1,187 @@
+task_id: skill-test-perf-scenario-dryrun-e2e
+description: >
+  E2E test: agent uses the uipath-test skill to check whether an automated test
+  case can be load tested: create a scenario under the name pre_run hands it,
+  bind EVFX-PERFDRY-TC1 to it as a load group with 1 virtual user, run a dry
+  run, wait for it to finish, and write the dry run's result to dryrun.txt,
+  without starting a full performance run. Graded on the tenant: the load
+  group is set to 1 virtual user, a dry run of this scenario finished,
+  dryrun.txt matches its result, and no performanceTesting run was started.
+tags: [uipath-test, e2e, mode:operate, lifecycle:end-to-end, outcome-graded]
+
+# Blocked: Test Manager refuses a perf dry run unless the package is built with
+# UiPath.Testing.Activities 25.10.0 or newer ("The dependency
+# UiPath.Testing.Activities must be version 25.10.0 or higher"), and the
+# folder's serverless robot runs cross-platform packages only. The shared
+# TestCase_CrossPlatform_VB_Tests is built with 23.6.0-preview. Re-enable once a
+# cross-platform test package built with Testing.Activities >= 25.10.0 is in
+# _setup/packages and this task points at it. Everything before the dry run
+# (setup, scenario, load group) passed on the eval tenant.
+skip: true
+
+run_limits:
+  expected_turns: 20
+  max_turns: 40
+  turn_timeout: 900
+  task_timeout: 1500
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+# Dedicated fixture, see tests/tasks/uipath-test/fixtures/README.md. The shared
+# run-package script checks the tenant (folder, runtime), uploads
+# TestCase_CrossPlatform_VB_Tests to uipath-test-folder-feed when it is
+# missing, and creates a throwaway project per run (key in project-key.txt).
+# The second step creates EVFX-PERFDRY-TC1 in that project, links it to the
+# package and writes the scenario name to scenario-name.txt. Either step exits
+# TENANT NOT READY when the tenant cannot do it. A dry run takes a few minutes
+# on the folder's serverless robot and uses no licence units. post_run stops a
+# dry run still in flight, then deletes the project.
+pre_run:
+  - command: >-
+      python3 _setup/run_package_fixture.py seed --folder uipath-test-folder-feed
+      --package TestCase_CrossPlatform_VB_Tests --nupkg TestCase_CrossPlatform_VB_Tests.1.0.0.nupkg
+      --prefix EVFX-PERFDRY- --key-prefix EVPD
+    timeout: 240
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      FOLDER, PACKAGE, TEST, TC = "uipath-test-folder-feed", "TestCase_CrossPlatform_VB_Tests", "TestCase", "EVFX-PERFDRY-TC1"
+      P = open("project-key.txt").read().strip()
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          except Exception:
+              return {"Result": "Failure", "Message": (r.stdout + r.stderr)[:300]}
+
+      def not_ready(msg):
+          print(f"TENANT NOT READY — environment failure, not an agent failure: {msg}", file=sys.stderr)
+          sys.exit(1)
+
+      lic = call("tm", "perf-scenario", "licenses", "get", "--project-key", P)
+      if lic.get("Result") != "Success":
+          not_ready(f"this login cannot use performance testing in {P}: {lic.get('ErrorCode')} {lic.get('Message')}")
+      tc = call("tm", "testcases", "create", "--project-key", P, "--name", TC)
+      if tc.get("Result") != "Success":
+          print(f"SEED FAILED: could not create {TC} in {P}: {tc}"); sys.exit(1)
+      key = (tc.get("Data") or {}).get("TestCaseKey") or next(
+          t["TestCaseKey"] for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC).get("Data") or [] if t.get("Name") == TC)
+      folder = (call("or", "folders", "list", "-n", FOLDER, "--all").get("Data") or [{}])[0].get("Key")
+      link = call("tm", "testcases", "link-automation", "--project-key", P, "--test-case-key", key,
+                  "--folder-key", folder or "", "--package-name", PACKAGE, "--test-name", TEST)
+      if link.get("Result") != "Success":
+          not_ready(f"could not link {TC} to {PACKAGE} in {FOLDER}: {link.get('Message')}")
+      name = f"EVFX-PERFDRY-{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      open("scenario-name.txt", "w").write(name + "\n")
+      print(f"SEEDED {TC} ({key}) in {P}, linked to {PACKAGE}; scenario name {name}")
+      PYEOF
+    timeout: 180
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          except Exception:
+              return {}
+      if os.path.exists("project-key.txt"):
+          P = open("project-key.txt").read().strip()
+          # Delete does not stop a running execution, so stop this run's first.
+          execs = (call("tm", "perf-scenario", "executions", "list", "--project-key", P, "--limit", "50").get("Data") or {}).get("Data") or []
+          for e in execs:
+              if e.get("Status") not in ("Finished", "Cancelled"):
+                  call("tm", "perf-scenario", "stop", "--execution-id", e["Id"], "--project-key", P)
+          call("tm", "project", "delete", "--project-key", P, "--yes")
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  Before we load test EVFX-PERFDRY-TC1, I want to know if it even works under
+  the perf runner. It's in the Test Manager project whose key is in
+  project-key.txt, and it runs from the Orchestrator folder
+  "uipath-test-folder-feed". Set up a scenario for it with 1 virtual user,
+  named as in scenario-name.txt, do a dry run and wait for it. Don't start a
+  real load run. Write just the dry run result, Passed or Failed, to dryrun.txt.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "The scenario has one load group for EVFX-PERFDRY-TC1 with 1 virtual user"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      TC = "EVFX-PERFDRY-TC1"
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+      P = open("project-key.txt").read().strip()
+      name = open("scenario-name.txt").read().strip()
+      tc = [t for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC)["Data"] if t.get("Name") == TC][0]
+      keys = [s["ScenarioKey"] for s in (call("tm", "perf-scenario", "list", "--project-key", P, "--search", name)["Data"] or {}).get("Scenarios") or []
+              if s.get("Name") == name]
+      if len(keys) != 1:
+          print("scenarios named", name, ":", keys); sys.exit(1)
+      groups = call("tm", "perf-scenario", "get", "--scenario-key", keys[0])["Data"].get("LoadGroups") or []
+      print("load groups:", [(g.get("TestCaseKey"), g.get("VirtualUsers")) for g in groups])
+      ok = len(groups) == 1 and groups[0].get("TestCaseKey") == tc["TestCaseKey"] and groups[0].get("VirtualUsers") == 1
+      sys.exit(0 if ok else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A dry run of this scenario finished, and dryrun.txt holds its result"
+    command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess, sys
+      P = open("project-key.txt").read().strip()
+      r = subprocess.run(["uip", "tm", "perf-scenario", "executions", "list", "--project-key", P,
+                          "--execution-type", "dryRun", "--limit", "50", "--output", "json"],
+                         capture_output=True, text=True)
+      out = json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+      name = open("scenario-name.txt").read().strip()
+      runs = [e for e in (out.get("Data") or {}).get("Data") or []
+              if (e.get("Name") or "").startswith(name + " - ") and e.get("Status") == "Finished"]
+      if not runs:
+          print("no finished dry run for", name); sys.exit(1)
+      want = "Passed" if runs[0].get("Passed") and not runs[0].get("Failed") else "Failed"
+      got = open("dryrun.txt").read().strip() if os.path.exists("dryrun.txt") else ""
+      print("dry run passed:", runs[0].get("Passed"), "failed:", runs[0].get("Failed"), "| want:", want, "| dryrun.txt:", got)
+      sys.exit(0 if got.lower() == want.lower() else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the scenario with `perf-scenario execute`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+execute\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not start a full performanceTesting run"
+    tool_name: "Bash"
+    command_pattern: 'perf-scenario\s+execute\b[^\n]*performanceTesting'
+    weight: 2.0
+    pass_threshold: 1.0

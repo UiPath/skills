@@ -1,0 +1,57 @@
+task_id: skill-flow-pattern-no-pattern
+description: >
+  A near miss: a nightly batch of transaction rows, each put into an export
+  format, which sounds like batch AI work but is a deterministic reshape.
+  Verifies the negative gate holds: the agent builds the steps asked for and does
+  not retrofit agents, reviews, routing or fan-out onto work that does not need
+  them.
+  Validate-only by design: the grade is what the agent did not add, which a run
+  cannot show.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 80
+  turn_timeout: 900
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Flow project named "NightlyExport". Every night the finance
+  team gets a batch of yesterday's transactions (input `rows`, each with `id`,
+  `amount` and `currency`). Each row goes into their export format:
+  `transactionId`, `amountCents` (the amount times 100, rounded) and `currency`
+  upper-cased. Return the export rows as the output `exportRows`.
+
+  Registry reads are fine, but do NOT pack, deploy, or upload. The task is NOT
+  complete until `uip maestro flow validate` passes on the generated flow.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The flow is linear and free of retrofitted pattern scaffolding"
+    command: "python3 $REFERENCE_DIR/patterns/no_pattern/check_no_pattern.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

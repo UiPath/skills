@@ -4,7 +4,8 @@ description: >
   business process (and a PDD document) to Automation Hub. The eval image
   ships an `ah`-capable `uip`, so the skill's Step-0 preflight must route to
   the CLI flows. The calls reach the live alpha tenant the CI login targets,
-  and post_run archives the process by its fixed name. The test grades the
+  through the call recorder, and post_run archives exactly the process ids this
+  run's creates returned, so concurrent runs never archive each other's. The test grades the
   COMMAND SHAPE; the content of a publish is graded by
   publish_from_pdd_structural. The skill must (1) activate, (2) take the CLI transport (`uip ah …`
   — auth is the CLI's job; the agent never handles a token), (3) walk the
@@ -20,8 +21,18 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
+      path: _shared/live_template
+    - type: template_dir
       path: _setup
       mount_point: _setup
+  mock_path_dirs:
+    - .uip-recorder
+
+# A tenant outage or revoked login fails here as TENANT NOT READY, which the smoke
+# gate leaves out of the pass rate, instead of being scored against the skill.
+pre_run:
+  - command: "python3 _setup/preflight_ah.py"
+    timeout: 300
 
 initial_prompt: |
   Publish the approved business process below to UiPath Automation Hub using
@@ -36,8 +47,9 @@ initial_prompt: |
   tenant. Do NOT run `uip login` and do NOT handle a token yourself.
 
   Important:
-  - Walk through the skill's full publish sequence and issue each command once,
-    in order. Do NOT retry a failed command.
+  - Walk through the skill's full publish sequence in order. If the create is
+    rejected, fix the payload and retry it once, as the skill says; never re-run
+    a create that succeeded.
   - Do NOT prompt the user for confirmation — this is an automated test.
   - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header — this
     skill authenticates with the user's cloud session, not an admin OpenAPI token.
@@ -115,5 +127,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: 'python3 _setup/cleanup_ah.py --name "Invoice Reconciliation (smoke)"'
+  - command: 'python3 _setup/cleanup_ah.py --created'
     timeout: 300

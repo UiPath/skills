@@ -2,22 +2,9 @@
 
 All skill documentation and agent-facing prose in this repo MUST follow these rules. Technical accuracy stays. Fluff dies.
 
-## 0. Compression Boundary — what may be compressed
-
-Compression is NOT uniform. A/B evidence (internal July 2026 rollback; external compliance testing where merging 8 safety bullets into 3 equivalent sentences dropped rule-following from 3/3 to 1/3, and shorthand like `python=venv` was ignored outright): compressing RULES breaks compliance; compressing enumerations does not.
-
-| Compress aggressively (60–70%) | Keep full sentences (trim 10–20% max) |
-|---|---|
-| Enumerations, file-path lists, link lists | Critical Rules and any numbered rule text |
-| Tool/feature/keyword tables | Action patterns ("do X, then Y, never Z") |
-| Section intros, table surrounds | Scope qualifiers ("only when…", "except…") |
-| Repeated statements → state once fully + pointers | Rationale/example blocks inside rules — redundancy in safety rules is reinforcement, not waste |
-
-Duplication is the preferred target over wording: the same fact stated in N places compresses to ONE full statement + N pointers — never to N terse paraphrases.
-
 ## 1. Prose Compression
 
-Strip every word that does not carry information — within the § 0 boundary: rules and action patterns keep full sentences. Drop articles. Fragments OK. Short synonyms. Technical terms exact.
+Strip every word that does not carry information. Drop articles. Fragments OK. Short synonyms, except for technical and depended-on terms (see What to Keep).
 
 Pattern: `[thing] [action] [reason]. [next step].`
 
@@ -33,10 +20,13 @@ Pattern: `[thing] [action] [reason]. [next step].`
 | **Redundant context** | "as mentioned above", "as we discussed", "note that" | Delete |
 | **Weak verbs** | "perform a validation" → "validate", "make a determination" → "determine", "do an installation" → "install" | Use direct verb |
 | **Subject padding** | "You should run", "You need to check", "You can use", "You'll want to" | Lead with verb: "Run", "Check", "Use" |
+| **Repeated facts** | The same CLI flag explained in SKILL.md and two references | State it once in full and link to it from the others — never several terse paraphrases |
 
 ### What to Keep
 
 - Technical terms — exact, never abbreviated (no "DB" for "database", no "auth" for "authentication")
+- The exact terms other files or tests depend on (e.g. the user-facing name of an entity) — never swap in a synonym
+- Scope qualifiers and prohibitions ("only when…", "except…", "unless…", "never…") — they are conditions, not hedging; dropping one changes what a rule allows
 - Tables and structured data — unchanged
 - Numbered rules and ordered steps — keep numbering
 - Section headers — keep for navigation

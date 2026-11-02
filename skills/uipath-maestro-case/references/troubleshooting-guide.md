@@ -1,6 +1,8 @@
 # Troubleshooting Failed Cases
 
+<!--skill-flavor:troubleshoot-intro:start-->
 Diagnostic workflow for failed debug runs and deployed case process runs. All commands require `uip login`.
+<!--skill-flavor:troubleshoot-intro:end-->
 
 > **`--folder-key` is required for `incident get`.** Most `instance` subcommands accept `--folder-key <FOLDER_KEY>` and auto-detect from the authenticated folder if omitted, but `incident get` requires it explicitly. Get the folder key from `uip or folders list --output json` or from the job/process context.
 
@@ -15,6 +17,7 @@ Investigate in this order — each step adds context, stop when you have enough 
 
 ## Step 1 — Get the instance ID
 
+<!--skill-flavor:step-one-instance-id:start-->
 The debug output (`Data.instanceId`) or `job status` response contains the instance ID. If you only have a job key:
 
 ```bash
@@ -24,6 +27,7 @@ uip maestro case job status <JOB_KEY> --output json
 Parse the instance ID and folder key from the response.
 
 > **No instance ID / `job status` fails →** halt. Report job key to user; downstream steps need the instance ID.
+<!--skill-flavor:step-one-instance-id:end-->
 
 ## Step 2 — Fetch incidents
 
@@ -105,7 +109,9 @@ uip maestro case job traces <JOB_KEY> --pretty                  # human-readable
 2. **Empty result → next step.** If a step returns empty/missing data, move to the next step. Do not retry the same command.
 3. **One retry on transient failure** (auth, network). Second failure: halt that step, continue.
 4. **Max one full pass through Steps 1–5.** No looping.
+<!--skill-flavor:escalation-report:start-->
 5. **Escalate to user** if Steps 1–5 yield no root cause, or all paths blocked. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot. Do not propose `caseplan.case` edits without confirmed cause.
+<!--skill-flavor:escalation-report:end-->
 
 ## CLI command reference
 

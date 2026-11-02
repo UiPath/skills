@@ -1,0 +1,127 @@
+task_id: skill-agent-usecase-vendor-inquiry-rpa-invoice
+description: >
+  Use-case pattern "document + RPA" — the single most common capability
+  combination. The agent answers a vendor's invoice inquiry by calling the
+  solution's own "DownloadVendorInvoice" RPA process (the real Studio Web
+  project, in the fixture), which returns the invoice PDF as a File output
+  argument, and then reads that returned file. Exercises the recurring
+  attachment-passing failure: the RPA tool's output schema must carry the File
+  as a job-attachment (mirroring the project's entry-points.json), and the
+  returned attachment must be handed to a file-reading built-in tool. Graded
+  on the final project only: solution-local RPA tool wiring + schemas,
+  file-reading tool, output contract, read-only `uip agent validate`, and an
+  LLM judge on the system prompt.
+  Studio Web context: the user has the empty agent project open in an
+  existing solution (_fixtures/), and the checker requires the agent to be
+  built inside it. Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code]
+
+run_limits:
+  expected_turns: 35
+  turn_timeout: 1200
+  task_timeout: 1500
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/VendorInquirySol
+      mount_point: VendorInquirySol
+    - type: template_dir
+      path: _fixtures/attachments
+      mount_point: attachments
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+# Sample documents are kept as *.pdf.txt in the repo; render them into the
+# user's attachments and remove the generator before the agent starts.
+pre_run:
+  - command: "python3 _setup/make_pdfs.py attachments && rm -rf _setup"
+    timeout: 60
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  You are a coding agent running in Studio Web. The user is in an empty
+  low-code agent project in that solution with the name VendorInquiryAgent.
+  The agent is in a UiPath solution called VendorInquirySol. We already have
+  an RPA process, "DownloadVendorInvoice" in the current solution, that takes
+  an invoice number, fetches the invoice PDF from the archive and hands back
+  the file (and whether it found one). The user attached a sample of the
+  legacy archive records and two archived invoices to this request:
+  `attachments/legacy-ap-records.json` and `attachments/invoices/`.
+
+  I need you to build an agent that automatically answers queries related to
+  accounts payable: what we have on file, the amount, when it's due.
+  Queries typically have the vendor's name and their inquiry (email text).
+  The Agent should use the RPA process to pull the invoice, read the PDF and
+  answer the query based on what's in the invoice.
+
+  It returns:
+      - `invoiceNumber` (empty if the email doesn't mention one)
+      - `invoiceFound` (true or false)
+      - `invoiceAmount` and `dueDate` as read from the invoice
+      - `reply`: a short answer to the vendor
+      - `needsHumanFollowUp`: true when there's no invoice number, the
+        invoice isn't found, or the PDF doesn't answer the question
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate VendorInquirySol/VendorInquiryAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "External RPA tool for DownloadVendorInvoice with schemas mirroring the process (File output as job-attachment), binding + solution process declaration, file-reading tool, output contract"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/vendor_inquiry_rpa_invoice/check_vendor_inquiry_rpa_invoice.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt chains RPA → file reading, handles missing/not-found invoices, and grounds the reply in the PDF"
+    files: ["VendorInquirySol/VendorInquiryAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that answers
+      vendor invoice inquiries. It has an RPA tool, DownloadVendorInvoice, that
+      returns the invoice PDF as a file, and a file-analysis tool. Read
+      `VendorInquirySol/VendorInquiryAgent/agent.json` and grade ONLY the
+      `content` of the `messages[]` entry whose `role == "system"`. Ignore
+      schemas, settings, resources and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Invoice number first — extract the invoice number from the
+            inquiry before calling DownloadVendorInvoice, and do not call the
+            tool when there is none (return an empty invoiceNumber and flag
+            human follow-up instead).
+        R2. Read the returned file — pass the invoice file returned by
+            DownloadVendorInvoice to the file-analysis tool to read its
+            contents (amount, due date, other details); the file reference
+            itself carries only metadata, so the agent must not answer from
+            it directly.
+        R3. Not found / unreadable — when DownloadVendorInvoice reports
+            found = false, or the PDF can't be read or doesn't answer the
+            question, set invoiceFound / needsHumanFollowUp accordingly and
+            reply without inventing details.
+        R4. Grounded reply — the reply, invoiceAmount and dueDate come only
+            from the invoice contents; never guess amounts or dates, and
+            keep the reply short and addressed to the vendor.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.

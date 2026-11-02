@@ -15,6 +15,18 @@ tags: [uipath-automationhub, smoke, mode:operate, lifecycle:discover]
 run_limits:
   expected_turns: 8
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+# A tenant outage or revoked login fails here as TENANT NOT READY, which the smoke
+# gate leaves out of the pass rate, instead of being scored against the skill.
+pre_run:
+  - command: "python3 _setup/preflight_ah.py"
+    timeout: 300
+
 initial_prompt: |
   Using the `uipath-automationhub` skill, fetch process `12345` from UiPath
   Automation Hub and list its attached documents (PDD/SDD). You already have the

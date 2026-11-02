@@ -1,0 +1,150 @@
+{
+  "_comment": "Snapshot of `uip maestro case rule-types list --output json` Data. Do not edit by hand; refresh with: python3 scripts/refresh-cli-declarations.py",
+  "Data": {
+    "Scopes": [
+      {
+        "Scope": "task-entry",
+        "Validated": true,
+        "RuleTypes": [
+          {
+            "Type": "current-stage-entered"
+          },
+          {
+            "Type": "selected-tasks-completed"
+          },
+          {
+            "Type": "wait-for-connector"
+          },
+          {
+            "Type": "adhoc"
+          },
+          {
+            "Type": "runs-sequentially"
+          },
+          {
+            "Type": "sla-status-change"
+          },
+          {
+            "Type": "api-event"
+          }
+        ]
+      },
+      {
+        "Scope": "stage-entry",
+        "Validated": true,
+        "RuleTypes": [
+          {
+            "Type": "case-entered"
+          },
+          {
+            "Type": "selected-stage-exited"
+          },
+          {
+            "Type": "selected-stage-completed"
+          },
+          {
+            "Type": "wait-for-connector"
+          },
+          {
+            "Type": "user-selected-stage"
+          },
+          {
+            "Type": "sla-status-change"
+          },
+          {
+            "Type": "api-event"
+          }
+        ]
+      },
+      {
+        "Scope": "stage-exit",
+        "Validated": false,
+        "MarksComplete": false,
+        "RuleTypes": [
+          {
+            "Type": "selected-tasks-completed"
+          },
+          {
+            "Type": "wait-for-connector"
+          },
+          {
+            "Type": "sla-status-change"
+          },
+          {
+            "Type": "api-event"
+          }
+        ]
+      },
+      {
+        "Scope": "stage-completion",
+        "Validated": false,
+        "MarksComplete": true,
+        "RuleTypes": [
+          {
+            "Type": "required-tasks-completed"
+          },
+          {
+            "Type": "selected-tasks-completed"
+          },
+          {
+            "Type": "wait-for-connector"
+          },
+          {
+            "Type": "sla-status-change"
+          },
+          {
+            "Type": "api-event"
+          }
+        ]
+      },
+      {
+        "Scope": "case-exit",
+        "Validated": false,
+        "MarksComplete": false,
+        "RuleTypes": [
+          {
+            "Type": "selected-stage-completed"
+          },
+          {
+            "Type": "selected-stage-exited"
+          },
+          {
+            "Type": "wait-for-connector"
+          },
+          {
+            "Type": "sla-status-change"
+          },
+          {
+            "Type": "api-event"
+          }
+        ]
+      },
+      {
+        "Scope": "case-completion",
+        "Validated": false,
+        "MarksComplete": true,
+        "RuleTypes": [
+          {
+            "Type": "required-stages-completed"
+          },
+          {
+            "Type": "selected-stage-exited"
+          },
+          {
+            "Type": "selected-stage-completed"
+          },
+          {
+            "Type": "wait-for-connector"
+          },
+          {
+            "Type": "sla-status-change"
+          },
+          {
+            "Type": "api-event"
+          }
+        ]
+      }
+    ],
+    "Unscoped": []
+  }
+}

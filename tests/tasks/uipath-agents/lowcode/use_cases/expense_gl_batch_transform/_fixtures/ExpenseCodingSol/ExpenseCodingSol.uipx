@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "0a2f2b5a-6431-426e-aff2-16b1f45d7d9c",
+  "Projects": [
+    {
+      "Type": "Agent",
+      "ProjectRelativePath": "ExpenseCodingAgent/project.uiproj",
+      "Id": "6d1d6fd9-8a4d-48b2-80cd-547ae498ac5f"
+    }
+  ]
+}

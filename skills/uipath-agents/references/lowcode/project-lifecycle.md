@@ -259,12 +259,6 @@ Uninstall removes the resources and the folder; the deployment itself stays in `
 uip solution deploy delete "<DEPLOYMENT_NAME>" --yes --output json
 ```
 
-### Bundle for Upload
-
-```bash
-uip solution bundle . -d ./dist --output json
-```
-
 ## Resource Discovery
 
 `uip solution resources list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.

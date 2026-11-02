@@ -1,0 +1,15 @@
+{
+ "name_contains": "San Aurelio Medicaid Referral Authorization and Care Coordination",
+ "documents": {
+  "pdd": "corpus/medicaid-referral-authorization/pdd.md"
+ },
+ "systems": {
+  "TEVS": [
+   "tevs"
+  ],
+  "OCAA": [
+   "ocaa"
+  ]
+ },
+ "allow_other_category": true
+}

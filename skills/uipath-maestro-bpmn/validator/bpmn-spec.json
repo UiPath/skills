@@ -212,7 +212,7 @@
       },
       "requiresDiscovery": true,
       "isDynamic": true,
-      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <uipath:activity type=\"Orchestrator.StartAgentJob\" version=\"v1\">\n    <uipath:context>\n      <uipath:input name=\"name\" type=\"string\" value=\"=bindings.{nameBindingId}\" />\n      <uipath:input name=\"folderPath\" type=\"string\" value=\"=bindings.{folderPathBindingId}\" />\n    </uipath:context>\n    <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n    <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n  </uipath:activity>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartAgentJob\" version=\"v2\" />\n      <uipath:context>\n        <uipath:input name=\"name\" type=\"string\" value=\"=bindings.{nameBindingId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"=bindings.{folderPathBindingId}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
       "discoveryNotes": "Uses getSupportedOrchestratorTasks('agent', search) to list available agents"
     },
     "Orchestrator.BusinessRules": {

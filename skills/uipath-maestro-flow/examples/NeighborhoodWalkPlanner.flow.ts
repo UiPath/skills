@@ -6,7 +6,7 @@
  *
  * Generic scenario: ask a community-planning process for a neighborhood walk.
  */
-import { flow, agenticProcess, script, input, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, agenticProcess, script, input, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('neighborhood-walk-planner')
   .name('NeighborhoodWalkPlanner')
@@ -20,8 +20,10 @@ export default flow('neighborhood-walk-planner')
     inputs: { District: input('district') },
     returns: { RouteName: 'string' },
   }))
-  .step('recordRoute', script({
-    code: 'return "route: " + String($vars.planWalk.output.RouteName);',
-  }))
+  .step('recordRoute', script(recordRoute))
   .return({ route: out('recordRoute') })
   .build();
+
+function recordRoute($vars: FlowVars) {
+  return "route: " + String($vars.planWalk.output.RouteName);
+}

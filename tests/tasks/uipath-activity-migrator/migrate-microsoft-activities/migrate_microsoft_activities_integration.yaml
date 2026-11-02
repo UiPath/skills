@@ -1,0 +1,227 @@
+task_id: skill-migrator-migrate-microsoft-activities-integration
+description: >
+  Integration on the Microsoft.Activities.Extensions extension, and the only
+  task that starts from a Windows-Legacy project: the agent uses the
+  uipath-activity-migrator skill on a committed Legacy project whose two
+  workflows use the community dictionary activities (MicrosoftActivitiesExtensions:
+  Add To, Get From, Key Exists In, Value Exists In, Remove From and Clear
+  Dictionary; DictAct.xaml and DictActInt.xaml from Studio's Upgrade test
+  project MicroftActivitiesExtensionsSample2, folder and project renamed from
+  the leftover LegacyReadRange, main set to DictAct.xaml). Main.xaml of that
+  project is left out on purpose: it carries GetInstanceId, LoadAssembly,
+  LoadActivity and InvokeWorkflow, which the public build reports as
+  UNSUPPORTED-MICROSOFT-ACTIVITY and leaves untouched while still removing the
+  package, so an output containing it cannot load. The extension has no flags
+  and no connection, so the run is the skill's plain pipeline on a Legacy
+  source: acquire, analyze and upgrade in SARIF mode, summarize, build.
+  Measured on UiPath Upgrade Tool 25.10.1 with Microsoft.Activities.Extensions
+  2.0.6.9 and System 24.10.7: 23 activities rewritten to Invoke Code, the
+  package removed, System raised to 25.10.3 (unbracketed), target framework
+  Legacy to Windows; the summarizer reports them as 23 migrated (its
+  MICROSOFT rule family, covered by the _shared pytest). Graded on the migrated
+  artifact (Windows target, package gone, System at or above the extension's
+  floor, Invoke Code in both workflows and no dictionary activity left, the 12
+  and 11 rewrite results per workflow in the upgrade SARIF), an untouched
+  source, no uip rpa build or validate against the Legacy source, and a build
+  the harness runs itself. Windows only: the migrator is a .NET 8 desktop tool and the build
+  needs Helm. The runtime check is declined in the prompt. Nightly only: the
+  windows tag routes it to daily-windows.ps1, and the PR gate filters on smoke.
+tags: [uipath-activity-migrator, integration, mode:build, lifecycle:generate, windows]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 90
+  task_timeout: 2400
+  turn_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
+initial_prompt: |
+  Migrate the UiPath project in ./MicrosoftActivitiesExtensions with the
+  Activity Migrator. Do not run the migrated project.
+
+  The `uip` CLI is available and authenticated in this sandbox.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 8: every `uip rpa` command clears the host Studio pin, `env -u
+  # UIPATH_STUDIO_PID` in bash or `$env:UIPATH_STUDIO_PID = $null` in PowerShell.
+  # Flagged: a bare `uip rpa` at the start of a command, or after ;, &&, | or a
+  # line break, in a command that never mentions UIPATH_STUDIO_PID at all; inside
+  # Studio's terminal such a command opens the project in the user's Studio.
+  - type: command_not_executed
+    description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
+    command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    tool_name: "Bash"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 2: every analyze/upgrade run uses SARIF output. The segment idiom keeps
+  # the lookahead inside this one command: it stops at a shell operator, at the
+  # next analyze/upgrade, or at a newline that does not continue the option list
+  # (coder-eval also matches a shell-normalized haystack in which a backslash
+  # continuation survives as a bare newline). `--help` invocations are exempt.
+  - type: command_executed
+    description: "Agent ran analyze with --output-format sarif"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+analyze(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-format\s+sarif)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran upgrade into a separate output path"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+upgrade(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-path)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No analyze or upgrade run without SARIF output (console mode opens a browser and prints nothing machine-readable)"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+(analyze|upgrade)(?!(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*(--output-format\s+sarif|--help))'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent classified the SARIF with the skill's summarizer"
+    command_pattern: 'summarize-sarif\.mjs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Analyze SARIF was written under the source's .upgrade folder"
+    path: "MicrosoftActivitiesExtensions/.upgrade/analyze-latest.sarif"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Upgrade SARIF was written under the source's .upgrade folder"
+    path: "MicrosoftActivitiesExtensions/.upgrade/upgrade-latest.sarif"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The modern XAML has to come from this run's tool, not from a hand edit, and the
+  # counts are fixed by the fixture, not by the tool version: DictAct.xaml holds 12
+  # dictionary activities and DictActInt.xaml 11, so the upgrade SARIF must carry
+  # exactly that many MICROSOFT-ACTIVITY-MIGRATION-SUCCESS results per file. Decoded
+  # as UTF-8 or UTF-16, whichever the shell redirect produced.
+  - type: run_command
+    description: "Upgrade SARIF reports the 12 and 11 dictionary rewrites of the two workflows"
+    command: |-
+      python -c "import json, sys; raw = open('MicrosoftActivitiesExtensions/.upgrade/upgrade-latest.sarif', 'rb').read(); text = raw.decode('utf-16') if raw[:2] in (bytes([255, 254]), bytes([254, 255])) else raw.decode('utf-8-sig'); doc = json.loads(text[text.find('{'):text.rfind('}') + 1]); hits = {}; [hits.__setitem__(f, hits.get(f, 0) + 1) for f in (str((((r.get('locations') or [{}])[0].get('physicalLocation') or {}).get('artifactLocation') or {}).get('uri') or '').replace(chr(92), '/').split('/')[-1] for r in doc['runs'][0]['results'] if r.get('ruleId') == 'MICROSOFT-ACTIVITY-MIGRATION-SUCCESS')]; print(sorted(hits.items())); sys.exit(0 if all(hits.get(f) == n for f, n in {'DictAct.xaml': 12, 'DictActInt.xaml': 11}.items()) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Legacy to Windows, the community package removed, System raised to at least
+  # the extension's 25.6.1 floor (25.10.3 on the measured build, written without
+  # brackets, so both forms are accepted).
+  - type: file_check
+    description: "Output project.json is a Windows project without Microsoft.Activities.Extensions and with System at or above 25.6"
+    path: "MicrosoftActivitiesExtensions_Upgraded/project.json"
+    patterns:
+      - pattern: '"targetFramework"\s*:\s*"Windows"'
+        must_match: true
+      - pattern: 'Microsoft\.Activities'
+        must_match: false
+      - pattern: '"UiPath\.System\.Activities"\s*:\s*"\[?(?:25\.(?:[6-9]|1\d)|2[6-9]\.\d+)\.\d+\]?"'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Each dictionary activity became an Invoke Code with working dictionary code;
+  # `ForEach` stays (System). Namespace prefixes are the tool's choice, so the
+  # element name is matched under any prefix.
+  - type: file_check
+    description: "DictAct.xaml carries Invoke Code and no dictionary activity"
+    path: "MicrosoftActivitiesExtensions_Upgraded/DictAct.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:InvokeCode\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:(?:AddToDictionary|GetFromDictionary|KeyExistsInDictionary|ValueExistsInDictionary|RemoveFromDictionary|ClearDictionary)\s'
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "DictActInt.xaml carries Invoke Code and no dictionary activity"
+    path: "MicrosoftActivitiesExtensions_Upgraded/DictActInt.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:InvokeCode\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:(?:AddToDictionary|GetFromDictionary|KeyExistsInDictionary|ValueExistsInDictionary|RemoveFromDictionary|ClearDictionary)\s'
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 5: the source project is never written to (only its .upgrade folder).
+  # REFERENCE_DIR is read inside Python so the check works under cmd.exe and /bin/sh.
+  - type: run_command
+    description: "Source project.json and both XAMLs are byte-identical to the fixture"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'MicrosoftActivitiesExtensions'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('MicrosoftActivitiesExtensions', f), shallow=False) for f in ('DictAct.xaml', 'DictActInt.xaml', 'project.json')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The source is Legacy: `uip rpa build` and `validate` refuse it and start Helm
+  # for nothing. The only project the agent may build or validate is the output.
+  # The source folder name is matched as a whole token (absolute or relative path,
+  # trailing slash, a file inside it), and the _Upgraded output never matches. The
+  # segment also stops at `>`, so a redirect into the source's .upgrade folder is
+  # not read as a build target.
+  - type: command_not_executed
+    description: "Agent did not build or validate the Legacy source project"
+    command_pattern: '(?:uip|\$UIP)\s+rpa\s+(?:build|validate)\b(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||>|\s(?:uip|\$UIP)\s)[\s\S])*(?<![\w.-])MicrosoftActivitiesExtensions(?![\w-]))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 8, graded as an outcome: the harness builds the output itself with the
+  # host Studio pin cleared. Absolute path per the rpa-tool double-resolve bug;
+  # `shutil.which` resolves the `uip.cmd` shim on Windows.
+  - type: run_command
+    description: "uip rpa build exits 0 against the migrated output"
+    command: |-
+      python -c "import subprocess, os, sys, shutil, time; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); run = lambda: subprocess.run([uip, 'rpa', 'build', os.path.abspath('MicrosoftActivitiesExtensions_Upgraded'), '--output', 'json'], env=env, capture_output=True); r = next((r for r in (time.sleep(10 * bool(i)) or run() for i in range(12)) if r.returncode == 0 or b'RetryLater' not in r.stdout), None) or run(); sys.stdout.buffer.write(r.stdout); sys.stderr.buffer.write(r.stderr); sys.exit(r.returncode)"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Rule 11: the prompt declined the run; the agent must not start one.
+  - type: command_not_executed
+    description: "Agent did not run or debug the migrated project"
+    command_pattern: 'uip\s+rpa\s+(run|debug)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not resolve package versions through the headless Studio (refuses Legacy projects, starts Helm for nothing)"
+    command_pattern: 'uip\s+rpa\s+packages\s+versions'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Advisory (weight 0, so informational: excluded from the score and the gate).
+  # Step 2 says to omit the UIAutomation flag when the project has no UIAutomation
+  # dependency. The tool accepts and ignores it, so the outcome is invisible; this
+  # only records the convention.
+  - type: command_not_executed
+    description: "Advisory: no --uia-package-version on a project without UIAutomation"
+    command_pattern: '--uia-package-version'
+    weight: 0
+    pass_threshold: 0

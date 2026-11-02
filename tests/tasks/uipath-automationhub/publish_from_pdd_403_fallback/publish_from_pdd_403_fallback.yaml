@@ -155,6 +155,13 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: command_not_executed
+    description: "Agent did not open the harness's call log, snapshot or setup scripts with the Read tool"
+    tool_name: "Read"
+    command_pattern: '(\.uip-recorder/|\.ah-tenant\.json|seed\.json|_setup/)'
+    weight: 1.0
+    pass_threshold: 1.0
+
 post_run:
   - command: "python3 _setup/cleanup_ah.py"
     timeout: 300

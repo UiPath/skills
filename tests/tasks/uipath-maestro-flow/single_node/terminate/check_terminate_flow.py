@@ -13,10 +13,11 @@ from _shared.flow_check import (  # noqa: E402
     find_project_dir,
     run_debug,
 )
+from _shared.flow_graph import FlowGraph  # noqa: E402
 
 
 def _check_parallel_branches(project_dir):
-    """Verify 2+ edges leave the trigger node (parallel branches)."""
+    """Verify 2+ branches leave the trigger node, directly or through a merge fork."""
     flows = glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
     if not flows:
         sys.exit("FAIL: No .flow file found")
@@ -24,11 +25,11 @@ def _check_parallel_branches(project_dir):
     with open(flows[0]) as f:
         flow = json.load(f)
 
-    edges = flow.get("edges", [])
+    graph = FlowGraph(flow)
     trigger_ids = {n["id"] for n in flow.get("nodes", []) if "trigger" in n.get("type", "")}
-    outgoing = [e for e in edges if e.get("sourceNodeId") in trigger_ids]
+    outgoing = [e for t in trigger_ids for e in graph.fan_out(t)]
     if len(outgoing) < 2:
-        sys.exit(f"FAIL: Expected 2+ edges from trigger for parallel branches, found {len(outgoing)}")
+        sys.exit(f"FAIL: Expected 2+ parallel branches from trigger, found {len(outgoing)}")
 
     print("OK: Parallel branches from trigger verified")
 

@@ -1,0 +1,242 @@
+task_id: skill-migrator-migrate-gsuite-gmail-integration
+description: >
+  Integration on the GSuite extension: the agent uses the uipath-activity-migrator
+  skill on a committed Windows-framework project whose three GMail workflows use
+  the classic GSuite activities (GSuiteMigration: Send Email, Get Mail Messages,
+  Change Labels inside GSuite Application Scope; Studio's own Upgrade test
+  workflows, re-pinned to release packages; Main.xaml is an empty entry point).
+  Fixture deviations from the Studio original: the UiPath.MicrosoftOffice365
+  dependency, pinned there to a preview build and unused by the GMail workflows,
+  is dropped although their ReferencesForImplementation still name the assembly
+  (the build tolerates it); the scope's P12 password literal is {x:Null} (KeyType
+  is JSON, so it is unused). Runs the GSuite guide's three hooks without user
+  questions: the prompt supplies the Gmail connection and the target GSuite
+  package, so the agent writes the connection config, passes it with the package
+  version to analyze and upgrade in SARIF mode, summarizes, and builds the
+  output. The guide calls this extension preview-gated; on the public 25.10.1
+  build the --gsuite-* flags are listed and the migrators run, and this task is
+  the regression signal for that. Measured on UiPath Upgrade Tool 25.10.1 with
+  GSuite 3.5.10 to 3.12.10 and System 25.10.5: 12 activities migrate, 0 are left
+  classic, 6 need attention; the modern activities take their connection from
+  the scope, so ConnectionId stays {x:Null} on every activity (Studio's expected
+  result agrees) and the connection config is graded as the skill's prescribed
+  artifact, not as a tool outcome. Graded on the migrated artifact (package pin,
+  modern tags, no classic GSuite tags), the config artifact, an untouched source,
+  and a build the harness runs itself. Windows only: the migrator is a .NET 8
+  desktop tool and the build needs Helm. The runtime check is declined in the
+  prompt because the connection is synthetic. Nightly only: the windows tag
+  routes it to daily-windows.ps1, and the PR gate filters on smoke.
+
+tags: [uipath-activity-migrator, integration, mode:build, lifecycle:generate, windows]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 90
+  task_timeout: 2400
+  turn_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
+initial_prompt: |
+  Migrate the UiPath project in ./GSuiteMigration with the Activity Migrator.
+  Use the Integration Service connection 9b7e2d41-3c6a-4f8e-b215-6d0a9c3e7f52
+  for Gmail and target GSuite Activities 3.12.10. Do not run the migrated
+  project.
+
+  The `uip` CLI is available and authenticated in this sandbox.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 8: every `uip rpa` command clears the host Studio pin, `env -u
+  # UIPATH_STUDIO_PID` in bash or `$env:UIPATH_STUDIO_PID = $null` in PowerShell.
+  # Flagged: a bare `uip rpa` at the start of a command, or after ;, &&, | or a
+  # line break, in a command that never mentions UIPATH_STUDIO_PID at all; inside
+  # Studio's terminal such a command opens the project in the user's Studio.
+  - type: command_not_executed
+    description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
+    command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    tool_name: "Bash"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 2: every analyze/upgrade run uses SARIF output. The segment idiom keeps
+  # the lookahead inside this one command: it stops at a shell operator, at the
+  # next analyze/upgrade, or at a newline that does not continue the option list
+  # (coder-eval also matches a shell-normalized haystack in which a backslash
+  # continuation survives as a bare newline). `--help` invocations are exempt.
+  - type: command_executed
+    description: "Agent ran analyze with --output-format sarif"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+analyze(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-format\s+sarif)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran upgrade into a separate output path"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+upgrade(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-path)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No analyze or upgrade run without SARIF output (console mode opens a browser and prints nothing machine-readable)"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+(analyze|upgrade)(?!(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*(--output-format\s+sarif|--help))'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # GSuite guide Hook 1: the connection goes through a config file under the
+  # source's .upgrade folder. Scope-provided activities keep ConnectionId {x:Null}
+  # whatever the config says, so the artifact is graded, not a tool outcome: some
+  # JSON under .upgrade maps the Gmail connector (or the wildcard fallback) to the
+  # prompt's connection. The file name is the guide's suggestion, not a contract;
+  # the check is a regex over the file text, so a stray malformed JSON cannot fail it;
+  # the file is decoded as UTF-8 or UTF-16 (PowerShell 5.1 redirects write UTF-16).
+  - type: run_command
+    description: "A connection config under .upgrade maps the Gmail connector to the connection from the prompt"
+    command: |-
+      python -c "import glob, re, sys; G = '9b7e2d41-3c6a-4f8e-b215-6d0a9c3e7f52'; rx = re.compile(r'\x22[^\x22]*(?:uipath-google-gmail|[*] > [*])[^\x22]*\x22\s*:\s*[{][^{}]*\x22ConnectionId\x22\s*:\s*\x22' + G + r'\x22'); ok = any(rx.search((lambda b: b.decode('utf-16') if b[:2] in (bytes([255, 254]), bytes([254, 255])) else b.decode('utf-8-sig', 'replace'))(open(f, 'rb').read())) for f in glob.glob('GSuiteMigration/.upgrade/*.json')); print(ok); sys.exit(0 if ok else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent classified the SARIF with the skill's summarizer"
+    command_pattern: 'summarize-sarif\.mjs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Analyze SARIF was written under the source's .upgrade folder"
+    path: "GSuiteMigration/.upgrade/analyze-latest.sarif"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Upgrade SARIF was written under the source's .upgrade folder"
+    path: "GSuiteMigration/.upgrade/upgrade-latest.sarif"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The modern XAML has to come from this run's tool, not from a hand edit: the
+  # upgrade SARIF carries at least one GSuite migration result for every GMail
+  # workflow. Decoded as UTF-8 or UTF-16, whichever the shell redirect produced.
+  - type: run_command
+    description: "Upgrade SARIF names a migration result in each of the three GMail workflows"
+    command: |-
+      python -c "import json, sys; raw = open('GSuiteMigration/.upgrade/upgrade-latest.sarif', 'rb').read(); text = raw.decode('utf-16') if raw[:2] in (bytes([255, 254]), bytes([254, 255])) else raw.decode('utf-8-sig'); doc = json.loads(text[text.find('{'):text.rfind('}') + 1]); hits = {}; [hits.__setitem__(f, hits.get(f, 0) + 1) for f in (str((((r.get('locations') or [{}])[0].get('physicalLocation') or {}).get('artifactLocation') or {}).get('uri') or '').replace(chr(92), '/').split('/')[-1] for r in doc['runs'][0]['results'] if (r.get('ruleId') or '').endswith('-ACTIVITY-MIGRATION'))]; print(sorted(hits.items())); sys.exit(0 if set(['ChangeLabels.xaml', 'GetMailMessages.xaml', 'SendEmail.xaml']) <= set(hits) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The requested GSuite version proves --gsuite-package-version bound: without
+  # the flag the tool moves the pin to its 3.8.10 default instead.
+  - type: file_check
+    description: "Output project.json is a Windows project with GSuite at the requested 3.12.10"
+    path: "GSuiteMigration_Upgraded/project.json"
+    patterns:
+      - pattern: '"targetFramework"\s*:\s*"Windows"'
+        must_match: true
+      - pattern: '"UiPath\.GSuite\.Activities"\s*:\s*"\[3\.12\.10\]"'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The tool rewrote each classic GSuite activity into its connector-based modern
+  # activity; the `GSuiteApplicationScope` wrapper and `LogMessage` stay. Namespace
+  # prefixes are the tool's choice, so the element name is matched under any prefix.
+  - type: file_check
+    description: "Send Email became the modern Send Email"
+    path: "GSuiteMigration_Upgraded/GMail/SendEmail.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:SendEmailConnections\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:SendEmail\s'
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Get Mail Messages became Get Email List"
+    path: "GSuiteMigration_Upgraded/GMail/GetMailMessages.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:GetEmailListConnections\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:GetMailMessages\s'
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Change Labels became Apply and Remove Email Labels"
+    path: "GSuiteMigration_Upgraded/GMail/ChangeLabels.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:ApplyEmailLabelsConnections\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:RemoveEmailLabelsConnections\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:ChangeLabels\s'
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 5: the source project is never written to (only its .upgrade folder).
+  # REFERENCE_DIR is read inside Python so the check works under cmd.exe and /bin/sh.
+  - type: run_command
+    description: "Source project.json, entry-points.json and the four XAMLs are byte-identical to the fixture"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'GSuiteMigration'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('GSuiteMigration', f), shallow=False) for f in ('Main.xaml', os.path.join('GMail', 'SendEmail.xaml'), os.path.join('GMail', 'GetMailMessages.xaml'), os.path.join('GMail', 'ChangeLabels.xaml'), 'project.json', 'entry-points.json')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 8, graded as an outcome: the harness builds the output itself with the
+  # host Studio pin cleared. Absolute path per the rpa-tool double-resolve bug;
+  # `shutil.which` resolves the `uip.cmd` shim on Windows.
+  - type: run_command
+    description: "uip rpa build exits 0 against the migrated output"
+    command: |-
+      python -c "import subprocess, os, sys, shutil, time; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); run = lambda: subprocess.run([uip, 'rpa', 'build', os.path.abspath('GSuiteMigration_Upgraded'), '--output', 'json'], env=env, capture_output=True); r = next((r for r in (time.sleep(10 * bool(i)) or run() for i in range(12)) if r.returncode == 0 or b'RetryLater' not in r.stdout), None) or run(); sys.stdout.buffer.write(r.stdout); sys.stderr.buffer.write(r.stderr); sys.exit(r.returncode)"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Rule 11: the prompt declined the run; the agent must not start one.
+  - type: command_not_executed
+    description: "Agent did not run or debug the migrated project"
+    command_pattern: 'uip\s+rpa\s+(run|debug)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not resolve package versions through the headless Studio (refuses Legacy projects, starts Helm for nothing)"
+    command_pattern: 'uip\s+rpa\s+packages\s+versions'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Advisory (weight 0, so informational: excluded from the score and the gate).
+  # Step 2 says to omit the UIAutomation flag when the project has no UIAutomation
+  # dependency. The tool accepts and ignores it, so the outcome is invisible; this
+  # only records the convention.
+  - type: command_not_executed
+    description: "Advisory: no --uia-package-version on a project without UIAutomation"
+    command_pattern: '--uia-package-version'
+    weight: 0
+    pass_threshold: 0

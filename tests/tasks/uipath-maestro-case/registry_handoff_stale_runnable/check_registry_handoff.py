@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.case_check import registry_audit_entries  # noqa: E402
+from _shared.case_check import read_registry_cache, registry_audit_entries  # noqa: E402
 
 
 # Correct resolution expected AFTER the stale cache is discarded and re-resolved from the
@@ -48,7 +48,6 @@ assert len(entries) == len(EXPECTED), (
     f"expected one fresh audit entry per SDD task, got {len(entries)}"
 )
 
-cache_root = Path.home() / ".uip" / "case-resources"
 
 for name, expected in EXPECTED.items():
     matching = [e for e in entries if str(e.get("searchQuery", "")).strip() == name]
@@ -76,7 +75,7 @@ for name, expected in EXPECTED.items():
         f"{name} did not record cacheFile {expected['cache_file']}"
     )
 
-    cache = load_json(cache_root / expected["cache_file"])
+    cache = read_registry_cache(expected["cache_file"])
     exact_matches = [
         r for r in cache
         if str(r.get("name", "")).strip().casefold() == name.casefold()

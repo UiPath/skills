@@ -1,0 +1,25 @@
+{
+ "name_contains": "IT Incident Management (ITIL v4)",
+ "documents": {
+  "pdd": "corpus/it-incident-management/pdd.md"
+ },
+ "systems": {
+  "ServiceNow": [],
+  "Jira Service Management": [
+   "jira"
+  ],
+  "Microsoft Teams": [
+   "teams"
+  ]
+ },
+ "optional_systems": {
+  "ISO 27001 Information Security Incident Register": [
+   "iso 27001",
+   "incident register"
+  ],
+  "UiPath Case Management": [
+   "case management"
+  ]
+ },
+ "allow_other_category": true
+}

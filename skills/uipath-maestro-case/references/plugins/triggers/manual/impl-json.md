@@ -79,7 +79,7 @@ Emit the canonical first-trigger shape:
     "description": "<description from sdd.md or LLM-inferred>",
     "typeVersion": "1.0.0",
     "display": { "label": "<displayName or \"Trigger 1\">" },
-    "inputs": { "serviceType": "None" }
+    "inputs": { "serviceType": "None", "entryPointId": "<entry-points.json uniqueId>" }
   }
 }
 ```
@@ -99,12 +99,12 @@ Emit a secondary trigger with `data.parentElement` included:
     "description": "<description from sdd.md or LLM-inferred>",
     "typeVersion": "1.0.0",
     "display": { "label": "<displayName>" },
-    "inputs": { "serviceType": "None" }
+    "inputs": { "serviceType": "None", "entryPointId": "<entry-points.json uniqueId>" }
   }
 }
 ```
 
-**`data.inputs.serviceType` is `"None"` for manual triggers.** Older schemas may omit `inputs` entirely — both forms are valid when reading. Always emit `"inputs": {"serviceType": "None"}` when writing.
+**`data.inputs.serviceType` is `"None"` for manual triggers.** Older schemas may omit `inputs` entirely — both forms are valid when reading. Always emit `"inputs": {"serviceType": "None", "entryPointId": "<uniqueId>"}` when writing — `entryPointId` equals the `uniqueId` of the entry-points.json entry below. See [case-schema.md § Trigger Node](../../../case-schema.md#a-trigger-node--uipathcasetrigger) for the `entryPointId` rule.
 
 ## Recipe — `entry-points.json` (append to `entryPoints`)
 
@@ -147,6 +147,7 @@ After writing, confirm:
 - `nodes[].data.typeVersion === "1.0.0"`.
 - `nodes[].data.parentElement` present in Case B, absent in Case A. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 19).
 - `nodes[].data.inputs.serviceType === "None"` (or `inputs` absent in older schemas — both are valid).
+- `nodes[].data.inputs.entryPointId` equals the `uniqueId` of this trigger's `entry-points.json` entry.
 - **`schema.edges` is still `[]`** (Rule 21) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 

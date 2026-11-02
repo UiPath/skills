@@ -1,0 +1,39 @@
+{
+ "name_contains": "BCS Commercial Credit Evaluation Process",
+ "documents": {
+  "pdd": "corpus/sdd-commercial-credit-evaluation/pdd.md",
+  "sdd": "corpus/sdd-commercial-credit-evaluation/sdd.md"
+ },
+ "systems": {
+  "Salesforce": [],
+  "Equifax": [],
+  "LAMS": [
+   "lams"
+  ],
+  "KYRA": [
+   "kyra"
+  ],
+  "Power BI": [
+   "power bi",
+   "powerbi"
+  ]
+ },
+ "optional_systems": {
+  "Tax Registry": [
+   "tax registry"
+  ],
+  "Financial-analysis application": [
+   "financial-analysis",
+   "financial analysis"
+  ],
+  "Email / approved customer channel": [
+   "email",
+   "outlook"
+  ],
+  "Case and evidence workspace": [
+   "case",
+   "evidence"
+  ]
+ },
+ "allow_other_category": true
+}
