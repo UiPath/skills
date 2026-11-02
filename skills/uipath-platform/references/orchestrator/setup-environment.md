@@ -308,7 +308,7 @@ Notes:
 - Slot flags (`--unattended-slots`, `--headless-slots`, `--non-production-slots`, `--testing-slots`) must be whole numbers `>= 0` (validated client-side; `0` is allowed).
 - `machines delete` removes the machine **and** any folder assignments it has (the assignments are re-creatable config, so there is no `--force` gate). It does not require unassigning first.
 - Each folder accepts **one** Cloud Robots / Serverless machine. Trying to assign a second serverless to the same folder returns `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.`
-- `machines list` defaults to all machines visible to the user. With `--folder-path`/`--folder-key` it returns only machines assigned to that folder, each with `IsAssignedToFolder`. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.) — note `--all-fields` emits the raw camelCase DTO.
+- `machines list` defaults to all machines visible to the user. With `--folder-path`/`--folder-key` it returns only machines assigned to that folder, each with `IsAssignedToFolder`. Use `--all-fields` for the raw DTO including slot subtypes (`AutomationCloudSlots`, `AutomationCloudTestAutomationSlots`, etc.) — stdout prints raw keys PascalCase too.
 
 ### Step 8: Configure Licenses
 
