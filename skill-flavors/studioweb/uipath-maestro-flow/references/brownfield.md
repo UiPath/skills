@@ -82,3 +82,11 @@ so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:subflow-layout-sdk-upgrade:start-->
 so tell the user, since Studio Web owns the SDK copy).
 <!--skill-flavor:subflow-layout-sdk-upgrade:end-->
+
+<!--skill-flavor:fresh-decompile-cleanup:start-->
+<!--skill-flavor:fresh-decompile-cleanup:end-->
+
+<!--skill-flavor:supplied-source:start-->
+In Studio Web the target `.flow` is the source: use the round trip in
+[SKILL.md — Lifecycle](../SKILL.md#lifecycle).
+<!--skill-flavor:supplied-source:end-->

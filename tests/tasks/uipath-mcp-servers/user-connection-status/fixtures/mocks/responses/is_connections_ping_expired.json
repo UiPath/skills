@@ -1,0 +1,7 @@
+{
+  "Result": "Failure",
+  "Message": "Connection '7a1b2c3d-0000-4000-8000-0000000000aa' is not enabled (status: Expired).",
+  "Instructions": "Run 'uip is connections edit 7a1b2c3d-0000-4000-8000-0000000000aa' to re-authenticate the expired connection.",
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}

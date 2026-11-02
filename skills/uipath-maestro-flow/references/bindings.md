@@ -94,6 +94,15 @@ pick one: `prepare … --connection <name>` lists each candidate with its
 `--connection-id <id>` and folder — pass the id of the one in the folder you mean,
 and `prepare` still writes both entries into `bindings.json`.
 
+`prepare` binds one connection from your own folder, `--connection-folder` or
+the solution's record, and prints `connection: <Name> (<id>)` and why. When it
+refuses with several candidates, ask a user who can answer. Headless, pass
+`--connection-folder` for the folder the request names. With no folder named,
+or when that refuses (no match or several), pass the first candidate line's
+`--connection-id`: that connection is guessed. Do not debug on it, report the
+flow unverified, and list the pick under Open questions as **[REQUIRED]**
+([completion output](author.md#completion-output)).
+
 `Folder` is the folder's own name, not its path. A requested
 `Shared/uipath-maestro-flow` is the row whose `Folder` is `uipath-maestro-flow`,
 not `Shared`. When the request names a folder, pass that last segment to
