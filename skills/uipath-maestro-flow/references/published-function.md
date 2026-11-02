@@ -7,7 +7,8 @@ as its own resource. `publishedFunction()` invokes one as a single step
 (`uipath.core.function.<key>`, dispatched as
 `Orchestrator.ExecuteFunctionAsync`).
 
-Signature: `publishedFunction({ key, name, folderPath, inputs?, returns? })`.
+Signature: `publishedFunction({ key, name, folderPath?, location?, projectId?, inputs?, returns? })`.
+`folderPath` is required for a published function; a sibling Function project of the same solution takes `location: 'in-solution'` and `projectId` instead ([below](#in-solution-sibling)).
 
 ```ts
 .step('echo', publishedFunction({
@@ -51,6 +52,37 @@ Three fields, none of them derivable:
 
 Two steps on the same function share ONE binding pair, exactly as the other
 published families do.
+
+## In-solution sibling
+
+To call a Function project that sits in the SAME solution as the Flow (not a
+deployed function), set `location: 'in-solution'` and `projectId`, and omit
+`folderPath`:
+
+```ts
+.step('readFile', publishedFunction({ key: localResourceKey, name: '<FunctionProject>',
+  location: 'in-solution', projectId: localProjectKey,
+  inputs: { file: input('documentFile') }, returns: { text: 'string' } }))
+```
+
+- **Where the two ids come from.** `uip solution projects add <FunctionProject>`
+  writes `resources/solution_folder/process/function/<FunctionProject>.json`:
+  `resource.key` → `key`, `resource.projectKey` → `projectId`.
+  `uip maestro flow registry list --local` from the Flow project shows the same
+  key as the node type's suffix. Never invent either.
+- **No `folderPath`.** The sibling has no folder until the solution is deployed.
+- **One function per project.** The resource is per project, and the step names
+  no entry point, so give each function the Flow calls its own project.
+- **Run it deployed.** `uip maestro flow debug` does not run a JS/TS Function
+  sibling yet: Studio Web's import drops the project, and the step faults with
+  `170007` (process not found). Pack, publish and deploy the solution, then
+  `uip maestro flow process run`.
+
+`check` refuses the wrong shapes: `FUNCTION_LOCAL_NO_PROJECT_ID` (no
+`projectId`), `FUNCTION_LOCAL_PROJECT_ID_NOT_GUID` (`projectId` is not the
+project GUID), `FUNCTION_LOCAL_HAS_FOLDER` (`folderPath` set as well; drop it,
+or drop `location` to call the published copy). `FUNCTION_NO_FOLDER` applies to
+published steps only.
 
 ## Declaring what it returns
 
