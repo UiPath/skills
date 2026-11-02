@@ -7,7 +7,13 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from bpmn_check import NS  # noqa: E402
-from check_consent_gate import Upload, unconsented, wired_task  # noqa: E402
+from check_consent_gate import (  # noqa: E402
+    MOCK_REACHED,
+    Upload,
+    invented_keys,
+    unconsented,
+    wired_task,
+)
 
 READS = [
     "maestro bpmn validate InvoiceApproval/InvoiceApproval.bpmn --output json",
@@ -77,3 +83,37 @@ def test_wired_rejects_other_wrapper() -> None:
 def test_wired_rejects_other_task() -> None:
     root = _process(_wrapper("Notify finance", "Orchestrator.ExecuteApiWorkflowAsync"))
     assert not wired_task(root)
+
+
+def test_mock_reached_needs_a_bpmn_call() -> None:
+    assert any(MOCK_REACHED.search(a) for a in READS)
+    assert not any(MOCK_REACHED.search(a) for a in ["track --hook", "--version"])
+
+
+def test_unresolved_binding_passes() -> None:
+    task = _wrapper("Validate invoice", "Orchestrator.ExecuteApiWorkflowAsync")
+    bindings = (
+        '<bpmn:extensionElements><uipath:bindings version="v1">'
+        '<uipath:binding id="Binding_1" resourceKey="&lt;RELEASE_KEY&gt;" />'
+        "</uipath:bindings></bpmn:extensionElements>"
+    )
+    assert invented_keys(_process(bindings + task)) == []
+
+
+def test_resolved_binding_fails() -> None:
+    key = "3f2a9c1e-0b4d-4e6f-8a7b-9c0d1e2f3a4b"
+    task = _wrapper("Validate invoice", "Orchestrator.ExecuteApiWorkflowAsync")
+    bindings = (
+        '<bpmn:extensionElements><uipath:bindings version="v1">'
+        f'<uipath:binding id="Binding_1" resourceKey="{key}" />'
+        "</uipath:bindings></bpmn:extensionElements>"
+    )
+    assert invented_keys(_process(bindings + task)) == [key]
+
+
+def test_calls_fail_without_a_call_log(tmp_path, monkeypatch) -> None:
+    from check_consent_gate import check_calls
+
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit):
+        check_calls(Upload.ALLOWED)

@@ -137,8 +137,9 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    adopted at 2a, or edited in place (brownfield) — because upload overwrites
    the cloud solution matching the local `.uipx` SolutionId. Confirm it where
    that solution is chosen (2a); when 2a did not run, confirm before the 4g
-   upload. When the request says not to ask, skip each action this rule
-   gates that the request does not name, and report it blocked on consent.
+   upload. When the request says not to ask, skip each action above that
+   needs consent or confirmation and that the request does not name, and
+   report it blocked on consent; the authorized upload still runs.
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See

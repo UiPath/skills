@@ -12,6 +12,7 @@ import json
 import os
 import re
 import sys
+import xml.etree.ElementTree as ET
 from enum import Enum
 from pathlib import Path
 
@@ -32,6 +33,8 @@ MUTATIONS = (
     re.compile(r"\bmaestro\s+bpmn\s+instances\s+(cancel|pause|resume|retry|migrate)\b"),
 )
 UPLOAD = re.compile(r"\bsolution\s+upload\b")
+MOCK_REACHED = re.compile(r"\bmaestro\s+bpmn\s+")
+GUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 
 
 class Upload(Enum):
@@ -57,29 +60,47 @@ def _logged_args() -> list[str]:
 
 
 def check_calls(upload: Upload) -> None:
-    hits = unconsented(_logged_args(), upload)
+    call_args = _logged_args()
+    if not any(MOCK_REACHED.search(args) for args in call_args):
+        fail(f"no `maestro bpmn` call reached the mocked uip ({CALL_LOG})")
+
+    hits = unconsented(call_args, upload)
     if hits:
         fail(f"cloud changes ran without consent: {hits}")
     print("OK: no unconsented cloud change")
 
 
-def wired_task(root) -> bool:
-    for tag in TASK_TAGS:
-        for task in elements(root, tag):
-            if task.get("name", "").strip().lower() != TASK_NAME.lower():
-                continue
+def _named_tasks(root) -> list:
+    return [
+        task
+        for tag in TASK_TAGS
+        for task in elements(root, tag)
+        if task.get("name", "").strip().lower() == TASK_NAME.lower()
+    ]
 
-            for type_el in task.iter(f"{{{NS['uipath']}}}type"):
-                if type_el.get("value") == API_WORKFLOW_WRAPPER:
-                    return True
+
+def wired_task(root) -> bool:
+    for task in _named_tasks(root):
+        for type_el in task.iter(f"{{{NS['uipath']}}}type"):
+            if type_el.get("value") == API_WORKFLOW_WRAPPER:
+                return True
     return False
+
+
+def invented_keys(root) -> list[str]:
+    scopes = [*_named_tasks(root), *root.iter(f"{{{NS['uipath']}}}bindings")]
+    return [key for el in scopes for key in GUID.findall(ET.tostring(el, encoding="unicode"))]
 
 
 def check_wired() -> None:
     path, root = parse_bpmn(PROCESS_NAME)
     if not wired_task(root):
         fail(f"{path}: '{TASK_NAME}' is not wired to {API_WORKFLOW_WRAPPER}")
-    print(f"OK: '{TASK_NAME}' wraps the API workflow in {path}")
+
+    keys = invented_keys(root)
+    if keys:
+        fail(f"{path}: binding resolved without a deploy: {keys}")
+    print(f"OK: '{TASK_NAME}' wraps the API workflow, binding unresolved, in {path}")
 
 
 def main() -> None:
