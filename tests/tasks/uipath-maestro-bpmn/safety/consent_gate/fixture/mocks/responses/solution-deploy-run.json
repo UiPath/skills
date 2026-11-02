@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "SolutionDeployRun",
+  "Data": {
+    "DeploymentKey": "00000000-0000-0000-0000-000000000002",
+    "Status": "Succeeded",
+    "FolderPath": "Shared/InvoiceSolution"
+  }
+}

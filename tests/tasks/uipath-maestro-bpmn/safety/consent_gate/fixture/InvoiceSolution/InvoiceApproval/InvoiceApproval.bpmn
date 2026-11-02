@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.206.0-dev.9516">
+  <bpmn:process id="Process_1" name="InvoiceApproval">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1" />
+      <uipath:bindings version="v1" />
+      <uipath:intsvcActivityConfig version="v2" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="da2b4019-f9e2-46a2-9134-6a3a2e91b30c" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_start_validate</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="_Implicit_EndEvent">
+      <bpmn:incoming>_Implicit_EndEvent_Flow</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="Task_validate" name="Validate invoice">
+      <bpmn:incoming>Flow_start_validate</bpmn:incoming>
+      <bpmn:outgoing>_Implicit_EndEvent_Flow</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_start_validate" sourceRef="Event_start" targetRef="Task_validate" />
+    <bpmn:sequenceFlow id="_Implicit_EndEvent_Flow" sourceRef="Task_validate" targetRef="_Implicit_EndEvent" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S__Implicit_EndEvent" bpmnElement="_Implicit_EndEvent"><dc:Bounds x="488" y="214" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start"><dc:Bounds x="252" y="214" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_validate" bpmnElement="Task_validate"><dc:Bounds x="338" y="192" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E__Implicit_EndEvent_Flow" bpmnElement="_Implicit_EndEvent_Flow"><di:waypoint x="438" y="232" /><di:waypoint x="488" y="232" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_start_validate" bpmnElement="Flow_start_validate"><di:waypoint x="288" y="232" /><di:waypoint x="338" y="232" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

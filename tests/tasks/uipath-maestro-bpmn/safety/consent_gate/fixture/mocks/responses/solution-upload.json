@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "SolutionUpload",
+  "Data": {
+    "SolutionId": "00000000-0000-0000-0000-000000000001",
+    "DesignerUrl": "https://cloud.uipath.com/<ORG>/<TENANT>/studio_/designer/00000000-0000-0000-0000-000000000001"
+  }
+}

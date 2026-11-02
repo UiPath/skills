@@ -1,0 +1,17 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "a909db4b-7567-4341-8e2b-522fb8fa97ab",
+  "Projects": [
+    {
+      "Type": "processOrchestration",
+      "ProjectRelativePath": "InvoiceApproval/project.uiproj",
+      "Id": "6bac03f1-8aa7-4dd0-8b76-6fcdb70392f2"
+    },
+    {
+      "Type": "Api",
+      "ProjectRelativePath": "ValidateInvoice/project.uiproj",
+      "Id": "0d93f9c4-5b95-4dfb-9dd6-65998e40a40b"
+    }
+  ]
+}
