@@ -63,7 +63,7 @@ success_criteria:
 
   - type: run_command
     description: "validate re-run confirms a valid connector (exit 0)"
-    command: "uip is connectors builder validate --connector-dir periodic-design-acme-acmechatbridge"
+    command: "CD=$(find . -type d -name periodic-design-acme-acmechatbridge -not -path '*/node_modules/*' | head -1); uip is connectors builder validate --connector-dir \"$CD\""
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
@@ -72,7 +72,7 @@ success_criteria:
   # Primary outcome: the connector's own hooks translate both ways.
   - type: run_command
     description: "check_byo_connector.py: flavor path, tag, auth header, and the hooks' translation both ways"
-    command: "python3 $REFERENCE_DIR/check_byo_connector.py periodic-design-acme-acmechatbridge --hooks"
+    command: "CD=$(find . -type d -name periodic-design-acme-acmechatbridge -not -path '*/node_modules/*' | head -1); python3 $REFERENCE_DIR/check_byo_connector.py \"$CD\" --hooks"
     timeout: 120
     expected_exit_code: 0
     weight: 6.0

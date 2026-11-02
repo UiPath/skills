@@ -25,13 +25,13 @@ Hooks are where a BYO LLM connector does its work: the **preRequest** hook turns
 | `request_vendor_headers` | write | Headers sent to the vendor (merged over the connector's header parameters) |
 | `request_vendor_path` | write | Vendor path; **a value starting with `http` replaces the whole URL** |
 | `request_vendor_parameters`, `request_vendor_method` | write | Vendor query and method |
-| `continue`, `response_body`, `response_status_code`, `response_error_message` | done()-only | Answer without calling the vendor (`continue: false`) — for a request the vendor cannot serve |
+| `continue`, `response_body`, `response_status_code`, `response_error_message` | done()-only | Answer without calling the vendor (`continue: false`) — for a request the vendor cannot serve. The postRequest hook **still runs** on that answer: make it pass a body it did not get from the vendor through unchanged |
 
 **postRequest**
 
 | Variable | Access | Use |
 |---|---|---|
-| `response_body` | read/write | The vendor's answer (object, or a string — parse defensively) |
+| `response_body` | read/write | The vendor's answer (object, or a string — parse defensively). `response_body_map` and `response_body_raw_map` hold it too, read-only; read one name consistently |
 | `response_iserror` | read | `true` unless the vendor returned 200–207 |
 | `response_status_code`, `response_headers` | read/write | Correct a status the vendor got wrong |
 | `configuration` | read/write | Writable here: persist a token or a derived value with `done({ configuration: {...} })` |
@@ -159,7 +159,7 @@ On a streaming call (`"stream": true`, or a stream path such as `:streamGenerate
 
 - The preRequest hook can still rewrite the URL, headers, model and body — so a vendor that streams **in the flavor's own event format** works.
 - A vendor that streams in a different format, or cannot stream, cannot be fixed in the connector. Tell the user which product calls will not work, and prefer a flavor the vendor streams natively.
-- Do not switch a streamed call to `"stream": false` in the preRequest hook: the caller expects an event stream and gets a JSON body.
+- Do not switch a streamed call to `"stream": false` in the preRequest hook: the caller expects an event stream and gets a JSON body. For a vendor that cannot stream at all, refuse the streamed call instead: `done({ continue: false, response_status_code: 400, response_body: { error: { message: 'Streaming is not supported by this model.' } } })`.
 
 ## Testing a hook offline
 
@@ -172,7 +172,11 @@ import vm from 'node:vm';
 const [hookFile, varsFile] = process.argv.slice(2);
 const vars = JSON.parse(readFileSync(varsFile, 'utf8'));
 let result;
-const context = vm.createContext({ ...vars, btoa, atob, done: (out = {}) => { result = out; } });
+// Every documented variable exists in Integration Service, so a hook may read one vars.json leaves out.
+const declared = Object.fromEntries(['request_body', 'request_body_map', 'request_path_variables', 'request_parameters',
+    'request_headers', 'configuration', 'response_body', 'response_body_map', 'response_body_raw_map',
+    'response_iserror', 'response_status_code', 'response_headers'].map((name) => [name, undefined]));
+const context = vm.createContext({ ...declared, ...vars, btoa, atob, done: (out = {}) => { result = out; } });
 vm.runInContext(`(function () {\n${readFileSync(hookFile, 'utf8')}\n})();`, context);
 if (result === undefined) { console.error('done() was not called'); process.exit(1); }
 console.log(JSON.stringify(result, null, 2));

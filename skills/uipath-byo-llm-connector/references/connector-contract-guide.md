@@ -62,8 +62,8 @@ Pick the builder auth type that matches the vendor; the builder writes the confi
 
 Rules that hold for every type:
 
-- Secrets are config entries with `encrypt: true` (usually `PASSWORD`). Never give one a `defaultValue`.
-- A value the user must type has `configScreenType: "pre"` (or `"pre-optional"`) and a `hintText` with an example. A value a hook writes back (`accessToken`, `expires_in`, `authentication.time`) has **no** `configScreenType` at all — any value, even `"post"`, puts it on a form.
+- Secrets are config entries with `encrypt: true` (usually `PASSWORD`). Never give one a non-empty `defaultValue` (the empty one `init` writes is fine).
+- A value the user must type has `configScreenType: "pre"` (or `"pre-optional"`) and a `hintText` with an example — for a secret, where to find it (`Your Acme API key, from the Acme console`), never a value. A value a hook writes back (`accessToken`, `expires_in`, `authentication.time`) has **no** `configScreenType` at all — any value, even `"post"`, puts it on a form.
 - Credentials travel in headers or a form-encoded token body only. Never as a `vendorType: "query"` or `"path"` parameter, never in `request_vendor_path` — full request URLs are written to telemetry in clear text. Query parameters are fine for non-secrets (`api-version`, `alt`).
 - Add a `provisionAuthValidation` system resource when the vendor has a cheap authenticated `GET` (for example `/models`), so a wrong key fails on the connection page instead of in the probe: `uip is connectors builder auth system create --type provisionAuthValidation --vendor-path /models --method GET`.
 
@@ -91,5 +91,5 @@ Run after `builder validate` passes, before the first `import` (the version chec
 3. **Version** — `element-metadata.json:latestVersion` is higher than the last published version (first publish: `1.0.0`).
 4. **Hooks** — every hook passes `node --check`, ends every path in `done(...)`, passes a vendor error through with its status, and contains no `console.log`.
 5. **No credentials in URLs** — no credential is a `query`/`path` parameter or part of a URL a hook builds.
-6. **No secret defaults** — no encrypted or `PASSWORD` config entry has a `defaultValue`; `base.url` holds the vendor host, not a placeholder such as `https://example.com`.
+6. **No secret defaults** — no encrypted or `PASSWORD` config entry has a non-empty `defaultValue`; `base.url` holds the vendor host, not a placeholder such as `https://example.com`.
 7. **Hook-written config** — every config entry a hook writes back has no `configScreenType`.

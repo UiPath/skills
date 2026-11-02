@@ -42,7 +42,7 @@ success_criteria:
 
   - type: run_command
     description: "validate re-run confirms a valid connector (exit 0)"
-    command: "uip is connectors builder validate --connector-dir periodic-design-acme-acmechatbridge"
+    command: "CD=$(find . -type d -name periodic-design-acme-acmechatbridge -not -path '*/node_modules/*' | head -1); uip is connectors builder validate --connector-dir \"$CD\""
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
@@ -50,7 +50,7 @@ success_criteria:
 
   - type: run_command
     description: "check_byo_connector.py (static): flavor path, template tag, x-api-key header, no secret defaults"
-    command: "python3 $REFERENCE_DIR/check_byo_connector.py periodic-design-acme-acmechatbridge"
+    command: "CD=$(find . -type d -name periodic-design-acme-acmechatbridge -not -path '*/node_modules/*' | head -1); python3 $REFERENCE_DIR/check_byo_connector.py \"$CD\""
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

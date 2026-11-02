@@ -25,7 +25,7 @@ Consecutive messages of the same role must be merged for Anthropic, Converse and
 | JSON output | `response_format: {type:"json_schema", json_schema:{name, schema}}` | `generationConfig.responseMimeType: "application/json"` + `responseSchema` | — (use a forced tool) | — (use a forced tool) |
 | Streaming | `stream: true` (+ `stream_options.include_usage`) | the `:streamGenerateContent?alt=sse` path | `stream: true` | the `converse-stream` path |
 
-Drop what the vendor does not support rather than forwarding it — an unknown field is a 400 on most endpoints. Return exactly as many choices as requested (`n`, default 1): an extra choice fails the probe.
+Drop a tuning parameter the vendor does not support (`top_p`, `seed`, penalties) rather than forwarding it — an unknown field is a 400 on most endpoints. A request that needs a feature the vendor lacks — tools, several choices, a JSON `response_format`, an image — changes the answer if it is dropped: refuse it with a 400 and a fixed message instead, so the caller and the probe see why. Return exactly as many choices as requested (`n`, default 1): an extra choice fails the probe.
 
 ## Tools
 

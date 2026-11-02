@@ -67,6 +67,11 @@ def vendor_answer(stop: str) -> dict:
     }
 
 
+def response_reads(body: dict) -> dict:
+    # Every name a postRequest hook may read the vendor answer from.
+    return {"response_body": body, "response_body_map": body, "response_body_raw_map": body}
+
+
 class Report:
     def __init__(self) -> None:
         self.results: list[tuple[str, bool, str]] = []
@@ -208,7 +213,7 @@ def hook_checks(report: Report, root: Path, element: dict, resource: dict) -> No
             for stop, finish in (("complete", "stop"), ("token_limit", "length")):
                 out, err = run_hook(post, {
                     "response_iserror": False, "response_status_code": 200, "response_headers": {},
-                    "response_body": vendor_answer(stop), "configuration": configuration,
+                    **response_reads(vendor_answer(stop)), "configuration": configuration,
                     "request_body_map": OPENAI_REQUEST,
                 }, work)
                 if not report.check(f"postRequest hook runs ({stop})", err is None, " ".join(err or [])):
@@ -234,7 +239,7 @@ def hook_checks(report: Report, root: Path, element: dict, resource: dict) -> No
             error_body = {"error": {"code": "unauthorized", "message": "bad key"}}
             out, err = run_hook(post, {
                 "response_iserror": True, "response_status_code": 401, "response_headers": {},
-                "response_body": error_body, "configuration": configuration, "request_body_map": OPENAI_REQUEST,
+                **response_reads(error_body), "configuration": configuration, "request_body_map": OPENAI_REQUEST,
             }, work)
             if report.check("postRequest hook runs on a vendor error", err is None, " ".join(err or [])):
                 passed_through = "response_body" not in out or as_obj(out.get("response_body")) == error_body
