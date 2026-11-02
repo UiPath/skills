@@ -61,14 +61,9 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Checks 4-6 look only inside a script node's code (the JSON "script" string), so the
-  # HITL field definitions ("variable": "vars.legalApproval") and End-node mappings do not count.
-  # A field-id read is `.approved` / `.reviewcomments` anywhere in script code: this accepts
-  # $vars.<id>.output.approved and the alias idiom the skill teaches
-  # (const output = $vars.<id>.output; output.approved). Any `.legalApproval` / `.legalNotes` in
-  # script code fails check 6, including the global alias $vars.legalApproval (SKILL.md rule 10).
-  # Known gaps: destructuring and bracket access are not accepted; `.approved` on an unrelated
-  # object, or names in a code comment, still count.
+  # The next three checks search only the code of script nodes (the "script" strings in the .flow), not the
+  # HITL field definitions or End-node mappings. They pass when that code contains .approved and .reviewcomments
+  # (direct or through an alias of $vars.<id>.output) and no .legalApproval / .legalNotes (a by-name read).
   - type: run_command
     description: "Downstream script reads the field ID .approved (e.g. $vars.<id>.output.approved, or output.approved after const output = $vars.<id>.output)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --regex '\"script\"\\s*:\\s*\"(?:[^\"\\\\]|\\\\.)*?\\.approved\\b'"
