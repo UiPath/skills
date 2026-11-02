@@ -73,14 +73,14 @@ If Studio Web URL is not returned, print `Studio Web URL: <not returned by CLI>`
 Use process run only for a process already deployed to Orchestrator.
 
 ```bash
-uip maestro bpmn process list --output json
-uip maestro bpmn process get <PROCESS_KEY> <FEED_ID> --output json
-uip maestro bpmn process run <PROCESS_KEY> <FOLDER_KEY> --inputs @inputs.json --validate --output json
+uip maestro bpmn process list --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn process get <PROCESS_KEY> --feed-id <FEED_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn process run <PROCESS_KEY> --folder-key <FOLDER_KEY> --release-key <RELEASE_KEY> --inputs @inputs.json --validate --output json
 ```
 
-`process run` requires the folder key as a positional argument.
-Use `--release-key`, `--feed-id`, or `--robot-ids` only when the user provides those deployment-specific choices
-or the process discovery output clearly identifies them.
+`get` also requires `--feed-id`; `run` requires `--release-key`.
+Take `processKey`, `releaseKey`, `feedId`, and `folderKey` from the `process list` entry for the process.
+Add `--feed-id` or `--robot-ids` to `process run` only when the user provides them or the list entry identifies them.
 
 ## Job and instance inspection
 
@@ -139,6 +139,6 @@ If execution faults, hand off to [diagnose/CAPABILITY.md](../diagnose/CAPABILITY
 - **Never run `uip maestro bpmn debug` as validation.** Use Author validation and packaging checks for correctness;
   debug executes the process.
 - **Never reuse stale inputs silently.** Confirm every side-effecting run's input set and redact secrets from summaries.
-- **Never skip folder context for deployed runs.** `process run` requires `<FOLDER_KEY>` and instance inspection commands
-  require `--folder-key` or `-f`.
+- **Never skip folder context for deployed runs.** `process list`, `get`, and `run` require
+  `--folder-key`, and instance inspection commands require `--folder-key` or `-f`.
 - **Never start diagnosis from traces.** Use incidents, variables, deployed BPMN asset, and element executions first.

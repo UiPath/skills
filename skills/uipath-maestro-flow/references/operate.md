@@ -270,7 +270,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flo
 ## Trigger a deployed process
 
 ```bash
-uip maestro flow process list --output json
+uip maestro flow process list --folder-key <folder-key> --output json
 uip maestro flow process run <process-key> <folder-key> --output json \
   --inputs '{"numberA": 5}' --attachment <inputName>=<localPath>
 ```
