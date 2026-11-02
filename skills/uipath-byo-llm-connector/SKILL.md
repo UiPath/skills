@@ -25,7 +25,7 @@ Everything here runs through `uip`: `uip is connectors builder` (author on disk)
 
 ## Critical Rules
 
-1. **The API flavor fixes the contract.** The product decides the flavor (`allowedApiFlavors` in `list-product-configs`), and the flavor decides the exact resource path(s) the gateway calls and the body it sends. Expose exactly those paths — a connector at any other path returns 404 to the probe. Look the path up in [references/connector-contract-guide.md](references/connector-contract-guide.md); never guess it.
+1. **The API flavor fixes the contract.** The product decides the flavor (`AllowedApiFlavors` in `list-product-configs`), and the flavor decides the exact resource path(s) the gateway calls and the body it sends. Expose exactly those paths — a connector at any other path returns 404 to the probe. Look the path up in [references/connector-contract-guide.md](references/connector-contract-guide.md); never guess it.
 2. **Register with `--connector-type Custom --connector-template <template>`.** The gateway reads the template to route the call and to pick the strategy; without it the probe fails before it reaches the connector. A connector built from scratch or from an AI Gateway template is `CustomAiGateway`. Also put the matching template tag in `element-metadata.json:tags` (same guide) so the AI Trust Layer UI lists the connector for that flavor. If the CLI rejects `--connector-template`, upgrade `uip` — older releases cannot register Custom connectors.
 3. **Scaffold with `builder init`; use templates and zips only as reference.** `init` derives the tenant key `design-{org}-{slug}` from your login. A template or an old zip carries someone else's key (every AI Gateway template is `design-entity-customaigatewaybyomtemplate`), and importing it updates whichever connector already owns that key. Copy resources, config entries and hook bodies from the reference into the fresh scaffold — see [references/connector-contract-guide.md](references/connector-contract-guide.md) §"Porting from a template or zip".
 4. **Streaming responses bypass the postRequest hook.** On a streaming call Integration Service runs only the preRequest hook and relays the vendor's bytes raw. A connector can reshape a streamed *request*, never a streamed *response*: when the vendor's stream format differs from the flavor's, tell the user streaming will not work for that product, and choose a flavor the vendor streams natively if one is allowed.
@@ -50,11 +50,11 @@ uip llm-configuration byo-connections list-product-configs \
   --product <PRODUCT> --feature <FEATURE> --output json
 ```
 
-From the row read: `modelsConfigurationOption` (multi-mapping needed for `AllModels`/`AnyModel`), each model's `allowedApiFlavors` and `allowedConnectors`, and `addYourOwn`. `Custom` must appear in `allowedConnectors` (or as a key of `addYourOwn` for a customer-added model). If it does not, custom connectors are not enabled for this organization or feature — stop and tell the user; do not build a connector the gateway will refuse.
+From the row read (the CLI returns these keys PascalCase): `ModelsConfigurationOption` (multi-mapping needed for `AllModels`/`AnyModel`), each entry of `Models` with its `AllowedApiFlavors` and `AllowedConnectors`, and `AddYourOwn`. `Custom` must appear in `AllowedConnectors` (or as a key of `AddYourOwn` for a customer-added model). If it does not, custom connectors are not enabled for this organization or feature — stop and tell the user; do not build a connector the gateway will refuse.
 
 ### 1. Agree the contract with the user
 
-Ask for (unless already given): the vendor base URL; how it authenticates (API key header, bearer token, OAuth2 client credentials, AWS SigV4, custom token exchange); its request and response format, or one sample of each; whether the product's calls stream; the model identifier the vendor expects (becomes `--llm-identifier`). Pick the flavor from the model's `allowedApiFlavors` that is closest to the vendor's own format — the closer it is, the less the hooks translate. Then read the flavor's resource paths, tag and template in [references/connector-contract-guide.md](references/connector-contract-guide.md).
+Ask for (unless already given): the vendor base URL; how it authenticates (API key header, bearer token, OAuth2 client credentials, AWS SigV4, custom token exchange); its request and response format, or one sample of each; whether the product's calls stream; the model identifier the vendor expects (becomes `--llm-identifier`). Pick the flavor from the model's `AllowedApiFlavors` that is closest to the vendor's own format — the closer it is, the less the hooks translate. Then read the flavor's resource paths, tag and template in [references/connector-contract-guide.md](references/connector-contract-guide.md).
 
 ### 2. Scaffold the connector
 
@@ -112,11 +112,11 @@ tar -a -c -f <CONNECTOR_DIR>.zip <CONNECTOR_DIR>/app/element                    
 ### 5. Import and publish
 
 ```bash
-uip is connectors import --output json                  # create-or-update by key
-uip is connectors publish --wait --output json          # Data.Status == "SUCCESS"; note Data.PublishedKey
+uip is connectors import --connector-dir <CONNECTOR_DIR> --output json           # create-or-update by key
+uip is connectors publish --connector-dir <CONNECTOR_DIR> --wait --output json   # Data.Status == "SUCCESS"; note Data.PublishedKey
 ```
 
-A `FAILURE` status or a non-zero exit stops the workflow: read the message, fix, bump `latestVersion`, re-import, re-publish.
+The `builder` commands find the connector from `<WORK_DIR>`; `import` and `publish` look only at the current directory and above, so pass `--connector-dir` (the `RepoName` folder `init` printed). A `FAILURE` status or a non-zero exit stops the workflow: read the message, fix, bump `latestVersion`, re-import, re-publish.
 
 ### 6. Create the test connection
 
@@ -170,7 +170,7 @@ uip llm-configuration byo-connections
 uip is connectors builder                                # author on disk (see Workflow 2–4)
   init | activity create | activity hook create | auth set | auth system create
   state query <ptr> | state patch <ptr> --value-file | inspect | validate
-uip is connectors import | publish --wait | publish-status <id> | get <key>
+uip is connectors import | publish --wait (both --connector-dir <dir>) | publish-status <id> | get <key>
 uip is connections create <custom-key> --no-wait | list <key> --all-folders | ping <id> | edit <id> --no-wait | delete <id> --yes
 uip or folders list                                      # folder Type (Personal vs Standard)
 ```
