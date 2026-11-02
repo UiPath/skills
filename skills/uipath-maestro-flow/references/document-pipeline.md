@@ -21,7 +21,7 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
   model: { modelName: 'invoiceixp-cef0d447-ixp',
     folderKey: 'c4359cde-55f0-4f0e-9322-c6cdce74ab4c' },
 }))
-.step('total', script({ code: 'return $vars.extract.output.result.output;' }))
+.step('total', script({ code: 'return $vars.extract.output.result.output;' })) // warns until the SDK typing catches up
 ```
 
 ## At a glance

@@ -73,7 +73,7 @@ The created node already carries everything else it needs:
 | `outputs.output` and `outputs.error` | both ports named on the instance, which is what lets a downstream `$vars` read resolve |
 | no top-level `model` block | the slim manifest model belongs in `definitions[]`, and validation rejects a copy on the instance |
 
-Do not write `model`, `modelName` or `folderKey` under `inputs` either. Those name a trained IXP deployment and belong to the published-model node in [ixp.md](ixp.md). This node requires only `fileRef`; validation does not reject deployment fields under `inputs`, so they sit there unread.
+`nodes create` writes `modelName`, `folderKey` and the other deployment fields under `inputs` as empty strings — leave them empty. They name a trained IXP deployment and belong to the published-model node in [ixp.md](ixp.md); this node requires only `fileRef`, and filled-in values sit there unread.
 
 ## Wiring the file it reads
 
@@ -170,7 +170,7 @@ The binding itself lives in the End node's own `outputs` block, keyed by the out
 uip maestro flow validate <file> --output json
 ```
 
-Validation checks this node against the definition `nodes create` embedded in the `.flow` itself, which is how it passes despite never appearing in a tenant manifest; the tenant's manifests, cached by `registry pull` and kept thirty minutes, are a cross-check for edge handles and other node types. For this node it enforces that `fileRef` is a `$vars` reference rather than a literal, that both output ports are named on the instance, and that no top-level `model` block is present. A freshly created node fails on `fileRef` alone until it is wired — that failure is the expected state, not a fault.
+For this node, validation enforces that `fileRef` is a `$vars` reference rather than a literal, that both output ports are named on the instance, and that no top-level `model` block is present. A freshly created node fails on `fileRef` alone until it is wired — that failure is the expected state, not a fault.
 
 ## Making it actually extract
 
