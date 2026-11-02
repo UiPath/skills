@@ -26,8 +26,9 @@ Re-homing decisions vs the Flow grader:
     operation-string spelling for this event is CLI-owned enrichment, not
     pinned by the skill docs.
   - Flow's direct field read ``trigger.inputs.detail.connectionId`` becomes:
-    the startEvent's ``connectionId`` context input, resolved through the
-    BPMN connection-binding indirection (``=bindings.<id>`` -> process-level
+    the startEvent's ``connection`` context input (V1: ``connectionId``),
+    resolved through the BPMN connection-binding indirection
+    (``=bindings.<id>`` -> process-level
     ``<uipath:binding id="<id>" resource="Connection"
     propertyAttribute="ConnectionId" ...>``, per registry-workflow.md
     section 4 "Bindings") when the value takes that form, or used literally
@@ -57,7 +58,7 @@ Assertion map (Flow -> BPMN):
   I                                   resolve `=bindings.<id>` to a live connection id -> _resolve_binding()
   T                                   connectorKey/objectName/operation match at any input depth, case/hyphen-insensitive -> is_email_received_trigger()
   T                                   parentFolderId input at any depth, or inside a JSON filter/parameters blob or body.queryParams -> find_parent_folder_id()
-  T                                   connectionId as a literal value OR the `=bindings.<id>` indirection -> _bound_connection_value()/_resolve_binding()
+  T                                   connection (V1: connectionId) as a literal value OR the `=bindings.<id>` indirection -> _bound_connection_value()/_resolve_binding()
   DROPPED  require_no_private_connector_values / require_sequence_integrity / require_di_for_visible_elements  (not in Flow; the `validate` criterion already covers structure)
   DROPPED  "no manual start coexists" / "exactly one trigger start" / "trigger is process entry (no inbound flow)"  (Flow's check_trigger_node only asserts the trigger node exists; it never asserted exclusivity or process-entry position)
 
@@ -275,17 +276,22 @@ def _find_email_trigger(root: ET.Element) -> ET.Element:
 
 def _bound_connection_value(trigger: ET.Element) -> str:
     """Mirrors Flow's ``_bound_connection_id``: the connection the trigger is
-    actually bound to. In BPMN this is the startEvent's ``connectionId``
-    context input — either a raw connection id, or the standard
-    ``=bindings.<id>`` indirection (registry-workflow.md section 4), which
-    ``_resolve_binding`` follows to the process-level ``<uipath:binding>``'s
-    real connection id. Unlike Flow (where `node configure` requires the
-    field once the flow validates), BPMN's `validate` passes even with an
-    unmaterialized connection binding (registry-workflow.md: error 102010 is
-    a runtime-only fault) — so falling back to the folder default when this
-    is empty is still necessary here, not just defensive."""
-    raw = context_value(trigger, "connectionId")
-    return raw.strip() if isinstance(raw, str) else ""
+    actually bound to. In BPMN this is the startEvent's ``connection``
+    context input, or V1's ``connectionId`` when ``connection`` is blank (the
+    order cli's ``connectionReference`` reads them): either a raw connection
+    id, or the standard ``=bindings.<id>`` indirection (registry-workflow.md
+    section 4), which ``_resolve_binding`` follows to the process-level
+    ``<uipath:binding>``'s real connection id. Unlike Flow (where
+    `node configure` requires the field once the flow validates), BPMN's
+    `validate` passes even with an unmaterialized connection binding
+    (registry-workflow.md: error 102010 is a runtime-only fault) — so
+    falling back to the folder default when this is empty is still
+    necessary here, not just defensive."""
+    for name in ("connection", "connectionId"):
+        raw = context_value(trigger, name).strip()
+        if raw:
+            return raw
+    return ""
 
 
 def _resolve_binding(root: ET.Element, value: str) -> str:
@@ -307,7 +313,7 @@ def _resolve_binding(root: ET.Element, value: str) -> str:
             if resolved:
                 return resolved
     sys.exit(
-        f"FAIL: trigger connectionId references binding {binding_id!r}, which has no "
+        f"FAIL: trigger connection references binding {binding_id!r}, which has no "
         "resolvable Connection binding declared in the process-level uipath:bindings"
     )
 
@@ -358,7 +364,7 @@ def check_folder_binding() -> None:
     connection_value = _bound_connection_value(trigger)
     parent_folder_id = find_parent_folder_id(trigger)
     if not connection_value:
-        fail("trigger startEvent's connectionId context input is missing")
+        fail("trigger startEvent has no connection (V1: connectionId) context input")
     if not parent_folder_id:
         fail("trigger startEvent has no parentFolderId event parameter configured")
     print("OK: Outlook connection and MailFolder reference are both bound")

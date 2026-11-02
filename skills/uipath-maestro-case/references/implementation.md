@@ -431,7 +431,9 @@ Optional CLI debug run. Full contract — prompt options, debug command, safety 
 
 ## Step 15 — Debug prompt + session
 
+<!--skill-flavor:step-fifteen-debug:start-->
 Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). On `Run debug session` → run `uip solution resources refresh` then `uip maestro case debug`, loop until the user picks `Continue to publish`. On `Continue to publish` → Phase 7. Never auto-run (Rule 13).
+<!--skill-flavor:step-fifteen-debug:end-->
 
 ## Step 15a — Troubleshoot failed case
 
@@ -449,7 +451,9 @@ When a debug or process run fails, read **[troubleshooting-guide.md](troubleshoo
 
 **Per-round timeout.** If debug run exceeds 10 minutes wall-clock, treat round as inconclusive and advance to next round (counts toward 3-round limit). Advisory — do not hard-kill subprocess; classify by elapsed time and move on.
 
+<!--skill-flavor:troubleshoot-halt-report:start-->
 After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.case` edits without confirmed cause.
+<!--skill-flavor:troubleshoot-halt-report:end-->
 
 ---
 
