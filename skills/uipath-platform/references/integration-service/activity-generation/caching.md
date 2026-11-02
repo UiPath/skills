@@ -116,28 +116,32 @@ no caller identity the cache is off for that run.
 
 ## Checked before you publish
 
-In a connector repo (`app/element/v4/scripts/**/*.js`), `uip is connectors builder
-validate --connector-dir <dir>` and the periodic-workflows pre-merge check apply the
-same rules. Every finding fails; there is no ignore list.
+Cache declarations are checked before a connector ships. The runtime cannot tell whether a vendor read is shared across scripts, so these rules run on the scripts themselves.
 
-| rule | fails when |
+**Errors** fail the check:
+
+| Rule | Fails when | Fix |
+|---|---|---|
+| `cache-shape` | `cache` is not `{ ttl: <seconds> }`: an extra key, a missing ttl, or a ttl that is not a positive number | Write `cache: { ttl: 3600 }` |
+| `cache-on-write` | `cache` is on a call that changes data (anything but GET, HEAD, OPTIONS, or POST with `read: true`) | Remove `cache`, or mark a query-only POST `read: true` |
+| `cache-not-shared` | a vendor call has `cache` but no other script makes the same call with `cache` | Cache the script's whole answer with `export const cache = { ttl }` instead |
+| `script-parse` | a script is not valid JavaScript, so it cannot be checked | Fix the syntax error |
+
+Two calls count as the same when the method and URL match, ignoring the query string and treating every `${…}` in the URL as a placeholder; a URL built at runtime cannot be compared and fails `cache-not-shared`.
+
+**Warnings** print but never fail:
+
+| Warning | Means |
 |---|---|
-| `cache-shape` | `cache` has a key other than `ttl`, no `ttl`, or a literal `ttl` that is not a positive number; `export const cache` is not an object literal |
-| `cache-on-write` | `cache` on a method other than GET, HEAD, OPTIONS, or a POST with `read: true` |
-| `cache-not-shared` | a call with `cache` has a non-literal `method`, a `url` that is not a literal or template, or its method + url template is cached in fewer than two script files |
-| `script-parse` | a v4 script does not parse, so its cache use cannot be checked |
+| `answer-cache-on-write` | `export const cache` on a script that writes; its answers are never stored |
+| `answer-cache-reads-headers` | the script reads `context.request.headers`, which a cached script does not get |
+| `cache-ttl-capped` | the ttl is above 48 h; the runtime stores for at most 48 h |
 
-If `cache-not-shared` fires, either add `cache` to the other scripts that make the read,
-or cache this script's answer with `export const cache = { ttl }`.
+**How it is enforced**
 
-The CLI also warns, without failing validation. Fix these too: the runtime makes each
-harmless, but the cache is not doing what the script says.
-
-| warning | means |
-|---|---|
-| `answer-cache-on-write` | `export const cache` in a script that writes; such runs are never stored |
-| `answer-cache-reads-headers` | an `export const cache` script reads `context.request.headers`, which are removed |
-| `cache-ttl-capped` | a literal `ttl` above `172800` s, the proxy's 48 h cap |
+- **Locally:** `uip is connectors builder validate`. Errors fail validation, and warnings are listed.
+- **Connector repos, CI:** the unit tests step in periodic-workflows, which a connector repo gets with `./scripts/build`. Errors fail the PR check, and warnings are printed.
+- Both print `<file>:<line>:<col> <rule> <message>`, and there is no ignore list.
 
 ## Worked example: Slack
 
