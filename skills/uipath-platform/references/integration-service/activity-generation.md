@@ -167,13 +167,11 @@ uip is resources run script \
   --connection-id <connectionId> \
   --inline-script $WORK/<scriptRef>.js \
   --body '{ "channel": "C0A66HP9KKM" }' \
-  --refresh \
   --output json
 ```
 
-`--refresh` skips the cached read and stores the fresh answer, so a vendor call you
-are iterating on is re-fetched. Drop it only to test the caching itself
-([caching.md](activity-generation/caching.md)).
+An inline script is never cached, so every run calls the vendor. Test caching against
+the published script (`--script-ref`; [caching.md](activity-generation/caching.md)).
 
 Read `Data.Body` — the vendor's own response, parsed — and loop:
 
@@ -225,7 +223,6 @@ uip is resources run script \
   --connection-id <connectionId> \
   --inline-script $WORK/<scriptRef>.js \
   --body '{ "name": "test-1756900000" }' \
-  --refresh \
   --output json
 ```
 
