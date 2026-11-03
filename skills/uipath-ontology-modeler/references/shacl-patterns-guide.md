@@ -34,11 +34,11 @@ shape:{ClassMustHaveRule}
                     ] .
 ```
 
-- Shape name: `shape:{ClassName}Must{BehaviorName}` — business rule as a phrase (e.g. `shape:doctorMustBeLicensed`)
+- Shape name: `shape:{ClassName}Must{BehaviorName}` — the rule as a phrase (for example `shape:salesOrderMustHaveCustomer`)
 - `rdfs:label`: human-readable description of the rule
 - `sh:message`: the violation message displayed to users — write it as a complete sentence
 - Property path uses `{ClassName}.{propName}` — **never** just the prop name
-- Constraints cover business rules about data (required, range, pattern, value list, relationship class). They are not functions or actions; do not write those.
+- Constraints cover rules about data: required, range, pattern, value list, relationship class.
 
 ---
 
@@ -82,16 +82,6 @@ sh:property [
 ] ;
 ```
 
-### Value list (a STRING field with fixed values)
-```turtle
-sh:property [
-    sh:path     ont:{ClassName}.{statusProp} ;
-    sh:datatype xsd:string ;
-    sh:minCount 1 ;
-    sh:in       ( "Pending" "Shipped" "Delivered" )
-] ;
-```
-
 ### Numeric range constraint
 ```turtle
 sh:property [
@@ -111,6 +101,30 @@ sh:property [
     sh:pattern  "^[^@]+@[^@]+\\.[^@]+$"
 ] ;
 ```
+
+---
+
+## Value list from a choice set
+
+A choice-set field holds one of the values of its choice set. The constraint lists those values by name, exactly as the choice set spells them (case-sensitive), with the choice set's value names in the same order.
+
+```turtle
+shape:SalesOrderStatusMustBeListed
+    a               sh:NodeShape ;
+    rdfs:label      "Sales order status must be an OrderStatus value" ;
+    sh:message      "A sales order status must be Open, Shipped or Cancelled" ;
+    sh:targetClass  ont:SalesOrder ;
+    sh:property     [ sh:path     ont:SalesOrder.status ;
+                      sh:datatype xsd:string ;
+                      sh:minCount 1 ;
+                      sh:in       ( "Open" "Shipped" "Cancelled" )
+                    ] .
+```
+
+- Read the names with `uip df choice-sets list-values <CHOICE_SET> --local --output json`. Never type them from memory.
+- Use `sh:datatype xsd:string`. The value name is the literal, not an identifier.
+- A `CHOICE_SET_MULTIPLE` field is the same shape without `sh:maxCount 1`: each selected value is one triple, and each must be in the list.
+- When the choice set gains or loses a value, update the `sh:in` list in the same change.
 
 ---
 
@@ -142,4 +156,44 @@ Use `sh:minCount 1 ; sh:maxCount 1` on both sides — a junction record that is 
 
 ## Full worked example
 
-A complete worked `{name}-constraints.ttl` is in [`shacl-patterns-example.md`](shacl-patterns-example.md). Read it only if `uip ont validate --local` reports a constraints problem and you need a concrete reference to self-correct, or you judge the patterns above aren't enough to proceed confidently for this request.
+A complete `SalesOps-constraints.ttl` for the Orders domain: `Customer`, `SalesOrder.customer` (a `RELATIONSHIP`) and `SalesOrder.status` (choice set `OrderStatus`). It is a model to adapt, not a file to copy verbatim.
+
+```turtle
+@prefix ont:   <https://ontology.uipath.com/SalesOps#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix shape: <https://ontology.uipath.com/shapes#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+shape:CustomerMustHaveName
+    a               sh:NodeShape ;
+    rdfs:label      "Customer must have a name" ;
+    sh:message      "A customer must declare a name" ;
+    sh:targetClass  ont:Customer ;
+    sh:property     [ sh:path     ont:Customer.customerName ;
+                      sh:datatype xsd:string ;
+                      sh:minCount 1
+                    ] .
+
+shape:SalesOrderMustHaveCustomer
+    a               sh:NodeShape ;
+    rdfs:label      "Sales order must have a customer" ;
+    sh:message      "A sales order must be placed by exactly one customer" ;
+    sh:targetClass  ont:SalesOrder ;
+    sh:property     [ sh:path     ont:placedBy ;
+                      sh:class    ont:Customer ;
+                      sh:minCount 1 ;
+                      sh:maxCount 1
+                    ] .
+
+shape:SalesOrderStatusMustBeListed
+    a               sh:NodeShape ;
+    rdfs:label      "Sales order status must be an OrderStatus value" ;
+    sh:message      "A sales order status must be Open, Shipped or Cancelled" ;
+    sh:targetClass  ont:SalesOrder ;
+    sh:property     [ sh:path     ont:SalesOrder.status ;
+                      sh:datatype xsd:string ;
+                      sh:minCount 1 ;
+                      sh:in       ( "Open" "Shipped" "Cancelled" )
+                    ] .
+```

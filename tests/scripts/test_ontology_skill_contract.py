@@ -125,3 +125,66 @@ def test_activation_rows_route_files_to_the_modeler():
         rows[skill] = [json.loads(l)["prompt"].lower() for l in read(path).splitlines() if l.strip()]
     assert all(re.search(r"sdd|pdd|design document|specification", p) for p in rows["uipath-ontology-authoring"])
     assert not any(re.search(r"\bsdd\b|\bpdd\b", p) for p in rows["uipath-ontology-modeler"])
+
+
+ARTIFACT_GUIDES = ("artifacts-guide.md", "owl-patterns-guide.md", "shacl-patterns-guide.md",
+                   "mapping-yarrrml-guide.md", "summary-context-guide.md")
+ID_TERMS = re.compile(
+    r"\b(entityId|folderId|choiceSetId|connectionId|referenceEntityId|referenceFieldId|referenceFolderKey)\b")
+GUID = re.compile(r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b")
+# lowercase only (a table header "Action" is fine); `function:` is the YARRRML join key, not the concept
+OUT_OF_SCOPE = re.compile(r"(?i:business[- ]rules?)\b|\bfunctions?\b(?!:)|\bactions?\b")
+RETIRED = re.compile(r"\b(OFN-00[3678]|SHC-00[15]|MAP-00[1378]|FNO-\d+|BRU-\d+)\b|summary\.txt|manifest\.json")
+
+
+def test_artifact_guides_exist():
+    for g in ARTIFACT_GUIDES:
+        assert (MODELER_DIR / "references" / g).is_file(), g
+
+
+def test_example_files_are_folded_into_their_guides():
+    assert sorted(p.name for p in (MODELER_DIR / "references").glob("*-example.md")) == []
+
+
+def test_artifact_guides_never_carry_ids():
+    hits = [h for g in ARTIFACT_GUIDES for h in unnegated_lines(MODELER_DIR / "references" / g, ID_TERMS)]
+    assert hits == []
+
+
+def test_no_guid_literals_in_skills():
+    assert [str(p) for p in guidance_files() if GUID.search(read(p))] == []
+
+
+def test_out_of_scope_only_negated():
+    assert [h for p in guidance_files() for h in unnegated_lines(p, OUT_OF_SCOPE)] == []
+
+
+def test_no_retired_rules_or_formats():
+    assert [str(p) for p in guidance_files() if RETIRED.search(read(p))] == []
+
+
+def test_artifacts_guide_matches_zip_contract():
+    t = read(MODELER_DIR / "references/artifacts-guide.md")
+    for row in ("| `{name}.ofn` | `schema` | `text/owl-functional` | exactly 1 |",
+                "| `{name}-constraints[-{area}].ttl` | `constraints` | `text/turtle` | 1+ |",
+                "| `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | exactly 1 |",
+                "| `{name}-summary.json` | `summary` | `application/json` | 0..1 |",
+                "| `{name}-context.json` | `context` | `application/json` | 0..1 |",
+                "operations/", "## Do not"):
+        assert row in t, row
+
+
+def test_mapping_guide_maps_choice_sets_by_name():
+    t = read(MODELER_DIR / "references/mapping-yarrrml-guide.md")
+    assert "## Choice-set columns" in t and "xsd:string" in t and "CHOICE_SET_MULTIPLE" in t
+    assert "table:" in t and "access: datafabric" in t
+    assert "equal(str1=$(customer), str2=$(Id))" in t and "## Joins" in t
+
+
+def test_shacl_guide_lists_value_names():
+    t = read(MODELER_DIR / "references/shacl-patterns-guide.md")
+    assert "## Value list from a choice set" in t and re.search(r'sh:in\s*\(\s*"Open"', t)
+
+
+def test_owl_guide_has_inverse_properties_section():
+    assert "## Inverse properties" in read(MODELER_DIR / "references/owl-patterns-guide.md")

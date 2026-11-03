@@ -2,7 +2,9 @@
 
 Artifact type: `mapping` | Media type: `application/yaml` | File: `{name}-mapping.yarrrml.yml`
 
-The mapping binds each class to a local entity **by name**. The ontology service resolves `table:` to the entity in the deployment folder at install. The mapping never carries `entityId` or `folderId`. It is an `application/yaml` artifact: check it with `uip ont artifacts check {name}-mapping.yarrrml.yml --content-type application/yaml --type mapping --file <path>`, and the CLI sends it to the service as YAML.
+The mapping binds each class to a local entity **by name**. The ontology service resolves `table:` to the entity in the deployment folder at install. The mapping never carries an entity or folder identifier (rule `MAP-012`). It is an `application/yaml` artifact: check it with `uip ont artifacts check {name}-mapping.yarrrml.yml --content-type application/yaml --type mapping --file <path>`, and the CLI sends it to the service as YAML.
+
+Write the mapping after every entity exists in the solution. It uses the entity and field names exactly as they were created.
 
 ---
 
@@ -20,20 +22,16 @@ mappings:
         referenceFormulation: rr:SQL2008
     s: ont:{ClassName}/$(Id)
     po:
-      - - a
-        - ont:{ClassName}
-      - - ont:{ClassName}.{propName}
-        - $({columnName})
+      - [a, ont:{ClassName}]
+      - [ont:{ClassName}.{propName}, $({columnName})]
       - p: ont:{objectProperty}
         o:
           mapping: {TargetClassName}
           condition:
             function: equal
             parameters:
-              - - str1
-                - $({foreignKeyColumn})
-              - - str2
-                - $({primaryKeyColumn})
+              - [str1, $({relationshipField})]
+              - [str2, $(Id)]
 ```
 
 ---
@@ -41,125 +39,127 @@ mappings:
 ## Rules
 
 ### Source block
-- `access: datafabric` — always this literal string; tells the runtime to use Data Fabric as the FQS source
-- `table:` — the local entity name (the `input/entities/{EntityName}.json` body you created; usually the class name). It must be an entity listed in the ontology's `--entity` set. No entity IDs, folder IDs, or placeholders.
-- `referenceFormulation: rr:SQL2008` — always this literal
+- `access: datafabric`: always this literal string.
+- `table: <EntityName>`: the local entity's name in the solution, case-sensitive. A federated entity is named the same way. No identifiers of any kind.
+- `referenceFormulation: rr:SQL2008`: always this literal.
 
 ### Subject template (`s:`)
-- Pattern: `ont:{ClassName}/$(Id)`
-- `primaryKeyColumn` is `Id` (the system key) unless the user named another unique field; field names are case-sensitive
-- Example: `ont:Doctor/$(Id)`
+- Pattern: `ont:{ClassName}/$(Id)`. `$(Id)` is the subject key.
+- Field names are case-sensitive.
 
 ### Property-object pairs (`po:`)
 
-**rdf:type** (required for every mapping):
+**Type** (required in every mapping block):
 ```yaml
-- - a
-  - ont:{ClassName}
+- [a, ont:{ClassName}]
 ```
 
-**Data property** (scalar column → ontology data property):
+**Data property** (a column to an ontology data property):
 ```yaml
-- - ont:{ClassName}.{propName}
-  - $({columnName})
+- [ont:{ClassName}.{propName}, $({columnName})]
 ```
-Column name must be a field in the local entity body, exactly as written (case-sensitive), or a system field such as `Id`.
+The column is a field of the entity named in this block's `table:`, written exactly as it is spelled there.
 
-**Object property** (join → ontology object property):
+**System fields.** `Id`, `CreateTime`, `UpdateTime`, `CreatedBy` and `UpdatedBy` exist on every entity. `Id` is the subject key and the join target. Never map the others as domain properties; they are not in the schema.
 
-`ont:{objectProperty}` must exactly match an `ObjectProperty` IRI declared in `{name}.ofn` — look it up before writing the `p:` line.
+---
 
-`{TargetClassName}` must be the exact key of another mapping block in this file — if the block is absent or misspelled, YARRRML silently produces no join triples.
+## Joins
 
-**The join is on plain columns on both sides.** `str1` is the key field of the current mapping's entity (for example `Order.customerId`); `str2` is the target entity's key (usually `Id`). Both are ordinary fields (or system fields), never an entity or folder id. `str1` resolves from the **current mapping's** source rows; `str2` from the **target `mapping:`** source rows. See [`relationships-guide.md`](relationships-guide.md) for how to choose the key column.
+An object property joins two mapped classes on plain columns. `ont:{objectProperty}` must exactly match an `ObjectProperty` declared in `{name}.ofn`, and `mapping: {TargetClassName}` must be the exact key of another mapping block in this file. A missing or misspelled target silently produces no join triples.
+
+A `RELATIONSHIP` field on the referencing entity holds the target's key. The join reads the field on the current mapping's entity and the target's `Id`:
+
+```
+equal(str1=$(customer), str2=$(Id))
+```
 
 ```yaml
-- p: ont:{objectProperty}
+- p: ont:placedBy
   o:
-    mapping: {TargetClassName}
+    mapping: Customer
     condition:
       function: equal
       parameters:
-        - - str1
-          - $({foreignKeyColumn})     # e.g. customerId on the current entity
-        - - str2
-          - $({primaryKeyColumn})     # e.g. Id on the target entity
+        - [str1, $(customer)]     # RELATIONSHIP field on SalesOrder
+        - [str2, $(Id)]           # system key on Customer
 ```
 
-When the key column happens to have the same name on both sides, `str1` and `str2` both use that name. That is correct.
+- `str1` resolves from the **current mapping's** source rows, `str2` from the **target mapping's** rows.
+- The join goes in the mapping of the entity that holds the field. The inverse property (`InverseObjectProperties` in the schema) gets no join; it is answered from this one. See [owl-patterns-guide.md](owl-patterns-guide.md#inverse-properties).
+- A federated target is a plain-column join too: `str2` is the key column of the federated entity (usually `Id`).
+- Every object property between two mapped classes needs its join (`XF-015`), and every join needs a declared object property (`XF-014`). See [relationships-guide.md](relationships-guide.md) for choosing the key.
 
----
+### Junction class (many-to-many)
 
-## Full worked example
-
-A complete worked 3-class mapping (Doctor, Patient, Prescription) is in [`mapping-yarrrml-example.md`](mapping-yarrrml-example.md). Read it only if `uip ont validate --local` reports a mapping problem and you need a concrete reference to self-correct, or you judge the rules above aren't enough to proceed confidently for this request.
-
----
-
-## Junction class mapping (many-to-many)
-
-A junction class maps to its own entity (the association table). It holds both key columns, so both object property joins originate from the junction mapping block.
+A junction class maps to its own entity. It holds one `RELATIONSHIP` field per side, so both joins live in the junction's block.
 
 ```yaml
-{JunctionClass}:
+OrderLine:
   sources:
     - access: datafabric
-      table: {JunctionEntityName}
+      table: OrderLine
       referenceFormulation: rr:SQL2008
-  s: ont:{JunctionClass}/$(Id)
+  s: ont:OrderLine/$(Id)
   po:
-    - - a
-      - ont:{JunctionClass}
-    - p: ont:{propToSideA}
+    - [a, ont:OrderLine]
+    - p: ont:lineOfOrder
       o:
-        mapping: {SideA}
+        mapping: SalesOrder
         condition:
           function: equal
           parameters:
-            - - str1
-              - $({sideAKeyColumn})      # key field on the junction entity
-            - - str2
-              - $({sideAPKColumn})      # key on the SideA entity (usually Id)
-    - p: ont:{propToSideB}
+            - [str1, $(order)]       # RELATIONSHIP field on OrderLine
+            - [str2, $(Id)]
+    - p: ont:lineOfProduct
       o:
-        mapping: {SideB}
+        mapping: Product
         condition:
           function: equal
           parameters:
-            - - str1
-              - $({sideBKeyColumn})      # key field on the junction entity
-            - - str2
-              - $({sideBPKColumn})      # key on the SideB entity (usually Id)
+            - [str1, $(product)]     # RELATIONSHIP field on OrderLine
+            - [str2, $(Id)]
 ```
 
-Both key columns (`str1`) are on the junction entity. The `SideA` and `SideB` mapping blocks remain unchanged — they do not need to reference the junction. Verify column casing separately for each side against the entity bodies.
+The `SalesOrder` and `Product` blocks stay unchanged. Check each side's column casing against its own entity.
+
+---
+
+## Choice-set columns
+
+A choice-set field is mapped by its **value name**, as a literal `xsd:string`. Never map a value identifier.
+
+```yaml
+- [ont:SalesOrder.status, $(status), xsd:string]
+```
+
+- The value names in the column are the ones the constraints list with `sh:in` (see [shacl-patterns-guide.md](shacl-patterns-guide.md#value-list-from-a-choice-set)) and the schema comment lists.
+- `CHOICE_SET_MULTIPLE` column: one triple per selected value; the service splits it. Write the same single line. Do not split or join values in the mapping.
 
 ---
 
 ## USAGE POLICY block
 
-Add a `# USAGE POLICY` comment block at the top of the `.yarrrml.yml` file, before the `prefixes:` key. This is the **rule** layer — imperative rules for any agent or tool that reads this file as text. It teaches *how* to use the constructs.
+Add a `# USAGE POLICY` comment block at the top of the `.yarrrml.yml` file, before the `prefixes:` key. This is the **rule** layer: imperative rules for any agent or tool that reads this file as text. It teaches *how* to use the constructs.
 
-**Separation of Concerns**: the USAGE POLICY carries rules only. Facts (what status='A' means, grain, value domains) belong in `rdfs:comment` in `{name}.ofn`. Bindings (which key column joins which) belong in the `condition:` blocks below. Do not duplicate facts from `{name}.ofn` here — reference them ("LITERALS are case-sensitive — see `{name}.ofn`") instead of restating them.
+**Separation of concerns.** The USAGE POLICY carries rules only. Facts (what a status value means, grain, value domains) belong in `rdfs:comment` in `{name}.ofn`. Bindings (which key column joins which) belong in the `condition:` blocks. Do not restate facts from `{name}.ofn` here; reference them instead.
 
-Keep it ≤30 non-empty lines. Every rule must reference constructs that actually exist in the mapping or schema. State the non-action explicitly for conditional rules (see example below).
+Keep it to 30 non-empty lines or fewer. Every rule must reference constructs that exist in the mapping or schema. For a conditional rule, state what to leave undone when the condition is false.
 
 ```yaml
 # ============================================================================
 # USAGE POLICY  (how to use the constructs; facts live in {name}.ofn)
 # ============================================================================
 # JOIN GRAPH (join only what the question needs):
-#   Order → Customer via Order.customerId = Customer.Id
-#   OrderLine → Order via OrderLine.orderId = Order.Id
+#   SalesOrder → Customer via SalesOrder.customer = Customer.Id
 # ROUTING (canonical property for ambiguous phrases):
-#   "customer name" → Customer.customerName, not OrderLine.customerName
+#   "customer name" → Customer.customerName
 # GRAIN DISCIPLINE:
-#   Order: ONE row per order — no dedup needed
-#   OrderHistory: TIME SERIES — SELECT DISTINCT orderId for per-order questions
+#   SalesOrder: ONE row per order, no dedup needed
 # OUTPUT DISCIPLINE:
 #   Return ALL matching rows for list questions; LIMIT 1 only for single-answer superlatives.
 #   No default LIMIT. No DISTINCT unless uniqueness was asked.
-# LITERALS are case- and format-sensitive — copy exactly as annotated in {name}.ofn.
+# LITERALS are case- and format-sensitive. Copy status values exactly as annotated in {name}.ofn.
 # ============================================================================
 
 prefixes:
@@ -167,25 +167,61 @@ prefixes:
 ...
 ```
 
-Fill in only the sections relevant to the domain. Omit sections that don't apply rather than leaving them empty or generic. The join graph and routing sections have the most impact — always include them when there are object properties or ambiguous column names.
-
----
-
-## Federated entities
-
-Not supported in a local solution. A federated entity needs an Integration Service connection and cannot be authored locally; stop and tell the user.
+Fill in only the sections that apply. The join graph and routing sections matter most: include them whenever there are object properties or ambiguous column names.
 
 ---
 
 ## Common mistakes
 
-- **Wrong column name** — column names in `$()` must match field names in the local entity body exactly (case-sensitive), or be `Id`.
-- **Join column casing mismatch** — `str1` is a field of this entity; `str2` is a field of the target entity. Check each side separately against its entity body.
-- **Missing `a` triple** — every mapping block must have `- - a\n  - ont:{ClassName}` or the class instances won't be typed.
-- **Wrong object property direction** — check `ObjectPropertyDomain` and `ObjectPropertyRange` in `{name}.ofn`. The join goes in the mapping of the entity that holds the key.
-- **Object property name not in schema** — `ont:{objectProperty}` in the `p:` line must exactly match an `ObjectProperty` declared in `{name}.ofn`. Read `{name}.ofn` for the IRI before writing the join.
-- **Missing `mapping:` target** — `mapping: {TargetClassName}` must be a top-level key of this file. Check every target.
-- **Object property with no join** — an object property between two mapped classes needs a join in the domain class's mapping.
-- **Mapping out of sync with the schema** — every `ont:` term in the mapping must exist in the schema. Write the schema and constraints first, then the mapping, and let `uip ont validate --local` confirm they agree.
-- **Entity or folder ids** — never write `entityId` or `folderId`. `table: <EntityName>` is the only link.
-- **Verbose YARRRML syntax** — never use `subjects:`, `predicateobjects:`, `predicate:`, `object:`, or `[rdf:type, ont:Class~iri]`, and no inline `~iri` relationships. Use only the compact `s:`/`po:`/`p:`/`o:` form with `table:` and `referenceFormulation: rr:SQL2008` in every source block. If `uip ont artifacts check` warns about the mapping, re-read this file and rewrite it.
+- **Wrong column name.** Names in `$()` must match field names in the entity exactly (case-sensitive), or be a system field.
+- **Join casing mismatch.** `str1` is a field of this entity; `str2` is a field of the target entity. Check each side against its own entity.
+- **Missing type triple.** Every block needs `[a, ont:{ClassName}]`, or the instances are untyped.
+- **Wrong direction.** Check `ObjectPropertyDomain` and `ObjectPropertyRange` in `{name}.ofn`. The join goes in the mapping of the entity that holds the `RELATIONSHIP` field.
+- **Object property not in the schema.** Read the IRI from `{name}.ofn` before writing the `p:` line.
+- **Missing `mapping:` target.** Check every target against the top-level keys of this file.
+- **Join on an inverse property.** Only the property whose entity holds the field gets a join.
+- **Mapping out of sync with the schema.** Every `ont:` term must exist in the schema. Write schema and constraints first, then the mapping.
+- **Identifiers in the mapping.** Never write `entityId` or `folderId`. `table: <EntityName>` is the only link.
+- **Verbose YARRRML.** Never use `subjects:`, `predicateobjects:`, `predicate:`, `object:`, or inline `~iri` relationships. Use the compact `s:`/`po:`/`p:`/`o:` form with `table:` and `referenceFormulation: rr:SQL2008` in every source block.
+
+---
+
+## Full worked example
+
+The Orders domain: `Customer` and `SalesOrder`. `SalesOrder.customer` is a `RELATIONSHIP` field, `SalesOrder.status` uses the choice set `OrderStatus`. It is a model to adapt, not a file to copy verbatim.
+
+```yaml
+prefixes:
+  ont: https://ontology.uipath.com/SalesOps#
+
+mappings:
+  SalesOrder:
+    sources:
+      - access: datafabric
+        table: SalesOrder
+        referenceFormulation: rr:SQL2008
+    s: ont:SalesOrder/$(Id)
+    po:
+      - [a, ont:SalesOrder]
+      - [ont:SalesOrder.orderId, $(orderId)]
+      - [ont:SalesOrder.status, $(status), xsd:string]
+      - p: ont:placedBy
+        o:
+          mapping: Customer
+          condition:
+            function: equal
+            parameters:
+              - [str1, $(customer)]
+              - [str2, $(Id)]
+  Customer:
+    sources:
+      - access: datafabric
+        table: Customer
+        referenceFormulation: rr:SQL2008
+    s: ont:Customer/$(Id)
+    po:
+      - [a, ont:Customer]
+      - [ont:Customer.customerName, $(name)]
+```
+
+`places` (the inverse of `placedBy`) has no block entry: the schema declares it with `InverseObjectProperties`.

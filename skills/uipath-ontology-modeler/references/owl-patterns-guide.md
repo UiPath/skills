@@ -49,7 +49,7 @@ A syntax check alone does not catch these — forbidden constructs parse cleanly
 
 **QL-legal object property axioms — confirmed by example artifacts, use freely:**
 - `InverseObjectProperties(:a :b)` — marks two properties as semantic inverses. Only one of the pair gets a mapping join; see the join rule below
-- `SubObjectPropertyOf(:child :parent)` — declares a sub-property hierarchy (e.g. `primaryDoctor ⊑ treatingDoctor`). Each of the two still needs its own mapping join
+- `SubObjectPropertyOf(:child :parent)` — declares a sub-property hierarchy (e.g. `billedTo ⊑ relatedCustomer`). Each of the two still needs its own mapping join
 
 **Forbidden — never write these:**
 - `ObjectExactCardinality` / `DataExactCardinality`
@@ -66,7 +66,7 @@ A syntax check alone does not catch these — forbidden constructs parse cleanly
 
 **Express cardinality constraints in annotation text instead:**
 ```
-AnnotationAssertion(rdfs:comment :prescribedBy "Each prescription is issued by exactly one doctor. 'Exactly one' is QL-inexpressible as an axiom; recorded here.")
+AnnotationAssertion(rdfs:comment :placedBy "Each sales order is placed by exactly one customer. 'Exactly one' is QL-inexpressible as an axiom; recorded here.")
 ```
 
 ---
@@ -90,16 +90,13 @@ Follow the structure of the real artifact files:
 All declarations go first before any axioms:
 
 ```
-Declaration(Class(:Doctor))
-Declaration(Class(:Patient))
-Declaration(Class(:Prescription))
-Declaration(ObjectProperty(:prescribedBy))
-Declaration(ObjectProperty(:prescribes))
-Declaration(ObjectProperty(:prescriptionFor))
-Declaration(DataProperty(:Doctor.licenseNo))
-Declaration(DataProperty(:Doctor.name))
-Declaration(DataProperty(:Patient.birthDate))
-Declaration(DataProperty(:Prescription.status))
+Declaration(Class(:Customer))
+Declaration(Class(:SalesOrder))
+Declaration(ObjectProperty(:placedBy))
+Declaration(ObjectProperty(:places))
+Declaration(DataProperty(:Customer.customerName))
+Declaration(DataProperty(:SalesOrder.orderId))
+Declaration(DataProperty(:SalesOrder.status))
 ```
 
 ---
@@ -114,40 +111,51 @@ Declaration(DataProperty(:Prescription.status))
 # Object Property: <https://ontology.uipath.com/{name}#{verbPhrase}> ({Human Label})
 
 AnnotationAssertion(rdfs:label :{verbPhrase} "{verb phrase}")
-AnnotationAssertion(rdfs:comment :{verbPhrase} "Each {FromClass} {verb phrase} {ToClass}. Join: {FromClass}.{keyColumn} = {ToClass}.Id.")
+AnnotationAssertion(rdfs:comment :{verbPhrase} "Each {FromClass} {verb phrase} {ToClass}. Join: {FromClass}.{relationshipField} = {ToClass}.Id.")
 ObjectPropertyDomain(:{verbPhrase} :{FromClass})
 ObjectPropertyRange(:{verbPhrase} :{ToClass})
 ```
 
 When the relationship is "exactly one", append the cardinality note to the comment:
 ```
-AnnotationAssertion(rdfs:comment :prescribedBy "Each Prescription is prescribed by one Doctor. Join: Prescription.doctorId = Doctor.Id. 'Exactly one' is QL-inexpressible; recorded here.")
+AnnotationAssertion(rdfs:comment :placedBy "Each SalesOrder is placed by one Customer. Join: SalesOrder.customer = Customer.Id. 'Exactly one' is QL-inexpressible; recorded here.")
 ```
 
-**Join rule.** Every object property between two mapped classes needs its own join in the mapping, on plain columns (`XF-015`). The one exception is a property declared `InverseObjectProperties` of a property that already has a join: the inverse is answered from that join and gets none. Sub-properties are not exempt; `primaryDoctor` and `treatingDoctor` each need a join.
-
-**Inverse pair** — when two properties are semantic inverses of each other (join only `prescribedBy`, the side that holds the key; `prescribes` gets none):
-```
-AnnotationAssertion(rdfs:label :prescribes "Prescribes")
-AnnotationAssertion(rdfs:comment :prescribes "Inverse of :prescribedBy. A doctor prescribes prescriptions. No join of its own; answered from prescribedBy (Prescription.doctorId = Doctor.Id).")
-InverseObjectProperties(:prescribes :prescribedBy)
-ObjectPropertyDomain(:prescribes :Doctor)
-ObjectPropertyRange(:prescribes :Prescription)
-```
+**Join rule.** Every object property between two mapped classes needs its own join in the mapping, on plain columns (`XF-015`). The one exception is a property declared `InverseObjectProperties` of a property that already has a join: the inverse is answered from that join and gets none. Sub-properties are not exempt; `billedTo` and `relatedCustomer` each need a join. See [Inverse properties](#inverse-properties).
 
 **Sub-property** — when one relationship is a specialisation of another:
 ```
-AnnotationAssertion(rdfs:label :primaryDoctor "Primary doctor")
-AnnotationAssertion(rdfs:comment :primaryDoctor "Specialisation of :treatingDoctor. The patient's designated primary doctor. Join: Patient.primaryDoctorId = Doctor.Id.")
-SubObjectPropertyOf(:primaryDoctor :treatingDoctor)
-ObjectPropertyDomain(:primaryDoctor :Patient)
-ObjectPropertyRange(:primaryDoctor :Doctor)
+AnnotationAssertion(rdfs:label :billedTo "Billed to")
+AnnotationAssertion(rdfs:comment :billedTo "Specialisation of :relatedCustomer. The customer the order is billed to. Join: SalesOrder.billTo = Customer.Id.")
+SubObjectPropertyOf(:billedTo :relatedCustomer)
+ObjectPropertyDomain(:billedTo :SalesOrder)
+ObjectPropertyRange(:billedTo :Customer)
 ```
 
-- Name with a verb: `orderedBy`, `belongsToCategory`, `prescribedBy`, `prescriptionFor`
+- Name with a verb: `placedBy`, `belongsToCategory`, `lineOfOrder`
 - Standard `rdfs:comment` form: business sentence + join columns + cardinality note if "exactly one"
 - Inverse `rdfs:comment` form: `"Inverse of :{primaryProp}. {One-line meaning.}"` (no join of its own)
 - Sub-property `rdfs:comment` form: `"Specialisation of :{parentProp}. {One-line meaning.}"`
+
+---
+
+## Inverse properties
+
+A relationship has one `RELATIONSHIP` field, on the referencing entity (`SalesOrder.customer`). Its inverse exists only in the schema, as `InverseObjectProperties`. The inverse has no field on the other entity, no mapping join and no shape of its own.
+
+```
+Declaration(ObjectProperty(:places))
+
+AnnotationAssertion(rdfs:label :places "places")
+AnnotationAssertion(rdfs:comment :places "Inverse of :placedBy. A customer places sales orders. No join of its own; answered from placedBy (SalesOrder.customer = Customer.Id).")
+InverseObjectProperties(:places :placedBy)
+ObjectPropertyDomain(:places :Customer)
+ObjectPropertyRange(:places :SalesOrder)
+```
+
+- Join only `placedBy`, the side whose entity holds the field. `places` gets none.
+- Never add a second field on `Customer` for the inverse. When a user describes the relationship from both sides ("customers have orders, each order has a customer"), it is still one field on `SalesOrder`.
+- Comment form: `"Inverse of :{primaryProp}. {One-line meaning.}"`.
 
 ---
 
@@ -172,18 +180,18 @@ DataPropertyRange(:{ClassName}.{propName} xsd:{type})
 - Add `skos:altLabel` only when the SDD names a synonym or alias; omit if none
 - `rdfs:comment` is required — pick the form that matches what the data contains
 
-Examples: `:Doctor.licenseNo`, `:Patient.birthDate`, `:Prescription.status`
+Examples: `:Customer.customerName`, `:SalesOrder.orderId`, `:SalesOrder.status`
 
 ### DataProperty comment forms
 
 **Plain meaning** (most properties):
 ```
-AnnotationAssertion(rdfs:comment :Order.orderDate "The date and time the order was placed.")
+AnnotationAssertion(rdfs:comment :SalesOrder.orderDate "The date and time the order was placed.")
 ```
 
-**Value domain** — exact, complete, case-sensitive enum (verify against real data before writing):
+**Value domain** — a choice-set field: exact, complete, case-sensitive value names, read from the choice set (`uip df choice-sets list-values <CHOICE_SET> --local --output json`). Range is `xsd:string`:
 ```
-AnnotationAssertion(rdfs:comment :Order.orderStatus "Values: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled' (case-sensitive; copy exactly).")
+AnnotationAssertion(rdfs:comment :SalesOrder.status "Values of choice set OrderStatus: 'Open' | 'Shipped' | 'Cancelled' (case-sensitive; copy exactly).")
 ```
 
 **Code list** — cryptic codes with meanings + phrase-to-code bridge:
@@ -196,19 +204,14 @@ AnnotationAssertion(rdfs:comment :Contract.status "'A' = finished, no problems |
 AnnotationAssertion(rdfs:comment :Score.value "Stored 0–1 fraction; multiply by 100 for a percent answer.")
 ```
 
-**NULL behavior with condition** (state the fact + the non-action to prevent over-filtering):
+**NULL behavior with condition** (state the fact and what to leave undone, to prevent over-filtering):
 ```
 AnnotationAssertion(rdfs:comment :Score.rank "NULL for ~600 rows. NULLs sort last in DESC — highest-score queries need no IS NOT NULL filter; add it only when ranking ascending.")
 ```
 
-**Value list** — a fixed set of values is a `STRING` field; list them in the comment (and enforce with `sh:in` in the constraints file):
-```
-AnnotationAssertion(rdfs:comment :Order.stage "Values: 'Pending' | 'Shipped' | 'Delivered' (case-sensitive; copy exactly).")
-```
-
 **Boolean**:
 ```
-AnnotationAssertion(rdfs:comment :Order.isPaid "Compare true/false, never 1/0.")
+AnnotationAssertion(rdfs:comment :SalesOrder.isPaid "Compare true/false, never 1/0.")
 ```
 
 ### Choosing the XSD range
@@ -221,6 +224,7 @@ AnnotationAssertion(rdfs:comment :Order.isPaid "Compare true/false, never 1/0.")
 | date, timestamp, created at | `xsd:dateTime` |
 | date only (no time) | `xsd:date` |
 | true/false, flag, enabled | `xsd:boolean` |
+| one of a fixed set of values (choice set) | `xsd:string` |
 | URL, link, URI | `xsd:anyURI` |
 
 Each range maps to one of the nine local entity types; see [`entity-format-guide.md`](entity-format-guide.md) for the mapping (for example `xsd:integer` is `DECIMAL` with `decimalPrecision: 0`, `xsd:dateTime` is `DATETIME_WITH_TZ`).
@@ -265,13 +269,13 @@ AnnotationAssertion(rdfs:comment :{ClassName} "TIME SERIES: ~{N} dated rows per 
 
 Every `Declaration(Class(...))` must be (a) the domain of ≥1 `DataPropertyDomain`/`ObjectPropertyDomain`, and (b) instantiated in `{name}-mapping.yarrrml.yml` over a local entity. A class that fails either — typically a "role"/"actor" concept (approving manager, external system name, job title) with zero properties and no entity — parses as valid OWL but fails `uip ont validate --local` (`XF-009`, every class needs a backing entity). If the concept is narrative-only, fold it into the relevant property's `rdfs:comment` instead (e.g. `Payment.approvedBy`'s comment) rather than declaring a class.
 
-**Real properties don't mean relationships are modeled.** A `DataProperty` whose value equals another class's key (e.g. `SupplierInvoice.poReference` matching `PurchaseOrder.Id`) is two matching columns, not a relationship, until it's an `ObjectProperty` (with `ObjectPropertyDomain`/`ObjectPropertyRange`) wired into the mapping as a join on plain columns. Every object property between two mapped classes needs that join (`XF-015`), and every join needs a declared object property (`XF-014`). See [`relationships-guide.md`](relationships-guide.md).
+**Real properties don't mean relationships are modeled.** A `DataProperty` whose value equals another class's key (e.g. a text column that happens to hold another entity's key) is two matching columns, not a relationship, until the entity has a `RELATIONSHIP` field and the schema an `ObjectProperty` (with `ObjectPropertyDomain`/`ObjectPropertyRange`) wired into the mapping as a join on plain columns. Every object property between two mapped classes needs that join (`XF-015`), and every join needs a declared object property (`XF-014`). See [`relationships-guide.md`](relationships-guide.md).
 
 ---
 
 ## Many-to-many relationships
 
-When two classes have a mutual "can have many" relationship (e.g. a Patient can have many InsurancePlans, and an InsurancePlan covers many Patients), OWL 2 QL cannot directly express this as two ObjectProperties — each ObjectProperty has a single domain and range. Model it with a **junction class**.
+When two classes have a mutual "can have many" relationship (e.g. a SalesOrder can contain many Products, and a Product appears on many SalesOrders), OWL 2 QL cannot directly express this as two ObjectProperties — each ObjectProperty has a single domain and range. Model it with a **junction class**.
 
 ### Pattern — junction class
 
@@ -279,42 +283,42 @@ Introduce a class that represents the association itself:
 
 ```
 Classes:
-  Patient
-  InsurancePlan
-  PatientInsurance   ← junction: one row per (patient, plan) pair
+  SalesOrder
+  Product
+  OrderLine   ← junction: one row per (order, product) pair
 
 ObjectProperties:
-  coveredUnder: PatientInsurance → InsurancePlan
-  enrolledPatient: PatientInsurance → Patient
+  lineOfOrder: OrderLine → SalesOrder
+  lineOfProduct: OrderLine → Product
 ```
 
 In the OWL file:
 ```
-Declaration(Class(:PatientInsurance))
-Declaration(ObjectProperty(:coveredUnder))
-Declaration(ObjectProperty(:enrolledPatient))
+Declaration(Class(:OrderLine))
+Declaration(ObjectProperty(:lineOfOrder))
+Declaration(ObjectProperty(:lineOfProduct))
 
-AnnotationAssertion(rdfs:label :PatientInsurance "Patient insurance enrolment")
-AnnotationAssertion(rdfs:comment :PatientInsurance "ONE row per (patient, plan) enrolment. Junction between Patient and InsurancePlan. Keyed by enrolmentId.")
-AnnotationAssertion(rdfs:label :coveredUnder "Covered under")
-AnnotationAssertion(rdfs:comment :coveredUnder "Links an enrolment record to its insurance plan. Join: PatientInsurance.planId = InsurancePlan.Id.")
-AnnotationAssertion(rdfs:label :enrolledPatient "Enrolled patient")
-AnnotationAssertion(rdfs:comment :enrolledPatient "Links an enrolment record to the patient. Join: PatientInsurance.patientId = Patient.Id.")
-ObjectPropertyDomain(:coveredUnder :PatientInsurance)
-ObjectPropertyRange(:coveredUnder :InsurancePlan)
-ObjectPropertyDomain(:enrolledPatient :PatientInsurance)
-ObjectPropertyRange(:enrolledPatient :Patient)
+AnnotationAssertion(rdfs:label :OrderLine "Order line")
+AnnotationAssertion(rdfs:comment :OrderLine "ONE row per (order, product) line. Junction between SalesOrder and Product.")
+AnnotationAssertion(rdfs:label :lineOfOrder "Line of order")
+AnnotationAssertion(rdfs:comment :lineOfOrder "Links an order line to its order. Join: OrderLine.order = SalesOrder.Id.")
+AnnotationAssertion(rdfs:label :lineOfProduct "Line of product")
+AnnotationAssertion(rdfs:comment :lineOfProduct "Links an order line to its product. Join: OrderLine.product = Product.Id.")
+ObjectPropertyDomain(:lineOfOrder :OrderLine)
+ObjectPropertyRange(:lineOfOrder :SalesOrder)
+ObjectPropertyDomain(:lineOfProduct :OrderLine)
+ObjectPropertyRange(:lineOfProduct :Product)
 ```
 
-The junction class maps to its own local entity (the association table). Both key columns are plain fields of that entity.
+The junction class maps to its own local entity. It holds one `RELATIONSHIP` field per side.
 
 **When to introduce a junction class:**
 - User says "X can have many Y AND Y can be shared across many X"
 - There is a real association entity with its own `Id`
-- The association itself carries extra fields (enrolment date, coverage tier, etc.)
+- The association itself carries extra fields (quantity, unit price, etc.)
 
 **Do not use a junction class when:**
-- One side is strictly "many owned by one" (use a plain ObjectProperty with FK on the many-side entity)
+- One side is strictly "many owned by one" (use a plain ObjectProperty with `RELATIONSHIP` field on the many-side entity)
 - There is no association entity
 
 ---
@@ -341,6 +345,6 @@ SubClassOf(:{Child} :{Parent})
 | Construct | Convention | Example |
 |---|---|---|
 | Class | PascalCase | `CustomerOrder`, `RMA_Transaction` |
-| DataProperty | `{ClassName}.{propName}` camelCase — **never** `has{Prop}` | `Order.orderDate`, `Order.totalAmount` |
+| DataProperty | `{ClassName}.{propName}` camelCase — **never** `has{Prop}` | `SalesOrder.orderDate`, `SalesOrder.totalAmount` |
 | ObjectProperty | camelCase verb phrase | `orderedBy`, `belongsToCategory` |
-| Label | natural business phrase, lowercase | `"order date"`, `"prescribed by"` |
+| Label | natural business phrase, lowercase | `"order date"`, `"placed by"` |

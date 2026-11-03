@@ -17,14 +17,14 @@ A short description of the ontology for the agent or person who reads it. It is 
 
 ```json
 {
-  "name": "orders",
-  "description": "Customers, the orders they place, and the lines on each order.",
+  "name": "SalesOps",
+  "description": "Customers and the sales orders they place.",
   "classes": [
     { "name": "Customer", "grain": "ONE row per customer." },
-    { "name": "Order", "grain": "ONE row per order." }
+    { "name": "SalesOrder", "grain": "ONE row per order." }
   ],
   "relationships": [
-    "Order placedBy Customer (Order.customerId = Customer.Id)"
+    "SalesOrder placedBy Customer (SalesOrder.customer = Customer.Id)"
   ]
 }
 ```
@@ -40,11 +40,11 @@ A JSON-LD `@context` that maps short terms to ontology IRIs. The file is a JSON 
 ```json
 {
   "@context": {
-    "@base": "https://ontology.uipath.com/orders#",
-    "ont": "https://ontology.uipath.com/orders#",
+    "@base": "https://ontology.uipath.com/SalesOps#",
+    "ont": "https://ontology.uipath.com/SalesOps#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
-    "orderDate": { "@id": "ont:Order.orderDate", "@type": "xsd:dateTime" },
-    "totalAmount": { "@id": "ont:Order.totalAmount", "@type": "xsd:decimal" },
+    "orderDate": { "@id": "ont:SalesOrder.orderDate", "@type": "xsd:dateTime" },
+    "totalAmount": { "@id": "ont:SalesOrder.totalAmount", "@type": "xsd:decimal" },
     "placedBy": { "@id": "ont:placedBy", "@type": "@id" }
   }
 }
