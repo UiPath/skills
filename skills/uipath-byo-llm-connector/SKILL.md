@@ -14,7 +14,7 @@ UiPath product ──(API flavor body)──▶ LLM Gateway ──▶ Integratio
         └─ your connector: preRequest hook → vendor endpoint → postRequest hook
 ```
 
-Everything here runs through `uip`: `uip is connectors builder` (author on disk), `uip is connectors import` and `publish` (tenant), `uip is connectors test-connection` (connect the draft), `uip is connections` (the runtime connection), `uip llm-configuration byo-connections` (probe + save).
+Everything here runs through `uip`: `uip is connectors builder` (author on disk), `uip is connectors import` and `publish` (tenant), `uip is connections` (the runtime connection), `uip llm-configuration byo-connections` (probe + save). The one exception is the draft's test connection, which the CLI does not make: `curl` calls the Integration Service API for it, with the token from `uip login refresh`.
 
 ## When to Use This Skill
 
@@ -29,12 +29,12 @@ Everything here runs through `uip`: `uip is connectors builder` (author on disk)
 2. **Register with `--connector-type Custom --connector-template <template>`.** The gateway reads the template to route the call and to pick the strategy; without it the probe fails before it reaches the connector. A connector built from scratch or from an AI Gateway template is `CustomAiGateway`. Also put the matching template tag in `element-metadata.json:tags` (same guide) so the AI Trust Layer UI lists the connector for that flavor. If `uip llm-configuration byo-connections create --help` lists no `--connector-template`, run `uip update` and check again; if it is still missing, this CLI release cannot register a Custom connector — build and test-connect the connector, but stop before step 7 and tell the user.
 3. **Scaffold with `builder init`; use templates and zips only as reference.** `init` derives the tenant key `design-{org}-{slug}` from your login. A template or an old zip carries someone else's key (every AI Gateway template is `design-entity-customaigatewaybyomtemplate`), and importing it updates whichever connector already owns that key. Copy resources, config entries and hook bodies from the reference into the fresh scaffold — see [references/connector-contract-guide.md](references/connector-contract-guide.md) §"Porting from a template or zip".
 4. **Streaming responses bypass the postRequest hook.** On a streaming call Integration Service runs only the preRequest hook and relays the vendor's bytes raw. A connector can reshape a streamed *request*, never a streamed *response*: when the vendor's stream format differs from the flavor's, tell the user streaming will not work for that product, and choose a flavor the vendor streams natively if one is allowed.
-5. **Credentials enter only through the connection form.** API keys, client secrets and tokens are typed by the user into the Integration Service connection page (`AuthUrl`). Never put one in a hook, an `element.json` default, a CLI argument, a file, or the chat. Never send a credential in a query string or path (`vendorType: "query"`/`"path"`, or in `request_vendor_path`) — full request URLs are recorded in telemetry. Headers or a form-encoded token body only.
+5. **Credentials enter only through the connection form.** API keys, client secrets and tokens are typed by the user into the Integration Service connection page (`AuthUrl`). Never put one in a hook, an `element.json` default, a CLI argument, a file, or the chat. Never send a credential in a query string or path (`vendorType: "query"`/`"path"`, or in `request_vendor_path`) — full request URLs are recorded in telemetry. Headers or a form-encoded token body only. The same goes for the UiPath access token the step 6 helper reads: it reaches `curl` on stdin only — never print it or `$S`, and never put it in a command line, a file or a URL.
 6. **Hooks never log or echo content.** No `console.log`, no prompt, completion, header or token in an error message, `response_error_message`, or `connection_identity`. Return the vendor's error status and a fixed message instead.
 7. **Log in and check the session before any tenant step.** `uip login status --output json` → `Data.Status` must be `"Logged in"` (the envelope says `Success` even when the session expired). If it is not, ask the user to run `uip login`; until then build offline only, and never guess a tenant, folder or connection id. The user needs the **OrganizationAdmin** role for AI Trust Layer to probe or save a configuration.
-8. **Test the draft; publish once the probes pass.** `uip is connectors test-connection create` is the Connector Builder's Add connection button: it connects the imported design connector, and that connection runs whatever was last imported — a fix is one `import` away, with no version bump and no publish. It belongs to the draft: `uip is connections` never lists it and only its creator sees it. The runtime connection is made on the **published** `custom-…` key (`PublishedKey` from `publish`) in the shared folder, from the Integration Service web UI — `uip is connections create` cannot pick a folder (see [references/connections-guide.md](references/connections-guide.md)).
+8. **Test the draft; publish once the probes pass.** The test connection (step 6) is the Connector Builder's Add connection button, called over the API: it connects the imported design connector, and that connection runs whatever was last imported — a fix is one `import` away, with no version bump and no publish. It belongs to the draft: `uip is connections` never lists it and only its creator sees it. The runtime connection is made on the **published** `custom-…` key (`PublishedKey` from `publish`) in the shared folder, from the Integration Service web UI — `uip is connections create` cannot pick a folder (see [references/connections-guide.md](references/connections-guide.md)).
 9. **Every publish needs a higher version.** Bump `element-metadata.json:latestVersion` (or `publish --version`) before each `publish`; the server rejects an equal version. While testing, only re-import.
-10. **Probing saves a configuration.** `byo-connections create` and `update` run the product probes and save only when every model passes; there is no dry run. Probe with `--no-enabled` so a passing test configuration never serves traffic, and ask the user before deleting a configuration (`byo-connections delete --force`) or a connection (`test-connection delete --yes`, `uip is connections delete --yes`).
+10. **Probing saves a configuration.** `byo-connections create` and `update` run the product probes and save only when every model passes; there is no dry run. Probe with `--no-enabled` so a passing test configuration never serves traffic, and ask the user before deleting a configuration (`byo-connections delete --force`) or a connection (the test connection's `DELETE` in [references/connections-guide.md](references/connections-guide.md), `uip is connections delete --yes`).
 11. **Stop after three failed probes on the same reason.** Read the reason, change one thing, re-import, re-probe. After three attempts on one reason, stop and show the user the probe summary and the hook — do not keep guessing.
 12. **Git Bash on Windows: disable path conversion first.** `export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'` before any builder command, or `/v1/chat/completions` is rewritten to a Windows path that validates, publishes, and then 404s. With conversion off, pass file paths relative or as `C:/…`: a `/c/…` path reaches the CLI as `C:\c\…`.
 
@@ -117,23 +117,70 @@ tar -a -c -f <CONNECTOR_DIR>.zip <CONNECTOR_DIR>/app/element                    
 uip is connectors import --connector-dir <CONNECTOR_DIR> --output json           # create-or-update by key
 ```
 
-The `builder` commands find the connector from `<WORK_DIR>`; `import`, `test-connection` and `publish` look only at the current directory and above, so pass `--connector-dir` (the `RepoName` folder `init` printed). Do not publish yet: the draft is tested first.
+The `builder` commands find the connector from `<WORK_DIR>`; `import` and `publish` look only at the current directory and above, so pass `--connector-dir` (the `RepoName` folder `init` printed). Note `Data.Id` — the `<CONNECTOR_ID>` step 6 needs. Do not publish yet: the draft is tested first.
 
 ### 6. Create the test connection on the draft
 
-```bash
-uip is connectors test-connection create --connector-dir <CONNECTOR_DIR> \
-  --name '<CONNECTOR_NAME> test' --no-wait --output json
-```
-
-- `Code: "TestConnectionCreated"` — a connector without authentication is connected at once; take `Data.ConnectionId`.
-- `Code: "TestConnectionAuthorizationPending"` — give the user `Data.AuthUrl`, ask them to open it, enter the vendor credentials (a sandbox key is fine) and confirm when done. Then confirm the connection with the `Data.ConnectionId` from `create` exists:
+This is the Connector Builder's **Add connection**, called with `curl` (it needs `curl`, `jq` and `node`). Shell variables do not survive between commands, so write a helper once, outside the connector folder, and source it in every call. It reads a fresh token from `uip login refresh` and hands it to `curl` on stdin, so the token never reaches a command line, a file or the output:
 
 ```bash
-uip is connectors test-connection list --connector-dir <CONNECTOR_DIR> --output json   # Data.Connections[].ConnectionId
+cat > <WORK_DIR>/is-api.sh <<'EOF'
+# Sourced before each call. It holds no token; $S does, so never print $S.
+S=$(uip login refresh --login-validity 15 --output json) && jq -e '.Data.AccessToken' <<<"$S" >/dev/null ||
+  { echo 'Not logged in: ask the user to run uip login.' >&2; return 1; }
+T=$(jq -r '.Data | "\(.BaseUrl)/\(.OrganizationId)/\(.TenantName)"' <<<"$S")
+NI="$T/elements_/v1/elements/normalized-instances"
+api() {
+  local out
+  out=$(jq -r '"header = \"Authorization: Bearer \(.Data.AccessToken)\""' <<<"$S" |
+    curl -sS --fail-with-body -K - -H 'Accept: application/json' -H 'Content-Type: application/json' \
+      -H 'x-uipath-source: UiPath.IntegrationService.ConnectorBuilder' "$@") || { printf '%s\n' "$out" >&2; return 1; }
+  printf '%s\n' "$out"
+}
+EOF
 ```
 
-The connection belongs to the draft, so `uip is connections list` and `ping` do not see it; the probe is its test. Details and credential changes: [references/connections-guide.md](references/connections-guide.md).
+Open a connection session on the draft, in your Personal workspace, with a connection id you choose — without one the connection is created with an empty id no configuration can use:
+
+```bash
+( set -eo pipefail; source <WORK_DIR>/is-api.sh
+  CONNECTOR=$(api "$T/elements_/v3/element/connectors/<CONNECTOR_ID>" | jq -c '{key, elementId: .sobaId}')
+  FOLDER=$(api "$T/orchestrator_/odata/PersonalWorkspaces/UiPath.Server.Configuration.OData.GetPersonalWorkspace" |
+    jq -c '{key: .Key, name: .Name, path: .Name, folderType: "Personal", personalWorkspace: true}')
+  CONNECTION_ID=$(node -e 'console.log(crypto.randomUUID())')
+  SESSION=$(api "$NI/applications/default/sessions" --data-raw "$(jq -nc --argjson c "$CONNECTOR" --argjson f "$FOLDER" \
+    --arg id "$CONNECTION_ID" '{elementKey: $c.key, elementVersion: "Design", debug: true, usePreAuth: true,
+                                instanceId: "", connectionId: $id, folder: $f}')")
+  ASKS_NOTHING=$(api "$NI/applications/sessions/$(jq -r .sessionID <<<"$SESSION")" | jq '.elementMetadata
+    | .authentication.type == "none" and all(.configuration[]?; (.configScreenType // "") | startswith("pre") | not)')
+  jq --argjson c "$CONNECTOR" --arg id "$CONNECTION_ID" --argjson asksNothing "$ASKS_NOTHING" \
+    '{elementId: $c.elementId, connectionId: $id, sessionId: .sessionID, authUrl: .redirectUrl, expiresAt: .expiration, asksNothing: $asksNothing}' <<<"$SESSION"
+)
+```
+
+- `asksNothing: true` — the connector has no authentication and no connection field, so finish the session yourself, as the page's Connect button would:
+
+```bash
+( set -eo pipefail; source <WORK_DIR>/is-api.sh
+  DETAILS=$(api "$NI/applications/sessions/<SESSION_ID>")
+  api "$NI/authenticate" -H "x-uipath-folderkey: $(jq -r .headers.folderKey <<<"$DETAILS")" -H 'x-uipath-foldertype: Personal' \
+    --data-raw "$(jq -c --arg name '<CONNECTOR_NAME> test' '{element: {key: .elementMetadata.key, version: .elementVersion},
+      sessionID, tags: .elementInstanceTags, configuration: (.configs // {}), name: $name}' <<<"$DETAILS")" |
+    jq '.elementInstance | {connectionId, instanceId: .id, name}'
+)
+```
+
+- `asksNothing: false` — give the user `authUrl`, ask them to open it before `expiresAt`, enter the vendor credentials (a sandbox key is fine) and confirm when done. Never complete this session yourself.
+
+Either way `connectionId` is the test connection (the `--connection-id` for step 7), and `elementId` addresses the draft's connections. Confirm it exists — a `404` "No element instances found" means none does yet:
+
+```bash
+( set -eo pipefail; source <WORK_DIR>/is-api.sh
+  api "$T/elements_/elements/api-v2/elements/<ELEMENT_ID>/instances" | jq 'map({connectionId, instanceId: .id, name, createdDate})'
+)
+```
+
+The connection belongs to the draft, so `uip is connections list` and `ping` do not see it; the probe is its test. Errors, delete and credential changes: [references/connections-guide.md](references/connections-guide.md).
 
 ### 7. Probe with the product's own probes
 
@@ -173,7 +220,7 @@ uip llm-configuration byo-connections update <CONFIG_ID> \
   --llm-name <CATALOG_MODEL> --llm-identifier <VENDOR_MODEL_ID> --output json
 ```
 
-`update` re-runs the probes against the runtime connection, which runs the published version. Finish with `byo-connections get <CONFIG_ID> --force-refresh --output json`, and ask before deleting the test connection (`uip is connectors test-connection delete <TEST_CONNECTION_ID> --connector-dir <CONNECTOR_DIR> --yes`). Report: connector key + version, flavor, the connections (id, folder), the configuration id, the probe verdict, and any limitation (streaming, unsupported parameters).
+`update` re-runs the probes against the runtime connection, which runs the published version. Finish with `byo-connections get <CONFIG_ID> --force-refresh --output json`, and ask before deleting the test connection ([references/connections-guide.md](references/connections-guide.md) §"Delete"). Report: connector key + version, flavor, the connections (id, folder), the configuration id, the probe verdict, and any limitation (streaming, unsupported parameters).
 
 ## Command Map
 
@@ -186,8 +233,10 @@ uip is connectors builder                                # author on disk (see W
   init | activity create | activity hook create | auth set | auth system create
   state query <ptr> | state patch <ptr> --value-file | inspect | validate
 uip is connectors import | publish --wait | publish-status <id> | get <key>       # import/publish: --connector-dir <dir>
-uip is connectors test-connection                        # the draft's connection, --connector-dir <dir>
-  create --no-wait | list | delete <connection-id> --yes
+uip login refresh                                        # token for the curl calls (via <WORK_DIR>/is-api.sh)
+curl … elements_/v1/elements/normalized-instances        # the draft's test connection (Workflow 6)
+  POST applications/default/sessions | GET applications/sessions/<id> | POST authenticate
+curl … elements_/elements/api-v2/elements/<element-id>/instances   # list | DELETE …/<instance-id>
 uip is connections list <custom-key> --all-folders | ping <id> | edit <id> --no-wait | delete <id> --yes
 uip or folders list                                      # folder Type (Personal vs Standard)
 ```

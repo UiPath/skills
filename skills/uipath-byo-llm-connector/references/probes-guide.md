@@ -37,7 +37,7 @@ The verdict is keyed by catalog model (`validation.<model>` on success; in the f
 
 | `unavailabilityReason` | Likely cause | Fix |
 |---|---|---|
-| `IntegrationServiceConfigurationNotFound` | Wrong connection id, or a deleted connection | Re-list it — `test-connection list` for the test connection, `uip is connections list <PUBLISHED_KEY> --all-folders --refresh` for the runtime one — and use its id ([connections-guide.md](connections-guide.md)) |
+| `IntegrationServiceConfigurationNotFound` | Wrong connection id, or a deleted connection | Re-list it — the instances list in SKILL.md step 6 for the test connection, `uip is connections list <PUBLISHED_KEY> --all-folders --refresh` for the runtime one — and use its id ([connections-guide.md](connections-guide.md)) |
 | `IntegrationServiceConfigurationNotEnabled` | Connection disabled or its authorization expired | `uip is connections edit <ID>` and re-enter the fields |
 | `IntegrationServiceMissingAttributes` | The connection lacks a required field | Re-create the connection with every `pre` field filled |
 | `IntegrationServiceUnreachable` | Integration Service error; on the runtime connection, a version that is not published yet | `publish-status`, then retry |

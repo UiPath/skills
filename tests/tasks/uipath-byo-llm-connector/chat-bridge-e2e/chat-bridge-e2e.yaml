@@ -9,9 +9,10 @@ description: >
   hooks on an OpenAI body and on Acme answers and checks the translation both
   ways, plus the flavor path, the template tag, the auth header and the
   absence of secret defaults. The tenant steps run against a disconnected CLI
-  and are graded on the command shape: the draft's test-connection for the
-  connection (never `uip is connections create` on the design- key) and
-  Custom + CustomAiGateway + --no-enabled for the probe.
+  and are graded on the command shape: the builder's connection session on
+  the Integration Service API for the test connection (never `uip is
+  connections create` on the design- key) and Custom + CustomAiGateway +
+  --no-enabled for the probe.
 tags: [uipath-byo-llm-connector, e2e, 'mode:build', 'lifecycle:setup', connector, 'feature:hooks', 'feature:connections']
 
 run_limits:
@@ -41,8 +42,8 @@ initial_prompt: |
   Important:
   - The `uip` CLI is installed but NOT logged in to a tenant here. Build the
     connector offline (pass the organization explicitly). Tenant commands
-    (import, publish, connections, llm-configuration) WILL fail with auth
-    errors — that is expected. Run each tenant command once and move on;
+    (import, publish, connections, llm-configuration, and the test
+    connection's API calls) WILL fail with auth errors — that is expected. Run each tenant command once and move on;
     use placeholder ids where a previous step returned none. Do NOT try to
     log in.
   - No real credentials exist; never put a key anywhere.
@@ -103,9 +104,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the test connection on the draft with test-connection"
+    description: "Agent opened the builder's connection session on the draft through the API"
     tool_name: Bash
-    command_pattern: 'uip\s+is\s+connectors\s+test-connection\s+create'
+    command_pattern: 'normalized-instances/applications/default/sessions'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -7,7 +7,7 @@ An Integration Service connection is one set of vendor credentials on a connecto
 | | Test connection | Runtime connection |
 |---|---|---|
 | Purpose | Probe the connector while it is being built and fixed | Serve the product once the configuration is enabled |
-| Made with | `uip is connectors test-connection create` — the Connector Builder's Add connection | The Integration Service web UI, on the published connector |
+| Made with | `curl` on the Integration Service API — the Connector Builder's Add connection (SKILL.md step 6) | The Integration Service web UI, on the published connector |
 | Connector | The draft (`design-…`); runs whatever was last imported | The published `custom-…` key; runs the published version |
 | Credentials | A sandbox key, or the builder's own | The credentials production must use — ask the user |
 | Who sees it | Only its creator; `uip is connections` never lists it | The shared folder the configuration names in `--folder-key`, so other admins can manage it |
@@ -17,21 +17,32 @@ Use one set of credentials for both only when the user says the same credentials
 
 ## Create the test connection
 
-```bash
-uip is connectors test-connection create --connector-dir <CONNECTOR_DIR> \
-  --name '<CONNECTOR_NAME> test' --no-wait --output json
-```
+SKILL.md step 6 has the calls: the `<WORK_DIR>/is-api.sh` helper, then open a session, finish it or hand its page to the user, and list. They are the requests the Connector Builder sends when you press Add connection:
 
-The connector must be imported first; the command finds it on the tenant by the `key` in `element.json` (`connectorNotFoundOnTenant` means it was not imported).
+| Call | Request |
+|---|---|
+| The draft's key and element id | `GET elements_/v3/element/connectors/<CONNECTOR_ID>` → `key`, `sobaId` (`<CONNECTOR_ID>` is `Data.Id` from `import`) |
+| Your Personal workspace | `GET orchestrator_/odata/PersonalWorkspaces/UiPath.Server.Configuration.OData.GetPersonalWorkspace` → `Key`, `Name` |
+| Open a session | `POST elements_/v1/elements/normalized-instances/applications/default/sessions` → `sessionID`, `redirectUrl` (the authorization page), `expiration` |
+| Read it | `GET elements_/v1/elements/normalized-instances/applications/sessions/<SESSION_ID>` → `elementMetadata` (its `authentication` and `configuration`), `configs`, `headers.folderKey` |
+| Finish it, when it asks nothing | `POST elements_/v1/elements/normalized-instances/authenticate` with the folder headers → `elementInstance` |
+| List your connections on the draft | `GET elements_/elements/api-v2/elements/<ELEMENT_ID>/instances` |
 
-- A connector without authentication is connected straight away: `Code: "TestConnectionCreated"`, `Data.ConnectionId`.
-- Any other returns `Code: "TestConnectionAuthorizationPending"` with `Data.AuthUrl` — a page where the user enters the connection's fields (the ones with `configScreenType: "pre"`); `Data.ExpiresAt` bounds it. Hand the URL to the user and wait for them to say it is done. Never ask for the credentials in the chat or pass them on a command line, and do not open the page on their behalf with stored credentials. `Data.ConnectionId` is the id the finished connection will carry.
+Every call carries `x-uipath-source: UiPath.IntegrationService.ConnectorBuilder`, under `<BaseUrl>/<OrganizationId>/<TenantName>/` from `uip login refresh`.
 
-```bash
-uip is connectors test-connection list --connector-dir <CONNECTOR_DIR> --output json
-```
+- A session asks for something when the connector has authentication or a connection field the page shows (`configScreenType` `"pre"` or `"pre-optional"`). Hand `authUrl` to the user and wait for them to say it is done. Never ask for the credentials in the chat or pass them on a command line, never complete that session with `authenticate`, and do not open the page on their behalf with stored credentials. The finished connection carries the `connectionId` you chose; the page names it.
+- A session is spent once a connection is made from it, and expires at `expiresAt`: reading it then answers `404` "Session expired" — open a new one.
 
-`Data.Connections[]` lists your test connections on the draft (`ConnectionId`, `InstanceId`, `Name`, `CreatedDate`); use the `ConnectionId` as `--connection-id` on the BYO configuration.
+What the calls answer when something is wrong:
+
+| Answer | Meaning | Fix |
+|---|---|---|
+| `404` "Connector not found" on the connector record | Wrong `<CONNECTOR_ID>` | Use `Data.Id` from the last `import` |
+| `400` "Element key is missing or invalid" on the session | The session body has no `elementKey` | Check the connector record call succeeded |
+| `404` "No element instances found" on the list | You have no connection on this draft yet | Open a session |
+| `404` "Session expired" | The session was spent or timed out | Open a new session |
+| `401` | The token expired between calls | Run the call again: the helper reads a fresh one; if `uip login refresh` fails, ask the user to run `uip login` |
+| "Argument list too long" | A whole connector record was passed as an argument | Keep the `jq -c '{key, elementId: .sobaId}'` projection |
 
 Because it belongs to the draft, a re-import changes what the test connection runs: fix a hook, `import`, re-probe. Nothing is published until step 8. The test connection is not in the connections catalog, so `uip is connections ping` cannot check it — the probe is its test.
 
@@ -72,6 +83,15 @@ Deleting a connection breaks every BYO configuration that names it. List the con
 
 ```bash
 uip llm-configuration byo-connections list --include-connection-details --output json
-uip is connectors test-connection delete <CONNECTION_ID> --connector-dir <CONNECTOR_DIR> --yes --output json   # test connection
-uip is connections delete <CONNECTION_ID> --yes --output json                                                  # runtime connection
+uip is connections delete <CONNECTION_ID> --yes --output json                     # runtime connection
 ```
+
+A test connection is deleted by its `instanceId` (the list in SKILL.md step 6 maps `connectionId` to it):
+
+```bash
+( set -eo pipefail; source <WORK_DIR>/is-api.sh
+  api -X DELETE "$T/elements_/elements/api-v2/elements/<ELEMENT_ID>/instances/<INSTANCE_ID>" && echo deleted
+)
+```
+
+A probe on a deleted test connection answers `VendorModelNotFound` with "Invalid Element Instance Id provided.".
