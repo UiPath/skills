@@ -757,8 +757,10 @@ Draft mode only.
    draft (4c) or a draft with a placeholder connection binding skips it; a
    placeholder-binding draft keeps the initializer's `Event_start` id and its
    `uipath:entryPointId`, because a renamed start event leaves
-   `entry-points.json` stale and 4e fails. For the full contract (scope,
-   idempotency, binding rules) see
+   `entry-points.json` stale and 4e fails. Such a draft is never a
+   package-ready, upload, debug, publish, or deploy deliverable: stop and ask
+   for a real connection, or report it blocked; never skip `refresh` and ship.
+   For the full contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 - **4g Show the finished process.** When the request allows an upload and the
