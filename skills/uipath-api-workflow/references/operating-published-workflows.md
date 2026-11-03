@@ -74,7 +74,7 @@ Two surfaces that look useful and are NOT, for API-workflow jobs:
 
 > **Diagnose before you tear down.** After uninstalling the deployment, `uip or jobs get <jobId>` returns `Result: Failure` with an empty `State`. Jobs themselves are immutable audit records (`uip or jobs --help`: they "cannot be deleted -- they age out per the binding process's retention period"), so the likely cause is that the folder/process context needed to resolve the job is gone, not the records. Either way, capture what you need while the deployment still stands.
 
-> For per-activity detail the local loop is stronger than anything in cloud: reproduce with `uip api-workflow run <Workflow.json> --no-auth --output json`, which names the failing activity. Cloud gives you the fault message; local gives you its position.
+> For per-activity detail the local loop is stronger than anything in cloud: reproduce with `uip api-workflow run <Workflow.json> --no-auth --output json` (after consent — SKILL.md rule 21), which names the failing activity. Cloud gives you the fault message; local gives you its position.
 
 Map the surfaced error back to a fix using the category catalog in [troubleshooting.md](troubleshooting.md) (Structure > Expression > Activity Config > Logic). For deep, multi-signal root-cause investigations (what changed, cross-run comparison, incident correlation), hand off to **uipath-troubleshoot**.
 

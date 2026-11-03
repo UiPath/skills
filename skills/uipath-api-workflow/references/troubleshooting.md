@@ -251,7 +251,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Either expression-form works:** `"${ { ... } }"` (single-brace expression containing a JS object literal) and `"${{ ... }}"` (double-brace object-literal-expression form) evaluate to the same value. Pick one convention; this skill standardizes on the double-brace form, but you may see single-brace in the wild and they are interchangeable. Never combine them: `"${{ { ... } }}"` passes `validate` but fails at run time with `Unexpected token '{'`.
 - **Single-value responses are fine as-is:** `"response": "${$context.outputs.Javascript_1}"` or `"response": "${'done'}"` — the designer only mangles object payloads, not single expressions.
 <!--skill-flavor:designer-roundtrip-runtime-check:start-->
-- **On-disk is authoritative — re-validate after every designer save.** Even with the single-expression workaround, every StudioWeb designer save may re-trigger normalization passes that corrupt the Response shape. Treat the file on disk as the source of truth: after any designer roundtrip, re-run `uip api-workflow run --no-auth --output json` and inspect the Response output. If a field has become the literal text of its expression (a long string instead of the evaluated value), the file was re-corrupted — re-apply the single-expression workaround in the file directly, and consider keeping CLI-authored workflows out of designer save cycles until the designer fix ships.
+- **On-disk is authoritative — re-validate after every designer save.** Even with the single-expression workaround, every StudioWeb designer save may re-trigger normalization passes that corrupt the Response shape. Treat the file on disk as the source of truth: after any designer roundtrip, re-run `uip api-workflow validate`, then — with the user's consent (SKILL.md rule 21) — `uip api-workflow run --no-auth --output json`, and inspect the Response output. If a field has become the literal text of its expression (a long string instead of the evaluated value), the file was re-corrupted — re-apply the single-expression workaround in the file directly, and consider keeping CLI-authored workflows out of designer save cycles until the designer fix ships.
 <!--skill-flavor:designer-roundtrip-runtime-check:end-->
 - **Upstream:** designer-side StudioWeb bug. Fix lives in the api-workflows translator for Response tasks (needs to preserve object payloads losslessly). Until that ships, the single-expression workaround is required and may need re-applying after each designer roundtrip.
 
@@ -742,7 +742,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Symptom:** Reported "fixed" but errors remain
 - **Cause:** Skipped re-running the validators after applying a fix
 <!--skill-flavor:runtime-validation-pitfall:start-->
-- **Fix:** ALWAYS re-run after every edit. Two validators: `uip api-workflow validate <Workflow.json>` (offline static — schema + semantic checks, autonomous) then `uip api-workflow run --no-auth` (runtime — catches expression/connection errors static analysis can't). See SKILL.md rules 20–21.
+- **Fix:** ALWAYS re-run `uip api-workflow validate <Workflow.json>` after every edit (offline static — schema + semantic checks, autonomous). Runtime check `uip api-workflow run --no-auth` catches expression/connection errors static analysis can't, but executes the workflow's code and HTTP calls, so run it only with consent. See SKILL.md rules 20–21.
 <!--skill-flavor:runtime-validation-pitfall:end-->
 
 ### `Unknown activityType '<Name>'`
@@ -843,7 +843,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 <!--skill-flavor:runtime-debugging-strategy:start-->
 1. **Always run with `--output json`** so failures are machine-parseable
-2. **Run `--no-auth` first** to confirm structural validity. If structure passes but the real run fails, the issue is auth, network, or input data — not the workflow shape
+2. **Run `--no-auth` first** (with consent — SKILL.md rule 21) to confirm structural validity. If structure passes but the real run fails, the issue is auth, network, or input data — not the workflow shape
 3. **Reduce to minimal repro** — comment out (delete + restore via git) downstream tasks to isolate which task fails
 4. **Check exit code** — `0` = success, `1` = failure
 5. **Read `Instructions` first** — the executor often suggests the fix directly
