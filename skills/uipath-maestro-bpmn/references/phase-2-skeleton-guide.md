@@ -188,7 +188,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   <Name>: outline ready<, uploaded> (draft mode). <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
-  - <each box, in order>: <resource and folder | which of two | none yet, create it or name one>
+  - <each box, in order>: <resource and folder | which of two | none yet, create it or name one | not checked>
 
   Is this the process you want?
   1. **Build it**: make every step work.
@@ -196,8 +196,11 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   3. **Keep it**: stop here with this outline.
   ```
 
-  Send nothing beyond these lines: no diagram of the flow, no preamble or
-  status line, no headings or separators. The canvas, or the box lines when
+  Start the message with the `<Name>:` line. List task boxes only, not
+  events or gateways, each with one short clause: no element type ids, no
+  phase-4 plans, no reasons a lookup failed (say those once, in a sentence
+  after the first line). Send nothing beyond these lines: no diagram of the
+  flow, no preamble or status line, no headings or separators. The canvas, or the box lines when
   there is no upload, already show the shape, and Autopilot's chat panel is
   narrow: anything extra pushes the question out of view.
 
