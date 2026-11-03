@@ -1,0 +1,7 @@
+Case_ID,Activity,Timestamp
+ORD-2201,Order Received,2026-02-02 08:15:00
+ORD-2201,Credit Check,2026-02-02 09:40:00
+ORD-2201,Order Shipped,2026-02-03 14:05:00
+ORD-2202,Order Received,2026-02-02 10:02:00
+ORD-2202,Credit Check,2026-02-02 12:30:00
+ORD-2202,Order Cancelled,2026-02-02 16:45:00
