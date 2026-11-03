@@ -87,7 +87,7 @@ Autonomous runs — only when the user's current request explicitly says not to 
 
 ### 1.4 Resolve the target project
 
-Every project is created with the `Scaffolding` answers from 1.3: location, target framework, expression language, package set and versions. Pass them to the owning skill's project-creation step as its init flags and dependency list; when the answer was "pin to installed versions", install exactly those versions and never let the init command's defaults override them.
+Every project is created with the `Scaffolding` answers from 1.3: location, target framework, expression language, package set and versions. Pass them to the owning skill's project-creation step as its init flags and dependency list; when the answer was "pin to installed versions", install exactly those versions and never let the init command's defaults override them. When the Source fidelity answer keeps the source's names, each project is named as [source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md) names it.
 
 **Component genome:**
 1. When the Location answer is "reuse the existing project" (`project.json`, `project.uiproj`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.case`, `caseplan.json`, `uipath.json` matching the genome's primary skill), use it.
