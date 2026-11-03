@@ -91,23 +91,23 @@ tools: [{
 4. `summarize` takes the same `query` forms. `outputColumns` and
    `webSearchGrounding` are for `batchtransform` only.
 
-`check` codes, all errors:
+`check` reports all eight as errors. Compile itself fails on the four marked
+**compile**, and writes the others as given:
 
-| Code | Fix |
-| --- | --- |
-| `INLINE_AGENT_BATCH_TRANSFORM_NO_COLUMNS` / `_TOO_MANY_COLUMNS` | Give 1 to 10 columns |
-| `INLINE_AGENT_BATCH_TRANSFORM_COLUMN_NAME` / `_COLUMN_DESCRIPTION` | Fix the name's characters or length; add the description |
-| `INLINE_AGENT_BATCH_TRANSFORM_GROUNDING` | Use `'enabled'` or `'disabled'` |
-| `INLINE_AGENT_BUILTIN_QUERY_SOURCE` | Give the `query` object exactly one of `prompt`, `value`, `variable` |
-| `INLINE_AGENT_BUILTIN_COMPOSITE_REF` | Bind one reference; compute the rest in a `script()` step |
-| `INLINE_AGENT_BUILTIN_SETTING_NOT_APPLICABLE` | Drop `outputColumns` / `webSearchGrounding` from a non-`batchtransform` built-in |
+| Code | Fails | Fix |
+| --- | --- | --- |
+| `INLINE_AGENT_BATCH_TRANSFORM_NO_COLUMNS` / `_TOO_MANY_COLUMNS` | check | Give 1 to 10 columns |
+| `INLINE_AGENT_BATCH_TRANSFORM_COLUMN_NAME` / `_COLUMN_DESCRIPTION` | check | Fix the name's characters or length; add the description |
+| `INLINE_AGENT_BATCH_TRANSFORM_GROUNDING` | compile | Use `'enabled'` or `'disabled'` |
+| `INLINE_AGENT_BUILTIN_QUERY_SOURCE` | compile | Give the `query` object exactly one of `prompt`, `value`, `variable` |
+| `INLINE_AGENT_BUILTIN_COMPOSITE_REF` | compile | Bind one reference; compute the rest in a `script()` step |
+| `INLINE_AGENT_BUILTIN_SETTING_NOT_APPLICABLE` | compile | Drop `outputColumns` / `webSearchGrounding` from a non-`batchtransform` built-in |
 
-Compile also refuses the `_QUERY_SOURCE` and `_COMPOSITE_REF` cases.
-
-**Brownfield.** Decompile reads a Batch Transform tool back whole. Settings
-with no SDK form (a file bound to a variable, a `fileExtension` other than
-`csv`, a non-empty `folderPathPrefix`) are reported lossy, and a Summarize
-tool's task is reported lossy too. Edit those flows with `merge --baseline`
+**Brownfield.** Decompile reads a Batch Transform tool back whole. It reports
+lossy (an error under `--strict`) what it cannot: a file bound to a variable,
+a `fileExtension` other than `csv`, a non-empty `folderPathPrefix`, a
+canvas-saved tool node whose `resource.json` it could not read, and any
+Summarize task but Empty. Edit those flows with `merge --baseline`
 ([brownfield.md](brownfield.md#agent-resources-added-changed-removed)), which
 keeps the original `resource.json` and carries only your change. Adding or
 removing a column replaces the whole `outputColumns` array.

@@ -198,11 +198,13 @@ flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derive
   No action needed: do not delete it.
 - In a Flow project, merge also writes `bindings_v2.json` with the changed
   agent's rows re-derived, so a removed index is no longer declared.
-- Decompile does not read a built-in Summarize tool's task back and reports it
-  lossy, as it does a Batch Transform tool's settings that have no SDK form
-  ([agent-resources.md](agent-resources.md#the-batch-transform-tool)). Edit
-  such an agent with `merge --baseline`: it keeps the original `resource.json`
-  and carries only your change. Never copy the round trip's file over it.
+- Decompile does not read a built-in Summarize tool's task back: it reports
+  any task but Empty lossy (an error under `--strict`), as it does a Batch
+  Transform tool's settings that have no SDK form or a `resource.json` it
+  could not read ([agent-resources.md](agent-resources.md#the-batch-transform-tool)).
+  Edit such an agent with `merge --baseline`: it keeps the original
+  `resource.json` and carries only your change. Never copy the round trip's
+  file over it.
 
 ## Flows with draft nodes: let merge compile
 
