@@ -12,13 +12,9 @@ stages:
         pool: ${{ parameters.poolName }}
         steps:
           - checkout: self
-          - task: AzureKeyVault@2
-            displayName: '[FOSSA] Download secrets from devopsprodauthtokenswekv'
-            inputs:
-              azureSubscription: ${{ parameters.azureServiceConnection }}
-              keyVaultName: devopsprodauthtokenswekv
-              SecretsFilter: 'FossaApiKey,FossaApiIntegrationKey'
-              RunAsPreJob: false
+          # No Key Vault read here: from uipath.security.fossa.3.2.5 the template
+          # signs in to FOSSA through the FOSSA-OIDC workload identity connection.
+          # skipToggleKvStep keeps the job off the devopsprodauthtokenswekv vault.
           - template: Security/fossa.steps.yml@fossa
             parameters:
               OS: 'linux'
