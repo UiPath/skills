@@ -49,8 +49,10 @@ uip maestro bpmn incident summary --output json
 For process-level incident overview:
 
 ```bash
-uip maestro bpmn processes incidents <PROCESS_KEY> --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn processes incidents <PROCESS_DEFINITION_KEY> --folder-key <FOLDER_KEY> --output json
 ```
+
+`<PROCESS_DEFINITION_KEY>` is the bare process definition key, without the `:<processVersion>` suffix that `process run` takes.
 
 ## Step 3 - Inspect runtime variables
 
@@ -167,7 +169,7 @@ uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --out
 uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn incident summary --output json
-uip maestro bpmn processes incidents <PROCESS_KEY> --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn processes incidents <PROCESS_DEFINITION_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
 Lifecycle commands are intentionally absent from this diagnostic command list.
