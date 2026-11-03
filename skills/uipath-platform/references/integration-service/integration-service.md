@@ -2,7 +2,7 @@
 
 Interact with external services through UiPath Integration Service — discover connectors, manage connections, and execute operations via the `uip` CLI.
 
-> Full command syntax and options: [uip-commands.md — Other Tool Groups](../uip-commands.md#other-tool-groups). Domain-specific usage patterns are shown inline in each reference file.
+> Full command syntax and options: `uip is --help`, and `--help` on each subcommand. Domain-specific usage patterns are shown inline in each reference file.
 
 ## Prerequisites
 

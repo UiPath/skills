@@ -2,7 +2,7 @@
 
 How to resolve reference fields — fields whose values must be looked up from another resource before create/update operations.
 
-> Full command syntax and options: [uip-commands.md — Other Tool Groups](../uip-commands.md#other-tool-groups). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: `uip is --help`, and `--help` on each subcommand. Domain-specific usage patterns are shown inline below.
 
 ## Contents
 - Reference IDs Are Connection-Scoped (CRITICAL)

@@ -2,7 +2,7 @@
 
 Activities are pre-built actions available for each connector (e.g., "Send Message", "Create Issue"). They represent specific operations the connector supports. Activities include both **actions** (non-trigger) and **triggers** (event listeners).
 
-> Full command syntax and options: [uip-commands.md — Other Tool Groups](../uip-commands.md#other-tool-groups). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: `uip is --help`, and `--help` on each subcommand. Domain-specific usage patterns are shown inline below.
 
 ---
 

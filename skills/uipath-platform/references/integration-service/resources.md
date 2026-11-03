@@ -2,7 +2,7 @@
 
 Resources represent the data objects available through a connector (e.g., Salesforce Account, Contact, Opportunity). Each resource supports a set of CRUD operations.
 
-> Full command syntax and options: [uip-commands.md — Other Tool Groups](../uip-commands.md#other-tool-groups). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: `uip is --help`, and `--help` on each subcommand. Domain-specific usage patterns are shown inline below.
 
 ## Contents
 - Listing and Describing Resources

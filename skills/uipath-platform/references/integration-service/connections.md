@@ -2,7 +2,7 @@
 
 Connections are authenticated sessions for a specific connector. They store credentials and tokens, and can be shared across automations within a folder.
 
-> Full command syntax and options: [uip-commands.md — Other Tool Groups](../uip-commands.md#other-tool-groups). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: `uip is --help`, and `--help` on each subcommand. Domain-specific usage patterns are shown inline below.
 
 ---
 
