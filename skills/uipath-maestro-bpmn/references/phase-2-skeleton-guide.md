@@ -223,10 +223,11 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   `approval` for `Manager review [Action app]`). Say a resource does not
   exist only after every search found no fit. When a
   lookup fails, mark its boxes *not checked*, say why in the one sentence
-  the reply's first line allows, and do not retry. State the failure as what
-  is missing for the user ("No Slack connection in this tenant"), never as a
-  connector key, kind, or CLI term, and never write "connector key" in the
-  reply. Then, for each box:
+  the reply's first line allows, and do not retry. A failed lookup proves
+  nothing is missing, so state it as what could not be checked ("Couldn't
+  check your Slack connections"), never as "No Slack connection in this
+  tenant", and never as a connector key, kind, or CLI term; never write
+  "connector key" in the reply. Then, for each box:
 
   - When the user named the resource, or exactly one row fits the box, use
     it and name it on the box's line, with its folder when the row has one.
