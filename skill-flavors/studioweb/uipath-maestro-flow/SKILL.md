@@ -115,7 +115,7 @@ Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` a
 - **If the baseline compile refuses a canvas node**, run step 2. A node it marks `(pre-existing)` is a probable SDK defect: stop and tell the user (UiPath/builder-sdk#1402).
 - **A flow with connectors** needs each connection in the solution after the merge ([the connector loop](#the-connector-loop-in-studio-web), step 7).
 
-Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>" --inputs '{}'` is a real run: ask per references/operate.md. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it, unless it names the dialog (references/operate.md). First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.
+Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>" --inputs '{}'` is a real run: ask per references/operate.md. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it. If it names the dialog, ask the user to click Save & Debug. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. Or ask the user to run it from the designer.
 <!--skill-flavor:sdk-lifecycle:end-->
 
 <!--skill-flavor:sdk-editing:start-->
