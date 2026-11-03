@@ -452,7 +452,10 @@ below, because it is the one step that depends on phase 1's scan.
 Adjust the shape, re-`format`, show the change, and hold the approval gate
 until the user agrees it: see
 [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating).
-Draft mode only.
+Draft mode only. End the turn with the 3c reply exactly as that guide's
+template shows it: the message starts with `<Name>: outline ready`, and no
+status sentence, separator, or description of the flow comes before or after
+the template's lines.
 
 ### Phase 4 — Wire it up
 
@@ -784,9 +787,14 @@ Draft mode only.
   Assumed: <...>  Unverified: <...>
   ```
 
-  Send nothing beyond these lines: no extra sections, headings, numbered
-  lists, or suggested next steps. Keep the change lines to five; fold
-  anything else the user must act on into `Assumed` or `Unverified`.
+  This reply is your whole final message, and its first characters are the
+  process name: write no status sentence or introduction before the
+  `<Name>:` line. Send nothing beyond these lines: no extra sections,
+  headings, tables, numbered lists, questions, or suggested next steps.
+  Keep the change lines to five; fold anything else the user must act on
+  into `Assumed` or `Unverified`. Before you send it, compare the message
+  with the template line by line and delete every line the template does
+  not have.
 
 ## Operate and diagnose
 

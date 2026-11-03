@@ -143,7 +143,9 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   workflow, API workflow, agent, agentic process, app, queue, entity, or a
   connector's connection) cannot be built without one. When 1a reported no
   login, skip the lookup and mark each such box *not checked*. Otherwise run
-  every lookup in **one** Bash call:
+  every lookup in **one** Bash call. It is the turn's last tool call: send
+  any progress note before it, and when it returns, send the 3c reply below
+  as your next and final message, starting with its first line.
 
   - **Processes, queues, apps:** `uip solution resources list --kind
     <Process|Queue|App> --search "<term>" --output json`. It lists what the
@@ -163,11 +165,13 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     as above.
 
   `--search` matches names only, and tenants hold thousands of processes, so
-  never list a kind unfiltered. Search first with the user's own words for
-  the resource, then with one or two keywords from the box's label; say a
-  resource does not exist only after every search found no fit. When a
-  lookup fails, mark its boxes *not checked*, say why in one line, and do
-  not retry. Then, for each box:
+  never list a kind unfiltered, not even after a search came back empty.
+  Put every search in the one lookup call: the user's own words for the
+  resource, and one or two keywords from the box's label (`review`,
+  `approval` for `Manager review [Action app]`). Say a resource does not
+  exist only after every search found no fit. When a
+  lookup fails, mark its boxes *not checked*, say why in the one sentence
+  the reply's first line allows, and do not retry. Then, for each box:
 
   - When the user named the resource, or exactly one row fits the box, use
     it and name it on the box's line, with its folder when the row has one.
@@ -185,10 +189,10 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   its three options are fixed:
 
   ```text
-  <Name>: outline ready<, uploaded> (draft mode). <One sentence if you kept the user's online changes.>
+  <Name>: outline ready<, uploaded> (draft mode). <One sentence if a lookup failed or you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
-  - <each box, in order>: <resource and folder | which of two | none yet, create it or name one | not checked>
+  - <each box, in order>: <resource and folder | which of two | none yet, create it or name one | not checked | no resource needed>
 
   Is this the process you want?
   1. **Build it**: make every step work.
@@ -196,13 +200,34 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   3. **Keep it**: stop here with this outline.
   ```
 
-  Start the message with the `<Name>:` line. List task boxes only, not
-  events or gateways, each with one short clause: no element type ids, no
-  phase-4 plans, no reasons a lookup failed (say those once, in a sentence
-  after the first line). Send nothing beyond these lines: no diagram of the
-  flow, no preamble or status line, no headings or separators. The canvas, or the box lines when
-  there is no upload, already show the shape, and Autopilot's chat panel is
-  narrow: anything extra pushes the question out of view.
+  This reply is your whole final message, and its first characters are the
+  process name. When the lookup call returns, do not comment on its result:
+  your next words are the `<Name>:` line. Write nothing before that line:
+  not a status sentence ("Valid, zero errors", "Lookups complete", "No
+  matching processes found", "Presenting the gate"), not an introduction
+  ("Here is the outline:"), not a `---` separator. What a lookup found goes
+  on the box lines, and why it failed goes in the first line's one
+  sentence; steps you ran or skipped are not reported at all. A progress
+  note belongs in a message before your last tool call; the message after
+  it holds the 3c reply and nothing else.
+
+  Give every task box its own line, in order, including a script step or
+  quick-form task that needs no resource (`no resource needed`): the box
+  lines are the outline, so a box left off is a step the user never sees.
+  List task boxes only, never the start event, a timer, a gateway, or the
+  end event, and give each box one short clause: no element type ids, no
+  phase-4 plans, no alternatives for the kind. When a lookup failed, say why
+  once, in the one sentence the first line allows, not on the box lines.
+
+  Do not describe the shape in any other form. Send no `Flow:` or
+  `The shape:` line, no drawn diagram or code block, no line about a
+  gateway, its condition, or the variable it reads, no table, and no
+  heading. The canvas, or the box lines when there is no upload, already
+  show the shape, and Autopilot's chat panel is narrow: anything extra
+  pushes the question out of view.
+
+  Before you send it, compare the message with the template line by line
+  and delete every line the template does not have.
 
   Send this reply as your final message and end the turn. Do not ask the
   gate question with a pick-list or question tool: a pending question keeps
