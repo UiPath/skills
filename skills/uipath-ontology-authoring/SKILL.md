@@ -183,7 +183,7 @@ Stop after pack. Deploy only when the user asks, by handing off to `uipath-solut
 
 | Error | Cause | Fix |
 |---|---|---|
-| Modeler reports `XF-001`–`XF-011` | Missing or extra artifacts, IRI or namespace drift, OWL 2 QL constructs, unlabelled or undeclared terms, an undeployable class | Fix the confirmed model (Phases 3–5) if the cause is a modeling decision; delegate again |
+| Modeler reports `XF-001`–`XF-010` | Missing or extra artifacts, IRI or namespace drift, OWL 2 QL constructs, unlabelled or undeclared terms, an undeployable class | Fix the confirmed model (Phases 3–5) if the cause is a modeling decision; delegate again |
 | Modeler reports `XF-012`/`XF-013` | A class has no matching entity, or a mapped column is not a field of its entity | Fix the class-to-entity map or the entity fields in the handoff; delegate again |
 | Modeler reports `XF-014`/`XF-015` | A relationship has no join, or a join has no relationship | Add or fix the join columns in `RELATIONSHIPS`; delegate again |
 | Modeler reports `SVC-002` | The ontology name is already used in the tenant | Tell the user a rename at deploy will be needed; not a blocker for pack |

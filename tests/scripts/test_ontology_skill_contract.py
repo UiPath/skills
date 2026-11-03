@@ -238,3 +238,139 @@ def test_entity_guide_spells_out_federated_body():
     assert '"joins"' in t and "FEDERATED_SOURCES" not in t
     for k in ("source", "relatedSource", "sourceField", "relatedField", "sourceConnectionName", "relatedConnectionName"):
         assert f'"{k}"' in t, k
+
+
+def fenced_block_starting(text: str, first_line: str) -> str:
+    """Content of the first fenced block whose first line starts with `first_line`."""
+    for m in re.finditer(r"^```[^\n]*\n(.*?)^```", text, re.M | re.S):
+        if m.group(1).startswith(first_line):
+            return m.group(1)
+    raise AssertionError(f"no fenced block starts with: {first_line}")
+
+
+HANDOFF_FIELDS = ("ONTOLOGY_NAME", "ONTOLOGY_IRI", "DISPLAY_NAME", "DESCRIPTION", "WORKDIR", "SOLUTION_DIR",
+                  "CLASS_MAP", "ENTITY_DEFINITIONS", "CHOICE_SETS", "RELATIONSHIPS", "FEDERATED_SOURCES",
+                  "MAPPING_STATUS", "DOMAIN_MODEL", "ANNOTATIONS")
+RETURN_FIELDS = ("SOLUTION_DIR", "PACKAGE_PATH", "ONTOLOGY_NAME", "ENTITIES", "CHOICE_SETS", "CONNECTIONS",
+                 "PACKED_FILES", "VALIDATION", "UNRESOLVED_AMBIGUITIES")
+# Source: the CLI plan's per-file ids, cross-file XF ids, service ids and error codes. XF-011 is retired
+# (MAP-012 replaces it); XF-016/XF-018 don't exist; the folder-scope and suffixed-name rules have no meaning
+# for local entities and are not listed.
+PER_FILE_RULES = ("OFN-001", "OFN-002", "OFN-004", "OFN-005", "OFN-009", "SHC-002", "SHC-003", "SHC-004",
+    "SHC-006", "SHC-007", "SHC-008", "SHC-009", "SHC-010", "MAP-002", "MAP-004", "MAP-005", "MAP-006",
+    "CTX-001", "CTX-002", "CTX-003", "CTX-005", "CTX-006", "CTX-007", "SUM-001", "SUM-002")
+C1_CODES = ("NoParentSolution", "OntologyNotFound", "OntologyNameTaken", "InvalidOntologyName", "EntityNotFound",
+    "LocalFlagRequired", "LocalAndFolderKeyConflict", "LocalAndPackageConflict", "InvalidFolderKey",
+    "ConfirmationRequired", "InvalidArtifactFileName", "ArtifactTypeUnresolved", "ArtifactTypeNotSupported",
+    "ArtifactTypeAlreadyPresent", "ArtifactCheckFailed", "ArtifactNotFound", "ResourceFileMissing",
+    "InvalidResourceArchive", "InvalidAttachedFile", "FileAttachNotSupported", "ResourceNotFound", "PackageNotFound",
+    "OntologyNotInPackage", "OntologyManifestNotWritten", "ValidationFailed", "ServiceValidationUnavailable",
+    "ServiceValidationFailed")
+# local authoring codes of the `uip df … --local` commands the modeler can meet
+DF_LOCAL_CODES = ("CONNECTION_NOT_FOUND", "REFERENCE_TARGET_NOT_FOUND", "CHOICE_SET_NOT_FOUND", "RELATIONSHIP_TARGET_FEDERATED",
+    "FEDERATED_UPDATE_NOT_SUPPORTED", "ENTITY_IN_USE", "CHOICE_SET_IN_USE", "CHOICE_SET_NAME_TAKEN", "CHOICE_SET_VALUE_NAME_TAKEN")
+RECOVERY_IDS = PER_FILE_RULES + ("MAP-012",) + tuple(f"XF-{n:03d}" for n in range(1, 16) if n != 11) + \
+    ("ZIP-001", "XF-017", "XF-019", "SVC-001", "ENTITY_ID_IGNORED") + C1_CODES + DF_LOCAL_CODES + \
+    ("Not logged in", "Ambiguous match", "EntityConflict", "Missing in the target folder",
+     "a rename onto a name another ontology holds", "BLOCKED_AMBIGUITY")
+# Entities are created before the artifacts are written: login < init < connection import
+# < choice sets / entities create < artifacts check < ont create < validate < pack.
+STAGES = ("uip login status", "uip solution init",
+          "uip solution resources add --source remote --kind Connection", "uip df entities list --local",
+          "uip df choice-sets create", "uip df entities create", "uip df entities validate --local",
+          "uip ont artifacts check", "uip ont create", "uip ont files add",
+          "uip ont validate --local", "uip solution pack", "uip ont files list", "Stop after pack")
+# Order tests read only the `## Workflow` section, so Critical Rules may name commands in any order.
+wf = lambda: section(read(MODELER_DIR / "SKILL.md"), "Workflow")
+
+
+def test_modeler_stage_order():
+    t = wf(); pos = [t.index(s) for s in STAGES]
+    assert pos == sorted(pos)
+
+
+def test_artifacts_follow_created_entities():
+    t = wf()
+    assert t.index("<WORKDIR>/input/entities/<Entity>.json") < t.index("uip solution init")  # definitions in Stage 2
+    assert t.index("<FEDERATED_BODY>") < t.index("uip ont artifacts check") < t.index("uip ont create")
+    s3 = t[t.index("Init the solution and import connections"):t.index("uip solution init")]
+    assert "Artifacts-only mode skips Stages 3–4" in s3
+    s5 = t[t.index("uip df entities validate --local"):t.index("uip ont create")]
+    assert "created entity and field names exactly" in s5 and "Artifacts-only mode stops here" in s5
+
+
+def test_modeler_checks_duplicates_before_create():
+    t = wf()
+    assert t.index("uip df choice-sets list --local") < t.index("uip df choice-sets create")
+    assert t.index("uip df entities list --local") < t.index("uip df entities create")
+
+
+def test_federated_entities_follow_their_connection():
+    t = wf()
+    assert t.index("--kind Connection") < t.index("<FEDERATED_BODY>")
+    assert t.index("uip df entities create <E> --local") < t.index("<FEDERATED_BODY>")
+
+
+def test_only_remote_import_is_a_folder_scoped_connection():
+    lines = [l for p in guidance_files() for l in read(p).splitlines() if "--source remote" in l]
+    assert lines and all("--kind Connection" in l and "--folder-path" in l for l in lines), lines
+
+
+def test_no_entity_import_or_refresh():
+    pat = re.compile(r"resources\s+(refresh|edit)\b|--kind\s+(Entity|ChoiceSet)\b")
+    assert [h for p in guidance_files() for h in unnegated_lines(p, pat)] == []
+
+
+def test_entity_change_is_a_local_edit():
+    t = wf()
+    assert "uip df entities update <E> --local" in t
+    assert t.index("uip ont validate --local") < t.rindex("uip df entities update <E> --local")  # the fix loop sits in Validate
+
+
+def test_no_retired_rule_ids():
+    assert [str(p) for p in guidance_files() if re.search(r"\bXF-(01[168]|02[01])\b", read(p))] == []
+
+
+def test_stop_after_pack_and_no_lifecycle_commands():
+    t = read(MODELER_DIR / "SKILL.md")
+    assert "Stop after pack" in t
+    assert not re.search(r"uip solution (publish|deploy)", t)
+    assert "uip ont get" not in wf()  # the post-deploy check belongs to uipath-solution
+
+
+def test_validation_needs_login_and_no_offline_flag():
+    assert [str(p) for p in guidance_files() if "--offline" in read(p)] == []  # the option does not exist
+    sec = section(read(MODELER_DIR / "SKILL.md"), "Recovery table")
+    assert "uip login" in next(l for l in sec.splitlines() if "ServiceValidationUnavailable" in l and "validation needs" in l)
+
+
+def test_handoff_and_return_blocks_have_exact_fields():
+    t = read(MODELER_DIR / "SKILL.md")
+    h = fenced_block_starting(t, "ONTOLOGY_NAME: exact slug"); r = fenced_block_starting(t, "SOLUTION_DIR: absolute path")
+    assert tuple(re.findall(r"^([A-Z_]+):", h, re.M)) == HANDOFF_FIELDS
+    assert tuple(re.findall(r"^([A-Z_]+):", r, re.M)) == RETURN_FIELDS
+    assert not ID_TERMS.search(h) and not GUID.search(h)
+
+
+def test_recovery_table_lists_every_id():
+    sec = section(read(MODELER_DIR / "SKILL.md"), "Recovery table")
+    assert [i for i in RECOVERY_IDS if not re.search(rf"\b{re.escape(i)}\b", sec)] == []
+
+
+def test_recovery_rows_are_local_fixes():
+    sec = section(read(MODELER_DIR / "SKILL.md"), "Recovery table")
+    row = lambda key: next(l for l in sec.splitlines() if key in l)
+    assert "uip df entities update" in row("XF-017") and "--local" in row("XF-017")
+    assert "uip df choice-set-values create" in row("XF-019") and "--local" in row("XF-019")
+    assert "uip df entities delete" in row("FEDERATED_UPDATE_NOT_SUPPORTED") and "uip login" in row("Not logged in")
+    assert "connector source" in row("Not logged in")
+    assert "uip df entities create <E> --local" in row("EntityNotFound")
+    assert "--kind Connection" in row("Ambiguous match")
+    assert "redeploy" in row("Missing in the target folder")
+    assert "another name" in row("a rename onto a name another ontology holds") and "deployment configuration" in row("a rename onto a name another ontology holds")
+
+
+def test_skill_links_resolve():
+    for p in guidance_files():
+        for link in re.findall(r"\]\(([^)#]+\.md)", read(p)):
+            assert (p.parent / link).is_file(), f"{p}: {link}"
