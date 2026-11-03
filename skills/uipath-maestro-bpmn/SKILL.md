@@ -718,9 +718,11 @@ Draft mode only.
    placeholder, a source-only draft (Rule 16), or a boundary handoff, or 4a found no `Enabled`
    candidate, no invented identifier can clear
    `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
-   expected result. Report the pair once and continue; `refresh` (4f)
-   succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
-   it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on
+   expected result. Report the pair once and continue. A connection binding
+   whose `default` is a placeholder fails `refresh` (4f), exit 1 with
+   "default must be a GUID", so that draft skips 4f; refresh needs a real
+   connection id from `uip is connections list`. Fix every
+   `VARIABLE_DOES_NOT_EXIST` warning: it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on
    the node reading a start-event-scoped caller input is expected; see
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
 
@@ -752,8 +754,8 @@ Draft mode only.
    JSON by hand. Refresh after binding a connection (4a) and for a
    package-ready, upload, debug, publish, or deploy deliverable; a source-only
    draft needs it only for 4c's start-event edits, and a trigger-start
-   draft (4c) skips it. For the full contract (scope, idempotency,
-   binding rules) see
+   draft (4c) or a draft with a placeholder connection binding skips it. For
+   the full contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 - **4g Show the finished process.** When the request allows an upload and the
