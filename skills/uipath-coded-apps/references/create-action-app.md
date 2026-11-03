@@ -123,7 +123,7 @@ node <skill-dir>/scripts/validate-action-schema.js <path-to-action-schema.json>
 # or pipe it:  echo '<schema-json>' | node <skill-dir>/scripts/validate-action-schema.js -
 ```
 
-Exit `0` = valid. On exit `1`, fix every reported `path: message` (it flags unsupported types, `format` on non-`string`, missing `items` on arrays, nested arrays, missing/malformed sections) and re-run until it passes. Never propose or write an `action-schema.json` that has not passed the validator.
+Exit `0` = valid. On exit `1`, fix every reported `path: message` (it flags unsupported types, `format` on non-`string`, missing `items` on arrays, nested arrays, missing/malformed sections) and re-run, for at most 3 rounds; if errors remain, show them to the user and ask how to proceed (usually a field type the schema cannot express). Never propose or write an `action-schema.json` that has not passed the validator.
 
 #### Confirm the schema
 Once it validates, show the complete `action-schema.json` and explain the structure:
