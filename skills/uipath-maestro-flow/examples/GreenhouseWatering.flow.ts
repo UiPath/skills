@@ -11,7 +11,7 @@
  * sub-builder exactly like the top-level flow. An arm that ends in `.return()`
  * is that path's End node — the two arms are independent endings, not a join.
  */
-import { flow, script, input, out, js, types } from '@uipath/maestro-builder-sdk';
+import { flow, script, input, out, js, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('greenhouse-watering')
   .name('GreenhouseWatering')
@@ -24,16 +24,20 @@ export default flow('greenhouse-watering')
     js`${input('moisture')} < ${input('threshold')}`,
     (yes) =>
       yes
-        .step('water', script({
-          code: 'return "watered: moisture " + $vars.start.output.moisture + " is below " + $vars.start.output.threshold;',
-        }))
+        .step('water', script(water))
         .return({ action: out('water') }),
     (no) =>
       no
-        .step('hold', script({
-          code: 'return "held off: moisture " + $vars.start.output.moisture + " is at or above " + $vars.start.output.threshold;',
-        }))
+        .step('hold', script(hold))
         .return({ action: out('hold') }),
   )
 
   .build();
+
+function water($vars: FlowVars) {
+  return "watered: moisture " + $vars.start.output.moisture + " is below " + $vars.start.output.threshold;
+}
+
+function hold($vars: FlowVars) {
+  return "held off: moisture " + $vars.start.output.moisture + " is at or above " + $vars.start.output.threshold;
+}

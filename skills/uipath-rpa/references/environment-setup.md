@@ -325,7 +325,7 @@ Choose Sequence, Flowchart, or State Machine per [xaml/xaml-basics-and-rules.md 
 
 #### Promotion ladder
 
-Promote only as reuse appears: inline → separate workflow file → shared library ([library-authoring-guide.md](library-authoring-guide.md)) → UI Library for shared selectors ([uia-starter-guide.md § Object Repository as a Published UI Library](uia-starter-guide.md#object-repository-as-a-published-ui-library)).
+Promote only as reuse appears: inline → separate workflow file → shared library ([library-authoring-guide.md](library-authoring-guide.md)) → UI Library for shared selectors ([uia-policies-catalog.md § Object Repository as a Published UI Library](uia-policies-catalog.md#object-repository-as-a-published-ui-library)).
 
 ### Example — Invoice Processing Project (XAML)
 

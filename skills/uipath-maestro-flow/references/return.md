@@ -79,12 +79,12 @@ upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 
 - Two `.return`s with the same name and different values, label, version or
   updates, or in different scopes (a loop body and the main path), are refused
-  (`DUP_END_NAME`; `compile --no-check` throws). They are not renamed
+  (`DUP_END_NAME`, by `check` and by `compile`). They are not renamed
   `failed2`. Identical repeats in one scope are one End. Prefer one `.return`
   and `.stepToRef('<name>')` on the other paths.
 - An End's `name` is its node id and is never renamed. A name that a step,
-  the trigger or an entry point already uses is refused (`STEP_ID_COLLISION`;
-  `compile --no-check` throws). For example, `.step('x', ...).return({}, { name: 'x' })`
+  the trigger or an entry point already uses is refused (`STEP_ID_COLLISION`,
+  by `check` and by `compile`). For example, `.step('x', ...).return({}, { name: 'x' })`
   fails `check`. Give the End its own name, such as `endX`.
   Needs `@uipath/maestro-builder-sdk` 6.32.3 or later; an older SDK renames the End
   `x2` with no error,
