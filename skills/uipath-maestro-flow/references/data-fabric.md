@@ -309,7 +309,7 @@ shape these operations use: [`connector-params.md`](connector-params.md).
 ### A file field: connector example
 
 File-record-field operations take the file as a Flow input — the shared pattern
-for every connector file field ([`connector-params.md` § file uploads](connector-params.md#schema-dynamic-operations-the-parent-field-loop)):
+for every connector file field ([`connector-params.md` § file uploads](connector-params.md#file-uploads-are-multipart-flow-inputs)):
 
 ```bash
 uip maestro registry prepare uipath-uipath-dataservice \
@@ -346,7 +346,7 @@ shape — only the action name changes.
 
 `file:` accepts ANY upstream file reference, not just `input('doc')`. Chain the
 download's `output.Response` straight into another upload — same shape as the
-Slack upload example ([`connector-params.md` § file uploads](connector-params.md#schema-dynamic-operations-the-parent-field-loop)):
+Slack upload example ([`connector-params.md` § file uploads](connector-params.md#file-uploads-are-multipart-flow-inputs)):
 
 ```ts
 .step('mirror', connector(UploadFileToRecordField, {
