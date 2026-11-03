@@ -69,7 +69,13 @@ Use this section only when emit-only mode is disabled. Use the source check as
 the fast no-output inner loop (with a library and `.flow-sdk/bindings.json` beside the
 source it reports every connector-input and binding refusal `compile` would
 raise), compile to emit, then run the product's static check on the artifact.
-There is no compiled-artifact `check`; `validate` is that rung.
+There is no compiled-artifact `check`; `validate` is that rung. `compile` does
+not run `check` (it writes any flow it can serialize), so a clean `check` is
+the gate: never go on to `compile` with a `check` error left. The one
+exception is an error whose own message says when to ignore it, in a case
+that applies (for example `INLINE_AGENT_PROMPT_JSON_TEXT` on a prompt that
+mentions JSON only as data). In a brownfield edit, add `--baseline <original.flow>`
+([brownfield.md](brownfield.md#check-only-what-you-changed-check---baseline)).
 
 The full sequence, in order — `registry prepare` appears only where `check`
 names it, never before the source exists:
@@ -265,7 +271,8 @@ With `variablesError`, the outputs are unknown, not empty: run the re-read
 command its `Instructions` give.
 
 For example, a direct-input claim can keep the useful status, outputs, and
-diagnostics in one read-back instead of printing the full execution envelope:
+diagnostics in one read-back instead of printing the full execution envelope
+(a real run: [ask first](operate.md#debug--a-real-end-to-end-run)):
 
 ```bash
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
