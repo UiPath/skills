@@ -17,8 +17,10 @@ cannot make: which node, which topology, what an output means, and what to ask.
 1. **Choose the node before writing it, from a search, never from a brand
    name.** For an external service run `uip maestro registry search
    '<service>'` and prefer, in order: a curated connector, managed HTTP in
-   connector mode, manual HTTP for an API with no connector, and an RPA
-   workflow only when there is no API at all (a desktop app, a terminal). For a
+   connector mode, a connector you build with `uip is connectors builder` for
+   an authenticated REST+JSON API with no connector, manual HTTP otherwise (it
+   keeps the credential in the flow, outside `uip is connections list`), and an
+   RPA workflow only when there is no API at all (a desktop app, a terminal). For a
    tenant resource (agent, process, API workflow, IxP model) run the family's
    `uip maestro flow registry search`; it only returns published resources, so
    `uip maestro flow registry pull --force` first, and check the solution's own
