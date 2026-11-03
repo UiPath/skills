@@ -1,0 +1,108 @@
+# --- Tenant fixtures (LIVE registry) --------------------------------------------------
+# Valid only when the tenant has NO Action App named "create-probe-approval-app-q93" or
+# "create-probe-review-app-q93". A "test precondition failed" from the checker means that
+# is off — an ENVIRONMENT gap, NOT a skill regression.
+# --------------------------------------------------------------------------------------
+task_id: skill-case-create-action-app-on-missing
+description: >
+  CREATE-ON-MISSING FOR ACTION APPS — an approved sdd.md names two Action Apps
+  that do not exist in the tenant. At the empty-lookup gate the user chooses
+  Create. Each app must be built as an in-solution Coded Action App with
+  uipath-coded-apps, registered in the .uipx, and bound to its action task, so
+  no action task stays a placeholder.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:registry
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite", "Agent"]
+
+run_limits:
+  task_timeout: 3000
+  max_turns: 150
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  This approved `sdd.md` is authoritative. Build the case from it. Its two
+  Action Apps are not deployed in the tenant.
+
+  Do NOT deploy or publish. Stop when `uip maestro case validate` passes.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Phase 1 refreshed the tenant registry before resolving"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+registry\s+pull\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Both Action Apps were scaffolded as Coded Action Apps"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+codedapp\s+init\b[^;&|\n]*--type\s+Action'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Built apps were registered into the solution by the caller"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+solution\s+projects?\s+add\b'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both action tasks are bound to built in-solution apps with the correct schema, registration and bindings"
+    command: "python3 $REFERENCE_DIR/create_action_app_on_missing/check_create_action_app.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The finished case validates"
+    command: "uip maestro case validate \"$(find . -name caseplan.case -not -path '*/node_modules/*' | head -1)\" --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing was published or deployed to the tenant"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+solution\s+(?:publish|deploy\s+run|upload)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+simulation:
+  enabled: true
+  persona: |
+    You are a solution designer handing over an approved SDD. The two Action
+    Apps in it do not exist yet and you want them built as part of the case.
+  goal: |
+    Get a validated case in which both human tasks are bound to newly built
+    Action Apps.
+  constraints:
+    - "At the empty-lookup prompt, choose Create missing resources inline, then select BOTH Action Apps."
+    - "Do not change the SDD or provide other app names."
+    - "Answer any app-design question from the SDD; if it is not there, say to keep it minimal."
+    - "Do not ask for a deploy or publish."
+    - "Keep replies short — one sentence or a single option pick."
+  max_turns: 14

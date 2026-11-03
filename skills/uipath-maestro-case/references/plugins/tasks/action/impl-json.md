@@ -76,6 +76,7 @@ uip maestro case tasks describe --type action --id "<action-app-id>" --output js
 - `type: "action"`
 - `data.taskTitle` non-empty
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
+- an in-solution sibling (built inline, [planning.md § Creating an Action App inline](planning.md#creating-an-action-app-inline)) binds the same two entries with `resourceKey="solution_folder.<app-name>"`, `name` default `<app-name>`, `folderPath` default `""`
 - `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever the SDD recorded a recipient (omitted only for Skip or no-Type-maps). A group/role is `Type 1` carrying the group **name**; dropping it leaves the task created and reaching nobody
 - `data.actionCatalogName` is absent (present only for a catalog the USER named and you confirmed in the app's deployment folder)
 - `entryConditions` is present and non-empty — a task with no entry condition is never triggered, and `validate` does NOT catch it (it accepts an empty array and a missing key). Use the activation the SDD declares (`current-stage-entered`, `runs-sequentially`, `adhoc`, `sla-status-change` for an SLA `start-task` response — see [sla-response-shapes.md](../../../sla-response-shapes.md))
