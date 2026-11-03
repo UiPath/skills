@@ -10,9 +10,10 @@
 //
 // CODEOWNERS semantics (the LAST matching rule wins) are applied to skills/<skill>/SKILL.md.
 // A team owner counts only when the actor is an ACTIVE member, which needs a token that can
-// read org membership. The workflow's github.token cannot: GitHub answers 404 for "not a
-// member" and for "may not look", so team-only skills are not self-serve — their owners ask a
-// listed user owner or an optimizer maintainer. The check fails closed and says whom to ask.
+// read org membership: optimize-skill.yml passes one from the skill-trimming-optimizer GitHub
+// App, narrowed to Members: read, when its key is configured. github.token cannot read teams — GitHub answers 404 for "not a
+// member" and for "may not look" alike — so without the App team owners fail closed, and the
+// refusal says whom to ask (a listed user owner or an optimizer maintainer).
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
@@ -129,7 +130,7 @@ export async function checkActor({ skill, owners, matched, actor, maintainers, m
     const who = [...users.map((u) => `@${u}`), ...maintainers.map((m) => `@${m}`)].join(" ") || "an optimizer maintainer";
     lines.push({
       level: "error",
-      text: `Could not verify membership of ${unverifiable.join(", ")} (the workflow token cannot read teams); if you are in one, ask ${who} to run it.`,
+      text: `Not an active member of ${unverifiable.join(", ")} as far as GitHub tells this token (GitHub hides membership from tokens that cannot read teams); if you are in one, ask ${who} to run it.`,
     });
   }
   return { code: 1, lines };
