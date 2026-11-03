@@ -17,8 +17,10 @@ cannot make: which node, which topology, what an output means, and what to ask.
 1. **Choose the node before writing it, from a search, never from a brand
    name.** For an external service run `uip maestro registry search
    '<service>'` and prefer, in order: a curated connector, managed HTTP in
-   connector mode, manual HTTP for an API with no connector, and an RPA
-   workflow only when there is no API at all (a desktop app, a terminal). For a
+   connector mode, a connector you build with `uip is connectors builder` for
+   an authenticated REST+JSON API with no connector, manual HTTP otherwise (it
+   keeps the credential in the flow, outside `uip is connections list`), and an
+   RPA workflow only when there is no API at all (a desktop app, a terminal). For a
    tenant resource (agent, process, API workflow, IxP model) run the family's
    `uip maestro flow registry search`; it only returns published resources, so
    `uip maestro flow registry pull --force` first, and check the solution's own
@@ -45,7 +47,14 @@ cannot make: which node, which topology, what an output means, and what to ask.
    Brownfield JSON goes through `decompile` ([`brownfield.md`](brownfield.md)).
 5. **Run the loop once the source is complete.** `check --source` is cheap, so
    use it freely while writing; `compile` and `validate` run on the finished
-   source, and again after the last edit. Treat every `validate` warning as a
+   source, and again after the last edit. `compile` does not run `check`, so a
+   clean `check` comes before every `compile` (in a brownfield edit, with
+   `--baseline <original.flow>`: [`brownfield.md`](brownfield.md#check-only-what-you-changed-check---baseline)).
+   The exception is an error whose message says when to ignore it, in a case
+   that applies (a false positive such as `INLINE_AGENT_PROMPT_JSON_TEXT` on a
+   prompt that mentions JSON only as data).
+   Emit-only mode is the exception: there `check` refuses and `validate` is
+   the gate. Treat every `validate` warning as a
    failure unless the loop reference names it as reviewed.
 6. **Bind every declared output on every path.** Each `.return({...})` must
    name every key in `.output({...})`. `check` does not catch a missing one:
@@ -56,6 +65,10 @@ cannot make: which node, which topology, what an output means, and what to ask.
    for invalid input", "handle timeouts"); an unhandled failure must fault the
    run. A handler either genuinely recovers or reaches a terminal the caller
    can tell apart from success — a distinct `.return`, or `.terminate`.
+   Likewise add a human task (`hitl`) only when the request has the run wait for
+   a person. A person who reviews the output afterward, such as a drafted reply,
+   is not one. This overrides `uipath-human-in-the-loop` Step 2b and its
+   pattern guide: a signal the request did not state goes under Open questions.
 8. **Never invent the business meaning of a named output or an uncovered
    input case — ask.** When a request names an output (`caseKey`, `severity`,
    `ticketId`) without saying how to derive it, whether it passes through or
@@ -172,6 +185,14 @@ nodes, not patterns.
    answer while authoring.
 4. A threshold the request leaves out is an open question (rule 8): ask, or
    headless, use the guide's value and list it as **[REQUIRED]**.
+
+## Variable types
+
+Inputs, outputs and vars take one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`.
+
+- `float`, `double`, `date`, `datetime` and `jsonSchema` are Case-only. The Flow builder refuses them: a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build. Write a date as `types.string`, a decimal as `types.number`, and a `jsonSchema` as `types.object` or `types.array` with its shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. A decompiled `.flow` that already carries one: [brownfield](brownfield.md#a-case-only-variable-type) (`date`/`datetime` come back as `types.string`; the others stop merge until you retype them).
+- `types.integer` builds and packs as an integer, but Workbench does not offer it, so prefer `types.number`.
+- `types.any` is the untyped declaration: use it only when a value really has no fixed type.
 
 ## Anti-patterns
 

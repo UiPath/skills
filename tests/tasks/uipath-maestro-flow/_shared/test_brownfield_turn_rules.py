@@ -58,7 +58,7 @@ PINNED = {
         "`flow debug` is a REAL run, not a validation step: ask first, as it says.",
     ],
     ("studioweb", "SKILL.md"): [
-        "`uip maestro flow debug \"<Project>\"` is a real run: ask per references/operate.md.",
+        "`uip maestro flow debug \"<Project>\" --inputs '{}'` is a real run: ask per references/operate.md.",
         "`flow debug` is a REAL run, not a validation step: ask first, as it says.",
     ],
     ("default", "references/operate.md"): [

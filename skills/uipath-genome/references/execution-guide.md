@@ -68,7 +68,7 @@ Three groups of questions, asked in this order — four in a refactor:
 | Framework migration guide (extracted genomes from a framework other than UiPath only) | Where is the framework migration guide ([SKILL.md § Source Frameworks](../SKILL.md))? | Path given in the request; another path or a git URL to clone (free text); not available — same outcome as "no export available", stated in the report |
 | Source fidelity *(once per run, extracted genomes from a framework other than UiPath only, not in a refactor)* | How closely does the rebuild follow the source's steps and folder tree ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md))? | The source's names and shape, each difference a row of the correspondence table (Recommended); the source's names and shape without the table — recommended instead when the source's steps run to thousands, where writing the rows costs more than a reviewer gains from them; the build's own names and grouping |
 | Log target *(every project that logs; skipped when a genome question already asks it)* | Where do the run's log messages go? | Orchestrator's job log, through a plain Log Message at each log point (Recommended; the robot also writes its execution logs to a local file); the source's own target, a file or library, built as the source has it (extracted genomes); a log target the user names |
-| Subagents *(once per run, when the host runs subagents)* | Does one session build everything, or do parts run through subagents — and then on which model, and how many at once? | The options of [parts-guide.md](parts-guide.md) item 8, recommended by the genome's Complexity there; how many parts may run in parallel: [execution-parts-guide.md](execution-parts-guide.md) item 1a |
+| Subagents *(once per run, when the host runs subagents)* | Does one session build everything, or do parts run through subagents — and then on which model, and how many at once? | The options of [parts-guide.md](parts-guide.md) item 7, recommended by the genome's Complexity there; how many parts may run in parallel: [execution-parts-guide.md](execution-parts-guide.md) item 1a |
 
 Rules:
 
@@ -87,7 +87,7 @@ Autonomous runs — only when the user's current request explicitly says not to 
 
 ### 1.4 Resolve the target project
 
-Every project is created with the `Scaffolding` answers from 1.3: location, target framework, expression language, package set and versions. Pass them to the owning skill's project-creation step as its init flags and dependency list; when the answer was "pin to installed versions", install exactly those versions and never let the init command's defaults override them.
+Every project is created with the `Scaffolding` answers from 1.3: location, target framework, expression language, package set and versions. Pass them to the owning skill's project-creation step as its init flags and dependency list; when the answer was "pin to installed versions", install exactly those versions and never let the init command's defaults override them. When the Source fidelity answer keeps the source's names, each project is named as [source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md) names it.
 
 **Component genome:**
 1. When the Location answer is "reuse the existing project" (`project.json`, `project.uiproj`, `.flow`, `.bpmn`, `agent.json`, `Workflow.json`, `caseplan.case`, `caseplan.json`, `uipath.json` matching the genome's primary skill), use it.
@@ -172,7 +172,7 @@ Never stop between groups to ask whether to continue.
 
 ### 2.2a Parts, ledgers and resuming
 
-A group built in parts, a build run through subagents or forks, and a pause or a compaction mid-build follow [parts-guide.md](parts-guide.md) and [execution-parts-guide.md](execution-parts-guide.md): one owner per project, the ledger and its skeleton, read plans, forks, progress written through, the run brief and its rulings, and the part report checked against the disk.
+A group built in parts, a build run through subagents, and a pause or a compaction mid-build follow [parts-guide.md](parts-guide.md) and [execution-parts-guide.md](execution-parts-guide.md): one owner per project, the ledger and its skeleton, read plans, progress written through, the run brief and its rulings, and the part report checked against the disk.
 
 ### 2.2b Migrate UI targets (extracted genomes)
 
