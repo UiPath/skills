@@ -20,8 +20,8 @@ For field options beyond this table, delegate to `uipath-platform` (Data Fabric)
 | `xsd:date` | `DATE` | |
 | `xsd:dateTime` | `DATETIME_WITH_TZ` | |
 | object property | `RELATIONSHIP` | one field on the referencing entity. See [relationships-guide.md](relationships-guide.md) |
-| value list, one value | `CHOICE_SET_SINGLE` | names a local choice set |
-| value list, several values | `CHOICE_SET_MULTIPLE` | names a local choice set |
+| value list, one value | `CHOICE_SET_SINGLE` | single-select: one value per row; names a local choice set |
+| value list, several values | `CHOICE_SET_MULTIPLE` | multi-select: several values per row; names a local choice set |
 
 Never use `UUID`, `INTEGER` or `DATETIME`: the Data Fabric UI renders them broken and `--local` refuses them. Never substitute `STRING` for a relationship or a choice set.
 
@@ -123,21 +123,36 @@ uip df entities create <F> --local --body '<FEDERATED_BODY>' --output json
 
 The resource is written to `entity/federated/<F>.json`. With at least one connector source the command needs `uip login`, because the CLI reads the connection and each source object's fields from the tenant. With local native sources only it runs offline and takes the field types from those entities.
 
-Build `<FEDERATED_BODY>` from `FEDERATED_SOURCES`. The `sources` become `externalFields`:
+Build `<FEDERATED_BODY>` from the sources and joins the user confirmed. The sources become `externalFields`:
 
 - A connector source keeps `connectionName` (already a connection resource in the solution), `object` and `fields`. The `connector` key is for finding the connection and is not passed.
 - A native source keeps `entityName` (a local entity) and `fields`.
-- Each join keeps `source`, `relatedSource`, `sourceField`, `relatedField`, `sourceConnectionName` and `relatedConnectionName`.
+- `fields` entries are plain external field names, or override objects `{ "source": "<FIELD>", "name", "type", "direction", "searchable", "sortable", "requiredForRead" }` where only `source` is required. Field types come from the connector (connector source) or the local entity (native source).
+- Each join in `joins` keeps `source`, `relatedSource`, `sourceField`, `relatedField`, `sourceConnectionName` and `relatedConnectionName`. For a connector source the connection name goes in `sourceConnectionName` / `relatedConnectionName`; for a native source, the entity name.
 
 ```json
 {
   "displayName": "<DISPLAY_NAME>",
   "description": "<DESCRIPTION>",
   "externalFields": [
-    { "connectionName": "<CONNECTION>", "object": "<OBJECT>", "fields": ["<FIELD>"] },
+    {
+      "connectionName": "<CONNECTION>",
+      "object": "<OBJECT>",
+      "fields": ["<FIELD>", { "source": "<FIELD>", "name": "<FIELD_ALIAS>", "type": "STRING" }]
+    },
     { "entityName": "<NATIVE_ENTITY>", "fields": ["<FIELD>"] }
+  ],
+  "joins": [
+    {
+      "source": "<SOURCE>",
+      "relatedSource": "<RELATED_SOURCE>",
+      "sourceField": "<SOURCE_FIELD>",
+      "relatedField": "<RELATED_FIELD>",
+      "sourceConnectionName": "<CONNECTION>",
+      "relatedConnectionName": "<NATIVE_ENTITY>"
+    }
   ]
 }
 ```
 
-The join key placement and the per-source field shape follow the CLI's federated body. Copy them from `FEDERATED_SOURCES` without renaming, and do not invent other keys. A federated entity is never a `RELATIONSHIP` target; see [relationships-guide.md](relationships-guide.md).
+A federated entity is never a `RELATIONSHIP` target; see [relationships-guide.md](relationships-guide.md).

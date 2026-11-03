@@ -49,7 +49,7 @@ Mapping, on the `SalesOrder` block:
 
 ## One field, inverse in the schema only
 
-The inverse lives only in the schema, as `InverseObjectProperties`. **Never add a second RELATIONSHIP field for the inverse.** Two fields pointing at each other form a cycle, which the validator reports as `XF-017`. The inverse gets no field, no join and no shape. The same code applies if an entity set has any other reference cycle: keep one field and drop the other.
+The inverse lives only in the schema, as `InverseObjectProperties`. **Never add a second RELATIONSHIP field for the inverse.** Two fields pointing at each other form a cycle, which the validator reports as `XF-017`. The inverse gets no field, no join and no shape. `XF-017` also covers longer reference cycles (A to B to C to A): break the cycle by keeping only one field of the loop.
 
 If `XF-017` is reported, remove the second field with `uip df entities update <E> --local` (`removeFields`), then validate again.
 

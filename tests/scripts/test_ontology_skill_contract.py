@@ -231,3 +231,10 @@ def test_relationship_guide_forbids_second_field():
     assert "InverseObjectProperties" in t and "XF-017" in t
     assert re.search(r"(?i)never add a second RELATIONSHIP field", t)
     assert re.search(r"(?i)federated[^\n]*plain column", t)
+
+
+def test_entity_guide_spells_out_federated_body():
+    t = read(MODELER_DIR / "references/entity-guide.md")
+    assert '"joins"' in t and "FEDERATED_SOURCES" not in t
+    for k in ("source", "relatedSource", "sourceField", "relatedField", "sourceConnectionName", "relatedConnectionName"):
+        assert f'"{k}"' in t, k
