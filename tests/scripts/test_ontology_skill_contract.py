@@ -188,3 +188,46 @@ def test_shacl_guide_lists_value_names():
 
 def test_owl_guide_has_inverse_properties_section():
     assert "## Inverse properties" in read(MODELER_DIR / "references/owl-patterns-guide.md")
+
+
+DF_WRITE = re.compile(r"uip\s+df\s+(entities|choice-sets|choice-set-values)\s+(create|update)\b")
+
+
+def test_every_df_write_is_local():
+    lines = [l for p in guidance_files() for l in read(p).splitlines() if DF_WRITE.search(l)]
+    assert lines and all("--local" in l for l in lines), lines
+
+
+def test_no_tenant_folder_scope_in_skills():
+    pat = re.compile(r"--folder-key|(?i:dev[ _-]?folder)")
+    assert [h for p in guidance_files() for h in unnegated_lines(p, pat)] == []
+
+
+def test_entity_guide_type_table_and_sources():
+    t = read(MODELER_DIR / "references/entity-guide.md")
+    for v in ("`DATETIME_WITH_TZ`", "`RELATIONSHIP`", "`CHOICE_SET_SINGLE`", "`CHOICE_SET_MULTIPLE`",
+              "decimalPrecision: 0", "referenceEntityName", "referenceFieldName", "choiceSetName", "connectionName"):
+        assert v in t
+    for src in ("supplied", "described", "generated"):
+        assert f"`{src}`" in t
+    assert "`existing`" not in t
+    assert "uipath-platform" in t and "](../../uipath-platform" not in t
+
+
+def test_entity_guide_authors_locally_in_order():
+    t = read(MODELER_DIR / "references/entity-guide.md")
+    assert re.search(r"uip df choice-sets create [^\n]*--local", t)
+    assert re.search(r"uip df choice-set-values create <C> <VALUE> --local", t)
+    assert "externalFields" in t and "sourceConnectionName" in t and "uip login" in t
+    assert re.search(r"connector source[^\n]*uip login|uip login[^\n]*connector source", t)
+    assert re.search(r"uip df entities create [^\n]*--local", t)
+    assert t.index("uip df entities list --local") < t.index("uip df entities create")
+    assert t.index("choice-sets create") < t.index("entities create") < t.index("<FEDERATED_BODY>")
+    assert "entity/federated/" in t and "choiceSet/" in t
+
+
+def test_relationship_guide_forbids_second_field():
+    t = read(MODELER_DIR / "references/relationships-guide.md")
+    assert "InverseObjectProperties" in t and "XF-017" in t
+    assert re.search(r"(?i)never add a second RELATIONSHIP field", t)
+    assert re.search(r"(?i)federated[^\n]*plain column", t)

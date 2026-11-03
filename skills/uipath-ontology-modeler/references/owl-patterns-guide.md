@@ -227,7 +227,7 @@ AnnotationAssertion(rdfs:comment :SalesOrder.isPaid "Compare true/false, never 1
 | one of a fixed set of values (choice set) | `xsd:string` |
 | URL, link, URI | `xsd:anyURI` |
 
-Each range maps to one of the nine local entity types; see [`entity-format-guide.md`](entity-format-guide.md) for the mapping (for example `xsd:integer` is `DECIMAL` with `decimalPrecision: 0`, `xsd:dateTime` is `DATETIME_WITH_TZ`).
+Each range maps to a Data Fabric field type; see [`entity-guide.md`](entity-guide.md) for the mapping (for example `xsd:integer` is `DECIMAL` with `decimalPrecision: 0`, `xsd:dateTime` is `DATETIME_WITH_TZ`).
 
 ---
 
@@ -269,7 +269,7 @@ AnnotationAssertion(rdfs:comment :{ClassName} "TIME SERIES: ~{N} dated rows per 
 
 Every `Declaration(Class(...))` must be (a) the domain of ≥1 `DataPropertyDomain`/`ObjectPropertyDomain`, and (b) instantiated in `{name}-mapping.yarrrml.yml` over a local entity. A class that fails either — typically a "role"/"actor" concept (approving manager, external system name, job title) with zero properties and no entity — parses as valid OWL but fails `uip ont validate --local` (`XF-009`, every class needs a backing entity). If the concept is narrative-only, fold it into the relevant property's `rdfs:comment` instead (e.g. `Payment.approvedBy`'s comment) rather than declaring a class.
 
-**Real properties don't mean relationships are modeled.** A `DataProperty` whose value equals another class's key (e.g. a text column that happens to hold another entity's key) is two matching columns, not a relationship, until the entity has a `RELATIONSHIP` field and the schema an `ObjectProperty` (with `ObjectPropertyDomain`/`ObjectPropertyRange`) wired into the mapping as a join on plain columns. Every object property between two mapped classes needs that join (`XF-015`), and every join needs a declared object property (`XF-014`). See [`relationships-guide.md`](relationships-guide.md).
+**Real properties don't mean relationships are modeled.** A `DataProperty` whose value equals another class's key (e.g. a text column that happens to hold another entity's key) is two matching columns, not a relationship, until the entity has a `RELATIONSHIP` field and the schema an `ObjectProperty` (with `ObjectPropertyDomain`/`ObjectPropertyRange`) wired into the mapping as a join. Every object property between two mapped classes needs that join (`XF-015`), and every join needs a declared object property (`XF-014`). See [`relationships-guide.md`](relationships-guide.md).
 
 ---
 

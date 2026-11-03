@@ -25,7 +25,7 @@ Builds an ontology as a **local UiPath solution**: one ontology resource, plus o
 2. **Always validate with the ontology service.** Be logged in. Never skip service validation or validate offline. If the service can't be reached, stop and tell the user.
 3. **Entities are local and referenced by name.** Author them as local Data Fabric entities (Step 4). Never read the tenant for entities. Never write `entityId` or `folderId`.
 4. **What the user gives is authoritative.** Use a supplied entity body as is. Ask before changing anything the user stated.
-5. **Field types are only the nine local types** (see [entity-format-guide.md](references/entity-format-guide.md)). No relationship or choice-set fields in M1.
+5. **Field types follow the entity guide's type table** (see [entity-guide.md](references/entity-guide.md)).
 6. **Produce only the five artifact types:** schema, constraints, mapping, and optionally summary (JSON) and context. No business rules, functions or actions; business constraints go to SHACL.
 7. **The ontology name must be unique in the tenant.** Tell the user. The CLI can't check it offline. Service validation warns with `SVC-002` when the name is taken, and at deploy `uipath-solution` resolves a conflict by renaming (`RenameInSolution`).
 8. **Stop after pack.** Publish, deploy and activate belong to `uipath-solution`. Then confirm the result in the deployment folder.
@@ -134,7 +134,7 @@ Produce one reviewable summary:
 - object properties with direction, cardinality notes, and **join columns** (for example `Order.customerId = Customer.Id`). Use a named FK field as is; otherwise propose `{targetClass}Id` joined to the target's `Id` and ask;
 - subclass axioms and business constraints mapped to SHACL.
 
-Record `ENTITY_SOURCE` per entity, following [entity-format-guide.md](references/entity-format-guide.md):
+Record `ENTITY_SOURCE` per entity, following [entity-guide.md](references/entity-guide.md):
 
 | `ENTITY_SOURCE` | Meaning | What to do |
 |---|---|---|
@@ -142,7 +142,7 @@ Record `ENTITY_SOURCE` per entity, following [entity-format-guide.md](references
 | `described` | The user described fields in words | Keep every stated name, type and required flag. Fill gaps (display names, lengths) and show them |
 | `generated` | You proposed the entity from the domain | Generate it, show it, and get one confirmation |
 
-The schema and mapping follow the entity and field names exactly (case-sensitive), not the other way round. Wait for confirmation, then write `<WORKDIR>/input/handoff.json` (the confirmed `CLASS_MAP`, `ENTITY_SOURCE`, `RELATIONSHIPS` with join columns) and one `<WORKDIR>/input/entities/<Entity>.json` update body per entity: `displayName`, `description` and `addFields` (see [entity-format-guide.md](references/entity-format-guide.md); a supplied `fields` list moves unchanged under `addFields`).
+The schema and mapping follow the entity and field names exactly (case-sensitive), not the other way round. Wait for confirmation, then write `<WORKDIR>/input/handoff.json` (the confirmed `CLASS_MAP`, `ENTITY_SOURCE`, `RELATIONSHIPS` with join columns) and one `<WORKDIR>/input/entities/<Entity>.json` update body per entity: `displayName`, `description` and `addFields` (see [entity-guide.md](references/entity-guide.md); a supplied `fields` list moves unchanged under `addFields`).
 
 ## Step 3 — Write each artifact, then check it
 

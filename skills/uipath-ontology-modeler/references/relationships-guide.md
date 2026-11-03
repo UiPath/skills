@@ -1,34 +1,38 @@
 # Relationships Guide
 
-**The ontology owns relationships.** Entities carry no relationship fields. A relationship between two classes has three parts, and all three must exist.
+A relationship between two classes has three parts, and all three must exist.
 
 | Where | What |
 |---|---|
-| Schema (`{name}.ofn`) | an `ObjectProperty` with `ObjectPropertyDomain` (the class holding the key) and `ObjectPropertyRange` (the class it points to) |
-| Constraints (`{name}-constraints*.ttl`) | `sh:class` on the object property path, where a shape constrains it |
-| Mapping (`{name}-mapping.yarrrml.yml`) | a join in the domain class's mapping block, on plain columns |
+| Entity | one `RELATIONSHIP` field on the referencing entity, naming the target entity |
+| Schema (`{name}.ofn`) | an `ObjectProperty` with `ObjectPropertyDomain` (the class holding the field) and `ObjectPropertyRange` (the class it points to) |
+| Mapping (`{name}-mapping.yarrrml.yml`) | a join in the domain class's mapping block, on the field and the target's `Id` |
 
-## Worked example: Order to Customer
+Where a shape constrains the relationship, the constraints file adds `sh:class` on the object property path.
 
-An order has one customer. `Order` holds the key, so the entity `Order` has a plain field `customerId` (`STRING`) and `Customer` is keyed by its system field `Id`.
+## Worked example: SalesOrder to Customer
 
-Entity field (see [`entity-format-guide.md`](entity-format-guide.md)):
+A sales order has one customer. `SalesOrder` holds the field, and `Customer` is keyed by its system field `Id`.
+
+Entity field (see [entity-guide.md](entity-guide.md)):
 
 ```json
-{ "name": "customerId", "type": "STRING", "lengthLimit": 64 }
+{ "name": "customer", "type": "RELATIONSHIP", "referenceEntityName": "Customer" }
 ```
+
+`referenceFieldName` defaults to `Id`; add it only to reference a different unique field of the target.
 
 Schema:
 
 ```
 Declaration(ObjectProperty(:placedBy))
-AnnotationAssertion(rdfs:label :placedBy "placed by")
-AnnotationAssertion(rdfs:comment :placedBy "Each Order is placed by one Customer. Join: Order.customerId = Customer.Id. 'Exactly one' is QL-inexpressible; recorded here.")
-ObjectPropertyDomain(:placedBy :Order)
+ObjectPropertyDomain(:placedBy :SalesOrder)
 ObjectPropertyRange(:placedBy :Customer)
+Declaration(ObjectProperty(:places))
+InverseObjectProperties(:places :placedBy)
 ```
 
-Mapping, on the `Order` block:
+Mapping, on the `SalesOrder` block:
 
 ```yaml
 - p: ont:placedBy
@@ -37,54 +41,54 @@ Mapping, on the `Order` block:
     condition:
       function: equal
       parameters:
-        - - str1
-          - $(customerId)
-        - - str2
-          - $(Id)
+        - [str1, $(customer)]
+        - [str2, $(Id)]
 ```
 
-`str1` is read from the current mapping's entity (`Order`), `str2` from the target mapping's entity (`Customer`). Both must be fields of those entities or system fields, case-sensitive.
+`str1` is read from the current mapping's entity, `str2` from the target mapping's entity. Both are fields of those entities or system fields, case-sensitive.
 
-Constraint, when the relationship is required:
+## One field, inverse in the schema only
 
-```turtle
-sh:property [ sh:path ont:placedBy ; sh:class ont:Customer ; sh:minCount 1 ] ;
+The inverse lives only in the schema, as `InverseObjectProperties`. **Never add a second RELATIONSHIP field for the inverse.** Two fields pointing at each other form a cycle, which the validator reports as `XF-017`. The inverse gets no field, no join and no shape. The same code applies if an entity set has any other reference cycle: keep one field and drop the other.
+
+If `XF-017` is reported, remove the second field with `uip df entities update <E> --local` (`removeFields`), then validate again.
+
+## Which side holds the field
+
+1. **The user named a field.** Use it exactly as stated.
+2. **The user described the relationship but named no field.** Propose a field named after the target (`customer`) on the many side and **ask before adding it**.
+3. **The many side holds it.** `SalesOrder.customer`, not a list on `Customer`. The object property's domain is the class that holds the field.
+4. **Create order.** The referenced entity is created before the entity that references it (see [entity-guide.md](entity-guide.md)).
+
+For an entity you did not write (`ENTITY_SOURCE` is `supplied`), ask before adding the field.
+
+## Federated target
+
+A federated entity can't be a `RELATIONSHIP` target. Join on a plain column of the referencing entity to the federated entity's key column:
+
+```yaml
+- [str1, $(accountKey)]   # plain column on the referencing entity
+- [str2, $(Id)]           # key column of the federated entity
 ```
-
-## Rules the validator checks
-
-- Every join in a mapping uses an object property declared in the schema.
-- Every object property whose domain and range are both mapped classes has a join in the domain class's mapping. **Exception:** a property declared `InverseObjectProperties` of a property that already has a join gets none; the inverse is answered from that join. Sub-properties (`SubObjectPropertyOf`) are not exempt and need their own join.
-- Every `$(column)` in a join is a field of its entity (or of the entity of the mapping it joins to), or a system field.
-- Do not write an inline `~iri` relationship. Use the join form above.
-
-## Choosing the key column
-
-1. **The user named a key field.** Use it exactly as stated, for example `Order.customerId`. Do not rename it.
-2. **The key field exists on a supplied entity.** Use that field. If it is not a plain column the join can use, ask.
-3. **The user described the relationship but named no key.** Propose `{targetClass}Id` on the entity that holds the key (for example `customerId`), joined to the target's `Id`. **Ask before you invent it.** Do not add the field, or write the join, until the user confirms.
-4. **Which side holds the key.** The many side holds it (`Order.customerId`, not a list on `Customer`). The object property's domain is the class that holds the key.
-5. **The target key.** Join to the target's `Id` unless the user named a different unique field of the target (then use that).
-
-A key column holds the same kind of value as the column it joins to. `Id` is a system field, so a foreign key to it is `STRING`.
-
-If the key is missing from an entity you did not write (`ENTITY_SOURCE` is `supplied`), ask the user before adding it. Do not change a supplied body on your own.
-
-## Inverses and sub-properties
-
-- **Inverse.** `prescribedBy` (domain `Prescription`, holds `doctorId`) is joined. Its inverse `prescribes` (domain `Doctor`) is declared with `InverseObjectProperties(:prescribes :prescribedBy)` and has no join. Join the side that holds the key.
-- **Sub-property.** `primaryDoctor` is a `SubObjectPropertyOf` `treatingDoctor`. Each has its own join, even if both use the same columns.
 
 ## Many-to-many
 
-Use a junction class backed by its own local entity. The entity has two plain key fields, and the junction's mapping block carries two joins, one per side. See the junction sections of [`owl-patterns-guide.md`](owl-patterns-guide.md) and [`mapping-yarrrml-guide.md`](mapping-yarrrml-guide.md).
+Use a junction entity with two `RELATIONSHIP` fields, one per side (`OrderLine.order`, `OrderLine.product`). Its mapping block carries two joins. See [owl-patterns-guide.md](owl-patterns-guide.md) and [mapping-yarrrml-guide.md](mapping-yarrrml-guide.md).
 
-## When entities carry relationship fields later
+## Self-reference
 
-Today no entity has a relationship field, so every key is a plain field as above. When entities later define relationship fields, reuse that field as the join column instead of adding another key. The join check treats a relationship field like any other field. Nothing else in the three parts above changes.
+A `RELATIONSHIP` field may name its own entity (`"referenceEntityName": "<E>"`). Locally only the CLI authors it (`uip df entities create|update <E> --local`). Whether Data Fabric deploys it is not yet shown, so tell the user.
+
+## Rules the validator checks
+
+- Every join uses an object property declared in the schema (`XF-014`).
+- Every object property between two mapped classes has a join in the domain class's mapping (`XF-015`). **Exception:** a property declared `InverseObjectProperties` of a joined property gets none. Sub-properties are not exempt.
+- Every `$(column)` in a join is a field of its entity or a system field.
+- Do not write an inline `~iri` relationship. Use the join form above.
 
 ## Do not
 
-- Declare a foreign key as a `DataProperty` and stop there. Two matching columns are not a relationship until there is an `ObjectProperty` and a join.
-- Use `RELATIONSHIP`, `CHOICE_SET_*` or any reference field in an entity.
-- Write `entityId` or `folderId` in the mapping.
+- Declare a key as a `DataProperty` and stop there. Two matching columns are not a relationship.
+- Add a second `RELATIONSHIP` field for an inverse.
+- Substitute a `STRING` column for a `RELATIONSHIP` field.
+- Write an entity, field or folder id in the mapping.
