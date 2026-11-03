@@ -8,6 +8,7 @@ import json
 import re
 import shlex
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,10 @@ TASKS = ("add_node", "add_output", "update_node", "remove_node", "move_node", "g
 spec = importlib.util.spec_from_file_location("check_brownfield_preserved", REFERENCE_DIR / "_shared" / "check_brownfield_preserved.py")
 preserved = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(preserved)
+
+spec = importlib.util.spec_from_file_location("check_add_node", REFERENCE_DIR / "_shared" / "check_add_node.py")
+add_node_check = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(add_node_check)
 
 
 def criteria(task: str) -> dict[str, list[str]]:
@@ -192,3 +197,19 @@ def test_remove_node_may_drop_the_definition_no_node_uses(sandbox: Path) -> None
 def test_move_node_fails_preserved_when_a_branch_still_ends_directly(sandbox: Path) -> None:
     mutate(sandbox, move_node, lambda f: f["edges"].append(edge("checkTemperature", "true", "endNiceDay")), renumber_edges)
     assert preserved.main(criteria("move_node")["graph"]) == 1
+
+
+@pytest.mark.parametrize(
+    ("outputs", "message"),
+    [
+        ({"convertToCelsius.output": {}}, "no numeric temperatureC"),
+        ({"convertToCelsius.output": {"temperatureC": 20}, "formatSummary.output": {"summary": "warm"}}, "does not include a Celsius value"),
+        ({"convertToCelsius.output": {"temperatureC": 20}, "formatSummary.output": {"summary": "25 C"}}, "does not match"),
+    ],
+)
+def test_add_node_output_failures_keep_the_raw_capture(monkeypatch, capsys, outputs: dict, message: str) -> None:
+    flow_check = sys.modules["_shared.flow_check"]
+    monkeypatch.setattr(flow_check, "_LAST_DEBUG_RAW", '{"Data": {"finalStatus": "Completed"}}')
+    with pytest.raises(SystemExit, match=message):
+        add_node_check._assert_celsius_output({"variables": {"globals": outputs}})
+    assert "FLOW_DEBUG_RAW_CAPTURE BEGIN" in capsys.readouterr().err
