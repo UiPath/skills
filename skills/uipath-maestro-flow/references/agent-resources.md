@@ -106,8 +106,8 @@ tools: [{
 
 **Brownfield.** Decompile reads a Batch Transform tool back whole. It reports
 lossy (an error under `--strict`) what it cannot: a file bound to a variable,
-a `fileExtension` other than `csv`, a non-empty `folderPathPrefix`, a
-canvas-saved tool node whose `resource.json` it could not read, and any
+a `fileExtension` other than `csv`, a non-empty `folderPathPrefix`, a tool
+node cut to `{ source }` whose `resource.json` it could not read, and any
 Summarize task but Empty. Edit those flows with `merge --baseline`
 ([brownfield.md](brownfield.md#agent-resources-added-changed-removed)), which
 keeps the original `resource.json` and carries only your change. Adding or
