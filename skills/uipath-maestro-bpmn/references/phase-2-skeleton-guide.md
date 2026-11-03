@@ -137,7 +137,8 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   drift check passing rather than a no-op to skip. Skip 2e for a
   trigger-start skeleton (timer or message start): `refresh` fails with no
   manual start, as in 4c.
-- **2f Make the shape visible.** When the request allows an upload, run
+- **2f Make the shape visible.**
+  When the request allows an upload, run
   `uip solution upload <SolutionDir> --output json`; 3c shows the returned
   `Data.DesignerUrl`. Do not ask first: a request to build the
   process authorizes the upload that shows it, and a consent gate per
@@ -152,12 +153,14 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   uploaded it, download it first (as in 1c); when its `.bpmn` differs from
   the local one, the user edited it online: edit the downloaded `.bpmn` (3c
   says so).
-- **3b Show the change** the same way as 2f. Each upload after the first
+- **3b Show the change** the same way as 2f.
+  Each upload after the first
   reports `Data.Action: "Overwritten"` and reuses the same `SolutionId` and
   `DesignerUrl`, because `upload` writes the cloud solution id back into the
   local `.uipx`. `"Imported"` on a later upload means that id was lost and a
   second cloud solution was just created — stop and fix that before
-  continuing. Repeat 3a–3b.
+  continuing.
+  Repeat 3a–3b.
 - **3c Ask before building.** Find each box's resource, then reply.
 
   **Find the resources.** A box whose kind runs a deployed resource (RPA
@@ -177,7 +180,12 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     `CaseManagement`, Maestro Flow `Flow`, Function `function`.
   - **Connections:** `uip is connections list <connector-key> --all-folders
     --output json`, the same list 4a binds from. Prefer `IsDefault: Yes`,
-    then `State: Enabled`.
+    then `State: Enabled`. Run it for every connector box, including when the
+    user named no provider: find the key with `uip is connectors list
+    --filter "<service name>" --output json` in the same call. When the
+    lookup returns no connection, the box's line says what is missing in
+    plain words, such as "No Slack connection in this tenant"; a connector
+    box is *not checked* only when the lookup itself errored.
   - **Data Fabric entities:** `uip df entities list --include-folders
     --output-filter "[].Name" --output json`, matched on `Name`. (`uip`
     1.203.0: `solution resources list --kind Entity` returns no rows even
@@ -194,7 +202,8 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   lookup fails, mark its boxes *not checked*, say why in the one sentence
   the reply's first line allows, and do not retry. State the failure as what
   is missing for the user ("No Slack connection in this tenant"), never as a
-  connector key, kind, or CLI term. Then, for each box:
+  connector key, kind, or CLI term, and never write "connector key" in the
+  reply. Then, for each box:
 
   - When the user named the resource, or exactly one row fits the box, use
     it and name it on the box's line, with its folder when the row has one.

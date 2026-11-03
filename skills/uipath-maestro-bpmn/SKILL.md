@@ -129,7 +129,8 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    or fixtures added to this skills repository, stay sanitized.
 10. **Confirm before any cloud change.** Publish, deploy, run, pause, resume,
    cancel, retry, and migrate require explicit user consent; validate locally
-   first. `solution upload` is the exception: unless the request forbids it, a
+   first.
+   `solution upload` is the exception: unless the request forbids it, a
    request to build the process authorizes the upload that shows it, so upload
    without asking. Confirm only when the project was not created in this run —
    adopted at 2a, or edited in place (brownfield) — because upload overwrites
@@ -347,15 +348,18 @@ choice.
 | **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
 
 Say which mode was taken in the final report: in 4g's first line, or in the
-3c reply when the run stops at the gate. 4g names the mode the session
-started in: a draft session stays `draft` after *Build it*.
+3c reply when the run stops at the gate. 4g's first line carries the mode
+as literal text: write `(draft mode)` for any run that stopped at the 3c
+gate, including after *Build it*, and write `(auto mode)` only in a run that
+never stopped at a gate. Never write `(auto mode)` after a draft gate.
 
 In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
 gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
 
 **Only *Build it* at 3c authorizes phase 4.** When the user keeps the
 outline, or has not answered, report the skeleton as an outline, not as a
-finished process. Draft mode shows the
+finished process.
+Draft mode shows the
 shape by upload when the request allows one (2f); when it forbids upload,
 show the laid-out local `.bpmn` path and a short text outline instead.
 
@@ -443,7 +447,8 @@ below, because it is the one step that depends on phase 1's scan.
   Never silently
   adopt, initialize, or repair an existing solution. Say in that question that
   adopting one means a later `upload` overwrites its cloud copy, because this is
-  the only point where that is still the user's choice to make. If it found
+  the only point where that is still the user's choice to make.
+  If it found
   nothing, run `init` now, by the rules in **Assemble** (4c); 2b (draft) or 4c
   (auto) authors into the `.bpmn` it generates.
 
@@ -775,15 +780,17 @@ the template's lines.
    binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
-- **4g Show the finished process.** When the request allows an upload and the
+- **4g Show the finished process.**
+  When the request allows an upload and the
   project has a solution (`.uipx`), `uip solution upload <SolutionDir> --output json`
   returns the `Data.DesignerUrl`. When the project was not created in
   this run (brownfield, or adopted at 2a without a confirmation), confirm before
   uploading (Rule 10). When the request forbids upload, or there is no
-  solution, skip it. Then reply in this shape, dropping lines that do not apply:
+  solution, skip it.
+  Then reply in this shape, dropping lines that do not apply:
 
   ```text
-  <Name>: built, validated<, uploaded><, run> (<auto|draft> mode). <One sentence if you kept the user's online changes.>
+  <Name>: built, validated<, uploaded><, run> (draft mode). <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
   - <what changed, one line each, up to 5>
@@ -794,7 +801,7 @@ the template's lines.
 
   When validation fails only because tenant resources are missing (no
   connection, agent, process, or queue to bind), the first line reads
-  `<Name>: built, not runnable yet (<auto|draft> mode).` and `Needs:` names
+  `<Name>: built, not runnable yet (draft mode).` and `Needs:` names
   each missing resource in the user's words, such as `a Slack connection`
   or `the ticket triage agent`. Drop `Needs:` when nothing is missing.
 
