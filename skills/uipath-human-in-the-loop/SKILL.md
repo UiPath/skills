@@ -368,7 +368,7 @@ response = interrupt(CreateTask(
 
 ### Surface: Maestro
 
-QuickForm and coded-action-app HITL nodes are both supported on Maestro BPMN processes. `uipath.human-in-the-loop.quick-form` and `uipath.human-in-the-loop.coded-action-app` are registered as **registry shortcut names** in the BPMN validator ([bpmn-spec.json](../uipath-maestro-bpmn/validator/bpmn-spec.json)) — these are palette/discovery identifiers, not literal XML to write. There is no dedicated CLI subcommand for Maestro (unlike Flow's `uip maestro flow hitl add`) — write the node directly into the `.bpmn` XML.
+QuickForm and coded-action-app HITL nodes are both supported on Maestro BPMN processes. `uipath.human-in-the-loop.quick-form` and `uipath.human-in-the-loop.coded-action-app` are registered as **registry shortcut names** in the `uipath-maestro-bpmn` skill's BPMN validator — these are palette/discovery identifiers, not literal XML to write. There is no dedicated CLI subcommand for Maestro (unlike Flow's `uip maestro flow hitl add`) — write the node directly into the `.bpmn` XML.
 
 **Confirmed node shape (verified by direct reproduction against a real Studio Web BPMN process with a working, editable QuickForm task):**
 
