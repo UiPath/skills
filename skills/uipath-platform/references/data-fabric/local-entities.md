@@ -194,16 +194,10 @@ at runtime (below). Which way you supply them depends on how the flow is
 authored.
 
 <!--skill-flavor:flow-sdk-local-entity-keys:start-->
-**Builder SDK (`.flow.ts`, the Flow skill's default).** Pass both keys to the
-`dataFabric*` factory — `folderKey` from `FolderId` in
-`uip df entities get <Name> --local`, `resourceKey` from the `Key` of the
-`Source: Local` row whose `Name` is `<Name>` in
-`uip solution resources list --kind Entity` (an entity the solution only
-references is listed as `Local` too). Do not look the entity up on the
-tenant: it is not there until deploy. Leaving the keys out — the Flow skill's
-fallback for a tenant entity — makes the node look for a tenant entity that
-does not exist, so the run fails. See
-[/uipath:uipath-maestro-flow — data-fabric.md](../../../uipath-maestro-flow/references/data-fabric.md#an-entity-the-solution-authors-itself).
+**Builder SDK (`.flow.ts`, the Flow skill's default).** Name the entity, not its keys: `entity: { name: '<Name>' }` in the `dataFabric*` factory.
+`check` prints `uip maestro registry prepare --entity <Name>`; run it from inside the solution folder, where it finds the entity in the solution before the tenant, records both keys, and names the folder to pin with `folder:`.
+Do not look the entity up on the tenant yourself: it is not there until deploy.
+See [/uipath:uipath-maestro-flow — data-fabric.md](../../../uipath-maestro-flow/references/data-fabric.md#a-folder-scoped-entity-name-it-and-its-folder).
 
 <!--skill-flavor:flow-sdk-local-entity-keys:end-->
 **Hand-written `.flow` JSON:**
