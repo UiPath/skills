@@ -103,6 +103,22 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Human task outcomes
 
+<!-- RULE:bpmn.hitl.inline-form-default -->
+- Unless the request names a deployed Action App, write a human task as an inline form: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`.
+  The form travels in the `.bpmn`, so nothing on the tenant has to exist; `app` is for a named, deployed app, and an app id the tenant does not have fails `uip maestro bpmn validate` with `MISSING_BINDING` / `MISSING_RESOURCE`.
+  Never swap a human task for a plain `.task()` to get past that — use the form.
+- A field is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back).
+  The call refuses a form that breaks any of these:
+  - Every field id is a plain identifier that is not a reserved word: `reviewNote`, not `review-note` or `default`.
+  - No field is called `Action`; that is the outcome picked.
+  - Outcome ids are unique, including derived ones: `Needs review` and `Needs-review` collide.
+  - Each variable has one writer: two answers never share a `variable`, and an `outputs` key is never an answer's variable (a field named `decision` beside `outputs: { decision: '=Action' }` is refused).
+  - A picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) has `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
+- The cloud engine takes the inline-form path only on a tenant with its quick-form flag on.
+  With the flag off, the run fails at the human task with a HITL incident: `170004` "Invalid input for the HITL task" on current engines, or `170015` "No app … found" on engines from before mid-September 2026.
+  Then tell the user to enable the quick-form flag on the tenant, or to name a deployed Action App for `app`; do not fall back to `.task()`.
+- Studio Web's "Edit Schema" canvas does not open for an inline form.
+
 <!-- RULE:bpmn.hitl.output-map -->
 - Map any decision used by later routing through `outputs`; the typed platform
   output is not populated by the local runtime. Exercise each important outcome.

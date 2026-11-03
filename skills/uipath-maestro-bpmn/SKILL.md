@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects, including a BPMN process the user wants to see or sketch before it is built. For .flow use uipath-maestro-flow; for case plans use uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects, including a BPMN process the user wants to see or sketch before it is built. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -197,7 +197,9 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    list; the default list without `--all-fields` omits `ProcessType`) and
    bind per rule 18, never a fabricated or placeholder key. Re-read both
    after every deploy: `deploy run` creates a new folder, so a literal
-   `folderKey` from an earlier deploy points at the old one. (5) Unless the task forbids
+   `folderKey` from an earlier deploy points at the old one.
+<!--skill-flavor:debug-node-output:start-->
+   (5) Unless the task forbids
    live runs or asks for a draft or handoff, run the process
    (`uip maestro bpmn debug`) and read the node's output in
    `debug-instance variables-all`. Map `=result.<key>` to the key that output
@@ -205,6 +207,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    property name. Without a run, use the schema name and report the mapping
    as unverified. A business rule maps its whole result as one `output` from
    `=result`, never one output per decision or column.
+<!--skill-flavor:debug-node-output:end-->
 18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
    `ExecuteApiWorkflowAsync`, `StartAgenticProcess[Async]`,
    `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that
@@ -216,7 +219,11 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    template's remaining fields and make that swap only after a live run
    faults with `key:FolderKey`; without a run, report the node unverified. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
-19. **Write no extra files.** Write no notes, memory, summary, or
+19. **Fill every placeholder (`{name}`, `<name>`) in an HTTP request's `url` before `registry
+   get`, with a discovered or given value or a `=js:` expression; never invent
+   one.** To change the url, run `registry get` again, never edit it in the
+   element ([how](references/v2-connector-nodes.md#http-requests)).
+20. **Write no extra files.** Write no notes, memory, summary, or
    validation-log file, and no scratch copy of the project, inside it or
    outside it. Report findings in the reply. The files a step or the user asks
    for are not extra: the project's own files (the `.bpmn` and what `init` and

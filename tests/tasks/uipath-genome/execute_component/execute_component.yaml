@@ -84,6 +84,16 @@ success_criteria:
     pass_threshold: 0
 
   - type: run_command
+    description: "Advisory: a hand-off folder outside the project holds the completion report (README with Status and Configuration answers) and the open items"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'handoff', '--open-items']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
     description: "Execution leaves the genome unchanged"
     command: >-
       python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,

@@ -130,7 +130,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
 - **2d `uip maestro bpmn validate <file>.bpmn --output json`** — must reach
   `Status: Valid`. This is an import-readiness check, not a design review:
   act on errors, ignore the expected warnings above. Write no file for the
-  result: no notes, log, or memory file (Rule 19). The reply carries it.
+  result: no notes, log, or memory file (Rule 20). The reply carries it.
 - **2e `uip maestro bpmn refresh <project-path> --output json`** — run it from the
   solution directory. `refresh` validates internally and refuses to write
   anything while validation fails, so 2d must pass first. On a skeleton that

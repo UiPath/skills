@@ -27,7 +27,7 @@
  */
 import {
   flow, dataFabricRead, dataFabricCreate, dataFabricUpdate, dataFabricDelete,
-  script, input, out, types,
+  script, input, out, types, type FlowVars,
 } from '@uipath/maestro-builder-sdk';
 
 export default flow('bee-hive-ledger')
@@ -52,10 +52,10 @@ export default flow('bee-hive-ledger')
     entity: 'HiveInspectionDrafts',
     record: { byId: input('draftId') },
   }))
-  .step('noteLedger', script({
-    code:
-      'return "hive " + $vars.start.output.hiveTag'
-      + ' + " inspected on " + $vars.start.output.inspectedOn;',
-  }))
+  .step('noteLedger', script(noteLedger))
   .return({ ledgerNote: out('noteLedger') })
   .build();
+
+function noteLedger($vars: FlowVars) {
+  return "hive " + $vars.start.output.hiveTag + " inspected on " + $vars.start.output.inspectedOn;
+}

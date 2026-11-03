@@ -283,7 +283,7 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.case` — c
    > **Connector tasks skip 3–5:** `uip maestro case splice <caseplan> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json --connection-id <id>` (no `--folder-key`: splice takes it from the spec) does the substitution, the id minting, and the root bindings in one call ([connector-activity/impl-json.md § Step 5](plugins/tasks/connector-activity/impl-json.md)). The steps below apply to the event-trigger node and connector-bound rules.
 3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` per the plugin's uniqueness rule.
 
-Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
+Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`). If `get-connection` or `case spec` fails with `Connector catalog unavailable` (`ErrorCode: server_error`), downgrade every task that index serves to a Rule 9 placeholder (`data: {}` — never leave the flat `{name, value}` inputs convert emitted, which `validate` rejects as `CASE_MGMT_CONNECTOR_INPUT_FLATTENED`); [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx).
 
 **Phase B — batched write.** One Read of `caseplan.case`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs` = the output set [`io-binding/impl-json.md` § Output Binding Shapes](plugins/variables/io-binding/impl-json.md#output-binding-shapes) produces from `caseShape.outputs` plus the SDD's `->` / `=` rows, and the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
 
@@ -431,7 +431,9 @@ Optional CLI debug run. Full contract — prompt options, debug command, safety 
 
 ## Step 15 — Debug prompt + session
 
+<!--skill-flavor:step-fifteen-debug:start-->
 Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). On `Run debug session` → run `uip solution resources refresh` then `uip maestro case debug`, loop until the user picks `Continue to publish`. On `Continue to publish` → Phase 7. Never auto-run (Rule 13).
+<!--skill-flavor:step-fifteen-debug:end-->
 
 ## Step 15a — Troubleshoot failed case
 
@@ -449,7 +451,9 @@ When a debug or process run fails, read **[troubleshooting-guide.md](troubleshoo
 
 **Per-round timeout.** If debug run exceeds 10 minutes wall-clock, treat round as inconclusive and advance to next round (counts toward 3-round limit). Advisory — do not hard-kill subprocess; classify by elapsed time and move on.
 
+<!--skill-flavor:troubleshoot-halt-report:start-->
 After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.case` edits without confirmed cause.
+<!--skill-flavor:troubleshoot-halt-report:end-->
 
 ---
 
