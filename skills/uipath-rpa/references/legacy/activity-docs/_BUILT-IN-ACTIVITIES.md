@@ -27,7 +27,7 @@ Default namespace `http://schemas.microsoft.com/netfx/2009/xaml/activities` — 
 </If>
 ```
 
-Properties: `Condition` (InArgument Boolean), `If.Then`, `If.Else` (optional). Wrap each branch in a `Sequence`, even for a single activity; omit an unused `If.Else`. XAML has no property for Else visibility: Studio opens Else hidden only when `If.Else` is omitted (an empty `Sequence` there still shows as an empty Else drop zone), and its **Show Else** / **Hide Else** toggle is not saved. To hide an unused Else, omit `If.Else`; never delete activities to hide it.
+Properties: `Condition` (InArgument Boolean), `If.Then`, `If.Else` (optional). Wrap each branch in a `Sequence`, even for a single activity; omit an unused `If.Else`. Hide Else does not work in Legacy projects, so there is no way to keep a non-empty Else out of view; never delete activities to hide the branch.
 
 ### 2. Assign
 
