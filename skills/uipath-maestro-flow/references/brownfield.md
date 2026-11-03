@@ -172,10 +172,12 @@ Merge warns, does not carry, and refuses under `--strict` when:
 - the agent node carries its prompts on the node itself (older canvas saves).
   The edited `agent.json` would not be what runs. Make that change on the canvas.
 - the agent node is embedded (canvas-saved) and the edit changes a process
-  tool argument's source (`prompt` / `value` / `variable`): the tool node
-  carries its own copy, which the canvas reads first, so merge keeps the
-  original `resource.json` (`the source of argument "<arg>" on its tool ... The
-  change is NOT carried`). Make that change on the canvas.
+  tool's `resource.json` (argument sources, added or removed arguments,
+  `returns`): the canvas loads that tool from its node, so merge keeps the
+  original file (`its tool "<nodeId>" was edited (<path>: <changed paths>), but
+  the original agent node carries its own configuration (embedded) ... The
+  change is NOT carried; the original's resource.json stays`). Make that change
+  on the canvas.
 
 Never copy `$WORK/edited/<source>/` into the project by hand: it carries the
 round trip's changes along with yours.
