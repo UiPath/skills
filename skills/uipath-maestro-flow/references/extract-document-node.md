@@ -229,10 +229,6 @@ Anything not described as supported for the Extract document node is unsupported
 | "Run an eval" / "evaluate on this one file" / "what's my score?" / "compare the eval runs" / "improve the accuracy" | "I can't run or read evaluations for this node. See [Running an evaluation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/running-an-evaluation) and [Evaluating model performance](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/evaluating-model-performance)." |
 | "Make the extract node actually run" / "provision the processor" / "set the processorKey" | "I can't create the node's processor from here. Open the flow in Studio Web and save it once; that creates it, and extraction works after you publish and deploy." |
 
-## What this guide does not cover
-
-**Going live.** Publishing and deploying stay the user's decision, in Studio Web.
-
 ## Evidence boundary
 
 Everything here is offline file authoring, apart from the registry lookup, which needs login to see what the tenant serves. `validate` proves the node is wired and shaped correctly — that `fileRef` resolves to something upstream, that the ports are named, that the taxonomy is well formed. It proves nothing about what the node extracts: that takes the Studio Web save ([Making it actually extract](#making-it-actually-extract)) and then a run against real documents, which usually sends the taxonomy back for a round of tightening.
