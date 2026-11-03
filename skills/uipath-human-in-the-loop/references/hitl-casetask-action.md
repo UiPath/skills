@@ -330,7 +330,7 @@ Add 2 entries to the top-level `bindings[]` array — one for `name` and one for
 
 `resourceKey` = `<folderPath>.<deploymentTitle>`. Binding IDs: `b` + 8 chars.
 
-For the full binding procedure, see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md) in the case skill.
+For the full binding procedure (`resourceKey` construction, binding pairs), see the resource bindings plugin (its JSON implementation reference) in the `uipath-maestro-case` skill.
 
 ### Step 4 — Write the Task
 
@@ -369,7 +369,7 @@ For the full binding procedure, see [bindings-and-expressions.md](../../uipath-m
 
 > **`hitlType` is `"custom"` for app-based tasks.** App-based tasks have no schema file at all — the form is defined by the deployed app itself, not by a schema document. **Never write `_schemaFileId` or `hitlSchemaId` for an app-based task** — those two context entries exist only on the QuickForm path (Path 1), where they identify the `.hitl.json` schema file. An app-based task is fully described by `data.name`/`data.folderPath` (the bindings to the deployed app) plus `data.inputs[]`/`data.outputs[]` (from `tasks describe`) — nothing else identifies its "schema."
 
-For the full `inputs[]`/`outputs[]` variable shapes, see the action task plugin in the `uipath-maestro-case` skill.
+For the full `inputs[]`/`outputs[]` variable shapes, see the action task plugin (its JSON implementation reference) in the `uipath-maestro-case` skill.
 
 ---
 
