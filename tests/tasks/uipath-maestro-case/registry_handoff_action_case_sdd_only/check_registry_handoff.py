@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.case_check import registry_audit_entries  # noqa: E402
+from _shared.case_check import read_registry_cache, registry_audit_entries  # noqa: E402
 
 
 ACTION_RESOURCE = "PortableReviewActionProbeQ91"
@@ -61,7 +61,6 @@ assert len(entries) == len(EXPECTED), (
     f"expected one corrected audit entry per SDD task, got {len(entries)}"
 )
 
-cache_root = Path.home() / ".uip" / "case-resources"
 resolved_entry = None
 
 for resource_name, expected in EXPECTED.items():
@@ -91,7 +90,7 @@ for resource_name, expected in EXPECTED.items():
         f"{resource_name} did not record cacheFile {expected['cache_file']}"
     )
 
-    cache = json.loads((cache_root / expected["cache_file"]).read_text(encoding="utf-8"))
+    cache = read_registry_cache(expected["cache_file"])
     name_field = expected["name_field"]
     id_field = expected["id_field"]
     exact_matches = [

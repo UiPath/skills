@@ -96,6 +96,7 @@ Adds the project to `.uipx.Projects[]`. Run after `project.uiproj` exists.
 
 ## uip solution resources refresh
 
+<!--skill-flavor:refresh-before-debug:start-->
 Re-scan all projects in the solution and sync resource declarations from `bindings_v2.json`. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists.
 
 ```bash
@@ -107,6 +108,7 @@ uip solution resources refresh --solution-folder <SolutionDir> --output json
 **Always run before `uip solution upload` or `uip maestro case debug`.** Without this step, connection resources may not be registered on Studio Web ("Resource is not configured" warning).
 
 > Requires `bindings_v2.json` to be populated. If still the empty scaffold (`resources: []`), no resources will be synced.
+<!--skill-flavor:refresh-before-debug:end-->
 
 ---
 
@@ -274,7 +276,7 @@ Output: `Code: CaseBindingsSync` with `Data.BindingsPath`, `Data.ResourceCount`,
 
 ## uip maestro case splice
 
-Write a connector task's `data` and the connection's root bindings from a saved `case spec` envelope. The only sanctioned writer of `data.context` / `data.inputs` / `data.outputs` on `execute-connector-activity` and `wait-for-connector` tasks; never hand-author them.
+Write a connector task's `data` and the connection's root bindings from a saved `case spec` envelope. The only sanctioned writer of `data.context` / `data.inputs` / `data.outputs` on `execute-connector-activity`, `wait-for-connector`, `external-agent` and `external-workflow` tasks; never hand-author them.
 
 ```bash
 uip maestro case splice <caseplan.case> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json \
@@ -295,6 +297,7 @@ Output: `Code: ConnectorShapeSpliced` with `Data.Summary` (`TaskType`, `ServiceT
 
 ---
 
+<!--skill-flavor:case-debug-command:start-->
 ## uip maestro case debug
 
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. Executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.**
@@ -313,6 +316,7 @@ uip maestro case debug <project-path> --log-level debug --output json
 | `--poll-interval <ms>` | Polling interval in milliseconds (default: `2000`) |
 | `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` (default: `json`) |
 | `--login-validity <minutes>` | Minimum minutes before token expiration triggers refresh (default: `10`) |
+<!--skill-flavor:case-debug-command:end-->
 
 ---
 
@@ -396,11 +400,11 @@ uip maestro case registry get <uiPathActivityTypeId> --type typecache-activities
 
 # --local: in-solution (offline) discovery of sibling projects (.uipx in cwd/parent/grandparent), no tenant/login
 uip maestro case registry list --local --output json
-uip maestro case registry search "<Name>" --type <agent|api> --local --output json    # matches by name (keyword); `agent` = agent sibling, `api` = api-workflow sibling
-uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api> --local --output json   # matches by key, NOT name
+uip maestro case registry search "<Name>" --type <agent|api|businessRule> --local --output json    # matches by name (keyword); `agent` = agent sibling, `api` = api-workflow sibling, `businessRule` = business-rule sibling
+uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api|businessRule> --local --output json   # matches by key, NOT name
 ```
 
-Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`.
+Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `businessRule`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`.
 
 Options for `pull`:
 | Flag | Description |
@@ -423,7 +427,7 @@ Options for `get`:
 | `<identifier>` | **(required)** The entityKey (process types), id (action-apps), or uiPathActivityTypeId (typecache) of the resource |
 | `-t, --type <type>` | Limit to a specific resource type |
 | `--connection-id <id>` | Connection UUID for connector-specific IS field metadata. Only applies to `typecache-activities` / `typecache-triggers` results |
-| `--local` | Resolve against in-solution sibling projects (offline; no login). On `list`/`search`/`get`. Local types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`. |
+| `--local` | Resolve against in-solution sibling projects (offline; no login). On `list`/`search`/`get`. Local types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `function`, `businessRule`. |
 
 **`--local` semantics.** Discovers sibling projects from the enclosing solution `.uipx` (walks cwd → parent → grandparent). Keys (`--output json`, PascalCased): `search`/`get` nest each match under `Data.Resources[].Resource.{EntityKey,Name,Category,Folders[].FullyQualifiedName,Inputs,Outputs,Source}`; `list` flattens to `Data.Resources[].{EntityKey,Name,Category,Source}` (no `Resource` wrapper, no I/O). **`get --local` matches the identifier only against `entityKey`/`.uipx` project Id — never the display name; to find a sibling by name use `search "<Name>" --local`.** A freshly-built, unpacked sibling's `EntityKey` equals its `.uipx` project Id. No solution found → `Result:"Failure"`, `Message:"No solution found for --local"`, exit 1.
 

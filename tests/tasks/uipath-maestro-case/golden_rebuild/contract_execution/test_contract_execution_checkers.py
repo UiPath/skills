@@ -481,14 +481,15 @@ class TopologyCheckerTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("run-once task set differs", result.stdout + result.stderr)
 
-    def test_rejects_dropped_direct_task_output_passing(self) -> None:
+    def test_accepts_a_plan_without_the_retired_direct_output_key(self) -> None:
+        # Retired in PO.Frontend 15cd541e9: outputs always pass directly and the
+        # designer drops the key on open, so a plan without it is the current shape.
         plan = expected_caseplan()
-        plan["metadata"]["caseDirectlyPassTaskOutputs"] = False
+        del plan["metadata"]["caseDirectlyPassTaskOutputs"]
 
         result = self._run(plan)
 
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("caseDirectlyPassTaskOutputs", result.stdout + result.stderr)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_rejects_wrong_case_identifier(self) -> None:
         plan = expected_caseplan()

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "APMailboxInvoiceBot",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "abd4b2e0-4817-41c3-8d9e-894bb9b8700e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "APMailboxInvoiceBot"
+    },
+    "locks": [],
+    "key": "943eb252-0f15-4057-9b5e-ebe72aac181e",
+    "files": []
+  }
+}

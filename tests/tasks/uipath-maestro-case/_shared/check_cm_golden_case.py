@@ -247,10 +247,7 @@ def main():
         _fail("SLA at-risk threshold lost: no escalation with atRiskPercentage=70")
 
     # -- runtime contracts (functional-build facts, run4-oracle-verified) --------
-    # Direct task-output passing is what makes the lowered vars.<id> gates
-    # resolve at runtime; intsvcActivityConfig v2 is the connector-task contract.
-    if (plan.get("metadata") or {}).get("caseDirectlyPassTaskOutputs") is not True:
-        _fail("metadata.caseDirectlyPassTaskOutputs must be true (SDD: task-output passing = Direct)")
+    # intsvcActivityConfig v2 is the connector-task contract.
     if (plan.get("metadata") or {}).get("intsvcActivityConfig") != "v2":
         _fail("metadata.intsvcActivityConfig must be 'v2'")
 

@@ -1,4 +1,4 @@
-"""Shared helpers for uipath-agents tests.
+"""Shared helpers for uipath-functions tests.
 
 Used by check scripts under sibling directories of `_shared/` (e.g.
 `simple_echo/check_simple_echo.py`). Each check script imports from
@@ -16,9 +16,9 @@ this package via:
         find_module_level_llm_clients,
     )
 
-Coded-agent helpers are minimal: they mirror the on-disk shape that
+Helpers are minimal: they mirror the on-disk shape that
 `uip function init` would produce, the bindings.json schema documented
-in `references/coded/lifecycle/bindings-reference.md`, and the lazy-LLM
+in `references/python/bindings-reference.md`, and the lazy-LLM
 init invariant called out in `references/coded/quickstart.md`.
 Inline-flow helpers (`inline_wiring.py`) cover the low-code agent-in-flow
 shape — see that module's docstring.

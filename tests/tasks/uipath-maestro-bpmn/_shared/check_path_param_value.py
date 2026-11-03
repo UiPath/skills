@@ -10,13 +10,15 @@ registry-workflow.md §3 "Connector enrichment").
 
 Flow looked in exactly two places: a node's `pathParameters` dict values
 (exact match) or its `url`/`endpoint` string (substring match). The BPMN
-homes are a `target="path"` input (exact) and a url/path/endpoint field
-(substring). A query or body value is not a path parameter.
+homes are a path parameter (exact): a V1 `target="path"` input or a key of a
+V2 element's `target="pathParameters"` JSON input, and a url/path/endpoint
+field (substring). A query or body value is not a path parameter.
 
 Assertion map (Flow -> BPMN):
   F check_path_param_value.py:87-91  pathParameters dict value == needle   -> path_input_match(): a
-    (exact match)                                                             target="path" input whose value
-                                                                                equals needle
+    (exact match)                                                             path parameter (V1 or V2 shape,
+                                                                                bpmn_check.path_parameters) whose
+                                                                                value equals needle
   F check_path_param_value.py:92-95  url/endpoint substring match          -> context_field_match(): any "url"/
                                                                                 "path"/"endpoint" context field
                                                                                 containing needle, checked on every
@@ -40,7 +42,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import context_inputs, elements, fail, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import context_inputs, elements, fail, parse_bpmn, path_parameters  # noqa: E402
 
 CONTEXT_FIELDS = ("url", "path", "endpoint")
 
@@ -62,13 +64,9 @@ CANDIDATE_TAGS = (
 
 def path_input_match(node: ET.Element, needle: str) -> str | None:
     node_id = node.attrib.get("id", "<unknown>")
-    for inp in context_inputs(node):
-        if inp.attrib.get("target") != "path":
-            continue
-        value = (inp.attrib.get("value") or inp.text or "").strip()
-        if value == needle:
-            name = inp.attrib.get("name") or "?"
-            return f"path input {name!r} of node {node_id!r}"
+    for name, value in path_parameters(node).items():
+        if value.strip() == needle:
+            return f"path parameter {name!r} of node {node_id!r}"
     return None
 
 

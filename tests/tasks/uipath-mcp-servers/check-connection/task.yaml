@@ -1,0 +1,64 @@
+task_id: skill-mcp-servers-check-connection
+description: |
+  Check a remote-type Agent Gateway MCP server whose Integration Service connection has expired, without changing anything. Exercises Checking a Server: read the server (`mcp get` / `mcp list` give its `ConnectionId`), check that connection live (`uip is connections ping <id> --force-refresh`; the connection list still shows the cached state `Enabled`, so only the live check returns `Expired`), and tell the user that the connection's owner has to sign in again. Graded from the uip mock's call log, plus an LLM judge on the answer. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:operate', 'lifecycle:validate']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Check whether the Integration Service connection of the AgentHub MCP
+  server mock-connected-mcp in the Shared folder still works, and tell me what
+  I need to do if it doesn't. Don't change the server or the connection.
+success_criteria:
+- type: command_executed
+  description: Agent checked the server's own connection live (ping by the ConnectionId the server shows)
+  tool_name: Bash
+  command_pattern: 'uip\s+is\s+connections\s+ping\s+6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01\b'
+  min_count: 1
+  weight: 3.0
+- {type: command_executed, description: Agent read the server to find its connection (mcp get / mcp list), tool_name: Bash,
+  command_pattern: 'uip\s+agenthub\s+mcp\s+(get|list)\b', min_count: 1}
+- type: command_not_executed
+  description: Agent did NOT change the server (mcp update / delete / create)
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp\s+(update|delete|create)\b(?![^\n]*--(dry-run|help|print-schema))'
+- type: command_not_executed
+  description: Agent did NOT create, edit or delete an Integration Service connection
+  tool_name: Bash
+  command_pattern: 'uip\s+is\s+connections\s+(create|edit|delete|rename|set-default)\b'
+- type: llm_judge
+  description: The answer says the connection expired and its owner has to sign in again
+  weight: 2.0
+  pass_threshold: 0.7
+  include_reference: false
+  include_dialog: true
+  include_agent_output: true
+  prompt: |
+    The MCP server's Integration Service connection (id
+    6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01) has the live status Expired; the
+    server and its other settings are fine. Grade the agent's final answer to
+    the user:
+
+      1.0  Says the connection has expired and that its owner has to sign in
+           to it again (re-authenticate it, e.g. `uip is connections edit <id>`
+           or in Integration Service), without asking to replace the server.
+      0.7  Says the connection has expired and needs re-authentication, but is
+           vague about who does it or how.
+      0.3  Says the connection is the problem without saying it expired, or
+           recommends replacing the connection or the server first.
+      0.0  Says the connection works, blames something else, or reports that
+           it changed the server or the connection.
+
+    Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+run_limits: {max_turns: 40}

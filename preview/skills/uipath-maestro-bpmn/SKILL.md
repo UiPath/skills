@@ -81,7 +81,8 @@ spells the paths its rows are relative to.
 | Script and assignment tasks | `scriptTask`, `task` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
-| Human work | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/NotifyChannel.bpmn.ts` |
+| A deployed business rule | `businessRule` | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | — |
+| Human work — an inline form unless a deployed Action App is named | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/InvoiceEscalation.bpmn.ts` |
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connectors](references/connectors.md) | `examples/NotifyChannel.bpmn.ts` |
 | A connector EVENT, as a start or a mid-flow wait | `eventTrigger`, `waitForEvent` | [Connector events](references/connectors.md#6-connector-events) | — |
 | Data Fabric records and file fields | `dataService` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/ContractRegistry.bpmn.ts` |
@@ -120,7 +121,7 @@ export default bpmn('approval')
   .var('action', 'string')
   .var('outcome', 'string', { default: 'RUNNING' })
   .startEvent('start')
-  .humanTask('approve', { app: 'InvoiceApproval', actions: ['Approve', 'Reject'] }, (t) => {
+  .humanTask('approve', { form: { fields: [], outcomes: ['Approved', 'Rejected'] }, outputs: { action: '=Action' } }, (t) => {
     t.onTimer('PT1H', { interrupting: false }, (b) => b.task('remind').endEvent('reminded'));
     t.onError(true, { errorVar: 'failure' }, (b) => b.endEvent('failed', { name: 'Approval failed' }));
   })

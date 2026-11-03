@@ -2,48 +2,18 @@
 """NonCatalogHttpFallback (BPMN): connector-mode HTTP request to a non-catalog
 service (Spotify), through the generic HTTP connector.
 
-Ported from Flow `connector_features/non-catalog-http-fallback/
-check_non_catalog_http_fallback.py`: same scenario (Spotify has no
-``uipath-spotify`` IS connector; the only managed path is the generic HTTP
-connector ``uipath-uipath-http``, whose own connection instance holds
-Spotify's base URL + OAuth), translated from a JSON node/``inputs.detail``
-walk to an XML walk over the registry-driven ``Intsvc.ActivityExecution``
-connector shell (skills/uipath-maestro-bpmn/references/registry-workflow.md
-§"Connectionless vs connector HTTP").
+Spotify has no ``uipath-spotify`` IS connector; the only managed path is a
+connection of the generic HTTP connector ``uipath-uipath-http``, which holds
+Spotify's base URL + OAuth. Every HTTP request is ``Intsvc.UnifiedHttpRequest``
+(skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "HTTP requests"),
+so the node must be one in connector mode through that connection.
 
-Assertion map (Flow -> BPMN):
-  F check_non_catalog_http_fallback.py:_is_http_connector_fallback (node type)          -> sendTask carrying Intsvc.ActivityExecution or Intsvc.HttpExecution
-  F check_non_catalog_http_fallback.py:_is_http_connector_fallback (auth=="connector")  -> a context `connectorKey` input is present on the node (connector-backed auth, not a raw literal request)
-  F check_non_catalog_http_fallback.py:_is_http_connector_fallback (uses_http_connector)-> connectorKey == "uipath-uipath-http"
-  F check_non_catalog_http_fallback.py:_connection_bound                                -> `connection` (or `connectionId`) context value is non-empty and not the literal "ImplicitConnection" sentinel
-  F check_non_catalog_http_fallback.py:_targets_me_endpoint                             -> a `path`/`url` context field, or a `path`/`url` key inside the single `target="body"` JSON payload, ends with "/me"
-  I                locate/parse .bpmn                                                   -> parse_bpmn("SpotifyProfileTest")
-  T                curated (Intsvc.ActivityExecution) OR the connector-authenticated     -> is_http_connector_node() classifies by connectorKey + bound
-                   form of Intsvc.HttpExecution -- accept either wrapper tag                connection, not by which wrapper tag hosts them (see GUESS below)
-  T                collect uipath:input elements at any depth under the node            -> context_inputs() uses `.//uipath:input`
-  T                endpoint value found in either a sibling context field or inside      -> target_paths()
-                   the body CDATA JSON (the skill does not pin where it lands)
-
-GUESS (flag for reviewer): registry-workflow.md documents `Intsvc.HttpExecution`'s
-`mode` context field as hardcoded to "manual" (hidden, defaultValue "manual") with
-no documented connector-authenticated alternative -- the skill's own contract
-splits connector-mode HTTP as `Intsvc.ActivityExecution` (connectorKey=
-uipath-uipath-http) and reserves `Intsvc.HttpExecution` for connectionless/manual
-calls only. The "connector-authenticated Intsvc.HttpExecution" form named in the
-porting brief was not found documented anywhere under skills/uipath-maestro-bpmn;
-it echoes a same-named but distinct JSON API-workflow concept
-(skills/uipath-troubleshoot/.../connection-auth-failure.md: bodyParameters
-`authentication: "connector"` + `targetConnector`), not a BPMN registry field.
-To stay faithful to both instructions without inventing a hard requirement on
-one tag name, this checker classifies purely by `connectorKey` + a bound
-connection, and accepts either wrapper tag carrying them -- the skill-documented
-`Intsvc.ActivityExecution` shape passes squarely; a hypothetical
-`Intsvc.HttpExecution` node carrying the same fields would also pass, but no
-skill reference was found describing agents actually authoring it that way.
-
-No Flow assertions were dropped -- all five of Flow's structural checks (node
-type, connector-backed auth, HTTP connector key, connection bound, "/me"
-endpoint) have a BPMN counterpart above.
+Checks:
+  - a bpmn:sendTask carries Intsvc.UnifiedHttpRequest;
+  - its body is ``authentication: "connector"`` with ``targetConnector``
+    ``uipath-uipath-http``;
+  - its ``connection`` is bound (not the manual ``ImplicitConnection``);
+  - a ``path``/``url`` (context field or body key) ends with ``/me``.
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_non_catalog_http_fallback.py check_fallback
@@ -73,7 +43,7 @@ PROJECT_NAME_HINT = "SpotifyProfileTest"
 HTTP_CONNECTOR_KEY = "uipath-uipath-http"
 # Spotify "Get Current User's Profile" endpoint.
 ME_ENDPOINT = "/me"
-ACTIVITY_TYPES = ("Intsvc.ActivityExecution", "Intsvc.HttpExecution")
+ACTIVITY_TYPES = ("Intsvc.UnifiedHttpRequest",)
 _IMPLICIT_CONNECTION = "implicitconnection"
 
 
@@ -112,8 +82,10 @@ def is_http_connector_node(task: ET.Element) -> bool:
     bound -- the non-catalog fallback shape."""
     if not any(has_type(task, token) for token in ACTIVITY_TYPES):
         return False
-    connector_key = context_value(task, "connectorKey").lower()
-    if connector_key != HTTP_CONNECTOR_KEY:
+    body = body_json(task) or {}
+    if body.get("authentication") != "connector":
+        return False
+    if str(body.get("targetConnector", "")).lower() != HTTP_CONNECTOR_KEY:
         return False
     connection_val = context_value(task, "connection") or context_value(task, "connectionId")
     return is_bound_connection(connection_val)
@@ -153,18 +125,17 @@ def check_fallback() -> None:
     if not fallback_nodes:
         seen = sorted(
             {
-                context_value(t, "connectorKey")
+                f"{context_value(t, 'connectorKey')} ({'Unified' if has_type(t, 'Intsvc.UnifiedHttpRequest') else 'other'})"
                 for t in send_tasks
-                if any(has_type(t, token) for token in ACTIVITY_TYPES)
+                if context_value(t, "connectorKey")
             }
         )
         fail(
-            "No managed HTTP-request node using the generic "
-            f"{HTTP_CONNECTOR_KEY!r} connector with a bound connection was "
-            "found. Spotify is not a catalog connector, so the process must "
-            "issue a connector-mode Intsvc.ActivityExecution request bound "
-            f"to a {HTTP_CONNECTOR_KEY!r} connection. connectorKey values "
-            f"seen: {seen}"
+            "No Intsvc.UnifiedHttpRequest in connector mode through a "
+            f"{HTTP_CONNECTOR_KEY!r} connection was found. Spotify is not a "
+            "catalog connector, so the process must send a connector-mode "
+            f"HTTP request (targetConnector {HTTP_CONNECTOR_KEY!r}) bound to "
+            f"that connection. Connector nodes seen: {seen}"
         )
     print(
         f"OK: {len(fallback_nodes)} managed-HTTP node(s) bound to "

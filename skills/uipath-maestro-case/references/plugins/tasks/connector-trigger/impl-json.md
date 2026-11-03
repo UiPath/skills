@@ -74,7 +74,7 @@ For each entry in `caseShape.inputs[]`:
 - `id` = same as `var`
 - `elementId` = the task's elementId
 
-For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers).
+For each entry in `caseShape.outputs[]`: **name-based ids, not `v` + 8** — `id` = `var` = the output's name in camelCase (`response`, `Error` → `error`), `elementId` as above, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers). The Case Designer keeps a name-shaped output id on save and rewrites a `v…` one to a name-derived id without updating the expressions that read it, so a `v…` output id that anything reads breaks on the next Designer save.
 
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 
@@ -131,7 +131,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 2. `data.context[]` populated from `caseShape.context` with placeholders substituted (`=bindings.<connBindingId>`, etc.)
 3. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)
 4. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`)
-5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` is empty `[]`
+5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` holds only the picker rows `splice` wrote (`[]` without a picker)
 6. Each entry in `data.inputs[]` / `data.outputs[]` has `var` / `id` / `elementId` minted; uniqueness rule applied for outputs
 7. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 8. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 across every connector node — a task left in the Graceful-degradation shape while `case spec` succeeded is a Check 12 failure, not an acceptable outcome

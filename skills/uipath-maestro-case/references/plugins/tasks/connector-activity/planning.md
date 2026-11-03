@@ -12,13 +12,29 @@ For **connector-based triggers** inside a stage (wait for an external event), us
 
 For **case-level event triggers** (outside any stage), use [`plugins/triggers/event/`](../../triggers/event/planning.md).
 
+## External agents and automations
+
+An external agent (CrewAI, Snowflake Cortex, Salesforce Agentforce, Azure AI Foundry, Google Vertex…) or an external automation (Power Automate, Salesforce flows) is a task of its own type, built exactly like a connector activity:
+
+| `type` | TypeCache index (§ 1) |
+|---|---|
+| `external-agent` | `typecache-external-agent-activities-index.json` |
+| `external-workflow` | `typecache-external-automation-activities-index.json` |
+
+Differences from a connector activity:
+- **§ 1:** search the index in the table, not `typecache-activities-index.json`. Pass `--type typecache-external-agent-activities` (or `typecache-external-automation-activities`) to `registry get-connection` in § 2.
+- **§ 2:** the connection must be the agent's own connector's. Execute Salesforce Agent is `uipath-salesforce-agent`, not a `uipath-salesforce-sfdc` connection; `case spec` refuses another connector's with `invalid_argument`.
+- **§ 3:** `case spec --type activity` finds the entry in the external catalog by itself.
+
+If `sdd convert` drops the task as a type an SDD may not declare, or `splice` refuses it as `not a connector task`, the CLI predates external tasks: say so in one line, keep the task as an `<UNRESOLVED>` placeholder ([§ Unresolved Fallback](#unresolved-fallback)), and ask the user to update `uip`.
+
 ## Resolution Pipeline
 
 Run these steps during planning. Each step feeds into the resolved entry.
 
 ### 1. Find the connector in TypeCache
 
-If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 18 gate does not apply). If still missing after pull, the tenant has no connector activities — emit placeholder per § Unresolved Fallback below.
+If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 18 gate does not apply). If still missing after a pull whose `Data.Errors` lists `typecache-activities` with a 5xx, the catalog is unavailable — Scenario C below, no Rule 18 gate. If the pull synced it and the file is still absent, the tenant has no connector activities — emit placeholder per § Unresolved Fallback below.
 
 Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
 
@@ -221,7 +237,7 @@ Output bindings are **not** recorded here: they come from the SDD Outputs table 
 
 ## Unresolved Fallback
 
-Two entry paths: **Scenario A** — connector not found in TypeCache ([§ 1 No-match](#1-find-the-connector-in-typecache), after the Rule 18 gate); **Scenario B** — connector found but connection unresolved, only after the Step 2 create offer is **declined** or fails (or the run is non-interactive). When `Connections` is empty, offer to create one first (Step 2) — do not jump straight here.
+Three entry paths: **Scenario A** — connector not found in TypeCache ([§ 1 No-match](#1-find-the-connector-in-typecache), after the Rule 18 gate); **Scenario B** — connector found but connection unresolved, only after the Step 2 create offer is **declined** or fails (or the run is non-interactive); **Scenario C** — `typecache-activities` unavailable ([connector-integration.md § Catalog unavailable](../../../connector-integration.md#catalog-unavailable-typecache-5xx)) — no gate, straight to placeholder with reason `connector catalog unavailable (TypeCache <status>)`. When `Connections` is empty, offer to create one first (Step 2) — do not jump straight here.
 
 > **Rule 18 exception.** Empty `Connections` from `get-connection` (the connector activity exists in typecache but no IS connection is registered) does NOT require the Rule 18 gate — proceed directly to placeholder.
 

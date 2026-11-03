@@ -1,0 +1,23 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "key": "0f0e0d0c-0000-4000-8000-00000000c501",
+    "name": "OrderStatus",
+    "kind": "choiceSet",
+    "apiVersion": "dataservice.uipath.com/v2",
+    "dependencies": [],
+    "isOverridable": true,
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "resourceJson": "{\"Name\": \"OrderStatus\", \"DisplayName\": \"OrderStatus\", \"Data\": [{\"Name\": \"open\", \"DisplayName\": \"open\", \"NumberId\": 0}, {\"Name\": \"shipped\", \"DisplayName\": \"shipped\", \"NumberId\": 1}]}",
+      "name": "OrderStatus",
+      "displayName": "OrderStatus",
+      "description": ""
+    }
+  }
+}

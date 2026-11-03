@@ -11,11 +11,12 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
    ```
    The Makefile composes these into `UV_EXTRA_INDEX_URL` for `uv pip install`. If either variable is empty, install continues against public PyPI only and prints a notice.
 
-2. **coder-eval** — install from GitHub (creates a local `.venv`, requires Python 3.13+):
+2. **coder-eval** — install the version pinned in `.coder-eval-version` (creates a local `.venv`, requires Python 3.13+):
    ```bash
    cd tests
    make install
    ```
+   Dependencies are constrained to the `pip freeze` of the pinned `ghcr.io/uipath/coder-eval-agent` image, the same constraints CI uses. Needs Docker; without it the install prints a warning and runs unconstrained.
 
 3. **uip CLI** — the UiPath CLI must be available:
    ```bash
@@ -193,6 +194,7 @@ criteria that passed.
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
 | `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
+| `use-case-tiers.yaml` | docker | Opt-in A/B for the `uipath-agents` use-case tasks: `assisted` vs `unassisted` (lower-tier helper text stripped) | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -202,6 +204,22 @@ runner. The image build passes the package credential as
 `--secret id=npm_auth_token,env=NPM_AUTH_TOKEN`; the Dockerfile build-arg path
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
+
+`use-case-tiers.yaml` runs the `uipath-agents` use-case tasks
+(`tasks/uipath-agents/lowcode/use_cases/`) in two variants. Those prompts carry
+guidance meant only for lower-tier models between `<!-- helper:start -->` and
+`<!-- helper:end -->`. Every other experiment sends the prompt unchanged, helper
+included. The `unassisted` variant strips the block with a regex
+`prompt_mutation`, so a higher-tier model gets only the context, the user's
+request and the closing autonomy line. Helper text is never graded, so both
+variants share the same success criteria. A task without the markers runs
+identically in both variants. The "Run Coder Eval" workflow always passes
+`-e experiments/nightly.yaml`, so run this experiment locally:
+
+```bash
+SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run \
+  tasks/uipath-agents/lowcode/use_cases/*/*.yaml -e experiments/use-case-tiers.yaml
+```
 
 `flow-v2-preview.yaml` runs the three builder-SDK skills
 `uipath-maestro-{flow,case,bpmn}` as the ONLY skill catalog, so a run measures the
@@ -236,12 +254,25 @@ docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 
-`agent.allowed_tools` is an **auto-approval** list, not a restriction: it reaches
-`ClaudeAgentOptions.allowed_tools`, which names the tools that skip a permission
-prompt. A tool left off it is still callable — on 2026-09-08 flow runs used
-`Agent` and `TaskOutput`, neither of which is listed, and one spent 420s of a
-900s turn blocked on `TaskOutput`. Use `agent.disallowed_tools` to actually
-withhold a tool.
+The experiments set no `agent.allowed_tools` and no `agent.permission_mode`, so each
+harness uses its own defaults. On Claude Code the agent is offered the CLI's own tool
+set and runs `bypassPermissions`.
+
+On Claude Code, `agent.allowed_tools` **restricts and pre-approves**: the agent is
+offered only the listed built-in tools, and they run without a prompt. Set it on a
+task only when the restriction is part of what the task measures, because a shorter
+list changes what the agent does (with only 7 tools it calls `Skill` first more
+often). A task that stages the plugin must keep `Skill` on its list, or `coder-eval
+plan` refuses it. `Glob` and `Grep` are not in the CLI's own set; name them on the
+list if the task needs them. Use `agent.disallowed_tools` to withhold a tool from
+the full set.
+
+On codex, opencode, pi and antigravity, `allowed_tools` and `permission_mode` are
+ignored with a warning, and `--strict` refuses them.
+
+coder-eval 0.12.x differs: there `allowed_tools` only pre-approves, so a tool left
+off the list is still offered, and its own default experiment adds
+`permission_mode: acceptEdits` and the 7-tool list under every experiment.
 
 Task files should **not** duplicate the full `agent:` block — the experiment provides the defaults. Only specify fields that differ from the experiment:
 

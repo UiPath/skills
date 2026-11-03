@@ -2,7 +2,7 @@
 
 *Exact signatures, fields, and defaults: `inlineAgent()`. Prompting, inputs and the sidecar: [inline-agent.md](inline-agent.md).*
 
-An inline agent's capabilities are ARTIFACT nodes hanging off its own handles — tools on `tool`, a context index on `context`, an escalation on `escalation`, a memory on `memory` — not steps in the control flow.
+An inline agent's capabilities are ARTIFACT nodes hanging off its own handles — tools on `tool`, a context index on `context`, an escalation on `escalation` — not steps in the control flow.
 Each is authored as an entry on `inlineAgent`, and the compiler emits the node and the edge.
 Context index: [inline-agent.md](inline-agent.md#context-grounding).
 
@@ -16,7 +16,6 @@ Context index: [inline-agent.md](inline-agent.md#context-grounding).
     { kind: 'httpRequest', url: 'https://api.example.test/items', method: 'GET' },
     { kind: 'function', key: '<guid>', name: 'acme-echo', folderPath: 'Shared/acme-echo' },
   ],
-  memory: { name: 'Support History', id: '<guid>' },
   escalation: [{ variant: 'quick-form', name: 'Confirm', outcomes: ['Approve', 'Reject'],
     fields: [{ id: 'approved', type: 'boolean', direction: 'output' }] }],
 }))
@@ -28,14 +27,14 @@ Context index: [inline-agent.md](inline-agent.md#context-grounding).
 | --- | --- | --- |
 | `builtin` | A platform tool (`summarize`, `analyzefiles`, `batchtransform`) | the tool name |
 | `connector` | An Integration Service operation | `connector` + `operation` (needs a library), plus `connection` + `folder` (`bindings.json` labels) — see [inline-agent.md](inline-agent.md#tools) |
-| `process` / `api` / `flow` / `maestro` / `agent` / `function` | A deployed resource | `key` (GUID) + `name` + `folderPath` |
+| `process` / `api` / `flow` / `maestro` / `agent` / `function` | A deployed resource, or a sibling project of this solution | `key` (GUID) + `name` + `folderPath` (`'solution_folder'` for a sibling, see [inline-agent.md](inline-agent.md#tools)) |
 | `ixp` | A published IxP project | `projectId` + `name` |
 | `mcp` | An MCP server's tools | `name` + `key`; `slug` is what the runtime resolves |
 | `a2a` | A remote agent to delegate to | `name` + `key` + `slug` (required) |
 | `clientside` | The CALLING application runs it | `name`, plus the `inputs`/`returns` contract |
 | `httpRequest` | The built-in HTTP tool | nothing — see below |
 
-For `mcp`, `a2a`, `memory` and the per-instance resource kinds, the node TYPE is
+For `mcp`, `a2a` and the per-instance resource kinds, the node TYPE is
 minted from the identity you give (`…tool.mcp.<name-slug>.<key-slug>`), so a
 wrong key emits a node the tenant cannot resolve. Read them from the tenant.
 
@@ -61,16 +60,32 @@ form INLINE instead — `fields` (the same rows a human task takes) and no `app`
 
 ## Memory
 
-`memory: { name, id }` attaches an episodic memory so the agent learns from past
-runs, with optional retrieval tuning (`dynamicFewShotLearning`,
-`semanticSimilarity`, `kValue`, `searchMode`). Naming one selects the agent's
-**1.4** definition — the version that declares the `memory` handle. Omitting it
-leaves the agent on 1.2 exactly as before.
+Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`).
+Find the space, declare it in the solution, then attach it to the sidecar after the
+last `compile`. `add` only attaches an existing space: an empty list means stop and
+report it. `--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`.
+`<MEMORY_SPACE_NAME>` and `<MEMORY_SPACE_FOLDER>` are the list row's `Name` and `Folder`:
+
+```bash
+uip solution resources list --source remote --kind MemorySpace --search "<MEMORY_SPACE_NAME>" --output json
+uip solution resources add --source remote --kind MemorySpace --name "<MEMORY_SPACE_NAME>" \
+  --folder-path "<MEMORY_SPACE_FOLDER>" --solution-folder "<Solution>" --output json
+uip agent memory add <FeatureName> --memory-space "<MEMORY_SPACE_NAME>" \
+  --folder-path "<MEMORY_SPACE_FOLDER>" --field <inputSchema-key>=1 \
+  --path "<Solution>/<Name>/<source>" --output json
+uip agent refresh "<Solution>/<Name>/<source>" --inline-in-flow \
+  --bindings-target "<Solution>/<Name>/bindings_v2.json" --output json
+```
+
+`memory add` reporting `SolutionResource.Status: NotDeclared` means the space is not
+linked: run the `resources add` line, then `memory add` again. Threshold, result count,
+search mode: `uip agent memory add --help`. Do not add items: they come from real runs
+after deploy (`uip agent memory item add --help`).
 
 ## Evidence boundary
 
 Every resource here is tenant data, runtime behaviour, or both: no local rung
-calls an MCP server, delegates to a remote agent, retrieves a memory, or asks a
+calls an MCP server, delegates to a remote agent, or asks a
 client application to run a tool. Offline `validate` proves the minted node
 types, the wiring to the right handle, and the declared contracts. Whether the
 resources exist and what they return is platform evidence.

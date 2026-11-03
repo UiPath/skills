@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" id="definitions_55181714-c8e4-4ad6-83eb-4030bfbf27c6" name="Decision" namespace="http://uipath.com/dmn/ns_3eeab9b9-807f-4a15-9043-6716d9c20079" exporter="UiPath Maestro" xmlns:tns="http://uipath.com/dmn/ns_3eeab9b9-807f-4a15-9043-6716d9c20079" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring">
+  <extensionElements>
+    <uipath:authoring surface="decision-table" />
+  </extensionElements>
+  <decision id="decision_b1f856d6-4da3-4b78-8112-ade88a7311db" name="RiskDecision" label="RiskDecision">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_260983b0-3984-4123-ae7c-20efa5443de8" name="RiskDecision" typeRef="string" />
+    <informationRequirement id="informationRequirement_1287893c-761a-4602-aab3-b997f4e8b7dc">
+      <requiredInput href="#inputData_bc15e840-52d9-4906-bc36-2a8b68e8ece8" />
+    </informationRequirement>
+    <decisionTable id="decisionTable_a86cc8d8-d9a7-47c8-8e3e-39ed7948e768" hitPolicy="FIRST">
+      <input id="input_e7bc93f4-27da-48c2-a222-0185508c16fd" label="creditScore">
+        <inputExpression id="inputExpression_f4dc8784-df10-4d17-a23f-b03fd398f6ac" typeRef="number">
+          <text>creditScore</text>
+        </inputExpression>
+      </input>
+      <output id="output_bb2bb0e2-96f0-492b-8e8c-d869ccf86ff1" label="riskBand" name="riskBand" typeRef="string" />
+      <rule id="rule_6ce12d28-349b-4644-9532-a9e3118bbe8d">
+        <inputEntry id="inputEntry_76f1d3ca-61aa-4224-895a-d71337275dd4">
+          <text>&gt;= 700</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_e45421be-f4a6-4645-ad89-e422c4363747">
+          <text>"LOW_RISK"</text>
+        </outputEntry>
+      </rule>
+      <rule id="rule_8a0c51e2-1b6f-4c37-9d2e-5f4b7a3c9e10">
+        <inputEntry id="inputEntry_2f6e8b14-7c3d-4a59-b1e0-8d9c6a4f2b37">
+          <text>&lt; 700</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_5c9d2a71-3e8b-4f06-a4d7-1b2e6f8c0a94">
+          <text>"HIGH_RISK"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData name="creditScore" id="inputData_bc15e840-52d9-4906-bc36-2a8b68e8ece8">
+    <variable id="variable_aba46cdd-0cf5-42ce-b3f6-57932069482f" name="creditScore" typeRef="number" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_1" dmnElementRef="tns:decision_b1f856d6-4da3-4b78-8112-ade88a7311db">
+        <dc:Bounds height="80" width="180" x="0" y="0" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_3d7106d5-d260-46ff-b77b-005609bfbf76" dmnElementRef="inputData_bc15e840-52d9-4906-bc36-2a8b68e8ece8">
+        <dc:Bounds x="32" y="176" width="216" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

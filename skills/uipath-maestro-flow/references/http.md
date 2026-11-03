@@ -57,8 +57,16 @@ them only when the scenario calls for different operational behavior.
 ## Managed authentication
 
 Managed HTTP has two authentication modes. Omit `connection` and `folder` for
-manual/implicit mode. To reuse an Integration Service HTTP connection, provide
-both symbolic names from `bindings.json`; the compiler resolves them into the
+manual/implicit mode. For a URL that needs no connection, prefer standalone
+(`managed: false`) unless the scenario names the managed node: implicit managed
+HTTP goes out through Integration Service's shared egress, which public APIs
+often rate-limit. Standalone draws an `HTTP_V1_RETIRED` warning from `check`;
+that is expected. CLI builds before cli#5384 also refuse implicit managed HTTP
+in `uip maestro flow debug` (`Connection ImplicitConnection not found in
+Resource Catalog`).
+
+To reuse an Integration Service HTTP connection, provide both symbolic names
+from `bindings.json`; the compiler resolves them into the
 node detail and the emitted flow's resource bindings:
 
 ```ts
@@ -84,6 +92,11 @@ node detail and the emitted flow's resource bindings:
 Connection mode emits `authentication: "connector"`, targets
 `uipath-uipath-http`, and treats `url` as a path relative to the connection's
 configured base URL. Supplying only one of `connection` or `folder` is an error.
+
+A secret the call needs, such as a header token or basic credentials, belongs in
+that connection. The builder has no node that reads an Orchestrator asset or
+credential, so a token written into `headers` sits in the flow source as plain
+text.
 
 For an HTTP fallback authenticated by another connector, set its connector key
 as `targetConnector`. The node remains the managed HTTP wrapper, while the

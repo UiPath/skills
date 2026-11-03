@@ -22,3 +22,20 @@
    auto-deploys; a shared location needs `uip solution deploy run`. Follow
    `uipath-solution` for destinations and redeploys.
 <!--skill-flavor:delegated-resource-author-deploy:end-->
+
+<!--skill-flavor:v2-solution-resources-refresh:start-->
+   Studio Web keeps the open solution's resources in sync after
+   `bpmn refresh`: skip the `uip solution resources refresh` step that
+   `Data.V2.Instructions` ends with. It is Node-CLI-only and is not run here.
+<!--skill-flavor:v2-solution-resources-refresh:end-->
+
+<!--skill-flavor:debug-node-output:start-->
+   (5) Unless the task forbids
+   live runs or asks for a draft or handoff, run the process
+   (`uip maestro bpmn debug "<ProjectName>"`) and read the node's output in the
+   execution trace it prints. Map `=result.<key>` to the key that output
+   used; a scalar can surface under a generic key instead of the schema
+   property name. Without a run, use the schema name and report the mapping
+   as unverified. A business rule maps its whole result as one `output` from
+   `=result`, never one output per decision or column.
+<!--skill-flavor:debug-node-output:end-->

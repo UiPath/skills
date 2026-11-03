@@ -1,0 +1,22 @@
+{
+ "name_contains": "Orvane Sales Command Center",
+ "documents": {
+  "pdd": "corpus/sales-command-center/pdd.md",
+  "process_map": "corpus/sales-command-center/process-map.bpmn"
+ },
+ "systems": {
+  "Snowflake": []
+ },
+ "optional_systems": {
+  "CRM": [
+   "crm"
+  ],
+  "TMS": [
+   "tms"
+  ],
+  "CIP data": [
+   "cip"
+  ]
+ },
+ "allow_other_category": true
+}

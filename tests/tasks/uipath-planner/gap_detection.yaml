@@ -22,7 +22,7 @@ run_limits:
   turn_timeout: 2700
 
 initial_prompt: |
-  Analyze the following Process Design Document and generate a Solution Design
+  Analyze the following Process Definition Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.
 
   This PDD is deliberately incomplete. Apply [DEFAULT] and [SME REVIEW] markers
@@ -39,7 +39,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Payment Reconciliation
+  # Process Definition Document: Payment Reconciliation
 
   ## Process Overview
   - **Process Name:** Payment Reconciliation

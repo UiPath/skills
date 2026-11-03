@@ -1,0 +1,45 @@
+task_id: skill-mcp-servers-remote-connection-create
+description: |
+  Register a remote-type Agent Gateway MCP server that authenticates with an Integration Service connection the user names. Exercises the remote `--connection-id` path: look the connection up under the UiPath MCP connector (`uip is connections list uipath-uipath-mcp`), take the enabled row whose name matches exactly (an `(old)` row in state `Failed` is listed first), pass its id on create, then refresh tools and read the server back. Graded from the uip mock's call log. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Register a remote-type AgentHub MCP server in the Shared folder for the
+  MCP endpoint https://mcp.mock.example.com/mcp. It must authenticate with my
+  Integration Service connection "Mock MCP OAuth".
+    - Use slug: mock-connected-mcp
+    - Display name: "Mock Connected MCP"
+
+  Make sure the server's tools are stored, and tell me the MCP URL my agents
+  should use.
+success_criteria:
+- {type: command_executed, description: Agent looked the connection up in Integration Service, tool_name: Bash, command_pattern: 'uip\s+is\s+connections\s+list\b',
+  min_count: 1}
+- type: run_command
+  description: 'The executed create sent https://mcp.mock.example.com/mcp with the id of the enabled "Mock MCP OAuth" connection (--connection-id, or a camelCase connectionId in a --file/--body payload), and no create used the failed "(old)" connection'
+  command: python3 $REFERENCE_DIR/check_remote_connection_create.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- {type: command_executed, description: Agent refreshed tools after create, tool_name: Bash, command_pattern: 'uip\s+agenthub\s+mcp\s+refresh-tools\s+mock-connected-mcp(?![^\n]*--dry-run)',
+  min_count: 1}
+- {type: command_executed, description: 'Agent read the server or its tools back (mcp get / mcp-tools list)', tool_name: Bash,
+  command_pattern: 'uip\s+agenthub\s+(mcp\s+get|mcp-tools\s+list)', min_count: 1}
+- type: command_not_executed
+  description: Agent did NOT create, edit or delete an Integration Service connection
+  tool_name: Bash
+  command_pattern: 'uip\s+is\s+connections\s+(create|edit|delete|rename|set-default)\b'
+run_limits: {max_turns: 60}

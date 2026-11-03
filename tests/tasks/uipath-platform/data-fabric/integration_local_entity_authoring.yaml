@@ -1,0 +1,91 @@
+task_id: skill-datafabric-integration-local-entity-authoring
+description: >
+  Integration test: the agent authors a Data Fabric entity INSIDE an existing
+  solution (a local entity that ships with the solution) rather than on the
+  tenant. Covers routing to references/data-fabric/local-entities.md: the
+  --local verbs, the whole-number field (INTEGER is rejected locally, so it must
+  become DECIMAL with precision 0), and the `entities validate --local` loop.
+  Fully offline: no tenant call is needed or allowed. Needs a CLI with
+  `uip df entities --local` (UiPath/cli #4441).
+tags: [uipath-platform, integration, mode:build, lifecycle:generate, feature:entities]
+run_limits:
+  expected_turns: 12
+  max_turns: 40
+  turn_timeout: 1200
+
+reference:
+  directory: .
+
+pre_run:
+  - command: "uip solution init HelpdeskSol --output json"
+    timeout: 120
+
+initial_prompt: |
+  The HelpdeskSol solution in this directory needs its own Ticket entity that
+  ships with the solution when we deploy it. It must not be created on the
+  tenant: nothing should exist there until the solution deploys.
+
+  Ticket has these columns:
+    - title: text, required, up to 200 characters
+    - priority: a whole number
+    - dueDate: a date
+    - resolved: yes/no
+
+  Make sure the solution would pack cleanly with the entity in it.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: command_executed
+    # Advisory: the literal flag. The outcome is graded below by
+    # verify_local_entity.py (the sentinel FolderId proves the entity is local).
+    description: "Agent created the entity with the local verb"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create\b(?:\\[\s\S]|[^\n;&|\\])*--local'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent must NOT create the entity on the tenant (a create without --local)"
+    tool_name: "Bash"
+    # Spans `\` continuations, so a --local on the next line is seen.
+    command_pattern: 'uip\s+df\s+entities\s+create\b(?:(?!--local\b|--help\b|\s-h\b)(?:\\[\s\S]|[^\n;&|\\]))*(?=$|[\n;&|])'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the local validate loop"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+validate\b(?:\\[\s\S]|[^\n;&|\\])*--local|uip\s+solution\s+pack\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Ticket is a local entity with the four columns at the right types"
+    command: "python3 $REFERENCE_DIR/_shared/verify_local_entity.py Ticket title:NVARCHAR:required priority:DECIMAL dueDate:DATE resolved:BIT"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The solution's local entities validate"
+    command: "cd HelpdeskSol && uip df entities validate --local --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

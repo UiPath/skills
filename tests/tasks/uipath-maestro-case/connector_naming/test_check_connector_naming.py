@@ -151,6 +151,19 @@ def test_a_trigger_envelope_key_is_not_graded_as_a_contract_field():
     assert chk.FAILURES == []
 
 
+def test_a_compiled_trigger_filter_is_not_graded_as_a_request_field():
+    """The filter envelope carries `expression`, which no contract declares."""
+    body = {"filters": {"expression": "(contains(Title,'x'))"}}
+    chk.check_inputs("T", block(inputs=[{"body": body}]), ["calendarID"])
+    assert chk.FAILURES == []
+
+
+def test_a_filter_operand_written_as_a_request_field_is_reported():
+    body = {"filters": {"expression": "(contains(Title,'x'))"}, "Title": "x"}
+    chk.check_inputs("T", block(inputs=[{"body": body}]), ["calendarID"])
+    assert "input key 'Title' matches no field" in only()
+
+
 def test_a_request_that_wrote_nothing_is_reported():
     chk.check_inputs("T", block(inputs=[{"body": {}}]), ["message.subject"])
     assert "no request field was written at all" in only()
@@ -301,9 +314,21 @@ def roots() -> list:
     return [binding("b1", "ConnectionId"), binding("b2", "folderKey")]
 
 
-def test_a_task_that_copies_root_bindings_onto_itself_is_reported():
+def test_a_task_that_copies_its_connection_binding_onto_itself_is_reported():
     chk.check_bindings("T", block(bindings=[{"id": "b1"}]), roots())
-    assert "data.bindings must be empty or omitted" in only()
+    assert "must not copy the connection or folder binding" in only()
+
+
+def test_a_copied_connection_row_under_another_id_is_reported():
+    chk.check_bindings("T", block(bindings=[{"id": "bX", "resource": "Connection"}]), roots())
+    assert "must not copy the connection or folder binding" in only()
+
+
+def test_the_picker_rows_splice_lists_on_the_task_are_allowed():
+    picker = [{"id": "bE1", "resource": "entity", "propertyAttribute": "name"},
+              {"id": "bE2", "resource": "entity", "propertyAttribute": "folderKey"}]
+    chk.check_bindings("T", block(bindings=picker), roots())
+    assert chk.FAILURES == []
 
 
 def test_an_empty_data_bindings_array_is_allowed():

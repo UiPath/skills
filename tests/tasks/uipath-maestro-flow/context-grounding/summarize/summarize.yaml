@@ -15,6 +15,7 @@ tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, 
 run_limits:
   expected_turns: 47
   turn_timeout: 1200
+  task_timeout: 1500
 
 reference:
   directory: ../..

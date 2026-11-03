@@ -191,6 +191,28 @@ flowchart LR
 |---|---|---|---|---|
 | `<FLOW_KEY>` | `<SOURCE_NODE>` | `<TARGET_NODE>` | <EXPRESSION_OR_—> | <NOTES> |
 
+### Decision Tables
+
+<!-- references/business-rules-guide.md → Decision tables. Each decision runs in a businessRuleTask (§4); gateways route on its output. Validation rules go in §7. Empty: `None. No rule decides an outcome.` -->
+
+#### D1 — <DECISION_NAME>
+**Hit policy:** <UNIQUE / FIRST / COLLECT>
+**Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
+**Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
+**Runs in:** `<BUSINESS_RULE_TASK_NODE_KEY>`
+
+| # | <INPUT_NAME> | <INPUT_NAME> | → <OUTPUT_NAME> | Rule |
+|---|---|---|---|---|
+| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | <BR_ID> |
+
+### Rules That Need Reasoning
+
+<!-- references/business-rules-guide.md → Rules that need reasoning. Agent: a serviceTask hosting the agent. Person: a userTask, also in §9 HITL Touchpoints. Empty: `None. Every rule is deterministic.` -->
+
+| ID | Rule | Applied by | Inputs → Output | Where it runs |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | `<NODE_KEY>` |
+
 ---
 
 ## 6. Events
@@ -207,7 +229,7 @@ flowchart LR
 
 ## 7. Data Objects & Variables
 
-<!-- Process variables and data objects passed between nodes. -->
+<!-- Process variables and data objects passed between nodes. A validation business rule (regex / range / type / allowed values) goes in Description, prefixed with its BR ID. -->
 
 | Name | Direction | Type | Scope | Default | Description |
 |---|---|---|---|---|---|

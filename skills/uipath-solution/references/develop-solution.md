@@ -48,7 +48,7 @@ Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live insid
 
 > **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Python Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. JS/TS Coded Functions have no `init` — their `uipath.json` functions map is the registration marker (`entry-points.json` is generated at pack). Registration without these creates an incomplete solution entry.
 
-Register a project that already lives inside the solution directory.
+Register a project that already lives inside the solution directory. An RPA project `uip rpa init` creates there is registered by its creation, unless `--skip-solution-registration` kept it out.
 
 ```bash
 uip solution projects add ./InvoiceAutomation/Processor --output json
@@ -314,7 +314,11 @@ A local stub starts from the kind's defaults: a queue has automatic retry on, `m
 
 **Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. Idempotent — re-run on drift; returns `Updated`.
 
-**Tenant-scoped `Entity` / `ChoiceSet`** (created without `--folder-key`) — NOT a solution resource. Reference the entity from the workflow via a DataService activity and pack the workflow project — the referencing runtime resolves it. Flow (Maestro `.flow`) and API workflows (`process:api`) use the DataService connector activity and are fully CLI-packable end-to-end (no special bundle in the nupkg). RPA (XAML) workflows use strongly-typed DataService activities that need a compiled `content/.entities/DataService.*.Entities.dll` bundle Studio Web builds at pack time — **Studio Web is required for RPA tenant-DF today**. In all cases, do not run `uip solution resources add` for tenant-scoped DF, and **the destination tenant must already have the same entity at tenant scope with matching schema** (name + fields + SQL types) — the solution does NOT provision it.
+**Tenant-scoped `Entity` / `ChoiceSet`** (created without `--folder-key`) — NOT a solution resource. Reference the entity from the workflow via a DataService activity; the referencing runtime resolves it. Flow (Maestro `.flow`) and API workflows (`process:api`) use the DataService connector activity and are fully CLI-packable end-to-end (no special bundle in the nupkg).
+<!--skill-flavor:tenant-df-rpa:start-->
+RPA (XAML) workflows use strongly-typed DataService activities: install the entities into the project (`uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`), and `uip solution pack` packs their generated types into the project's package; the deployed process reads the tenant entity.
+<!--skill-flavor:tenant-df-rpa:end-->
+In all cases, do not run `uip solution resources add` for tenant-scoped DF, and **the destination tenant must already have the same entity at tenant scope with matching schema** (name + fields + SQL types) — the solution does NOT provision it.
 
 > **Do not hand-write `configurations/default/configuration.json`.** `uip df entities get` returns `fieldDataType`-shaped fields — pack and publish succeed silently; upgrade fails with per-field `EntityConflict`. Only `uip solution resources add --source remote` writes the shape the deploy validator accepts.
 

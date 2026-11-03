@@ -57,14 +57,6 @@
       },
       "last_synced": null
     },
-    "uipath-automation-discovery": {
-      "status": "preview",
-      "confluence": {
-        "page_id": null,
-        "url": null
-      },
-      "last_synced": null
-    },
     "uipath-automationhub": {
       "status": "stable",
       "confluence": {
@@ -258,6 +250,14 @@
       "last_synced": null
     },
     "uipath-troubleshoot": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-vertical-solutions": {
       "status": "preview",
       "confluence": {
         "page_id": null,

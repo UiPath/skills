@@ -1,0 +1,148 @@
+task_id: skill-test-executions-list-smoke
+description: >
+  Smoke test: an agent is asked for the executions on a project's test set and
+  the pass/fail totals of the most recent finished one. Exercises the read side
+  of the executions surface — `executions list` scoped to a test set — with no
+  mutation. Each list row carries the run's `Passed`/`Failed`/`None` (equal to
+  `executions get-stats`), so the list call alone answers both questions;
+  `get-stats` / `report get` are optional and not graded. The skill, not the
+  prompt, must teach that a run is located under its test set, not by guessing
+  an id.
+tags: [uipath-test, smoke, mode:diagnose, lifecycle:discover, feature:test-case]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 25
+
+# Self-provisioning, self-healing fixture — see fixtures/README.md (EVFX-).
+# Guards on the PROPERTY the task reads (at least one FINISHED execution on the
+# set), topping up with a single recorded run only when none exists.
+pre_run:
+  - timeout: 290
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys, time
+      P, SET = "CLAIM", "EVFX-EXLIST-SET"
+      CASES = ["EVFX-EXLIST-TC1", "EVFX-EXLIST-TC2"]
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out = (r.stdout or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:200]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def all_named(label, kind, name):
+          return [x for x in (call(label, "tm", kind, "list", "--project-key", P,
+                                   "--filter", name).get("Data") or [])
+                  if x.get("Name") == name]
+
+      def by_name(label, kind, name):
+          hits = all_named(label, kind, name)
+          return hits[0] if hits else None
+
+      def has_verb(*w):
+          return subprocess.run(["uip", *w, "--help"],
+                               capture_output=True, text=True).returncode == 0
+
+      # Dedupe: the name-keyed create-if-absent can race under parallel smoke
+      # load and leave >1 set with this name; the agent then correctly stops on
+      # the ambiguity. Keep the lowest-Id canonical set and delete the extras.
+      # `delete` needs explicit confirmation, so pass --yes or it no-ops.
+      dupes = sorted(all_named("set.all", "testsets", SET),
+                     key=lambda x: str(x.get("Id")))
+      if len(dupes) > 1:
+          for extra in dupes[1:]:
+              k = pick(extra, "TestSetKey", "Key", "ObjKey")
+              if k:
+                  call(f"set.dedup.{k}", "tm", "testsets", "delete",
+                       "--test-set-key", k, "--yes")
+          dupes = sorted(all_named("set.after", "testsets", SET),
+                         key=lambda x: str(x.get("Id")))
+      ts = dupes[0] if dupes else None
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key, set_id = pick(ts, "TestSetKey", "Key", "ObjKey"), ts.get("Id")
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"tc.{name}", "testcases", name)
+          if not tc:
+              call(f"tc.create.{name}", "tm", "testcases", "create", "--project-key", P, "--name", name)
+              tc = by_name(f"tc.re.{name}", "testcases", name)
+          if not tc:
+              fail(f"could not create or find {name}")
+          keys.append(pick(tc, "TestCaseKey", "Key", "ObjKey"))
+      call("cases.add", "tm", "testcases", "add", "--test-set-key", set_key,
+           "--test-case-keys", ",".join(keys))
+
+      # Already have a finished run? Leave it — nothing to seed.
+      for e in (call("ex.list", "tm", "executions", "list", "--project-key", P,
+                     "--test-set-id", set_id, "--limit", "100").get("Data") or []):
+          if call(f"st.{e['Id'][:8]}", "tm", "executions", "get-stats",
+                  "--execution-id", e["Id"], "--project-key", P).get("Data", {}).get("ExecutionFinished"):
+              print("FIXTURE: a finished execution already exists", flush=True)
+              raise SystemExit(0)
+
+      run = call("open", "tm", "testsets", "run", "--test-set-key", set_key,
+                 "--execution-type", "manual")
+      eid = (run.get("Data") or {}).get("ExecutionId")
+      if not eid:
+          fail("could not open a manual run")
+      logs = (call("logs", "tm", "executions", "testcaselogs", "list",
+                   "--execution-id", eid, "--project-key", P).get("Data") or [])
+      if not logs:
+          fail(f"run {eid} has no logs")
+      for l in logs:
+          tc = l.get("TestCaseId")
+          call(f"start.{(tc or '')[:8]}", "tm", "testcaselog", "start",
+               "--project-key", P, "--execution-id", eid, "--test-case-id", tc)
+          call(f"finish.{(tc or '')[:8]}", "tm", "testcaselog", "finish",
+               "--project-key", P, "--execution-id", eid, "--test-case-id", tc,
+               "--result", "Passed", "--has-error", "false",
+               "--executed-by", "eval-fixture@uipath.com")
+      for _ in range(12):
+          if call("st", "tm", "executions", "get-stats", "--execution-id", eid,
+                  "--project-key", P).get("Data", {}).get("ExecutionFinished"):
+              break
+          time.sleep(3)
+      print(f"FIXTURE: seeded finished run {eid}", flush=True)
+      EOF
+
+initial_prompt: |
+  In the CLAIM project in Test Manager, what executions do we have on the
+  "EVFX-EXLIST-SET" test set, and for the most recent finished one, what are the
+  pass/fail totals? No need to check back with me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent listed the executions for the named test set, not a guessed id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-set-id\s+\S)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0

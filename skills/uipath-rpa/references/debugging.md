@@ -59,7 +59,7 @@ The mid-session verbs (`break`, `continue`, `resume`, `continue-retry`, `continu
 | Verb | When to Use | What It Does |
 |------|-------------|--------------|
 | `run` | Run without debugging | Executes the workflow to completion. The default authoring loop verb |
-| `debug start` | Begin a debug session | Starts execution in debug mode and **returns at the first stable state**: `Paused` at a breakpoint (pass `--breakpoints` to set them), `Suspended` on an unhandled exception, or `Completed` if nothing interrupts the run. The response's `DebugState` / `DebugDetails` say where execution stands; the session stays alive for the mid-session verbs |
+| `debug start` | Begin a debug session | Starts execution in debug mode and **returns at the first stable state**: `Paused` at a breakpoint (pass `--breakpoints` to set them), `Suspended` on an exception, or `Completed` if nothing interrupts the run. The response's `DebugState` / `DebugDetails` say where execution stands; the session stays alive for the mid-session verbs |
 | `debug test-activity` | Test one activity in isolation | Isolates the currently focused activity and executes it in a temporary test workflow. **Requires `focus-activity` first → Studio Desktop required** (see [Studio Desktop vs headless](#studio-desktop-vs-headless)). Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
 | `debug start-from-here` | Debug from a specific activity | Starts a debugging session from the currently focused activity, skipping all preceding activities. **Requires `focus-activity` first → Studio Desktop required** (see [Studio Desktop vs headless](#studio-desktop-vs-headless)). Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
 | `debug toggle-breakpoint` | Set/remove breakpoints interactively (Studio Desktop only) | Toggles a breakpoint on the currently focused activity (XAML) or line (.cs). Use `uip rpa focus-activity` to focus beforehand. For XAML, cycles through 3 states: **enabled → disabled → no breakpoint**. For .cs, cycles through 2 states: **breakpoint → no breakpoint**. **Not available headless** (rejected as an unknown command) — use `--breakpoints` on `debug start` or `debug set-breakpoints` instead |
@@ -87,7 +87,7 @@ On the headless backend, debugging is a synchronous request/response loop: **eve
 | `DebugState` | Meaning | What to do next |
 |---|---|---|
 | `Paused` | Stopped at a breakpoint or after a step/break. `DebugDetails` carries the current activity (name, id, workflow file) and a snapshot of in-scope variables, arguments, and properties | Inspect `DebugDetails`, then `step-over` / `step-into` / `step-out` / `continue`, or `execution cancel` |
-| `Suspended` | Stopped on an unhandled exception; the session is still alive. `DebugDetails` carries the exception type, message, faulting activity, and locals | `continue` to propagate the exception, `continue-retry` to re-run the faulted activity, `continue-ignore` to skip it, or `execution cancel` |
+| `Suspended` | Stopped on an exception; the session is still alive. A suspension does not mean the workflow leaves the exception unhandled: the debugger hooks every activity its parent schedules without a fault handler (each child of a Sequence or an If, the root of an invoked workflow; not the activity placed directly in a Try Catch's Try) and suspends when a fault leaves a hooked activity, even when a Try Catch or Retry Scope above will handle it — once per hooked level the fault climbs, and at each failed Retry Scope attempt. `errorMessage` calls the exception unhandled every time. `DebugDetails` carries the exception type, message, the activity the fault is leaving, and locals | Look in the workflow for a Try Catch with a Catch for the exception's type or a base type, or a Retry Scope, around that activity. If one handles it, `continue` until the run reaches it: a fault the workflow tolerates (an optional element that is absent) is continued, not repaired. Otherwise `continue` propagates the exception and the run fails, `continue-retry` re-runs the faulted activity, `continue-ignore` skips it, and `execution cancel` ends the session |
 | `Completed` | The run finished. The response is the normal run result (§ Output Format) | Read the run result; the session is gone |
 | `Running` | The wait timed out before a stable state was reached — execution is still going | Poll with `debug state`, send `debug break` to pause at the next activity, or `execution cancel` |
 | `None` | No debug session is active | Start one with `debug start` |
@@ -190,12 +190,12 @@ A clean `run`, then the same workflow under `debug start`:
 [Information] Sum: 10
 [Information] <PROJECT_NAME> execution ended in: 00:00:00
 { "Result": "Success", "Code": "ToolResult",
-  "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null } }
+  "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null, "errorScope": null } }
 ```
 
 ```json
 { "Result": "Success", "Code": "ToolResult",
-  "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": "Completed", "debugDetails": null } }
+  "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": "Completed", "debugDetails": null, "errorScope": null } }
 ```
 
 | Field | Type | Meaning |
@@ -203,15 +203,18 @@ A clean `run`, then the same workflow under `debug start`:
 | `output` | `string` | Workflow's serialized output arguments JSON once the run ends — `{"out_Sum":10}` for an entry point with `out_Sum`, `"{}"` for one that declares none, also on a run that faulted inside an activity. `""` while a session is `Paused`, `Suspended` or `Running`, on `debug state`, and when the run never started (validation failure, missing entry point). **Carries the workflow's data, not a verdict.** |
 | `hasErrors` | `bool` | `true` when the run ended without succeeding: an unhandled exception that ended a `run`, a compile/validation failure, a missing entry point. `false` otherwise — including while `Suspended` on an exception, because the session is still alive and the outcome undecided. |
 | `errorMessage` | `string?` | The failure text when `hasErrors: true`: an activity fault gives `Source: <activity>`, `Message: …`, `Exception Type: …` and the stack; a compile/validation failure gives `Validation failed with N error(s):` and the diagnostics; a missing entry point gives `Message: The <file> workflow cannot be found …`. On the response that reports a `Suspended` session it carries **guidance** (which commands apply) with `hasErrors: false`. `null` otherwise. |
-| `debugState` | `string?` | Debug sessions only (`null` on plain `run`): `Paused` (breakpoint), `Suspended` (unhandled exception), `Running` (`debug state` polled mid-run), `Completed`, or `None` (`debug state` with no session). See [The stable-state debug loop](#the-stable-state-debug-loop-headless). |
+| `debugState` | `string?` | Debug sessions only (`null` on plain `run`): `Paused` (breakpoint), `Suspended` (exception), `Running` (`debug state` polled mid-run), `Completed`, or `None` (`debug state` with no session). See [The stable-state debug loop](#the-stable-state-debug-loop-headless). |
 | `debugDetails` | `string?` | Debug sessions only: JSON snapshot for the state — `Activity`, `ActivityId`, `WorkflowFile`, `CurrentActivity` and locals when `Paused`; `ExceptionType`, `Message`, `Activity`, `CurrentActivity` and locals when `Suspended`; `""` while `Running`; `null` otherwise. |
 | `profiling` | `object?` | `null` unless `--profiling` was passed on a start command; then `{"outputDirectory": "<absolute path>"}` — the run's `*.uistat` and screenshot folder (verifies UI automation correctness and workflow performance). See [Profiling Workflow Performance](#profiling-workflow-performance). |
+| `errorScope` | `string?` | Set only when the pre-run validation failed, and names whose errors they are: `"target"` — the file passed to `--file-path`; `"dependency"` — a workflow that file invokes; `"project"` — the run could not be narrowed to the file and the workflows it invokes, so the whole project was validated and the errors may sit in files the run never reaches. `null` otherwise. |
 
-**On Helm the workflow's log output is not in the envelope.** `Log Message` activities and system traces stream to stdout as `[Level] message` lines *above* the JSON envelope, live, while the run executes. That is where a logged value is read back to confirm runtime behavior — do not strip those lines. Output arguments are read from `output`, from the workflow's own log lines, or from artifacts the workflow wrote.
+**On Helm the workflow's log output is not in the envelope.** `Log Message` activities and system traces stream to stdout as `[Level] message` lines *above* the JSON envelope, live, while the run executes. That is where a logged value is read back to confirm runtime behavior — do not strip those lines. In a debug session only the `debug start` call streams them: a line logged after it returns (after a `continue` or a step) reaches no later command's output, so read it from the Robot's execution log (`%LOCALAPPDATA%\UiPath\Logs\<yyyy-MM-dd>_Execution.log` on Windows), where each line ends in a JSON object with `message` and the workflow's `fileName`. Output arguments are read from `output`, from the workflow's own log lines, or from artifacts the workflow wrote.
 
-> **The outer `Result` reports the CLI invocation, NOT the workflow.** On Helm it is `ValidationError` for an unknown flag or a filter that failed to evaluate; `Failure` **for a `run` whose workflow faulted, failed validation, or named a missing entry point** (`Message` holds the `Data` fields JSON-encoded, `hasErrors: true`) and for a project directory that cannot be opened or an executor that is still busy (`Message` holds `{"success": false, "errorMessage": "…"}`); and `Success` for every `debug start` that reached the runtime — including one suspended on an unhandled exception. **Never treat `Result: "Success"` as a passing run.**
+> **The outer `Result` reports the CLI invocation, NOT the workflow.** On Helm it is `ValidationError` for an unknown flag or a filter that failed to evaluate; `Failure` **for a `run` or `debug continue` whose workflow faulted, failed validation, or named a missing entry point** (`Message` holds the `Data` fields JSON-encoded, `hasErrors: true`) and for a project directory that cannot be opened or an executor that is still busy (`Message` holds `{"success": false, "errorMessage": "…"}`); and `Success` for every `debug start` that reached the runtime — including one suspended on an exception. **Never treat `Result: "Success"` as a passing run.**
 >
 > **Helm verdict: a run passed only when `Data.hasErrors` is `false` AND `Data.errorMessage` is `null` AND `Data.debugState` is `null` or `"Completed"`.** All three are required: a suspended debug session reports `hasErrors: false` with `debugState: "Suspended"` and guidance in `errorMessage`; a completed failure reports `hasErrors: true` with the chain in `errorMessage`.
+>
+> A test case's verification that fails with `ContinueOnFailure` `True` (the default) leaves all three clean. Its own `[Error]` line, the verification's result message, is the only sign: check a test case's verification lines in addition to the verdict.
 >
 > **Do NOT use a log line's level as a failure signal** — workflow `Log Message` activities emit at any level, and a clean run that logs at `Error` still returns `hasErrors: false`. Treating log levels as a verdict flips green runs to "failed". Conversely, when a run has failed, `errorMessage` and the `[Error]` lines above the envelope carry the most specific diagnosis — read them for the root cause after the verdict is already established.
 
@@ -355,7 +358,7 @@ uip rpa execution cancel --output json
 
 ### 4. Exception Investigation
 
-When execution hits an unhandled exception in a debug session, the command that was running returns `DebugState: "Suspended"` — the session is alive and waiting for your decision. `DebugDetails` carries the exception type, message, faulting activity, and a locals snapshot.
+When a debug session stops on an exception, the command that was running returns `DebugState: "Suspended"` — the session is alive and waiting for your decision. Which exceptions suspend and what `DebugDetails` carries: [The stable-state debug loop](#the-stable-state-debug-loop-headless).
 
 ```bash
 # Start debugging — if an exception fires, the response comes back Suspended
@@ -373,7 +376,7 @@ uip rpa debug continue-retry --output json
 # Option B: Ignore the exception and continue past it (pauses at the next activity)
 uip rpa debug continue-ignore --output json
 
-# Option C: Propagate the exception (the run fails; response is Completed with hasErrors: true)
+# Option C: Propagate the exception (to the next suspension or the handler that catches it; with none, the run fails — envelope in § Output Format)
 uip rpa debug continue --output json
 
 # Option D: Cancel and fix the root cause

@@ -3,7 +3,7 @@
 <!--skill-flavor:step-six-zero:end-->
 
 <!--skill-flavor:step-six-intro:start-->
-The case file must live inside a project of the open Studio Web solution. `uip maestro case init` creates that project and seeds its scaffold; the case plugin owns the root caseplan write (and any scaffold file Studio Web did not seed). Project creation is the only CLI call. **Never use `uip maestro case cases add` (or another case mutation command) to create the root caseplan** — execute the T01 direct-JSON recipe so required root metadata such as `caseDirectlyPassTaskOutputs` is emitted.
+The case file must live inside a project of the open Studio Web solution. `uip maestro case init` creates that project and seeds its scaffold; the case plugin owns the root caseplan write (and any scaffold file Studio Web did not seed). Project creation is the only CLI call. **Never use `uip maestro case cases add` (or another case mutation command) to create the root caseplan** — execute the T01 direct-JSON recipe so required root metadata such as `intsvcActivityConfig` is emitted.
 <!--skill-flavor:step-six-intro:end-->
 
 <!--skill-flavor:step-six-t01-scaffold:start-->
@@ -23,3 +23,11 @@ Optional `solution publish` of the open solution to the tenant solution feed —
 <!--skill-flavor:step-sixteen:start-->
 Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). On `Publish to Orchestrator` → run `uip solution publish --output json` from `/solution`; if it lists several destinations, ask the user and rerun with `--location "<key or name>"` or `--personal-workspace`. On `Done` → exit skill. Never auto-run (Rule 13).
 <!--skill-flavor:step-sixteen:end-->
+
+<!--skill-flavor:step-fifteen-debug:start-->
+Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). On `Run debug session` → run `uip maestro case debug "<ProjectName>"`, loop until the user picks `Continue to publish`. On `Continue to publish` → Phase 7. Never auto-run (Rule 13).
+<!--skill-flavor:step-fifteen-debug:end-->
+
+<!--skill-flavor:troubleshoot-halt-report:start-->
+After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: the `Trace ID` if one was printed, faulting element ID and error from the execution trace, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.case` edits without confirmed cause.
+<!--skill-flavor:troubleshoot-halt-report:end-->

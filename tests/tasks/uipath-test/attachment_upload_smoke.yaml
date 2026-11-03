@@ -1,0 +1,128 @@
+task_id: skill-test-attachment-upload-smoke
+description: >
+  Smoke test (Attachments scenario 6): agent uses the uipath-test skill to
+  attach a local file to a test case and show its attachments. Graded on the
+  test case's live attachments (exactly the one uploaded file) and on a
+  successful upload command. pre_run seeds a throwaway `EVFX-ATTUP-*` project
+  per run (key in project-key.txt) holding EVFX-ATTUP-Checkout with no
+  attachments, and writes the local file; post_run deletes the project.
+  Per-run isolation because the agent mutates the case's attachments and
+  concurrent gate runs on a shared case would corrupt the "exactly one" check.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-ATTUP-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:400]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      # Orphan sweep: delete only EVFX-ATTUP-* projects stamped more than 6
+      # hours ago, so a concurrent run keeps its own.
+      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          nm, key = p.get("Name") or "", p.get("ProjectKey")
+          if not key or not nm.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(nm[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "project", "delete", "--project-key", key, "--yes")
+
+      key = "EVAT" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create {name}")
+      need(call("tm", "testcases", "create", "--project-key", key, "--name", "EVFX-ATTUP-Checkout"),
+           "create EVFX-ATTUP-Checkout")
+      with open("project-key.txt", "w") as f:
+          f.write(key + "\n")
+      with open("checkout-failure.png", "w") as f:
+          f.write("EVFX-ATTUP fake screenshot bytes\n")
+      print(f"SEEDED {name} ({key}): EVFX-ATTUP-Checkout with no attachments; "
+            f"local checkout-failure.png written")
+      PYEOF
+    timeout: 240
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  hey, the key of my Test Manager project is in project-key.txt in this
+  folder. can you attach checkout-failure.png (it's in this folder too) to my
+  EVFX-ATTUP-Checkout test case in that project, and then show me what's
+  attached to it?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent uploaded with `attachment upload` (command must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+attachment\s+upload\b'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the test case's attachments to confirm"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+attachment\s+(list|get)\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-ATTUP-Checkout now has exactly one attachment, checkout-failure.png"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = "EVFX-ATTUP-Checkout"
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", key, "--filter", name) if t.get("Name") == name][0]
+      rows = uip("tm", "attachment", "list", "--project-key", key, "--test-case-keys", case["TestCaseKey"])
+      files = sorted(a["FileName"] for r in rows for a in (r.get("Attachments") or []))
+      print(files)
+      sys.exit(0 if files == ['checkout-failure.png'] else 1)
+      PYEOF
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

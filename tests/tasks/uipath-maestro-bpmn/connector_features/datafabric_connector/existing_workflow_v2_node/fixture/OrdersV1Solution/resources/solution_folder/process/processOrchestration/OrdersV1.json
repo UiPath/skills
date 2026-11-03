@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OrdersV1",
+    "kind": "process",
+    "type": "processOrchestration",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "34c60ec8-acc4-4c06-8378-709ee02d8883",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "OrdersV1"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "ProcessOrchestration",
+      "name": "OrdersV1",
+      "package": {
+        "key": "936416aa-c139-44a9-9eac-dce27bae84ad"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "0df1873e-5d33-4e93-84b0-7924f9da97a8",
+    "files": []
+  }
+}

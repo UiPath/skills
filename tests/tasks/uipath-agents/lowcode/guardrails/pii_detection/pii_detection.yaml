@@ -2,18 +2,21 @@ task_id: skill-agent-guardrail-pii-detection
 description: >
   Built-in PII detection guardrail. End-to-end test: scaffold a
   standalone low-code agent and add a builtInValidator guardrail for
-  pii_detection that blocks Email and PhoneNumber entities. Verifies
-  correct $guardrailType, validatorType, $parameterType discriminators,
-  PascalCase entity names, enum-list and map-enum parameter types, and
-  PascalCase scope values.
+  pii_detection that blocks Email and PhoneNumber entities in both the
+  typed text and an uploaded account statement. Verifies correct
+  $guardrailType, validatorType, $parameterType discriminators, PascalCase
+  entity names, enum-list and map-enum parameter types, PascalCase scope
+  values, a job-attachment input field, and the file-support parameter
+  detectionScope set to Both (text and files).
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 reference:
-  directory: .
+  directory: ../../..
 
 initial_prompt: |
   Create a UiPath low-code agent "PiiSafeAgent" that answers user questions about
-  their accounts. Add a guardrail that blocks email addresses and phone numbers
-  in the agent's output — use a 0.5 threshold for each — with the message "PII
+  their accounts and lets the user upload an account statement as a file. Add a
+  guardrail that blocks email addresses and phone numbers in both the typed text
+  and the uploaded file — use a 0.5 threshold for each — with the message "PII
   detected in output." The solution should be named "PiiGuardSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
@@ -73,14 +76,14 @@ success_criteria:
 
 
   - type: run_command
-    description: "PII detection guardrail shape (builtInValidator, pii_detection, parameters, PascalCase)"
-    command: "python3 $REFERENCE_DIR/check_pii_detection.py"
+    description: "PII detection guardrail shape (builtInValidator, pii_detection, parameters, PascalCase, file input, detectionScope Both)"
+    command: "python3 $REFERENCE_DIR/lowcode/guardrails/pii_detection/check_pii_detection.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 15
-  max_turns: 30
+  expected_turns: 18
+  max_turns: 50
   turn_timeout: 1200

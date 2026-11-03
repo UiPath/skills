@@ -1,0 +1,232 @@
+task_id: skill-test-testset-order-integration
+description: >
+  Integration test: agent copies a test set under a unique name, makes two of
+  its three test cases run first on the copy, and makes runs follow that
+  order. The user names only two cases, but set-execution-order must list
+  every assigned case, and the order is enforced only by a separate settings
+  switch. The task runs in its own fixture project EVTSORD, seeded once with
+  Alpha, Beta and Gamma as EVTSORD:1-3, so the full order Gamma, Alpha, Beta
+  is checked on the command (the order cannot be read back through the CLI).
+  Graded also on a fresh copy enforcing its order while the original set stays
+  untouched. post_run sweeps copies older than six hours.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 15
+  max_turns: 40
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, re, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def key_of(row):
+          return row.get("TestSetKey") or row.get("TestCaseKey") or row.get("Key")
+
+      def ensure_project(key, name):
+          rows = call("tm", "project", "list", "--filter", key).get("Data") or []
+          if any(p.get("ProjectKey") == key for p in rows):
+              return False
+          need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create project {key}")
+          return True
+
+      def find_set(project, name):
+          rows = call("tm", "testsets", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else None
+
+      def ensure_case(project, name):
+          rows = call("tm", "testcases", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(call("tm", "testcases", "create", "--project-key", project, "--name", name), f"create {name}")
+
+      def ensure_set(project, name, case_names):
+          ts = find_set(project, name)
+          if ts is None:
+              ts = need(call("tm", "testsets", "create", "--project-key", project, "--name", name), f"create {name}")
+          have = {r.get("Name") for r in call("tm", "testsets", "list-testcases", "--project-key", project, "--test-set-key", key_of(ts)).get("Data") or []}
+          missing = [ensure_case(project, n) for n in case_names if n not in have]
+          if missing:
+              need(call("tm", "testcases", "add", "--test-set-key", key_of(ts), "--test-case-keys", *[key_of(c) for c in missing]), f"assign to {name}")
+          return ts
+
+      def sweep(project, prefix, hours=6):
+          # delete only this task's copies (prefix + stamp) older than `hours`, so a concurrent run's copy is safe
+          now = datetime.datetime.now(datetime.timezone.utc)
+          for r in call("tm", "testsets", "list", "--project-key", project, "--filter", prefix).get("Data") or []:
+              m = re.fullmatch(re.escape(prefix) + r"(\d{8}-\d{6})-[0-9a-f]{6}", r.get("Name") or "")
+              if m and now - datetime.datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=hours):
+                  call("tm", "testsets", "delete", "--test-set-key", key_of(r), "--yes")
+
+      new = ensure_project("EVTSORD", "EVFX-TSORDER-Project")
+      if new:
+          keys = [need(call("tm", "testcases", "create", "--project-key", "EVTSORD", "--name", n), f"create {n}")["TestCaseKey"]
+                  for n in ("TC Alpha", "TC Beta", "TC Gamma")]
+          ts = need(call("tm", "testsets", "create", "--project-key", "EVTSORD", "--name", "EVFX-TSORDER-Regression"), "create source set")
+          need(call("tm", "testcases", "add", "--test-set-key", key_of(ts), "--test-case-keys", *keys), "assign source set")
+      # The order criteria name the keys literally; the project is seeded once and never changed.
+      ts = find_set("EVTSORD", "EVFX-TSORDER-Regression")
+      got = sorted((r.get("Name"), r.get("TestCaseKey")) for r in call("tm", "testsets", "list-testcases", "--project-key", "EVTSORD",
+                   "--test-set-key", key_of(ts) if ts else "missing").get("Data") or [])
+      if got != [("TC Alpha", "EVTSORD:1"), ("TC Beta", "EVTSORD:2"), ("TC Gamma", "EVTSORD:3")]:
+          print(f"SEED FAILED: fixture project EVTSORD is not in its seeded shape: {got}")
+          sys.exit(1)
+      if call("tm", "testsets", "settings", "get", "--test-set-key", key_of(ts)).get("Data", {}).get("EnforceExecutionOrder"):
+          need(call("tm", "testsets", "settings", "set", "--test-set-key", key_of(ts), "--no-enforce-execution-order"), "reset source enforce flag")
+      sweep("EVTSORD", "EVFX-TSORDER-")
+      print("READY EVTSORD: EVFX-TSORDER-Regression holds EVTSORD:1 Alpha, :2 Beta, :3 Gamma")
+      PYEOF
+    timeout: 300
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, re, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def key_of(row):
+          return row.get("TestSetKey") or row.get("TestCaseKey") or row.get("Key")
+
+      def ensure_project(key, name):
+          rows = call("tm", "project", "list", "--filter", key).get("Data") or []
+          if any(p.get("ProjectKey") == key for p in rows):
+              return False
+          need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create project {key}")
+          return True
+
+      def find_set(project, name):
+          rows = call("tm", "testsets", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else None
+
+      def ensure_case(project, name):
+          rows = call("tm", "testcases", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(call("tm", "testcases", "create", "--project-key", project, "--name", name), f"create {name}")
+
+      def ensure_set(project, name, case_names):
+          ts = find_set(project, name)
+          if ts is None:
+              ts = need(call("tm", "testsets", "create", "--project-key", project, "--name", name), f"create {name}")
+          have = {r.get("Name") for r in call("tm", "testsets", "list-testcases", "--project-key", project, "--test-set-key", key_of(ts)).get("Data") or []}
+          missing = [ensure_case(project, n) for n in case_names if n not in have]
+          if missing:
+              need(call("tm", "testcases", "add", "--test-set-key", key_of(ts), "--test-case-keys", *[key_of(c) for c in missing]), f"assign to {name}")
+          return ts
+
+      def sweep(project, prefix, hours=6):
+          # delete only this task's copies (prefix + stamp) older than `hours`, so a concurrent run's copy is safe
+          now = datetime.datetime.now(datetime.timezone.utc)
+          for r in call("tm", "testsets", "list", "--project-key", project, "--filter", prefix).get("Data") or []:
+              m = re.fullmatch(re.escape(prefix) + r"(\d{8}-\d{6})-[0-9a-f]{6}", r.get("Name") or "")
+              if m and now - datetime.datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=hours):
+                  call("tm", "testsets", "delete", "--test-set-key", key_of(r), "--yes")
+
+      sweep("EVTSORD", "EVFX-TSORDER-")
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  in Test Manager project EVTSORD, make a copy of the EVFX-TSORDER-Regression
+  test set named EVFX-TSORDER-<current UTC time as YYYYMMDD-HHMMSS>-<6 random
+  lowercase hex characters> (the random part matters, others may do this at
+  the same time). on the copy, TC Gamma has to run first and TC Alpha second,
+  and runs should actually follow that order. leave the original set as it is.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent cloned under a new name (`--new-name EVFX-TSORDER-<stamp>-<tag>`, literal or a shell variable; must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+clone\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--new-name[\s\\=]+(?:["\x27]?EVFX-TSORDER-\d{8}-\d{6}-[0-9a-f]{6}\b|["\x27]?\$\{?[A-Za-z_])'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent set the full order Gamma (EVTSORD:3), Alpha (EVTSORD:1), Beta (EVTSORD:2) in one command (must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+set-execution-order\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--test-case-keys[\s\\]+["\x27]?EVTSORD:3\b[\s\\,"\x27]+EVTSORD:1\b[\s\\,"\x27]+EVTSORD:2\b'
+    require_success: true
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent enforced the order with `settings set --enforce-execution-order` (must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+settings\s+set\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--enforce-execution-order\b'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A fresh EVFX-TSORDER-<stamp>-<tag> copy enforces its order, and the original set does not"
+    command: |
+      python3 - <<'PYEOF'
+      import datetime, json, re, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data")
+      def key_of(row): return row.get("TestSetKey") or row.get("Key")
+      def fresh_copies(project, prefix, minutes=45):
+          now = datetime.datetime.now(datetime.timezone.utc); out = []
+          for r in uip("tm", "testsets", "list", "--project-key", project, "--filter", prefix) or []:
+              m = re.fullmatch(re.escape(prefix) + r"(\d{8}-\d{6})-[0-9a-f]{6}", r.get("Name") or "")
+              if m and abs(now - datetime.datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=datetime.timezone.utc)) < datetime.timedelta(minutes=minutes):
+                  out.append(r)
+          return out
+      def source(project, name):
+          return [r for r in uip("tm", "testsets", "list", "--project-key", project, "--filter", name) or [] if r.get("Name") == name][0]
+      copies = fresh_copies("EVTSORD", "EVFX-TSORDER-")
+      enforce = lambda k: bool((uip("tm", "testsets", "settings", "get", "--test-set-key", k) or {}).get("EnforceExecutionOrder"))
+      ok_copy = any(enforce(key_of(c)) for c in copies)
+      ok_src = not enforce(key_of(source("EVTSORD", "EVFX-TSORDER-Regression")))
+      print("copies:", [c["Name"] for c in copies], "copy enforces:", ok_copy, "original untouched:", ok_src)
+      sys.exit(0 if ok_copy and ok_src else 1)
+      PYEOF
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

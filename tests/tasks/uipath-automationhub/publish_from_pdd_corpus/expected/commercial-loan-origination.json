@@ -1,0 +1,45 @@
+{
+ "name_contains": "Mid-Market Term Loan Origination",
+ "documents": {
+  "pdd": "corpus/commercial-loan-origination/pdd.md"
+ },
+ "systems": {
+  "Experian": [],
+  "D&B": [
+   "d&b",
+   "dun & bradstreet",
+   "dun and bradstreet",
+   "dnb"
+  ],
+  "Plaid": [],
+  "Databricks": [],
+  "Snowflake": [],
+  "DocuSign": [],
+  "Fedwire/SWIFT": [
+   "fedwire",
+   "swift"
+  ]
+ },
+ "optional_systems": {
+  "IXP": [
+   "ixp"
+  ],
+  "Core banking": [
+   "core banking"
+  ],
+  "WORM archive": [
+   "worm",
+   "archive"
+  ],
+  "Case platform": [
+   "case platform"
+  ],
+  "Screening services": [
+   "screening services"
+  ],
+  "Controlled workpaper": [
+   "controlled workpaper"
+  ]
+ },
+ "allow_other_category": true
+}

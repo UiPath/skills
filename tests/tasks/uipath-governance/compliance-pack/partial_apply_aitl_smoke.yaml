@@ -6,26 +6,21 @@ description: >
   Companion to interactive_values_smoke.yaml which covers Robot UIAutomation —
   this covers the AI Trust Layer model governance path for the ISO 42001 compliance standard.
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance]
 
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `inactive`: ISO 42001 never applied; AOps policies and tenant assignments are recorded.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# CI passes live tenant auth into every smoke sandbox, so the partial-apply
-# flow can REALLY create `iso-42001-2023-*-aitl` AOps policies. Clean up before
-# (prevents name-collision suffix churn) and after.
 pre_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
-
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+  - command: 'printf inactive > mocks/scenario'
+    timeout: 10
 
 initial_prompt: |
   For our ISO 42001 alignment, I want to lock down which AI model providers are
@@ -37,7 +32,7 @@ initial_prompt: |
 
   If you're asked which AI model providers to approve, just answer SKIP for now.
   Important:
-  - uip CLI not connected — auth errors expected. Run each command once and continue.
+  - Run each command once and continue.
   - Always pass --output json. Do NOT prompt for confirmation.
   - Write any helper scripts to the current working directory using relative paths
     (e.g. ./scripts/, ./compliance-session/), not to AppData or TEMP paths.
@@ -62,6 +57,16 @@ success_criteria:
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: run_command
+    # Advisory: the prompt SKIPs the providers list, the only value this control
+    # needs, so "nothing to apply, configure it manually" is a valid outcome.
+    description: "An AI Trust Layer policy the agent created (iso-42001-2023-*) is assigned to the tenant (shim state; advisory — SKIP can leave nothing to apply)"
+    command: 'python3 mocks/check_state.py assigned AITrustLayer'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 0
 
   - type: file_exists
     description: "Command output captured to output.txt"

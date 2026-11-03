@@ -124,6 +124,36 @@ Requires `--connection-id` and `--operation`. Cache is bypassed when `--field` i
 
 When no api-type action's `rules[]` are satisfied by the supplied fields, the CLI errors with `No api-type ObjectAction matched for fields [...]`. List the operation's actions from the describe output's `connectorMethodInfo.design.actions[]` (or top-level `objectActions[]` for older shapes) to see which fields each action requires.
 
+### Solution-resource pickers
+
+Some parent fields pick a **solution resource** rather than a plain value — a Data Fabric folder entity is the common case, but any kind works the same way. Spot them in the describe output's `Method` JSON: the parameter's `design` carries `"solutionResourceKind"` (the resource kind, e.g. `"entity"`) and usually `"component": "Resources"`.
+
+Pass the resource **name** with `-f` like any other parent value; the CLI resolves it by `solutionResourceKind`:
+
+```bash
+# Create Entity Record: folderEntityName is an entity picker
+uip is resources describe uipath-uipath-dataservice CreateEntityRecord_V3 \
+  --connection-id "<id>" --operation Create \
+  -f entityScope=folder \
+  -f folderEntityName="<entity-name>" \
+  --solution-folder <solution-dir> \
+  --output json
+# → RequestFields lists the entity's fields; a choice-set field's Enum holds the option NumberIds
+#   (labels: the solution's choiceSet/<name>.json, or `uip df choice-sets list-values <choice-set-id>`)
+```
+
+Where the resource is looked up:
+
+- **Local solution first** — `--solution-folder` (only with `-f`), or the current directory when it is a solution. A resource declared there (deployed or not) wins, and local edits are what the connector sees.
+- **Otherwise the tenant's resource catalog** — e.g. run from outside any solution.
+
+| Situation | What to do |
+|-----------|-----------|
+| The catalog has the name in several folders → `ErrorCode: "invalid_argument"`, `Data.Candidates` lists every folder as `{ FolderPath, FolderKey }` | Add `-f <field>_folderKey=<FolderKey>` for the folder you mean (the same companion field the activity stores); `Instructions` names the field. This is a `-f` field, not the `--folder-key` option used for folder-scoped connections. |
+| No resource of that kind has the name → `ErrorCode: "not_found"`, `Message` names the value and the field | Check the name and kind — `uip solution resources list --kind <kind> --search "<name>"` (add `--source remote` for the tenant). |
+
+Do not drop the picker field and retry when the lookup fails: a design action with a body, sent without the graph, fails with `400 … Value for required parameter 'body' not found`. A `GET` design action that substitutes only the name (e.g. `FetchObjectMetadataTenant` over `tenantEntityName`) needs no lookup.
+
 ---
 
 ## Execute Operations

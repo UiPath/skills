@@ -7,7 +7,7 @@ description: >
   keywords are evidence, the need decides.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 initial_prompt: |
-  Analyze the following Process Design Document and generate a Solution Design
+  Analyze the following Process Definition Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints. Assume
   UiPath Automation Cloud as the delivery model.
 
@@ -24,7 +24,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Smart Invoice Validation
+  # Process Definition Document: Smart Invoice Validation
 
   ## Process Overview
   - **Process Name:** Smart Invoice Validation

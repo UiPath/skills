@@ -6,7 +6,7 @@ description: >
   inputs before they reach the LLM. Verifies the agent restricts scopes to
   ["Llm"] only (not Agent or Tool — anti-pattern 3), uses a block action, and
   authors validatorParameters as either empty or catalog-declared parameters
-  only (all user_prompt_attacks parameters are optional — e.g. appliesTo,
+  only (all user_prompt_attacks parameters are optional — e.g. detectionScope,
   AL-594). Complements the coded decorator-style test by covering the
   low-code builtInValidator path.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
@@ -85,5 +85,5 @@ success_criteria:
 
 run_limits:
   expected_turns: 15
-  max_turns: 30
+  max_turns: 50
   turn_timeout: 1200

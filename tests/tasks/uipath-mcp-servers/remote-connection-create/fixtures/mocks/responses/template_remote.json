@@ -1,0 +1,14 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpTemplate",
+  "Data": {
+    "name": "Example MCP",
+    "slug": "example-mcp",
+    "description": "Ready-to-edit server description.",
+    "version": "1.0.0",
+    "uri": "https://example.com/mcp",
+    "headers": "",
+    "connectionId": null,
+    "useRelay": false
+  }
+}

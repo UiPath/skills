@@ -53,7 +53,7 @@ Use the `ProjectName` from the create output for all subsequent commands. This i
 Create the working directory using the returned `ProjectName`:
 
 ```bash
-mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,prompts}
+mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,payloads}
 ```
 
 ## Step 2 — Configure the Model

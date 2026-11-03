@@ -17,8 +17,9 @@ Always. This plugin is invoked for the very first build step (`T01`). It creates
 | `case-identifier` | sdd.md (optional; defaults to `name`) | The runtime identifier. |
 | `identifier-type` | sdd.md (optional; default `constant`) | `constant` \| `external`. Use `external` when sdd.md says the identifier comes from an upstream system. |
 | `case-app-enabled` | sdd.md (default `false`) | `true` if the sdd.md says the case is exposed via the Case App UI. |
-| `directly-pass-task-outputs` | sdd.md (default `true`) | Passes task outputs through messages instead of shared variables, avoiding parallel-task race conditions. `false` only if sdd.md explicitly requests shared-variable passing. |
 | `description` | sdd.md case description |  |
+
+**Direct Task Outputs is retired.** Task outputs always pass directly through messages (PO.Frontend `15cd541e9`, 2026-06-16), so there is no T01 field for it. If sdd.md's Case Metadata asks to turn it off (`Direct Task Outputs: No`, `false`, or shared-variable passing), build anyway and tell the user in the build summary that the option no longer exists and outputs pass directly. A row that says Yes needs nothing.
 
 ## identifier-type Guidance
 
@@ -54,7 +55,6 @@ case file "<name>"
 - case-identifier: "<identifier>"
 - identifier-type: constant
 - case-app-enabled: false
-- directly-pass-task-outputs: true
 - description: "<one-sentence description>"
 - order: first
 - verify: Confirm caseplan.case written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "32.0.3", nodes == [], edges == []

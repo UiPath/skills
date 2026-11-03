@@ -38,6 +38,8 @@ from _shared.case_check import existing_caseplan  # noqa: E402
 CASEPLAN = "ConnectorNaming/ConnectorNaming/caseplan.json"
 ERROR_OUTPUT_NAMES = {"error"}
 ENVELOPE_BODY_KEYS = {"parameters", "filters", "queryParams"}
+# `filters` holds the compiled `expression`, never a request field: check_filter grades it
+FILTER_ENVELOPE_KEY = "filters"
 ERROR_ENVELOPE = ["code", "message", "detail", "category", "status", "element"]
 # The exact request fields fixtures/sdd.md declares, keyed by connectorKey (NOT by the
 # node's free-text displayName, which an agent can rename). A count floor was gameable
@@ -187,6 +189,12 @@ def check_inputs(label: str, block: dict, auth: list[str], connector_key: str = 
             # structural envelope keys a trigger input body carries, not contract fields:
             # `parameters` holds eventParameters, `filters` holds the filter tree
             if not prefix and written in ENVELOPE_BODY_KEYS:
+                if written == FILTER_ENVELOPE_KEY:
+                    # a populated filter is a populated request; its field names are
+                    # check_filter's to grade, and `expression` is not a contract field
+                    if value:
+                        written_count += 1
+                    continue
                 # recurse into the envelope: eventParameters ARE contract fields
                 if isinstance(value, dict):
                     walk(value, prefix)
@@ -444,17 +452,21 @@ def check_bindings(label: str, block: dict, root_bindings: list) -> None:
     folder — and copies neither onto itself. A dangling or malformed binding
     renders as a broken node in Studio Web while `validate` stays green.
 
-    Empty and omitted are the SAME state here: the FE reads per-activity
-    property bindings at `data.context[name="metadata"].bindings` (via
-    getContextMap in PackagingUtil) and never reads `data.bindings`, and
-    `bindings?: UiPathBinding[]` is optional in the CLI's own type model. Only a
-    non-empty copy is the defect this guards."""
+    `data.bindings` may list the picker rows `splice` writes (an `entity` a
+    resource picker chose), as the Case Designer lists them. A Connection row
+    there — the connection or its folder copied onto the task — is the defect
+    this guards."""
     by_id = {b.get("id"): b for b in root_bindings if isinstance(b, dict)}
     ctx = {c.get("name"): c.get("value") for c in (block.get("context") or [])}
 
-    if block.get("bindings"):
-        fail(f"{label}: data.bindings must be empty or omitted — root bindings are never copied "
-             f"onto the task (got {block.get('bindings')!r})")
+    referenced = {m.group(1) for name in ("connection", "folderKey")
+                  if (m := re.fullmatch(r"=bindings\.(\w+)", str(ctx.get(name))))}
+    copied = [b for b in (block.get("bindings") or [])
+              if isinstance(b, dict)
+              and (b.get("resource") == "Connection" or b.get("id") in referenced)]
+    if copied:
+        fail(f"{label}: data.bindings must not copy the connection or folder binding onto the "
+             f"task — those stay root bindings (got {copied!r})")
 
     conn_id = ctx.get("resourceKey")
     for ctx_name, attr in (("connection", "ConnectionId"), ("folderKey", "folderKey")):

@@ -74,7 +74,8 @@ Checks performed:
   4. Download's recordId is a literal (non-expression) UUID.
   5. Create's target="body" JSON (merged across every such input) covers
      title/description/score.
-  6. Upload's file input (`target="file"`/`target="multipart"`/`name="file"`)
+  6. Upload's file input (`target="file"`/`target="multipart"`/`name="file"`,
+     or a V2 `target="metadata"` `multipartParameters` entry named `file`)
      carries a `vars.<id>` reference (any variable).
   7. Upload and Delete both reference Create's output variable for recordId.
 
@@ -146,6 +147,8 @@ CREATE_CURATED_OBJS = {
     "CreateEntityRecord_V3",
 }
 FILE_TARGETS = {"file", "multipart"}
+METADATA_TARGET = "metadata"
+FILE_PART_NAME = "file"
 REQUIRED_CREATE_BODY = {"title", "description", "score"}
 
 UUID_RE = re.compile(
@@ -247,6 +250,28 @@ def literal_uuid_value(task: ET.Element) -> str | None:
     return None
 
 
+def multipart_file_values(inp: ET.Element) -> list[str]:
+    """The ``file`` part's value in a V2 element's ``target="metadata"`` input.
+
+    ``{"multipartParameters": [{"name": "file", "dataType": "file", "value": "=js:vars.X"}]}``
+    """
+    try:
+        parsed = json.loads((inp.text or inp.attrib.get("value") or "").strip() or "{}")
+    except json.JSONDecodeError:
+        return []
+    parts = parsed.get("multipartParameters") if isinstance(parsed, dict) else None
+    if not isinstance(parts, list):
+        return []
+    return [
+        part["value"]
+        for part in parts
+        if isinstance(part, dict)
+        and part.get("name") == FILE_PART_NAME
+        and isinstance(part.get("value"), str)
+        and part["value"]
+    ]
+
+
 def file_field_values(task: ET.Element) -> list[str]:
     """Values of the input(s) that carry the multipart file binding.
 
@@ -258,12 +283,17 @@ def file_field_values(task: ET.Element) -> list[str]:
     keeps this check meaningful: Upload's recordId is separately required to
     reference Create's output var, so "any vars.* on the node" would always
     pass regardless of whether the file binding itself carries one.
+
+    A V2 element carries the file part in its `target="metadata"` input's
+    `multipartParameters` instead.
     """
     values: list[str] = []
     for inp in node_inputs(task):
         target = inp.attrib.get("target")
         name = (inp.attrib.get("name") or "").strip().lower()
-        if target in FILE_TARGETS or name == "file":
+        if target == METADATA_TARGET:
+            values.extend(multipart_file_values(inp))
+        elif target in FILE_TARGETS or name == FILE_PART_NAME:
             v = inp.attrib.get("value") or (inp.text or "")
             if v:
                 values.append(v)
@@ -334,7 +364,8 @@ def main() -> None:
     if not file_values:
         fail(
             'Upload node has no file input to carry the file binding '
-            '(expected target="file" or target="multipart", or an input named "file")'
+            '(expected target="file" or target="multipart", an input named "file", '
+            'or a V2 metadata multipartParameters entry named "file")'
         )
     if not any(VARS_REF_RE.search(v) for v in file_values):
         fail(f"Upload node's file input has no `vars.<id>` variable reference (found: {file_values})")

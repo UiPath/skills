@@ -267,6 +267,64 @@ def test_native_filter_reached_through_a_script_hop(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+AMBIGUOUS_SCRIPTS = [
+    pytest.param(
+        "const n = String($vars.start.output.invoiceNumber).trim(); "
+        "if (n) { return { value: n }; } else { return { value: 'NONE' }; }",
+        id="two-returns",
+    ),
+    pytest.param(
+        "try { return { value: String($vars.start.output.invoiceNumber).trim() }; } "
+        "catch (e) { return { value: '' }; }",
+        id="try-catch",
+    ),
+    pytest.param(
+        "let v;\nv = String($vars.start.output.invoiceNumber).trim();\nreturn { value: v };",
+        id="deferred-let",
+    ),
+    pytest.param(
+        "const n = String($vars.start.output.invoiceNumber).trim(); "
+        "['a'].map(t => { const n = t.toUpperCase(); return n; }); return { value: n };",
+        id="shadowed-name",
+    ),
+]
+
+
+@pytest.mark.parametrize("script", AMBIGUOUS_SCRIPTS)
+def test_native_filter_hop_through_ambiguous_script(tmp_path: Path, script: str) -> None:
+    def mutate(flow):
+        flow["nodes"].append(_script("normalizeInvoice", script))
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["value"] = "=js:$vars.normalizeInvoice.output.value"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_filter_hop_to_constant_same_named_output_fails(tmp_path: Path) -> None:
+    def mutate(flow):
+        flow["nodes"].append(_script("normalizeInvoice", CONSTANT_SAME_NAMED_SCRIPT))
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["value"] = "=js:$vars.normalizeInvoice.output.invoiceNumber"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "reaches $vars.…invoiceNumber" in result.stdout + result.stderr
+
+
+def test_native_filter_reference_in_a_comment_fails(tmp_path: Path) -> None:
+    def mutate(flow):
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["value"] = "=js:/* $vars.start.output.invoiceNumber */ 'MCS-9999-00000'"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "reaches $vars.…invoiceNumber" in result.stdout + result.stderr
+
+
 def test_native_filter_hop_to_nothing_still_fails(tmp_path: Path) -> None:
     """Following the hop must not degrade into accepting any `$vars` reference."""
 
@@ -281,6 +339,546 @@ def test_native_filter_hop_to_nothing_still_fails(tmp_path: Path) -> None:
     result = _run_invoice_native(tmp_path, mutate)
     assert result.returncode != 0
     assert "invoiceNumber" in result.stdout + result.stderr
+
+
+def _run_invoice_connector(tmp_path: Path, mutate) -> subprocess.CompletedProcess:
+    source = FLOW_TASKS / REFERENCE_CASES["advisory_billing_invoice_lookup.py"]
+    flow = json.loads(source.read_text())
+    mutate(flow)
+    target = tmp_path / source.name.replace(".reference", "")
+    target.write_text(json.dumps(flow))
+    return run_script("advisory_billing_invoice_lookup.py", target)
+
+
+def _connector_query(flow: dict, expression: str, *producers: dict) -> None:
+    """Point the connector read's queryExpression at ``expression``, fed by ``producers``."""
+    flow["nodes"].extend(producers)
+    for node in flow["nodes"]:
+        detail = (node.get("inputs") or {}).get("detail")
+        if detail and "queryExpression" in (detail.get("queryParameters") or {}):
+            detail["queryParameters"]["queryExpression"] = expression
+
+
+def _script(node_id: str, script: str) -> dict:
+    return {"id": node_id, "type": "core.action.script", "inputs": {"script": script}}
+
+
+CONSTANT_SAME_NAMED_SCRIPT = "return { invoiceNumber: \"MCS-9999-00000\" };"
+NORMALIZE_SCRIPT = (
+    "const n = String($vars.start.output.invoiceNumber).trim().toUpperCase(); "
+    "return { value: n.startsWith('MCS-') ? n : 'MCS-' + n };"
+)
+
+
+def test_connector_query_built_by_a_script_hop(tmp_path: Path) -> None:
+    """Advisory policy, not skill guidance: normalising in a Script that returns
+    the CEQL string is the hop the native branch already accepts."""
+
+    def mutate(flow):
+        _connector_query(
+            flow,
+            "=js:$vars.buildQuery.output.queryExpression",
+            _script(
+                "buildQuery",
+                "const n = String($vars.start.output.invoiceNumber).trim().toUpperCase(); "
+                "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+            ),
+        )
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_connector_query_built_two_hops_from_the_input(tmp_path: Path) -> None:
+    def mutate(flow):
+        _connector_query(
+            flow,
+            "=js:$vars.buildQuery.output.queryExpression",
+            _script("normalizeInvoice", NORMALIZE_SCRIPT),
+            _script(
+                "buildQuery",
+                "return { queryExpression: `invoiceNumber = '${$vars.normalizeInvoice.output.value}'` };",
+            ),
+        )
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("script", AMBIGUOUS_SCRIPTS)
+def test_connector_hop_through_ambiguous_script(tmp_path: Path, script: str) -> None:
+    script = script.replace("value: n", "value: \"invoiceNumber = '\" + n + \"'\"")
+    script = script.replace("value: v", "value: \"invoiceNumber = '\" + v + \"'\"")
+    script = script.replace(
+        "value: String($vars.start.output.invoiceNumber).trim()",
+        "value: \"invoiceNumber = '\" + String($vars.start.output.invoiceNumber).trim() + \"'\"",
+    )
+    result = _run_invoice_connector(
+        tmp_path,
+        lambda flow: _connector_query(
+            flow, "=js:$vars.buildQuery.output.value", _script("buildQuery", script)
+        ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    ("expression", "script"),
+    [
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const n = $vars.start.output.invoiceNumber;\n"
+            "return { queryExpression: `invoiceNumber = '${n.startsWith(\"MCS-\") ? n : `MCS-${n}`}'` };",
+            id="nested-template",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const n = $vars.start.output.invoiceNumber;\n"
+            "const f = (o) => o.v;\n"
+            "return { queryExpression: `invoiceNumber = '${f({ v: n })}'` };",
+            id="braces-in-interpolation",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "let n = \"\"; n += $vars.start.output.invoiceNumber; "
+            "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+            id="compound-assignment",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "return { /* CEQL filter */ queryExpression: "
+            "\"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="comment-before-key",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "return { \"queryExpression\": \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="double-quoted-key",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "return { /* CEQL */ 'queryExpression': \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="single-quoted-key",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "return { queryExpression: \"\", ...{ queryExpression: "
+            "\"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" } };",
+            id="overriding-spread",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const supplied = String($vars.start.output.invoiceNumber ?? \"\").trim().toUpperCase();\n"
+            "const normalized = supplied.startsWith(\"MCS-\") ? supplied : `MCS-${supplied}`;\n"
+            "// CEQL escapes a single quote by doubling it.\n"
+            "const queryExpression = \"invoiceNumber = '\" + normalized.replace(/'/g, \"''\") + \"'\";\n"
+            "return { normalized, queryExpression };",
+            id="shorthand-entry-through-bindings",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output[\"queryExpression\"]",
+            "return { queryExpression: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="bracket-access",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const n = $vars.start.output.invoiceNumber;\n"
+            "const ok = (() => { return /'/.test(n) })();\n"
+            "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+            id="regex-after-return",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const n = $vars.start.output.invoiceNumber;\n"
+            "const ok = /[/]'/.test(n);\n"
+            "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+            id="regex-char-class-slash",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const hasQuote = (s) => /'/.test(s);\n"
+            "return { queryExpression: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="regex-after-arrow",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const n = $vars.start.output.invoiceNumber;\n"
+            "if (!n) { throw new Error('empty'); } else /'/.test(n);\n"
+            "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+            id="regex-after-else",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const n = $vars.start.output.invoiceNumber;\n"
+            "if (!n) { return { queryExpression: \"invoiceNumber = ''\" }; }\n"
+            "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+            id="guard-clause",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "return { ['queryExpression']: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="computed-key",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const { output: { invoiceNumber: n } } = $vars.start;\n"
+            "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+            id="nested-destructuring",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression.trim()",
+            "return { queryExpression: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="method-on-hop",
+        ),
+        pytest.param(
+            "=js:`${$vars.buildQuery.output.queryExpression}`",
+            "return { queryExpression: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="hop-in-template",
+        ),
+        pytest.param(
+            "=js:String($vars.buildQuery.output.queryExpression)",
+            "return { queryExpression: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="hop-in-call",
+        ),
+    ],
+)
+def test_connector_hop_spellings_pass(tmp_path: Path, expression: str, script: str) -> None:
+    result = _run_invoice_connector(
+        tmp_path, lambda flow: _connector_query(flow, expression, _script("buildQuery", script))
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    ("expression", "producers"),
+    [
+        pytest.param("invoiceNumber = 'MCS-9999-00000'", (), id="literal"),
+        pytest.param("=js:$vars.start.output.accountNumber", (), id="unrelated-reference"),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (_script("buildQuery", "return { queryExpression: \"invoiceNumber = 'MCS-9999-00000'\" };"),),
+            id="producer-ignores-input",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "const n = $vars.start.output.invoiceNumber; "
+                    "return { queryExpression: \"invoiceNumber = 'MCS-9999-00000'\" };",
+                ),
+            ),
+            id="dead-read",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "const n = \"MCS-9999-00000\", unused = $vars.start.output.invoiceNumber; "
+                    "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+                ),
+            ),
+            id="dead-read-comma-declarators",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "const n = \"MCS-9999-00000\"\n"
+                    "const unused = $vars.start.output.invoiceNumber\n"
+                    "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" }",
+                ),
+            ),
+            id="dead-read-no-semicolons",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "return { erp: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+                ),
+            ),
+            id="absent-output",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script("normalizeInvoice", CONSTANT_SAME_NAMED_SCRIPT),
+                _script(
+                    "buildQuery",
+                    "return { queryExpression: \"invoiceNumber = '\" + "
+                    "$vars.normalizeInvoice.output.invoiceNumber + \"'\" };",
+                ),
+            ),
+            id="constant-same-named-output",
+        ),
+        pytest.param(
+            "=js:\"invoiceNumber = '\" + $vars.normalizeInvoice.output.invoiceNumber + \"'\"",
+            (_script("normalizeInvoice", CONSTANT_SAME_NAMED_SCRIPT),),
+            id="constant-same-named-output-direct",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "return { queryExpression: \"invoiceNumber = 'MCS-9999-00000'\" "
+                    "/* from $vars.start.output.invoiceNumber */ };",
+                ),
+            ),
+            id="reference-in-entry-comment",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "return { queryExpression: \"invoiceNumber = 'MCS-9999-00000' -- $vars.start.output.invoiceNumber\" };",
+                ),
+            ),
+            id="reference-in-entry-string",
+        ),
+        pytest.param(
+            "=js:/* $vars.start.output.invoiceNumber */ \"invoiceNumber = 'MCS-9999-00000'\"",
+            (),
+            id="reference-in-direct-comment",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "const n = $vars.start.output.invoiceNumber; let tries = 0; tries += 1; "
+                    "return { queryExpression: \"invoiceNumber = 'MCS-9999-00000'\" };",
+                ),
+            ),
+            id="dead-read-beside-a-reassignment",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "const n = $vars.start.output.invoiceNumber; "
+                    "[n].map(x => { return { queryExpression: \"invoiceNumber = '\" + x + \"'\" }; }); "
+                    "return { queryExpression: \"invoiceNumber = 'MCS-9999-00000'\" };",
+                ),
+            ),
+            id="callback-return",
+        ),
+    ],
+)
+def test_connector_query_not_from_the_input_fails(
+    tmp_path: Path, expression: str, producers: tuple
+) -> None:
+    """Following the hop must not degrade into accepting any `$vars` reference."""
+    result = _run_invoice_connector(tmp_path, lambda flow: _connector_query(flow, expression, *producers))
+    assert result.returncode != 0
+    assert "neither it nor a node it reads" in result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        pytest.param(
+            "return { queryExpression: 'invoiceNumber = ' + $vars.start.output.invoiceNumber };",
+            id="js-quotes-around-unquoted-value",
+        ),
+        pytest.param(
+            "const p = \"MCS-\"; const n = $vars.start.output.invoiceNumber; "
+            "return { queryExpression: 'invoiceNumber = ' + p + n, note: \"done\" };",
+            id="js-quotes-between-double-quoted-literals",
+        ),
+        pytest.param(
+            "const n = String($vars.start.output.invoiceNumber).replace(/'/g, \"''\"); "
+            "return { queryExpression: \"invoiceNumber = \" + n };",
+            id="unrelated-quote-literal",
+        ),
+        pytest.param(
+            "return { queryExpression: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber };",
+            id="no-closing-quote",
+        ),
+        pytest.param(
+            "const n = $vars.start.output.invoiceNumber; console.log(\"invoiceNumber = '\" + n + \"'\"); "
+            "return { queryExpression: 'invoiceNumber = ' + n };",
+            id="quote-only-in-a-log",
+        ),
+        pytest.param(
+            "const n = String($vars.start.output.invoiceNumber).replace(/'/g, \"''\"); "
+            "return { queryExpression: \"invoiceNumber = '\" + n };",
+            id="escaped-value-no-closing-quote",
+        ),
+        pytest.param(
+            "return { queryExpression: `invoiceNumber = '${String($vars.start.output.invoiceNumber)"
+            ".replace(/'/g, \"''\")}` };",
+            id="template-quote-only-in-interpolation",
+        ),
+        pytest.param(
+            "const n = $vars.start.output.invoiceNumber; let tries = 0; tries += 1; "
+            "console.log(\"invoiceNumber = '\" + n + \"'\"); return { queryExpression: 'invoiceNumber = ' + n };",
+            id="quote-only-in-a-log-beside-a-reassignment",
+        ),
+        pytest.param(
+            "const n = $vars.start.output.invoiceNumber; "
+            "if (!n) { return { queryExpression: \"invoiceNumber = ''\" }; } "
+            "return { queryExpression: 'invoiceNumber = ' + n };",
+            id="guard-clause-unquoted",
+        ),
+        pytest.param(
+            "const n = $vars.start.output.invoiceNumber; "
+            "const unused = (() => { return { queryExpression: \"invoiceNumber = '\" + n + \"'\" }; })(); "
+            "return { queryExpression: 'invoiceNumber = ' + n };",
+            id="iife-return",
+        ),
+        pytest.param(
+            "const n = $vars.start.output.invoiceNumber;\n"
+            "const isUrl = (s) => /^https?:\\/\\//.test(s); return { queryExpression: 'invoiceNumber = ' + n };\n"
+            "const msg = \"invoiceNumber = '\" + n + \"'\";",
+            id="regex-with-slashes-after-arrow",
+        ),
+        pytest.param(
+            "return { queryExpression: \"invoiceNumber = ''\" + $vars.start.output.invoiceNumber };",
+            id="empty-quoted-literal",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "expression",
+    [
+        pytest.param("=js:$vars.buildQuery.output.queryExpression", id="dot"),
+        pytest.param("=js:$vars.buildQuery.output['queryExpression']", id="bracket"),
+    ],
+)
+def test_connector_hop_with_unquoted_ceql_fails(tmp_path: Path, script: str, expression: str) -> None:
+    """A quote somewhere upstream is not a quoted CEQL value; unquoted, the RHS
+    parses as subtraction server-side and 400s."""
+
+    def mutate(flow):
+        _connector_query(flow, expression, _script("buildQuery", script))
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "single-quoted" in result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        pytest.param("=js:$vars.buildQuery.output.queryExpression + \" AND status = 'open'\"", id="quoted-suffix"),
+        pytest.param("=js:$vars.buildQuery.output.queryExpression /* ' */", id="quote-in-comment"),
+    ],
+)
+def test_connector_quote_beside_an_unquoted_hop_fails(tmp_path: Path, expression: str) -> None:
+    """A quote in the direct expression does not quote the value the hop builds."""
+    script = "return { queryExpression: 'invoiceNumber = ' + $vars.start.output.invoiceNumber };"
+    result = _run_invoice_connector(
+        tmp_path, lambda flow: _connector_query(flow, expression, _script("buildQuery", script))
+    )
+    assert result.returncode != 0
+    assert "single-quoted" in result.stdout + result.stderr
+
+
+def test_connector_hop_carrying_the_answer_fails(tmp_path: Path) -> None:
+    """An inner return can satisfy the reference and quote checks while the
+    returned query is the canonical answer, written in."""
+    script = (
+        "const n = $vars.start.output.invoiceNumber; "
+        "[n].map(() => { return { queryExpression: \"invoiceNumber = '\" + n + \"'\" }; }); "
+        "return { queryExpression: \"invoiceNumber = 'MCS-2026-04872'\" };"
+    )
+    result = _run_invoice_connector(
+        tmp_path,
+        lambda flow: _connector_query(
+            flow, "=js:$vars.buildQuery.output.queryExpression", _script("buildQuery", script)
+        ),
+    )
+    assert result.returncode != 0
+    assert "carries the literal 'MCS-2026-04872'" in result.stdout + result.stderr
+
+
+def test_literal_scan_reads_inside_a_double_quoted_script_string() -> None:
+    sys.path.insert(0, str(SHARED))
+    from advisory_flow_utils import carries_literal
+
+    script = "return { queryExpression: \"invoiceNumber = 'MCS-2026-04872'\" };"
+    assert carries_literal({"nodes": [{"inputs": {"script": script}}]}, "MCS-2026-04872")
+
+
+def test_script_trace_past_the_inline_cap_is_ambiguous() -> None:
+    """Each ternary triples the inlined text; past the cap the trace falls back
+    instead of building a multi-megabyte string."""
+    sys.path.insert(0, str(SHARED))
+    from advisory_flow_utils import script_output
+
+    lines = ["const v0 = $vars.start.output.invoiceNumber;"]
+    lines += [f"const v{i} = v{i - 1} ? v{i - 1} : v{i - 1};" for i in range(1, 11)]
+    lines.append("return { queryExpression: \"invoiceNumber = '\" + v10 + \"'\" };")
+    assert script_output(_script("buildQuery", "\n".join(lines)), "queryExpression") is None
+
+
+def test_connector_hop_forwarded_through_an_alias(tmp_path: Path) -> None:
+    def mutate(flow):
+        _connector_query(
+            flow,
+            "=js:$vars.forward.output.queryExpression",
+            _script(
+                "buildQuery",
+                "return { queryExpression: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            ),
+            _script(
+                "forward",
+                "const q = $vars.buildQuery.output.queryExpression; return { queryExpression: q };",
+            ),
+        )
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_connector_hop_on_the_wrong_column_names_the_column(tmp_path: Path) -> None:
+    def mutate(flow):
+        _connector_query(
+            flow,
+            "=js:$vars.buildQuery.output.queryExpression",
+            _script(
+                "buildQuery",
+                "return { queryExpression: \"customerId = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            ),
+        )
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "`invoiceNumber = '<value>'`" in result.stdout + result.stderr
+
+
+def test_connector_hop_cross_wired_outputs_fail(tmp_path: Path) -> None:
+    """One Script builds both queries; each read must take the entry built from
+    its own input, not the one the other read needs."""
+    source = FLOW_TASKS / REFERENCE_CASES["advisory_billing_discrepancy_detector.py"]
+    flow = json.loads(source.read_text())
+    flow["nodes"].append(
+        _script(
+            "buildQueries",
+            "const inv = $vars.start.output.invoiceNumber; const acc = $vars.start.output.accountNumber; "
+            "return { erp: \"invoiceNumber = '\" + inv + \"'\", crm: \"accountNumber = '\" + acc + \"'\" };",
+        )
+    )
+    for node in flow["nodes"]:
+        detail = (node.get("inputs") or {}).get("detail") or {}
+        query = detail.get("queryParameters") or {}
+        if "queryExpression" not in query:
+            continue
+        key = "crm" if detail["pathParameters"]["entityName"] == "BillingDisputeERP" else "erp"
+        query["queryExpression"] = f"=js:$vars.buildQueries.output.{key}"
+    target = tmp_path / source.name.replace(".reference", "")
+    target.write_text(json.dumps(flow))
+
+    result = run_script("advisory_billing_discrepancy_detector.py", target)
+    assert result.returncode != 0
+    assert "neither it nor a node it reads" in result.stdout + result.stderr
 
 
 def test_native_read_beside_a_connector_write_is_not_a_mix(tmp_path: Path) -> None:
