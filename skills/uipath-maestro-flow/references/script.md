@@ -83,7 +83,7 @@ function normalize($vars: FlowVars) {
 }
 ```
 
-- The function is never called. Its body, exactly as written, becomes the script. Its parameter stands for the runtime's `$vars`, and a second parameter for the instance metadata, `$metadata` ([below](#reading-the-instance-metadata)). Name them `$vars` and `$metadata`, as the examples do: then nothing is renamed and the body reads exactly as it runs. Any other name works too, and is renamed to the runtime's name.
+- The function is never called. Its body, exactly as written, becomes the script. Its parameter stands for the runtime's `$vars`, and a second parameter for the instance metadata, `$metadata` ([below](#reading-the-instance-metadata)). Name them `$vars` and `$metadata`, as the examples do: then nothing is renamed and the body reads exactly as it runs. Any other name works too, and is renamed to the runtime's name. Parameters bind by position, so take them in that order: a parameter named like the other one (`($metadata) => …`) is refused.
 - Read the parameter only with dots (`$vars.start.output.amount`). A destructured parameter, an alias (`const v = $vars`), `$vars['start']`, `$vars?.start`, or passing `$vars` to a helper is refused, because a step read hidden that way is invisible to `check`.
 <!--skill-flavor:script-function-returns-check:start-->
 - `returns` is what the `.flow` declares, and its type is checked against the function's return: `returns: { amount: 'string' }` over the function above is a type error. `compile` does not type-check, so the error shows only where tsc runs: with a workspace copy (`npm install --save-dev @uipath/maestro-builder-sdk typescript`), `npx tsc --noEmit --strict --module nodenext --moduleResolution nodenext --skipLibCheck <file>.flow.ts` reports it. With only the global SDK copy nothing checks it, so match the `returns` fields to what the function returns by hand. Without `returns`, the body's type is inferred as for a string body.
@@ -105,6 +105,7 @@ The function form needs `@uipath/maestro-builder-sdk` 6.57.0 or later: check tha
 A script can also read `$metadata`, the instance's metadata: `InstanceId`, `FolderKey`, `ProcessKey`, `ExternalId` (the external id a case gives the instance; unset when no case started the flow) and `ElementCount` (how many times each element has run, by element id).
 In a script function, take it as the second parameter, typed `FlowMetadata`.
 Name it `$metadata` (any name works, and is renamed to it), and read it only with dots, as the first (`$metadata.InstanceId`, not `$metadata['InstanceId']`).
+Only that first read needs the dot: an element id that is not a JavaScript name is read with brackets after it, `$metadata.ElementCount['my-step']`.
 
 ```ts
 import { script, type FlowVars, type FlowMetadata } from '@uipath/maestro-builder-sdk';
@@ -120,6 +121,7 @@ function tag($vars: FlowVars, $metadata: FlowMetadata) {
 Those five keys are all the engine sets, so `check` warns `UNKNOWN_METADATA_KEY` on a read of any other key, in a script or any other expression: a misspelled key (`$metadata.instanceId`) reads `undefined` in the run, and the warning's suggestion names the right one.
 A case that starts the flow can set keys of its own on the instance.
 When the flow is meant to read one of those, keep the read, leave the warning, and widen the parameter's type: `$metadata: FlowMetadata & { Region?: string }`.
+Decompile widens it as `FlowMetadata & Record<string, any>` instead; the two are interchangeable, so leave whichever form is there.
 
 <!--skill-flavor:script-function-metadata-sdk-version:start-->
 The metadata parameter needs an SDK copy whose `dist/api-index.md` lists `FlowMetadata`. An older one refuses a function with two parameters, and a function that reads `$metadata` at all. Upgrade the copy in use as above, or read `$metadata` from `script({ code })`.

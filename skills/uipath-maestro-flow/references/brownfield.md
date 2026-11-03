@@ -480,6 +480,7 @@ function script_normalize($vars: FlowVars) {
 
 Edit the script in the function's body; the text between its braces is exactly the node's script, so an untouched script compiles back byte for byte.
 A script that reads `$metadata` gets a second parameter, `$metadata: FlowMetadata`; when it reads a key the engine does not set (one a case sets), the type is `FlowMetadata & Record<string, any>`, so the module still type-checks.
+An SDK without the metadata parameter (its `dist/api-index.md` does not list `FlowMetadata`) keeps such a script as `script({ code: "…" })`, with the warning below naming `$metadata`.
 The rules in [script.md](script.md#writing-the-script-as-a-function) apply to the edit: the function may read only what the script runtime has.
 
 A script that cannot be printed as a function stays `script({ code: "…" })`, and decompile warns once for each: `flow-decompile: warning: step "<id>": script kept as a string: <why>`.
