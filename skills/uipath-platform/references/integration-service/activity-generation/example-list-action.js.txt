@@ -2,7 +2,7 @@
 // user-group ID fields: run it and filter the output; it does no matching itself.
 //
 // ONE invocation = ONE page — the page the vendor answers with. The runtime
-// carries no page token; never walk the cursor here.
+// never walks the cursor for you; do not loop over it here.
 async function execute(context) {
   const { include_disabled, team_id } = context.request.body ?? {};
   const query = { include_disabled, team_id };
