@@ -233,38 +233,20 @@ Inside a solution (a `.uipx` in that folder or one above it) it looks in the sol
   One match in a folder is recorded, and the output names the folder to pin in the source.
   Several matches are listed with the `folder:` to write for each; write the one the user meant and run `prepare` again.
 - **A tenant-level match** needs no `prepare`: write it as `entity: '<Name>'`, as the output says.
-- **Names and `folder` paths match exactly, case included.** A `folder` that holds no entity of that name is `RESOURCE_NOT_IN_FOLDER`, listing the folders that do.
+- **A name matches exactly, case included; a `folder` path ignores case and a leading or trailing slash.** A `folder` that holds no entity of that name is `RESOURCE_NOT_IN_FOLDER`, listing the folders that do.
 - **No match:** it lists near misses and the listings to check.
   When none of them is the entity meant, ask the user how to resolve it; do not create an entity on your own.
-  `prepare` also prints a `uip df entities create` command; do not run it without the user's say-so.
   Creating one, in the scope the user asks for, follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md), and then `prepare` runs again.
 - **A recorded row older than a day** counts as missing, so `check` asks for `prepare` again.
 
 ### An entity the solution authors itself
 
-An entity created with `uip df entities create <Name> --local` lives only in the solution until it is deployed, and `prepare` does not resolve one yet.
-Leaving the keys out makes the node tenant-scoped, and the run fails with `Entity <Name> does not exist`, naming an entity that does exist.
-Take both keys from the solution, running both commands from the solution root (the folder holding the `.uipx`):
-
-```bash
-uip df entities get <Name> --local --output json           # FolderId → folderKey (always 99999999-9999-9999-9999-999999999999)
-uip solution resources list --kind Entity --output json    # the Source: Local row whose Name is <Name>: its Key → resourceKey
-```
-
-Pick the row by `Name`: every resource the solution files declare is listed as `Source: Local`, including entities the solution only references (`uip solution resources add --source remote`), so the first `Local` row may be a different entity.
-
-```ts
-.step('read', dataFabricRead({ entity: 'Product', resultMode: 'multiple',
-  folderKey: '99999999-9999-9999-9999-999999999999',
-  resourceKey: '<Key of the Source: Local row named Product>' }))
-```
-
-The `99999999-…` folder is a placeholder the platform replaces: `flow debug` provisions the entity into a `Debug_<project>` folder, and `solution deploy` into the deployment's own folder, and binds the node there.
-Use the entity's own casing for `entity`.
+An entity created with `uip df entities create <Name> --local` lives only in the solution until it is deployed, and resolves the same way.
+Write it as `{ name: '<Name>' }` and run the `prepare` that `check` prints, from the Flow project folder: `prepare` reads the solution as well as the tenant, records the entity in the solution's placeholder folder (`99999999-9999-9999-9999-999999999999`, which `flow debug` and `solution deploy` replace with the folder they provision), and names the folder to pin, `folder: 'solution_folder'`.
+Do not look the entity up on the tenant yourself: it is not there until deploy.
+Leaving the keys out instead makes the node tenant-scoped, and the run fails with `Entity <Name> does not exist`, naming an entity that does exist; `flow validate` reports such a node as `INLINE_ENTITY_UNBOUND`.
+Its message suggests `uip maestro flow node configure`, which edits the compiled `.flow`; in a builder-SDK project fix the `.flow.ts` instead, or the next `compile` reverts it.
 Creating and modelling the entity belongs to [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
-
-`flow validate`, `flow pack` and `uip solution pack` refuse a node that names a local entity without these keys (`INLINE_ENTITY_UNBOUND`).
-The message suggests `uip maestro flow node configure`, which edits the compiled `.flow`; in a builder-SDK project fix the `.flow.ts` instead, or the next `compile` reverts it.
 
 A decompiled flow names a folder-scoped entity with `folderKey` and `resourceKey`.
 That form compiles as it is; leave it unless the entity itself changes.
