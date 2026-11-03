@@ -43,9 +43,9 @@ After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker
 `STRICT_SDD_SLA_EXTRA` (more SLA rules on a scope than the SDD declares — one declared SLA with two escalations is one rule with two `escalationRule` entries, not two rules),
 `CASE_MGMT_SLA_RULE_UNKNOWN_KEY` (an SLA rule's keys are exactly `id, displayName, expression, count, unit, escalationRule` — `duration`/`type` are not keys; the duration is `count` + `unit`),
 `CASE_MGMT_SLA_ID_DUPLICATE` (one SLA rule `id` on two holders — a stage, a task, or the case level; `sla-status-change` rules key on `slaId`, so a shared id is ambiguous at runtime: mint a fresh `sla_` id per entry, never copy an SLA rule between holders — an error on every profile),
-`STRICT_SDD_SLA_DURATION_MISMATCH` (`count`/`unit` vs the SDD's Case Metadata `Case-Level SLA` row or a stage's SLA duration)
+`STRICT_SDD_SLA_DURATION_MISMATCH` (`count`/`unit` vs the SDD's Case Metadata `Case-Level SLA` row or a stage's SLA duration),
 `STRICT_SDD_SLA_CONDITIONAL_MISSING` (a row of the SDD's conditional SLA table — `Variable SLA Rules` / `Stage Conditional SLA Rules` and their sibling headings — has no `slaRules` entry with that expression and `count`/`unit`; a condition-based SLA is the conditional rows followed by the default row, never the default alone),
-`CASE_MGMT_SLA_RULE_UNREACHABLE` (an unconditional `=js:true` rule with rules after it — the first rule whose expression holds applies, so everything below it is dead; conditional rows first, default last — an error on every profile)
+`CASE_MGMT_SLA_RULE_UNREACHABLE` (an unconditional `=js:true` rule with rules after it — the first rule whose expression holds applies, so everything below it is dead; conditional rows first, default last — an error on every profile),
 and `STRICT_SDD_BINDING_FOLDER_MISMATCH` (a folderPath default that is not the task's `**Folder Path:**` / `**Deployment Folder:**`, or a folder key GUID where a path belongs) are Check 11
 
 ### Check 1 — SDD variable parity
