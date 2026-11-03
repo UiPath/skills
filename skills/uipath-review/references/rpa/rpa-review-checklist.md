@@ -115,7 +115,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 |---|---|---|
 | Variables follow PascalCase/camelCase | Warning | Workflow Analyzer rule ST-NMG-001 (default regex: `^([A-Z]\|[a-z])+([0-9])*$`; the `dt_` prefix convention is ST-NMG-009, not part of ST-NMG-001) |
 | DataTable variables prefixed with `dt_` | Info | Workflow Analyzer rule ST-NMG-009 |
-| Arguments use directional prefixes (`in_`, `out_`, `io_`), except a library's public workflows, whose arguments become activity properties, and names the runtime or a command fixes (the Global Exception Handler's `errorInfo` and `result`, test-data arguments) | Warning | Workflow Analyzer rule ST-NMG-002; its warnings on those exceptions are not findings |
+| Arguments use directional prefixes (`in_`, `out_`, `io_`), except: a library's public workflows (those `project.json` → `designOptions.libraryOptions.privateWorkflows` does not list), whose arguments become activity properties; the Global Exception Handler's `errorInfo` and `result`, which the runtime requires as written; test-data arguments, bound to their data by name | Warning | Workflow Analyzer rule ST-NMG-002; its warnings on those exceptions are not findings |
 | No variable-argument name conflicts (shadowing) | Warning | Workflow Analyzer rules ST-NMG-005, ST-NMG-006 |
 | Activity display names are descriptive | Warning | Workflow Analyzer rule ST-MRD-002 |
 | Workflow file names use Verb + Object (PascalCase) | Info | Manual check (e.g., `GetTransactionData.xaml`, `ProcessInvoice.xaml`) |
