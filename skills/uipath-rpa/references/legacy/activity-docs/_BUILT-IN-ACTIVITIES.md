@@ -27,7 +27,7 @@ Default namespace `http://schemas.microsoft.com/netfx/2009/xaml/activities` — 
 </If>
 ```
 
-Properties: `Condition` (InArgument Boolean), `If.Then` (single activity), `If.Else` (optional, single activity). Wrap multiple activities in a Sequence.
+Properties: `Condition` (InArgument Boolean), `If.Then`, `If.Else` (optional). Wrap each branch in a `Sequence`, even for a single activity; omit an unused `If.Else`.
 
 ### 2. Assign
 
@@ -91,7 +91,9 @@ Properties: `Sequence.Variables` (local variables scoped to this Sequence), chil
     </Catch>
   </TryCatch.Catches>
   <TryCatch.Finally>
-    <!-- cleanup activities (always runs) -->
+    <Sequence DisplayName="Finally">
+      <!-- cleanup activities (always runs) -->
+    </Sequence>
   </TryCatch.Finally>
 </TryCatch>
 ```
@@ -99,10 +101,10 @@ Properties: `Sequence.Variables` (local variables scoped to this Sequence), chil
 **Required xmlns for exception types:**
 ```xml
 xmlns:s="clr-namespace:System;assembly=mscorlib"
-xmlns:uic="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activities"
+xmlns:uic="clr-namespace:UiPath.Core;assembly=UiPath.System.Activities"
 ```
 
-Each `Catch` needs `ActivityAction<ExceptionType>` with `DelegateInArgument` named `exception`. Order matters — put specific catches first.
+Wrap `Try`, every `Catch` body, and `Finally` in a `Sequence`, even for a single activity; omit an unused `Finally`. Each `Catch` needs `ActivityAction<ExceptionType>` with `DelegateInArgument` named `exception`. Order matters — put specific catches first.
 
 ### 5. Flowchart
 
@@ -183,15 +185,21 @@ Same as While but body executes before condition check.
 
 ```xml
 <Switch x:TypeArguments="x:String" Expression="[status]" DisplayName="Switch" sap2010:WorkflowViewState.IdRef="Switch`1_1">
-  <ui:LogMessage x:Key="Active" Message="[&quot;Status is Active&quot;]" DisplayName="Log Active" />
-  <ui:LogMessage x:Key="Closed" Message="[&quot;Status is Closed&quot;]" DisplayName="Log Closed" />
+  <Sequence x:Key="Active" DisplayName="Case Active">
+    <ui:LogMessage Message="[&quot;Status is Active&quot;]" DisplayName="Log Active" />
+  </Sequence>
+  <Sequence x:Key="Closed" DisplayName="Case Closed">
+    <ui:LogMessage Message="[&quot;Status is Closed&quot;]" DisplayName="Log Closed" />
+  </Sequence>
   <Switch.Default>
-    <ui:LogMessage Message="[&quot;Unknown status: &quot; &amp; status]" DisplayName="Log Default" />
+    <Sequence DisplayName="Default">
+      <ui:LogMessage Message="[&quot;Unknown status: &quot; &amp; status]" DisplayName="Log Default" />
+    </Sequence>
   </Switch.Default>
 </Switch>
 ```
 
-`x:TypeArguments` sets the switch type. Cases use `x:Key="value"`. `Switch.Default` for the default case.
+`x:TypeArguments` sets the switch type. Each case is a `Sequence` carrying `x:Key="value"`; `Switch.Default` holds the default case's `Sequence`. Wrap every case and the default in a `Sequence`, even for a single activity.
 
 ### 10. Throw
 
@@ -422,4 +430,4 @@ These xmlns are needed beyond the baseline when using activities above:
 | `xmlns:sd="clr-namespace:System.Data;assembly=System.Data"` | ForEachRow (DataRow), DataTable variables |
 | `xmlns:s="clr-namespace:System;assembly=mscorlib"` | TryCatch (System.Exception), DateTime, arrays (AddDataRow `s:Object[]`) |
 | `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"` | ForEach (IEnumerable), InvokeCode Arguments |
-| `xmlns:uic="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activities"` | TryCatch (BusinessRuleException) |
+| `xmlns:uic="clr-namespace:UiPath.Core;assembly=UiPath.System.Activities"` | TryCatch (BusinessRuleException) |
