@@ -1,6 +1,6 @@
 ---
 name: uipath-ontology-authoring
-description: "UiPath Ontology authoring from documents (SDD, PDD, domain specification). Extracts and confirms classes, properties, relationships with their join columns, entity definitions, and annotations with the user, then delegates artifact generation, the local solution build (ontology + local entities), service validation and pack to uipath-ontology-modeler. For plain-language domains or existing ontology files→uipath-ontology-modeler. For publish/deploy/activate of the packed solution→uipath-solution."
+description: "UiPath Ontology authoring from documents (SDD, PDD, domain specification). Extracts and confirms classes, properties, relationships with their join columns, entity definitions, and annotations with the user, then delegates artifact generation, the local solution build (ontology + local entities), service validation and pack to uipath-ontology-modeler. For plain-language domains or existing ontology files→uipath-ontology-modeler. For publish/deploy/activate of the packed solution→uipath-solution. For PDD→automation SDD design→uipath-planner."
 when_to_use: "User provides an SDD, PDD, or design/domain specification and says 'create an ontology from this SDD', 'turn this PDD into an ontology solution', or 'build the ontology and its entities from this spec'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true

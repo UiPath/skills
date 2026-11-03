@@ -248,6 +248,24 @@ jobs:
       - name: Run contract guard
         run: pytest tests/scripts/test_runtime_payload_key_casing.py -v
 
+  ontology-skill-contract:
+    runs-on: uipath-ubuntu-latest
+    name: ontology skill contract guards
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest pyyaml
+
+      # Frontmatter, registry, CODEOWNERS and content contract of the two
+      # ontology skills (uipath-ontology-modeler, uipath-ontology-authoring).
+      - name: Run contract guards
+        run: pytest tests/scripts/test_ontology_skill_contract.py -v
+
   # One job for every BPMN contract guard, listed explicitly: a glob that stops
   # matching is a silently green job, and `-k` over the directory couples this
   # job to unrelated files' collection. Add new guards to the run step.

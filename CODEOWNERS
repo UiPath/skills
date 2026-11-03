@@ -64,8 +64,11 @@
 # Ontology skills (local solution: Ontology + local Entity resources)
 /skills/uipath-ontology-authoring/ @diwakar-jha3110
 /skills/uipath-ontology-modeler/ @diwakar-jha3110
+/skill-flavors/studioweb/uipath-ontology-authoring/ @diwakar-jha3110
+/skill-flavors/studioweb/uipath-ontology-modeler/ @diwakar-jha3110
+/tests/tasks/uipath-ontology-authoring/ @diwakar-jha3110
 /tests/tasks/uipath-ontology-modeler/ @diwakar-jha3110
-/tests/scripts/test_ontology_skill_structure.py @diwakar-jha3110
+/tests/scripts/test_ontology_skill_contract.py @diwakar-jha3110
 /tests/scripts/test_ontology_solution_golden.py @diwakar-jha3110
 
 # Agents skill (coded + low-code)
