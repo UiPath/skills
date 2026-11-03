@@ -381,14 +381,12 @@ Nothing to do yet. Surface detection is future work.
   login and no `registry pull`:
 
   ```bash
-  uip maestro bpmn registry list --limit -1 --output json --output-filter "ExtensionTypes[?!starts_with(ExtensionType,'Maestro.Case') && !contains(['Maestro.UpdateCaseState','Maestro.RetrieveCaseState','Maestro.NotificationService','Maestro.AcquireLock','Maestro.ReleaseLock','BPMN.Variables','uipath:Activity'],ExtensionType)].[ExtensionType,Kind,Label]"
+  uip maestro bpmn registry list --limit -1 --output json --output-filter "ExtensionTypes[?!starts_with(ExtensionType,'Maestro.Case') && !contains(['Maestro.UpdateCaseState','Maestro.RetrieveCaseState','Maestro.NotificationService','Maestro.AcquireLock','Maestro.ReleaseLock','BPMN.Variables','uipath:Activity'],ExtensionType)].[ExtensionType,Label]"
   ```
 
   The filter drops the types Studio Web generates for case management,
   which its BPMN toolbox does not offer.
 
-  When every `Kind` is `null`, the installed `uip` predates the column;
-  phase 2 then uses `Label` for every box.
 - **1b Scan for a solution and project.** Look for any `*.uipx` file up to two
   levels below the working directory, with whatever file search the host
   provides — for example:

@@ -38,10 +38,11 @@ in. It is not a working process and must never be reported as one.
    structure.
 5. **Label each box with the action first and the element's toolbox kind last,
    in brackets** — `Extract invoice data [RPA workflow]`, `Manager review
-   [Action app]`, `Classify ticket [Agent]`. Take the kind verbatim from the
-   `Kind` column of the 1a list; when the box's type has no `Kind`, take its
-   `Label` (`Execute script`, `Execute connector activity`). Never write a
-   kind that is not in that list. When several types could fit, pick the one
+   [Action app]`, `Classify ticket [Agent]`. Pick the box's type from the 1a
+   list, then take its kind verbatim from [Toolbox kinds](#toolbox-kinds);
+   a type not in that table takes its `Label` from the 1a list (`Execute
+   script`, `Execute connector activity`). Never write a type that is not in
+   the 1a list. When several types could fit, pick the one
    a Studio Web user would most likely choose for that step and label the box
    with it; the user changes it at the gate if they disagree. The label
    carries the meaning a blank box cannot.
@@ -55,6 +56,24 @@ in. It is not a working process and must never be reported as one.
 
 The kind is enough for a label; the type's template is resolved in phase 4.
 The resource each box will use is looked up at 3c.
+
+### Toolbox kinds
+
+The short names Studio Web's BPMN toolbox shows (PO.Frontend
+`toolbox/types.ts` `enum Category`). The registry's `Label` is the longer
+element name, so copy these instead when the type is listed.
+
+| Type | Kind |
+|---|---|
+| `Actions.HITL` | Action app |
+| `Orchestrator.StartJob` | RPA workflow |
+| `Orchestrator.StartAgentJob` | Agent |
+| `Orchestrator.ExecuteApiWorkflowAsync` | API workflow |
+| `Orchestrator.ExecuteFunctionAsync` | Function |
+| `Orchestrator.BusinessRules` | Business rule |
+| `Orchestrator.StartAgenticProcess`, `Orchestrator.StartAgenticProcessAsync` | Maestro BPMN |
+| `Orchestrator.StartCaseMgmtProcess`, `Orchestrator.StartCaseMgmtProcessAsync` | Maestro Case |
+| `Orchestrator.StartFlowProcess`, `Orchestrator.StartFlowProcessAsync` | Maestro Flow |
 
 ## Gateways cost more than boxes
 
