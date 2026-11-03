@@ -48,7 +48,8 @@ in. It is not a working process and must never be reported as one.
    carries the meaning a blank box cannot.
 6. **Name each branch flow** with the outcome it carries (`approve`, `reject`,
    `escalate`) via the flow's `name` attribute, so the routing reads off the
-   picture.
+   picture. Leave the name off the flows leaving a parallel gateway: every
+   branch runs, so a name would read as a choice.
 7. **Declare variables and gateway conditions for real.** The basis a gateway
    routes on is part of what the user is approving — three branches out of a
    diamond with no stated basis could mean anything. See
@@ -119,8 +120,8 @@ error-severity findings, and only when they block import.
 Phases 0 and 1 run first, and 2a has created or adopted the project — see
 [SKILL.md](../SKILL.md#workflow). Then:
 
-- **2b Author the skeleton** into the `.bpmn` that `init` generated, editing in
-  place. Preserve the generated start event's `id`, its
+- **2b Author the skeleton** by writing the starter `Process.bpmn` that `init`
+  generated whole, in one Write, instead of patching it with a series of edits. Preserve the generated start event's `id`, its
   `<uipath:entryPointId>`, and the four generated JSON files. **Do not rename
   the start event**: its name feeds the entry-point schema, so renaming it
   makes `refresh` rewrite `entry-points.json` for no benefit.
@@ -191,7 +192,9 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   `approval` for `Manager review [Action app]`). Say a resource does not
   exist only after every search found no fit. When a
   lookup fails, mark its boxes *not checked*, say why in the one sentence
-  the reply's first line allows, and do not retry. Then, for each box:
+  the reply's first line allows, and do not retry. State the failure as what
+  is missing for the user ("No Slack connection in this tenant"), never as a
+  connector key, kind, or CLI term. Then, for each box:
 
   - When the user named the resource, or exactly one row fits the box, use
     it and name it on the box's line, with its folder when the row has one.

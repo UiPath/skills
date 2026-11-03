@@ -16,6 +16,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 - **Don't repeat work.** Do not rerun a command when its inputs and relevant state are unchanged, and do not reread an unchanged file, script, or SKILL.md already in context. After a tool or command may modify a file, reread the affected content before relying on it.
 - **Write code once and reuse.** If a step needs code, write it once as a small script (paths/params as CLI args) and call it; don't paste near-duplicate inline python across turns. Keep it terse — no comment banners or narration in inline scripts.
 - **Keep outputs small.** Don't put large tool results and outputs into the context, instead write them into a file and use tools to inspect them. If there is no tool available, you should write your own scripts to inspect the file. To decide whether a row exists, filter CLI JSON by field (`jq select`), never truncate it (`head`, `sed -n`).
+- **Talk to the user in plain words.** Every line the user sees, including the short progress note you write while working, is one plain sentence about what is happening for them ("Sketching your process", "Checking what your tenant already has"). Never put an element, gateway, variable, validator, or file term in it, and never name a phase or step ("2f", "1a", "phase 4"): those labels are this skill's, not the user's.
 - **Don't do anything unnecessary.** Don't call tools, read files, or put results into context unless they're immediately needed.
 
 # UiPath Maestro BPMN
@@ -346,7 +347,8 @@ choice.
 | **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
 
 Say which mode was taken in the final report: in 4g's first line, or in the
-3c reply when the run stops at the gate.
+3c reply when the run stops at the gate. 4g names the mode the session
+started in: a draft session stays `draft` after *Build it*.
 
 In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
 gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
@@ -480,7 +482,10 @@ the template's lines.
    each chosen registry-owned node only. Fetch every chosen template in **one**
    Bash call, not one command per turn — each shell round-trip is a model turn
    and dozens of them exhaust the run's time budget before authoring finishes:
-   `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json; done`.
+   `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json --output-filter "ExtensionType.XmlTemplate"; done`.
+   That filter returns only the template, as `Data.Value`; do not retry
+   `registry get` with other filters or flags to find it. Drop the filter only
+   when you need the full spec (`ContextFields`, bindings) of a type.
    Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`; take
    `--object-name` from the table in
    [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-the-table-first-then-the-parameters)
@@ -501,10 +506,10 @@ the template's lines.
 - **4c Assemble.** If this run uploaded the shape, download it first (as in
    1c); when its `.bpmn` differs from the local one, build on the downloaded
    one (4g says so). For
-   greenfield, edit the `.bpmn` that 2a's `init`
-   generated in place; never replace the whole file.
-   Editing in place preserves the four generated JSON files, the initializer's
-   `Event_start` id, and its `uipath:entryPointId`. Author from the complete minimal file in
+   greenfield, write the starter `Process.bpmn` that 2a's `init`
+   generated whole, in one Write, instead of patching it with a series of edits.
+   Keep the initializer's `Event_start` id and its `uipath:entryPointId` in
+   what you write, and never touch the four generated JSON files. Author from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
    a stable manual entry point, one structural task, and complete DI. **Do not
@@ -701,7 +706,8 @@ the template's lines.
    CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if
    upgrading is unavailable, hand-author the fallback DI structure in
    [references/structural-bpmn.md](references/structural-bpmn.md).
-- **4e Validate.** Check well-formedness first. `validate` tokenizes with a
+- **4e Validate.**
+   Check well-formedness first. `validate` tokenizes with a
    tolerant parser and reports `Valid` on XML with an unbound namespace
    prefix, so a `ParseError` here is a source defect to fix before anything
    else. Then run the CLI validator, which runs the full PO.Frontend canvas
