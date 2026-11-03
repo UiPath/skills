@@ -71,6 +71,7 @@ element name, so copy these instead when the type is listed.
 | `Orchestrator.ExecuteApiWorkflowAsync` | API workflow |
 | `Orchestrator.ExecuteFunctionAsync` | Function |
 | `Orchestrator.BusinessRules` | Business rule |
+| `Intsvc.ActivityExecution` | Connector |
 | `Orchestrator.StartAgenticProcess`, `Orchestrator.StartAgenticProcessAsync` | Maestro BPMN |
 | `Orchestrator.StartCaseMgmtProcess`, `Orchestrator.StartCaseMgmtProcessAsync` | Maestro Case |
 | `Orchestrator.StartFlowProcess`, `Orchestrator.StartFlowProcessAsync` | Maestro Flow |
