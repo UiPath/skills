@@ -63,8 +63,10 @@ Read first, then change. Show what is already there and what is missing, and ask
 **1. Find the deployment and its solution folder.**
 
 ```bash
-uip solution deploy list --output json --output-filter "[].{Name:Name,PackageName:PackageName,Version:PackageVersion,FolderPath:FolderPath,FolderKey:FolderKey,Operation:Operation,OperationStatus:OperationStatus}"
+uip solution deploy list --limit 100 --output json --output-filter "[].{Name:Name,PackageName:PackageName,Version:PackageVersion,FolderPath:FolderPath,FolderKey:FolderKey,Operation:Operation,OperationStatus:OperationStatus}"
 ```
+
+If `Pagination.HasMore` is true, continue with `--offset 100`, `--offset 200`, and so on to find all installed copies.
 
 Skip rows whose `Operation` is `Uninstall` or whose `OperationStatus` is `Failed`. `FolderKey` is the solution folder's key (`<SOLUTION_FOLDER_KEY>`). When several copies are installed, list them and ask which.
 
