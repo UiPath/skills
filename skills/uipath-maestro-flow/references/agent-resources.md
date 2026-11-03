@@ -52,65 +52,45 @@ implementation and dispatches on the name. Nothing local runs it.
 ## The Batch Transform tool
 
 `{ kind: 'builtin', tool: 'batchtransform' }` lets the agent add columns to a
-CSV's rows when it decides to. A fixed step that always enriches one CSV is the
-`batchTransform()` node instead ([batch-transform.md](batch-transform.md)). The
-file is the tool's `attachment` argument, passed by the model; it cannot be
-pinned to a flow variable.
+CSV; the model passes the file as the tool's `attachment`. A step that always
+enriches one CSV is `batchTransform()` instead ([batch-transform.md](batch-transform.md)).
 
 ```ts
-tools: [{
+{
   kind: 'builtin', tool: 'batchtransform',
-  query: { value: 'Classify each invoice line' },
+  query: { value: 'Classify each invoice line' },  // the task
   outputColumns: [
     { name: 'Category', description: 'One of: Utility, Software, Travel, Other' },
-    { name: 'Vendor', description: 'The company that issued the invoice' },
   ],
-  webSearchGrounding: 'disabled',
-}]
+  webSearchGrounding: 'disabled',                  // default 'enabled'
+}
 ```
 
-1. **`outputColumns`** (required): 1 to 10 `{ name, description }`, in order.
-   A name is 1 to 64 letters, digits, `_` or `-`, checked as written (no
-   spaces, not even trimmed). A description is required: it tells the model
-   what goes in the column.
-2. **`webSearchGrounding`**: `'enabled'` (default) or `'disabled'`. Disable it
-   unless the scenario needs the web. The node's own
-   `enableWebSearchGrounding` defaults to `false`; the tool's does not.
-3. **`query`** is the task, from the canvas's four sources:
+**`outputColumns` is required:** 1 to 10, each a name of 1 to 64 letters,
+digits, `_` or `-` (no spaces) and a description of what goes in the column.
+**Disable `webSearchGrounding` unless the scenario needs the web:** unlike the
+step's `enableWebSearchGrounding`, it defaults to on.
 
-   | `query` | Source |
-   | --- | --- |
-   | omitted | Empty: the model writes the task |
-   | `'text'` or `{ prompt: 'text' }` | Prompt: the model writes the task, guided by the text |
-   | `{ value: 'text' }` | Fixed value: the task itself |
-   | `{ variable: input('task') }` | Variable: read from the flow; becomes one of the agent's inputs |
+**`query` takes the canvas's sources:** omitted (the model writes the task), a
+string or `{ prompt }` (the model writes it, guided), `{ value }` (pinned), or
+`{ variable }` (ONE flow reference, which becomes an agent input). A bare
+`query: input('task')` is pinned text, never evaluated. `summarize` takes the
+same forms; the other two settings are `batchtransform`'s only.
 
-   A `variable` is ONE reference (`input()`, `out()`, `v()`); compute anything
-   else in a `script()` step. A bare `query: input('task')` is a Fixed value
-   holding the expression's text, never evaluated: use `{ variable }`.
-4. `summarize` takes the same `query` forms. `outputColumns` and
-   `webSearchGrounding` are for `batchtransform` only.
+`check` reports these as `INLINE_AGENT_BATCH_TRANSFORM_*` (`_NO_COLUMNS`,
+`_TOO_MANY_COLUMNS`, `_COLUMN_NAME`, `_COLUMN_DESCRIPTION`, `_GROUNDING`) and
+`INLINE_AGENT_BUILTIN_*` (`_QUERY_SOURCE`, `_COMPOSITE_REF`,
+`_SETTING_NOT_APPLICABLE`). Compile also refuses `_GROUNDING` and the three
+`BUILTIN` codes.
 
-`check` reports all eight as errors. Compile itself fails on the four marked
-**compile**, and writes the others as given:
-
-| Code | Fails | Fix |
-| --- | --- | --- |
-| `INLINE_AGENT_BATCH_TRANSFORM_NO_COLUMNS` / `_TOO_MANY_COLUMNS` | check | Give 1 to 10 columns |
-| `INLINE_AGENT_BATCH_TRANSFORM_COLUMN_NAME` / `_COLUMN_DESCRIPTION` | check | Fix the name's characters or length; add the description |
-| `INLINE_AGENT_BATCH_TRANSFORM_GROUNDING` | compile | Use `'enabled'` or `'disabled'` |
-| `INLINE_AGENT_BUILTIN_QUERY_SOURCE` | compile | Give the `query` object exactly one of `prompt`, `value`, `variable` |
-| `INLINE_AGENT_BUILTIN_COMPOSITE_REF` | compile | Bind one reference; compute the rest in a `script()` step |
-| `INLINE_AGENT_BUILTIN_SETTING_NOT_APPLICABLE` | compile | Drop `outputColumns` / `webSearchGrounding` from a non-`batchtransform` built-in |
-
-**Brownfield.** Decompile reads a Batch Transform tool back whole. It reports
-lossy (an error under `--strict`) what it cannot: a file bound to a variable,
-a `fileExtension` other than `csv`, a non-empty `folderPathPrefix`, a tool
-node cut to `{ source }` whose `resource.json` it could not read, and any
-Summarize task but Empty. Edit those flows with `merge --baseline`
+**Brownfield.** Decompile reports lossy what it cannot read back: a setting
+with no SDK form (a file bound to a variable, a non-`csv` `fileExtension`), a
+tool node cut to `{ source }` whose `resource.json` it could not read, and any
+Summarize task but Empty. Edit
+those flows with `merge --baseline`
 ([brownfield.md](brownfield.md#agent-resources-added-changed-removed)), which
-keeps the original `resource.json` and carries only your change. Adding or
-removing a column replaces the whole `outputColumns` array.
+keeps the original `resource.json`. Adding or removing a column replaces the
+whole array.
 
 ## Escalation
 
