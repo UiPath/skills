@@ -1,1 +1,10 @@
 version: 3
+
+# tests/ holds ~300 UiPath project.json fixtures (genome, activity-migrator,
+# troubleshoot tasks). They are never restored or shipped (package.json
+# `files` omits tests/), but fossa-cli reads each as a NuGet manifest, so a
+# fixture pinning a legacy or community package fails the release gate as an
+# unlicensed dependency. The root npm project, the shipped package, stays scanned.
+paths:
+  exclude:
+    - ./tests
