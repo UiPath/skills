@@ -355,7 +355,7 @@ After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker
 
 - **Check 14 — Variable `default` encoding** — Scan `variables.inputs[]`, `variables.outputs[]`, and `variables.inputOutputs[]`. Every entry carrying a `default` MUST hold a **JSON string**, whatever the entry's `type`. An object or array `default` is **silently deleted** by the caseplan → BPMN converter (`bpmn-moddle.ts` keeps only primitive attributes), leaving the variable null at runtime; the first task bound to it fails with `AGENT_STARTUP.INPUT_VALIDATION_ERROR / <input> Field required`. Numbers and booleans survive serialization but violate the field's declared string type and are equally non-conforming.
 
-  **Nothing upstream catches this.** `uip maestro case validate` returns `Valid`; the frontend's own Zod schema types the field `z.any()` and parses an object clean, so borrowing it as a gate does not work here. The enforcement point is [`global-vars/impl-json.md` § `default` encoding](plugins/variables/global-vars/impl-json.md#default-encoding-every-type-mandatory) and this check.
+  **Nothing upstream catches this.** `uip maestro case validate` returns `Valid`; the frontend's own Zod schema types the field `z.any()` and parses an object clean, so borrowing it as a gate does not work here. The enforcement point is [`global-vars/impl-json.md` § `default` encoding](plugins/variables/global-vars/impl-json.md#default-encoding--every-type-mandatory) and this check.
 
   **Non-interactive repair:** re-encode in place — `{"a":1}` → `"{\"a\":1}"`, `5` → `"5"`, `true` → `"true"` (lowercase JSON, not Python `True`), `{}` → `"{}"`. Do not drop the value and do not change the variable's `type`. Re-scan once; halt before Phase 4 if any non-string `default` remains.
 
