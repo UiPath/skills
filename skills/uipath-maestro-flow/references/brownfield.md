@@ -489,6 +489,13 @@ To print every script that way, pass `--scripts string`: `uip maestro flow decom
 
 Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lists `ScriptValue`); an older SDK's decompile prints every script as `script({ code })`.
 
+## A Case-only variable type
+
+A `.flow` written by Studio Web or an older SDK can carry a global typed `date`, `datetime`, `float`, `double` or `jsonSchema`. `decompile` warns once for each.
+
+- **`date` / `datetime`: nothing to do.** Decompile prints `types.string` and warns `... The source declares it types.string, so a recompile writes "type":"string" in its place`. Merge goes through. Without `--baseline-from` the merged `.flow` says `"type":"string"`; with it, an untouched variable keeps its own type. Neither changes the run: `flow pack` already writes a date as a plain string.
+- **`float` / `double` / `jsonSchema`: retype it in the same round.** Decompile keeps `types.float`, and `compile`/`merge` stop with `DECLARATION_TYPE_NOT_FLOW` even if your edit is elsewhere. Change that one declaration to the type the warning names (`types.number`; for `jsonSchema`, `types.object` or `types.array` with `{ schema }`), then compile and merge as usual. The merged `.flow` carries the new type.
+
 ## The file's schema version comes back out
 
 `decompile` emits `.schemaVersion("<the file's version>")` as the first line of
