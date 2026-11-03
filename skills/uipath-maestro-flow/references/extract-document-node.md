@@ -231,8 +231,6 @@ Anything not described as supported for the Extract document node is unsupported
 
 ## What this guide does not cover
 
-**The test set and the scorer.** A node's extraction dataset and its evaluator are created in Studio Web today; the CLI refuses to author an eval set targeting a document node and says so. Add the node and its taxonomy, then tell the user that seeding test documents and scoring them is their next step in Studio Web.
-
 **Going live.** Publishing and deploying stay the user's decision, in Studio Web.
 
 ## Evidence boundary
