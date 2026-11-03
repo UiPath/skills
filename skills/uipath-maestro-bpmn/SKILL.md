@@ -376,6 +376,16 @@ Nothing to do yet. Surface detection is future work.
   user rather than discovering against a half-registry. Local authoring and
   `validate` still work offline — see
   [references/cli-conventions.md](references/cli-conventions.md#login-boundary).
+  In the same call, read the element kinds Studio Web's toolbox shows; phase
+  2 labels boxes with them. It reads the CLI's built-in list, so it needs no
+  login and no `registry pull`:
+
+  ```bash
+  uip maestro bpmn registry list --limit -1 --output json --output-filter 'ExtensionTypes[].[ExtensionType,Kind,Label]'
+  ```
+
+  When every `Kind` is `null`, the installed `uip` predates the column;
+  phase 2 then uses `Label` for every box.
 - **1b Scan for a solution and project.** Look for any `*.uipx` file up to two
   levels below the working directory, with whatever file search the host
   provides — for example:

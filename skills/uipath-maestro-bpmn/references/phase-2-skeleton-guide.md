@@ -22,7 +22,8 @@ in. It is not a working process and must never be reported as one.
    envelope) make a box look like a decided product choice. Keep every box
    blank.
 3. **Make no registry calls.** No `registry pull`, `list`, `search`, or `get`.
-   Element types are not being chosen yet.
+   Element types are not being chosen yet. Box kinds come from the list 1a
+   already read.
 4. **Control flow is real.** Genuine `bpmn:startEvent` (with a plain
    `bpmn:timerEventDefinition` or `bpmn:messageEventDefinition` when the
    process starts that way; it needs no registry call, and phase 4 wires the
@@ -35,10 +36,14 @@ in. It is not a working process and must never be reported as one.
    public result, so the shared-result end-event exception in that file's
    validation checklist does not apply here. Do not simplify the branch
    structure.
-5. **Label each box with the action first and the intended element family last,
-   in brackets** — `Classify ticket [Agent]`, `Notify approvals team [Slack]`,
-   `Prepare ticket summary [Script]`. The label carries the meaning a blank box
-   cannot.
+5. **Label each box with the action first and the element's toolbox kind last,
+   in brackets** — `Extract invoice data [RPA workflow]`, `Manager review
+   [Action app]`, `Classify ticket [Agent]`. Take the kind verbatim from the
+   `Kind` column of the 1a list; when the box's type has no `Kind`, take its
+   `Label` (`Execute script`, `Execute connector activity`). Never write a
+   kind that is not in that list. When the user's words do not settle which
+   type a box is, leave the brackets off; the 3c reply names the kinds that
+   fit. The label carries the meaning a blank box cannot.
 6. **Name each branch flow** with the outcome it carries (`approve`, `reject`,
    `escalate`) via the flow's `name` attribute, so the routing reads off the
    picture.
@@ -47,15 +52,8 @@ in. It is not a working process and must never be reported as one.
    diamond with no stated basis could mean anything. See
    [Gateways cost more than boxes](#gateways-cost-more-than-boxes).
 
-Element families come from the bundled catalog, not the registry: the
-login-free table in
-[registry-workflow.md](registry-workflow.md#ootb-extension-types-29-login-free)
-and the `label` field of each entry in `validator/bpmn-spec.json`. Those labels
-distinguish the families a user's wording leaves ambiguous — "Start and wait for
-RPA workflow" versus "Start and wait for agent" versus "Start and wait for
-agentic process" versus "Start and wait for external agent". Family is enough
-for a label; the specific type and its template are resolved in phase 4. The
-resource each box will use is looked up at 3c.
+The kind is enough for a label; the type's template is resolved in phase 4.
+The resource each box will use is looked up at 3c.
 
 ## Gateways cost more than boxes
 
@@ -140,7 +138,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   continuing. Repeat 3a–3b.
 - **3c Ask before building.** Find each box's resource, then reply.
 
-  **Find the resources.** A box whose family runs a deployed resource (RPA
+  **Find the resources.** A box whose kind runs a deployed resource (RPA
   workflow, API workflow, agent, agentic process, app, queue, entity, or a
   connector's connection) cannot be built without one. When 1a reported no
   login, skip the lookup and mark each such box *not checked*. Otherwise run
@@ -150,8 +148,9 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     <Process|Queue|App> --search "<term>" --output json`. It lists what the
     solution already holds (`Source: Local`) and what the tenant has
     (`Source: Remote`). `--kind Process` returns every process type; match
-    the box's family on `Type`: RPA workflow `process`, API workflow `api`,
-    agent `agent`, agentic process `processOrchestration`.
+    the box's kind on `Type`: RPA workflow `process`, API workflow `api`,
+    Agent `agent`, Maestro BPMN `processOrchestration`, Maestro Case
+    `CaseManagement`, Maestro Flow `Flow`, Function `function`.
   - **Connections:** `uip is connections list <connector-key> --all-folders
     --output json`, the same list 4a binds from. Prefer `IsDefault: Yes`,
     then `State: Enabled`.
@@ -175,6 +174,8 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   - When none fits, say on the box's line that it does not exist yet: the
     user creates it or names one, or picks *Change it* to have it authored
     (Rule 17).
+  - When the box has no kind (item 5) and no resource settled it, name the
+    kinds that fit on the box's line and ask which one.
 
   Script steps and quick-form human tasks need no resource. Run the lookup
   again at every 3c, so a resource the user created since the last gate
@@ -188,7 +189,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   <Name>: outline ready<, uploaded> (draft mode). <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
-  - <each box, in order>: <resource and folder | which of two | none yet, create it or name one>
+  - <each box, in order>: <resource and folder | which of two | which kind | none yet, create it or name one>
 
   Is this the process you want?
   1. **Build it**: make every step work.
