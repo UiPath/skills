@@ -129,7 +129,8 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   it no box renders on the canvas (Rule 5).
 - **2d `uip maestro bpmn validate <file>.bpmn --output json`** — must reach
   `Status: Valid`. This is an import-readiness check, not a design review:
-  act on errors, ignore the expected warnings above.
+  act on errors, ignore the expected warnings above. Write no file for the
+  result: no notes, log, or memory file (Rule 19). The reply carries it.
 - **2e `uip maestro bpmn refresh <project-path> --output json`** — run it from the
   solution directory. `refresh` validates internally and refuses to write
   anything while validation fails, so 2d must pass first. On a skeleton that
@@ -178,20 +179,36 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     the box's kind on `Type`: RPA workflow `process`, API workflow `api`,
     Agent `agent`, Maestro BPMN `processOrchestration`, Maestro Case
     `CaseManagement`, Maestro Flow `Flow`, Function `function`.
-  - **Connections:** `uip is connections list <connector-key> --all-folders
-    --output json`, the same list 4a binds from. Prefer `IsDefault: Yes`,
-    then `State: Enabled`. Run it for every connector box, including when the
-    user named no provider: find the key with `uip is connectors list
-    --filter "<service name>" --output json` in the same call. When the
-    lookup returns no connection, the box's line says what is missing in
-    plain words, such as "No Slack connection in this tenant"; a connector
-    box is *not checked* only when the lookup itself errored.
+  - **Connections:** run this once, whatever the number of connector boxes,
+    and including when the user named no provider. It lists every connection
+    in the tenant, so no connector key is needed:
+
+    ```bash
+    uip is connections list --all-folders --output-filter "[].{Connector:ConnectorName,Connection:Name,State:State,IsDefault:IsDefault,Folder:Folder}" --output json
+    ```
+
+    Match each connector box to the rows whose `Connector` is the service the
+    box uses (`Salesforce`, `Slack`, `Microsoft Outlook 365`, `Gmail`). Match
+    on `Connector` only: a connector's key can contain another service's name
+    (the Slack connector's key contains `salesforce`). A box that names no
+    provider, such as "send an email", takes any connection whose `Connector`
+    is an email service. Prefer `IsDefault: Yes`, then `State: Enabled`. The
+    list is complete, so a service with no row has no connection: the box's
+    line says so in plain words, such as "No Salesforce connection in this
+    tenant". A connector box is *not checked* only when this command itself
+    exited non-zero.
   - **Data Fabric entities:** `uip df entities list --include-folders
     --output-filter "[].Name" --output json`, matched on `Name`. (`uip`
     1.203.0: `solution resources list --kind Entity` returns no rows even
     when the entity exists; drop this note when it does.) A Data Fabric box
-    also needs a Data Fabric connection: look up `uipath-uipath-dataservice`
-    as above.
+    also needs a Data Fabric connection: match `Connector` `UiPath Data
+    Fabric` in the connections list above.
+
+  Run each lookup exactly as written, adding no flag. `uip` rejects
+  `--output-filter` on `uip solution resources list` unless `--limit` comes
+  with it, and rejects `--limit` on every `uip is` and `uip df` list. Where a
+  lookup above shows no `--output-filter`, leave it off. When you do narrow a
+  `solution resources list` output, pass `--limit 50`.
 
   `--search` matches names only, and tenants hold thousands of processes, so
   never list a kind unfiltered, not even after a search came back empty.
@@ -211,6 +228,15 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   - When none fits, say on the box's line that it does not exist yet: the
     user creates it or names one, or picks *Change it* to have it authored
     (Rule 17).
+
+  A row fits only when both hold: its kind is the box's kind (match `Type`
+  as above, and an Action app box takes an action app, never a web or other
+  app), and its name and folder show it does the step the box describes. A
+  name that merely shares a keyword does not fit: an app called `review-app`
+  in an unrelated project's folder is not the approval step of an
+  accounts-payable process. When you cannot tell that a row serves the step,
+  treat the box as having none: write "none yet, create it or name one" and
+  never bind to the row. Phase 4 binds only the resource this gate named.
 
   Script steps and quick-form human tasks need no resource. Run the lookup
   again at every 3c, so a resource the user created since the last gate

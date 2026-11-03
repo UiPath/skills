@@ -216,6 +216,12 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    template's remaining fields and make that swap only after a live run
    faults with `key:FolderKey`; without a run, report the node unverified. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
+19. **Write only the files the process needs.** A run writes the project's own
+   files (the `.bpmn` and what `init` and `refresh` generate) and nothing else:
+   no notes, memory, summary, or validation-log markdown, and no scratch
+   copies, inside the project or outside it. Report findings in the reply.
+   The only exceptions are the notes file Rule 16 asks for and the image
+   inventory the image-transcription rules ask for.
 
 ## The model
 
@@ -468,7 +474,9 @@ the template's lines.
    session — do not re-pull), then `list` / `search` to map intent to extension
    types; `uip is connections list --all-folders` for live connections (always
    `--all-folders` — a folder-scoped list silently misses connections). Never
-   fabricate an identifier; ask only under Rule 4, otherwise decide. In draft
+   fabricate an identifier; ask only under Rule 4, otherwise decide. Bind a box
+   only to a resource that fits its step (kind and purpose, not a similar
+   name); when unsure, report it as none yet. In draft
    mode, bind each box to the resource the 3c gate named; when a connection it
    named does not ping `Enabled`, fall to the next candidate below and name
    the swap under `Assumed` in 4g. Bind each
@@ -793,7 +801,7 @@ the template's lines.
   <Name>: built, validated<, uploaded><, run> (draft mode). <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
-  - <what changed, one line each, up to 5>
+  - <what changed, one line each, at most 5 lines in all>
 
   Needs: <...>
   Assumed: <...>  Unverified: <...>
@@ -814,8 +822,11 @@ the template's lines.
   process name: write no status sentence or introduction before the
   `<Name>:` line. Send nothing beyond these lines: no extra sections,
   headings, tables, numbered lists, questions, or suggested next steps.
-  Keep the change lines to five; fold anything else the user must act on
-  into `Assumed` or `Unverified`. Before you send it, compare the message
+  **Write at most five change lines. A sixth line is a defect, not a
+  judgment call.** Count the lines under the first line before you send:
+  when there are more than five, merge related steps into one line each, and
+  fold anything else the user must act on into `Assumed` or `Unverified`.
+  Before you send it, compare the message
   with the template line by line and delete every line the template does
   not have.
 
