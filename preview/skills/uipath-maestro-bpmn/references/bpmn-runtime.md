@@ -191,7 +191,9 @@ binding half, which is the same for every connector-backed node.
 - `entity: { name, folderKey }` is for a folder key already in hand.
   A decompiled process shows such a task as an `.activity()` with its query rows and the two `Entity` bindings; it compiles back as it is.
 - The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
-- The entity and its folder are literals in the compiled task, so a deploy cannot re-point them per environment.
+  Tell the user the file operation is not supported on a folder-scoped entity; do not fall back to a plain entity name, which addresses a tenant-level entity instead, or hand-fill `.activity()`.
+- The entity and its folder are literals in the compiled task: the two `Entity` bindings declare the entity in the solution, and the task does not read them.
+  Do not add bindings by hand or promise per-environment re-pointing; tell the user the entity is fixed at compile time.
 
 <!-- RULE:bpmn.connector.parameter-rows -->
 - A connector's path and query parameters are one `uipath:input` row each, under
