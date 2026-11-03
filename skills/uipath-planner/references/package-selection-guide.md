@@ -98,8 +98,10 @@ These two mechanisms both provide access to third-party systems, but they are **
 ### Decision
 
 1. If Orchestrator has a configured **Integration Service** connection for the target system AND the PDD does not require specific native-package activities → use the **Integration Service connector**.
-2. Otherwise → use the matching **NuGet package**.
-3. If both paths are listed in §9 for the same application, pick Integration Service for the primary path and note the NuGet package as a fallback in §14.
+2. If a catalog connector exists but no connection is configured yet → still use the **Integration Service connector**; list creating the connection as a prerequisite.
+3. If no catalog connector exists and the target is a REST+JSON API → **build a custom connector** (`uipath-connector-builder`) and budget it as a plan task.
+4. Otherwise → use the matching **NuGet package**, or a direct authenticated call (key in a `Credential` asset) with a written justification in the SDD.
+5. If both paths are listed in §9 for the same application, pick Integration Service for the primary path and note the NuGet package as a fallback in §14.
 
 ### Side-by-side
 
@@ -116,7 +118,7 @@ These two mechanisms both provide access to third-party systems, but they are **
 
 - **Do not** list the connector slug in §14 Packages. Slugs are not NuGet packages.
 - **Do not** install `UiPath.Salesforce.Activities` when the design uses the Salesforce Integration Service connector — they are parallel paths, not complementary.
-- **Do not** assume every Orchestrator instance has Integration Service enabled. Confirm during Phase 1 scoping; default to the NuGet package path if in doubt.
+- **Do not** assume every Orchestrator instance has Integration Service enabled. Confirm during Phase 1 scoping; take the NuGet path only when it is disabled on the target tenant, and record that as the reason.
 
 ### Example — Salesforce via Integration Service
 
