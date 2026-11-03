@@ -374,3 +374,41 @@ def test_skill_links_resolve():
     for p in guidance_files():
         for link in re.findall(r"\]\(([^)#]+\.md)", read(p)):
             assert (p.parent / link).is_file(), f"{p}: {link}"
+
+
+def test_handoff_and_return_blocks_identical_in_both_skills():
+    m, a = read(MODELER_DIR / "SKILL.md"), read(AUTHORING_DIR / "SKILL.md")
+    for first in ("ONTOLOGY_NAME: exact slug", "SOLUTION_DIR: absolute path"):
+        assert fenced_block_starting(m, first) == fenced_block_starting(a, first)
+
+
+def test_authoring_phases_then_delegation():
+    t = read(AUTHORING_DIR / "SKILL.md")
+    marks = ("Step 1 — Collect", "Phase 3 — Define business concepts", "Phase 4 — Define properties and relationships",
+             "Phase 5 — Define labels, descriptions, and synonyms", "Step 2 — Build the solution")
+    pos = [t.index(x) for x in marks]
+    assert pos == sorted(pos)
+    assert "If `uipath-ontology-modeler` is not available" in t and "Stop after pack" in t
+
+
+def test_authoring_runs_no_cli_writes_and_reads_no_sibling_files():
+    t = read(AUTHORING_DIR / "SKILL.md")
+    assert not re.search(r"uip\s+(df|ont)\s+\S+\s+(create|update|add)", t)
+    assert not re.search(r"uip solution (init|pack|publish|deploy)", t)
+    assert "../uipath-ontology-modeler" not in t
+    assert "SOLUTION_DIR" in section(t, "Step 1")
+
+
+def test_authoring_phase_4_covers_df_types_choice_sets_and_connections():
+    sec = section(read(AUTHORING_DIR / "SKILL.md"), "Phase 4")
+    for term in ("Data Fabric type", "choice set", "relationshipField", "connectionName", "federated"):
+        assert term in sec, term
+
+
+def test_authoring_has_no_stale_claims():
+    t = read(AUTHORING_DIR / "SKILL.md")
+    for stale in ("SVC-002", "XF-011", "--offline", "not supported", "in the tenant", "in the deployment folder",
+                  "UseExisting", "RenameExisting", "MergeConfiguration"):
+        assert stale not in t, stale
+    assert "unique per folder" in t and "Replace" in t and "RenameInSolution" in t
+    assert not ID_TERMS.search(t) and not GUID.search(t)
