@@ -166,5 +166,5 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 
 ## Related
 
-- **Orchestrator** (`uip or`) — folders, processes, jobs, machines → the `uipath-platform` skill
-- **Resources** (`uip or assets` / `queues` / `buckets` / …) — resources used by solutions → the `uipath-platform` skill
+- **Orchestrator** (`uip or`) — folders, processes, jobs, machines → [`uipath-platform`](../../uipath-platform/references/orchestrator/orchestrator.md)
+- **Resources** (`uip or assets` / `queues` / `buckets` / …) — resources used by solutions → [`uipath-platform`](../../uipath-platform/references/orchestrator/resources.md)
