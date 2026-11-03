@@ -41,9 +41,10 @@ in. It is not a working process and must never be reported as one.
    [Action app]`, `Classify ticket [Agent]`. Take the kind verbatim from the
    `Kind` column of the 1a list; when the box's type has no `Kind`, take its
    `Label` (`Execute script`, `Execute connector activity`). Never write a
-   kind that is not in that list. When the user's words do not settle which
-   type a box is, leave the brackets off; the 3c reply names the kinds that
-   fit. The label carries the meaning a blank box cannot.
+   kind that is not in that list. When several types could fit, pick the one
+   a Studio Web user would most likely choose for that step and label the box
+   with it; the user changes it at the gate if they disagree. The label
+   carries the meaning a blank box cannot.
 6. **Name each branch flow** with the outcome it carries (`approve`, `reject`,
    `escalate`) via the flow's `name` attribute, so the routing reads off the
    picture.
@@ -174,8 +175,6 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   - When none fits, say on the box's line that it does not exist yet: the
     user creates it or names one, or picks *Change it* to have it authored
     (Rule 17).
-  - When the box has no kind (item 5) and no resource settled it, name the
-    kinds that fit on the box's line and ask which one.
 
   Script steps and quick-form human tasks need no resource. Run the lookup
   again at every 3c, so a resource the user created since the last gate
@@ -189,13 +188,18 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   <Name>: outline ready<, uploaded> (draft mode). <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
-  - <each box, in order>: <resource and folder | which of two | which kind | none yet, create it or name one>
+  - <each box, in order>: <resource and folder | which of two | none yet, create it or name one>
 
   Is this the process you want?
   1. **Build it**: make every step work.
   2. **Change it**: tell me what to add, remove, or move.
   3. **Keep it**: stop here with this outline.
   ```
+
+  Send nothing beyond these lines: no diagram of the flow, no preamble or
+  status line, no headings or separators. The canvas, or the box lines when
+  there is no upload, already show the shape, and Autopilot's chat panel is
+  narrow: anything extra pushes the question out of view.
 
   Send this reply as your final message and end the turn. Do not ask the
   gate question with a pick-list or question tool: a pending question keeps
