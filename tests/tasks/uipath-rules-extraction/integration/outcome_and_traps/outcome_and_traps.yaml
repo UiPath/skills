@@ -1,0 +1,110 @@
+task_id: skill-rules-extraction-integration-outcome-and-traps
+description: >
+  Agent extracts a BusinessRules decision table from a short policy supplied as
+  page-marked text (no digitizer positions), headless. Grades skill activation,
+  the lifecycle commands, and the table's outcome on 14 hidden scenarios that
+  each pin one trap: inclusive boundaries, an exception that lifts only one
+  condition, missing information routed to Refer, a permissive "may" sentence
+  that must not become a condition, and an instruction injected into the
+  document. Also grades the uipdm inputVariable provenance, that no sourceRef
+  is written when no positions exist, and that review-notes.md records the
+  assumptions made.
+tags: [uipath-rules-extraction, integration, "mode:build", "lifecycle:generate", "outcome-graded"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup/policy
+      mount_point: policy
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Business Rules project named ReimbursementRules from our
+  equipment reimbursement policy. The policy is `./policy/document.md`, already
+  converted to text with `<!-- page: N -->` markers; no page positions are
+  available.
+
+  Use these names so we can wire the rule into a workflow:
+  - Inputs: `serviceDays` (number), `requestAmount` (number),
+    `hasDirectorPreApproval` (boolean), `hasMedicalAccommodation` (boolean).
+  - Output: `outcome` (string), one of "Approve", "Deny", "Refer".
+  Keep each named input as its own column of the table so a reviewer can read it;
+  do not build a column from an expression that combines inputs.
+
+  Nobody is available to answer questions: at every checkpoint accept your own
+  proposed answer, and note each assumption in the rule. There is no tenant, so
+  do not run `uip rules debug`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules-extraction skill"
+    skill_name: "uipath-rules-extraction"
+    expected_skill: "uipath-rules-extraction"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the project with rules init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent regenerated the package files with rules refresh"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+refresh'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/policy_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inputs, output and entry-point contract as named; a uipdm:inputVariable per input; no pipeline-state elements; no receipts input"
+    command: "python3 $REFERENCE_DIR/_shared/policy_check.py profile"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The table returns the policy's outcome on all 14 hidden scenarios"
+    command: "python3 $REFERENCE_DIR/_shared/policy_check.py outcomes"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No uipdm:sourceRef written when no digitizer positions exist"
+    command: "python3 $REFERENCE_DIR/_shared/policy_check.py norefs"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "review-notes.md records the assumptions made"
+    command: "python3 $REFERENCE_DIR/_shared/policy_check.py notes"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run rules debug without a tenant"
+    tool_name: "Bash"
+    command_pattern: '(?m)(?:^|&&|;|\|\|?)\s*uip\s+rules\s+debug'
+    weight: 0.5
+    pass_threshold: 0

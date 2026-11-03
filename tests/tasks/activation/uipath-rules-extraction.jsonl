@@ -1,0 +1,28 @@
+{"id": "uipath-rules-extraction-001", "prompt": "Turn this policy PDF into a UiPath business rule and cite the page for every row", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-002", "prompt": "Extract the decision rules from this prior authorization policy document into a .dmn", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-003", "prompt": "I have a scanned underwriting guideline; build a Business Rules project from it with source references", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-004", "prompt": "Generate a decision table from our travel expense policy and the amendment that changed the hotel cap", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-005", "prompt": "Read this eligibility policy PDF and create the rules, asking me about anything ambiguous", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-006", "prompt": "Build rules from the base policy plus Amendment 2 effective next January", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-007", "prompt": "Convert this reimbursement policy into DMN with a quote and page number behind each rule", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-008", "prompt": "Here is a 40 page coverage policy: create a UiPath business rule from sections 3 and 4 only", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-009", "prompt": "Extract rules from this claims handling guideline and flag the clauses that are unclear", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-010", "prompt": "Create a decision table from the policy document, but the FAQ says something different from the policy, which wins?", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-011", "prompt": "Update my existing business rule from this new amendment document", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-012", "prompt": "Use the digitizer output document.md and dom.json to build the rules with uipdm source refs", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-013", "prompt": "Turn this loan underwriting manual into business rules; the policy may be amended mid-year", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-014", "prompt": "From this HR leave policy PDF, produce a DMN decision table section by section and let me review each section", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-015", "prompt": "Take this medical necessity guideline and generate the rule, citing the quote it came from", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-016", "prompt": "Make rules out of this procurement policy document; the SOP is only supporting material", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-017", "prompt": "Extract a rule from this insurance policy wording where the exceptions use notwithstanding clauses", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-018", "prompt": "I want to generate a business rule from a policy document, which skill do I use and what will it ask me?", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-019", "prompt": "Build a rules project from this scanned policy and tell me what you assumed", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-020", "prompt": "Read the amendment and the base policy and give me the in-force rules as of 2026-06-30", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-021", "prompt": "Generate .dmn rules from a compliance policy PDF; highlight where each row was read in the document", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-022", "prompt": "Convert the eligibility criteria in this clinical policy into a decision table and mark the ambiguous terms", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-023", "prompt": "We have a policy document and a rate schedule; build the business rule from both", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-024", "prompt": "Create a business rule from this policy document and ask me only the questions that block", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-025", "prompt": "I have our travel expense policy as a text file plus two amendments and an FAQ; build a UiPath business rule from them as of today", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-026", "prompt": "Build a UiPath Business Rules project from this reimbursement policy document, and apply the amendment that was issued after it", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-027", "prompt": "Turn our policy document and its supporting FAQ into a .dmn decision table, checking with me as you go", "expected_skill": "uipath-rules-extraction"}
+{"id": "uipath-rules-extraction-028", "prompt": "Update our existing business rule so it reflects this new amendment to the policy, with citations to the amendment", "expected_skill": "uipath-rules-extraction"}

@@ -1,0 +1,133 @@
+task_id: skill-rules-extraction-e2e-multi-doc-full
+description: >
+  Agent extracts a BusinessRules decision table (the full multi-document case) from a
+  base travel-expense policy plus two amendments, an SOP, a FAQ and a rate schedule, all supplied as
+  page-marked text, headless, for an as-of date of 2026-10-30. Grades skill
+  activation, the lifecycle commands, and the table's outcome on 24 hidden
+  scenarios: Amendment 1 (in force) replaces the domestic hotel and meal caps,
+  Amendment 2 (not yet effective) leaves the receipt threshold and the
+  submission window alone, the SOP's practice and example and the FAQ's verbal
+  approval do not override the policy, and missing information routes to Refer.
+  Also grades the uipdm inputVariable provenance, that no sourceRef is written
+  when no positions exist, and that review-notes.md records the assumptions and
+  the amendment that was not applied. The rate schedule is reference data: the prompt
+  names no mileage input, so a mileage input or row would fail the named-inputs check.
+  The prompt asks for one table column per named input only so the grader can read the table.
+tags: [uipath-rules-extraction, e2e, "mode:build", "lifecycle:generate", "outcome-graded"]
+
+run_limits:
+  # Six documents through all six phases in one headless turn runs ~15 minutes.
+  task_timeout: 3600
+  turn_timeout: 3600
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup/multi_doc
+      mount_point: policy
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Business Rules project named TravelExpenseRules from our travel
+  expense reimbursement policy. The documents are in `./policy/`:
+  `01-base-policy-travel-expense.md` is the base policy; `02-amendment-1.md` and
+  `03-amendment-2.md` amend it; `04-sop-expense-review.md`,
+  `05-faq-travel-expense.md` and `06-rate-schedule.md` are supporting documents.
+  All are converted to text with `<!-- page: N -->` markers; no page positions
+  are available. The rule should reflect the policy as of 2026-10-30.
+
+  Use these names so we can wire the rule into a workflow:
+  - Inputs: `expenseType` (string: "Airfare", "Hotel" or "Meal"),
+    `travelType` (string: "Domestic" or "International"), `amount` (number, per
+    night for a hotel, per day for meals, per flight for airfare), `hasReceipt`
+    (boolean), `hasManagerPreApproval` (boolean), `isAlcohol` (boolean),
+    `daysAfterTripEnd` (number).
+  - Output: `outcome` (string), one of "Approve", "Reject", "Refer".
+  Keep each named input as its own column of the table so a reviewer can read it;
+  do not build a column from an expression that combines inputs.
+
+  Nobody is available to answer questions: at every checkpoint accept your own
+  proposed answer, and note each assumption in the rule. There is no tenant, so
+  do not run `uip rules debug`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules-extraction skill"
+    skill_name: "uipath-rules-extraction"
+    expected_skill: "uipath-rules-extraction"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the project with rules init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent regenerated the package files with rules refresh"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+refresh'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py full validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inputs, output and entry-point contract as named; a uipdm:inputVariable per input; no pipeline-state elements"
+    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py full profile"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The table returns the policy's outcome on all 24 hidden scenarios"
+    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py full outcomes"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No uipdm:sourceRef written when no digitizer positions exist"
+    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py full norefs"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "review-notes.md records the assumptions made"
+    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py full notes"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "review-notes.md records both amendments and that Amendment 2 was not applied"
+    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py full ledger"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run rules debug without a tenant"
+    tool_name: "Bash"
+    command_pattern: '(?m)(?:^|&&|;|\|\|?)\s*uip\s+rules\s+debug'
+    weight: 0.5
+    pass_threshold: 0
