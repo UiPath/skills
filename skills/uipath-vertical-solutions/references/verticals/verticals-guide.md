@@ -2,7 +2,7 @@
 
 Each Vertical Solution installs different things. One file per vertical explains its packages: the values a deploy asks for, what must exist before the first deploy, how to set up a deployed solution, and the tenant and folder access the deploy needs.
 
-Which verticals and packages a tenant can deploy comes from `uip vss deploy packages --output json`, not from these files. A file only adds notes for the packages it names. A new or renamed package is deployable without a change here.
+Which verticals and packages a tenant can deploy comes from `uip vss deploy packages --no-interactive --output json`, not from these files. A file only adds notes for the packages it names. A new or renamed package is deployable without a change here.
 
 | Vertical | `Vertical` in the list | File | Packages with notes |
 |----------|------------------------|------|---------------------|
@@ -27,7 +27,7 @@ Which verticals and packages a tenant can deploy comes from `uip vss deploy pack
 
 The skill deploys a vertical with no file: `uip vss deploy packages` lists its packages, and the dry run names the values. A file adds what the service cannot say: what each value means, what must exist first, the access list, and the setup after a deploy. When a vertical onboards, its team adds one in a pull request to this skill:
 
-1. **Packages.** Run `uip vss deploy packages --vertical <VERTICAL> --output json` and note each `PackageName`, and the `Vertical` value for the table above.
+1. **Packages.** Run `uip vss deploy packages --vertical <VERTICAL> --no-interactive --output json` and note each `PackageName`, and the `Vertical` value for the table above.
 2. **Values.** For each package, run the dry run without `--yes`:
 
    ```bash

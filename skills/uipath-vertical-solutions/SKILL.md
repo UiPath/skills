@@ -62,7 +62,7 @@ uip login status --output json
 Look at the `Commands` in the `uip vss deploy --help` output from step 1. When `packages` is not among them, the CLI is older: do not run it, and go straight to the fallback at the end of this step. When it is, read what this tenant can deploy:
 
 ```bash
-uip vss deploy packages --output json
+uip vss deploy packages --no-interactive --output json
 ```
 
 `Data` has one row per package: `Vertical`, `PackageName`, and `DisplayName` and `LatestVersion` when the service sends them. This list is the only source for which verticals and packages exist. The vertical files do not decide it: a package can be on the list with no file, and a file can name a package this tenant does not have.
@@ -76,7 +76,7 @@ Then:
 
 - **The user names a vertical or package the list does not have.** Tell them this tenant cannot deploy it: the service does not offer it here. Name what it does offer. It may be on another tenant (`uip login tenant set <TENANT_NAME>`, then list again), or not published yet. Do not guess a package name.
 - **The list fails with a login error** (`Result: AuthenticationError`) → handle it as in step 1. **Any other failure** → say what failed and use the fallback below.
-- **The package has no vertical file.** Go on. The dry run in step 3 names each value the deploy needs. Ask for each one by its name, and say this skill has no notes on what it means. Skip the vertical's access list and setup steps: the skill has none for it.
+- **The package has no vertical file.** Go on. The dry run in step 5 names each value the deploy needs. Ask for each one by its name, and say this skill has no notes on what it means. There is no access list for the vertical: still check access, against the per-step table in [access-troubleshooting-guide.md](references/access-troubleshooting-guide.md). Skip the setup steps after the deploy: the skill has none for it.
 
 **Fallback, when `packages` is not in the help or the list fails.** Ask which vertical first, as its own question: list the verticals in [verticals-guide.md](references/verticals/verticals-guide.md) by their full name, and always offer "another vertical" too, even when the guide has only one. Once the user picks a vertical with a file, list the packages in it. For anything else, ask the user for the package name, or have them run `uip vss deploy` in their own terminal: it lists the verticals and packages to pick from, and they can stop once they have the name. Say that updating the CLI (run the installer again) lets you list the packages yourself.
 

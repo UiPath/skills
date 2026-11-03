@@ -74,6 +74,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
+    description: "Checked uip vss deploy --help before relying on the packages command"
+    verb: "vss deploy"
+    tool: "uip"
+    flags:
+      help: {present: true, aliases: ["h"]}
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
     description: "Read the tenant's live package list with uip vss deploy packages"
     verb: "vss deploy packages"
     tool: "uip"
