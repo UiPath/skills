@@ -1,104 +1,95 @@
 ---
 name: uipath-functions
-description: "UiPath Coded Functions — deterministic Python or TypeScript/JavaScript units built with the `uip function` CLI (`new -l py|ts|js`, `init`, `serve`, `run`, `pack`, `publish`); the `functions` map in `uipath.json` marks the project. Python: Pydantic Input/Output models, lazy `UiPath()` SDK singleton. JS/TS: `defineFunction` + `defineSchema<T>()` contracts, HTTP endpoints for Coded App backends or run-as-job, `FunctionError`. Rule-based logic, data transforms, ERP/Integration Service calls — invoked as Maestro Service Tasks, from agents, via Orchestrator `POST /Jobs/StartJobs`, or HTTP triggers; no LLM reasoning or agent loop. For LLM/agentic projects (LangGraph, LlamaIndex, OpenAI Agents, `agent.json`)→uipath-agents. For the Coded App frontend itself (React app code, PKCE setup, app deploy)→uipath-coded-apps."
+description: "UiPath Coded Functions — deterministic Python or TypeScript/JavaScript units built with the `uip function` CLI (`new -l py|ts|js`, `init`, `serve`, `run`, `pack`, `publish`); the `functions` map in `uipath.json` marks the project. Python: Pydantic Input/Output, lazy `UiPath()` SDK singleton. JS/TS: `defineFunction` + `defineSchema<T>()` contracts, HTTP endpoints for Coded App backends or run-as-job, `FunctionError`. Rules, data transforms, ERP/Integration Service calls — invoked as Maestro Service Tasks, from agents, via Orchestrator `POST /Jobs/StartJobs`, or HTTP triggers; no LLM or agent loop. LLM/agentic projects (LangGraph, LlamaIndex, OpenAI Agents, `agent.json`)→uipath-agents. Coded App frontend (React code, PKCE, app deploy)→uipath-coded-apps."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Coded Functions
 
-Atomic, deterministic units of business logic — no LLM reasoning, no agent loop — written in **Python** or **TypeScript/JavaScript** and shipped as first-class UiPath artifacts. One `uip function` CLI drives both languages. A Coded Function takes typed input, executes deterministic code, and returns typed output; use one when generic activities don't cover the required logic (custom-auth API calls, domain rules, ERP queries via Integration Service, data transforms).
+Atomic deterministic business logic in **Python** or **TypeScript/JavaScript**, shipped as first-class UiPath artifacts. A Coded Function takes typed input, executes deterministic code, and returns typed output; use one when generic activities don't cover the required logic (custom-auth API calls, domain rules, ERP queries via Integration Service, data transforms). The `uip function` CLI scaffolds, runs locally, packs, and publishes them.
 
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
 ## When to Use This Skill
 
-- Scaffold, author, or modify a coded function in either language (`uip function new <NAME> -l py|ts|js`)
-- Declare typed contracts — Pydantic Input/Output (Python) or `defineSchema<T>()` / JSON Schema literals (JS/TS)
-- Test locally: `uip function run` (both languages), `uip function serve` + curl (JS/TS HTTP endpoints)
-- Error handling: returned error fields (Python), `FunctionError`/status codes and job fault semantics (JS/TS)
-- Call UiPath platform APIs from inside a function (Python SDK; `@uipath/uipath-typescript` with `ctx` tokens)
-- Wire a Coded App frontend to a JS/TS function backend (tokens, CORS, timeout budget, local dev loop)
-- Pack, publish, invoke in production; register in a solution; derive `bindings.json` resource bindings from SDK calls
-- Debug deployed failures: cold-start hangs, errorCode 4801/4804/1623, missing tokens, entrypoint errors
+Use for coded-function scaffolding, authoring, modification, testing, packing, publishing, invocation, debugging, Python Pydantic or JS/TS `defineSchema<T>()`/JSON Schema contracts, `FunctionError`/status codes and job faults, UiPath API calls, Coded App frontend-to-JS/TS-backend wiring, `bindings.json` derivation, cold starts, errorCode 4801/4804/1623, missing tokens, entrypoint errors, solution registration, and production invocation.
 
-Do NOT use this skill for:
-- LLM/agentic projects (`agent.json`, LangGraph, LlamaIndex, OpenAI Agents, agent loop) → `uipath-agents`
-- The Coded App frontend itself (React/Vite app code, PKCE setup, app deploy) → `uipath-coded-apps`
+Do not use for LLM/agentic projects (`agent.json`, LangGraph, LlamaIndex, OpenAI Agents, agent loop) → `uipath-agents`, or Coded App frontends (React/Vite, PKCE, app deployment) → `uipath-coded-apps`.
 
 ## Language Split
 
-Detect an existing project by its signals before doing anything; for a new project the language follows the caller's stack.
+Detect existing projects from their signals before doing anything; new projects follow the caller's stack.
 
 | | Python | JS/TS |
 |---|---|---|
 | Scaffold | `uip function new <NAME> -l py` (`-l py` required) | `uip function new <NAME> -l ts` / `-l js` (ts is the CLI default) |
-| Project signals | `pyproject.toml` + `uipath.json` functions map | `package.json` + `uipath.json` functions map |
-| Contracts | Pydantic `BaseModel` / `@dataclass` Input/Output | `defineSchema<T>()` (TS) / JSON Schema literal (JS) |
+| Signals | `pyproject.toml` + `uipath.json` functions map | `package.json` + `uipath.json` functions map |
+| Contracts | Pydantic `BaseModel` / `@dataclass` | `defineSchema<T>()` (TS) / JSON Schema literal (JS) |
 | Entrypoints | `"main": "main.py:<fn>"`, generated by `uip function init` | `functions/<FILE>.ts:default`, auto-synced; no `init` |
-| Calling mode | run-as-job (Maestro, agents, Orchestrator API) | one declared mode: HTTP endpoint or run-as-job — never both |
+| Calling | run-as-job (Maestro, agents, Orchestrator API) | one mode only: HTTP endpoint or run-as-job |
 | Local dev | `uip function run` | `uip function serve` (HTTP on :7070) / `uip function run` (one-shot job) |
 | References | [references/python/](references/python/workflow-guide.md) | [references/js/](references/js/authoring-guide.md) |
 
-Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded agents (as a tool or step), other functions, the Orchestrator API (`POST /Jobs/StartJobs`), or schedules/triggers. A JS/TS **HTTP-mode** function is instead called synchronously through its Orchestrator HTTP trigger ([references/js/http-semantics-guide.md](references/js/http-semantics-guide.md)).
+Job-startable functions can be invoked from Maestro BPMN/Flow (Service Task), coded agents (tool or step), other functions, the Orchestrator API (`POST /Jobs/StartJobs`), or schedules/triggers. A JS/TS **HTTP-mode** function is called synchronously through its Orchestrator HTTP trigger ([references/js/http-semantics-guide.md](references/js/http-semantics-guide.md)).
 
 ## Critical Rules
 
 ### Both languages
 
-1. **No LLM calls inside a Coded Function.** LLM reasoning breaks the deterministic contract — that project is an agent → `uipath-agents`.
-2. **The `functions` map in `uipath.json` identifies the project as a Coded Function** — it is the marker every tool reads.
-3. **Cloud-backed work needs auth**: `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.
+1. **Do not make LLM calls inside a Coded Function.** LLM reasoning breaks determinism; use `uipath-agents`.
+2. The `functions` map in `uipath.json` identifies a Coded Function and is the marker every tool reads.
+3. For cloud-backed work, authenticate with `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.
 
 ### Python
 
-1. **`UiPath()` must never be instantiated at module level** — lazy singleton inside a getter.
-2. **Errors are returned, not raised**: populate `error_type`/`error_message` output fields; never let exceptions bubble out of the entrypoint.
-3. **`uip function init` must run before `pack` or `push`** — it generates `entry-points.json` and `project.uiproj` and creates `bindings.json` as an empty skeleton when the file is absent; re-run after any schema or entrypoint change. It never derives bindings from code (Rule 7).
-4. **Typed I/O is mandatory** — Pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, stdlib `@dataclass`, or a thin typed class; apply `@traced(name=..., run_type="uipath")` to the entrypoint for LLM Ops Traces.
-5. **`pyproject.toml` needs `authors`** (else `pack` rejects: `Project authors cannot be empty`) and no `[build-system]` section.
-6. **`uip function new -l py` produces a function scaffold** — `uipath.json` with a `functions` map, no `langgraph.json` — regardless of any agent framework package (`uipath-langchain`, `uipath-llamaindex`, `uipath-openai-agents`) installed in the venv.
-7. **Bindings are derived from `uipath` SDK calls — never left empty, never guessed.** `init` leaves `"resources": []`. Every `sdk().assets` / `queues` / `processes` / `buckets` / `context_grounding` / `connections` / `mcp` / `tasks` call needs a matching `bindings.json` entry, produced by the sync workflow in [references/python/bindings-reference.md](references/python/bindings-reference.md). Without it the project packs and publishes cleanly, surfaces no resource for mapping at deploy time, and fails at runtime. `uip function push` resolves the entries against the Resource Catalog exactly as `uip codedagent push` does.
+1. **Never instantiate `UiPath()` at module level**; use a lazy singleton inside a getter.
+2. **Return errors rather than raise them**: populate `error_type`/`error_message` output fields and prevent exceptions from leaving the entrypoint.
+3. **Run `uip function init` before `pack` or `push`**. It generates `entry-points.json` and `project.uiproj`, creates `bindings.json` as an empty skeleton when absent, and must be rerun after schema or entrypoint changes. It never derives bindings from code (Rule 7).
+4. **Typed I/O is mandatory**: use Pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, stdlib `@dataclass`, or a thin typed class; apply `@traced(name=..., run_type="uipath")` to the entrypoint for LLM Ops Traces.
+5. **`pyproject.toml` needs `authors`** or pack rejects with `Project authors cannot be empty`; do not add a `[build-system]` section.
+6. `uip function new -l py` creates a function scaffold with a `functions` map and no `langgraph.json`, regardless of installed `uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents` packages.
+7. **Derive bindings from `uipath` SDK calls; never leave them empty or guess them.** `init` leaves `"resources": []`. Each `sdk().assets` / `queues` / `processes` / `buckets` / `context_grounding` / `connections` / `mcp` / `tasks` call needs a matching `bindings.json` entry produced by [references/python/bindings-reference.md](references/python/bindings-reference.md). Without it, pack and publish succeed, no deploy-time resource is surfaced for mapping, and runtime fails. `uip function push` resolves entries against the Resource Catalog as `uip codedagent push` does.
 
 ### JS/TS
 
-1. **Throw `FunctionError`, never plain `Error`.** A plain throw is always a generic 500 (`JsCodedFunction.HandlerError`) that leaks the raw stack; `FunctionError(message, status)` carries an author-controlled status (pass `errorCode` in options to set the job error code). Argument order is `(message, status)`. See [error handling](references/js/authoring-guide.md#errors).
-2. **Contracts are schema-first.** `defineSchema<T>()` over interfaces (TS, lowered at build time) or a bare JSON Schema literal (JS). Do not use zod/arktype/valibot for new functions — they break static contract extraction and add a runtime dependency. No `$ref`, `any`, `bigint`, or tuples; the schema literal must be static.
-3. **One default-exported `defineFunction` per file, directly under `functions/`.** Helper modules are `_`-prefixed (`functions/_helpers.ts`). `method` + `path` together or neither — the pair selects the function's single calling mode: HTTP endpoint or plain run-as-job, never both. Logic needed on both surfaces gets two thin functions sharing a `_`-helper.
-4. **Intra-project imports carry the `.ts` extension** (`./_helpers.ts`). Extensionless imports resolve in local dev but hang the whole runtime at production cold start, with no logs.
-5. **Runtime deps go in `dependencies`, public npm only; the SDK stays in `devDependencies`.** Production runs `npm install --omit=dev` at cold start — a runtime import from `devDependencies` or a private registry crashes/hangs the function. Regenerate the lockfile after any dependency change; a stale `package-lock.json` fails every route with errorCode 4801.
-6. **Finish in <20 s — the gateway times out at 25 s** and returns a `303` to a polling URL without CORS: a browser caller loses the result permanently, and recovering it server-side via the redirect is undocumented. Use `AbortSignal.timeout(...)` on every external call; move longer work to a run-as-job function.
-7. **Deployed POST with empty input still needs `body: '{}'`** — the gateway rejects an empty body with `400 errorCode 4804` (local serve does not, so the bug only appears in production).
-8. **Two tokens, two identities.** `ctx.user.accessToken` = the caller's token (delegated, caller's folder permissions); `ctx.robot.accessToken` = the function's own robot identity (S2S, privileged reads). `ctx.robot` is always null under local serve (`ctx.user` only when no Bearer token is sent) — fall back to `process.env["UIPATH_ACCESS_TOKEN"]`.
-9. **Read platform coordinates from `ctx.platform`** (`baseUrl`, `orgId`, `tenantId`, `folderKey`), never from input fields — caller-controlled URLs are a redirect risk. Env vars (`UIPATH_BASE_URL`, `UIPATH_ORG_ID`, `UIPATH_TENANT_ID`) are the local-only fallback.
-10. **Only the SDK `logger.*` reaches Orchestrator job logs.** `console.*` prints locally and is not forwarded.
-11. **No `Buffer`.** Use `Uint8Array`, `TextEncoder`, `TextDecoder`.
-12. **After `uip function publish`, manually update the Function Release** in Orchestrator (Automations → Processes) — triggers only sync to the new version once the release is updated.
-13. **`uip function run` is a one-shot job execution, not an HTTP call.** To exercise the HTTP surface locally, curl/fetch against the `serve` server — no CLI subcommand invokes a route for you.
+1. **Throw `FunctionError`, never plain `Error`.** Plain throws produce generic 500 (`JsCodedFunction.HandlerError`) and leak the raw stack. `FunctionError(message, status)` carries the author-controlled status; pass `errorCode` in options for the job error code. Argument order is `(message, status)`. See [error handling](references/js/authoring-guide.md#errors).
+2. **Use schema-first contracts**: `defineSchema<T>()` over interfaces (TS, lowered at build time) or a static bare JSON Schema literal (JS). Do not use zod/arktype/valibot for new functions; they break static extraction and add a runtime dependency. No `$ref`, `any`, `bigint`, or tuples.
+3. **Put one default-exported `defineFunction` directly in each `functions/` file.** Prefix helper modules with `_` (for example, `functions/_helpers.ts`). Include `method` and `path` together or neither; that pair selects the sole mode, HTTP endpoint or run-as-job, never both. Share logic through a `_` helper when both surfaces are needed, using two thin functions.
+4. **Use `.ts` on intra-project imports** (`./_helpers.ts`); extensionless imports resolve in local dev but hang the entire production runtime at cold start, without logs.
+5. **Runtime deps go in `dependencies`, public npm only; the SDK stays in `devDependencies`.** Production runs `npm install --omit=dev` at cold start, so a runtime import from `devDependencies` or a private registry crashes/hangs. Regenerate the lockfile after dependency changes; a stale `package-lock.json` fails every route with errorCode 4801.
+6. **Finish in <20 s**; the gateway times out at 25 s and returns a `303` to a polling URL without CORS, so browser callers permanently lose the result and server-side redirect recovery is undocumented. Use `AbortSignal.timeout(...)` on every external call; move longer work to run-as-job.
+7. **Deployed POST with empty input still needs `body: '{}'`**; otherwise the gateway returns `400 errorCode 4804`. Local serve does not expose this bug.
+8. **Use the correct token identity**: `ctx.user.accessToken` is the delegated caller token and folder permissions; `ctx.robot.accessToken` is the function's S2S robot identity for privileged reads. `ctx.robot` is always null under local serve, and `ctx.user` is null only when no Bearer token is sent; fall back to `process.env["UIPATH_ACCESS_TOKEN"]`.
+9. **Read platform coordinates from `ctx.platform`** (`baseUrl`, `orgId`, `tenantId`, `folderKey`), never input fields, to prevent redirect risk. Local-only fallbacks are `UIPATH_BASE_URL`, `UIPATH_ORG_ID`, and `UIPATH_TENANT_ID`.
+10. **Only the SDK `logger.*` reaches Orchestrator job logs**; `console.*` is local only.
+11. **Do not use `Buffer`**; use `Uint8Array`, `TextEncoder`, and `TextDecoder`.
+12. **After `uip function publish`, manually update the Function Release** in Orchestrator (Automations → Processes); triggers sync to the new version only after that update.
+13. **`uip function run` is a one-shot job execution, not an HTTP call.** Exercise an HTTP surface locally with curl/fetch against `serve`; no CLI subcommand invokes a route for you.
 
 ## Quick Start
 
 ### Python
 
 ```bash
-uip function new <NAME> -l py    # scaffold a Python function project
-# author: Pydantic Input/Output + @traced entrypoint, lazy UiPath() singleton, errors returned not raised
-uip function init                # generate entry-points.json / project.uiproj; bindings.json starts empty
-# sync bindings.json from the SDK resource calls — references/python/bindings-reference.md
+uip function new <NAME> -l py
+uip function init
+# sync bindings.json from SDK resource calls — references/python/bindings-reference.md
 uip function run <ENTRYPOINT> '{"document_id": "42"}'
 uip function pack && uip function publish
 ```
 
-Full workflow (schema, template, `uipath.json` registration, `pyproject.toml`, SDK capabilities, attachments, packOptions): [references/python/workflow-guide.md](references/python/workflow-guide.md).
+Author with Pydantic Input/Output, `@traced` entrypoint, lazy `UiPath()` singleton, and returned errors. Full schema, template, `uipath.json` registration, `pyproject.toml`, SDK capabilities, attachments, and packOptions: [references/python/workflow-guide.md](references/python/workflow-guide.md).
 
 ### JS/TS
 
 ```bash
 uip function new <NAME> -l ts    # or -l js; --empty for no sample
-# author: one default-exported defineFunction per functions/ file — method+path for HTTP, neither for run-as-job
 uip function serve               # HTTP on :7070, hot reload; test with curl
 uip function run --function <NAME> --input '{}'   # one-shot local job execution
 uip function pack && uip function publish         # then update the Function Release in Orchestrator
 ```
+
+Author one default-exported `defineFunction` per `functions/` file, with `method`+`path` for HTTP or neither for run-as-job.
 
 ```ts
 // functions/invoice.ts
@@ -126,22 +117,13 @@ export default defineFunction({
 });
 ```
 
-Authoring detail, local dev, HTTP semantics, deployment, bindings, Coded App wiring: [references/js/](references/js/authoring-guide.md) (navigation below).
+Detail on authoring, local dev, HTTP semantics, deployment, bindings, and Coded App wiring: [references/js/](references/js/authoring-guide.md) (navigation below).
 
 ## CLI Reference
 
-```bash
-uip function new <NAME> -l py|ts|js [--empty]   # scaffold (TypeScript default; --empty is JS/TS only)
-uip function init                    # Python only — entry-points.json, project.uiproj, empty bindings.json skeleton
-uip function serve [--port 7070] [--runtime node|deno]   # JS/TS only — local HTTP server, hot reload
-uip function run                     # both languages — one-shot local execution
-uip function pack [--nolock]         # build the .nupkg
-uip function publish [--feed-id <FEED_ID>]      # upload package to a process feed
-uip function push --project-id <PROJECT_ID> [--ignore-resources]   # sync sources to Studio Web and import bindings.json resources
-uip function runtime-install         # JS/TS — one-time runtime pre-install (otherwise downloaded on first serve/run)
-```
+**MUST read [references/cli-reference.md](references/cli-reference.md) § CLI Reference before using a `uip function` subcommand or flag not shown in Quick Start (serve port/runtime, pack --nolock, publish --feed-id, push, runtime-install).**
 
-> The retired plural spelling (`functions`) is not available — always write the singular `uip function`.
+> Always write the singular `uip function`; the plural `functions` is retired.
 
 ## Reference Navigation
 

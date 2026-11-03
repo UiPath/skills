@@ -1,6 +1,6 @@
 # Python Workflow Guide
 
-The end-to-end Python Coded Function workflow: scaffold → schema → logic → registration → dependencies → entry points → SDK usage → pack/publish. Language split and shared rules → [SKILL.md](../../SKILL.md).
+End-to-end Python Coded Function workflow: scaffold → schema → logic → registration → dependencies → entry points → SDK → pack/publish. Language split and shared rules → [SKILL.md](../../SKILL.md).
 
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
@@ -12,15 +12,13 @@ uip function new <name> --language ts       # TypeScript Function → ../js/
 uip function new <name> --language js       # JavaScript Function → ../js/
 ```
 
-**`--language py` is required for Python.** The default language is TypeScript — omitting `--language` scaffolds a JS/TS project. Always pass `-l py` or `--language py` when building a Python Coded Function.
+**`--language py` is required for Python.** The default is TypeScript; omitting `--language` scaffolds a JS/TS project. Always pass `-l py` or `--language py` for a Python Coded Function. `--empty` skips the hello-world function (JS/TS only).
 
-`--empty` skips the hello-world function (JS/TS only).
-
-**The Python scaffold is a function project:** `main.py` + `pyproject.toml` + `uipath.json` with a `functions` map, regardless of any agent framework package (`uipath-langchain`, `uipath-llamaindex`, `uipath-openai-agents`) installed in the venv. For a coded agent, use `uip codedagent new` and the [`uipath-agents`](/uipath:uipath-agents) skill instead.
+The Python scaffold contains `main.py`, `pyproject.toml`, and `uipath.json` with a `functions` map regardless of installed agent packages (`uipath-langchain`, `uipath-llamaindex`, `uipath-openai-agents`). For a coded agent, run `uip codedagent new` and use the [`uipath-agents`](/uipath:uipath-agents) skill.
 
 ## Step 2: Define Function Schema
 
-Use typed I/O. The SDK accepts pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, a stdlib `@dataclass`, or a thin class with typed annotations. The shipped samples favor **pydantic** (`BaseModel` in csv-processor, `pydantic.dataclasses.dataclass` in calculator/greeter):
+Use typed I/O: pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, stdlib `@dataclass`, or a thin class with typed annotations. Samples favor pydantic (`BaseModel` in csv-processor; `pydantic.dataclasses.dataclass` in calculator/greeter).
 
 ```python
 from pydantic import BaseModel
@@ -37,13 +35,12 @@ class Output(BaseModel):
 
 ## Step 3: Implement Business Logic
 
-**Do NOT make LLM calls inside a Coded Function.** LLM calls introduce non-determinism and latency that break the function contract. If the step requires LLM reasoning or multi-step AI decisions, use a framework-based agent (LangGraph, LlamaIndex, OpenAI Agents) instead.
+**Do NOT make LLM calls inside a Coded Function.** They introduce non-determinism and latency that break the function contract. For LLM reasoning or multi-step AI decisions, use a framework-based agent (LangGraph, LlamaIndex, OpenAI Agents).
 
 ### Minimal template
 
 ```python
 from __future__ import annotations
-
 from pydantic import BaseModel
 from uipath.tracing import traced
 from uipath.platform import UiPath
@@ -78,12 +75,7 @@ def my_function(input: Input) -> Output:
     return out
 ```
 
-Key rules:
-- **Typed I/O** — pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, stdlib `@dataclass`, or a thin class with typed annotations; samples favor pydantic
-- **`def` or `async def`** — both supported (csv-processor uses `async def main`); the function name is arbitrary
-- **Lazy SDK init** — instantiate `UiPath()` inside a getter, never at module level
-- **Errors returned, not raised** — populate `error_type`/`error_message` output fields and return; never let exceptions bubble out of the entrypoint
-- **`@traced(name=..., run_type="uipath")`** — apply to the entrypoint and any sub-functions you want visible in LLM Ops Traces
+Use typed I/O as in Step 2; either `def` or `async def` is supported (csv-processor uses `async def main`), with an arbitrary function name. Instantiate `UiPath()` lazily inside a getter, never at module level. Return errors in `error_type`/`error_message` rather than raising or letting exceptions escape the entrypoint. Apply `@traced(name=..., run_type="uipath")` to the entrypoint and any sub-functions that should appear in LLM Ops Traces.
 
 ## Step 4: Register in `uipath.json`
 
@@ -96,9 +88,7 @@ Key rules:
 }
 ```
 
-The key is the entrypoint name — it can be any string and marks this as the callable entrypoint. The value is `"<file>:<function_name>"`. Both the key and the function name are arbitrary.
-
-**This `functions` map is what identifies the project as a Coded Function** — the runtime's `determine_project_type()` reads the entrypoint type from `uipath.json`.
+The key is an arbitrary entrypoint name identifying the callable; the value is `"<file>:<function_name>"`. **This `functions` map identifies the project as a Coded Function**: the runtime's `determine_project_type()` reads the entrypoint type from `uipath.json`.
 
 ## Step 5: Declare dependencies in `pyproject.toml`
 
@@ -116,23 +106,23 @@ dependencies = [
 ]
 ```
 
-`authors` is **required** — without it `uip function pack` rejects the package with `Project authors cannot be empty`.
-
-No `[build-system]` section. The project is identified as a Coded Function by the `functions` map in `uipath.json` (Step 4).
+`authors` is **required**; without it `uip function pack` rejects the package with `Project authors cannot be empty`. Do not add a `[build-system]` section. The `functions` map in `uipath.json` identifies the project as a Coded Function (Step 4).
 
 ## Step 6: Generate Entry Points
+
+Run:
 
 ```bash
 uip function init
 ```
 
-Python only. Discovers entrypoints and generates `entry-points.json` and `project.uiproj`; creates `bindings.json` as an empty skeleton (`{"version": "2.0", "resources": []}`) when absent and leaves an existing one untouched. It never derives bindings from code — that is Step 8. Must run before `pack` or `push`. Re-run whenever Input/Output schemas or the entrypoint registration in `uipath.json` changes.
+Python only. This discovers entrypoints and generates `entry-points.json` and `project.uiproj`; when absent, it creates `bindings.json` as `{"version": "2.0", "resources": []}` and leaves an existing one untouched. It never derives bindings from code—that is Step 8. Run it before `pack` or `push`, and re-run whenever Input/Output schemas or the `uipath.json` entrypoint registration changes.
 
 ## Step 7: SDK Capabilities
 
 Full SDK reference: https://uipath.github.io/uipath-python/
 
-Access UiPath platform resources via `sdk()`:
+Access UiPath resources through `sdk()`:
 
 ```python
 from uipath.platform import UiPath
@@ -163,11 +153,11 @@ result = sdk().connections.invoke_activity(
 )
 ```
 
-Every resource the code reads this way (`assets`, `buckets`, `connections`, plus `queues`, `processes`, `context_grounding`, `mcp`, `tasks`) needs a matching `bindings.json` entry — Step 8.
+Every resource read this way—`assets`, `buckets`, `connections`, `queues`, `processes`, `context_grounding`, `mcp`, and `tasks`—needs a matching `bindings.json` entry (Step 8).
 
 ### File attachment inputs
 
-To accept a runtime file, type an `Input` field as `Attachment` (pydantic model, not a dataclass):
+To accept a runtime file, type an `Input` field as `Attachment` (a pydantic model, not a dataclass):
 
 ```python
 from pydantic import BaseModel
@@ -177,15 +167,17 @@ class Input(BaseModel):
     attachment: Attachment
 ```
 
-`uip function init` recognizes the `Attachment` type and emits `x-uipath-resource-kind: JobAttachment` in `entry-points.json` — the schema Studio Web and Orchestrator read to render a file picker for that field. Access fields snake_case: `attachment.full_name`, `attachment.content`.
+`uip function init` recognizes `Attachment` and emits `x-uipath-resource-kind: JobAttachment` in `entry-points.json`, the schema that Studio Web and Orchestrator read to render a file picker for that field. Access fields in snake_case: `attachment.full_name`, `attachment.content`.
 
 ## Step 8: Sync `bindings.json`
 
-`bindings.json` is what lets Orchestrator remap the resources the function reads (assets, buckets, queues, processes, indexes, connections, MCP servers, Action Center apps) per execution environment. `init` only creates the empty skeleton; derive the entries from the code with [bindings-reference.md](bindings-reference.md): scan every `.py` file for SDK resource calls, resolve module-level constants, write one entry per unique resource, bind it to the entrypoint from `entry-points.json`, verify. Re-run after any SDK resource call changes.
+`bindings.json` lets Orchestrator remap resources read by the function—assets, buckets, queues, processes, indexes, connections, MCP servers, and Action Center apps—per execution environment. `init` creates only the empty skeleton. Derive entries from the code with [bindings-reference.md](bindings-reference.md): scan every `.py` file for SDK resource calls, resolve module-level constants, write one entry per unique resource, bind it to the entrypoint from `entry-points.json`, and verify. Re-run after SDK resource call changes.
 
-`uip function push` then resolves each entry against the Resource Catalog — virtual placeholders for `asset` / `queue` / `process` / `bucket` / `app` that do not exist yet, a skipped binding with a warning for `connection` / `index` / `mcpServer` that must already exist. The reference's § What `uip function push` does with bindings explains how to act on those warnings.
+`uip function push` resolves entries against the Resource Catalog: it creates virtual placeholders for `asset` / `queue` / `process` / `bucket` / `app` that do not yet exist, while skipping `connection` / `index` / `mcpServer` bindings with a warning because those must already exist. Use the reference's § What `uip function push` does with bindings to act on warnings.
 
 ## Step 9: Pack and Publish
+
+Run:
 
 ```bash
 uip function pack                            # creates .nupkg
@@ -193,15 +185,17 @@ uip function publish                         # upload to Orchestrator (interacti
 uip function publish --feed-id <FEED_ID>     # CI/non-interactive
 ```
 
-To sync to Studio Web instead of publishing to Orchestrator (`--ignore-resources` skips the `bindings.json` import):
+To sync to Studio Web instead of publishing to Orchestrator, run:
 
 ```bash
 uip function push
 ```
 
+`--ignore-resources` skips the `bindings.json` import.
+
 ### What Goes Into the Package
 
-`.nupkg` produced by `pack` contains project files (source, `pyproject.toml`, `uipath.json`, `uv.lock` when present) and generated metadata (`entry-points.json`, `bindings_v2.json` — `bindings.json` copied as-is, `package-descriptor.json`, `operate.json`). Control inclusion and exclusion via `packOptions` in `uipath.json` — keep local-only fixtures, test data, and caches out of the published artifact:
+`.nupkg` from `pack` contains project files (source, `pyproject.toml`, `uipath.json`, `uv.lock` when present) and generated metadata (`entry-points.json`, `bindings_v2.json`—`bindings.json` copied as-is, `package-descriptor.json`, `operate.json`). Control inclusion with `packOptions` in `uipath.json`; exclude local-only fixtures, test data, and caches from published artifacts:
 
 | Property | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
@@ -210,8 +204,6 @@ uip function push
 | `filesExcluded` | `string[]` | No | `[]` | Specific files to exclude |
 | `directoriesExcluded` | `string[]` | No | `[]` | Directories to exclude from packaging |
 | `includeUvLock` | `boolean` | No | `false` | Whether to include `uv.lock` file |
-
-**Example:**
 
 ```json
 {
