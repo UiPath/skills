@@ -129,7 +129,7 @@ service mocked) are the offline checks; `debug` executes against real services.
 ```bash
 uip maestro bpmn process list --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn process get <PROCESS_KEY> --feed-id <FEED_ID> --folder-key <FOLDER_KEY> --output json
-uip maestro bpmn process run <PROCESS_KEY> --folder-key <FOLDER_KEY> --release-key <RELEASE_KEY> --inputs @inputs.json --validate --output json
+uip maestro bpmn process run <PROCESS_KEY> --folder-key <FOLDER_KEY> --release-key <RELEASE_KEY> --inputs @inputs.json --output json
 ```
 
 `get` also requires `--feed-id`; `run` requires `--release-key`.

@@ -75,14 +75,14 @@ Use process run only for a process already deployed to Orchestrator.
 ```bash
 uip maestro bpmn process list --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn process get <PROCESS_KEY> --feed-id <FEED_ID> --folder-key <FOLDER_KEY> --output json
-uip maestro bpmn process run <PROCESS_KEY> --folder-key <FOLDER_KEY> --release-key <RELEASE_KEY> --inputs @inputs.json --validate --output json
+uip maestro bpmn process run <PROCESS_KEY> --folder-key <FOLDER_KEY> --release-key <RELEASE_KEY> --inputs @inputs.json --output json
 ```
 
 `get` also requires `--feed-id`; `run` requires `--release-key`.
 Take `<FOLDER_KEY>` from the user, or the `Key` of `uip or folders list --output json`.
 From the `process list` entry take `<RELEASE_KEY>` (`releaseKey`) and `<FEED_ID>` (`feedId`).
 `<PROCESS_KEY>` is `<processKey>:<processVersion>` from that entry, for example `MyProcess:1.0.0`.
-Add `--feed-id` or `--robot-ids` to `process run` only when the user provides them or the list entry identifies them.
+Add `--feed-id` or `--robot-ids` to `process run` only when the user provides them or they are needed.
 
 ## Job and instance inspection
 

@@ -20,8 +20,8 @@ rejected, and the mocked harness answers them with an error too.
 > need the user's explicit decision after the root cause is known.
 >
 > **Folder context.** Every `uip maestro bpmn instance` subcommand,
-> `processes incidents` and `incident get` require `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`; without
-> it the command is rejected before it reaches the API.
+> and `incident get` require `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`. `processes incidents` takes
+> `--folder-key` only, with no `-f`. Without it the command is rejected before it reaches the API.
 >
 > **The CLI is the diagnostic interface.** Read with the `uip maestro bpmn` commands below, always with `--output json`.
 > In a test harness the `mocks/` and `fixtures/` directories are the CLI's backing
