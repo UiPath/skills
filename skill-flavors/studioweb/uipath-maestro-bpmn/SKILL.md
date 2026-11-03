@@ -62,3 +62,29 @@
 <!--skill-flavor:final-path-line:start-->
   The process is on the canvas
 <!--skill-flavor:final-path-line:end-->
+
+<!--skill-flavor:rule-10-upload:start-->
+   Inside Autopilot, never run `uip solution upload`. The open solution is
+   what the canvas renders, and it re-renders as you change its files, so
+   there is no upload to authorize and no upload question to ask.
+<!--skill-flavor:rule-10-upload:end-->
+
+<!--skill-flavor:adopt-solution-question:start-->
+  The open solution is the workspace root: use it without asking, and never
+  ask the user about uploading, replacing a cloud copy, or keeping a local
+  copy.
+<!--skill-flavor:adopt-solution-question:end-->
+
+<!--skill-flavor:draft-shape-display:start-->
+Draft mode shows the shape on the canvas: write the files in the open
+solution and never run `uip solution upload`.
+<!--skill-flavor:draft-shape-display:end-->
+
+<!--skill-flavor:final-upload:start-->
+  Never run `uip solution upload` or ask about one: the canvas already shows
+  the finished process from the open solution's files.
+<!--skill-flavor:final-upload:end-->
+
+<!--skill-flavor:final-first-line:start-->
+  <Name>: built, validated<, run> (<draft|auto> mode). <One sentence if you kept the user's online changes.>
+<!--skill-flavor:final-first-line:end-->

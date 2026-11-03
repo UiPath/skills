@@ -130,6 +130,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 10. **Confirm before any cloud change.** Publish, deploy, run, pause, resume,
    cancel, retry, and migrate require explicit user consent; validate locally
    first.
+<!--skill-flavor:rule-10-upload:start-->
    `solution upload` is the exception: unless the request forbids it, a
    request to build the process authorizes the upload that shows it, so upload
    without asking. Confirm only when the project was not created in this run —
@@ -137,6 +138,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    the cloud solution matching the local `.uipx` SolutionId. Confirm it where
    that solution is chosen (2a); when 2a did not run, confirm before the 4g
    upload.
+<!--skill-flavor:rule-10-upload:end-->
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See
@@ -373,9 +375,11 @@ gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
 **Only *Build it* at 3c authorizes phase 4.** When the user keeps the
 outline, or has not answered, report the skeleton as an outline, not as a
 finished process.
+<!--skill-flavor:draft-shape-display:start-->
 Draft mode shows the
 shape by upload when the request allows one (2f); when it forbids upload,
 show the laid-out local `.bpmn` path and a short text outline instead.
+<!--skill-flavor:draft-shape-display:end-->
 
 Author early: do not pre-read every reference before writing. Read a reference
 only when you reach the structure it covers, and read only the section covering
@@ -463,10 +467,12 @@ below, because it is the one step that depends on phase 1's scan.
 
   If one is found, stop and ask the user which to use, as a pick list if the
   host has one: one option per solution found, plus "Create a new solution".
+<!--skill-flavor:adopt-solution-question:start-->
   Never silently
   adopt, initialize, or repair an existing solution. Say in that question that
   adopting one means a later `upload` overwrites its cloud copy, because this is
   the only point where that is still the user's choice to make.
+<!--skill-flavor:adopt-solution-question:end-->
   If it found
   nothing, run `init` now, by the rules in **Assemble** (4c); 2b (draft) or 4c
   (auto) authors into the `.bpmn` it generates.
@@ -813,16 +819,20 @@ the template's lines.
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 - **4g Show the finished process.**
+<!--skill-flavor:final-upload:start-->
   When the request allows an upload and the
   project has a solution (`.uipx`), `uip solution upload <SolutionDir> --output json`
   returns the `Data.DesignerUrl`. When the project was not created in
   this run (brownfield, or adopted at 2a without a confirmation), confirm before
   uploading (Rule 10). When the request forbids upload, or there is no
   solution, skip it.
+<!--skill-flavor:final-upload:end-->
   Then reply in this shape, dropping lines that do not apply:
 
   ```text
+<!--skill-flavor:final-first-line:start-->
   <Name>: built, validated<, uploaded><, run> (<draft|auto> mode). <One sentence if you kept the user's online changes.>
+<!--skill-flavor:final-first-line:end-->
 <!--skill-flavor:final-path-line:start-->
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 <!--skill-flavor:final-path-line:end-->
