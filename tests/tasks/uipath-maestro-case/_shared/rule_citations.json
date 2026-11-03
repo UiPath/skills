@@ -112,6 +112,9 @@
   "references/plugins/stages/planning.md": {
     "No authored edges": 1
   },
+  "references/plugins/tasks/action/planning.md": {
+    "Empty lookup gate": 3
+  },
   "references/plugins/tasks/agent/impl-json.md": {
     "Empty lookup gate": 1
   },
