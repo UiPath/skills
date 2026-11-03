@@ -414,7 +414,7 @@ uip or folders list --output json
 uip or packages list --output json
 ```
 
-The folder `Key` is the UUID and `FullyQualifiedName` is the human path. Either is accepted by `--folder-path`/`--folder-key`; most other calls require the UUID. For Pack → Publish → Link → Execute to Test Manager, delegate to the `uipath-test` skill.
+The folder `Key` is the UUID and `Path` is the human path. Either is accepted by `--folder-path`/`--folder-key`; most other calls require the UUID. For Pack → Publish → Link → Execute to Test Manager, delegate to the `uipath-test` skill.
 
 ### Common pitfalls
 
