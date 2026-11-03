@@ -120,8 +120,8 @@ error-severity findings, and only when they block import.
 Phases 0 and 1 run first, and 2a has created or adopted the project — see
 [SKILL.md](../SKILL.md#workflow). Then:
 
-- **2b Author the skeleton** by writing the starter `Process.bpmn` that `init`
-  generated whole, in one Write, instead of patching it with a series of edits. Preserve the generated start event's `id`, its
+- **2b Author the skeleton** by writing the `.bpmn` that `init`
+  generated (`<Name>.bpmn` at 2a's `Data.Path`) whole, in one Write, instead of patching it with a series of edits. Preserve the generated start event's `id`, its
   `<uipath:entryPointId>`, and the four generated JSON files. **Do not rename
   the start event**: its name feeds the entry-point schema, so renaming it
   makes `refresh` rewrite `entry-points.json` for no benefit.
@@ -164,9 +164,9 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   Repeat 3a–3b.
 - **3c Ask before building.** Find each box's resource, then reply.
 
-  **Find the resources.** A box whose kind runs a deployed resource (RPA
-  workflow, API workflow, agent, agentic process, app, queue, entity, or a
-  connector's connection) cannot be built without one. When 1a reported no
+  **Find the resources.** A box whose kind runs a deployed resource (any
+  kind in [Toolbox kinds](#toolbox-kinds), including Business rule, plus an
+  app, queue, entity, or a connector's connection) cannot be built without one. When 1a reported no
   login, skip the lookup and mark each such box *not checked*. Otherwise run
   every lookup in **one** Bash call. It is the turn's last tool call: send
   any progress note before it, and when it returns, send the 3c reply below
@@ -197,8 +197,13 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     line says so in plain words, such as "No Salesforce connection in this
     tenant". A connector box is *not checked* only when this command itself
     exited non-zero.
+  - **Business rules:** `uip rules list --all-folders --output json`,
+    matched on name and folder path. A business rule binds by name and folder
+    path (Rule 17).
   - **Data Fabric entities:** `uip df entities list --include-folders
-    --output-filter "[].Name" --output json`, matched on `Name`. (`uip`
+    --output-filter "[].{Name:Name,FolderId:FolderId}" --output json`, matched
+    on `Name`; the row carries a folder id, not a folder name, so judge an
+    entity on its name alone and name no folder on its box line. (`uip`
     1.203.0: `solution resources list --kind Entity` returns no rows even
     when the entity exists; drop this note when it does.) A Data Fabric box
     also needs a Data Fabric connection: match `Connector` `UiPath Data
@@ -241,7 +246,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   Script steps and quick-form human tasks need no resource. Run the lookup
   again at every 3c, so a resource the user created since the last gate
   shows up. These lookups read only; none is a registry call. In draft mode
-  this gate is the one clarifying round Rule 4 allows.
+  this gate is the one round for structure and resource questions that Rule 4 allows. The 2a solution pick list and the image-inventory confirmation still come before it.
 
   Reply in this shape, dropping lines that do not apply; the question and
   its three options are fixed:
@@ -299,7 +304,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   *Build it* goes to phase 4, which binds each box to the resource named here
   and asks nothing more about structure or resources. A box still marked
   *none yet* gets a placeholder binding (4a) and is listed under
-  `Unverified` in 4g; a *not checked* box is looked up in 4a. *Change it* goes back to 3a. *Keep it* ends the run
+  `Needs:` in 4g (`Unverified` is for mappings and nodes that could not be checked); a *not checked* box is looked up in 4a. *Change it* goes back to 3a. *Keep it* ends the run
   with the skeleton reported as an outline.
 
 Removing a box is the common edit: delete the task, delete its two sequence

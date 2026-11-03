@@ -87,7 +87,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.
-4. **One clarifying round, then author.** Ask (AskUserQuestion) only for a
+4. **One clarifying round, then author.** Ask (AskUserQuestion, except at the 3c gate, which is a plain message) only for a
    choice that the request and the CLI evidence leave undecidable and whose
    wrong answer is unrecoverable or forces an invented identifier; batch those
    into one round before authoring and never open a second. Decide everything
@@ -216,10 +216,13 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    template's remaining fields and make that swap only after a live run
    faults with `key:FolderKey`; without a run, report the node unverified. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
-19. **Write only the files the process needs.** A run writes the project's own
-   files (the `.bpmn` and what `init` and `refresh` generate) and nothing else:
-   no notes, memory, summary, or validation-log markdown, and no scratch
-   copies, inside the project or outside it. Report findings in the reply.
+19. **Write no extra files.** Write no notes, memory, summary, or
+   validation-log file, and no scratch copy of the project, inside it or
+   outside it. Report findings in the reply. The files a step or the user asks
+   for are not extra: the project's own files (the `.bpmn` and what `init` and
+   `refresh` generate), the 1c download directory, Discovery-only evidence
+   (`registry-evidence/`, `cli-error.txt`), Rule 16 notes, Rule 17 resource
+   projects, the image inventory, and helper scripts.
    The only exceptions are the notes file Rule 16 asks for and the image
    inventory the image-transcription rules ask for.
 
@@ -355,7 +358,7 @@ choice.
 
 Say which mode was taken in the final report: in 4g's first line, or in the
 3c reply when the run stops at the gate. 4g's first line carries the mode
-as literal text: write `(draft mode)` for any run that stopped at the 3c
+as literal text, in place of `<draft|auto>` in the 4g template: write `(draft mode)` for any run that stopped at the 3c
 gate, including after *Build it*, and write `(auto mode)` only in a run that
 never stopped at a gate. Never write `(auto mode)` after a draft gate.
 
@@ -393,11 +396,12 @@ Nothing to do yet. Surface detection is future work.
   login and no `registry pull`:
 
   ```bash
-  uip maestro bpmn registry list --limit -1 --output json --output-filter "ExtensionTypes[?!starts_with(ExtensionType,'Maestro.Case') && !contains(['Maestro.UpdateCaseState','Maestro.RetrieveCaseState','Maestro.NotificationService','Maestro.AcquireLock','Maestro.ReleaseLock','BPMN.Variables','uipath:Activity'],ExtensionType)].[ExtensionType,Label]"
+  uip maestro bpmn registry list --limit -1 --output json --output-filter "ExtensionTypes[?!starts_with(ExtensionType,'Maestro.Case') && !contains(['Maestro.UpdateCaseState','Maestro.RetrieveCaseState','Maestro.NotificationService','Maestro.AcquireLock','Maestro.ReleaseLock','BPMN.Variables','uipath:Activity','A2A.AgentExecution','Intsvc.HttpExecution','Intsvc.SyncAgentExecution','Intsvc.AsyncAgentExecution','Intsvc.SyncWorkflowExecution','Intsvc.AsyncWorkflowExecution'],ExtensionType)].[ExtensionType,Label]"
   ```
 
-  The filter drops the types Studio Web generates for case management,
-  which its BPMN toolbox does not offer.
+  The filter drops the types Studio Web's BPMN toolbox does not offer for
+  new nodes: case management, A2A, the legacy HTTP request, and the older
+  external agent and workflow variants (`Intsvc.AsyncExecution` stays).
 
 - **1b Scan for a solution and project.** Look for any `*.uipx` file up to two
   levels below the working directory, with whatever file search the host
@@ -519,8 +523,9 @@ the template's lines.
 - **4c Assemble.** If this run uploaded the shape, download it first (as in
    1c); when its `.bpmn` differs from the local one, build on the downloaded
    one (4g says so). For
-   greenfield, write the starter `Process.bpmn` that 2a's `init`
-   generated whole, in one Write, instead of patching it with a series of edits.
+   greenfield, write the `.bpmn` that 2a's `init` generated (`<Name>.bpmn`
+   at `Data.Path`; `init` never names it `Process.bpmn`) whole, in one Write,
+   instead of patching it with a series of edits. Never write a second `.bpmn`.
    Keep the initializer's `Event_start` id and its `uipath:entryPointId` in
    what you write, and never touch the four generated JSON files. Author from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
@@ -660,9 +665,10 @@ the template's lines.
    before it writes, so a node you just added fails it with `MISSING_DI_SHAPE`. `operate.json` and `entry-points.json` are generated once and
    do not follow source edits, so 4e's validator fails on the mismatch:
    `entry-points.json references start event "Event_start" via filePath, but no
-   <bpmn:startEvent id="Event_start"> exists`. Writing a full-file replacement from
-   the minimal file above renames the initializer's `Event_start`, so a
-   source-only draft needs this too; editing in place avoids it. Keep the output as written — that shape is the contract `pack` consumes.
+   <bpmn:startEvent id="Event_start"> exists`. A whole-file write that keeps the
+   initializer's `Event_start` and `uipath:entryPointId` (4c) needs no
+   refresh; one that renames or drops them does, so a source-only draft that
+   changed them needs this too. Keep the output as written — that shape is the contract `pack` consumes.
    `refresh` requires an init-generated project: with no
    `project.uiproj` it fails `Required file is missing` / `RetryWillNotFix`.
    For a bare `.bpmn` (the shape of this repo's edit fixtures), write the
@@ -798,7 +804,7 @@ the template's lines.
   Then reply in this shape, dropping lines that do not apply:
 
   ```text
-  <Name>: built, validated<, uploaded><, run> (draft mode). <One sentence if you kept the user's online changes.>
+  <Name>: built, validated<, uploaded><, run> (<draft|auto> mode). <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
   - <what changed, one line each, at most 5 lines in all>
@@ -809,7 +815,7 @@ the template's lines.
 
   When validation fails only because tenant resources are missing (no
   connection, agent, process, or queue to bind), the first line reads
-  `<Name>: built, not runnable yet (draft mode).` and `Needs:` names
+  `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names
   each missing resource in the user's words, such as `a Slack connection`
   or `the ticket triage agent`. Drop `Needs:` when nothing is missing.
 
