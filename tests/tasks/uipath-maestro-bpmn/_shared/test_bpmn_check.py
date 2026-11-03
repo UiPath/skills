@@ -952,7 +952,7 @@ def test_connector_requests_skips_unreadable_body() -> None:
     assert _requests(task) == []
 
 
-def test_connector_requests_reads_sdk_connector_http_as_http() -> None:
+def test_connector_requests_skips_legacy_sdk_http() -> None:
     body = {
         "authentication": "connector",
         "targetConnector": "uipath-uipath-testmanager",
@@ -963,9 +963,7 @@ def test_connector_requests_reads_sdk_connector_http_as_http() -> None:
         '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />'
         '<uipath:input name="objectName" type="string" value="http-request" />'
         '<uipath:input name="method" type="string" value="POST" />'
+        '<uipath:input name="path" type="string" value="/http-request" />'
     )
     task = _connector_task("Intsvc.ActivityExecution", context, body)
-    assert _requests(task) == [
-        ("Task_Intsvc.ActivityExecution", "GET", "/v2/{}/teststeplogs", bpmn_check.RequestShape.HTTP)
-    ]
-    assert _requests(task.replace('"connector"', '"manual"')) == []
+    assert _requests(task) == []

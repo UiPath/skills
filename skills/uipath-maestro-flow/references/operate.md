@@ -34,9 +34,10 @@ its canvas shape, and reports `NodesRepositioned`. Skipping it on a greenfield
 file is the most common cause of misshapen nodes in Studio Web.
 
 **Never format a merged brownfield file.** The original's `layout` already
-holds the canvas author's positions, and `merge` keeps them. `format` re-lays
-out every node and discards them. Upload or debug the merged file as `merge`
-wrote it.
+holds the canvas author's positions, and `merge` keeps them, moving later
+nodes right or down and growing containers only to fit added ones. `format`
+re-lays out every node and discards them. Upload or debug the merged file as
+`merge` wrote it.
 <!--skill-flavor:operate-format:end-->
 
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
@@ -134,12 +135,16 @@ UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json
 The argument is the PROJECT directory, the one holding `project.uiproj`.
 
 `flow debug` executes the flow for real: it sends the emails, posts the
-messages, calls the APIs. It is not a validation step — `validate` is. Run it
-when the request is for a flow that works; ask when the request stops at build
-or validate; and with nobody to ask, report the flow as unverified rather than
-letting a passing `validate` stand as the result. Never debug a solution this
-run did not scaffold: debug overwrites the Studio Web solution whose
-`SolutionId` matches the local `.uipx`.
+messages, calls the APIs. It is not a validation step — `validate` is. When a
+user can answer and did not ask for the run, ask once before the first run, even
+when the request is for a flow that works; that yes covers the fix-and-re-run
+loop on the flow the user asked to get working this turn. With nobody to ask,
+run it when the request is for a flow that works, unless a connection was guessed
+([bindings.md](bindings.md#where-both-values-come-from)); otherwise report the flow as unverified rather than
+letting a passing `validate` stand as the result. Debug overwrites the Studio Web
+solution whose `SolutionId` matches the local `.uipx`: for a solution not
+scaffolded this turn, debug only on a yes to a question that names that
+overwrite, and headless, never debug it.
 <!--skill-flavor:operate-debug:end-->
 
 Operational constraints, each of which has its own failure:

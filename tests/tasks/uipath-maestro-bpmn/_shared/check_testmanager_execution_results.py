@@ -11,11 +11,11 @@ search to an XML walk over the sendTasks that call the Test Manager
 connector (``bpmn_check.connector_requests``), in either shape:
 
 - ``Intsvc.ActivityExecution`` with ``connectorKey`` ``uipath-uipath-testmanager``
-  (see skills/uipath-maestro-bpmn/references/registry-workflow.md §3).
-- connector-mode HTTP with ``targetConnector`` ``uipath-uipath-testmanager``:
-  an ``Intsvc.UnifiedHttpRequest``, or an ``Intsvc.ActivityExecution`` on
-  object ``http-request``. A manual-mode request, or one through another
-  connector, does not count.
+  (see skills/uipath-maestro-bpmn/references/registry-workflow.md §3), except
+  on object ``http-request``.
+- connector-mode ``Intsvc.UnifiedHttpRequest`` with ``targetConnector``
+  ``uipath-uipath-testmanager``. A manual-mode request, or one through
+  another connector, does not count.
 
 Flow distinguished operations by node ``type``
 (``uipath.connector.uipath-uipath-testmanager.<op>``). BPMN carries no
