@@ -77,31 +77,50 @@ Prompt / Fixed value / Variable or a cleared argument:
 
 1. **Declare every argument the resource takes.** A Fixed or Variable argument still stays in the tool's `inputSchema` and `required`: the source pins the value, it does not hide the argument.
 2. **An argument object has a `type` (`string`, `number`, `integer`, `boolean`, `object`, `array`) and exactly ONE of `prompt`, `value`, `variable`.** To leave an argument to the model with no guidance, write the bare type, not `{ type }`.
-3. **Write a fixed `value` in its JSON type** (`10`, `true`, an object, an array), not as text (a later Studio Web save rewrites it as text, `10` → `'10'`). A `value` is a constant: an expression there is not evaluated, and `{{ … }}` inside a string is written as given.
+3. **Write a fixed `value` in its JSON type** (`10`, `true`, an object, an array), not as text (a later Studio Web save rewrites it as text, `10` → `'10'`). A `value` is plain JSON: an SDK expression anywhere in it (top level, nested, in an array), `lit()` included, refuses compile with `INLINE_AGENT_TOOL_ARGUMENT_EXPRESSION`; bind a flow value with `variable`. `{{ … }}` inside a string is written as given.
 4. **A `variable` is ONE reference:** `input('x')`, `out('step', 'field')` or `v('name')`. For anything computed (`$vars.a + $vars.b`, a template), compute it in a `script()` step first and bind `variable: out('<thatStep>')`; for a constant, use `value`. Compile turns the reference into an agent input (`input('topic')` → `start__output__topic`); the prompts need no `{{input.…}}` placeholder for it.
 5. **Other tool kinds take no sources.** A `clientside` tool's `inputs` are bare types; the HTTP tool has its own fixed fields (above).
 
-Compile does not run `check` and writes a malformed source as given, so run `check` after editing `inputs`:
+Run `check` after editing `inputs`. `_SOURCE`, `_COMPOSITE` and `_EXPRESSION`
+refuse compile; `_EMPTY_PROMPT` and `_TYPE` are `check` warnings, and compile
+writes those as authored:
 
 | Code | Level | Fix |
 | --- | --- | --- |
-| `INLINE_AGENT_TOOL_ARGUMENT_SOURCE` | error | Give the object a valid `type` and exactly one source; for none, write the bare type |
-| `INLINE_AGENT_TOOL_ARGUMENT_COMPOSITE` | error | The `variable` is a constant (use `value`) or a computed expression (compute it in a `script()` step, bind its `out(...)`) |
+| `INLINE_AGENT_TOOL_ARGUMENT_SOURCE` | error, refuses compile | Give the object a valid `type` and exactly one source; for none, write the bare type |
+| `INLINE_AGENT_TOOL_ARGUMENT_COMPOSITE` | error, refuses compile | The `variable` is a constant (use `value`) or a computed expression (compute it in a `script()` step, bind its `out(...)`) |
+| `INLINE_AGENT_TOOL_ARGUMENT_EXPRESSION` | error, refuses compile | Write the fixed `value` as a plain JSON constant; for a flow value use `variable`; for a value built from flow data, compute it in a `script()` step and bind `variable: out(...)` |
 | `INLINE_AGENT_TOOL_ARGUMENT_EMPTY_PROMPT` | warning | Say what the model should put there, or write the bare type |
-| `INLINE_AGENT_TOOL_ARGUMENT_TYPE` | warning | Make the fixed `value` match `type`: `integer` takes a whole number; `null`, `NaN` and infinities match no type |
+| `INLINE_AGENT_TOOL_ARGUMENT_TYPE` | warning | Make the fixed `value` match `type`: `integer` takes a whole number; `null`, `NaN` and infinities match no type. The canvas's text form is accepted (`'42'` for a `number` or `integer`, `'true'` for a `boolean`) |
+
+`check` reports one compile refusal per agent: fix it and rerun. Another error
+on the agent (a composite input, an unknown tool kind, …) is reported before a
+malformed argument; when the arguments are the only error, `check` reports the
+first malformed one, in tool and then argument order.
 
 **Brownfield.** Decompile reads each argument's source back, from the tool's
 `resource.json` or, in a canvas-saved flow, from the tool node (the node wins;
 a disagreement is reported). The canvas stores fixed values as text, so a
-decompiled `number` argument can read `value: '42'` and draw
-`INLINE_AGENT_TOOL_ARGUMENT_TYPE`; leave an argument the request does not touch
-as decompiled. Entries with no `inputs` form (Agent Builder's `textBuilder`,
-`dynamic`, `objectBuilder`, `arrayBuilder`) come back as bare types with a lossy
-warning; merge changes only what the edit changed, so such an entry survives
-an edit to the tool's other arguments. **When the canvas-saved agent is
-embedded, merge refuses to carry an edited argument source** (a warning, an
-error under `--strict`) and keeps that tool's original `resource.json`: make
-that change on the canvas and say so in the final response ([brownfield.md](brownfield.md#why-three-directories-inline-agents)).
+decompiled `number` argument can read `value: '42'`. Leave it as decompiled:
+on an embedded (canvas-saved) agent, changing `'42'` to `42` is a tool edit,
+and merge does not carry it.
+
+Decompile reports what has no `inputs` form as lossy (a warning, an error
+under `--strict`), and the argument or property comes back as its bare type:
+
+- Agent Builder's `textBuilder`, `dynamic`, `objectBuilder` and `arrayBuilder` entries;
+- a schema property carrying more than `type`, `title`, `description`, `minimum` or `maximum` (`items`, nested `properties`, `enum`, `format`, …).
+
+Do not "fix" these in the source: leave the tool alone, and merge keeps its
+original `resource.json` byte for byte.
+
+**On an embedded canvas-saved agent, merge withholds EVERY edit to a
+process-family tool's `resource.json`** (a source, an added or removed
+argument, `returns`): it keeps the original file and reports the changed paths
+(a warning, an error under `--strict`). Built-in, HTTP-request, IxP and
+connector tool edits are still carried, since their configuration lives on the
+node, which merge carries. Make process tool changes on the canvas, and say so
+in the final response ([brownfield.md](brownfield.md#why-three-directories-inline-agents)).
 
 ## Escalation
 
