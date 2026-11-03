@@ -90,7 +90,10 @@ enough; do not repeat paraphrases solely for confidence.
 
 Tool signatures:
 
-- `{ kind: 'builtin', tool: 'analyzefiles' | 'summarize' | 'batchtransform', ... }`
+- `{ kind: 'builtin', tool: 'analyzefiles' | 'summarize' | 'batchtransform', description?, query?, outputColumns?, webSearchGrounding?, fileExtension?, citationMode? }`;
+  `query` is the `summarize` / `batchtransform` task, `outputColumns` and
+  `webSearchGrounding` are `batchtransform`'s, `fileExtension` and
+  `citationMode` are `summarize`'s ([agent-resources.md](agent-resources.md#the-batch-transform-tool))
 - `{ kind: 'connector', connector, operation, connection, folder, version?, object?, name?, description? }`
 - `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
