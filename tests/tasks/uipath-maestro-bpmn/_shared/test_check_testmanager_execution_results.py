@@ -42,7 +42,7 @@ HTTP_NODE = """
       </bpmn:extensionElements>
     </bpmn:sendTask>"""
 
-SDK_HTTP_NODE = """
+LEGACY_SDK_HTTP_NODE = """
     <bpmn:sendTask id="Task_{index}">
       <bpmn:extensionElements>
         <uipath:activity version="v1">
@@ -254,13 +254,8 @@ def test_wrong_v1_object_name_fails_all_ops(tmp_path: Path) -> None:
     assert _missing(result.stderr) == ["get a test case log"]
 
 
-def test_sdk_connector_http_passes_all_ops(tmp_path: Path) -> None:
-    result = _run(tmp_path, _http_nodes(SDK_HTTP_NODE), "--all-ops")
-    assert result.returncode == 0, result.stderr
-
-
-def test_sdk_connector_http_to_other_connector_fails(tmp_path: Path) -> None:
-    nodes = _http_nodes(SDK_HTTP_NODE, targetConnector="uipath-salesforce-slack")
-    result = _run(tmp_path, nodes)
+@pytest.mark.parametrize("args", [(), ("--all-ops",)])
+def test_legacy_sdk_connector_http_fails(tmp_path: Path, args: tuple) -> None:
+    result = _run(tmp_path, _http_nodes(LEGACY_SDK_HTTP_NODE), *args)
     assert result.returncode != 0
     assert "no bpmn:sendTask calls the Test Manager connector" in result.stderr

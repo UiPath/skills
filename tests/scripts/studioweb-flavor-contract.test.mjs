@@ -92,6 +92,7 @@ const HOST_SCOPED_SKILLS = [
     references: [
       "environment-setup.md",
       "execution-maps-guide.md",
+      "execution-journeys-catalog.md",
       "cli-reference.md",
       join("xaml", "xaml-basics-and-rules.md"),
       join("coded", "operations-guide.md"),

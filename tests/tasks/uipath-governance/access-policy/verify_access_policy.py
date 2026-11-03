@@ -17,9 +17,9 @@ Each mode asserts an end state only the intended operation can produce:
            executable rule and actor rule survived. `access-policy update` is a
            full-body replace that also demands recursive camelCase, so a
            careless call either fails or silently drops those rules.
-  deleted  the pre-seeded policy is soft-deleted: `get` still succeeds but
-           reports Status "Deleted" with a DeletedOn stamp, and the row no
-           longer appears in `list`. A do-nothing agent cannot produce that.
+  deleted  the pre-seeded policy is gone: `get` answers HTTP 404 (the CLI's
+           `access-policy delete` is a hard delete) and the row no longer
+           appears in `list`. A do-nothing agent cannot make a seeded id vanish.
 
 Exits 0 on success, 1 on failure.
 """
@@ -30,7 +30,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_setup'))
-from gov_helpers import ap_by_name, ap_get, fail, ok, poll, seed_entry
+from gov_helpers import ap_by_name, ap_get, ap_gone, fail, ok, poll, seed_entry
 
 logging.basicConfig(level=logging.INFO, format="verify_access_policy: %(message)s")
 
@@ -63,12 +63,10 @@ def bystander_intact():
         fail(f"seed.json has no '{key}' bystander entry — the pre_run seed did not complete")
     policy = ap_get(entry["id"])
     if not policy:
-        fail(f"bystander policy '{entry['name']}' ({entry['id']}) could not be read back")
-    status = policy.get("Status")
-    if status == "Deleted":
-        fail(f"bystander policy '{entry['name']}' was deleted too — the scenario said to "
-             f"leave every other policy on the tenant untouched")
-    logging.info("bystander '%s' still present with status %s", entry["name"], status)
+        fail(f"bystander policy '{entry['name']}' ({entry['id']}) could not be read back — "
+             f"either it was deleted too (the scenario said to leave every other policy "
+             f"on the tenant untouched) or the service is unavailable")
+    logging.info("bystander '%s' still present with status %s", entry["name"], policy.get("Status"))
 
 
 def main():
@@ -107,6 +105,18 @@ def main():
     pid = entry.get("id")
     if not pid:
         fail(f"seed.json '{key}' entry has no id — the pre_run seed did not create the policy")
+
+    if check == "deleted":
+        if ap_get(pid):
+            fail(f"policy {pid} still exists — the delete did not land")
+        if not ap_gone(pid):
+            fail(f"could not prove policy {pid} is gone: `get` failed without an HTTP 404")
+        if ap_by_name(entry["name"]):
+            fail(f"policy '{entry['name']}' still appears in `access-policy list`")
+        bystander_intact()
+        ok(f"policy {pid} is gone: `get` answers 404 and it no longer appears in `list`")
+        return
+
     policy = ap_get(pid)
     if not policy:
         fail(f"could not read policy {pid} back from the service")
@@ -126,19 +136,6 @@ def main():
             fail(f"the update dropped {dropped} — `update` replaces the whole body, "
                  f"so every rule has to be resubmitted")
         ok(f"policy {pid} updated to {current!r} with status {policy.get('Status')} and rules intact")
-        return
-
-    # deleted
-    status = policy.get("Status")
-    if status != "Deleted":
-        fail(f"policy {pid} still has status {status!r} — the delete did not land "
-             f"(access-policy delete is a soft delete: Status becomes 'Deleted')")
-    if not policy.get("DeletedOn"):
-        fail(f"policy {pid} reports status Deleted with no DeletedOn stamp")
-    if ap_by_name(entry["name"]):
-        fail(f"policy '{entry['name']}' still appears in `access-policy list`")
-    bystander_intact()
-    ok(f"policy {pid} is soft-deleted (DeletedOn {policy.get('DeletedOn')}) and gone from `list`")
 
 
 main()
