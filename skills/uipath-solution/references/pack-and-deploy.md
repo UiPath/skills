@@ -261,6 +261,43 @@ When the `--config-file` links a resource (`deploy config link`, `linkToResource
 
 `-y, --yes` is not this consent: it only skips the already-deployed check. Nothing prompts. The same stop applies to `deploy upgrade` when the new version replaces an installed resource with a link, and there the confirming re-run must not add `--discard-draft` — see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place). The flag only exists on newer CLI builds; on an older one the option is unknown (check `uip solution deploy run --help`). Against a server that predates the confirmation, such a deploy never reaches a terminal status, and the CLI reports its usual timeout ("may still be in progress").
 
+### Solutions that carry an ontology
+
+An ontology solution carries its entities and choice sets as local resources. At deploy they are created in the target folder, or merged into a same-name entity there, before the ontology installs. Data Fabric entities and choice sets keep their own conflict actions.
+
+**Ontology names are unique per folder.** Deploying to another folder creates a separate ontology.
+
+- A same-name ontology in the target folder that this solution already owns (same resource key) is a normal upgrade. There is no prompt.
+- A same-name ontology the solution does not own is a conflict. The deploy pre-check reports it with `allowedActions: [Replace, RenameInSolution]`, and the deploy cannot continue until it is resolved. Ask the user which they want, then set it per resource:
+
+```bash
+uip solution deploy config set <config.json> <Ontology> conflictFixingAction Replace
+```
+
+Or keep the existing ontology and create a new one under another name:
+
+```bash
+uip solution deploy config set <config.json> <Ontology> conflictFixingAction RenameInSolution
+uip solution deploy config set <config.json> <Ontology> name <NewName>
+```
+
+`Replace` keeps the existing ontology's id and replaces its artifacts. `RenameInSolution` creates a new ontology under the new name. The ontology service never offers `UseExisting`, `MergeConfiguration` or `RenameExisting` for an ontology: never set them, and never set an ontology's action with `--all`.
+
+**Post-deploy check.** After `deploy run`, confirm the ontology landed with two read-only calls in the deployment folder:
+
+```bash
+uip ont get <ONTOLOGY_NAME> --folder-key <DEPLOY_FOLDER_KEY> --output json
+uip df entities list --folder-key <DEPLOY_FOLDER_KEY> --output json
+```
+
+**Install errors**
+
+- `EntityConflict`: a changed field type was merged into a same-name entity in the target folder. Tell the user; never change a field type silently.
+- `InstallError` naming an entity, column or choice set as "Missing in the target folder": the solution lacks it. Hand back to the ontology modeler to add it locally and pack, then redeploy.
+- `InstallError` for a rename onto a name another ontology holds in that folder: the new name is taken, and the previous version stays installed. Choose another name with `config set <config.json> <Ontology> name <NewName>`, then redeploy.
+
+A federated entity's connection ships in the solution; its `NeedsSetupToActivate` after deploy is handled as in [Step 4](#step-4-deploy-to-orchestrator).
+
 ## Step 5: Check Deployment Status
 
 The `deploy run` command returns a pipeline deployment ID. Use it to check progress:
@@ -342,17 +379,6 @@ uip solution deploy config set config.json --all conflictFixingAction UseExistin
 ```
 
 `--all` is restricted to `conflictFixingAction` — the field that controls what happens when a resource with the same name already exists in the target folder.
-
-#### Ontology name conflict
-
-Ontology names are unique per tenant, so the conflict can come from an ontology in another folder, not only the target folder. The only allowed action for an ontology is `RenameInSolution`. Set it, and a new name, per resource and never with `--all`:
-
-```bash
-uip solution deploy config set config.json MyOntology conflictFixingAction RenameInSolution
-uip solution deploy config set config.json MyOntology name MyOntologyV2
-```
-
-Never use `RenameExisting` or `UseExisting` for an ontology.
 
 ### Link to an Existing Orchestrator Resource
 

@@ -412,3 +412,53 @@ def test_authoring_has_no_stale_claims():
         assert stale not in t, stale
     assert "unique per folder" in t and "Replace" in t and "RenameInSolution" in t
     assert not ID_TERMS.search(t) and not GUID.search(t)
+
+
+def solution_ontology_section() -> str:
+    return section(read(SOLUTION_DIR_SKILL / "references/pack-and-deploy.md"), "Solutions that carry an ontology")
+
+
+def test_solution_ontology_post_deploy_check_and_install_errors():
+    sec = solution_ontology_section()
+    for s in ("local resources", "uip ont get", "uip df entities list", "read-only",
+              "EntityConflict", "Missing in the target folder", "redeploy"):
+        assert s in sec, s
+    for line in sec.splitlines():
+        if "--folder-key" in line:
+            assert re.search(r"uip (ont get|df entities list)", line), line
+    assert not re.search(r"(?i)dev[ _-]?folder", sec)
+
+
+def test_solution_ontology_conflict_is_replace_or_rename():
+    sec = solution_ontology_section()
+    assert "unique per folder" in sec and "per tenant" not in sec
+    assert "same resource key" in sec and "upgrade" in sec
+    assert "allowedActions" in sec and "Replace" in sec and "RenameInSolution" in sec
+    assert "upgraded in place" not in sec
+    assert re.search(r"uip solution deploy config set <config\.json> <Ontology> conflictFixingAction Replace", sec)
+    assert re.search(r"uip solution deploy config set <config\.json> <Ontology> conflictFixingAction RenameInSolution", sec)
+    assert re.search(r"uip solution deploy config set <config\.json> <Ontology> name <NewName>", sec)
+    assert "InstallError" in sec and "read only while authoring" not in sec
+    for l in unnegated_lines_of(sec, re.compile(r"UseExisting|MergeConfiguration|RenameExisting|--all")):
+        raise AssertionError(l)
+    old = read(SOLUTION_DIR_SKILL / "references/pack-and-deploy.md")
+    assert "Ontology names are unique per tenant" not in old
+
+
+def unnegated_lines_of(text: str, pattern: re.Pattern) -> list[str]:
+    return [l for l in text.splitlines() if pattern.search(l) and not NEGATION.search(l)]
+
+
+def test_solution_federated_connection_activation():
+    t = read(SOLUTION_DIR_SKILL / "references/pack-and-deploy.md")
+    assert re.search(r"federated[^\n]*NeedsSetupToActivate|NeedsSetupToActivate[^\n]*federated", t)
+    assert re.search(r"--kind Connection[^\n]*--folder-path",
+                     read(SOLUTION_DIR_SKILL / "references/develop-solution.md"))
+    assert t.count("CNS1072") == 1  # referenced, not duplicated
+
+
+def test_develop_solution_never_promises_updated_on_rerun():
+    t = read(SOLUTION_DIR_SKILL / "references/develop-solution.md")
+    assert not re.search(r"(?i)re-?run[^\n]*\bUpdated\b", t)
+    entity = next(l for l in t.splitlines() if l.startswith("**Folder-scoped `Entity`"))
+    assert "Unchanged" in entity and "Step 11a" in entity
