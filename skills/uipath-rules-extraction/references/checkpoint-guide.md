@@ -1,6 +1,6 @@
 # Checkpoint Formats
 
-Keep each checkpoint short. Start each one with its phase name in bold (Framing, Intake, Understanding, Inputs and structure, Extraction, Finish), never a number. Tables are Markdown; every question is one AskUserQuestion with the options listed. Names, outcomes, and values below are illustrations; take phase 1 framing from the request and phase 3 outcomes from the policy.
+Keep each checkpoint short. Start each one with its phase name in bold (Framing, Intake, Understanding, Inputs and structure, Extraction, Finish), never a number. Tables are Markdown; every question is one AskUserQuestion with the options listed. The first option of every question is your proposed answer, labelled with `(Recommended)` at the end, with a short description of why; the labels below show where it goes. Names, outcomes, and values below are illustrations; take phase 1 framing from the request and phase 3 outcomes from the policy.
 
 ## Phase 1: Framing
 
@@ -10,9 +10,9 @@ Keep each checkpoint short. Start each one with its phase name in bold (Framing,
 **Requested scope:** Device reimbursement policy (pages to confirm after intake)
 ```
 
-**Review level for extraction:** Open questions only (recommended) | Every section | At the end
+**Review level for extraction** (one question): `Open questions only (Recommended)` | `Every section` | `At the end`
 
-Options: Confirm framing and review level | Change framing | Change review level.
+Framing question options: `Confirm framing (Recommended)` | `Change framing`.
 
 ## Phase 2: Intake
 
@@ -31,7 +31,7 @@ Options: Confirm framing and review level | Change framing | Change review level
 **Conformed copy needed:** <AMENDMENT_TITLE> arrived as a redline | none
 ```
 
-Options: Confirm source, register, and as-of date | Change scope | Add or correct a document.
+Options: `Confirm source, register, and as-of date (Recommended)` | `Change scope` | `Add or correct a document`.
 
 ## Phase 3: Understanding
 
@@ -60,7 +60,7 @@ Options: Confirm source, register, and as-of date | Change scope | Add or correc
 | 4 | Appendix: history | 3 | No rules found | 0 | No |
 
 
-**Needs your input** (blocking only; proposed answer first)
+**Needs your input** (blocking only; asked as questions whose first option is the proposed answer, marked `(Recommended)`)
 1. "Eligible employee" is not defined in the policy. Proposed: all full-time employees. Which employees count?
 2. Page 2 says "recent purchase" with no time limit. What limit applies?
 3. Page 1 "up to $1,000" and page 2 "must not exceed $1,000" both cap laptops. Proposed: treat as one rule. Same requirement?
@@ -69,7 +69,7 @@ Options: Confirm source, register, and as-of date | Change scope | Add or correc
 - "More than 500" read as exclusive of 500
 ```
 
-Options: Confirm profile and sections | Change profile or sections | Answer the questions above.
+Options: `Confirm profile and sections (Recommended)` | `Change profile or sections`. Each question under **Needs your input** is its own AskUserQuestion question whose options are `<PROPOSED_ANSWER> (Recommended)` | `<ALTERNATIVE>` | `<ALTERNATIVE>`.
 
 ## Phase 4: Inputs and structure
 
@@ -99,7 +99,7 @@ For several decisions, repeat this block per decision, each with its own hit pol
 |---|---|---|
 ```
 
-Options: Approve | Rename or change.
+Options: `Approve (Recommended)` | `Rename or change`.
 
 ### Inputs, more than 8 (phase 4)
 
@@ -115,7 +115,7 @@ Options: Approve | Rename or change.
 **History:** priorClaims (number), bankruptcyLast7Years (boolean)
 ```
 
-Options: Approve all | Change some.
+Options: `Approve all (Recommended)` | `Change some`.
 
 ## Phase 5: Extraction
 
@@ -135,7 +135,7 @@ With several decisions, add the decision to the heading (`**Section: Eligibility
 
 A row with many citations shows its count instead of every quote (`p.1 - 13 quotes, see cites.json`); list the quotes under the table on request.
 
-Options: Approve section | Change rows | Answer the questions (list them under the table). Whether a section asks at all follows the review level (phase guide, phase 5).
+Options: `Approve section (Recommended)` | `Change rows`. Blocking questions are listed under the table and asked as their own questions. Whether a section asks at all follows the review level (phase guide, phase 5).
 
 ## Phase 6: Finish
 
@@ -151,4 +151,4 @@ Options: Approve section | Change rows | Answer the questions (list them under t
 **Limits:** supporting-document citations carry no box; 2 assumptions recorded; 1 user-stated rule awaiting written confirmation
 ```
 
-Options: Approve the table | Change rows in a section.
+Options: `Approve the table (Recommended)` | `Change rows in a section`.
