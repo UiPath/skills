@@ -224,17 +224,21 @@ uip maestro registry prepare --entity Orders --folder-path Finance/Prod
 `compile` then writes the entity's folder key and resource key, the two `resource: 'Entity'` binding rows, and the entity's row in the project's `bindings_v2.json`, so `uip solution resources refresh` declares it in the solution.
 Nothing is typed by hand, and `compile` refuses the step while the entity is unrecorded.
 
+Run `prepare` in the directory you run `check` and `compile` from, normally the Flow project folder (`<Solution>/<Name>/`): it records into `./.flow-sdk/resources.json` there, which is where `check` and `compile` read it.
+Inside a solution (a `.uipx` in that folder or one above it) it looks in the solution before the tenant.
+
 `prepare` lists and stops; it never picks:
 
 - **No `folder`:** it searches every folder.
   One match is recorded, and the output names the folder to pin in the source.
   Several matches are listed with the `folder:` to write for each; write the one the user meant and run `prepare` again.
 - **No match:** it lists near misses and the listings to check.
-  When none of them is the entity meant, create it ([/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md)) and run `prepare` again.
+  When none of them is the entity meant, ask the user how to resolve it; do not create an entity on your own.
+  Creating one, in the scope the user asks for, follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md), and then `prepare` runs again.
 - **A recorded row older than a day** counts as missing, so `check` asks for `prepare` again.
 
 An entity the solution authors itself (`uip df entities create <Name> --local`) resolves the same way.
-Run `prepare` from inside the solution folder, where it looks in the solution before the tenant, and write the entity as `{ name: '<Name>' }` until `prepare` names its folder.
+Write it as `{ name: '<Name>' }` until `prepare` names its folder.
 `uip maestro flow validate` reports a local entity's node that has no keys as `INLINE_ENTITY_UNBOUND`; fix the `.flow.ts` as above, not with `node configure`, or the next `compile` reverts it.
 
 A decompiled flow names a folder-scoped entity with `folderKey` and `resourceKey`.

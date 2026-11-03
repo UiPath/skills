@@ -186,7 +186,7 @@ binding half, which is the same for every connector-backed node.
 - `entity.folder` is the folder holding the ENTITY; the `folder` option stays the folder holding the CONNECTION.
   They are often the same folder and are still two options.
 - The record operations (`create`, `update`, `get`, `query`, `delete`) then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …) with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, plus the entity's two `Entity` bindings.
-  Run `uip maestro bpmn refresh <project>` after `compile`, then `uip solution resources refresh`: refresh turns the two bindings into the entity's row in `bindings_v2.json`, and the solution refresh declares the entity.
+  Run `uip maestro bpmn refresh <project>` after `compile`, then `uip solution resources refresh --solution-folder <SolutionDir>` (the folder holding the `.uipx`, `<Name>Solution/` in the default scaffold): the first turns the two bindings into the entity's row in `bindings_v2.json`, and the second declares the entity in the solution.
   Do not hand-fill the task through `.activity()`, and do not pass a folder entity's name as a plain `entity` string: that writes the tenant-scope operation, which validates but does not address the folder entity.
 - `entity: { name, folderKey }` is for a folder key already in hand.
   A decompiled process shows such a task as an `.activity()` with its query rows and the two `Entity` bindings; it compiles back as it is.
