@@ -91,7 +91,7 @@ uip or users get <USER_KEY> --all-fields --output json
 ```
 Require `MayHaveUnattendedSession: true`. Ordinary interactive users usually have `MayHaveUnattendedSession: false`; `uip or users update --allow-unattended` cannot fix this because it requires a Windows unattended username and password, which serverless does not use. Assign an already-capable principal, reliably a `DirectoryRobot` account. If no folder qualifies, create one with `uip or folders create <NAME> --output json` (name positional), then attach a machine and capable user.
 
-Folder, machine, and robot-user management belongs to the platform skill; use [/uipath:uipath-platform § orchestrator/setup-environment.md](../../uipath-platform/references/orchestrator/setup-environment.md) for authoritative flags and the one-serverless-machine-per-folder rule.
+Folder, machine, and robot-user management belongs to the platform skill; see the `uipath-platform` skill for authoritative flags. A folder takes only one serverless machine; assigning a second one fails.
 
 Create and fill the set:
 ```bash
@@ -179,7 +179,7 @@ uip or jobs list --folder-key <FOLDER_KEY> --output json
 - Stuck `Pending`: dispatch worked but nothing executes. A faulted job may never sync; check after ~5 minutes rather than waiting 30 minutes. Fixing the folder does not rescue the existing execution; fix it and start a new run.
 - `Serverless.Runtime.CannotIssueUserTokenDueToUserNotPartOfOrg` in `Info`: the selected folder account remains assigned but is no longer valid in the org. Point the project to a folder whose members satisfy Step 4, or create one, then rerun.
 
-Everything beyond the Test Manager boundary—job states, machines, and folder membership—belongs to [/uipath:uipath-platform § orchestrator/run-jobs.md](../../uipath-platform/references/orchestrator/run-jobs.md) and [§ orchestrator/setup-environment.md](../../uipath-platform/references/orchestrator/setup-environment.md). A `Duration` of `00:00:00` and empty `StartTime` on a finished execution are normal. `JobKey` in logs proves dispatch; jobs `Faulted` with no host machine mean the tenant cannot run them. Report this to the platform team rather than rerunning; there is no CLI verb to cancel a Test Manager execution.
+Everything beyond the Test Manager boundary—job states, machines, and folder membership—belongs to the `uipath-platform` skill. A `Duration` of `00:00:00` and empty `StartTime` on a finished execution are normal. `JobKey` in logs proves dispatch; jobs `Faulted` with no host machine mean the tenant cannot run them. Report this to the platform team rather than rerunning; there is no CLI verb to cancel a Test Manager execution.
 
 ## Iterating on the suite
 
