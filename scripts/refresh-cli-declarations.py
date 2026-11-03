@@ -51,6 +51,7 @@ class Declaration:
     generators: tuple[tuple[str, ...], ...] = ()  # argv lists re-run after a refresh
     tests: tuple[str, ...] = ()  # pytest paths holding the hand-kept copies
     copies: tuple[str, ...] = ()  # hand-kept files, named in the report
+    notes: tuple[Path, str] | None = None  # (module, function(data) -> lines): new lines reported, never failed
 
 
 CASE_SHARED = REPO / "tests" / "tasks" / "uipath-maestro-case" / "_shared"
@@ -67,9 +68,23 @@ DECLARATIONS: tuple[Declaration, ...] = (
         copies=(
             "skills/uipath-planner/references/case/case-design-layers-guide.md (§ Task types table and count)",
             "skills/uipath-planner/references/case/case-sdd-conformance-checklist.md (item 8 count, item 6 detail markers)",
-            "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS)",
-            "tests/tasks/uipath-planner/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS)",
+            "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS, STUDIO_WEB_ONLY, NOT_TASK_TYPES)",
+            "tests/tasks/uipath-planner/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS, STUDIO_WEB_ONLY, NOT_TASK_TYPES)",
         ),
+    ),
+    Declaration(
+        name="case rule types per slot",
+        command="uip maestro case rule-types list --output json",
+        module=CASE_SHARED / "rule_types.py",
+        significant="scopes",
+        snapshot=CASE_SHARED / "rule_types.json",
+        tests=(str(CASE_SHARED / "test_rule_types.py"),),
+        copies=(
+            "skills/uipath-planner/references/case/case-design-layers-guide.md (§ Lifecycle gates: Legal WHEN rules and Marks complete)",
+            "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (STAGE_ENTRY, TASK_ENTRY, … gate sets)",
+            "tests/tasks/uipath-planner/_shared/sdd_check.py (STAGE_ENTRY, TASK_ENTRY, … gate sets)",
+        ),
+        notes=(CASE_SHARED / "rule_types.py", "unused"),
     ),
 )
 
@@ -140,6 +155,15 @@ def refresh(decl: Declaration, write: bool) -> dict:
             if gen.returncode != 0:
                 sys.exit(f"generator {' '.join(argv)} failed:\n{gen.stdout}{gen.stderr}")
         result["passed"], result["failing"] = failing_tests(decl.tests)
+    if decl.notes:
+        # Only what this move added: the standing policy gaps would repeat in every PR.
+        # A notes failure is reported, never raised, so it cannot cost the run its report.
+        try:
+            notes_of = getattr(load_module(decl.notes[0]), decl.notes[1])
+            before = set(notes_of(old))
+            result["notes"] = [line for line in notes_of(live) if line not in before]
+        except Exception as e:  # noqa: BLE001
+            result["notes"] = [f"- notes unavailable: {type(e).__name__}: {e}"]
     return result
 
 
@@ -155,6 +179,8 @@ def report(results: list[dict], cli_version: str) -> str:
         elif "passed" in r:
             out += ["**These hand-kept copies no longer match**, so the tests below fail until they are updated in this PR:", ""]
             out += [f"- {c}" for c in d.copies] + ["", "Failing tests:", *[f"- `{t}`" for t in r["failing"]], ""]
+        if r.get("notes"):
+            out += ["Allowed by the CLI but not by the skills (policy, so nothing fails; widen a copy only on purpose):", *r["notes"], ""]
     for r in results:
         if r.get("error"):
             out += [f"**Could not read {r['decl'].name}:** {r['error']}. Nothing was written for it.", ""]

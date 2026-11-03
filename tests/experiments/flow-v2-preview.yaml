@@ -57,8 +57,6 @@ defaults:
         - $SKILLS_REPO_PATH:$SKILLS_REPO_PATH:ro
 
   agent:
-    permission_mode: acceptEdits
-    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     plugins:
       # PREVIEW ONLY. Also the source of the automatic repo-path bind mount.
       # Must stay the plugin ROOT (holds .claude-plugin/ + skills/), never preview/skills.
