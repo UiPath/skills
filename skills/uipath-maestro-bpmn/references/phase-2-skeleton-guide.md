@@ -255,11 +255,15 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
 
   ```text
   <Name>: outline ready<, uploaded> (draft mode). <One sentence if a lookup failed or you kept the user's online changes.>
+<!--skill-flavor:gate-path-line:start-->
   <DesignerUrl as a link on its own line, or the local .bpmn path>
+<!--skill-flavor:gate-path-line:end-->
 
   - <each box, in order>: <resource and folder | which of two | none yet, create it or name one | not checked | no resource needed>
 
+<!--skill-flavor:gate-question:start-->
   Is this the process you want?
+<!--skill-flavor:gate-question:end-->
   1. **Build it**: make every step work.
   2. **Change it**: tell me what to add, remove, or move.
   3. **Keep it**: stop here with this outline.

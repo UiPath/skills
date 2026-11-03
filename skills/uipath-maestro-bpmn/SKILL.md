@@ -389,6 +389,7 @@ Nothing to do yet. Surface detection is future work.
 
 ### Phase 1 — Preflight
 
+<!--skill-flavor:login-status-check:start-->
 - **1a Check login.** `uip login status --output json`, chained in the same Bash
   call as 1b's scan — not a turn of its own. Without login,
   `registry pull` returns only the built-in (OOTB) extension types, so
@@ -396,6 +397,7 @@ Nothing to do yet. Surface detection is future work.
   user rather than discovering against a half-registry. Local authoring and
   `validate` still work offline — see
   [references/cli-conventions.md](references/cli-conventions.md#login-boundary).
+<!--skill-flavor:login-status-check:end-->
   In the same call, read the element kinds Studio Web's toolbox shows; phase
   2 labels boxes with them. It reads the CLI's built-in list, so it needs no
   login and no `registry pull`:
@@ -740,6 +742,7 @@ the template's lines.
    upgrading is unavailable, hand-author the fallback DI structure in
    [references/structural-bpmn.md](references/structural-bpmn.md).
 - **4e Validate.**
+<!--skill-flavor:wellformed-check:start-->
    Check well-formedness first. `validate` tokenizes with a
    tolerant parser and reports `Valid` on XML with an unbound namespace
    prefix, so a `ParseError` here is a source defect to fix before anything
@@ -752,6 +755,7 @@ the template's lines.
      ! grep -nE '</?bpmn:[A-Z]' <file.bpmn> &&
      uip maestro bpmn validate <file.bpmn> --output json
    ```
+<!--skill-flavor:wellformed-check:end-->
 
    `validate` ignores tag case; a line the `grep` prints is a tag to lowercase
    (4b).
@@ -819,7 +823,9 @@ the template's lines.
 
   ```text
   <Name>: built, validated<, uploaded><, run> (<draft|auto> mode). <One sentence if you kept the user's online changes.>
+<!--skill-flavor:final-path-line:start-->
   <DesignerUrl as a link on its own line, or the local .bpmn path>
+<!--skill-flavor:final-path-line:end-->
 
   - <what changed, one line each, at most 5 lines in all>
 

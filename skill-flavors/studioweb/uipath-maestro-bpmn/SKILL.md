@@ -39,3 +39,26 @@
    as unverified. A business rule maps its whole result as one `output` from
    `=result`, never one output per decision or column.
 <!--skill-flavor:debug-node-output:end-->
+
+<!--skill-flavor:login-status-check:start-->
+- **1a Read the toolbox kinds.** The sandbox supplies login and denies
+  `uip login status`: never run it, and treat the session as logged in.
+  Chain 1a in the same Bash call as 1b's scan, not a turn of its own.
+<!--skill-flavor:login-status-check:end-->
+
+<!--skill-flavor:wellformed-check:start-->
+   The sandbox has no `python3`, so `validate` is the parse check: a
+   `ParseError` or `XML_NOT_WELL_FORMED` finding is a source defect to fix
+   before anything else. Run the CLI validator, which runs the full
+   PO.Frontend canvas rule set (structural rules plus variable, method-call,
+   input-type, and event-object checks) offline, plus deploy-readiness checks:
+
+   ```bash
+   ! grep -nE '</?bpmn:[A-Z]' <file.bpmn> &&
+     uip maestro bpmn validate <file.bpmn> --output json
+   ```
+<!--skill-flavor:wellformed-check:end-->
+
+<!--skill-flavor:final-path-line:start-->
+  The process is on the canvas
+<!--skill-flavor:final-path-line:end-->
