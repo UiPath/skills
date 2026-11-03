@@ -1027,8 +1027,10 @@ def test_require_operations_names_the_operation_that_took_the_node() -> None:
     [
         bpmn_check.ConnectorOperation("any", "Item", {"get"}, ""),
         bpmn_check.ConnectorOperation("any", "Item", {"get"}, "/"),
-        bpmn_check.ConnectorOperation("no verb", "Item", {"getbyid"}, "/v2/{p}/items/{id}"),
-        bpmn_check.ConnectorOperation("no verb", "Item", {"GETBYID"}, "/v2/{p}/items/{id}"),
+        bpmn_check.ConnectorOperation("no verb", "Item", set(), "/v2/{p}/items/{id}"),
+        bpmn_check.ConnectorOperation(
+            "empty alternative", "Item", {"get"}, "/v2/{p}/items/{id}", alternatives=(("Order", ""),)
+        ),
     ],
 )
 def test_require_operations_rejects_operations_that_fail_open(
@@ -1061,6 +1063,84 @@ def _http_item_requests(
     return list(bpmn_check.connector_requests(root, "uipath-uipath-testmanager"))
 
 
+ANY_RECORD = bpmn_check.ConnectorOperation(
+    "get a record", "Item", {"getbyid"}, "/v2/{p}/items/{id}",
+    alternatives=(("Order", "/v2/{p}/orders/{id}"),),
+)
+
+
+def _element_requests(*tasks: str) -> list[tuple[ET.Element, str, str, bpmn_check.RequestShape]]:
+    tasks = tuple(t.replace('id="Task_', f'id="Task_{i}_', 1) for i, t in enumerate(tasks))
+    root = ET.fromstring(
+        f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}">'
+        f'<bpmn:process id="P">{"".join(tasks)}</bpmn:process></bpmn:definitions>'
+    )
+    return list(bpmn_check.connector_requests(root, "uipath-uipath-testmanager"))
+
+
+def _activity(object_name: str, method: str) -> str:
+    return _connector_task(
+        "Intsvc.ActivityExecution",
+        '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />'
+        f'<uipath:input name="objectName" type="string" value="{object_name}" />'
+        f'<uipath:input name="method" type="string" value="{method}" />',
+    )
+
+
+def _http(method: str, url: str) -> str:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": method,
+        "url": url,
+    }
+    return _connector_task("Intsvc.UnifiedHttpRequest", HTTP_CONTEXT, body)
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        _activity("Item", "GETBYID"),
+        _activity("Order", "GETBYID"),
+        _http("GET", "=js:'/v2/' + vars.P + '/items/' + vars.Id"),
+        _http("GET", "=js:'/v2/' + vars.P + '/orders/' + vars.Id"),
+    ],
+)
+def test_require_operations_accepts_any_target(task: str) -> None:
+    bpmn_check.require_operations(_element_requests(task), [ANY_RECORD], "record")
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        _activity("Other", "GETBYID"),
+        _activity("Order", "GET"),
+        _http("GETBYID", "=js:'/v2/' + vars.P + '/orders/' + vars.Id"),
+        _http("GET", "=js:'/v2/' + vars.P + '/others/' + vars.Id"),
+        _http("GET", "=js:'/v2/{p}/orders/' + vars.Id"),
+    ],
+)
+def test_require_operations_rejects_unlisted_target(task: str) -> None:
+    with pytest.raises(SystemExit) as exc:
+        bpmn_check.require_operations(_element_requests(task), [ANY_RECORD], "record")
+    assert (
+        "get a record (objectName in ['Item', 'Order'] with method in ['getbyid'], "
+        "or HTTP GET on one of ['/v2/{p}/items/{id}', '/v2/{p}/orders/{id}']"
+    ) in str(exc.value)
+
+
+def test_require_operations_any_target_needs_a_node_each() -> None:
+    operations = [ANY_RECORD, ANY_RECORD._replace(label="get another record")]
+    with pytest.raises(SystemExit) as exc:
+        bpmn_check.require_operations(
+            _element_requests(_activity("Order", "GETBYID")), operations, "record"
+        )
+    assert "\n  get another record (" in str(exc.value)
+
+    two = _element_requests(_activity("Order", "GETBYID"), _http("GET", "/v2/p/items/1"))
+    bpmn_check.require_operations(two, operations, "record")
+
+
 UPDATE_AND_EXECUTE = [
     bpmn_check.ConnectorOperation("update an item", "Item", {"patch"}, "/v2/{p}/items/{id}"),
     bpmn_check.ConnectorOperation("execute items", "ExecuteItems", {"post"}, "/v2/{p}/items/startexecute"),
@@ -1076,6 +1156,26 @@ def test_require_operations_keeps_placeholders_off_sibling_literals() -> None:
 
     requests = _http_item_requests(("PATCH", "/v2/p/items/5"), ("POST", "/v2/p/items/startexecute"))
     bpmn_check.require_operations(requests, UPDATE_AND_EXECUTE, "item")
+
+
+@pytest.mark.parametrize("methods", [{"getbyid"}, {"GETBYID"}])
+def test_require_operations_reads_getbyid_only_as_http_get(methods: set[str]) -> None:
+    operations = [bpmn_check.ConnectorOperation("get an item", "Item", methods, "/v2/{p}/items/{id}")]
+    bpmn_check.require_operations(_item_requests("GETBYID"), operations, "item")
+    bpmn_check.require_operations(_http_item_requests(("GET", "/v2/p/items/5")), operations, "item")
+    with pytest.raises(SystemExit):
+        bpmn_check.require_operations(_item_requests("GET"), operations, "item")
+
+
+def test_require_operations_keeps_placeholders_off_alternative_literals() -> None:
+    execute = bpmn_check.ConnectorOperation(
+        "execute", "Run", {"post"}, "/v2/{p}/runs", alternatives=(("ExecuteItems", "/v2/{p}/items/startexecute"),)
+    )
+    operations = [UPDATE_AND_EXECUTE[0], execute]
+    requests = _http_item_requests(("PATCH", "/v2/p/items/startexecute"), ("POST", "/v2/p/runs"))
+    with pytest.raises(SystemExit) as exc:
+        bpmn_check.require_operations(requests, operations, "item")
+    assert "\n  update an item (" in str(exc.value)
 
 
 @pytest.mark.parametrize(
