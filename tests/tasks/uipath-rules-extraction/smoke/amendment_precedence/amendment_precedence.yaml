@@ -11,7 +11,7 @@ description: >
   exist, and that review-notes.md records the assumptions and the amendment
   that was not applied. This is the fast subset of the e2e multi_doc_full task. The prompt
   asks for one table column per named input only so the grader can read the table.
-tags: [uipath-rules-extraction, smoke, "mode:build", "lifecycle:generate", "outcome-graded"]
+tags: [uipath-rules-extraction, smoke, "mode:build", "lifecycle:generate"]
 
 run_limits:
   # A headless run through all six phases takes 10-13 minutes; the smoke default is 900s.

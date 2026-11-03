@@ -30,7 +30,7 @@ A rule that comes from a user's answer or a call, not from the document, has no 
 node "<SKILL_DIR>/scripts/resolve-refs.mjs" --dom <DOM_JSON> --cites <PROJECT_DIR>/../cites.json
 ```
 
-Stdout is one JSON object: `status`, `resolved`, `unresolved`, and `results[]`. Each result has `id` and `status`:
+Stdout is one JSON object: `status`, `resolved`, `unresolved`, `ambiguous` (counts), and `results[]`. Each result has `id` and `status`:
 
 | `status` | Meaning | Action |
 |---|---|---|

@@ -6,7 +6,7 @@ description: >
   that the script ran and that every uipdm:sourceRef box is exactly a word-run
   box from dom.json, so a box written or estimated by hand fails. The table's
   outcomes are graded by the outcome-and-traps task.
-tags: [uipath-rules-extraction, integration, "mode:build", "lifecycle:generate", "outcome-graded"]
+tags: [uipath-rules-extraction, integration, "mode:build", "lifecycle:generate"]
 
 sandbox:
   python: {}
@@ -43,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Agent resolved quotes to boxes with resolve-refs.mjs"
     tool_name: "Bash"
-    command_pattern: 'resolve-refs\.mjs'
+    command_pattern: 'node\s+"?[^\s"]*resolve-refs\.mjs'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -57,7 +57,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Every uipdm:sourceRef box is a real word-run box from dom.json on the page it names"
+    description: "Every uipdm:sourceRef box is the word-run box of a verbatim quote the agent cited on that page"
     command: "python3 $REFERENCE_DIR/_shared/policy_check.py refs"
     timeout: 30
     expected_exit_code: 0

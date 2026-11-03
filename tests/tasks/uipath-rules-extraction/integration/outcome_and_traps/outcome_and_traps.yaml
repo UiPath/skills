@@ -9,7 +9,7 @@ description: >
   document. Also grades the uipdm inputVariable provenance, that no sourceRef
   is written when no positions exist, and that review-notes.md records the
   assumptions made.
-tags: [uipath-rules-extraction, integration, "mode:build", "lifecycle:generate", "outcome-graded"]
+tags: [uipath-rules-extraction, integration, "mode:build", "lifecycle:generate"]
 
 sandbox:
   python: {}

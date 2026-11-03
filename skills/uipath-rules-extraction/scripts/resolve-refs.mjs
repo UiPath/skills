@@ -106,6 +106,7 @@ const results = cites.map(resolveOne)
 console.log(JSON.stringify({
   status: 'ok',
   resolved: results.filter(r => r.status === 'resolved').length,
-  unresolved: results.filter(r => r.status !== 'resolved').length,
+  unresolved: results.filter(r => r.status === 'unresolved').length,
+  ambiguous: results.filter(r => r.status === 'ambiguous').length,
   results,
 }))

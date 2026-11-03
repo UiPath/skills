@@ -22,6 +22,7 @@ Single-decision tables only; helpers come from the vendored rules_check.py.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -106,6 +107,8 @@ def evaluate(table: ET.Element, inputs: dict) -> str | None:
     hits = []
     for rule in table.findall("dmn:rule", rc.NS):
         cells = [(e.findtext("dmn:text", default="", namespaces=rc.NS) or "") for e in rule.findall("dmn:inputEntry", rc.NS)]
+        if len(cells) != len(columns):
+            fail(f"a rule has {len(cells)} input entries for {len(columns)} input columns")
         if all(cell_matches(cell, inputs[column]) for cell, column in zip(cells, columns)):
             values = [(e.findtext("dmn:text", default="", namespaces=rc.NS) or "") for e in rule.findall("dmn:outputEntry", rc.NS)]
             hits.append(rc.literal(values[out]))
@@ -183,8 +186,8 @@ def grade_notes() -> None:
     print("OK: review-notes.md records the assumptions made")
 
 
-def word_runs(dom: dict) -> dict[int, set[str]]:
-    """Per 1-based page, the `left,top,width,height` of every contiguous word run on one visual line."""
+def word_run_texts(dom: dict) -> dict[int, dict[str, str]]:
+    """Per 1-based page, `left,top,width,height` -> text (letters and digits only) of every contiguous word run on one visual line."""
     def collect(node):
         if isinstance(node, list):
             return [w for item in node for w in collect(item)]
@@ -193,24 +196,60 @@ def word_runs(dom: dict) -> dict[int, set[str]]:
         own = node.get("words") if isinstance(node.get("words"), list) else []
         return own + [w for key, value in node.items() if key != "words" for w in collect(value)]
 
-    runs: dict[int, set[str]] = {}
+    runs: dict[int, dict[str, str]] = {}
     for page in dom["pages"]:
         lines: dict[int, list] = {}
         for word in collect(page["sections"]):
-            lines.setdefault(word["visualLineNumber"], []).append(word["box"])
-        boxes = set()
+            lines.setdefault(word["visualLineNumber"], []).append(word)
+        boxes: dict[str, str] = {}
         for line in lines.values():
-            line.sort(key=lambda b: b[1])
+            line.sort(key=lambda w: w["box"][1])
             for i in range(len(line)):
                 for j in range(i, len(line)):
                     part = line[i:j + 1]
-                    left = min(b[1] for b in part)
-                    top = min(b[0] for b in part)
-                    right = max(b[1] + b[2] for b in part)
-                    bottom = max(b[0] + b[3] for b in part)
-                    boxes.add(f"{left:g},{top:g},{right - left:g},{bottom - top:g}")
+                    left = min(w["box"][1] for w in part)
+                    top = min(w["box"][0] for w in part)
+                    right = max(w["box"][1] + w["box"][2] for w in part)
+                    bottom = max(w["box"][0] + w["box"][3] for w in part)
+                    boxes[f"{left:g},{top:g},{right - left:g},{bottom - top:g}"] = squash("".join(w.get("text", "") for w in part))
         runs[page["pageIndex"] + 1] = boxes
     return runs
+
+
+def word_runs(dom: dict) -> dict[int, set[str]]:
+    """Per 1-based page, the `left,top,width,height` of every contiguous word run on one visual line."""
+    return {page: set(boxes) for page, boxes in word_run_texts(dom).items()}
+
+
+def squash(text: str) -> str:
+    """Letters and digits only, lower case: a quote and a word run compare equal across spacing and punctuation."""
+    return re.sub(r"[^0-9a-z]", "", text.lower())
+
+
+def page_texts(markdown: str) -> dict[int, str]:
+    """document.md split on its `<!-- page: N -->` markers, reduced by squash()."""
+    parts = re.split(r"<!--\s*page:\s*(\d+)\s*-->", markdown)
+    return {int(parts[k]): squash(parts[k + 1]) for k in range(1, len(parts) - 1, 2)}
+
+
+def check_refs(refs: list[tuple[int, str]], cites: list[dict], pages: dict[int, str],
+               texts: dict[int, dict[str, str]]) -> list[str]:
+    """Problems tying every sourceRef box to a verbatim quote the agent cited: the quote is on its page of
+    document.md, and the box is exactly the word run holding that quote (not just any word run)."""
+    problems = []
+    quotes: dict[int, set[str]] = {}
+    for cite in cites:
+        page, quote = int(cite.get("page", 0)), squash(str(cite.get("quote", "")))
+        if not quote or quote not in pages.get(page, ""):
+            problems.append(f"cite {cite.get('id')!r}: quote is not verbatim text on page {page} of document.md")
+        quotes.setdefault(page, set()).add(quote)
+    for page, box in refs:
+        text = texts.get(page, {}).get(box)
+        if text is None:
+            problems.append(f"page {page} box {box!r} is not the box of any word run in dom.json (written or estimated by hand?)")
+        elif text not in quotes.get(page, set()):
+            problems.append(f"page {page} box {box!r} holds {text[:40]!r}, which no cited quote on that page matches")
+    return problems
 
 
 def grade_refs() -> None:
@@ -218,16 +257,14 @@ def grade_refs() -> None:
     refs = uipdm_elements(root, "sourceRef")
     if len(refs) < 4:
         fail(f"{len(refs)} uipdm:sourceRef elements; the policy has at least 6 rows and positions were supplied")
-    runs = word_runs(json.loads(DOM.read_text(encoding="utf-8")))
-    invalid = []
-    for ref in refs:
-        page, box = int(ref.get("page", "0")), (ref.get("box") or "").replace(" ", "")
-        if box not in runs.get(page, set()):
-            invalid.append(f"page {page} box {box!r}")
-    if invalid:
-        fail(f"{len(invalid)} of {len(refs)} sourceRef boxes are not the box of any word run in dom.json "
-             f"(written or estimated by hand?): {invalid[:5]}")
-    print(f"OK: all {len(refs)} sourceRef boxes are word-run boxes from dom.json")
+    cites = json.loads(find_one("cites.json").read_text(encoding="utf-8"))
+    pages = page_texts(find_one("document.md").read_text(encoding="utf-8"))
+    texts = word_run_texts(json.loads(DOM.read_text(encoding="utf-8")))
+    pairs = [(int(ref.get("page", "0")), (ref.get("box") or "").replace(" ", "")) for ref in refs]
+    problems = check_refs(pairs, cites, pages, texts)
+    if problems:
+        fail(f"{len(problems)} citation problems:\n  " + "\n  ".join(problems[:6]))
+    print(f"OK: all {len(refs)} sourceRef boxes are word-run boxes holding a quote the agent cited")
 
 
 if __name__ == "__main__":

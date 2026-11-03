@@ -13,7 +13,7 @@ description: >
   the amendment that was not applied. The rate schedule is reference data: the prompt
   names no mileage input, so a mileage input or row would fail the named-inputs check.
   The prompt asks for one table column per named input only so the grader can read the table.
-tags: [uipath-rules-extraction, e2e, "mode:build", "lifecycle:generate", "outcome-graded"]
+tags: [uipath-rules-extraction, e2e, "mode:build", "lifecycle:generate"]
 
 run_limits:
   # Six documents through all six phases in one headless turn runs ~15 minutes.

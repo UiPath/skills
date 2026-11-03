@@ -73,3 +73,26 @@ def test_quoted_string_lists_and_commas_inside_quotes():
     assert pc.cell_matches('"Hotel","Meal"', "Meal")
     assert not pc.cell_matches('"Hotel","Meal"', "Airfare")
     assert pc.cell_matches('"a, b"', "a, b")
+
+
+def test_refs_must_hold_a_cited_quote_not_just_any_word_run():
+    dom = json.loads(pc.DOM.read_text(encoding="utf-8"))
+    texts = pc.word_run_texts(dom)
+    box = "1536,380,576,44"                      # the run "at least 90 days of service" on page 1
+    quote = pc.squash(texts[1][box])
+    pages = {1: quote, 2: ""}
+    good = [{"id": "r1", "page": 1, "quote": "at least 90 days of service"}]
+    assert pc.check_refs([(1, box)], good, pages, texts) == []
+    # a real box that no cited quote matches
+    other = next(b for b, t in texts[1].items() if t != quote)
+    assert pc.check_refs([(1, other)], good, pages, texts)
+    # a quote that is not on the page
+    assert pc.check_refs([(1, box)], [{"id": "r2", "page": 1, "quote": "not in the policy"}], pages, texts)
+    # an invented box
+    assert pc.check_refs([(1, "1,2,3,4")], good, pages, texts)
+
+
+def test_a_rule_with_fewer_entries_than_columns_is_rejected():
+    table = support.table("FIRST", [(("-", "-"), "Deny")])   # 2 entries for 4 columns
+    with pytest.raises(SystemExit):
+        pc.evaluate(table, dict(zip(pc.INPUTS, (1, 1, False, False))))
