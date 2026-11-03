@@ -62,7 +62,15 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   channels are `'Slack' | 'teams' | 'Email' | 'ActionCenter'` (Teams really is
   the lowercase `'teams'`); assignee types are `user`, `group`, `staticEmail`,
   `staticGroupName`, `workload`, `roundRobin`, `custom`. Omit the whole object
-  for the platform default (Email + Action Center, assigned to a group).
+  for the definition's default channels (Email + Action Center on the default
+  and `'quick-form'` variants, Action Center alone on `'action-app'` and
+  `'document-validation'`).
+  An omitted recipient, or any assignee with no `value`, assigns no one: the
+  task is created unassigned in its folder until someone picks it up. Give a
+  `value` to assign it. `user` and `staticEmail` name one person, so they need
+  a `value`; without one `check` warns (`HITL_RECIPIENT_NO_USER`). The warning
+  needs `@uipath/maestro-builder-sdk` 6.61.1 or later; an older SDK does not
+  warn, so no warning there does not mean the assignee is fine.
 - `labels` is one comma-separated string, shown in Action Center.
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
@@ -266,12 +274,123 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `extractionResult` to the upstream extract step's `ExtractionResult`.
   `render: 'custom'` requires `taxonomy` (and takes `app`).
 
+## Action App inputs and answers
+
+On `variant: 'action-app'`, give the app's action schema as `app.actionSchema`.
+Two spellings are accepted; pass either one as it is and do not convert
+between them:
+
+- a coded action app's `action-schema.json`: each section (`inputs`,
+  `outputs`, `inOuts`, `outcomes`) is `{ type: 'object', properties: { <name>:
+  { type, required? } } }`;
+- the platform's action schema, the solution resource's `spec.actionSchema`
+  (`resources/solution_folder/app/codedAction/<App>.json`): each section is an
+  array of `{ name, type: 'System.String', required, isList }`. It is stored as
+  a JSON string: parse it and pass the object, or `check` refuses it
+  (`HITL_APP_SCHEMA_INVALID`).
+
+If neither file is available, ask the user for the schema; never write one by
+hand.
+
+```ts
+.step('review', hitl({
+  variant: 'action-app',
+  app: {
+    name: 'InvoiceReview', key: appKey, folderPath: 'Shared',
+    inputs: { invoiceAmount: input('invoice_amount'), variancePct: out('math', 'variance_pct') },
+    actionSchema: {                       // the app's action-schema.json
+      inputs: { type: 'object', properties: {
+        invoiceAmount: { type: 'number', required: true },
+        variancePct: { type: 'number', required: true } } },
+      outputs: { type: 'object', properties: {
+        reviewerComments: { type: 'string', required: true } } },
+      outcomes: { type: 'object', properties: { Approve: { type: 'string' }, Reject: { type: 'string' } } },
+    },
+  },
+  outcomes: ['Approve', 'Reject'],
+}))
+.return({ decision: out('review', 'Action'), comments: out('review', 'reviewerComments') })
+```
+
+- **Without it every input reaches the app as a string.** The task's input
+  schema is built from `actionSchema`; with none, the platform types each
+  `app.inputs` key as `string`, so `invoiceAmount: 10450` arrives as
+  `"10450"`. `check` warns (`HITL_APP_NO_SCHEMA`) when inputs are sent with no
+  schema.
+- **`check` holds the flow to the schema:** an input the app does not declare
+  (`HITL_APP_INPUT_UNKNOWN`), a required input left unbound
+  (`HITL_APP_INPUT_REQUIRED`), an outcome the app has no button for
+  (`HITL_APP_OUTCOME_UNKNOWN`), and a value that is not an action schema
+  (`HITL_APP_SCHEMA_INVALID`) are errors.
+- **The app's answers become readable.** The schema's `outputs` and `inOuts`
+  are the task's typed answer fields, so `out('review', 'reviewerComments')`
+  passes `check`. Without the schema such a read fails
+  (`HITL_READ_UNKNOWN_FIELD`).
+- A nested object input's `properties` are not checked; don't rely on `check`
+  for them.
+- **Decompile keeps the schema as written.** It prints `app.actionSchema` when
+  that compiles back to the node's exact `inputSchema`. Otherwise (for example a
+  hand-edited schema with `title`s) it prints the node's schema verbatim as
+  `app.inputSchema`. Keep that as it is; give `actionSchema` or `inputSchema`,
+  not both.
+
+Needs `@uipath/maestro-builder-sdk` 6.59.1 or later; an older SDK has no
+`actionSchema` on `app`, so TypeScript rejects the key (check that
+`dist/api-index.md` lists `PlatformActionSchema`),
+<!--skill-flavor:action-schema-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:action-schema-sdk-upgrade:end-->
+
 ## Variant judgment
 
 Use the node variant explicitly named by the scenario. The default and
 quick-form variants own their fields in the Flow; action-app delegates the form
-to an already-deployed app. For an app task, resolve the app key, name, folder,
-and argument names from the same tenant resource.
+to an already-deployed app (or an app in this solution, below). For an app
+task, resolve the app key, name, folder, and argument names from the same
+tenant resource, and give its schema as `app.actionSchema`
+([Action App inputs and answers](#action-app-inputs-and-answers)).
+
+A coded action app in the SAME solution as the Flow is not deployed to a folder
+yet. Write it with `location: 'in-solution'` and no `folderPath`:
+
+```ts
+.step('review', hitl({
+  variant: 'action-app',
+  app: { name: '<App>', key: '<APP_RESOURCE_KEY>', location: 'in-solution' },
+  outcomes: ['Approve', 'Reject'],
+}))
+```
+
+- **Where the key comes from.**
+<!--skill-flavor:app-sibling-register:start-->
+  Register the app project and refresh resources
+  (`uip solution projects add`, then `uip solution resources refresh`). The
+<!--skill-flavor:app-sibling-register:end-->
+  generated `resources/solution_folder/app/codedAction/<App>.json` carries
+  `resource.key` → `key` and `resource.name` → `name`. Never invent the key;
+  the full recipe is in
+  [agent.md](agent.md#task-created-in-solution-coded-agent).
+- Do not give it a `folderPath`. A literal `'solution_folder'` reaches the
+  engine as-is and the task is refused; `check` refuses a non-empty
+  `folderPath` beside `location: 'in-solution'` (`HITL_APP_LOCAL_HAS_FOLDER`).
+  A decompiled in-solution task (folder `''` or `'solution_folder'`) comes back
+  as `location: 'in-solution'`.
+  This differs from an agent escalation's app
+  ([agent-resources.md](agent-resources.md#escalation)), which is an agent
+  resource and does carry `'solution_folder'`; do not carry either rule across.
+- Needs `@uipath/maestro-builder-sdk` 6.66.2 or later; an older SDK rejects
+  `location` on `app` (a type error, and `check` asks for the missing
+  `folderPath`),
+<!--skill-flavor:inso-app-sdk-upgrade:start-->
+  so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:inso-app-sdk-upgrade:end-->
+<!--skill-flavor:inso-app-uip-floor:start-->
+  No `uip` build checked so far keeps the app's folder when it packs this task
+  (1.204.0 and 1.205.0-preview.269 both drop it), and the task then fails at
+  run time with `170004 Invalid input for the HITL task`. Tell the user an
+  in-solution app task needs a `uip` release that carries the fix, and do not
+  retry the run.
+<!--skill-flavor:inso-app-uip-floor:end-->
 
 ## Evidence boundary
 

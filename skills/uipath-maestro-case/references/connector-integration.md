@@ -20,6 +20,36 @@ Consult this reference when planning or implementing any of:
 
 Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
 
+## Catalog unavailable (TypeCache 5xx)
+
+Studio Web TypeCache serves the connector catalog. When it cannot — on a ring with no connector packages it answers `500` — `registry pull` still exits 0 with `Result: Success`, lists the failed `typecache-*` types in `Data.Errors[]`, and writes no index for them. Read `Data.Errors` after every pull; a `Warning` of `N of M resource types failed to pull` is the cue.
+
+**Detect** any one of:
+
+- a `registry pull` `Data.Errors[]` row whose `Type` starts with `typecache-` **and is a 5xx**. A newer CLI carries `HttpStatus: 5xx` with `ErrorCode: "server_error"` and `Retry: "RetryLater"` on the row; an older CLI shows only `Error: "catalog search failed: 5xx …"`. A `typecache-*` row with any other status — `401` (`authentication_required`), `403` (`permission_denied`) — is a login or permission failure, not an outage: it takes Rule 3's pull-failure path (surface the error and stop Phase 1), never this section.
+- `registry get-connection`, `registry get-connector` or `case spec` failing with `Connector catalog unavailable: the last pull of <index> failed with HTTP <status> from Studio Web TypeCache …` and `ErrorCode: "server_error"` (`Retry: "RetryLater"`). With another `ErrorCode` the envelope's `Instructions` name the remedy (`uip login`, access to Studio Web): follow them and stop, as for any pull failure.
+- on an older CLI, `No resource index found` or `No TypeCache entry found` right after a pull whose `Data.Errors` listed that `typecache-*` type. The index is missing because the pull failed, not because it never ran.
+
+**Scope — act per failed index, not on every connector.** Studio Web answers the three slices of one project type (activities, triggers, packages) from one request, so they fail together; the external project types can fail independently of the case-management one. An index the pull synced (`Data.ResourceTypes[]`) resolves as usual.
+
+| Index in `Data.Errors` | Elements that become placeholders |
+|---|---|
+| `typecache-activities` | `execute-connector-activity` tasks |
+| `typecache-triggers` | event triggers, `wait-for-connector` tasks, connector-bound condition rules |
+| `typecache-external-agent-activities` | `external-agent` tasks |
+| `typecache-external-automation-activities` | `external-workflow` tasks |
+| any `typecache-*-packages` | none of its own — it only names the connector's category |
+
+**Then, for every element the failed index serves:**
+
+1. **Do not run the pull again, and do not retry a 5xx.** The answer does not change within a session. Rule 18's `Force pull and re-resolve` gate does not apply — this is not an empty lookup, so ask nothing.
+2. **Skip the Resolution Pipeline below** — no Step 1 index read, no `get-connection`, no `case spec`.
+3. In `tasks/registry-resolved.json` mark `type-id` and `connector-key` `<UNRESOLVED: connector catalog unavailable (TypeCache <status>)>`, omit `input-values`, and keep the SDD's inputs in `wiringNotes`.
+4. At execution write the existing placeholder shape: connector task `data: {}` ([placeholder-tasks.md](placeholder-tasks.md)), event trigger placeholder node ([event/impl-json.md § Placeholder fallback](plugins/triggers/event/impl-json.md#placeholder-fallback-unresolved-connector--connection)), condition-rule stub ([connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback)). **Never keep the flat `{name, value}` inputs `sdd convert` emits for a connector task** — `validate` rejects them with `CASE_MGMT_CONNECTOR_INPUT_FLATTENED`. If convert emitted the task with `data` anyway, replace its `data` with `{}`.
+5. Say in one business-language line, as soon as it is detected, that the connector catalog is unavailable, and continue. In the completion report list it as an **environment gap** — the status, the endpoint `studio_/typecache/api/Search/Catalog` and the time — not as a build defect; see [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
+
+The build then ends with placeholders and `validate` passes. Upgrade when the service recovers: `uip maestro case registry pull --force`, then [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md#upgrade-procedure--placeholder--full-task).
+
 ## Resolution Pipeline
 
 For every connector task or event trigger, run these CLI metadata fetches in order. Each call feeds the next; the populated `caseShape` from `case spec` is written directly into `caseplan.case` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
