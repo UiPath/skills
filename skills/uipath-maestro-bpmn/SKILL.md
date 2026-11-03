@@ -782,8 +782,20 @@ the template's lines.
 
   - <what changed, one line each, up to 5>
 
+  Needs: <...>
   Assumed: <...>  Unverified: <...>
   ```
+
+  When validation fails only because tenant resources are missing (no
+  connection, agent, process, or queue to bind), the first line reads
+  `<Name>: built, not runnable yet (<auto|draft> mode).` and `Needs:` names
+  each missing resource in the user's words, such as `a Slack connection`
+  or `the ticket triage agent`. Drop `Needs:` when nothing is missing.
+
+  Write every line in the user's words: say what each step now does. No
+  element type ids (`Orchestrator.StartAgentJob`), connector keys, object
+  or operation names, payload, binding, or placeholder terms, and no file
+  names other than the path line.
 
   This reply is your whole final message, and its first characters are the
   process name: write no status sentence or introduction before the
