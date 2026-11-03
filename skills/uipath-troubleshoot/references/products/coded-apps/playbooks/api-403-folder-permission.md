@@ -27,9 +27,11 @@ What to look for:
 2. Determine the folder the app targets — check `UIPATH_FOLDER_KEY` in the app's environment/config, or the folder key passed to the SDK service call. Resolve it against the tenant's folders:
 
    ```bash
-   uip or folders list --output json \
-     --output-filter "[].{name: FullyQualifiedName, key: Key}"
+   uip or folders list --limit 500 --output json \
+     --output-filter "[].{name: Path, key: Key}"
    ```
+
+   If `Pagination.HasMore` is true, continue with `--offset 500`, `--offset 1000`, and so on before concluding the folder is absent.
 
 3. Confirm the resource actually lives in the targeted folder (list the resource in that folder — e.g. `uip or assets list --folder-key <key> --output json`). If it is in a different folder, that is the cause.
 

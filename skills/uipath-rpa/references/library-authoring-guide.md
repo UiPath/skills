@@ -22,7 +22,7 @@ Boundaries:
 | Need | Go to |
 |------|-------|
 | Start new projects from a standard baseline | Project templates — [environment-setup.md § Template Selection](environment-setup.md) |
-| Share UI selectors across projects | UI Libraries — [uia-starter-guide.md § Object Repository as a Published UI Library](uia-starter-guide.md) |
+| Share UI selectors across projects | UI Libraries — [uia-policies-catalog.md § Object Repository as a Published UI Library](uia-policies-catalog.md) |
 | Reuse logic inside one project | Separate workflow file — [environment-setup.md § Designing for Reuse](environment-setup.md#designing-for-reuse) |
 
 ## Creating and Structuring

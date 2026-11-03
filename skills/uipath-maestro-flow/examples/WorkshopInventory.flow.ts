@@ -6,7 +6,7 @@
  *
  * Generic scenario: ask a robot to count missing tools in a shared workshop.
  */
-import { flow, rpaWorkflow, script, input, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, rpaWorkflow, script, input, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('workshop-inventory')
   .name('WorkshopInventory')
@@ -20,8 +20,10 @@ export default flow('workshop-inventory')
     inputs: { zone: input('zone') },
     returns: { missingTools: 'integer' },
   }))
-  .step('formatCount', script({
-    code: 'return "missing tools: " + String($vars.countTools.output.missingTools);',
-  }))
+  .step('formatCount', script(formatCount))
   .return({ report: out('formatCount') })
   .build();
+
+function formatCount($vars: FlowVars) {
+  return "missing tools: " + String($vars.countTools.output.missingTools);
+}
