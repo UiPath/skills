@@ -53,6 +53,8 @@ An app moves through: **create** (from a template + data mapping) → **load** (
 
 10. **Edit a field's data kind / calculated fields with `apps model fields` — and a data-kind mismatch can lock the app open.** Change a field's kind (e.g. numeric→duration), rename it, or add a calculated field with `uip pm apps model fields set <app> <field> [--kind|--display-name|--expression]` (the **semantic** model; dev-only, and **no `--etag`** — it merges into the version it just read, so a lost race is fixed by re-running it; a whole-document `apps model update` does require `--etag`). Relational/arithmetic operators require both operands to share a data kind, so flipping a field to `duration` while a metric / calculated field / dashboard filter still compares it to a `numeric` constant persists an invalid model that throws at dashboard open — the *"Must be duration, not numeric, for the 'lt' input"* lockout, which leaves only the data-upload module reachable. `fields set`/`update` validate and refuse such an edit with a hint; fix an already-broken app by making the comparison consistent (re-type the field or the constant). Full surface + the data-kind rule in [`references/model-editing.md`](references/model-editing.md).
 
+11. **Confirm with the user before removing a field, table or app.** `uip pm apps model fields remove`, `apps delete`, or any other `remove`/deletion: name the exact target (app id, field id or table name, and stage) and wait for the user's explicit confirmation before running it. Never remove something the user did not name.
+
 ## Quick Start
 
 The end-to-end CSV → queryable-app command sequence (discover template → create →
