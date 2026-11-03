@@ -508,8 +508,12 @@ the template's lines.
    and dozens of them exhaust the run's time budget before authoring finishes:
    `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json --output-filter "ExtensionType.XmlTemplate"; done`.
    That filter returns only the template, as `Data.Value`; do not retry
-   `registry get` with other filters or flags to find it. Drop the filter only
-   when you need the full spec (`ContextFields`, bindings) of a type.
+   `registry get` with other filters or flags to find it. Use it for non-connector
+   types only. Drop the filter when you need the full spec (`ContextFields`,
+   bindings) of a type. Never put the filter on an `Intsvc.*` connector node: it
+   projects away `Data.V2` and `Data.ISEnrichment`, which a connector node needs.
+   Fetch each connector node without a filter, outside that loop:
+   `uip maestro bpmn registry get <type> --connection-id <CONNECTION_ID> --object-name <OBJECT> --input-details '<JSON>' --output json`.
    Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`; take
    `--object-name` from the table in
    [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-the-table-first-then-the-parameters)
@@ -530,9 +534,12 @@ the template's lines.
 - **4c Assemble.** If this run uploaded the shape, download it first (as in
    1c); when its `.bpmn` differs from the local one, build on the downloaded
    one (4g says so). For
-   greenfield, write the `.bpmn` that 2a's `init` generated (`<Name>.bpmn`
+   greenfield, write the `.bpmn` that 2a's `init` generated in this run (`<Name>.bpmn`
    at `Data.Path`; `init` never names it `Process.bpmn`) whole, in one Write,
-   instead of patching it with a series of edits. Never write a second `.bpmn`.
+   instead of patching it with a series of edits. That whole-file write is only for
+   a file this run alone has touched. A downloaded copy or any brownfield `.bpmn`
+   is edited in place, per Editing an existing `.bpmn`; never rewrite it from the
+   minimal file. Never write a second `.bpmn`.
    Keep the initializer's `Event_start` id and its `uipath:entryPointId` in
    what you write, and never touch the four generated JSON files. Author from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)

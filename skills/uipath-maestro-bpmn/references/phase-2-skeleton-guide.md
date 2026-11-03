@@ -121,7 +121,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
 [SKILL.md](../SKILL.md#workflow). Then:
 
 - **2b Author the skeleton** by writing the `.bpmn` that `init`
-  generated (`<Name>.bpmn` at 2a's `Data.Path`) whole, in one Write, instead of patching it with a series of edits. Preserve the generated start event's `id`, its
+  generated in this run (`<Name>.bpmn` at 2a's `Data.Path`) whole, in one Write, instead of patching it with a series of edits. Only that fresh starter is written whole; a downloaded or brownfield `.bpmn` is edited in place. Preserve the generated start event's `id`, its
   `<uipath:entryPointId>`, and the four generated JSON files. **Do not rename
   the start event**: its name feeds the entry-point schema, so renaming it
   makes `refresh` rewrite `entry-points.json` for no benefit.
