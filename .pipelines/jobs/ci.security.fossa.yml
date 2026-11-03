@@ -12,9 +12,6 @@ stages:
         pool: ${{ parameters.poolName }}
         steps:
           - checkout: self
-          # No Key Vault read here: from uipath.security.fossa.3.2.5 the template
-          # signs in to FOSSA through the FOSSA-OIDC workload identity connection.
-          # skipToggleKvStep keeps the job off the devopsprodauthtokenswekv vault.
           - template: Security/fossa.steps.yml@fossa
             parameters:
               OS: 'linux'
