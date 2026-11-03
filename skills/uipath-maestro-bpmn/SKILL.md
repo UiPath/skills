@@ -829,7 +829,7 @@ the template's lines.
   `<Name>:` line. Send nothing beyond these lines: no extra sections,
   headings, tables, numbered lists, questions, or suggested next steps.
   **Write at most five change lines. A sixth line is a defect, not a
-  judgment call.** Count the lines under the first line before you send:
+  judgment call.** Count the `-` change lines before you send:
   when there are more than five, merge related steps into one line each, and
   fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
   Before you send it, compare the message
