@@ -17,10 +17,10 @@ Framing question options: `Confirm framing (Recommended)` | `Change framing`.
 ## Phase 2: Intake
 
 ```markdown
-**Readable source:** document.md, pages 1-3 (tables on p.2 readable)
+**Readable source:** document.md (temporary copy), pages 1-3 (tables on p.2 readable)
 **Position data:** dom.json available
 **Proposed scope:** Pages 1-2 (matches your request, or <DIFFERENCE> and asked below)
-**As-of date:** <DATE_OR_TODAY> (matches your request, or asked below)
+**As-of date:** <DATE_OR_TODAY> (matches your request, asked below, or `today (base document only)` when there is nothing to apply)
 
 | Document | Role | Version | Effective | Authority | Supersedes |
 |---|---|---|---|---|---|

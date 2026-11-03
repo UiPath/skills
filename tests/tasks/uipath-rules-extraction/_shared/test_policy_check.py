@@ -92,6 +92,13 @@ def test_refs_must_hold_a_cited_quote_not_just_any_word_run():
     assert pc.check_refs([(1, "1,2,3,4")], good, pages, texts)
 
 
+def test_boxes_without_cites_must_still_be_word_run_boxes():
+    texts = pc.word_run_texts(json.loads(pc.DOM.read_text(encoding="utf-8")))
+    box = next(iter(texts[1]))
+    assert pc.check_boxes([(1, box)], texts) == []
+    assert pc.check_boxes([(1, "1,2,3,4")], texts)
+
+
 def test_a_rule_with_fewer_entries_than_columns_is_rejected():
     table = support.table("FIRST", [(("-", "-"), "Deny")])   # 2 entries for 4 columns
     with pytest.raises(SystemExit):

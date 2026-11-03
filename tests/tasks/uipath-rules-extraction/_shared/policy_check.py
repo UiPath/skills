@@ -252,19 +252,29 @@ def check_refs(refs: list[tuple[int, str]], cites: list[dict], pages: dict[int, 
     return problems
 
 
+def check_boxes(refs: list[tuple[int, str]], texts: dict[int, dict[str, str]]) -> list[str]:
+    """Problems when cites.json is not in the sandbox (the skill keeps it in a temporary directory): every
+    sourceRef box must still be the box of a word run in dom.json, so a hand-written box fails."""
+    return [f"page {page} box {box!r} is not the box of any word run in dom.json (written or estimated by hand?)"
+            for page, box in refs if box not in texts.get(page, {})]
+
+
 def grade_refs() -> None:
     _, _, root = load()
     refs = uipdm_elements(root, "sourceRef")
     if len(refs) < 4:
         fail(f"{len(refs)} uipdm:sourceRef elements; the policy has at least 6 rows and positions were supplied")
-    cites = json.loads(find_one("cites.json").read_text(encoding="utf-8"))
     pages = page_texts(find_one("document.md").read_text(encoding="utf-8"))
     texts = word_run_texts(json.loads(DOM.read_text(encoding="utf-8")))
     pairs = [(int(ref.get("page", "0")), (ref.get("box") or "").replace(" ", "")) for ref in refs]
-    problems = check_refs(pairs, cites, pages, texts)
+    found = sorted(Path(".").rglob("cites.json"))
+    if found:
+        problems = check_refs(pairs, json.loads(found[0].read_text(encoding="utf-8")), pages, texts)
+    else:
+        problems = check_boxes(pairs, texts)
     if problems:
         fail(f"{len(problems)} citation problems:\n  " + "\n  ".join(problems[:6]))
-    print(f"OK: all {len(refs)} sourceRef boxes are word-run boxes holding a quote the agent cited")
+    print(f"OK: all {len(refs)} sourceRef boxes are word-run boxes in dom.json")
 
 
 if __name__ == "__main__":

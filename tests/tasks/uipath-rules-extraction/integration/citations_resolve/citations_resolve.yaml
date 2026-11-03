@@ -57,7 +57,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Every uipdm:sourceRef box is the word-run box of a verbatim quote the agent cited on that page"
+    description: "Every uipdm:sourceRef box is a word-run box from dom.json, none written by hand"
     command: "python3 $REFERENCE_DIR/_shared/policy_check.py refs"
     timeout: 30
     expected_exit_code: 0

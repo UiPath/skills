@@ -4,7 +4,7 @@ A row's position in the policy comes from a verbatim quote that code resolves to
 
 ## Record a citation (phase 5)
 
-Append one entry per place a row was read to `<PROJECT_DIR>/../cites.json`:
+Append one entry per place a row was read to `<TEMP_DIR>/cites.json`:
 
 ```json
 [{ "id": "r1", "page": 1, "quote": "Employees with less than six months of service" }]
@@ -27,7 +27,7 @@ A rule that comes from a user's answer or a call, not from the document, has no 
 ## Resolve (phase 6)
 
 ```bash
-node "<SKILL_DIR>/scripts/resolve-refs.mjs" --dom <DOM_JSON> --cites <PROJECT_DIR>/../cites.json
+node "<SKILL_DIR>/scripts/resolve-refs.mjs" --dom <DOM_JSON> --cites <TEMP_DIR>/cites.json
 ```
 
 Stdout is one JSON object: `status`, `resolved`, `unresolved`, `ambiguous` (counts), and `results[]`. Each result has `id` and `status`:
