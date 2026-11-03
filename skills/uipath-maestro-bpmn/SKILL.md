@@ -223,8 +223,6 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    `refresh` generate), the 1c download directory, Discovery-only evidence
    (`registry-evidence/`, `cli-error.txt`), Rule 16 notes, Rule 17 resource
    projects, the image inventory, and helper scripts.
-   The only exceptions are the notes file Rule 16 asks for and the image
-   inventory the image-transcription rules ask for.
 
 ## The model
 
@@ -396,12 +394,14 @@ Nothing to do yet. Surface detection is future work.
   login and no `registry pull`:
 
   ```bash
-  uip maestro bpmn registry list --limit -1 --output json --output-filter "ExtensionTypes[?!starts_with(ExtensionType,'Maestro.Case') && !contains(['Maestro.UpdateCaseState','Maestro.RetrieveCaseState','Maestro.NotificationService','Maestro.AcquireLock','Maestro.ReleaseLock','BPMN.Variables','uipath:Activity','A2A.AgentExecution','Intsvc.HttpExecution','Intsvc.SyncAgentExecution','Intsvc.AsyncAgentExecution','Intsvc.SyncWorkflowExecution','Intsvc.AsyncWorkflowExecution'],ExtensionType)].[ExtensionType,Label]"
+  uip maestro bpmn registry list --limit -1 --output json --output-filter "ExtensionTypes[?!starts_with(ExtensionType,'Maestro.Case') && !contains(['Maestro.UpdateCaseState','Maestro.RetrieveCaseState','Maestro.NotificationService','Maestro.AcquireLock','Maestro.ReleaseLock','BPMN.Variables','uipath:Activity','A2A.AgentExecution','Intsvc.HttpExecution','Intsvc.SyncAgentExecution','Intsvc.AsyncAgentExecution','Intsvc.SyncWorkflowExecution'],ExtensionType) && (ends_with(BpmnElement,'Task') || BpmnElement=='bpmn:CallActivity')].[ExtensionType,Label]"
   ```
 
-  The filter drops the types Studio Web's BPMN toolbox does not offer for
-  new nodes: case management, A2A, the legacy HTTP request, and the older
-  external agent and workflow variants (`Intsvc.AsyncExecution` stays).
+  The filter keeps the task types Studio Web's toolbox offers for new boxes
+  (`BpmnElement` ending in `Task`, or `CallActivity`). It drops events, case
+  management, A2A, the legacy HTTP request, the older external agent
+  variants, and the sync external workflow variant (`Intsvc.AsyncAgentExecution`
+  is dropped, `Intsvc.AsyncExecution` and `Intsvc.AsyncWorkflowExecution` stay).
 
 - **1b Scan for a solution and project.** Look for any `*.uipx` file up to two
   levels below the working directory, with whatever file search the host
@@ -831,7 +831,7 @@ the template's lines.
   **Write at most five change lines. A sixth line is a defect, not a
   judgment call.** Count the lines under the first line before you send:
   when there are more than five, merge related steps into one line each, and
-  fold anything else the user must act on into `Assumed` or `Unverified`.
+  fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
   Before you send it, compare the message
   with the template line by line and delete every line the template does
   not have.

@@ -243,7 +243,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   treat the box as having none: write "none yet, create it or name one" and
   never bind to the row. Phase 4 binds only the resource this gate named.
 
-  Script steps and quick-form human tasks need no resource. Run the lookup
+  Script steps need no resource, and neither does an `[Action app]` box the user wants as a simple approval form (Studio Web's quick approval: `Actions.HITL` with `hitlType` `quick`): write `no resource needed` and skip the app lookup. Every other `[Action app]` box needs the lookup. Run the lookup
   again at every 3c, so a resource the user created since the last gate
   shows up. These lookups read only; none is a registry call. In draft mode
   this gate is the one round for structure and resource questions that Rule 4 allows. The 2a solution pick list and the image-inventory confirmation still come before it.
@@ -275,7 +275,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   it holds the 3c reply and nothing else.
 
   Give every task box its own line, in order, including a script step or
-  quick-form task that needs no resource (`no resource needed`): the box
+  quick-approval `[Action app]` that needs no resource (`no resource needed`): the box
   lines are the outline, so a box left off is a step the user never sees.
   List task boxes only, never the start event, a timer, a gateway, or the
   end event, and give each box one short clause: no element type ids, no
