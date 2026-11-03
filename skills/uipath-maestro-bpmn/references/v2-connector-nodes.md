@@ -87,10 +87,11 @@ uip maestro bpmn registry get Intsvc.EventTrigger \
   bindings. When the name is in several folders the command fails
   `invalid_argument`, `A resource picker in --input-details did not resolve`,
   and lists each folder key; add `"<field>_folderKey": "<FolderKey>"` and run
-  it again. Put it under the list its `Type` in `uip is resources describe`
-  names, which can differ from the name's (Orchestrator Get Asset: `id` in
-  `pathParameters`, `id_folderKey` in `queryParameters`); a companion in the
-  wrong list is refused. Not listed: put it next to the name.
+  it again. Put it under the list its `Type` in the describe output names
+  (`uip is resources describe` for activities, `uip is triggers describe` for
+  triggers and waits), which can differ from the name's (Orchestrator Get
+  Asset: `id` in `pathParameters`, `id_folderKey` in `queryParameters`); a
+  companion in the wrong list is refused. Not listed: put it next to the name.
 - A `*_V3` object's `RequestFields` (the folder entity's columns, for
   `bodyParameters`) are empty until `describe` gets the picker the same way:
   `uip is resources describe uipath-uipath-dataservice <Object>_V3
