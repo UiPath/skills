@@ -28,6 +28,11 @@
         "file": "references/lowcode/capabilities/integration-service/integration-service.md",
         "command": "is connections",
         "reason": "Placeholder text inside a JSON example (`<connection-id from uip is connections list>`), not an instruction."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "eval",
+        "reason": "Prose: `uip eval ... delete` is named as an example of a tenant delete that needs user confirmation, not an instruction to run it."
       }
     ],
     "ceiling": {
@@ -599,7 +604,13 @@
     "ceiling": {}
   },
   "uipath-solution": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/develop-solution.md",
+        "command": "login tenant set",
+        "reason": "Prose: explains that switching tenants does not change which Studio Web solution an upload overwrites, not an instruction to run it."
+      }
+    ],
     "ceiling": {
       "codedagent init": 1,
       "codedapp": 1,

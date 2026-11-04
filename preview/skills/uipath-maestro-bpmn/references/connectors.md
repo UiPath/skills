@@ -145,6 +145,7 @@ For a generic record verb (`Create Record`, `Delete Record`), the catalog row's 
 ## 5. Data Fabric is not this
 
 Data Fabric (Data Service) records and file fields are `.dataService(id, { entity, connection, folder, op, … })`, one of eight operations.
+A folder-scoped entity is `entity: { name, folderKey }`, which writes the connector's `_V3` operation; see [the folder-entity rule](bpmn-runtime.md#connectors-and-bindings).
 The library ships one Data Service operation, so `.connector()` cannot author the rest, and a hand-filled `.activity()` gets `objectName`, the parameter targets and the folder binding wrong in ways `validate` does not report.
 See [Connections and bindings](bpmn-runtime.md#connectors-and-bindings) and `examples/ContractRegistry.bpmn.ts`.
 

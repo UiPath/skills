@@ -135,11 +135,11 @@ That XAML compiles, validates, runs — and does nothing. A re-run of the build 
 
 ```csharp
 [Workflow]
-public void Execute(string in_CredentialAssetName, out string out_WIID)
+public string Execute(string credentialAssetName)
 {
     // TODO[Indicate]: attach to the ACME WI app — replace placeholder with Descriptors.<App>.<Screen>
     using var app = uiAutomation.Open(/* TODO[Indicate]: Descriptors.AcmeWi.Login */);
-    var (username, password) = system.GetCredential(in_CredentialAssetName);
+    var (username, password) = system.GetCredential(credentialAssetName);
 
     // TODO[Indicate]: target the Username field
     app.TypeInto(/* TODO[Indicate]: Descriptors.AcmeWi.Login.Username */ "username-placeholder", username);
@@ -152,7 +152,7 @@ public void Execute(string in_CredentialAssetName, out string out_WIID)
 
     // TODO[Indicate]: target the WIID readout field on the next screen
     using var home = uiAutomation.Attach(/* TODO[Indicate]: Descriptors.AcmeWi.Home */);
-    out_WIID = home.GetText(/* TODO[Indicate]: Descriptors.AcmeWi.Home.WIIDField */ "wiid-field-placeholder");
+    return home.GetText(/* TODO[Indicate]: Descriptors.AcmeWi.Home.WIIDField */ "wiid-field-placeholder");
 }
 ```
 
@@ -165,14 +165,14 @@ What you must NOT do:
 
 ```csharp
 [Workflow]
-public void Execute(string in_CredentialAssetName, out string out_WIID)
+public string Execute(string credentialAssetName)
 {
     // TODO[selectors]: replace these with real uiAutomation calls once Object Repository is populated
     Log("LoginWorkflow: type username");
     Log("LoginWorkflow: type password");
     Log("LoginWorkflow: click Login");
     Log("LoginWorkflow: read WIID");
-    out_WIID = "";
+    return "";
 }
 ```
 
