@@ -306,14 +306,27 @@ uip or triggers create --type queue --name "<TRIGGER_NAME>" \
   --runtime-type Serverless --folder-path "<FOLDER_PATH>" --output json
 ```
 
-- **The job starts without the queue item.** The Flow's trigger output is
-  `null`, so nothing reaches the Flow from `SpecificContent`. The Flow, or a
-  Coded Function it calls, must take the next item from the queue itself
-  (start a transaction on the queue) and set the item's result when it is done.
-  Guard every read of the trigger output against `null`.
-- The trigger fires only for items added after it is enabled.
-- `uip or processes create --auto-create-triggers` creates no trigger for a
-  Flow process; create it with `uip or triggers create`.
+- **The job starts without the queue item.** Orchestrator starts a job per
+  item, but no job is tied to the item that started it. The Flow's trigger
+  output is `null`, so nothing reaches the Flow from `SpecificContent`. The
+  Flow, or a Coded Function it calls, must take the next item from the queue
+  itself (start a transaction on the queue), cope with getting no item, and
+  set the item's result when it is done. Guard every read of the trigger
+  output against `null`.
+- Keep `--items-threshold 1 --items-per-job 1`: Orchestrator fixes both to 1
+  for a Maestro process (one item, one instance) and refuses anything else
+  with HTTP 400 "The minimum number of items to trigger the first job must be
+  1 for this process type". `--max-jobs` is the one batch setting you choose;
+  it caps the instances running at once.
+- Don't count on the trigger for items that were already `New` when it was
+  created. Orchestrator evaluates it on creation and on each new item, and
+  re-checks unprocessed items only on a tenant schedule (every 30 minutes by
+  default). Create the trigger before you load the queue, or start one job by
+  hand for the backlog.
+- `uip or processes create --auto-create-triggers` creates only the connected
+  event triggers a package declares (Integration Service triggers). It never
+  creates a queue trigger, for any process type; create it with
+  `uip or triggers create`.
 
 ## Inspect a job
 

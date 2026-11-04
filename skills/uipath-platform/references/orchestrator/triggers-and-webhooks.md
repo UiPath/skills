@@ -97,7 +97,7 @@ uip or triggers create --type queue \
 
 Additional options: `--items-per-job` (default 1), `--activate-on-complete` (re-trigger on job completion).
 
-> **On a Maestro Flow process, a queue trigger starts the job without the item.** The Flow's trigger output is `null`, so the Flow (or a Coded Function it calls) must take the next item from the queue itself and set its result. The trigger fires only for items added after it is enabled.
+> **On a Maestro Flow process, a queue trigger starts one job per item but passes no item to it.** The Flow's trigger output is `null`, so the Flow (or a Coded Function it calls) must take the next item from the queue itself and set its result. Orchestrator fixes `--items-threshold` and `--items-per-job` to 1 for Maestro processes (HTTP 400 "… must be 1 for this process type" for any other value); only `--max-jobs` is yours to set. Items already `New` when the trigger is created are not necessarily picked up at once: Orchestrator evaluates the trigger on creation and on each new item, and re-checks unprocessed items every 30 minutes by default (tenant setting "Queues - Unprocessed queue items check frequency").
 
 ### API Trigger
 
