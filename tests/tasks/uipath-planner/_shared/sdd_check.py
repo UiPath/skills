@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mechanical check on a case-design ``sdd.md`` (markdown only).
 
-Case design (the uipath-planner Case Design Lane) stops at the approved
+Case design (the uipath-planner case design path) stops at the approved
 ``sdd.md`` — no caseplan exists yet — so these checks parse the markdown
 directly to confirm the SDD is sound enough to *deliver downstream* (the
 build's planning pass trusts it verbatim). Domain sense is graded separately
@@ -112,7 +112,7 @@ def _find_sdd() -> str:
 
 
 def _rule_token(cell: str) -> str | None:
-    """Leading rule keyword from a WHEN cell (``case-entered``, ``adhoc``, …)."""
+    """Leading rule keyword from a WHEN cell (``case-entered``, `adhoc`, …)."""
     m = re.match(r"`?\s*([a-z][a-z]+(?:-[a-z]+)*)", cell.strip())
     return m.group(1) if m else None
 
