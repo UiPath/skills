@@ -91,6 +91,16 @@ jobs:
             --version "$VERSION")
           echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
 
+      # Same gate as publish.yml: scan the selected tarball's exact bytes.
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Scan the flavor tarball for customer-blocked content
+        env:
+          TARBALL: ${{ steps.package.outputs.tarball }}
+        run: python3 scripts/check-sensitive-content.py "$TARBALL"
+
       - name: Require the GitHub Packages registry
         run: |
           REGISTRY=$(npm config get @uipath:registry)
