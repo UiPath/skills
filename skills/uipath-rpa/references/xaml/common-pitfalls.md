@@ -249,8 +249,8 @@ The path is relative to the project root directory. Use backslashes for subfolde
 <ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
     DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)" UnSafe="False">
   <ui:InvokeWorkflowFile.Arguments>
-    <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
-    <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument1">someValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument2">anotherValue</InArgument>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
 ```
