@@ -69,3 +69,66 @@ def test_delete_issue_structured_404_counts_as_gone(monkeypatch: pytest.MonkeyPa
         "Message": "Request failed with status code '404': Issue does not exist or you do not have permission to see it.",
     })
     assert jira_is.delete_issue("conn", "CE-1257") is True
+
+
+PROJECTS = {"Result": "Success", "Data": [{"id": "10000", "key": "CE"}, {"id": "10001", "key": "OPS"}]}
+
+
+def _types(*types: dict) -> dict:
+    return {"Result": "Success", "Data": list(types)}
+
+
+def _stub_lists(monkeypatch: pytest.MonkeyPatch, jira_is: ModuleType, types: dict) -> list[list[str]]:
+    seen: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append(list(cmd))
+        return Result(PROJECTS if "project" in cmd else types)
+
+    monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
+    return seen
+
+
+def test_the_issue_type_id_is_read_from_the_connections_site(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A project-scoped Task wins over a global one and over another project's Task."""
+    jira_is = _load_module()
+    types = _types(
+        {"id": "3", "name": "Task"},
+        {"id": "10109", "name": "Task", "scope": {"project": {"id": "10001"}}},
+        {"id": "10009", "name": "Task", "scope": {"project": {"id": "10000"}}},
+        {"id": "10007", "name": "Epic", "scope": {"project": {"id": "10000"}}},
+    )
+    seen = _stub_lists(monkeypatch, jira_is, types)
+
+    assert jira_is.issuetype_id("conn-1") == "10009"
+    assert jira_is.issuetype_id("conn-1") == "10009"
+    assert len(seen) == 2  # one project list, one issuetype list, then cached
+
+
+def test_a_global_type_is_used_only_when_the_project_has_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    jira_is = _load_module()
+    _stub_lists(monkeypatch, jira_is, _types({"id": "3", "name": "Task"}))
+    assert jira_is.issuetype_id("conn-1") == "3"
+
+
+def test_a_site_without_the_project_or_the_type_fails_loudly(monkeypatch: pytest.MonkeyPatch) -> None:
+    jira_is = _load_module()
+    _stub_lists(monkeypatch, jira_is, _types({"id": "10007", "name": "Epic"}))
+    with pytest.raises(RuntimeError, match="no 'Task' issue type in project CE"):
+        jira_is.issuetype_id("conn-1")
+
+
+def test_every_jira_helper_copy_resolves_the_issue_type_the_same_way() -> None:
+    """The helpers are per-task copies by design; the resolver must not drift between them."""
+    tasks = HERE.parents[2]
+    copies = sorted(tasks.glob("uipath-maestro-*/**/jira_is.py"))
+    assert len(copies) >= 9
+
+    def resolver(path: Path) -> str:
+        text = path.read_text(encoding="utf-8")
+        return text[text.index("_ISSUETYPE_IDS: dict[str, str] = {}") : text.index("\ndef connection_id(")]
+
+    reference = resolver(HERE / "_setup" / "jira_is.py")
+    for path in copies:
+        assert resolver(path) == reference, path
+        assert "11457" not in path.read_text(encoding="utf-8"), path
