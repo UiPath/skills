@@ -21,20 +21,15 @@ produces a data model and a genome whose Workflow is `*[Inferred]*` — say so.
 
 ## Discovery — which guide, when
 
-| At | Condition | Read |
-|---|---|---|
-| start | a bundle is present | this file, [ontology-sources-guide.md](ontology-sources-guide.md) |
-| after the inventory exists | always | [entity-derivation-guide.md](entity-derivation-guide.md) |
-| after the inventory exists | the inventory reports ≥1 SHACL shape | [constraint-register-guide.md](constraint-register-guide.md) |
-| after the inventory exists | the inventory reports ≥2 classes with an object property between them | [normalization-guide.md](normalization-guide.md) |
-| before writing any solution resource | always | [datafabric-emission-guide.md](datafabric-emission-guide.md) |
-| any Data Fabric field type, choice-set mechanic, federated rule or relationship wiring | always | `uipath-platform` → `references/data-fabric/` — **named, never restated here** |
+**[SKILL.md § Read Plans](../SKILL.md) is the one routing table**, for this extension
+as for every other. It names each guide below with the condition that opens it. Do
+not keep a second copy here; the two drift, and the plan is what an agent reads.
 
-The last row is the standing rule: the Data Fabric surface belongs to
-`uipath-platform`. This extension names a capability and routes; it does not copy a
-type table, an operator matrix or a command's flags. When that skill is not
-installed, the deterministic tools still run — they encode the field-shape rules
-they need — and the run says which guidance it could not consult.
+One standing boundary it cannot express: **any Data Fabric field type, choice-set
+mechanic, federated rule or relationship binding belongs to `uipath-platform` →
+`references/data-fabric/`** — named here, never restated. When that skill is not
+installed the deterministic tools still run, because they encode the field-shape
+rules they need; the run then says which guidance it could not consult.
 
 ## Artifacts
 
@@ -79,12 +74,8 @@ python3 "<SKILL_DIR>/scripts/ontology-inspect.py" \
   --out "<BUNDLE_SLUG>-inventory.json"
 ```
 
-Three reasons the inventory, not the source files, is what the derivation reads:
-the parsers' limits are then stated once and visible
-([ontology-sources-guide.md § Parser limits](ontology-sources-guide.md)); the
-derivation is reproducible from a small artifact a reviewer can read; and a bundle
-too large to hold in context still yields a derivation, because the inventory is
-orders of magnitude smaller than the sources.
+Why the inventory rather than the sources, and what it contains:
+[ontology-sources-guide.md § The inspector](ontology-sources-guide.md).
 
 ## Three schemas, three completeness assumptions
 
@@ -178,7 +169,7 @@ deferring anything "until we know more".
 | `numberId` per choice value | step 5, first emission | **immutable once deployed** | silently remaps deployed records — unrecoverable |
 | Tenant vs folder scope | step 7, before the first `--local` create | the resource envelope carries it | regenerate every resource |
 | `locus` — who enforces | step 6 by default; Phase 2 on evidence | **multi-phase by design** | a register edit; cheap |
-| `level` — state / transition / assumed | Phase 2 | needs the write sites | may add or remove field options; moderate |
+| `level` — state / transition / monitor / assumed | Phase 2 | needs the write sites | may add or remove field options; moderate |
 | Normalization degree | Phase 2a, refined 2b | **multi-phase by design** | free until the first binding, then a rework of bindings |
 | Federated views | Phase 2b | needs a cost model over access patterns | additive; cheap |
 
@@ -190,7 +181,7 @@ will either re-litigate the first or trust the second.
 
 ## Determinism
 
-**The entity set is a deterministic function of `(inventory, convention, overrides)`.**
+**The entity set is a deterministic function of `(inventory, overrides, previous, project, scope)`.**
 Same inputs, same `entities.json`, byte for byte. The tools enforce it: sorted keys,
 stable ordering, no timestamps, no generated ids that vary between runs.
 
@@ -200,8 +191,10 @@ anything that would make a second run differ belongs outside the tools.
 Check it:
 
 ```bash
-python3 "<SKILL_DIR>/scripts/derive-entities.py" --inventory "<INV>" --out /tmp/a.json
-python3 "<SKILL_DIR>/scripts/derive-entities.py" --inventory "<INV>" --out /tmp/b.json
+python3 "<SKILL_DIR>/scripts/derive-entities.py" --inventory "<INV>" \
+  --project "<P>" --overrides "<OVR>" --previous "<PRIOR>" --out /tmp/a.json
+python3 "<SKILL_DIR>/scripts/derive-entities.py" --inventory "<INV>" \
+  --project "<P>" --overrides "<OVR>" --previous "<PRIOR>" --out /tmp/b.json
 diff /tmp/a.json /tmp/b.json
 ```
 
@@ -216,7 +209,7 @@ exists yet.
 |---|---|
 | `direct` entities and fields | `consolidation` — several classes folded into one entity |
 | `junction` entities for many-to-many | `decomposition` — one class split for lifecycle or access |
-| `split-forced` where a platform cap leaves no option | `federated-view` — a read entity over native entities |
+| — | `federated-view` — a read entity over native entities |
 | field options for `expressible: yes` constraints | the `level` axis of every register row |
 | `locus` by declared default | `locus` where the default was overridden on evidence |
 
@@ -232,7 +225,7 @@ worklist rather than a re-derivation.
    ([open-items-guide.md](open-items-guide.md)).
 2. **The genome stays the contract.** The `## Data Model` section is written once by
    Author mode and is read-only afterwards, like every other section
-   ([execution-guide.md](execution-guide.md) Critical Rule 12).
+   (the genome is read-only during execution — [execution-guide.md](execution-guide.md)).
 3. **The Data Fabric surface is `uipath-platform`'s.** Name capabilities; route for
    detail. A field type, a choice-set mechanic or a relationship binding rule that is
    restated here will drift.
@@ -242,14 +235,10 @@ worklist rather than a re-derivation.
 
 ## Validation gates
 
-| Gate | Command | Blocks |
-|---|---|---|
-| Inventory parsed | `ontology-inspect.py` exit 0 | derivation |
-| Graph sound | `derive-entities.py` exit 0 — cycles fail hard | emission |
-| Determinism | two runs, byte-identical output | offering edits |
-| Schema | `uip df entities validate --local` | offering edits |
-| Pack | `uip solution pack <SOLUTION> --dry-run` | offering edits |
-| Genome | `check-genome.py --profile strict` | offering edits |
+All six are stated in
+[datafabric-emission-guide.md § Validation gates](datafabric-emission-guide.md):
+inventory parsed, graph sound, determinism, schema, pack, genome. Every one blocks
+offering edits.
 
 ## Closing the run
 

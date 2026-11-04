@@ -70,7 +70,7 @@ pass 3.
 
 ## entities.json
 
-Genome's own format, derived from `target.r2rml` and the inventory. **Not** the
+Genome's own format, derived from the inventory. **Not** the
 `uip df` input shape — the applier translates.
 
 ```jsonc
@@ -116,20 +116,25 @@ applied in a later pass and they are the fields the CLI cannot write.
 
 ## Choice sets
 
-`numberId` is **author-assigned** on the local path — the server assigns it only for
-tenant choice sets, where the "create one value at a time, then re-read
-`list-values`" rule applies. Locally there is no round trip.
+A choice set has no local form, so it is created on the tenant by the open items
+(§ The two tiers). **The server assigns `NumberId`, 0-based by creation order**, and
+the number is immutable once records exist — the stored record value is the integer,
+so renumbering silently changes what every existing row means. That is the one-way
+door ([data-model-guide.md § Commitment ladder](data-model-guide.md)), and it closes
+at the open-item run, not at derivation.
 
-**Pinned, sequential, never recomputed.** `entities.json` stores each value's
-`numberId` and the set's `nextNumberId`. A re-run keeps every existing value's
-number and gives a newly appeared value `nextNumberId`, even when the ontology
-inserted it in the middle of the list. A value the ontology drops **keeps its number
-reserved** — never reuse it.
+What `entities.json` carries is therefore a **proposal**: the value order the bundle
+implies, with the numbers it would produce. `--previous` carries that proposal
+forward so a re-derivation does not reshuffle it, and a value the ontology drops
+keeps its slot rather than letting a later value inherit it.
 
-The platform's only rule is uniqueness within the set. The pinning is ours, and it is
-what stops a later run silently remapping records that are already deployed: the
-stored record value is the integer, so renumbering changes what every existing row
-means. This is a one-way door ([data-model-guide.md § Commitment ladder](data-model-guide.md)).
+The proposal is not authority. `uip df choice-set-values create` can be rejected
+without the server reserving the slot, so a later success takes the number the failed
+one was meant to occupy. The open items therefore say: create one value at a time,
+**fail loud on each** — never silence a rejection — then re-read with
+`uip df choice-sets list-values` and check every number against the proposal before
+any record is written. `uipath-platform` → `references/data-fabric/choice-sets.md`
+owns that rule.
 
 ## The resource shape the CLI writes
 
@@ -219,12 +224,11 @@ key**, `dependencies: []`:
 
 ### Four rules the shape dictates
 
-1. **`SqlType.Name` is the SQL type, not the CLI enum.** A third vocabulary beside
+1. **`SqlType.Name` is the SQL type, not the CLI enum** — a third vocabulary beside
    the CLI write shape (`"type": "STRING"`) and the API read shape
-   (`FieldDataType.Name`): `STRING`→`NVARCHAR`, `MULTILINE_TEXT`/`MULTILINE_MAX`→
-   `NVARCHAR`, `DECIMAL`/`AUTO_NUMBER`→`DECIMAL`, `BOOLEAN`→`BIT`, `DATE`→`DATE`,
-   `DATETIME_WITH_TZ`→`DATETIMEOFFSET`, `CHOICE_SET_SINGLE`→`INT`,
-   `CHOICE_SET_MULTIPLE`→`NVARCHAR`, `RELATIONSHIP`/`FILE`→`UNIQUEIDENTIFIER`.
+   (`FieldDataType.Name`). The mapping is the SQL column of `uipath-platform` →
+   `references/data-fabric/entity-schema.md` § Supported Field Types; do not copy it
+   here, it drifts.
 2. **`resource.key` must equal `resourceJson.Id`.** Both are the GUID the applier
    mints for that entity.
 3. **`resource.dependencies` is separate from the in-field `Reference*` pointer.**
@@ -302,8 +306,9 @@ Three things the text must carry, because they are decisions rather than mechani
    immutable, so the table of intended numbers travels with the checklist and is
    checked against `list-values` before records exist.
 2. **`referenceFieldId` is the target's display field**, not its `Id` — it decides
-   what renders in pickers. `entities.json` carries `displayField` per entity so the
-   engineer does not have to choose.
+   what renders in pickers. `entities.json` carries `displayField` as a **proposal**;
+   `uipath-platform` requires the choice to be confirmed rather than defaulted, and
+   never silently defaulted to the target's `Id`. An entity with no proposal asks.
 3. **Which workflows are blocked** until each field exists (§ The two tiers).
 
 ## Validation gates
@@ -344,8 +349,8 @@ checked, and it would drift ([genome-format-guide.md § Provenance](genome-forma
 
 1. **Creating anything on a tenant.** Author mode is local-only; the target
    environment's setup is an open item.
-2. **Authoring a resource file or a `.entity` stub from scratch.** The CLI creates
-   the pair; the applier appends (§ Everything stays local).
+2. **Writing into `resources/solution_folder/` at all.** The CLI owns both halves of
+   the pair (§ The two tiers).
 3. **String-patching `spec.resourceJson`** instead of parsing and re-serializing.
 4. **Recomputing `numberId`.** A one-way door; renumbering remaps deployed records
    (§ Choice sets).

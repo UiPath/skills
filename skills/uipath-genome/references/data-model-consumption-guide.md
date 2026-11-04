@@ -3,7 +3,8 @@
 Rules. How a genome's Workflow, Handoffs and Interface refer to a derived entity set,
 and how the owning build skills bind to it.
 
-Read whole when a genome has a `## Data Model` section. Router:
+Read whole before writing the Workflow of a genome that has a data model, and in
+Edit or Execute when the genome carries a `## Data Model` section. Router:
 [data-model-guide.md](data-model-guide.md).
 
 This guide exists for one reason beyond readability: **the access pattern Phase 2
@@ -41,9 +42,10 @@ Rules:
 1. **Name entities and fields exactly as the model names them**, not as the ontology
    names them. The genome is written against the Data Fabric model; the IRI lives in
    the register.
-2. **Every `via` is a hop.** `reads Policy.coverageLimit via Claim.policy` costs a
-   resolve-then-filter round trip, because Data Fabric has no query-time join between
-   native entities ([normalization-guide.md § Platform limits](normalization-guide.md)).
+2. **Every `via` is a hop**, on the documented resolve-then-filter access pattern —
+   a claim that still needs confirming against a tenant
+   ([normalization-guide.md § Platform limits](normalization-guide.md)). Count them
+   regardless: the count is evidence whether or not the cost is what we think.
    Chained traversals are written as several `via` clauses and cost one round trip
    each — that is exactly the evidence a later fold is argued from.
 3. **A step that writes a field a constraint governs cites nothing extra** — the

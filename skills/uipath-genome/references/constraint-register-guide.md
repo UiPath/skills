@@ -78,7 +78,7 @@ The pattern is well established, and recognising which one you are in usually se
 | Ops platform over a PSS or MRO | Amadeus Altéa, Sabre, AMOS, TRAX | disruption management, predictive maintenance | "a serialised part is installed on one aircraft at a time" is the MRO's to hold |
 
 A UiPath solution authored from an ontology is almost always the engagement layer.
-That is why default D1 asks per entity whether this store is the system of record.
+That is why D1 defaults every entity to replica and asks only for the exceptions.
 
 ## When the consumer re-checks
 
@@ -135,11 +135,20 @@ holds partial copies.
 
 Mechanical. Set `expressible` from this and nothing else.
 
+Two rows are **structural and unconditional** — they shape the field whatever the
+verdict, because an entity has field types and a cardinality regardless of who
+enforces what:
+
+| SHACL | Always lands as |
+|---|---|
+| `sh:datatype` | the field `type` |
+| `sh:maxCount = 1` on an object property | `RELATIONSHIP` rather than a junction |
+
+The rest are conditional on the verdict:
+
 | SHACL | `expressible` | Lands as, when `locus: uipath` and `level: state` |
 |---|---|---|
-| `sh:datatype` | yes | the field `type` |
 | `sh:minCount >= 1` | yes | `isRequired` — **but see § The isRequired trap** |
-| `sh:maxCount = 1` on an object property | yes | `RELATIONSHIP` rather than a junction |
 | `sh:maxLength` | yes | `lengthLimit` |
 | `sh:minInclusive` / `sh:maxInclusive` | yes | `minValue` / `maxValue`, `DECIMAL` only |
 | `sh:in` | yes | a choice set + `CHOICE_SET_SINGLE` / `_MULTIPLE` |
@@ -151,7 +160,7 @@ Mechanical. Set `expressible` from this and nothing else.
 | `sh:minCount > 1` | **no** | no "at least N links" constraint exists |
 | `owl:hasKey` over ≥2 properties | **no** | `isUnique` is per field — no composite uniqueness |
 | pair-uniqueness on a junction | **no** | same reason |
-| `sh:nodeKind`, `sh:class` | partial | satisfied by `RELATIONSHIP` typing, nothing further |
+| `sh:nodeKind`, `sh:class` | yes | satisfied by `RELATIONSHIP` typing; nothing further is stated, and no separate option exists |
 | anything in `parserNotes` | **no** | not understood; `candidate: assumed`, and say so |
 
 `sh:pattern` is the cleanest proof the axes earn their keep: a format constraint that
@@ -216,10 +225,10 @@ list. Same pattern the skill already uses for configuration questions.
 
 | # | Default | Override by naming |
 |---|---|---|
-| D1 | every entity is the **system of record** | the entities that are replicas, and of what |
+| D1 | every entity is a **replica**; nothing on it is enforced here | the entities this solution is the **system of record** for |
 | D2 | scope is **tenant** | the entities that are folder-scoped, and the folder |
-| D3 | `displayField` is the first required `STRING`, else the first `STRING`, else `Id` | the entity and its display field |
-| D4 | an `owl:oneOf` class becomes a **choice set** | the classes that should be lookup entities instead |
+| D3 | `displayField` is **proposed** as the lowest-sorting required `STRING`, else the lowest-sorting `STRING`, else none | the entity and its display field |
+| D4 | a `sh:in` closed value set becomes a **choice set** | the properties that should be a relationship to a lookup entity instead |
 
 Declare them as one message, not four questions. The user answers with overrides or
 with "take the defaults"; either is an answer, and both are recorded.
@@ -229,9 +238,15 @@ default-applied`.** A silently applied default is worse than a deferred decision
 deferred decision is visible in the worklist, a silent one is indistinguishable from
 a derived fact.
 
-D1 is the load-bearing one. It decides `locus` for every constraint on that entity,
-and it is the only question that can legitimately put connector-backed federation on
-the table at all — a replica has no ingestion path to choose against.
+D1 is the load-bearing one, and it defaults the safe way round. The asymmetry of
+harm decides the direction: a constraint left unenforced is recoverable later, while
+a wrongly required field rejects data the source already accepted and cannot be
+ingested at all. It also matches what is almost always true (§ Systems of record and
+systems of engagement) — so the exception, not the rule, is what the user names.
+
+D3 proposes rather than decides. The display field controls what renders in every
+picker, and `uipath-platform` requires that choice to be confirmed rather than
+defaulted — in particular it must never fall back to the target's `Id`.
 
 ## The register row
 
@@ -267,7 +282,10 @@ side, a `decimalPrecision` with no evidence).
 
 ## What a verdict lands as
 
-Once `locus` and `level` are both set — Phase 2 for most rows:
+Once `locus` and `level` are both set — Phase 2 for most rows. **Author mode writes
+the `state` options provisionally** under D1 and the declared annotations; Phase 2
+may drop one when the evidence says `transition` (§ The `isRequired` trap). The
+table is what the verdict means, not a claim that it is settled:
 
 | `locus` | `level` | Lands as |
 |---|---|---|
@@ -320,19 +338,19 @@ more context" into a finite, ordered list.
 
 1. **Setting `isRequired` from `sh:minCount` alone** (§ The `isRequired` trap). The
    single most expensive error available here.
-1a. **Re-enforcing a constraint the system of record already holds**, outside the
+2. **Re-enforcing a constraint the system of record already holds**, outside the
    four cases in § When the consumer re-checks. Rejecting data the source accepted
    creates divergence — a record that exists upstream and cannot exist here. The
    layer's job is to surface the violation, not block it.
-1b. **Defaulting `locus` without reading the shapes' enforcement annotations**
+3. **Defaulting `locus` without reading the shapes' enforcement annotations**
    (§ Read the enforcement annotations before defaulting). A declared answer beats a
    defaulted one, and overriding a declared one silently is worse than either.
-2. **Applying a default without declaring it** (§ Defaults and overrides).
-3. **Writing a `level` for a `source: process` row in Author mode.** That is a guess
+4. **Applying a default without declaring it** (§ Defaults and overrides).
+5. **Writing a `level` for a `source: process` row in Author mode.** That is a guess
    wearing a verdict's clothes.
-4. **Collapsing `locus` and `level` into one column.** Loses the mandatory-but-not-
+6. **Collapsing `locus` and `level` into one column.** Loses the mandatory-but-not-
    enforced-here case the extension exists for.
-5. **Putting a rationale in `evidence`.** Evidence is facts; the reasoning belongs in
+7. **Putting a rationale in `evidence`.** Evidence is facts; the reasoning belongs in
    `note`.
-6. **Omitting a row for a `parserNotes` line.** A construct nobody understood is a
+8. **Omitting a row for a `parserNotes` line.** A construct nobody understood is a
    constraint nobody enforced.

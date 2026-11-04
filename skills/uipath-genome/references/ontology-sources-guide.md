@@ -32,8 +32,8 @@ handled below.
 | which entities exist | ✔ classes | — | ○ node shapes, when no OWL |
 | which fields exist | ✔ datatype properties | ✔ column mappings | ○ property shapes |
 | relationships | ✔ object properties | ✔ join conditions | ○ `sh:class` |
-| field **types** | ○ property ranges | ✔ column SQL types | ✔ `sh:datatype` |
-| field **lengths and bounds** | — | ✔ column declarations | ✔ `sh:maxLength`, `sh:minInclusive` |
+| field **types** | ○ property ranges | — *(column SQL types are not read — § Parser limits)* | ✔ `sh:datatype` |
+| field **lengths and bounds** | — | — *(same)* | ✔ `sh:maxLength`, `sh:minInclusive` |
 | functional dependencies | ✔ functional properties, `owl:hasKey` | ✔ logical tables, keys | ✔ `sh:maxCount 1` |
 | closed value sets | ○ `owl:oneOf` | — | ✔ `sh:in` |
 | required-ness *(as a domain claim)* | ○ cardinality restrictions | — | ✔ `sh:minCount` |
@@ -49,7 +49,7 @@ Proceed and say what cannot be derived. Never substitute a guess for a missing i
 | Missing | Still derivable | Lost |
 |---|---|---|
 | SHACL | the entity set, relationships, types from ranges | every constraint row; the register holds only renames. Field options default to permissive — no `isRequired`, no `lengthLimit`, no bounds |
-| R2RML | the entity set from OWL, constraints from SHACL | source provenance on every field; column-derived lengths and precisions; the FD evidence the source's own decomposition carries; **the `target.r2rml` baseline** — later phases have no diff anchor |
+| R2RML | the entity set from OWL, constraints from SHACL | source provenance on every field; the FD evidence the source's own decomposition carries; **the `target.r2rml` baseline** — later phases have no diff anchor |
 | OWL | entities from `sh:NodeShape`, fields from property shapes | class hierarchy, `owl:hasKey`, functional-property FDs, the n-ary reification signature (§ Reified relations) |
 
 **No R2RML is the serious one.** Without it there is no baseline document, so the
@@ -135,11 +135,15 @@ still yields a derivation, because the inventory is far smaller than its sources
   ],
   "shapes": [
     { "iri": "<IRI>", "targetClass": "<IRI|null>",
+      "annotations": { "<PREDICATE_IRI>": ["<VALUE>"] },
       "properties": [
         { "path": "<IRI>", "datatype": "<XSD_IRI|null>", "minCount": 1, "maxCount": 1,
           "maxLength": null, "minLength": null, "pattern": null,
           "minInclusive": null, "maxInclusive": null, "in": ["<VALUE>"],
           "nodeKind": null, "class": null, "name": null,
+          "severity": "<sh:Violation|sh:Warning|sh:Info|null>",
+          "deactivated": "<true|null>",
+          "annotations": { "<PREDICATE_IRI>": ["<VALUE>"] },
           "unsupported": ["<SHACL_PREDICATE>"] }
       ] }
   ],

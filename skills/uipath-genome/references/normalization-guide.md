@@ -180,7 +180,7 @@ touches components whose workflows exist.
 ## How a revision is recorded
 
 The genome is read-only during execution, so a revision never edits it
-([execution-guide.md](execution-guide.md) Critical Rule 12).
+(the genome is read-only during execution — [execution-guide.md](execution-guide.md)).
 
 | Artifact | Holds | Mutable |
 |---|---|---|
@@ -189,9 +189,9 @@ The genome is read-only during execution, so a revision never edits it
 | the working folder | evidence gathered, per component | yes |
 | README § Differences from the genome | any revision contradicting the contract | written at the end |
 
-`target.r2rml` is byte-identical to `source.r2rml` when Author mode ends. Every later
-revision edits it, and **the diff between the two files is the normalization decision
-record** — machine-readable, replayable, and reviewable as a diff.
+`target.r2rml` is byte-identical to `source.r2rml` when Author mode ends, and every
+later revision edits it — so the diff between them is the normalization decision
+record ([data-model-guide.md § Artifacts](data-model-guide.md)).
 
 The last row closes the loop: genome's completion report already surfaces a
 divergence and offers it as a genome edit, so an iteration that outgrows the contract

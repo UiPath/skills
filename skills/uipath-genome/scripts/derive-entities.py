@@ -6,22 +6,27 @@ Usage:
                      [--overrides <overrides.json>] [--previous <entities.json>]
                      [--scope tenant|folder]
 
-Emits only what the inputs and the platform FORCE: `direct` entities and fields,
-`junction` entities for many-to-many, and `split-forced` where a platform cap leaves
-no option. Consolidation, decomposition and federated views need a consumption
-pattern and are never emitted here — see references/entity-derivation-guide.md.
+Emits only what the inputs and the platform FORCE: `direct` entities and fields and
+`junction` entities for many-to-many. Consolidation, decomposition and federated
+views need a consumption pattern and are never emitted here — see
+references/entity-derivation-guide.md.
 
-Deterministic: given the same (inventory, overrides, previous) the output is byte
-identical. Keys are sorted and every list has a stable order.
+Deterministic: given the same (inventory, overrides, previous, project, scope) the
+output is byte identical. Keys are sorted and every list has a stable order.
 
---previous carries choice-set numberIds forward. numberId is immutable once deployed,
-so a re-run must never renumber an existing value.
+--previous carries each choice set's proposed value order forward, so a re-run does
+not renumber. The authoritative numbers are the server's, assigned when the open
+items create the set; read them back with `uip df choice-sets list-values`.
 
 --overrides is a JSON object; every key optional:
-  { "replicas":      { "<EntityName>": "<source system>" },
-    "folderScoped":  { "<EntityName>": "<folder>" },
-    "displayFields": { "<EntityName>": "<FieldName>" },
-    "lookupEntities": ["<CLASS_IRI>"] }
+  { "systemsOfRecord": ["<EntityName>"],                     # D1: everything else
+                                                             # is a replica
+    "replicas":       { "<EntityName>": "<source system>" }, # names the source
+    "folderScoped":   { "<EntityName>": "<folder>" },
+    "displayFields":  { "<EntityName>": "<FieldName>" },
+    "lookupEntities": ["<CLASS_IRI>"],
+    "annotations": { "authoritativeSource": "<PREDICATE_IRI>",
+                     "enforcementMode":     "<PREDICATE_IRI>" } }
 
 Exit 0 on a derivation; exit 1 naming a cycle's members or a rule that cannot be
 satisfied.
@@ -392,6 +397,7 @@ def main():
     annotation_map = overrides.get("annotations", {})
     source_predicate = annotation_map.get("authoritativeSource")
     mode_predicate = annotation_map.get("enforcementMode")
+    systems_of_record = set(overrides.get("systemsOfRecord", []))
     declared_sources = {}   # class IRI -> the system named in the shapes
 
     classes = {c["iri"]: c for c in inv.get("classes", [])}
@@ -433,17 +439,18 @@ def main():
             continue
         declared_sources[iri] = declared
         ename = name_of[iri]
-        if ename in replicas and replicas[ename] != declared:
-            register.add(source="domain", from_iri=iri, subject=ename,
-                         statement=f"the shapes name {declared!r} as the authoritative source; "
-                                   f"the override names {replicas[ename]!r}; the override wins",
-                         expressible="yes", locus="external", level=None,
-                         resolution="override")
-        elif ename not in replicas:
-            replicas[ename] = declared
+        if ename in systems_of_record:
             register.add(source="domain", from_iri=iri, subject=ename,
                          statement=f"the shapes name {declared!r} as the authoritative source, "
-                                   f"so this entity is a replica and D1 does not apply",
+                                   f"but the overrides claim this solution as the system of "
+                                   f"record; the override wins and its constraints are enforced",
+                         expressible="yes", locus="uipath", level=None,
+                         resolution="override")
+        else:
+            replicas.setdefault(ename, declared)
+            register.add(source="domain", from_iri=iri, subject=ename,
+                         statement=f"the shapes name {declared!r} as the authoritative source, "
+                                   f"so this entity is a replica of it",
                          expressible="yes", locus="external", level=None,
                          resolution="override")
 
@@ -570,8 +577,21 @@ def main():
     for iri in entity_classes:
         ename = name_of[iri]
         cls = classes[iri]
-        is_replica = ename in replicas
-        locus = "external" if is_replica else "uipath"
+        # D1: an entity is a replica unless this solution is named as its system of
+        # record. The asymmetry of harm decides the direction — a constraint left
+        # unenforced is recoverable, a wrongly required field rejects data the source
+        # already accepted and cannot be ingested at all.
+        is_master = ename in systems_of_record
+        is_replica = not is_master
+        locus = "uipath" if is_master else "external"
+        if is_replica and ename not in replicas:
+            register.add(source="domain", from_iri=iri, subject=ename,
+                         statement="no system of record declared for this entity, so it is "
+                                   "treated as a replica and nothing on it is enforced here "
+                                   "(default D1)",
+                         expressible="yes", locus="external", level=None,
+                         resolution="default-applied",
+                         note="name it under systemsOfRecord to enforce its constraints")
         taken_fields, fields, cs_fields = set(), [], []
 
         for prop in sorted(props_by_class.get(iri, []), key=lambda p: p["iri"]):
@@ -591,6 +611,11 @@ def main():
             # of record accepted creates divergence, not a catch.
             soft = declared_level or ("monitor" if field_locus == "external" else "transition")
             hard = declared_level or ("state" if field_locus == "uipath" else "monitor")
+            # expressible: no forecloses state, including when the shapes declare
+            # `authoritative`. A constraint the schema cannot hold is enforced by an
+            # operation, surfaced, or trusted — never by the schema.
+            if soft == "state":
+                soft = "transition"
             resolution = "override" if (deactivated or declared_level) else None
 
             # A deactivated shape is excluded from the merge so it cannot weaken an
@@ -629,14 +654,14 @@ def main():
             for statement in statements:
                 register.add(source="process", from_iri=prop["iri"], subject=subject,
                              statement=statement, expressible="no", locus=field_locus,
-                             level="assumed" if deactivated else None, candidate=soft,
+                             level=None, candidate=soft,
                              resolution=resolution or "deferred",
                              note="no Data Fabric field option states this")
             for unsupported in shape.get("unsupported", []):
                 register.add(source="process", from_iri=prop["iri"], subject=subject,
                              statement=f"sh:{unsupported} must hold",
                              expressible="no", locus=field_locus,
-                             level="assumed" if deactivated else None, candidate=soft,
+                             level=None, candidate=soft,
                              resolution=resolution or "deferred")
             for key_group in cls.get("hasKey", []):
                 if len(key_group) > 1 and prop["iri"] in key_group:
@@ -671,8 +696,30 @@ def main():
                      "provenance": {"from": [prop["iri"]], "derivation": "direct"}}
             field.update(extra)
 
+            # A bound beyond STRING's reach widens the type rather than being
+            # silently narrowed to 4000 — a narrowed bound is a different constraint
+            # from the one the bundle stated, and it would leave no trace.
             if shape.get("maxLength") and cli_type == "STRING":
-                field["lengthLimit"] = min(int(shape["maxLength"]), 4000)
+                limit = int(shape["maxLength"])
+                if limit > 10000:
+                    field["type"], cli_type = "MULTILINE_MAX", "MULTILINE_MAX"
+                    field["lengthLimit"] = min(limit * 2, 131072)
+                    register.add(source="metadata", from_iri=prop["iri"], subject=subject,
+                                 statement=f"sh:maxLength {limit} exceeds MULTILINE_TEXT's "
+                                           f"10000; emitted MULTILINE_MAX, whose limit counts "
+                                           f"UTF-16 bytes, not characters",
+                                 expressible="yes", locus=locus, level=None,
+                                 resolution="default-applied")
+                elif limit > 4000:
+                    field["type"], cli_type = "MULTILINE_TEXT", "MULTILINE_TEXT"
+                    field["lengthLimit"] = limit
+                    register.add(source="metadata", from_iri=prop["iri"], subject=subject,
+                                 statement=f"sh:maxLength {limit} exceeds STRING's 4000; "
+                                           f"emitted MULTILINE_TEXT",
+                                 expressible="yes", locus=locus, level=None,
+                                 resolution="default-applied")
+                else:
+                    field["lengthLimit"] = limit
             if cli_type == "DECIMAL":
                 for key, shape_key in (("minValue", "minInclusive"), ("maxValue", "maxInclusive")):
                     if shape.get(shape_key) is not None:
@@ -699,20 +746,32 @@ def main():
                          "cardinality": rel["cardinality"],
                          "provenance": {"from": [rel["prop"]["iri"]], "derivation": "direct"}})
 
+        # Lowest-sorting, so the pick does not depend on construction order. Never
+        # falls back to Id: the display field decides what renders in every picker,
+        # and the platform requires that choice to be confirmed, not defaulted to a
+        # UUID. With no candidate the entity carries none and the open item asks.
         chosen = overrides.get("displayFields", {}).get(ename)
         if not chosen:
-            required_strings = [f["name"] for f in fields
-                                if f["type"] == "STRING" and f.get("isRequired")]
-            any_strings = [f["name"] for f in fields if f["type"] == "STRING"]
-            chosen = (required_strings or any_strings or ["Id"])[0]
-            register.add(source="domain", from_iri=iri, subject=ename,
-                         statement=f"displayField defaulted to {chosen!r} (default D3)",
-                         expressible="yes", locus=locus, level=None,
-                         resolution="default-applied")
+            required_strings = sorted(f["name"] for f in fields
+                                      if f["type"] == "STRING" and f.get("isRequired"))
+            any_strings = sorted(f["name"] for f in fields if f["type"] == "STRING")
+            candidates = required_strings or any_strings
+            chosen = candidates[0] if candidates else None
+            register.add(
+                source="domain", from_iri=iri, subject=ename,
+                statement=(f"displayField proposed as {chosen!r} (default D3)" if chosen else
+                           "no STRING field to propose as displayField"),
+                expressible="yes", locus=locus, level=None,
+                resolution="default-applied" if chosen else "deferred",
+                note="a proposal only: the platform requires the display field to be "
+                     "confirmed, since it decides what renders in every picker")
 
         if len([f for f in fields if f["type"] == "MULTILINE_MAX"]) > 10:
-            raise DeriveError(f"{ename}: more than 10 MULTILINE_MAX fields; a split-forced "
-                              f"decomposition is required and is not yet implemented")
+            raise DeriveError(
+                f"{ename}: {len([f for f in fields if f['type'] == 'MULTILINE_MAX'])} "
+                f"MULTILINE_MAX fields exceeds the platform cap of 10. Splitting the entity "
+                f"is a decomposition this mode does not make; reduce the bundle's long-text "
+                f"properties or split the class in the ontology.")
 
         entities.append({
             "name": ename, "displayName": cls.get("label") or ename,
@@ -727,7 +786,7 @@ def main():
             "choiceSetFields": sorted(cs_fields, key=lambda c: c["name"]),
         })
 
-        if is_replica:
+        if is_replica and ename in replicas:
             register.add(source="domain", from_iri=iri, subject=ename,
                          statement=f"entity is a replica of {replicas[ename]}; the system of "
                                    f"record holds every constraint on it",

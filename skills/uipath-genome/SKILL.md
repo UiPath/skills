@@ -41,10 +41,10 @@ Every turn resends the whole context: a reference read early is paid again on ev
 | Author | the unit of work is assessed | the description iterates over items | [transactional-shape-guide.md](references/transactional-shape-guide.md) |
 | Author | start | an ontology bundle accompanies the request (`.ofn`, R2RML, SHACL, in any combination) | [data-model-guide.md](references/data-model-guide.md) and [ontology-sources-guide.md](references/ontology-sources-guide.md) whole |
 | Author | the inventory exists | — | [entity-derivation-guide.md](references/entity-derivation-guide.md) |
-| Author | the inventory exists | it reports ≥1 SHACL shape | [constraint-register-guide.md](references/constraint-register-guide.md) |
+| Author | the inventory exists | — (it holds the four defaults and the overrides shape, which every bundle needs) | [constraint-register-guide.md](references/constraint-register-guide.md) |
 | Author | the inventory exists | it reports ≥2 classes with an object property between them | [normalization-guide.md](references/normalization-guide.md) |
 | Author | before the first solution resource is written | — | [datafabric-emission-guide.md](references/datafabric-emission-guide.md) |
-| Author | the Workflow is written | the run emitted a data model | [data-model-consumption-guide.md](references/data-model-consumption-guide.md) |
+| Author | before the Workflow is written | the run emitted a data model | [data-model-consumption-guide.md](references/data-model-consumption-guide.md) |
 | Edit, Execute | start | the genome has a `## Data Model` section | [data-model-consumption-guide.md](references/data-model-consumption-guide.md); [data-model-guide.md](references/data-model-guide.md) § Commitment ladder before any change to the entity set |
 | Extract | start | — | [extraction-guide.md](references/extraction-guide.md), genome-format-guide.md, [extracted-genome-guide.md](references/extracted-genome-guide.md) and skill-mapping-guide.md whole; the template of the level chosen; the extracted example [salesforce-accounts-and-contacts-genome.md](assets/examples/salesforce-accounts-and-contacts-genome.md) by its § Source Map only, to calibrate the step table; the source guide as § Source Frameworks states |
 | Extract | from the inventory on | the inventory or a signal shows per-item work: queue items fetched or added, a loop over rows, files or mails with a per-item catch, a work list read, a framework state machine | transactional-shape-guide.md, in the turn after the first such signal |

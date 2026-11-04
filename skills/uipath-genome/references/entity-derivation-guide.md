@@ -30,10 +30,12 @@ Everything else here is recomputed free on a re-run.
 | a class in `reifiedRelations` | an entity with a `RELATIONSHIP` per participant plus its attribute fields | § Junctions — never also synthesize a bridge for it |
 | a datatype property | a field on each class in its domain | a property with no domain and no shape targeting it goes to `notCovered` |
 | an object property, functional or `sh:maxCount 1` | a `RELATIONSHIP` on the **many** side | lives on the child, points at the parent; no reverse field exists |
+| an object property, inverse-functional only | a `RELATIONSHIP` on the **range** class | § Object properties and direction |
 | an object property, many-to-many | a synthesized junction entity | § Junctions |
 | `rdfs:label` / `sh:name` | `displayName`, and the `displayField` candidate | |
 | `rdfs:comment` | `description`, truncated to 512 characters | a truncation is a register row |
-| `owl:hasKey` or `owl:InverseFunctionalProperty` over **one** datatype property | `isUnique: true` on that field | a composite key cannot be expressed — § Composite keys |
+| `owl:hasKey` over **one** datatype property | `isUnique: true` on that field | a composite key cannot be expressed — § Composite keys |
+| a class with object properties but no datatype property, not reified | an entity with no scalar fields | legal; it is still a `RELATIONSHIP` target |
 | a class with no property of any kind | nothing; a `notCovered` row | |
 
 **A property in several domains becomes a field on each.** That is duplication the
@@ -93,13 +95,17 @@ them — that enforces something the ontology did not say.
 
 ## Types
 
-From `sh:datatype` when a shape gives one, else the property's `rdfs:range`, else the
-R2RML column's SQL type, else `STRING` with a register row.
+From `sh:datatype` when a shape gives one, else the property's `rdfs:range`, else
+`STRING` with a register row. The R2RML column's SQL type is **not** a source: the
+inventory carries the column name as provenance, not its type
+([ontology-sources-guide.md § Inventory contract](ontology-sources-guide.md)).
 
 | XSD | Emit | Never emit |
 |---|---|---|
-| `xsd:string` ≤4000 | `STRING` + `lengthLimit` | |
-| `xsd:string` >4000 | `MULTILINE_TEXT` | |
+| `xsd:string`, no length known | `STRING`, no `lengthLimit` | |
+| `xsd:string` with `sh:maxLength` ≤4000 | `STRING` + `lengthLimit` | |
+| …>4000, ≤10000 | `MULTILINE_TEXT` + `lengthLimit` | the widening is a register row |
+| …>10000 | `MULTILINE_MAX` | its limit counts UTF-16 **bytes**, about 2 per character |
 | `xsd:integer`, `xsd:int`, `xsd:long`, `xsd:short` | `DECIMAL` + `decimalPrecision: 0` | `INTEGER`, `BIG_INTEGER` |
 | `xsd:decimal`, `xsd:float`, `xsd:double` | `DECIMAL` + `decimalPrecision` | `FLOAT`, `DOUBLE` |
 | `xsd:boolean` | `BOOLEAN` | |
@@ -112,9 +118,10 @@ broken in the Data Fabric UI. The authoritative type surface is
 `uipath-platform` → `references/data-fabric/entity-schema.md`; this table is the
 *mapping from XSD*, which that skill does not own.
 
-`decimalPrecision` with no evidence defaults to `0` and is a register row. A money
-field the ontology does not mark is the commonest miss — `sh:maxInclusive` with two
-decimal places, or an R2RML column of `DECIMAL(n,2)`, is the evidence to look for.
+`decimalPrecision` follows the XSD type — `0` for the integer family, `2` otherwise —
+and the choice is a register row. A money field the ontology does not distinguish
+from a count is the commonest miss; `sh:maxInclusive` with two decimal places is the
+only evidence the inventory carries.
 
 `defaultValue` is **a string for every type** — `"0"`, never `0`.
 
@@ -183,7 +190,6 @@ never a scalar, and every emitted object records why it exists.
 |---|---|---|---|
 | `direct` | one class, or one property | **Author** | 1:1 |
 | `junction` | both endpoint classes **and** the object property | **Author** | many-to-many with a single-valued `RELATIONSHIP` — no alternative exists |
-| `split-forced` | the class it was split from | **Author** | a platform cap with no option (>10 `MULTILINE_MAX`) |
 | `decomposition` | the class it was split from | Phase 2 | lifecycle, scope or access |
 | `consolidation` | every class folded in | Phase 2 | a denormalization judgement |
 | `federated-view` | every class the view spans | Phase 2 | a query pattern recurring across surfaces |
@@ -191,7 +197,7 @@ never a scalar, and every emitted object records why it exists.
 Open vocabulary — a new mapping shape gets a new kind rather than being forced into
 `direct`. **A non-`direct` derivation with an empty `because` is a defect.**
 
-**Author mode emits only the first three.** The bottom three need a consumption
+**Author mode emits only the first two.** The bottom three need a consumption
 pattern, and no automation exists yet in the run that authors the genome
 ([data-model-guide.md § What Author mode decides](data-model-guide.md)).
 
