@@ -2,25 +2,26 @@
 
 Format spec for the planner's two output artifacts:
 
-- `<feature>.md` — non-PDD lane plan file (combines lightweight architecture notes + task list)
-- `<process>-tasks.md` — PDD-driven lane task file (task list only; architecture lives in the SDD)
+- `<feature>.md` — `decompose` plan file (combines lightweight architecture notes + task list)
+- `<process>-tasks.md` — `plan` task file (task list only; architecture lives in the SDD)
 
 Both share the same task row schema. The difference is the prelude — `<feature>.md` carries an architecture summary; `<process>-tasks.md` does not (the SDD is the architecture).
 
 ## Header schema
 
-### Non-PDD lane (`<feature>.md`)
+### `decompose` (`<feature>.md`)
 
 ```markdown
 # <Feature Name> Implementation Plan
 
 **Goal:** <one sentence summarizing what the automation does>
 **Source:** None — planned from user request
-**Project type:** <XAML / C# coded / AI Agent / Flow / Application>
+**Project type:** <XAML / C# coded / AI Agent / Flow / BPMN / Case / API Workflow / Application>
 **Expression language:** VB.NET (XAML only; N/A for coded / AI Agent / Flow / Application)
 **Approach:** <explore-first / simultaneous>
 **Execution autonomy:** <autonomous / interactive>
-**Delivery model:** <cloud / automation-suite <version> / standalone>  <!-- only when delivery signals were present in the request; omit otherwise -->
+**Packaging:** <standalone / solution>  <!-- every plan with a generation skill; decides the deploy skill -->
+**Delivery model:** <cloud / automation-suite <version> / standalone / unspecified>
 **App type:** <web / desktop / citrix / N/A>
 **App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
 **UI targeting:** <agent-builds-you-review / user-indicates / N/A>
@@ -50,7 +51,7 @@ In `interactive` mode this section is optional — the user is available to reso
 "Scope feels large", "many tool calls used", "natural pause point", and "partial result looks usable" are NOT stop conditions. If it is not in this list, the executor continues.>
 ```
 
-### PDD-driven lane (`<process>-tasks.md`)
+### `plan` (`<process>-tasks.md`)
 
 ```markdown
 # <Process Name> — Implementation Tasks
@@ -59,10 +60,17 @@ In `interactive` mode this section is optional — the user is available to reso
 **SDD scope:** <single-product / solution>
 **Execution autonomy:** <autonomous / interactive>
 **Delivery model:** <cloud / automation-suite <version> / standalone / unspecified>
+**App type:** <web / desktop / citrix / N/A>
+**App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
+**UI targeting:** <agent-builds-you-review / user-indicates / N/A>
 **Generation date:** <YYYY-MM-DD>
 
 > Tasks below are derived from the SDD. The SDD remains the architectural source of truth.
 > When `Execution autonomy: interactive`, the planner enters plan mode for review before execution.
+
+## Stop conditions
+
+<Only when `Execution autonomy` is `autonomous`: the hard blockers that interrupt execution, as in the `decompose` header above.>
 ```
 
 ## Task row schema
@@ -79,7 +87,7 @@ Every task — in both file types — uses this exact structure. The fields belo
 **Skill prompt:**
 
 > <Imperative prompt that activates the specialist skill. Include exact SDD section
->  references when in PDD-driven lane. End with the anti-hallucination rule.>
+>  references when in `plan`. End with the anti-hallucination rule.>
 
 - [ ] <concrete sub-step: action + file paths / activity names / commands>
 - [ ] <concrete sub-step: expected outcome or verification>
@@ -92,37 +100,37 @@ Every task — in both file types — uses this exact structure. The fields belo
 |---|---|---|
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
 <!--skill-flavor:task-row-tool-fields:start-->
-| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The planner emits this skill in the live `TaskCreate` call. |
+| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`, `uipath-genome` (Pattern 7 only: the build of a genome). The planner names this skill in the live task it creates with the task-list tool. |
 | `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
-| `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its TaskUpdate flips the checkbox; `human` only when the user manually edits the file. |
-| `Blocked by` | yes | Comma-separated task IDs, or `none`. Drives the live `addBlockedBy` calls. |
-| `Skill prompt` | yes | Imperative prompt the planner pastes into the TaskCreate `description`. Must end with the anti-hallucination rule (below). |
+| `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its task status update flips the checkbox; `human` only when the user manually edits the file. |
+| `Blocked by` | yes | Comma-separated task IDs, or `none`. Drives the live blocked-by links. |
+| `Skill prompt` | yes | Imperative prompt the planner pastes into the live task's description. Must end with the anti-hallucination rule (below). |
 <!--skill-flavor:task-row-tool-fields:end-->
 | Sub-steps | yes | Concrete, checkable actions. One clear action per checkbox. No "TBD", no "as needed". |
 | `Validate:` sub-step | yes | Every generation task ends with a build/lint/compile check. |
 
 ## Anti-hallucination rule (mandatory in every Skill prompt)
 
-Append this exact line to every `Skill prompt` block, with the SDD path filled in for PDD-driven lane:
+Append this exact line to every `Skill prompt` block, with the SDD path filled in for `plan`:
 
 ```
 Use values, mappings, and structure exactly as documented in the SDD at <sdd-path>. Do not infer or guess.
 ```
 
-<!--skill-flavor:non-pdd-plan-reference:start-->
-For non-PDD lane, reference the plan file **by path** — never "this plan" (prompts are copied verbatim into `TaskCreate`):
+<!--skill-flavor:decompose-plan-reference:start-->
+For `decompose`, reference the plan file **by path** — never "this plan" (prompts are copied verbatim into the live tasks):
 
 ```
 Use values, mappings, and structure exactly as documented in the plan at <PLAN_FILE_PATH>. Do not infer or guess.
 ```
-<!--skill-flavor:non-pdd-plan-reference:end-->
+<!--skill-flavor:decompose-plan-reference:end-->
 
 ## Testing task is mandatory
 
-Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-agents`, `uipath-coded-apps`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops).
+Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-agents`, `uipath-coded-apps`, `uipath-api-workflow`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops). Under Pattern 7 the Testing task is the `uipath-genome` testing task of [multi-skill-patterns-guide.md](multi-skill-patterns-guide.md) Pattern 7 step 2, not one per skill the genome names, and the validation tasks below are its build's own acceptance criteria, not tasks of their own. A header field whose question was skipped (the UI answers under Pattern 7) reads `N/A`.
 
-Plans that build a **custom connector** (`uipath-connector-builder`) or an **IXP model** (`uipath-ixp`) also get a validation task per artifact — connector validate/import check, IXP model metrics review — placed immediately after that build task and **before** any consumer's build task.
+Plans that build a **custom connector** (`uipath-connector-builder`), an **IXP model** (`uipath-ixp`), a **decision table** (`uipath-rules`) or a **Coded Function** (`uipath-functions`) also get a validation task per artifact — connector validate/import check, IXP model metrics review, rule or function validate — placed immediately after that build task and **before** any consumer's build task.
 
 ```markdown
 ## Task T<N> — <generation-skill> — Testing (MANDATORY)
@@ -141,7 +149,7 @@ Plans that build a **custom connector** (`uipath-connector-builder`) or an **IXP
 - [ ] **Validate:** all tests pass; record results
 ```
 
-## Regenerate logic (PDD-driven lane only)
+## Regenerate logic
 
 When the user picks "Regenerate from the SDD" on the planner's resume question, preserve completed work via identity matching.
 
@@ -161,7 +169,7 @@ When the user picks "Regenerate from the SDD" on the planner's resume question, 
 6. Write the new <process>-tasks.md
 7. Show user a summary diff (preserved counts, added, archived)
 <!--skill-flavor:regenerate-emit:start-->
-8. Emit live TaskCreate calls per the new tasks.md
+8. Create the live tasks with the task-list tool per the new tasks.md
 <!--skill-flavor:regenerate-emit:end-->
 ```
 
@@ -198,30 +206,30 @@ Regenerated <process>-tasks.md from SDD.
 ```
 
 <!--skill-flavor:live-tasks-and-plan-mode:start-->
-## TaskCreate / TaskUpdate mapping
+## Task-list mapping
 
-The planner emits live tasks that mirror the file. Mapping rules:
+The planner creates live tasks with the task-list tool that mirror the file. Map each field to the closest field your task-list tool offers:
 
 | File field | Live task field |
 |---|---|
-| `Task T<N> — <skill> — <description>` | `subject` = `<skill> — <description>` |
+| `Task T<N> — <skill> — <description>` | title = `<skill> — <description>` |
 | `Status: [ ] pending` | initial status `pending` |
 | `Status: [~] in_progress` | status `in_progress` |
 | `Status: [x] completed` | status `completed` |
-| `Identity:` | `metadata.identity` (so future runs can match) |
-| `Skill prompt:` | `description` (verbatim, including anti-hallucination rule) |
-| `Blocked by:` | `addBlockedBy` (after all tasks are created) |
-| `Completed:` | `metadata.completed_by`, `metadata.completed_date` |
+| `Identity:` | metadata `identity` (so future runs can match) |
+| `Skill prompt:` | description (verbatim, including anti-hallucination rule) |
+| `Blocked by:` | blocked-by links (after all tasks are created) |
+| `Completed:` | metadata `completed_by`, `completed_date` |
 
-**Rule G-8 applies (defined in [sdd-generation-guide.md](sdd-generation-guide.md) Phase 1 Step 0.5):** if any TaskCreate or TaskUpdate fails, log a single warning, continue without live tasks, and do not retry. The markdown plan / tasks file is the authoritative deliverable.
+**Task-list calls are best-effort:** if one fails, log a single warning, continue without live tasks, and do not retry. The markdown plan / tasks file is the authoritative deliverable.
 
 ## Plan-mode integration
 
-Both files are valid `EnterPlanMode` payloads.
+Both files are valid plan-mode content.
 
-- **Non-PDD lane explore-first:** call `EnterPlanMode` with the full `<feature>.md` content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
-- **PDD-driven lane interactive:** call `EnterPlanMode` with the full `<process>-tasks.md` content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
-- **Non-PDD lane simultaneous / PDD-driven autonomous:** skip `EnterPlanMode`. Emit the file as text, then immediately emit live `TaskCreate` calls.
+- **`decompose` explore-first:** enter plan mode with the full `<feature>.md` content. User approves → exit plan mode → create the live tasks with the task-list tool.
+- **`plan` interactive:** enter plan mode with the full `<process>-tasks.md` content. User approves → exit plan mode → create the live tasks with the task-list tool.
+- **`decompose` simultaneous / `plan` autonomous:** skip plan mode. Emit the file as text, then immediately create the live tasks with the task-list tool.
 <!--skill-flavor:live-tasks-and-plan-mode:end-->
 
 ## Quality rules (applied during self-review before saving)
@@ -237,3 +245,4 @@ Both files are valid `EnterPlanMode` payloads.
 9. **No specialist-internal flow leakage.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe the skill's internal flow (target-configuration, OR registration, XAML authoring pipelines, auth flows, testing procedures). Each specialist's own docs own those details.
 10. **Autonomous plans MUST include a populated Stop conditions section.** Without concrete stop items, downstream specialists have no way to distinguish "keep going" from "ask the user" and will default to asking — defeating autonomous mode. Populate with hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources); never leave a generic placeholder.
 11. **Authoring surfaces are never plan fields.** Studio, Studio Web, VS Code are presentation layers — no plan-header field, task condition, or routing decision references them; each specialist owns its surface. A user-stated surface preference travels as ordinary requirement prose inside the relevant task prompt.
+12. **Coverage.** Every requirement of the request or the SDD appears in at least one task.
