@@ -39,7 +39,8 @@ in. It is not a working process and must never be reported as one.
 5. **Label each box with the action first and the element's toolbox kind last,
    in brackets** — `Extract invoice data [RPA workflow]`, `Manager review
    [Action app]`, `Classify ticket [Agent]`, `Notify the team [Slack]`. Pick the box's type from the 1a
-   list, then take its kind verbatim from [Toolbox kinds](#toolbox-kinds);
+   list, then take its kind verbatim from [Toolbox kinds](#toolbox-kinds) (for a
+   connector box, substitute the app per the rule above the table);
    a type not in that table takes its `Label` from the 1a list (`Execute
    script`, `Execute HTTP request`). Never write a type that is not in
    the 1a list. When several types could fit, pick the one
@@ -63,9 +64,11 @@ The resource each box will use is looked up at 3c.
 The short names Studio Web's BPMN toolbox shows (PO.Frontend
 `toolbox/types.ts` `enum Category`). The registry's `Label` is the longer
 element name, so copy these instead when the type is listed.
-A connector box names its app, not the generic category: a box labeled
-`[Connector]` does not tell the user which system the step talks to. If the
-user picks a different app at the gate, relabel the box with it.
+A connector box (`Intsvc.ActivityExecution`) names its app as the user names
+it (`Slack`, `Outlook`, `Jira`), not the generic category: a box labeled
+`[Connector]` does not tell the user which system the step talks to. Write
+`Connector` only when the request names no app. If the user picks a different
+app at the gate, relabel the box with it.
 
 | Type | Kind |
 |---|---|
@@ -75,7 +78,7 @@ user picks a different app at the gate, relabel the box with it.
 | `Orchestrator.ExecuteApiWorkflowAsync` | API workflow |
 | `Orchestrator.ExecuteFunctionAsync` | Function |
 | `Orchestrator.BusinessRules` | Business rule |
-| `Intsvc.ActivityExecution` | The app the step calls, as the user names it (`Slack`, `Outlook`, `Jira`). Write `Connector` only when the request names no app. |
+| `Intsvc.ActivityExecution` | `<App>` (see the connector rule above) |
 | `Orchestrator.StartAgenticProcess`, `Orchestrator.StartAgenticProcessAsync` | Maestro BPMN |
 | `Orchestrator.StartCaseMgmtProcess`, `Orchestrator.StartCaseMgmtProcessAsync` | Maestro Case |
 | `Orchestrator.StartFlowProcess`, `Orchestrator.StartFlowProcessAsync` | Maestro Flow |
