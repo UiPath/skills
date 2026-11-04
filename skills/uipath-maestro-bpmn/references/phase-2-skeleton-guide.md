@@ -1,7 +1,7 @@
 # Phase 2 — Skeleton
 
 Author a skeleton of blank boxes, arrows and labels, show it to the user, and
-stop for their approval. It makes **no registry calls**.
+stop for their approval. It makes no new registry calls (`list` already ran in 1a).
 
 **Draft mode only.** Draft mode stops afterwards and asks the user to agree
 the shape (phase 3); phase 4 then pastes real payloads into these same boxes.
@@ -21,7 +21,7 @@ in. It is not a working process and must never be reported as one.
 2. **Do not use `serviceTask` or `sendTask`.** Their icons (a gear, an
    envelope) make a box look like a decided product choice. Keep every box
    blank.
-3. **Make no registry calls.** No `registry pull`, `list`, `search`, or `get`.
+3. **Make no new registry calls.** No `registry pull`, `search`, or `get`; `list` already ran in 1a.
    Element types are not being chosen yet. Box kinds come from the list 1a
    already read.
 4. **Control flow is real.** Genuine `bpmn:startEvent` (with a plain
@@ -190,10 +190,13 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     in the tenant, so no connector key is needed:
 
     ```bash
-    uip is connections list --all-folders --output-filter "[].{Connector:ConnectorName,Connection:Name,State:State,IsDefault:IsDefault,Folder:Folder}" --output json
+    uip is connections list --all-folders --output-filter "[?ConnectorName=='<CONNECTOR_NAME>'].{Connector:ConnectorName,Connection:Name,State:State,IsDefault:IsDefault,Folder:Folder}" --output json
     ```
 
-    Match each connector box to the rows whose `Connector` is the service the
+    The command has no `--limit`, so the `[?...]` row filter keeps the output
+    to the boxes' connectors: write one `ConnectorName=='<NAME>'` clause per
+    service the boxes use, joined with `||`; for a box that names no
+    provider, one per email service. Match each connector box to the rows whose `Connector` is the service the
     box uses (`Salesforce`, `Slack`, `Microsoft Outlook 365`, `Gmail`). Match
     on `Connector` only: a connector's key can contain another service's name
     (the Slack connector's key contains `salesforce`). A box that names no
@@ -205,14 +208,13 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     tenant". A connector box is *not checked* only when this command itself
     exited non-zero.
   - **Business rules:** `uip rules list --all-folders --limit 10000
-    --output json`, matched on name and folder path. A business rule binds by name and folder
+    --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path. A business rule binds by name and folder
     path (Rule 17).
   - **Data Fabric entities:** `uip df entities list --include-folders
     --output-filter "[].{Name:Name,FolderId:FolderId}" --output json`, matched
     on `Name`; the row carries a folder id, not a folder name, so judge an
-    entity on its name alone and name no folder on its box line. (`uip`
-    1.203.0: `solution resources list --kind Entity` returns no rows even
-    when the entity exists; drop this note when it does.) A Data Fabric box
+    entity on its name alone and name no folder on its box line. (True as of `uip` 1.207.0: `solution resources list --kind Entity` returns no rows even
+    when the entity exists.) A Data Fabric box
     also needs a Data Fabric connection: match `Connector` `UiPath Data
     Fabric` in the connections list above.
 
