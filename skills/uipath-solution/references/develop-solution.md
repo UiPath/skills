@@ -48,7 +48,7 @@ Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live insid
 
 > **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Python Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. JS/TS Coded Functions have no `init` — their `uipath.json` functions map is the registration marker (`entry-points.json` is generated at pack). Registration without these creates an incomplete solution entry.
 
-Register a project that already lives inside the solution directory.
+Register a project that already lives inside the solution directory. An RPA project `uip rpa init` creates there is registered by its creation, unless `--skip-solution-registration` kept it out.
 
 ```bash
 uip solution projects add ./InvoiceAutomation/Processor --output json
@@ -672,6 +672,8 @@ The `SolutionId` in `.uipx` determines identity. Before uploading, the CLI probe
 - **Cloud has no solution with that id** → imported as new. This is the freshly `solution init`-ed flow. Studio Web assigns its own `SolutionId` — it never honors the one in the archive — so the CLI repoints the local `.uipx` to the assigned id and reports the rewrite under `Data.LocalSolutionIdUpdated` (`Path`, `From`, `To`). That link is what makes the next upload an update rather than a second cloud solution. The file is written only when the id actually changed.
 - **Cloud already has that id** → overwritten in place under the same id. The solution's Studio Web version history is **kept** — history rows key on the solution id, which does not change. The contents being replaced are recorded first as a restorable version (`Data.SnapshotCreated: true`), so an overwrite is recoverable. The local `.uipx` is not touched.
 
+The probe covers the whole organization. Studio Web solutions do not belong to a tenant, so switching tenants with `uip login tenant set` does not change which solution an upload overwrites.
+
 `--no-snapshot` suppresses that recording. Anything edited **in Studio Web** since the last upload is then lost with no way back; local files are never affected.
 
 `--force` asserts that the solution exists — it is not a request to replace history. Not normally needed: a plain upload overwrites an existing cloud solution on its own. Use it when the probe cannot run, since the probe needs read access to the solution. When that solution is gone, the upload fails with `ErrorCode: not_found` (exit 1, `Retry: RetryWillNotFix`) rather than importing a duplicate. With no `SolutionId` bundled it changes nothing: the upload imports as new.
@@ -679,7 +681,7 @@ The `SolutionId` in `.uipx` determines identity. Before uploading, the CLI probe
 A direct `.uis` upload has no local `.uipx` to read, so the CLI takes the `SolutionId` out of the archive (`SolutionStorage.json`, root `.uipx` as fallback, GUID-shaped values only). Re-uploading a `.uis` produced by `uip solution download` therefore updates the solution it came from instead of minting a `"<name> 1"` copy each time. An archive carrying no usable id imports as new.
 
 <!--skill-flavor:upload-as-new:start-->
-To upload as an unrelated new cloud solution rather than overwriting, scaffold a fresh solution with `uip solution init`, or replace the `SolutionId` in the local `.uipx` with a fresh GUID and re-run `upload` — removing the field entirely fails `.uipx` validation.
+To upload as an unrelated new cloud solution rather than overwriting, for example a second copy of a solution in the same org, scaffold a fresh solution with `uip solution init`, or replace the `SolutionId` in the local `.uipx` with a fresh GUID and re-run `upload` — removing the field entirely fails `.uipx` validation.
 <!--skill-flavor:upload-as-new:end-->
 
 ### `delete` uses the solution UUID, not the name
