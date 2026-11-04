@@ -150,3 +150,62 @@ def test_handoff_open_items_beside_it_fail(project):
     handoff_folder(project.parent)
     (project.parent / "sales-open-items.md").write_text(f"# Open items: Sales\n\n{' '.join(NAMES)}\n", encoding="utf-8")
     assert handoff("--open-items") == 1
+
+
+ANSWERS = r"""# Sales: hand-off
+
+## Status
+- ok
+
+## Configuration answers
+| Question | Answer |
+|---|---|
+| Conventions document | `team-conventions.md` (default) |
+| Where is the summary file written? | `C:\Reports` (default) |
+| Which folder are processed exports moved to? | `C:\Orders\Archive` (default) |
+| Which folder is the drive root? | `C:\` |
+
+## Decisions
+| Where is the summary file written? | `\\finance-fs\reports` |
+"""
+
+
+def answers(row: str, has=(), lacks=(), first_folder=None) -> int:
+    return execute_check.cmd_answers(argparse.Namespace(row=row, has=list(has), lacks=list(lacks), first_folder=first_folder))
+
+
+def test_answers_row_with_expected_text_passes(project):
+    handoff_folder(project.parent, ANSWERS)
+    assert answers("convention", has=["team-conventions.md"]) == 0
+
+
+def test_answers_text_outside_the_section_does_not_count(project):
+    handoff_folder(project.parent, ANSWERS)
+    assert answers("summary", has=["finance-fs"]) == 1
+    assert answers("summary", has=[r"C:\Reports"], lacks=["finance-fs"]) == 0
+
+
+def test_answers_first_folder_is_the_answer(project):
+    handoff_folder(project.parent, ANSWERS.replace(r"`C:\Reports` (default)",
+                                                   r"`C:\Reports` (default). The convention says `\finance-fs\reports`; not applied"))
+    assert answers("summary", first_folder=r"C:\Reports") == 0
+    assert answers("summary", first_folder=r"\finance-fs\reports") == 1
+    assert answers("drive root", first_folder="C:\\") == 1
+
+
+def test_answers_bullets_count(project):
+    handoff_folder(project.parent, "# Sales: hand-off\n\n## Configuration answers\n- Workflow type: coded C# only (default)\n")
+    assert answers("workflow type", has=["coded"]) == 0
+
+
+def test_answers_without_matching_row_fail(project):
+    handoff_folder(project.parent, ANSWERS)
+    assert answers("behaviou?r fidelity", has=["source"]) == 1
+
+
+def test_no_project(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert execute_check.cmd_no_project(argparse.Namespace()) == 0
+    (tmp_path / "P").mkdir()
+    (tmp_path / "P" / "project.json").write_text(json.dumps({"main": "Main.xaml"}), encoding="utf-8")
+    assert execute_check.cmd_no_project(argparse.Namespace()) == 1

@@ -1,0 +1,115 @@
+task_id: skill-genome-execute-conventions
+description: >
+  Smoke: the uipath-genome skill executes a small component genome extracted from another framework
+  (Order Totals — a CSV summed into a summary file, with a source defect and an archive folder left
+  empty) on an unattended run that stops once the configuration answers are recorded. A team
+  conventions document sits beside the genome. Grades the hand-off README's Configuration answers:
+  the conventions document is recorded, the genome's own default for the summary folder outranks the
+  convention, the convention decides the workflow type the genome leaves open, and the Behaviour
+  fidelity answer keeps the source's behaviour, under which the archive folder stays empty, as the
+  source runs it. No project is created and the genome is left unchanged. Tagged windows only
+  so the Windows smoke workflow runs it: the Linux smoke workflow skips every skill that owns a
+  windows-tagged task (execute_component).
+tags: [uipath-genome, windows, smoke, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# run_command goes through cmd.exe on Windows, so every check calls _shared/execute_check.py
+# through `python -c` and reads REFERENCE_DIR from the environment. REFERENCE_DIR (..) also holds
+# the untouched copy of the genome under execute_conventions/fixtures/.
+reference:
+  directory: ..
+
+initial_prompt: |
+  Build the automation described in `order-totals-genome.md` in this folder.
+  This is an unattended run: take the default for every question. Stop once the
+  configuration answers are recorded in the hand-off README; do not create any
+  project yet.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The Configuration answers record the conventions document found beside the genome"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'answers',
+      '--row', 'convention', '--has', 'team-conventions.md']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome's default summary folder outranks the convention's shared drive"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'answers',
+      '--row', 'summary', '--first-folder', 'C:\\Reports']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The convention decides the workflow type the genome leaves open: coded C#"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'answers',
+      '--row', 'workflow type|xaml|coded', '--has', 'coded']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The archive folder the genome leaves empty stays empty, as the source runs it"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'answers',
+      '--row', 'archive|processed', '--has', 'empty']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The Behaviour fidelity answer keeps the source's behaviour"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'answers',
+      '--row', 'behaviou?r fidelity|behaves wrongly', '--has', 'behavio', '--lacks', 'intent']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No project is created before the build is asked for"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'no-project']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Execution leaves the genome unchanged"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'genome-unchanged',
+      'order-totals-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'execute_conventions', 'fixtures', 'order-totals-genome.md')]))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

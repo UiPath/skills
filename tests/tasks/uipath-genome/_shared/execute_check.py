@@ -12,6 +12,11 @@ Usage:
   execute_check.py handoff [--open-items]      a '<slug>-handoff' folder outside every project whose README.md
                                                has the completion report's Status and Configuration answers
                                                sections; --open-items also requires the open items inside it
+  execute_check.py answers --row REGEX [--has TEXT …] [--lacks TEXT …] [--first-folder PATH]
+                                               a row of that README's Configuration answers whose question
+                                               matches REGEX and whose answer holds every --has text, no
+                                               --lacks text and PATH as its first folder path
+  execute_check.py no-project                  no RPA project was created
   execute_check.py genome-unchanged <genome> <reference>   execution left the genome byte-identical
 
 Cross-platform on purpose: coder-eval runs run_command through cmd.exe on Windows, so criteria call this
@@ -204,17 +209,22 @@ def cmd_open_items(a: argparse.Namespace) -> int:
 HANDOFF_SECTIONS = ["## Status", "## Configuration answers"]
 
 
-def cmd_handoff(a: argparse.Namespace) -> int:
-    """The engineer's hand-off: a folder named '<slug>-handoff' outside every project, whose README.md is the
-    completion report with its Status and Configuration answers sections, as the execution guide's template
-    has them. --open-items also requires a file headed '# Open items' inside that folder."""
-    projects = rpa_projects(Path("."))
+def handoff_folders(projects: list[Path]) -> tuple[list[Path], list[Path]]:
+    """(outside, inside): every folder named '<slug>-handoff', outside / inside the projects."""
     folders = []
     for dirpath, dirnames, _ in os.walk("."):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")]
         folders += [Path(dirpath, d).resolve() for d in dirnames if d.lower().endswith("-handoff")]
     inside = [f for f in folders if any(p == f or p in f.parents for p in projects)]
-    folders = [f for f in folders if f not in inside]
+    return [f for f in folders if f not in inside], inside
+
+
+def cmd_handoff(a: argparse.Namespace) -> int:
+    """The engineer's hand-off: a folder named '<slug>-handoff' outside every project, whose README.md is the
+    completion report with its Status and Configuration answers sections, as the execution guide's template
+    has them. --open-items also requires a file headed '# Open items' inside that folder."""
+    projects = rpa_projects(Path("."))
+    folders, inside = handoff_folders(projects)
     if not folders:
         print(f"FAIL: no '<slug>-handoff' folder outside the project{' (found inside: ' + ', '.join(map(str, inside)) + ')' if inside else ''}")
         return 1
@@ -231,6 +241,67 @@ def cmd_handoff(a: argparse.Namespace) -> int:
         print(f"OK: hand-off in {folder.name}")
         return 0
     return 1
+
+
+FOLDER_PATH = re.compile(r"(?:[A-Za-z]:|\\\\[^\\\s|`]+)\\+[^\\\s|`]+")
+
+
+def section_lines(readme: Path, heading: str) -> list[str]:
+    lines, section = [], False
+    for line in readme.read_text(encoding="utf-8", errors="ignore").splitlines():
+        if line.strip().startswith("## "):
+            section = line.strip() == heading
+        elif section and line.strip():
+            lines.append(line.strip())
+    return lines
+
+
+def answer_rows(readme: Path) -> list[tuple[str, str]]:
+    """(question, answer) per row of the README's Configuration answers section: a table row's first cell
+    and its other cells, or a bullet's text before and after its first colon."""
+    rows = []
+    for stripped in section_lines(readme, "## Configuration answers"):
+        if stripped.startswith("|"):
+            cells = [c.strip() for c in stripped.strip("|").split("|")]
+            if len(cells) > 1 and not set("".join(cells)) <= set("-: "):
+                rows.append((cells[0], " | ".join(cells[1:])))
+        elif stripped.startswith(("-", "*")) and ":" in stripped:
+            question, answer = stripped.lstrip("-* ").split(":", 1)
+            rows.append((question, answer))
+    return rows
+
+
+def cmd_answers(a: argparse.Namespace) -> int:
+    """A Configuration answers row of the hand-off README whose question matches --row (a regex, case
+    ignored) and whose answer holds every --has text and no --lacks text (case ignored). --first-folder
+    requires the answer's first folder path, a drive or share followed by at least one folder, to be the
+    given one."""
+    folders, _ = handoff_folders(rpa_projects(Path(".")))
+    readmes = [f / "README.md" for f in folders if (f / "README.md").is_file()]
+    if not readmes:
+        print("FAIL: no '<slug>-handoff/README.md' outside the project")
+        return 1
+    question = re.compile(a.row, re.I)
+    rows = [r for readme in readmes for r in answer_rows(readme) if question.search(r[0])]
+    if not rows:
+        print(f"FAIL: no Configuration answers row asks /{a.row}/")
+        return 1
+    for q, answer in rows:
+        text = answer.lower()
+        first = FOLDER_PATH.search(answer)
+        if all(h.lower() in text for h in a.has) and not any(l.lower() in text for l in a.lacks) \
+                and (not a.first_folder or (first and first.group(0).lower() == a.first_folder.lower())):
+            print(f"OK: {q}: {answer}")
+            return 0
+    for q, answer in rows:
+        print(f"FAIL: {q}: {answer}")
+    return 1
+
+
+def cmd_no_project(_: argparse.Namespace) -> int:
+    projects = rpa_projects(Path("."))
+    print(("FAIL: projects created: " + ", ".join(map(str, projects))) if projects else "OK: no project created")
+    return 1 if projects else 0
 
 
 def cmd_genome_unchanged(a: argparse.Namespace) -> int:
@@ -253,6 +324,13 @@ def main() -> int:
     p = sub.add_parser("handoff")
     p.add_argument("--open-items", action="store_true", help="also require the open items inside the hand-off folder")
     p.set_defaults(func=cmd_handoff)
+    p = sub.add_parser("answers")
+    p.add_argument("--row", required=True, help="regex the question must match, case ignored")
+    p.add_argument("--has", nargs="*", default=[])
+    p.add_argument("--lacks", nargs="*", default=[])
+    p.add_argument("--first-folder", help="the answer's first folder path must be this one, case ignored")
+    p.set_defaults(func=cmd_answers)
+    sub.add_parser("no-project").set_defaults(func=cmd_no_project)
     p = sub.add_parser("genome-unchanged")
     p.add_argument("genome")
     p.add_argument("reference")
