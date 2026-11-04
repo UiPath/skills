@@ -73,31 +73,41 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   warn, so no warning there does not mean the assignee is fine.
 - **A quick form sent to a group is often not one a person can act on.**
   `flow validate` and the run itself report nothing in either case:
-  - If Action Center can't resolve the group when it creates the task (for
-    example, the group has no role in the task's folder), the task is still
-    created, but `Unassigned`, and the group's members never see it.
-  - If it resolves, the task is assigned to "All users in group"
-    (`TaskAssignmentCriteria: "AllUsers"`). Every member sees it under Pending,
-    but the Action Center web UI opens a quick form assigned that way
-    read-only: Approve and Reject are disabled and there is no Claim button.
-    A quick form is editable only for the one user it is assigned to
-    (observed on Action Center 26.10).
+  - If Action Center can't resolve the group when it creates the task, the
+    task is still created, but `Unassigned`, and the group's members never
+    see it. A group resolves only when it, or every one of its members, has
+    at least Actions View and Edit in the task's folder;
+    `uip tasks users --folder-path "<FOLDER_PATH>" --output json` must list it.
+  - If it resolves, a `group` or `staticGroupName` assignee gives "All users
+    in group" (`TaskAssignmentCriteria: "AllUsers"`). Action Center's docs say
+    any member can then complete the task, but on Action Center 26.10 the web
+    UI opens a quick form assigned that way read-only for every member:
+    Approve and Reject are disabled and there is no Claim button. A quick form
+    is editable only for the one user it is assigned to.
 
-  When any member of a group should be able to approve, route the task to one
-  person (for example `uip tasks assign <TASK_ID> --user <EMAIL>`), or leave it
-  `Unassigned` (`uip tasks unassign <TASK_ID>`) so a member picks it up with
-  **Assign to self**. After the first run, read the task with
-  `uip tasks get <TASK_ID> --output json` and check `Status`,
+  When any member of a group should be able to approve, use the `workload` or
+  `roundRobin` assignee type (local groups only): the task is created
+  `Unassigned`, then Action Center picks one member and assigns it to them
+  about three seconds later (`TaskAssignmentCriteria: "Workload"` or
+  `"RoundRobin"`, `Status: Pending`), so the form opens ready to act. Or
+  leave it `Unassigned` so a member picks it up with **Assign to self**. To
+  repair a task that already has `AllUsers`, use
+  `uip tasks reassign <TASK_ID> --user <EMAIL>` (it becomes `SingleUser`) or
+  `uip tasks unassign <TASK_ID>`; `tasks assign` answers `2418` "This Action
+  is already assigned to another user" inside a `Result: Success` envelope,
+  so read `Data.Success`. After the first run, wait a few seconds, then read
+  the task with `uip tasks get <TASK_ID> --output json` and check `Status`,
   `TaskAssignmentCriteria` and `AssignedToUser` before you report it ready.
 - **The robot that runs the Flow job creates and assigns the task.** If that
   identity lacks `TaskAssignment.Create` (Action Assignments → Create) in the
   task's folder, the task is created `Unassigned` even for a single-user
   assignee, with no incident and no error in the run. Assigning it explicitly
   as that identity returns `2415` "You do not have the required permissions to
-  change the assignee of the action". The Automation User role doesn't include
-  the permission. Have a folder admin give the robot a role that does: where
+  change the assignee of the action". The Automation User role has no Action
+  Assignment permission at all; Automation Developer and Folder Administrator
+  have all four. Have a folder admin give the robot a role with Create: where
   custom roles aren't available, Automation Developer is the smallest built-in
-  role with it. `uip function run` and other local tests run as you, so they
+  role that has it. `uip function run` and other local tests run as you, so they
   don't show the gap; check the task after the first deployed run.
 - `labels` is one comma-separated string, shown in Action Center.
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
@@ -130,7 +140,8 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   To show a date the reviewer only reads, use `'string'`, not `'date'`. A
   `'date'` input bound to a date-only value (ISO 8601, no time) makes the
   Action Center task page fail to open: it shows "An unexpected error has
-  occured. Please try again later (Invalid time value)".
+  occured. Please try again later (Invalid time value)" (observed on Action
+  Center 26.10).
 - A picker field uses a choice-control spelling, with its choices in `options`
   (`{ id, value, label }` each, all three required): `'singleSelect'` and
   `'enum'` are a single-choice dropdown (a `string` answer), `'multiSelect'` a

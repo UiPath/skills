@@ -91,7 +91,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 
 **Supported field types:** `string`, `number`, `boolean`, `date`, `file`
 
-> **Display-only dates go in a `string` field.** An `input` field of type `date` bound to a date-only value (ISO 8601, no time) stops the Action Center task page from opening: "An unexpected error has occured. Please try again later (Invalid time value)". Keep `date` for dates the reviewer enters.
+> **Display-only dates go in a `string` field.** An `input` field of type `date` bound to a date-only value (ISO 8601, no time) stops the Action Center task page from opening: "An unexpected error has occured. Please try again later (Invalid time value)" (observed on Action Center 26.10). Keep `date` for dates the reviewer enters.
 
 **Design rules:**
 - Input fields: everything the human needs to decide — IDs, amounts, context; bind to upstream node output via `binding`
@@ -188,11 +188,11 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 **Node ID rule:** camelCase from the label, strip non-alphanumeric, append `1` (increment to `2`, `3`... until unique among existing node IDs). Example: `"Invoice Review"` → `invoiceReview1`.
 
 **Check the assignee after the first run.** Neither `flow validate` nor the run reports any of these:
-- A group that Action Center can't resolve in the task's folder (for example, one with no role there) leaves the task `Unassigned`, and its members never see it.
-- A group that resolves gets "All users in group" (`TaskAssignmentCriteria: "AllUsers"`), and the Action Center web UI opens the quick form read-only for every member (observed on Action Center 26.10). Route the task to one person (`uip tasks assign <TASK_ID> --user <EMAIL>`), or leave it `Unassigned` so a member picks it up with **Assign to self**.
+- A group that Action Center can't resolve in the task's folder leaves the task `Unassigned`, and its members never see it. A group resolves only when it, or every one of its members, has at least Actions View and Edit in that folder; `uip tasks users --folder-path "<FOLDER_PATH>" --output json` must list it.
+- A `group` assignee that resolves gets "All users in group" (`TaskAssignmentCriteria: "AllUsers"`). Action Center's docs say any member can then complete the task, but on Action Center 26.10 the web UI opens a quick form assigned that way read-only for every member (Approve and Reject disabled, no Claim button). When any member should be able to approve, use a `workload` or `roundRobin` assignee (local groups only): the task is created `Unassigned` and Action Center assigns one member about three seconds later (`TaskAssignmentCriteria: "Workload"` / `"RoundRobin"`), or leave the task `Unassigned` so a member uses **Assign to self**. Repair an existing `AllUsers` task with `uip tasks reassign <TASK_ID> --user <EMAIL>` or `uip tasks unassign <TASK_ID>`; `tasks assign` on it returns `2418` "This Action is already assigned to another user".
 - If the robot that runs the Flow lacks `TaskAssignment.Create` in the task's folder, even a single-user task is created `Unassigned`, and an explicit assignment as the robot returns `2415`. Automation User doesn't include the permission; Automation Developer is the smallest built-in role that does. Local tests run as you and don't show this.
 
-Read the task with `uip tasks get <TASK_ID> --output json` and check `Status`, `TaskAssignmentCriteria` and `AssignedToUser` before reporting it ready.
+A few seconds after the first run, read the task with `uip tasks get <TASK_ID> --output json` and check `Status`, `TaskAssignmentCriteria` and `AssignedToUser` before reporting it ready.
 
 ---
 

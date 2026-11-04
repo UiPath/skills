@@ -89,7 +89,7 @@ uip tasks get <task-id> --output json
 
 ## Tasks Sent to a Group
 
-`uip tasks assign`, `reassign` and `unassign` work on single users. A group can't be passed: its ID is refused with `2490` (see below).
+`uip tasks assign`, `reassign` and `unassign` work on single users. A group can't be passed: its ID is refused with `2490` (see below). To hand a group's task to one member without naming them, call the Orchestrator API with the folder header: `POST /odata/Tasks/UiPath.Server.Configuration.OData.AssignTasks` with `{"taskAssignments":[{"taskId":<TASK_ID>,"assignmentCriteria":"Workload","userId":<GROUP_ID>}]}` (`"RoundRobin"` also works; both need a local group). Action Center picks the member and assigns the task within seconds; a Flow's own `workload` / `roundRobin` assignee does the same at creation. `"AllUsers"` gives the read-only quick form described below.
 
 A task that a flow or agent assigned to a group shows it in `tasks get`:
 
@@ -98,19 +98,22 @@ uip tasks get <task-id> --output json
 # → "TaskAssignmentCriteria": "AllUsers", "AssignedToUser": { "Type": "DirectoryGroup", ... }
 ```
 
-- **A quick form (`QuickFormTask`) assigned this way opens read-only.** The Action Center web UI lists it under Pending for every member but disables Approve and Reject, and offers no Claim button. Only a quick form assigned to one user can be completed in the UI (observed on Action Center 26.10). To let a member act on it, assign it to that person (`tasks assign <task-id> --user <email>`), or run `tasks unassign <task-id>` so a member can pick it up with **Assign to self**.
-- **A group that can't be resolved leaves the task `Unassigned`**, and its members never see it. This happens, for example, when the group has no role in the task's folder. Run `tasks users --folder-path "<folder-path>"` and check that the group is listed.
+- **A quick form (`QuickFormTask`) assigned this way opens read-only.** Action Center's docs say any member can complete an "All users in group" task, but on Action Center 26.10 the web UI lists it under Pending for every member with Approve and Reject disabled and no Claim button. Only a quick form assigned to one user can be completed in the UI. To let a member act on it, move it to that person with `tasks reassign <task-id> --user <email>` (the task becomes `SingleUser`), or run `tasks unassign <task-id>` so a member can pick it up with **Assign to self**. `tasks assign` on it returns `2418` "This Action is already assigned to another user".
+- **A group that can't be resolved leaves the task `Unassigned`**, and its members never see it. A group resolves only when it, or every one of its members, has at least Actions View and Edit in the task's folder. Run `tasks users --folder-path "<folder-path>"` and check that the group is listed.
 - **A task can also be `Unassigned` because of who created it.** The identity that creates a task (for a Flow, the robot running the job) also assigns it. Without `TaskAssignment.Create` in the task's folder, the assignment is dropped with no error. See `2415` below.
-- **`tasks list` also returns deleted tasks.** Check `IsDeleted` on each one before you count or act on pending work.
+- **`tasks list` also returns deleted tasks.** Check `IsDeleted` before you count or act on pending work, or drop them with `uip tasks list --limit <N> --output-filter '[?!IsDeleted]' --output json` (the filter needs an explicit `--limit`).
 
 ## Assignment Errors
 
+`tasks assign` and `tasks reassign` report per-task failures inside a `Result: Success` envelope: check `Data.Success` and each `Data.Data[].ErrorCode` before you trust the call.
+
 | Error | Cause | Fix |
 |-------|-------|-----|
+| `2418` "This Action is already assigned to another user" | `tasks assign` on a task that already has an assignee, including an `AllUsers` group | Use `tasks reassign <task-id> --user <email>`, or `tasks unassign` first |
 | `2490` "A group entity cannot be used for a single user assignment" | A group's ID was passed to `tasks assign` | Assign one member by `--user`, or unassign the task so a member can self-assign |
-| `2482` "Local group not found or the group has insufficient permissions in this folder" | The group has no role in the task's folder | Have a folder admin give the group a role with task permissions in that folder; don't re-create or re-import the group |
+| `2482` "Local group not found or the group has insufficient permissions in this folder" | The group, or some of its members, lacks Actions View and Edit in the task's folder | Have a folder admin give the group a role with at least Actions View and Edit in that folder; don't re-create or re-import the group |
 | `2415` "You do not have the required permissions to change the assignee of the action" | The calling identity (for a Flow, the robot running the job) lacks `TaskAssignment.Create` in the task's folder; Automation User doesn't include it | Have a folder admin give that identity a role with it (Automation Developer is the smallest built-in one); don't work around it with another identity's token |
-| `2400` "Unable to change the assignee of the action at this time, please try again later" | Seen when a group was assigned by name after its folder membership had been re-created; retrying didn't help | Assign one member by `--user` |
+| `2400` "Unable to change the assignee of the action at this time, please try again later" | Group lookup by name failed; seen after the group's folder principal had been deleted and re-imported under a new Id. Retrying didn't help | Assign one member by `--user`, or assign the group by its numeric Id through `AssignTasks` (see above) |
 | `Missing assignee` | Neither `--user-id` nor `--user` provided | Add one of the two options |
 | `User not found` | Email or ID doesn't match a valid user | Run `tasks users <folder-id>` to list valid users |
 | `Permission denied` | User lacks Task.Edit permission in folder | Contact folder admin to grant permissions |
