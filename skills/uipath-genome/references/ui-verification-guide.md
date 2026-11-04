@@ -4,7 +4,7 @@ A UI activity waits for its target up to its timeout and fails with "element not
 
 ## Verification — a property of the activity, not another activity
 
-Every composite pattern ([ui-target-migration-guide.md § Composite interactions](ui-target-migration-guide.md)) owes a verify sub-step. **A verify sub-step is normally not a separate activity.** UI Automation activities carry post-action verification natively (`VerifyOptions` on Click, Hover, Keyboard Shortcuts and Type Into), and that is where a migration's verification belongs. Reaching for a Check Element / Check App State activity instead is the single largest source of activity-count inflation in a migrated project, and each one drags in a target that must be guessed, reviewed and healed like any other. A migrated project whose Check-activity count approaches its Click count, or that has hundreds of Check activities and no `VerifyOptions`, has this defect everywhere, not once.
+Every composite pattern ([composite-interactions-guide.md](composite-interactions-guide.md)) owes a verify sub-step. **A verify sub-step is normally not a separate activity.** UI Automation activities carry post-action verification natively (`VerifyOptions` on Click, Hover, Keyboard Shortcuts and Type Into), and that is where a migration's verification belongs. Reaching for a Check Element / Check App State activity instead is the single largest source of activity-count inflation in a migrated project, and each one drags in a target that must be guessed, reviewed and healed like any other. A migrated project whose Check-activity count approaches its Click count, or that has hundreds of Check activities and no `VerifyOptions`, has this defect everywhere, not once.
 
 Decide each check the genome states with one question: **does the outcome change what the automation does next?**
 
@@ -27,14 +27,6 @@ Mapping a source's own verification steps (a source expresses "the value was acc
 | the step is a checkpoint with no follow-up behaviour | still `VerifyOptions` — a failed verify raises, which is the checkpoint |
 | an outcome after an activity without `VerifyOptions` (Select Item, Check/Uncheck, a navigation, a process start) | the check the UIA package guide's *Execution Verification Policy* prescribes there, at the source's budget for that check |
 | the source branches on the result (retry, alternate path, optional dialog) | a Check activity — this is control flow, not verification |
-| the source branches on a control going (a dialog closing, a row deleted) | a Check App State in its disappear mode at the source's budget: one activity, not a loop of short checks |
-| the source waits until one of several conditions holds, one branch each | a Pick of Check App States, the winning condition's work after it (below) |
-
-**A wait on several conditions** is a Pick, one branch per condition in the source's order, each trigger a Check App State at the source's budget for the whole wait. A Pick takes the first trigger to finish, not the first listed, so when several conditions already hold its winner varies; a source that checks its conditions in order takes the first listed, an outcome a race allows too. The branches therefore only record which condition ended the wait, and that condition's work runs once, after the Pick:
-
-1. A branch records its condition when its trigger found the condition met, and none when the trigger timed out first.
-2. The conditions listed before the recorded one are checked in order, each with a Check App State at timeout 0; the first that holds is recorded instead.
-3. The recorded condition's work runs; none recorded is the source's time-out path.
 
 **The genome's checkpoints and step post-conditions are the request for verification.** The UIA package guide tells an author not to add `VerifyOptions` unless the user asks; in a migration the genome is that ask. A test-suite source asks through the Source Map's Checkpoints row: every checkpoint becomes an assertion of its test case ([test-execution-guide.md § Result parity](test-execution-guide.md) rule 2). A source without that row (an RPA bot) asks through its steps: a post-condition a Workflow substep states on an action (the field must read back the typed value, the page must appear) is verified on that action per the table above, never with a read activity and a comparison beside it. A secure-text field's check is target-less Auto — Expected text would put the secret in plain text. Nothing else gets one.
 
