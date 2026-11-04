@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SupplierResearchAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "fb744ebc-846b-4511-b498-9ebb10dba7ca",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SupplierResearchAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "SupplierResearchAgent",
+      "package": {
+        "key": "25315e70-00bf-4d74-a7ab-7ba1f786f825"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "ac60dbfa-44de-4374-85b1-6a8b813482c7",
+    "files": []
+  }
+}

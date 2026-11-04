@@ -27,6 +27,7 @@ from case_check import (  # noqa: E402
     find_solution_dir,
     is_non_required,
     partition_return_to_origin_conditions,
+    read_registry_cache,
     registry_audit_entries,
     run_debug,
 )
@@ -378,3 +379,20 @@ def test_timeout_reports_fail_not_traceback(monkeypatch):
     msg = str(excinfo.value)
     assert "uip maestro case validate timed out after 7s" in msg
     assert "half a payload" in msg
+
+
+def test_read_registry_cache_fails_with_the_skipped_pull_not_a_traceback(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    with pytest.raises(SystemExit, match=r"FAIL: registry cache .*action-apps-index.json is absent.*registry pull"):
+        read_registry_cache("action-apps-index.json")
+
+
+def test_read_registry_cache_loads_a_pulled_index(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    cache = tmp_path / ".uip" / "case-resources"
+    cache.mkdir(parents=True)
+    (cache / "api-index.json").write_text(json.dumps([{"name": "API Workflow"}]), encoding="utf-8")
+    assert read_registry_cache("api-index.json") == [{"name": "API Workflow"}]
+    (cache / "api-index.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(SystemExit, match="not a JSON array"):
+        read_registry_cache("api-index.json")

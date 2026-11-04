@@ -360,7 +360,7 @@ the exact stage display name — never the case name. -->
 | <Yes \| No> | <Yes \| No> | <=js: expression or —> |
 ###### Action Task Detail (type: `action`)
 
-**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. -->
+**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. Every named app must exist in the tenant before publish: deployed already (ID + folder resolved), or recorded as `create during build` (ID + folder `<UNRESOLVED>` + a review item), which the build skill turns into a Coded Action App. Naming an app that is neither leaves the task a placeholder. -->
 **Action App ID:** <actionAppId or <UNRESOLVED>>
 **Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>
@@ -747,7 +747,7 @@ ship a summary SDD (top-level headings like ## Source / ## Case Objective / ## S
 build-mode/path narration) even if a later caseplan.json would validate — rewrite from the model and
 this template.
 
-CONFORMANCE CHECKLIST — 35 items in 10 families, held in
+CONFORMANCE CHECKLIST — 37 items in 10 families, held in
 references/case/case-sdd-conformance-checklist.md. Items 30–33 apply only when finalizing a draft.
 The gate reads that file; authoring does not — the cell rules above are the render contract and are
 COMPLETE, and nothing outside this template states a shape rule they do not. (Design semantics — which

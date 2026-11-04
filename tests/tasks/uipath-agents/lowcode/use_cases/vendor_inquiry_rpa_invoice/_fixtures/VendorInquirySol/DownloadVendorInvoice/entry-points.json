@@ -1,0 +1,63 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "eb601b43-bef4-4b61-8607-c7289704241c",
+      "type": "Process",
+      "input": {
+        "type": "object",
+        "properties": {
+          "invoiceNumber": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "invoiceNumber"
+        ]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "invoiceFile": {
+            "$ref": "#/definitions/job-attachment"
+          },
+          "found": {
+            "type": "boolean"
+          }
+        },
+        "definitions": {
+          "job-attachment": {
+            "type": "object",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content, such as \"application/json\" or \"image/png"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary<string, string> of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ],
+            "x-uipath-resource-kind": "JobAttachment"
+          }
+        }
+      }
+    }
+  ]
+}

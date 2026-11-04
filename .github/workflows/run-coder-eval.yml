@@ -197,6 +197,29 @@ jobs:
           echo "linux_count=$LCOUNT"            >> "$GITHUB_OUTPUT"
           echo "windows_count=$WCOUNT"          >> "$GITHUB_OUTPUT"
 
+      # run-windows installs coder-eval on the host (tempdir driver, no
+      # Docker), so it can't read the agent image itself. Freeze the image's
+      # deps here on Linux and hand them over as an artifact.
+      - name: Freeze coder-eval-agent deps as install constraints
+        if: steps.split.outputs.windows_count != '0'
+        env:
+          CE_IMAGE_TAG: ${{ steps.ceref.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          img="ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$img"
+          docker run --rm --entrypoint pip "$img" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
+          docker logout ghcr.io
+
+      - name: Upload coder-eval constraints
+        if: steps.split.outputs.windows_count != '0'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: ce-constraints
+          path: ${{ runner.temp }}/ce-constraints.txt
+          retention-days: 1
+
   run-linux:
     needs: partition
     if: needs.partition.outputs.linux_count != '0'
@@ -298,8 +321,12 @@ jobs:
         env:
           CE_IMAGE_TAG: ${{ needs.partition.outputs.image_tag }}
         run: |
+          set -euo pipefail
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
+          # Host coder-eval (installed by the action below) is constrained to
+          # the image's frozen deps so host and container resolve the same.
+          docker run --rm --entrypoint pip "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
 
       # Build the skills extension image (`@uipath/cli`, its tool plugins, and
       # `@uipath/maestro-builder-sdk` on top of coder-eval-agent). Matches
@@ -404,7 +431,6 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ vars.AWS_REGION }}
           BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           E2E_PROCESS_KEY:          ${{ vars.E2E_PROCESS_KEY }}
           E2E_LONG_PROCESS_KEY:     ${{ vars.E2E_LONG_PROCESS_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
@@ -455,7 +481,7 @@ jobs:
           # the model if agent.model is unset. Values must be single-line.
           env_lines=()
           for name in SKILLS_REPO_PATH API_BACKEND AWS_BEARER_TOKEN_BEDROCK AWS_REGION \
-                      BEDROCK_MODEL ANTHROPIC_API_KEY E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
+                      BEDROCK_MODEL E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
                       TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL \
                       CLAUDE_CODE_MODEL CODEX_MODEL ANTIGRAVITY_MODEL DELEGATE_MODEL \
                       CODEX_API_KEY CODEX_BASE_URL GEMINI_API_KEY; do
@@ -618,6 +644,9 @@ jobs:
           version: ${{ needs.partition.outputs.coder_eval_version }}
           working-directory: tests
           extras: ${{ steps.prep.outputs.extras }}
+          # Frozen from the agent image by the pull step above.
+          install-flags: |
+            --constraints=${{ runner.temp }}/ce-constraints.txt
           args: ${{ steps.prep.outputs.args }}
           env: ${{ steps.prep.outputs.env_block }}
           run-dir: /tmp/runs
@@ -643,7 +672,6 @@ jobs:
         if: always()
         env:
           AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
           CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
           GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
           E2E_PROCESS_KEY:           ${{ vars.E2E_PROCESS_KEY }}
@@ -655,13 +683,12 @@ jobs:
           import os
           import pathlib
 
-          # Every secret this job forwards into the run, not just the three
+          # Every secret this job forwards into the run, not just the ones
           # smoke-skills.yml strips. It matters more here than there: this report
           # is uploaded twice (a GitHub artifact and, when the identity is wired,
           # an evalboard blob) and its run.md is echoed into the job summary.
           names = (
               "AWS_BEARER_TOKEN_BEDROCK",
-              "ANTHROPIC_API_KEY",
               "CODEX_API_KEY",
               "GEMINI_API_KEY",
               "E2E_PROCESS_KEY",
@@ -910,7 +937,14 @@ jobs:
           dotnet-version: '8.0.x'
 
       # Host coder-eval CLI at the version the partition job resolved. Windows
-      # tasks run under the tempdir driver — no agent image.
+      # tasks run under the tempdir driver — no agent image here; the
+      # partition job froze its deps into the constraints artifact.
+      - name: Download coder-eval constraints
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: ce-constraints
+          path: ${{ runner.temp }}
+
       - name: Install coder-eval
         shell: bash
         env:
@@ -918,6 +952,11 @@ jobs:
           CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
         run: |
           set -euo pipefail
+          # The agent SDKs below are picked per platform on purpose (Windows
+          # wheels, the openai-codex pre-release), so they stay out of the
+          # Linux image's pins.
+          grep -vE '^(claude-agent-sdk|openai-codex|google-antigravity)' "$RUNNER_TEMP/ce-constraints.txt" > "$RUNNER_TEMP/ce-constraints-win.txt"
+          export UV_CONSTRAINT="$RUNNER_TEMP/ce-constraints-win.txt"
           # Windows runs the tempdir driver (agent on host), so the codex SDK
           # installed here is what the codex agent actually uses. openai-codex
           # 0.1.0b3 (verified against coder-eval 0.6.2) pulls a pre-release
@@ -936,15 +975,13 @@ jobs:
           esac
           python -c 'from importlib.metadata import version; print("coder-eval resolved to", version("coder-eval"))'
 
+      # The feed allows anonymous reads, so it is added without credentials.
       - name: Configure NuGet feed for Helm packages
         shell: bash
         run: |
           dotnet nuget add source \
             "https://uipath.pkgs.visualstudio.com/Public.Feeds/_packaging/UiPath-Internal/nuget/v3/index.json" \
-            --name UiPath-Internal \
-            --username az \
-            --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
-            --store-password-in-clear-text
+            --name UiPath-Internal
 
       # Single-feed install: `@uipath/cli` AND the RPA tool plugins come from the
       # internal GitHub Packages feed on the same prerelease train (default `dev`),
@@ -1146,7 +1183,6 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ vars.AWS_REGION }}
           BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
@@ -1322,7 +1358,6 @@ jobs:
         shell: bash
         env:
           AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
           CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
           GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
           E2E_PROCESS_KEY:           ${{ vars.E2E_PROCESS_KEY }}
@@ -1339,7 +1374,6 @@ jobs:
 
           names = (
               "AWS_BEARER_TOKEN_BEDROCK",
-              "ANTHROPIC_API_KEY",
               "CODEX_API_KEY",
               "GEMINI_API_KEY",
               "E2E_PROCESS_KEY",

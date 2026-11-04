@@ -8,12 +8,17 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:case.trigger.event-resolution -->
 - A connector event without a subscription is a placeholder. A resolved event
   needs a generated descriptor or connector key/event plus symbolic connection
-  and folder bindings. For an unresolved placeholder, preserve the requested
-  source system, object, and event verbatim in the trigger name or description;
-  the service-type-only runtime bag cannot carry that intent. Do not fabricate
-  a connector descriptor or node type. For example,
-  `eventTrigger({ name: 'aged_invoice_cases record created' })` preserves the
-  unresolved source while remaining a valid placeholder. Only a live
+  and folder bindings. For an unresolved placeholder, put the watched object
+  in `object` (`@uipath/maestro-builder-sdk` 6.32.6 or later) and keep the
+  source system and event verbatim in the name or description. Do not fabricate a
+  connector descriptor or node type. This example keeps the source object
+  while remaining a valid placeholder:
+
+  ```ts
+  eventTrigger({ name: 'T02', object: 'aged_invoice_cases', description: 'record created' })
+  ```
+
+  `object` and `subscription` are mutually exclusive. Only a live
   subscription proves the payload shape.
 
 ## Human and on-demand work
@@ -37,7 +42,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   names. Compiling into a scaffolded project regenerates its existing
   `bindings_v2.json`; then run `uip solution resources refresh --solution-folder
   {solution} --output json`. A live run is the evidence that those environment
-  resources resolve.
+  resources resolve. A `CONNECTION_STUB` warning from `case check` or `case
+  compile` means a connection or folder label compiles to a value that is not
+  a real id; it still compiles (fine for an offline or validate-only task), but
+  bind it with the `registry prepare` command the warning prints before a live
+  run.
 
 <!-- RULE:case.resources.live -->
 - Published process, agent, RPA, API workflow, sub-case, connector, and folder
@@ -120,10 +129,17 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Brownfield editing
 
 <!-- RULE:case.brownfield.pipeline -->
-- Start with `uip maestro case decompile`. Edit the generated `.case.ts`, retain
-  `preserveCaseJson(...)`, and run the generated pipeline to keep foreign
-  metadata and bindings that the typed surface does not own. Strict decompile
-  fails closed on unresolved references. For an explicitly broken input, rerun
+- Start with `uip maestro case decompile <plan> -o <Name>.case.ts --no-pipeline`.
+  Edit the generated `.case.ts` and retain `preserveCaseJson(...)`: it keeps
+  the foreign metadata the typed surface does not own. Compile back into the
+  same plan: `uip maestro case compile <Name>.case.ts -o <plan>`. Needs
+  `@uipath/maestro-builder-sdk` 6.50.1 or later, which resolves the decompiled
+  labels (for example `bOC1`) against that plan's own `bindings` array; an
+  older SDK writes the label in as the key, so upgrade first. Do not pass
+  `--bindings <plan>`: it replaces `bindings.json`, so a connector the edit
+  adds loses its mapping. Do not run `<Name>.pipeline.mjs`: it writes a plan
+  pack and debug never read. Strict decompile fails closed on unresolved
+  references. For an explicitly broken input, rerun
   with `--best-effort`, inspect every reported diagnostic, and replace every
   `__UNRESOLVED_*` marker before checking or compiling the repair. Removing or
   repointing a bound task also requires the orphan cleanup under

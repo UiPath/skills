@@ -9,9 +9,11 @@ import os
 import re
 import sys
 import xml.etree.ElementTree as ET
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from enum import Enum
+from functools import lru_cache
 from pathlib import Path
-from typing import TypeVar
+from typing import NamedTuple, TypeVar
 
 _PathLike = TypeVar("_PathLike", str, Path)
 
@@ -280,6 +282,26 @@ def body_object(element: ET.Element) -> dict:
     return parsed
 
 
+def _scalar(value: object) -> str | None:
+    """A V2 JSON value in its V1 attribute spelling: ``false`` -> ``"false"``,
+    ``1`` -> ``"1"``. ``None`` for null, objects and arrays."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, bool):
+        return json.dumps(value)
+    if isinstance(value, (int, float)):
+        return str(value)
+    return None
+
+
+def _v2_object(inp: ET.Element) -> dict:
+    try:
+        parsed = json.loads(_input_payload(inp) or "{}")
+    except (json.JSONDecodeError, ValueError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
 def _parameters(element: ET.Element, v1_target: str, v2_target: str) -> dict[str, str]:
     params: dict[str, str] = {}
     for inp in context_inputs(element):
@@ -287,16 +309,10 @@ def _parameters(element: ET.Element, v1_target: str, v2_target: str) -> dict[str
         if target == v1_target and inp.attrib.get("name"):
             params[inp.attrib["name"]] = _input_payload(inp)
         elif target == v2_target:
-            try:
-                parsed = json.loads(_input_payload(inp) or "{}")
-            except (json.JSONDecodeError, ValueError):
-                continue
-            if isinstance(parsed, dict):
-                params.update(
-                    (str(key), value.strip())
-                    for key, value in parsed.items()
-                    if isinstance(value, str)
-                )
+            for key, value in _v2_object(inp).items():
+                scalar = _scalar(value)
+                if scalar is not None:
+                    params[str(key)] = scalar
     return params
 
 
@@ -308,7 +324,8 @@ def path_parameters(element: ET.Element) -> dict[str, str]:
     ``target="pathParameters"`` input holding them all as a JSON object
     (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
     from the V1 template"). A V2 payload that is not a JSON object adds
-    nothing, and neither does a non-string value.
+    nothing, and neither does a null, object or array value. A V2 boolean or
+    number reads as V1 spells it: ``"false"``, ``"1"``.
     """
     return _parameters(element, "path", "pathParameters")
 
@@ -318,6 +335,28 @@ def query_parameters(element: ET.Element) -> dict[str, str]:
     the V2 ``target="queryParameters"`` JSON input, read as
     :func:`path_parameters` reads path ones."""
     return _parameters(element, "query", "queryParameters")
+
+
+def query_values(element: ET.Element, name: str) -> list[str]:
+    """Every value ``element`` gives query field ``name``, one per occurrence, unstripped.
+
+    The ``value`` attribute of each V1 input named ``name``, then the ``name``
+    key of each V2 ``target="queryParameters"`` input, so a node carrying both
+    shapes yields two values where :func:`query_parameters` keeps one. A V2
+    value that is not a string counts as its JSON text.
+    """
+    inputs = context_inputs(element)
+    values = [inp.attrib.get("value", "") for inp in inputs if inp.attrib.get("name") == name]
+
+    for inp in inputs:
+        if inp.attrib.get("target") != "queryParameters":
+            continue
+        params = _v2_object(inp)
+        if name not in params:
+            continue
+        value = params[name]
+        values.append(value if isinstance(value, str) else json.dumps(value))
+    return values
 
 
 def root_bindings(root: ET.Element) -> dict[str, dict[str, str]]:
@@ -381,6 +420,283 @@ def has_typed_uipath_extension(
         ):
             return True
     return False
+
+
+ACTIVITY_EXECUTION = "Intsvc.ActivityExecution"
+UNIFIED_HTTP_REQUEST = "Intsvc.UnifiedHttpRequest"
+HTTP_CONNECTOR_KEY = "uipath-uipath-http"
+LEGACY_HTTP_OBJECT = "http-request"
+_JS_OPERAND_RE = re.compile(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`|([^+'\"`]+)")
+_TEMPLATE_SLOT_RE = re.compile(r"\$\{[^}]*\}")
+_EXPRESSION_SLOT = "{}"
+_LITERAL_SLOT = "{literal}"
+
+
+class RequestShape(Enum):
+    ACTIVITY = ACTIVITY_EXECUTION
+    HTTP = UNIFIED_HTTP_REQUEST
+
+
+def _literal_text(text: str) -> str:
+    return text.replace(_EXPRESSION_SLOT, _LITERAL_SLOT)
+
+
+def _literal_path(value: str) -> str:
+    """``value`` with each non-literal operand as ``{}``, and a literal ``{}``
+    as ``{literal}``: ``=js:('/v2/' + vars.P + '/items')`` -> ``/v2/{}/items``,
+    ``/v2/{}/items`` -> ``/v2/{literal}/items``."""
+    if not value.startswith("="):
+        return _literal_text(value)
+
+    expression = value.removeprefix("=js:").removeprefix("=")
+    parts: list[str] = []
+    for single, double, template, other in _JS_OPERAND_RE.findall(expression):
+        if other.strip("() \t\n"):
+            parts.append(_EXPRESSION_SLOT)
+            continue
+        if template:
+            slots = _TEMPLATE_SLOT_RE.split(template)
+            parts.append(_EXPRESSION_SLOT.join(_literal_text(s) for s in slots))
+            continue
+        parts.append(_literal_text(single or double))
+    return "".join(parts)
+
+
+def _http_request(task: ET.Element, connector_key: str) -> tuple[str, str] | None:
+    try:
+        body = body_object(task)
+    except BodyShapeError:
+        return None
+    if body.get("authentication") != "connector":
+        return None
+    if str(body.get("targetConnector", "")).lower() != connector_key:
+        return None
+
+    method = str(body.get("method", "")).strip()
+    path = str(body.get("url") or body.get("path") or "").strip()
+    return method, _literal_path(path)
+
+
+def connector_requests(
+    root: ET.Element, connector_key: str
+) -> Iterator[tuple[ET.Element, str, str, RequestShape]]:
+    """Every sendTask that calls ``connector_key``, as ``(task, method, path, shape)``.
+
+    ``RequestShape.ACTIVITY``: an ``Intsvc.ActivityExecution`` on the
+    connector, method and path from context. ``RequestShape.HTTP``: a
+    connector-mode ``Intsvc.UnifiedHttpRequest`` on ``uipath-uipath-http``
+    through its connection, method and ``url`` (else ``path``) from the body. A
+    manual-mode request, one to another connector, or an
+    ``Intsvc.ActivityExecution`` on object ``http-request`` is not yielded.
+    """
+    for task in elements(root, "sendTask"):
+        key = context_value(task, "connectorKey")
+        if key == HTTP_CONNECTOR_KEY and has_type(task, UNIFIED_HTTP_REQUEST):
+            request = _http_request(task, connector_key)
+            if request is not None:
+                yield task, *request, RequestShape.HTTP
+            continue
+
+        if key != connector_key or not has_type(task, ACTIVITY_EXECUTION):
+            continue
+        if context_value(task, "objectName") == LEGACY_HTTP_OBJECT:
+            continue
+
+        method, path = context_value(task, "method"), context_value(task, "path")
+        yield task, method, path, RequestShape.ACTIVITY
+
+
+_PATH_SEGMENT = (
+    r"(?!=)(?![^/]*=js:)(?!\$?vars\.)(?![^/]*%7B[^/]*%7D)(?![^/]*<[^/]*>)(?!:\w)"
+    r"(?:\{\}|[^/{])+"
+)
+_PLACEHOLDER_RE = re.compile(r"\{[^/}]*\}")
+_CATALOG_ONLY_METHODS = {"getbyid"}
+
+
+@lru_cache(maxsize=None)
+def _filled_path_re(template: str, taken: frozenset[tuple[str, str]]) -> re.Pattern[str]:
+    """End-anchored match for an IS path, each ``{name}`` one filled segment:
+    ``/v2/{projectId}/items`` matches ``/v2/{}/items`` and ``/v2/p/items``,
+    not ``/v2/{projectId}/items``, ``/v2/${projectId}/items``,
+    ``/v2/<projectId>/items`` or ``/v2/:projectId/items``. A placeholder
+    segment never takes a ``(parent, literal)`` in ``taken``, ``parent`` being
+    the ``_parent`` of that segment."""
+    segments: list[str] = []
+    template_segments = template.split("/")
+    for position, segment in enumerate(template_segments):
+        parts = _PLACEHOLDER_RE.split(segment)
+        guard = ""
+        if parts == ["", ""]:
+            parent = _parent(template_segments[:position])
+            literals = sorted(s for p, s in taken if p == parent)
+            guard = "".join(rf"(?!{re.escape(s)}(?:/|$))" for s in literals)
+        segments.append(guard + _PATH_SEGMENT.join(re.escape(part) for part in parts))
+    return re.compile("/".join(segments) + "/?$", re.IGNORECASE)
+
+
+def _parent(segments: list[str]) -> str:
+    """The segments above one, each placeholder as ``{}``:
+    ``/v2/{ProjectId}/items`` -> ``/v2/{}/items``."""
+    return "/".join("{}" if "{" in s else s.lower() for s in segments)
+
+
+class ConnectorOperation(NamedTuple):
+    """``alternatives``: further ``(object_name, path)`` targets that also
+    satisfy the operation. ``operation``: the activity operation (``Create``,
+    ``Retrieve``, ...) an ``Intsvc.ActivityExecution`` node writes in its
+    context, any case. When the node has one it decides, whatever its
+    ``method``; without one, ``methods`` decides."""
+
+    label: str
+    object_name: str
+    methods: set[str]
+    path: str
+    alternatives: tuple[tuple[str, str], ...] = ()
+    operation: str = ""
+
+
+def _targets(operation: ConnectorOperation) -> list[tuple[str, str]]:
+    return [(operation.object_name, operation.path), *operation.alternatives]
+
+
+def _methods(operation: ConnectorOperation) -> set[str]:
+    return {method.lower() for method in operation.methods}
+
+
+def _http_methods(operation: ConnectorOperation) -> set[str]:
+    return {"get" if m in _CATALOG_ONLY_METHODS else m for m in _methods(operation)}
+
+
+def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[str, str]]:
+    return frozenset(
+        (_parent(segments[:position]), segment.lower())
+        for operation in operations
+        for _, path in _targets(operation)
+        for segments in [path.split("/")]
+        for position, segment in enumerate(segments)
+        if segment and "{" not in segment
+    )
+
+
+def _operation_matches(
+    task: ET.Element,
+    method: str,
+    path: str,
+    shape: RequestShape,
+    operation: ConnectorOperation,
+    taken: frozenset[tuple[str, str]],
+) -> bool:
+    method = method.lower()
+    targets = _targets(operation)
+    if shape is RequestShape.ACTIVITY:
+        object_name = context_value(task, "objectName")
+        if not any(object_name == o for o, _ in targets):
+            return False
+
+        recorded = context_value(task, "operation").strip().lower()
+        if operation.operation and recorded:
+            return recorded == operation.operation.lower()
+        return method in _methods(operation)
+
+    if method not in _http_methods(operation):
+        return False
+    request_path = path.split("?", 1)[0]
+    return any(_filled_path_re(p, taken).search(request_path) for _, p in targets)
+
+
+def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
+    """Each operation's request index, no request used twice, as many
+    operations covered as possible (augmenting-path bipartite matching)."""
+    owner: dict[int, int] = {}
+
+    def claim(operation: int, seen: set[int]) -> bool:
+        for request in candidates[operation]:
+            if request in seen:
+                continue
+            seen.add(request)
+            if request not in owner or claim(owner[request], seen):
+                owner[request] = operation
+                return True
+        return False
+
+    for operation in range(len(candidates)):
+        claim(operation, set())
+    return {operation: request for request, operation in owner.items()}
+
+
+def _require_valid(operation: ConnectorOperation) -> None:
+    for _, path in _targets(operation):
+        if not path.strip("/"):
+            raise ValueError(f"{operation.label}: path {path!r} matches any request")
+    if not _http_methods(operation):
+        raise ValueError(f"{operation.label}: methods {sorted(operation.methods)} hold no HTTP verb")
+
+
+def _missing_operation(operation: ConnectorOperation, taken_by: list[str]) -> str:
+    http_methods = "/".join(sorted(_http_methods(operation))).upper()
+    if operation.alternatives:
+        object_names, paths = zip(*_targets(operation))
+        targets = (
+            f"objectName in {list(object_names)} with method in {sorted(_methods(operation))}, "
+            f"or HTTP {http_methods} on one of {list(paths)}"
+        )
+    else:
+        targets = (
+            f"objectName={operation.object_name!r} with method in {sorted(_methods(operation))}, "
+            f"or HTTP {http_methods} {operation.path!r}"
+        )
+    message = f"{operation.label} ({targets} with every placeholder filled)"
+    if taken_by:
+        message += f"; matching node(s) already used: {', '.join(taken_by)}"
+    return message
+
+
+def no_connector_node_message(connector_name: str, connector_key: str) -> str:
+    return (
+        f"no bpmn:sendTask calls the {connector_name} connector: expected "
+        f"{ACTIVITY_EXECUTION} with context connectorKey {connector_key!r} "
+        f"(objectName not {LEGACY_HTTP_OBJECT!r}), or {UNIFIED_HTTP_REQUEST} "
+        f"with context connectorKey {HTTP_CONNECTOR_KEY!r} and body "
+        f"authentication 'connector', targetConnector {connector_key!r}"
+    )
+
+
+def require_operations(
+    requests: list[tuple[ET.Element, str, str, RequestShape]],
+    operations: list[ConnectorOperation],
+    group: str,
+) -> None:
+    for operation in operations:
+        _require_valid(operation)
+
+    taken = _literal_segments(operations)
+    candidates = [
+        [i for i, request in enumerate(requests) if _operation_matches(*request, operation, taken)]
+        for operation in operations
+    ]
+    assigned = _assign_requests(candidates)
+
+    missing: list[str] = []
+    for index, operation in enumerate(operations):
+        if index not in assigned:
+            taken_by = [
+                f"{requests[request][0].attrib.get('id', '?')} by {operations[other].label!r}"
+                for other, request in assigned.items()
+                if request in candidates[index]
+            ]
+            missing.append(_missing_operation(operation, taken_by))
+            continue
+
+        task, method, request_path, _shape = requests[assigned[index]]
+        target = request_path or context_value(task, "objectName")
+        print(f"OK: {operation.label} -> {task.attrib.get('id', '?')} ({method} {target})")
+
+    if missing:
+        fail(
+            f"missing {group} connector node(s), each operation needs its own node:\n  "
+            + "\n  ".join(missing)
+        )
 
 
 def require_di_for_visible_elements(root: ET.Element) -> None:

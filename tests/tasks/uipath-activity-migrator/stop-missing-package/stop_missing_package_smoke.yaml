@@ -64,7 +64,7 @@ success_criteria:
   # lookahead inside this one command; `--help` invocations are exempt.
   - type: command_executed
     description: "Agent ran analyze with --output-format sarif"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+analyze(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-format\s+sarif)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

@@ -299,6 +299,8 @@ Report per guardrail:
 - **Actionability issue** — describe the problem (e.g., "`UserPromptAttacksValidator` is decorating `@tool def lookup_account_info` — the SDK docs say this validator only supports LLM scope; move the `@guardrail` above the LLM factory") and the fix
 - **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead
 
+> **Preserve the existing style when fixing.** A misplaced `@guardrail` decorator stays a decorator — move it above the correct target (`@tool` function, LLM factory, or agent factory; refactor into a factory first if needed). A misconfigured middleware stays middleware — fix its arguments in place. Do not convert between decorator and middleware unless the user explicitly asks for the other style.
+
 If the user asks to fix identified issues: apply corrections to the Python file, then verify:
 
 ```bash

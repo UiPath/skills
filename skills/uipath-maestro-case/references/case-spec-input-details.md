@@ -201,7 +201,7 @@ The CLI compiles the tree:
     "filters": [                             // 1+ Filter objects
         {
             "id":       "<field-name>",     // matches a name in caseShape.filter.fields[]
-            "operator": "<FilterOperator>", // see operator list below
+            "operator": "<FilterOperator>", // one of the field's operators[]; list below
             "value": {
                 "isLiteral": true,
                 "rawString": "<json-encoded value>",
@@ -230,6 +230,8 @@ After           AfterOrEqual       Before          BeforeOrEqual
 In              NotIn              Like            NotLike
 IsNull          IsNotNull
 ```
+
+This is every value the builder knows, not what a field accepts. When `case spec` lists `filter.fields[].operators[]` (or `filter.freeformOperators[]`), pick the row's `operator` from there. A field with `operators: []` takes no row.
 
 ### `WorkflowValue`
 
@@ -512,6 +514,7 @@ Before constructing `--input-details`, run `case spec` once WITHOUT it (use `--s
 | Required trigger event params | `inputs.eventParameters[?required]` |
 | Required trigger query/path params | `inputs.queryParameters[?required]`, `inputs.pathParameters[?required]` |
 | Filter field names | `filter.fields[*].name` (also `searchableOperators[]`, `searchableNames[]`, `enum[]`) |
+| Filter row operators | `filter.fields[*].operators[]` (builder names such as `Equals`; `searchableOperators[]` holds the CEQL symbols); `filter.freeformOperators[]` when any field name is allowed |
 | Whether the activity supports filter | `filter` present in spec output → yes |
 
 Then construct `--input-details` referencing those names.

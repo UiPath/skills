@@ -89,21 +89,21 @@ success_criteria:
 
   - type: command_executed
     description: "Agent ran analyze with --output-format sarif"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+analyze(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-format\s+sarif)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran upgrade into a separate output path"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+upgrade(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--output-path)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+upgrade(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-path)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran the migrated workflow"
-    command_pattern: 'uip\s+rpa\s+run(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--file-path)'
+    command_pattern: 'uip\s+rpa\s+run(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--file-path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -122,7 +122,7 @@ success_criteria:
 
   - type: command_not_executed
     description: "Agent never ran or validated the source project"
-    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--project-dir\s+["'']?[^"''\s]*[\\/]ConsentBannerProbe["'']?(?:\s|$))'
+    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--project-dir\s+["'']?[^"''\s]*[\\/]ConsentBannerProbe["'']?(?:\s|$))'
     weight: 1.0
     pass_threshold: 1.0
 
@@ -157,10 +157,11 @@ success_criteria:
   # Runtime guide, Limits: no element is resolved more often than the classic
   # construct resolved it. Check App State keeps what it found in
   # OutUiElement and the Click acts on that element through InUiElement.
+  # Parsed as XML: either property may be an attribute or a property element.
   - type: run_command
     description: "One element search: the Click takes the element Check App State found"
     command: |-
-      python -c "import re, sys; s = open('ConsentBannerProbe_Upgraded/Main.xaml', encoding='utf-8').read(); m = re.search(r'<uix:NCheckState\s[^>]*OutUiElement=\x22\[(\w+)\]\x22', s); c = re.search(r'<uix:NClick\s[^>]*DisplayName=\x22Dismiss consent banner\x22[^>]*>', s); sys.exit(0 if m and c and ('InUiElement=\x22[' + m.group(1) + ']\x22') in c.group(0) else 1)"
+      python -c "import re, sys, xml.etree.ElementTree as E; r = E.parse('ConsentBannerProbe_Upgraded/Main.xaml').getroot(); L = lambda e: e.tag.split('}')[-1]; V = lambda e, p: (e.get(p) or next((''.join(c.itertext()) for c in e if L(c) == L(e) + '.' + p), '')).strip(); outs = {V(e, 'OutUiElement') for e in r.iter() if L(e) == 'NCheckState'}; k = [e for e in r.iter() if L(e) == 'NClick' and e.get('DisplayName') == 'Dismiss consent banner']; v = V(k[0], 'InUiElement') if len(k) == 1 else ''; sys.exit(0 if re.fullmatch(r'\[\w+\]', v) and v in outs else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

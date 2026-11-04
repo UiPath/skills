@@ -47,7 +47,7 @@ Synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-requ
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
-**Solution-resource pickers** (such as a Data Fabric entity). Pass the resource **name** as a plain string, like any value. `case spec` resolves it into the solution and returns what to bind (Step 2). If the name exists in more than one folder, the command lists the candidates: add `"<picker>_folderKey": "<folder key>"` and rerun. A scope selector gating the picker (for example `entityScope`) is a reference field: write its lookup `value` (`folder`), not its `displayName` (`Folder`).
+**Solution-resource pickers** (such as a Data Fabric entity). Pass the resource **name** as a plain string, like any value. `case spec` resolves it into the solution and returns what to bind (Step 2). If the name exists in more than one folder, the command lists the candidates: add `"<picker>_folderKey": "<folder key>"` and rerun. Put the companion under the `inputs.*` list where `case spec` shows it, which can differ from the picker's: Orchestrator **Get Asset** takes `id` under `pathParameters` and `id_folderKey` under `queryParameters`. A companion in the wrong list is refused, and the error names the right one. When the spec doesn't list the companion, put it next to the picker. A scope selector gating the picker (for example `entityScope`) is a reference field: write its lookup `value` (`folder`), not its `displayName` (`Folder`).
 
 #### Step 1.a — Rewrite references to canonical sink form
 
@@ -216,6 +216,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 |---|---|---|
 | `case spec` fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 9 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 9 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
 | Required-field gate fails (user declines) | Placeholder per Rule 9 OR re-prompt | `[SKIPPED] required field <name> missing — placeholder task per Rule 9` |
+| `get-connection` or `case spec` fails with `Connector catalog unavailable` (`ErrorCode: server_error`) | Placeholder per Rule 9 (`data: {}`), not the typeId/connectionId-preserving shape: nothing was resolved. Every `execute-connector-activity` task takes this row ([connector-integration.md § Catalog unavailable](../../../connector-integration.md#catalog-unavailable-typecache-5xx)) | `[SKIPPED] connector catalog unavailable (TypeCache <status>) — placeholder task per Rule 9` |
 | All succeed | Skeleton + `splice` (Step 5), Step 6 sync | — |
 
 All issues appended to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md).

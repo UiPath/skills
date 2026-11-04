@@ -63,11 +63,13 @@ Registry discovery happens during build planning, so login is required first. Th
 **Negative trigger — tenant work overrides it.** The exception defers tenant lookup; it does not describe where a run stops. It does NOT fire when the same request asks to resolve resources or identities, pull or refresh the registry, replace a stale registry audit, or produce `tasks/registry-resolved.json` / `tasks/recipients-resolved.json` — even when that request also says to stop before `caseplan.case`, a solution, or Phase 2. Such a run is a normal resolution run: run this gate in full, resolve every identity, write the ledger, and stop before Phase 2.
 
 ```bash
+<!--skill-flavor:planning-login-command:start-->
 uip login status --output json
+<!--skill-flavor:planning-login-command:end-->
 uip maestro case registry pull
 ```
 
-Outside the fast path, do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue to Step 2/3 and do not write `registry-resolved.json` unless the pull succeeds. If not logged in, prompt the user to log in and stop Phase 1; if the pull fails, surface the command error and stop Phase 1. After a successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. The pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
+Outside the fast path, do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue to Step 2/3 and do not write `registry-resolved.json` unless the pull succeeds. If not logged in, prompt the user to log in and stop Phase 1; if the pull fails, surface the command error and stop Phase 1. A pull that exits 0 with a `Warning` is partial: read `Data.Errors[]`. A 5xx `typecache-*` row routes the elements that index serves to [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx); the pull is not re-run. A 401 or 403 `typecache-*` row is a login or permission failure: surface it and stop Phase 1. Rows for other types mean those indexes are not pulled — `sdd resolve` names them in `Data.Scope.missingIndexes`, and in `Data.Scope.unavailableIndexes` with the status when the CLI recorded the failure. After a successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. The pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
 ## Step 2 — Locate and parse the design document
 
@@ -158,6 +160,8 @@ Otherwise, continue with the normal resolution path:
 ### 3.4 Unresolved resources
 
 When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**.
+
+> **Connector catalog unavailable — no gate, no create offer.** The elements of a `typecache-*` index that `registry pull` listed in `Data.Errors` with a 5xx go straight to step 1 below with reason `connector catalog unavailable (TypeCache <status>)`; [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx) says which elements each index serves.
 
 > **Missing connection — offer to create first.** A missing/empty IS connection is not immediately "unresolved". The connector pipeline offers to create one via `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-planning.md § Resolve the connection](connector-trigger-planning.md#2-resolve-the-connection)). Only after the user **declines** or creation fails does the connection become `<UNRESOLVED>` and fall through to the steps below.
 

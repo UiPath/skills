@@ -236,6 +236,23 @@ class FlowGraph:
     def edges_from(self, node_id: str, port: str | None = None) -> list[dict[str, Any]]:
         return [e for e in self.out[node_id] if port is None or e["sourcePort"] == port]
 
+    def fan_out(self, node_id: str) -> list[dict[str, Any]]:
+        """Edges that start ``node_id``'s branches: its own, or, when it leads only
+        into a merge with one edge in, that merge's (the canvas parallel split)."""
+        out = self.edges_from(node_id)
+        if len(out) != 1:
+            return out
+
+        fork = out[0]["targetNodeId"]
+        if self.type_of(fork) != MERGE:
+            return out
+
+        if sum(e["targetNodeId"] == fork for e in self.edges) != 1:
+            return out
+
+        arms = self.edges_from(fork)
+        return arms if len(arms) >= 2 else out
+
     def reachable(self, start: str | Iterable[str], blocked: Iterable[str] = ()) -> set[str]:
         """Nodes reachable from ``start`` (exclusive), never entering ``blocked``.
 

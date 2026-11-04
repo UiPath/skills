@@ -106,7 +106,7 @@ success_criteria:
   # edited in place, absent by design when it delegated the edit to a subagent.
   - type: command_executed
     description: "Advisory: agent itself ran validate at error severity (absent when the edit was delegated)"
-    command_pattern: 'uip\s+rpa\s+validate(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--min-severity\s+error)'
+    command_pattern: 'uip\s+rpa\s+validate(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--min-severity\s+error)'
     min_count: 1
     weight: 0
     pass_threshold: 0

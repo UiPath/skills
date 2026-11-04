@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects. For .flow use uipath-maestro-flow; for case plans use uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -133,9 +133,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    adopted at 2a, or edited in place (brownfield) — because upload overwrites
    the cloud solution matching the local `.uipx` SolutionId. Confirm it where
    that solution is chosen (2a); when 2a did not run, confirm before the 4g
-   upload. After every `uip solution upload`, put `Data.DesignerUrl` in your
-   reply to the user as a clickable link on its own line. If the response has
-   no `DesignerUrl`, say so and show its `Data`.
+   upload.
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See
@@ -196,7 +194,9 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    list; the default list without `--all-fields` omits `ProcessType`) and
    bind per rule 18, never a fabricated or placeholder key. Re-read both
    after every deploy: `deploy run` creates a new folder, so a literal
-   `folderKey` from an earlier deploy points at the old one. (5) Unless the task forbids
+   `folderKey` from an earlier deploy points at the old one.
+<!--skill-flavor:debug-node-output:start-->
+   (5) Unless the task forbids
    live runs or asks for a draft or handoff, run the process
    (`uip maestro bpmn debug`) and read the node's output in
    `debug-instance variables-all`. Map `=result.<key>` to the key that output
@@ -204,6 +204,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    property name. Without a run, use the schema name and report the mapping
    as unverified. A business rule maps its whole result as one `output` from
    `=result`, never one output per decision or column.
+<!--skill-flavor:debug-node-output:end-->
 18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
    `ExecuteApiWorkflowAsync`, `StartAgenticProcess[Async]`,
    `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that
@@ -215,6 +216,10 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    template's remaining fields and make that swap only after a live run
    faults with `key:FolderKey`; without a run, report the node unverified. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
+19. **Fill every placeholder (`{name}`, `<name>`) in an HTTP request's `url` before `registry
+   get`, with a discovered or given value or a `=js:` expression; never invent
+   one.** To change the url, run `registry get` again, never edit it in the
+   element ([how](references/v2-connector-nodes.md#http-requests)).
 
 ## The model
 
@@ -482,7 +487,7 @@ Draft mode only.
    [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
 - **4c Assemble.** If this run uploaded the shape, download it first (as in
    1c); when its `.bpmn` differs from the local one, build on the downloaded
-   one and say in one sentence that you kept the user's changes. For
+   one (4g says so). For
    greenfield, edit the `.bpmn` that 2a's `init`
    generated in place; never replace the whole file.
    Editing in place preserves the four generated JSON files, the initializer's
@@ -713,8 +718,10 @@ Draft mode only.
    placeholder, a source-only draft (Rule 16), or a boundary handoff, or 4a found no `Enabled`
    candidate, no invented identifier can clear
    `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
-   expected result. Report the pair once and continue; `refresh` (4f)
-   succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
+   expected result. Report the pair once and continue. A connection binding
+   whose `default` is a placeholder fails `refresh` (4f) with "default must be
+   a GUID", so that draft skips 4f; refresh needs a real connection id from
+   `uip is connections list`. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
    it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on
    the node reading a start-event-scoped caller input is expected; see
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
@@ -747,16 +754,30 @@ Draft mode only.
    JSON by hand. Refresh after binding a connection (4a) and for a
    package-ready, upload, debug, publish, or deploy deliverable; a source-only
    draft needs it only for 4c's start-event edits, and a trigger-start
-   draft (4c) skips it. For the full contract (scope, idempotency,
-   binding rules) see
+   draft (4c) or a draft with a placeholder connection binding skips it; a
+   placeholder-binding draft keeps the initializer's `Event_start` id and its
+   `uipath:entryPointId`, because a renamed start event leaves
+   `entry-points.json` stale and 4e fails. Such a draft is never a
+   package-ready, upload, debug, publish, or deploy deliverable: stop and ask
+   for a real connection, or report it blocked; never skip `refresh` and ship.
+   For the full contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 - **4g Show the finished process.** When the request allows an upload and the
   project has a solution (`.uipx`), `uip solution upload <SolutionDir> --output json`
-  returns the `Data.DesignerUrl`; give it to the user as a link (Rule 10). When the project was not created in
+  returns the `Data.DesignerUrl`. When the project was not created in
   this run (brownfield, or adopted at 2a without a confirmation), confirm before
   uploading (Rule 10). When the request forbids upload, or there is no
-  solution, report the local `.bpmn` path instead.
+  solution, skip it. Then reply in this shape, dropping lines that do not apply:
+
+  ```text
+  <Name>: built, validated<, uploaded><, run>. <One sentence if you kept the user's online changes.>
+  <DesignerUrl as a link on its own line, or the local .bpmn path>
+
+  - <what changed, one line each, up to 5>
+
+  Assumed: <...>  Unverified: <...>
+  ```
 
 ## Operate and diagnose
 

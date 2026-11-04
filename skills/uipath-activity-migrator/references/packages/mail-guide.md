@@ -8,7 +8,7 @@ Extension `MailActivities`. Applies when `project.json` lists `UiPath.Mail.Activ
 
 ### What the extension does
 
-- Pins `UiPath.Mail.Activities` to `2.0.11`, the stable Windows-compatible release, so non-Outlook mail activities keep compiling `VERIFY`.
+- Raises `UiPath.Mail.Activities` to at least `2.0.11`, the first Windows-compatible release, so non-Outlook mail activities keep compiling; a project already above it keeps its version (measured on 25.10.1: `[2.12.10]` left in place, SARIF note "already exists 2.12.10 and does not need to be updated to 2.0.11").
 - Adds or upgrades `UiPath.MicrosoftOffice365.Activities` to at least `3.6.10`.
 - Rewrites each classic Outlook activity into its Microsoft 365 connector activity and names it `Migrated <old display name>`.
 
@@ -21,7 +21,7 @@ Availability and defaults come from `"<MIGRATOR_EXE>" analyze --help` on the ins
 | `--mail-o365-package-version=<VER>` | Pass the latest stable `UiPath.MicrosoftOffice365.Activities`: `node "<SKILL_DIR>/scripts/resolve-package-lines.mjs" --package UiPath.MicrosoftOffice365.Activities --all-lines --lines 1`. The tool raises values below its built-in minimum |
 | `--config=<FILE>` (alias `--mail-config`) | JSON file that supplies `ConnectionId` values and behavior overrides. Without it every migrated activity has an empty ConnectionId and is reported as action required |
 
-Extension options bind only in the `--name=value` form; the space-separated form is silently ignored.
+Pass extension options as `--name=value`. This extension's options also bind space-separated (measured on 25.10.1 for `--config` and `--mail-o365-package-version`); the `=` form is kept because `--uia-package-version` accepts only it ([tool-behavior-guide.md § Option binding](../tool-behavior-guide.md#option-binding)).
 
 ### Connection configuration file
 
@@ -54,12 +54,12 @@ Rule IDs follow `<CLASSIC-ACTIVITY-NAME>-ACTIVITY-MIGRATION`, one rule per class
 
 | Level | Meaning | Report as |
 |---|---|---|
-| `error` | Activity type not supported by the migrator; left classic | "Not migrated", per activity |
-| `warning` with `[PostMigration Action Required]:` in the message | Migrated, but a property or connection needs the user | Manual work, per activity |
+| `error` | Activity type not supported by the migrator; the classic activity is left in place (observed on 25.10.1: the Outlook Mail Messages Trigger, whose message also carries the prefix below) | "Not migrated", per activity; the summarizer lists it under needs attention: the tool reports it at error level and counts it as failed, unlike UIA leftovers, which it reports at note or warning level and which the left-classic count is reserved for |
+| `[PostMigration Action Required]:` in the message, at `note` or `warning` level (25.10.1 reports these at `note`) | Migrated, but a property or connection needs the user | Manual work, per activity |
 | `warning` without the prefix | Migrated with a caveat | Note in the report |
-| `note` | Migrated cleanly | Count |
+| `note` without the prefix | Migrated cleanly | Count |
 
-Do not describe the classic-to-modern mapping from memory: the analyze results name each affected activity, and the migrated activity in the output XAML keeps the display name prefixed with `Migrated`, so its modern type is read from the element tag on that line. Known gaps `VERIFY`: the Outlook Mail Messages Trigger has no equivalent and is left classic, a capability loss to report; Get Outlook Mail Messages filter options are not migrated and must be recreated by hand; attachments become `LocalResource.FromPath(...)` items; Save Outlook Mail Message is subject to the save-as-type check (see the reserved config key).
+Do not describe the classic-to-modern mapping from memory: the analyze results name each affected activity, and the migrated activity in the output XAML keeps the display name prefixed with `Migrated`, so its modern type is read from the element tag on that line. Known gaps: the Outlook Mail Messages Trigger (`umao:OutlookMailMessagesTrigger`) has no equivalent; the tool reports it at `error` level with `[PostMigration Action Required]: Migration of 'OutlookMailMessagesTrigger' is currently not supported` and leaves the activity in place; it counts under needs attention, not left classic, because the tool reports it as a failure and this guide wants it named, and it is a capability loss to report; Get Outlook Mail Messages filter options are not migrated and must be recreated by hand; attachments become `LocalResource.FromPath(...)` items; Save Outlook Mail Message is subject to the save-as-type check (see the reserved config key).
 
 ## Hook 3 — After upgrade
 

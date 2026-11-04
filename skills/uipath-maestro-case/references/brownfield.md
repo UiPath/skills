@@ -107,7 +107,9 @@ Report: file path edited, what changed (nodes/tasks/conditions added/removed/mod
 |---|---|
 | **Publish to Studio Web** | Phase 5 — `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` (filter mandatory — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)), print DesignerUrl and the `Action` (`Imported`/`Overwritten`). |
 | **Run debug session** | Phase 6 — executes the case for real (consent-gated, Rule 13). |
+<!--skill-flavor:brownfield-publish-row:start-->
 | **Publish to Orchestrator** | Phase 7 — `uip maestro case pack` (mandatory BPMN recompile), then `uip solution pack`, then `uip solution publish` to the tenant solution feed (consent-gated, Rule 13). |
+<!--skill-flavor:brownfield-publish-row:end-->
 | **Done** (default) | Stop here. |
 | **Something else** | Free-form. |
 

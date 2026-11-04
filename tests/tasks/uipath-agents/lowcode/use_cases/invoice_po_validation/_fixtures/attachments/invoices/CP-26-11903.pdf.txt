@@ -1,0 +1,16 @@
+CONTOSO PACKAGING GMBH
+Industriestrasse 9, Leipzig
+
+RECHNUNG / INVOICE
+Invoice number: CP-26-11903
+Invoice date: 2026-09-20
+PO reference: PO-77840
+
+Line  SKU        Description            Qty    Unit price   Amount
+1     CP-BOX-L   Shipping carton large  1100   0.97         1,067.00
+
+Subtotal                                                    1,067.00
+VAT 16%                                                       170.72
+Total due (EUR)                                             1,237.72
+
+Payment terms: 14 days. Due date: 2026-10-04

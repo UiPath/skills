@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "VendorDueDiligenceAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "8877b055-38bb-4f4d-927e-913a822a2413",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "VendorDueDiligenceAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "VendorDueDiligenceAgent",
+      "package": {
+        "key": "c8d9edbe-f350-4cba-ad13-582d336f40af"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "86a04a14-8525-4fa8-8f1a-d7aa9e62ff5a",
+    "files": []
+  }
+}

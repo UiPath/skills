@@ -39,8 +39,8 @@ These actions may contact UiPath services or external systems.
 5. **Keep source and package ownership clear** - fix process structure, variables, mappings, events, and documented non-IS
    extensions in `.bpmn`; rerun CLI generation/enrichment for generated package JSON and Integration Service metadata.
 6. **Default publish wording to Studio Web upload unless the user explicitly asks for Orchestrator deployment** - keep deploy semantics explicit.
-7. **Always include folder context on runtime commands that require it** - `process run` takes `<FOLDER_KEY>` and
-   `instance`/`incident get` commands require `--folder-key` or `-f`.
+7. **Always include folder context on runtime commands that require it** - `process list`/`get`/`run` require
+   `--folder-key`, and `instance`/`incident get` commands require `--folder-key` or `-f`.
 8. **Report identifiers plainly** - summarize returned Studio Web URLs, package paths, solution IDs, process keys,
    job keys, instance IDs, run IDs, final status, and folder context when available.
 9. **Do not retry before diagnosis** - identify root cause first, then decide whether retry, cancel, migrate,
@@ -50,20 +50,20 @@ These actions may contact UiPath services or external systems.
 
 | Journey | Read |
 | --- | --- |
-| Package and upload or publish | [references/ship.md](ship.md) |
-| Debug/run and inspect execution | [references/run.md](run.md) |
-| Manage a running instance | [references/manage.md](manage.md) |
+| Package and upload or publish | [ship.md](ship.md) |
+| Debug/run and inspect execution | [run.md](run.md) |
+| Manage a running instance | [manage.md](manage.md) |
 
 ## Common tasks
 
 | I need to... | Read these |
 | --- | --- |
-| Prepare for Studio Web upload | [references/ship.md](ship.md), [shared/project-layout.md](../shared/project-layout.md) |
-| Deploy to Orchestrator | [references/ship.md](ship.md) |
-| Run/debug a BPMN process | [references/run.md](run.md) |
-| Inspect job or instance status | [references/run.md](run.md) |
-| Pause/resume/cancel/retry | [references/manage.md](manage.md) |
-| Migrate or move an instance cursor | [references/manage.md](manage.md) |
+| Prepare for Studio Web upload | [ship.md](ship.md), [shared/project-layout.md](../shared/project-layout.md) |
+| Deploy to Orchestrator | [ship.md](ship.md) |
+| Run/debug a BPMN process | [run.md](run.md) |
+| Inspect job or instance status | [run.md](run.md) |
+| Pause/resume/cancel/retry | [manage.md](manage.md) |
+| Migrate or move an instance cursor | [manage.md](manage.md) |
 | Correlate a running instance to deployed BPMN | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 | Diagnose a failed run | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 
@@ -88,6 +88,6 @@ These actions may contact UiPath services or external systems.
 ### Cross-capability
 
 - [shared/project-layout.md](../shared/project-layout.md) - package files and content
-- [shared/cli-conventions.md](../cli-conventions.md) - side effects, login, JSON output
-- [author/validation.md](../structural-bpmn.md) - pre-operate validation
+- [cli-conventions.md](../cli-conventions.md) - side effects, login, JSON output
+- [structural-bpmn.md](../structural-bpmn.md) - pre-operate validation
 - [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) - failure investigation

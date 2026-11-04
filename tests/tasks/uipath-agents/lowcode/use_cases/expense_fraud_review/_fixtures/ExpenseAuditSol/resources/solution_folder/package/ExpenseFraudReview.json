@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ExpenseFraudReview",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "3cefb52e-0c62-457c-a8bb-c847ccc5f1ab",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": null,
+      "fileReference": null,
+      "name": "ExpenseFraudReview",
+      "description": null
+    },
+    "locks": [],
+    "key": "a229636a-716e-48c1-8b8b-d254d505c42b"
+  }
+}

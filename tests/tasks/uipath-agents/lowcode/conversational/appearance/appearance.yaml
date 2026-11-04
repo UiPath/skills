@@ -1,0 +1,79 @@
+task_id: skill-agent-conversational-appearance
+description: >
+  Skill-guided evaluation: agent builds a low-code conversational agent with a
+  welcome title and starting prompts. Tests whether the skill teaches the
+  storage shape of `agent.json` `appearance` (agent-definition.md § Appearance,
+  conversational anti-pattern 6): `welcomeTitle`, `welcomeDescription`, and
+  `startingPrompts` present, every starting prompt an object with non-empty
+  `id`, `displayPrompt`, `actualPrompt`, never a plain string. Plain-string
+  prompts pass a loose eye check but make the project unloadable in Studio Web.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, feature:conversational]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  python: {}
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Create a UiPath low-code conversational agent "HelpDeskBot" that answers
+  IT help desk questions. The solution should be named "HelpDeskSol".
+  Its chat welcome screen should have the title "IT Help Desk" and three
+  starting prompts users can click: "Reset my password",
+  "Request a new laptop", and "Check my ticket status".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "agent.json is conversational"
+    path: "HelpDeskSol/HelpDeskBot/agent.json"
+    assertions:
+      - expression: "metadata.isConversational"
+        operator: "equals"
+        expected: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "appearance matches the storage schema: required fields present, starting prompts are complete objects (conversational anti-pattern 6)"
+    command: "python3 $REFERENCE_DIR/check_conversational_appearance.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip agent validate passes on the final project (storage-schema check)"
+    command: "uip agent validate HelpDeskSol/HelpDeskBot --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

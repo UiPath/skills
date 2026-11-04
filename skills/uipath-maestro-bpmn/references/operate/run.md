@@ -16,8 +16,10 @@ Before any debug or process run:
 
 ## Debug - controlled Studio Web run
 
+<!--skill-flavor:debug-intro:start-->
 Use debug when the user wants to upload a local BPMN project to Studio Web and run a debug session with full Studio Web
 visibility.
+<!--skill-flavor:debug-intro:end-->
 
 <!--skill-flavor:local-debug-solution:start-->
 For local project debug, prefer a solution context so generated resources,
@@ -26,12 +28,16 @@ BPMN project, refresh resources, and run debug from the solution directory:
 
 ```bash
 uip solution init <SolutionName> --output json
-uip solution projects import <ProjectDir> --solutionFile <SolutionName>/<SolutionName>.uipx --output json
-uip solution resources refresh --solution-folder <SolutionName> --output json
-cd <SolutionName> && uip maestro bpmn debug <ProjectDirName> --output json
+cd <SolutionName>
+uip solution projects import <path-to-ProjectDir> --output json
+uip solution resources refresh --output json
+uip maestro bpmn debug <ProjectDirName> --output json
 ```
+
+`<path-to-ProjectDir>` is relative to `<SolutionName>` (`../MyProject`) or absolute.
 <!--skill-flavor:local-debug-solution:end-->
 
+<!--skill-flavor:debug-command-usage:start-->
 ```bash
 uip maestro bpmn debug [project-path] --output json
 ```
@@ -63,20 +69,23 @@ If Studio Web URL is not returned, print `Studio Web URL: <not returned by CLI>`
 > right after the debug run. Match returned keys case-insensitively
 > (`finalStatus`/`FinalStatus`, `instanceId`/`InstanceId`, `elementExecutions`/
 > `ElementExecutions`) — the CLI's JSON key casing varies by version.
+<!--skill-flavor:debug-command-usage:end-->
 
 ## Process run - deployed process
 
 Use process run only for a process already deployed to Orchestrator.
 
 ```bash
-uip maestro bpmn process list --output json
-uip maestro bpmn process get <PROCESS_KEY> <FEED_ID> --output json
-uip maestro bpmn process run <PROCESS_KEY> <FOLDER_KEY> --inputs @inputs.json --validate --output json
+uip maestro bpmn process list --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn process get <PROCESS_KEY> --feed-id <FEED_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn process run <PROCESS_KEY> --folder-key <FOLDER_KEY> --release-key <RELEASE_KEY> --inputs @inputs.json --output json
 ```
 
-`process run` requires the folder key as a positional argument.
-Use `--release-key`, `--feed-id`, or `--robot-ids` only when the user provides those deployment-specific choices
-or the process discovery output clearly identifies them.
+`get` also requires `--feed-id`; `run` requires `--release-key`.
+Take `<FOLDER_KEY>` from the user, or the `Key` of `uip or folders list --output json`.
+From the `process list` entry take `<RELEASE_KEY>` (`releaseKey`) and `<FEED_ID>` (`feedId`).
+`<PROCESS_KEY>` is `<processKey>:<processVersion>` from that entry, for example `MyProcess:1.0.0`.
+Add `--feed-id` or `--robot-ids` to `process run` only when the user provides them or they are needed.
 
 ## Job and instance inspection
 
@@ -94,6 +103,7 @@ Use traces only when status, incidents, variables, and deployed BPMN correlation
 uip maestro bpmn job traces <JOB_KEY> --output json
 ```
 
+<!--skill-flavor:debug-instance-inspection:start-->
 For debug instances, prefer the `debug-instance` inspection commands when
 standard deployed-instance commands do not have debug-session context. Use the
 identifiers returned by the debug command as the source of truth.
@@ -103,6 +113,7 @@ uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
 ```
+<!--skill-flavor:debug-instance-inspection:end-->
 
 ## Execution summary
 
@@ -133,6 +144,6 @@ If execution faults, hand off to [diagnose/CAPABILITY.md](../diagnose/CAPABILITY
 - **Never run `uip maestro bpmn debug` as validation.** Use Author validation and packaging checks for correctness;
   debug executes the process.
 - **Never reuse stale inputs silently.** Confirm every side-effecting run's input set and redact secrets from summaries.
-- **Never skip folder context for deployed runs.** `process run` requires `<FOLDER_KEY>` and instance inspection commands
-  require `--folder-key` or `-f`.
+- **Never skip folder context for deployed runs.** `process list`, `get`, and `run` require
+  `--folder-key`, and instance inspection commands require `--folder-key` or `-f`.
 - **Never start diagnosis from traces.** Use incidents, variables, deployed BPMN asset, and element executions first.

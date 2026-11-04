@@ -167,6 +167,22 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "the outcome cards are marked for intrinsic signals: data-signal-outcome on the outcomes and data-signal-recommended on the proposal"
+    command: "find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'data-signal-outcome' | grep -q . && find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'data-signal-recommended' | grep -q ."
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "the app imports @uipath/intrinsic-signals, attaches it, and passes intrinsicSignals from snapshot({ submitted: true }) in the completeTask outputs"
+    command: "find . -path '*/src/*' \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -print0 | xargs -0 grep -l '@uipath/intrinsic-signals' | grep -q . && find . -path '*/src/*' \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'submitted: true' | grep -q . && find . -path '*/src/*' \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'intrinsicSignals' | grep -q ."
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 0
+
+  - type: run_command
     description: "no telemetry or decision outputs: no signals/decision/action output field"
     command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; o=[k.lower() for k in json.load(open('$F'))['outputs']['properties']]; sys.exit(1 if {'signals','decision','action'}.intersection(o) else 0)\""
     timeout: 10
