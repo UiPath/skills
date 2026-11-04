@@ -343,7 +343,7 @@ never changes what a step does.
 <!--skill-flavor:phase-table-preflight:start-->
 | **1 — Preflight** | 1a–1c | Check login, scan for an existing solution and project, start from its cloud copy. Changes nothing in the project, so it runs in every mode. | Below |
 <!--skill-flavor:phase-table-preflight:end-->
-| **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
+| **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no new registry calls** (`list` ran in 1a). Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
 | **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, name each box's resource, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
 | **4 — Wire it up** | 4a–4g | Discover, fetch templates, paste real payloads into the existing boxes, lay out, validate, refresh, show. | Below |
 
@@ -487,9 +487,7 @@ Adjust the shape, re-`format`, show the change, and hold the approval gate
 until the user agrees it: see
 [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating).
 Draft mode only. End the turn with the 3c reply exactly as that guide's
-template shows it: the message starts with `<Name>: outline ready`, and no
-status sentence, separator, or description of the flow comes before or after
-the template's lines.
+template shows it (see its 3c section).
 
 ### Phase 4 — Wire it up
 
@@ -866,9 +864,7 @@ the template's lines.
   judgment call.** Count the `-` change lines before you send:
   when there are more than five, merge related steps into one line each, and
   fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
-  Before you send it, compare the message
-  with the template line by line and delete every line the template does
-  not have.
+  Check the message against the template as the guide's 3c section says.
 
 ## Operate and diagnose
 
@@ -919,7 +915,7 @@ and honestly surfaced to the user as gaps when asked.
 
 | Topic | Read |
 | --- | --- |
-| Phase 2 skeleton — blank boxes, real control flow, no registry calls | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
+| Phase 2 skeleton — blank boxes, real control flow, no new registry calls | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Worked-out topology for a recurring process shape, and how shapes compose | Patterns table above → `references/patterns/*-guide.md` |
