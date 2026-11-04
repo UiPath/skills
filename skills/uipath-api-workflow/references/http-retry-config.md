@@ -59,7 +59,7 @@ Retry section on: the `catch` gets `retry` beside `as` and `do`. Studio Web writ
 }
 ```
 
-Add a status filter by hand when only transient failures should retry: `"when": "${ [429, 503].includes($error.status) }"` — reference the catch's own `as` name. Studio Web keeps a `when` it can parse (this exact `[…].includes($<as>.status)` form). Complete example: [assets/templates/retry-http-request-example.json](../assets/templates/retry-http-request-example.json).
+Add a status filter by hand when only transient failures should retry: `"when": "${ [429, 503].includes($error.status) }"` — reference the catch's own `as` name. Studio Web keeps a `when` it can parse (this exact `[…].includes($<as>.status)` form). Some `validate` releases reject a string `when`; see [Validation Gap](#validation-gap). Complete example: [assets/templates/retry-http-request-example.json](../assets/templates/retry-http-request-example.json).
 
 ### HTTP Request With Retry (`<id>#Retry` Wrapper)
 
@@ -86,8 +86,17 @@ Rules for the wrapper:
 1. `try` holds exactly one task, the `call` task. Keep its key, `export`, and `metadata` unchanged; downstream reads stay `$context.outputs.<ExportBucketKey>`.
 2. Never add `catch.do`: Studio Web reads a wrapper with `do` as a plain Try/Catch, and without `do` exhausted retries fail the workflow as the bare call would.
 3. The wrapper key `<id>#Retry` is reserved and must be globally unique like `#Wrapper` / `#Body`.
-4. **Validation gap.** `uip api-workflow validate` releases without the wrapper fix reject this shape with `retry.when` "must be object" and a Connector task missing `call` / `metadata.configuration` at the wrapper path. When those are the only errors and they point at a `#Retry` wrapper, treat the wrapper as valid and report the validator gap; otherwise fix normally. To retry an HTTP Request that must validate clean today, author the Try/Catch shape above instead.
+4. Some `validate` releases reject this shape; see [Validation Gap](#validation-gap).
 5. Edit an existing wrapper in place (count, delay, backoff, status list); do not unwrap or convert it.
+
+### Validation Gap
+
+`uip api-workflow validate` releases without UiPath/cli#5785 reject two valid task-level retry forms:
+
+1. A string `retry.when` or `retry.exceptWhen`, on a Try/Catch or a `#Retry` wrapper: `Expected type 'object'` and `Expected type 'array'` at `…/catch/retry/when`.
+2. An `<id>#Retry` wrapper: a Connector task missing `call` or `metadata.configuration` at the wrapper path.
+
+When those are the only errors, treat the workflow as valid and report the validator gap; otherwise fix normally. Keep an existing workflow as it is: dropping `when`, unwrapping the call, or copying `configuration` onto the wrapper changes what the workflow does. For a new retry that must validate clean on such a release and needs no status filter, write a Try/Catch whose `retry` has no `when`; it retries every caught error.
 
 ### Precedence Over `httpRetryConfig`
 

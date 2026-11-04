@@ -13,10 +13,10 @@ description: >
   workflow-level `httpRetryConfig` may be added (it would not be per-activity, and
   a retrying `try` replaces it anyway).
 
-  The validate criterion requires Valid. `uip` releases without the #Retry
-  validator fix reject the wrapper, and the skill tells agents to author new HTTP
-  retries as a Try/Catch until then, so the wrapper only passes validation once
-  the CLI accepts it.
+  The validate criterion requires Valid, so it passes only on a `uip` that
+  includes UiPath/cli#5785: earlier releases reject any string `retry.when`
+  (both shapes) and the #Retry wrapper. The skill tells agents to report that
+  validator gap rather than drop the filter.
 
   Offline: the call is never sent and no registry lookup is needed.
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, feature:http]

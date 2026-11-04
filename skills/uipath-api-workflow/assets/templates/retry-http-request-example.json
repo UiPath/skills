@@ -106,7 +106,6 @@
               "catch": {
                 "as": "error",
                 "retry": {
-                  "when": "${ [429, 503].includes($error.status) }",
                   "delay": {
                     "milliseconds": 1000
                   },

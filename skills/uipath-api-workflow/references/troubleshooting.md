@@ -774,11 +774,11 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Logging:** use Log Message ([task-types.md](task-types.md#4-log-message-logmessage)), never `console.*` inside a JavaScript activity. Each call becomes a job log entry at its level; `run` prints it as `[Script <TaskName>]: ...`.
 - **Do not** mislabel `metadata.activityType` to slip a type past the check — the validator cross-checks the label against the task's own keys (`has activityType 'DoWhile' but must contain 'for' with 'doWhile'`).
 
-### `validate` rejects an HTTP Request `<id>#Retry` wrapper
+### `validate` rejects a retry `when` or an HTTP Request `<id>#Retry` wrapper
 
-- **Symptom:** At a `…#Retry` task path, `validate` reports `retry.when` "must be object" and/or a Connector task missing `call` / `metadata.configuration`; a Try/Catch with `catch.retry` validates clean.
-- **Cause:** Validator releases without wrapper support treat Studio Web's HTTP Request retry wrapper as a malformed Connector task. The shape is correct for the executor and the designer.
-- **Fix:** Do not unwrap the call, drop `when`, or copy `configuration` onto the wrapper. Follow wrapper rule 4 in [http-retry-config.md](http-retry-config.md#http-request-with-retry-idretry-wrapper).
+- **Symptom:** At `…/catch/retry/when`, `validate` reports `Expected type 'object'` / `'array'`; or at a `…#Retry` task path, a Connector task missing `call` / `metadata.configuration`.
+- **Cause:** Validator releases without the task-level retry fix type `retry.when` as an object and treat Studio Web's HTTP Request retry wrapper as a malformed Connector task. Both shapes are correct for the executor and the designer.
+- **Fix:** Follow [http-retry-config.md § Validation Gap](http-retry-config.md#validation-gap).
 
 ### Fixing in wrong order
 - **Symptom:** Fixing one error creates more errors; thrashing

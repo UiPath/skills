@@ -133,7 +133,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 <!--skill-flavor:file-run-cli:end-->
     Shapes, worked examples, and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
 
-24. **Per-activity retry lives in `catch.retry` of a `try` task, never on the activity.** A Try/Catch carries it beside `as` and `do`; Studio Web stores an HTTP Request's own Retry section as an `<id>#Retry` wrapper — preserve it and never add `catch.do`. A retrying `try` replaces `httpRetryConfig` for every call inside it. Task-level retry re-sends POST/PUT/DELETE; confirm idempotency first. Before authoring a new HTTP Request retry, read the wrapper's validation note. Shapes, defaults, and that note: [references/http-retry-config.md](references/http-retry-config.md#http-request-with-retry-idretry-wrapper).
+24. **Per-activity retry lives in `catch.retry` of a `try` task, never on the activity.** A Try/Catch carries it beside `as` and `do`; Studio Web stores an HTTP Request's own Retry section as an `<id>#Retry` wrapper — preserve it and never add `catch.do`. A retrying `try` replaces `httpRetryConfig` for every call inside it. Task-level retry re-sends POST/PUT/DELETE; confirm idempotency first. Some `validate` releases reject a string `retry.when` and the wrapper; before treating those errors as real, read [references/http-retry-config.md](references/http-retry-config.md#validation-gap), which also holds the shapes and defaults.
 
 ## Workflow Phases
 
@@ -237,7 +237,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 <!--skill-flavor:template-execution-proof:start-->
 - [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) — registry-generated HTTP with `ImplicitConnection`.
 <!--skill-flavor:template-execution-proof:end-->
-- [assets/templates/retry-http-request-example.json](assets/templates/retry-http-request-example.json) — HTTP Request retried on 429/503 by a Try/Catch with `catch.retry`, recording the final status in `catch.do` (rule 24).
+- [assets/templates/retry-http-request-example.json](assets/templates/retry-http-request-example.json) — HTTP Request retried by a Try/Catch with `catch.retry` (Studio Web defaults, no status filter), recording the final status in `catch.do` (rule 24).
 - [assets/templates/vendor-curated-call-example.json](assets/templates/vendor-curated-call-example.json) — IntSvc activity; replace its connection sentinel before writing.
 <!--skill-flavor:solution-resource-template:start-->
 - [assets/templates/solution-connection-resource-template.json](assets/templates/solution-connection-resource-template.json) — Solutions-mode IntSvc connection resource.
