@@ -105,7 +105,8 @@ The function form needs `@uipath/maestro-builder-sdk` 6.57.0 or later: check tha
 A script can also read `$metadata`, the instance's metadata: `InstanceId`, `FolderKey`, `ProcessKey`, `ExternalId` (the external id a case gives the instance; unset when no case started the flow) and `ElementCount` (how many times each element has run, by element id).
 In a script function, take it as the second parameter, typed `FlowMetadata`.
 Name it `$metadata` (any name works, and is renamed to it), and read it only with dots, as the first (`$metadata.InstanceId`, not `$metadata['InstanceId']`).
-Only that first read needs the dot: an element id that is not a JavaScript name is read with brackets after it, `$metadata.ElementCount['my-step']`.
+Only that first read needs the dot: an element id that is not a JavaScript name is read with brackets after it, `$metadata.ElementCount?.['my-step']`.
+`ElementCount` and `ExternalId` can be unset (`ElementCount` until the first count), so read through them with `?.`: strict `tsc` refuses a plain `.` or `[…]` on either, and the run throws a `TypeError` when the key is unset.
 
 ```ts
 import { script, type FlowVars, type FlowMetadata } from '@uipath/maestro-builder-sdk';
