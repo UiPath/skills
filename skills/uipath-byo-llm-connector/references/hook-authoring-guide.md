@@ -25,7 +25,7 @@ Hooks are where a BYO LLM connector does its work: the **preRequest** hook turns
 | `request_vendor_headers` | write | Headers sent to the vendor (merged over the connector's header parameters) |
 | `request_vendor_path` | write | Vendor path; **a value starting with `http` replaces the whole URL** |
 | `request_vendor_parameters`, `request_vendor_method` | write | Vendor query and method |
-| `continue`, `response_body`, `response_status_code`, `response_error_message` | done()-only | Answer without calling the vendor (`continue: false`) — for a request the vendor cannot serve. The postRequest hook **still runs** on that answer: make it pass a body it did not get from the vendor through unchanged |
+| `continue`, `response_body`, `response_status_code`, `response_error_message` | done()-only | Answer without calling the vendor (`continue: false`) — for a request the vendor cannot serve. The builder leaves `continue` out of `contextParams` on purpose: it is never injected. The postRequest hook **still runs** on that answer: make it pass a body it did not get from the vendor through unchanged |
 
 **postRequest**
 

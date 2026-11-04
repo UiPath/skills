@@ -93,3 +93,4 @@ Run after `builder validate` passes, before the first `import` (the version chec
 5. **No credentials in URLs** — no credential is a `query`/`path` parameter or part of a URL a hook builds.
 6. **No secret defaults** — no encrypted or `PASSWORD` config entry has a non-empty `defaultValue`; `base.url` holds the vendor host, not a placeholder such as `https://example.com`.
 7. **Hook-written config** — every config entry a hook writes back has no `configScreenType`.
+8. **Hints** — every `pre` / `pre-optional` config entry has a `hintText`.

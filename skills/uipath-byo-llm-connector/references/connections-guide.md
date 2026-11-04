@@ -89,7 +89,7 @@ uip is connections delete <CONNECTION_ID> --yes --output json                   
 A test connection is deleted by its `instanceId` (the list in SKILL.md step 6 maps `connectionId` to it):
 
 ```bash
-( set -eo pipefail; source <WORK_DIR>/is-api.sh
+( set -o pipefail; source <WORK_DIR>/is-api.sh &&
   api -X DELETE "$T/elements_/elements/api-v2/elements/<ELEMENT_ID>/instances/<INSTANCE_ID>" && echo deleted
 )
 ```

@@ -74,7 +74,7 @@ uip is connectors builder activity create --name chat_completions \
   --methods POST --no-curate --output json
 ```
 
-`init` takes the organization for the key from your login; offline, pass `--organization <org-slug>`. Repeat `activity create` once per path the flavor needs (the streaming twin too, for Gemini and Bedrock). Choose `--auth` from [references/connector-contract-guide.md](references/connector-contract-guide.md) §"Authentication". Then set the template tag: query the whole `element-metadata.json`, change `tags`, patch the whole object back:
+`init` takes the organization for the key from your login; offline, pass `--organization <org-slug>`. It writes the credential's config entry (`custom.api.key` for `customApiKey`) without a `hintText`: query the entry, add one, and patch the whole entry back (`state query` / `state patch element.json/configuration/custom.api.key`). Repeat `activity create` once per path the flavor needs (the streaming twin too, for Gemini and Bedrock). Choose `--auth` from [references/connector-contract-guide.md](references/connector-contract-guide.md) §"Authentication". Then set the template tag: query the whole `element-metadata.json`, change `tags`, patch the whole object back:
 
 ```bash
 uip is connectors builder state query element-metadata.json --output json > <WORK_DIR>/meta-query.json
@@ -140,19 +140,19 @@ api() {
 EOF
 ```
 
-Open a connection session on the draft, in your Personal workspace, with a connection id you choose — without one the connection is created with an empty id no configuration can use:
+Open a connection session on the draft, in your Personal workspace, with a connection id you choose — without one the connection is created with an empty id no configuration can use. Each line ends in `&&`, so the first failed call stops the block; do not rely on `set -e`, which many agent shells ignore:
 
 ```bash
-( set -eo pipefail; source <WORK_DIR>/is-api.sh
-  CONNECTOR=$(api "$T/elements_/v3/element/connectors/<CONNECTOR_ID>" | jq -c '{key, elementId: .sobaId}')
+( set -o pipefail; source <WORK_DIR>/is-api.sh &&
+  CONNECTOR=$(api "$T/elements_/v3/element/connectors/<CONNECTOR_ID>" | jq -c '{key, elementId: .sobaId}') &&
   FOLDER=$(api "$T/orchestrator_/odata/PersonalWorkspaces/UiPath.Server.Configuration.OData.GetPersonalWorkspace" |
-    jq -c '{key: .Key, name: .Name, path: .Name, folderType: "Personal", personalWorkspace: true}')
-  CONNECTION_ID=$(node -e 'console.log(crypto.randomUUID())')
+    jq -c '{key: .Key, name: .Name, path: .Name, folderType: "Personal", personalWorkspace: true}') &&
+  CONNECTION_ID=$(node -e 'console.log(crypto.randomUUID())') &&
   SESSION=$(api "$NI/applications/default/sessions" --data-raw "$(jq -nc --argjson c "$CONNECTOR" --argjson f "$FOLDER" \
     --arg id "$CONNECTION_ID" '{elementKey: $c.key, elementVersion: "Design", debug: true, usePreAuth: true,
-                                instanceId: "", connectionId: $id, folder: $f}')")
+                                instanceId: "", connectionId: $id, folder: $f}')") &&
   ASKS_NOTHING=$(api "$NI/applications/sessions/$(jq -r .sessionID <<<"$SESSION")" | jq '.elementMetadata
-    | .authentication.type == "none" and all(.configuration[]?; (.configScreenType // "") | startswith("pre") | not)')
+    | .authentication.type == "none" and all(.configuration[]?; (.configScreenType // "") | startswith("pre") | not)') &&
   jq --argjson c "$CONNECTOR" --arg id "$CONNECTION_ID" --argjson asksNothing "$ASKS_NOTHING" \
     '{elementId: $c.elementId, connectionId: $id, sessionId: .sessionID, authUrl: .redirectUrl, expiresAt: .expiration, asksNothing: $asksNothing}' <<<"$SESSION"
 )
@@ -161,8 +161,8 @@ Open a connection session on the draft, in your Personal workspace, with a conne
 - `asksNothing: true` — the connector has no authentication and no connection field, so finish the session yourself, as the page's Connect button would:
 
 ```bash
-( set -eo pipefail; source <WORK_DIR>/is-api.sh
-  DETAILS=$(api "$NI/applications/sessions/<SESSION_ID>")
+( set -o pipefail; source <WORK_DIR>/is-api.sh &&
+  DETAILS=$(api "$NI/applications/sessions/<SESSION_ID>") &&
   api "$NI/authenticate" -H "x-uipath-folderkey: $(jq -r .headers.folderKey <<<"$DETAILS")" -H 'x-uipath-foldertype: Personal' \
     --data-raw "$(jq -c --arg name '<CONNECTOR_NAME> test' '{element: {key: .elementMetadata.key, version: .elementVersion},
       sessionID, tags: .elementInstanceTags, configuration: (.configs // {}), name: $name}' <<<"$DETAILS")" |
@@ -175,7 +175,7 @@ Open a connection session on the draft, in your Personal workspace, with a conne
 Either way `connectionId` is the test connection (the `--connection-id` for step 7), and `elementId` addresses the draft's connections. Confirm it exists — a `404` "No element instances found" means none does yet:
 
 ```bash
-( set -eo pipefail; source <WORK_DIR>/is-api.sh
+( set -o pipefail; source <WORK_DIR>/is-api.sh &&
   api "$T/elements_/elements/api-v2/elements/<ELEMENT_ID>/instances" | jq 'map({connectionId, instanceId: .id, name, createdDate})'
 )
 ```
