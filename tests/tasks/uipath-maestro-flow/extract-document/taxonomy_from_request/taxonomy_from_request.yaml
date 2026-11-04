@@ -47,9 +47,8 @@ success_criteria:
   - type: run_command
     description: "The taxonomy has fields for the vendor name, invoice number, invoice date and total"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceFields fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceFields fields
       '[{"name": "vendor"}, {"name": "number"}, {"name": "date"}, {"name": "total"}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -57,9 +56,8 @@ success_criteria:
   - type: run_command
     description: "The invoice date is typed as a date and the total as a monetary quantity"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceFields fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceFields fields
       '[{"name": "date", "type": "ft-date"}, {"name": "total", "type": "ft-monetary-quantity"}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -67,24 +65,22 @@ success_criteria:
   - type: run_command
     description: "The user's rule about the No. prefix is in the invoice number's instructions"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceFields fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceFields fields
       '[{"name": "number", "says": "No[.]|prefix"}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "The overall prompt, every group and every field carry instructions"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceFields described
-    timeout: 60
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceFields described
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "uip maestro flow validate passes on InvoiceFields.flow with no warnings"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceFields validate
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
