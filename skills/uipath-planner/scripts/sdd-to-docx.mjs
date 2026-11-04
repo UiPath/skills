@@ -6,7 +6,8 @@
 //
 // Convert mode writes a .docx with a table of contents; --reference-doc applies the template's
 // styles. --headings prints the template's Markdown headings, one per line, to map its sections.
-// Mermaid blocks stay as code: pandoc does not render them.
+// Mermaid blocks stay as code: pandoc does not render them. --sandbox keeps pandoc from reading
+// any file or URL the documents reference; only the files named here are read.
 //
 // Exit codes: 0 success · 1 usage error · 2 pandoc missing · 3 conversion failed
 
@@ -68,7 +69,7 @@ const { headings, reference, positional } = parse(process.argv.slice(2));
 if (headings) {
     const [template] = positional;
     requireFile(template, 'template');
-    const markdown = pandoc([template, '-f', 'docx', '-t', 'gfm', '--wrap=none'], true);
+    const markdown = pandoc([template, '-f', 'docx', '-t', 'gfm', '--wrap=none', '--sandbox'], true);
     for (const line of markdown.split(/\r?\n/)) {
         if (/^#{1,6}\s/.test(line)) console.log(line);
     }
@@ -77,7 +78,7 @@ if (headings) {
 
 const [input, output = `${basename(input ?? '', extname(input ?? ''))}.docx`] = positional;
 requireFile(input, 'input file');
-const args = [input, '-f', 'gfm', '-t', 'docx', '--toc', '--toc-depth=2', '-o', output];
+const args = [input, '-f', 'gfm', '-t', 'docx', '--toc', '--toc-depth=2', '--sandbox', '-o', output];
 if (reference) {
     requireFile(reference, 'reference doc');
     args.push(`--reference-doc=${reference}`);
