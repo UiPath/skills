@@ -239,6 +239,43 @@ def shape_index(inventory):
     return out
 
 
+def relationship_constraints(prop, shape, subject, is_master, register, mode_predicate,
+                             replica_of):
+    """Classify an OBJECT property's shape, the way a datatype property's is.
+
+    Without this an `sh:minCount 1` on a relationship is parsed into the inventory
+    and then dropped: no field option, no register row, and the open-item command
+    ships without isRequired. Every SHACL shape becomes a register row — a
+    relationship is not an exception.
+    """
+    if not shape:
+        return {}
+    locus = "uipath" if is_master else "external"
+    declared = declared_level_for(shape, mode_predicate)
+    out = {}
+    min_count = shape.get("minCount") or 0
+    if min_count >= 1:
+        out["isRequired"] = is_master
+        register.add(
+            source="process", from_iri=prop["iri"], subject=subject,
+            statement=f"sh:minCount {min_count}: the relationship is mandatory in the domain",
+            expressible="yes" if min_count == 1 else "no",
+            locus=locus, level=None,
+            candidate=declared or ("state" if is_master else "monitor"),
+            resolution="default-applied" if is_master else "override",
+            evidence={"replicaOf": replica_of} if not is_master else {},
+            note=("isRequired left false: the entity is a replica and the system of "
+                  "record holds the guarantee" if not is_master else
+                  "isRequired set from the system-of-record default (D1)"))
+    for unsupported in shape.get("unsupported", []):
+        register.add(source="process", from_iri=prop["iri"], subject=subject,
+                     statement=f"sh:{unsupported} must hold on the relationship",
+                     expressible="no", locus=locus, level=None,
+                     candidate=declared or ("monitor" if not is_master else "transition"),
+                     resolution="deferred")
+    return out
+
+
 def shape_annotations(inventory):
     """class IRI -> the node shape's non-SHACL annotations"""
     return {s["targetClass"]: s.get("annotations", {})
@@ -567,7 +604,8 @@ def main():
                                  expressible="yes", locus=None, level=None,
                                  resolution="default-applied")
                 relationships.setdefault(name_of[child], []).append(
-                    {"prop": prop, "target": name_of[parent_cls], "cardinality": kind})
+                    {"prop": prop, "target": name_of[parent_cls], "cardinality": kind,
+                     "shape": shapes.get(dom, {}).get(prop["iri"], {})})
                 edges.append((name_of[child], name_of[parent_cls]))
 
     # reified relation participants
@@ -582,7 +620,9 @@ def main():
             for rng in prop.get("range", []):
                 if rng in name_of:
                     relationships.setdefault(name_of[iri], []).append(
-                        {"prop": prop, "target": name_of[rng], "cardinality": "many-to-one"})
+                        {"prop": prop, "target": name_of[rng],
+                         "cardinality": "many-to-one",
+                         "shape": shapes.get(iri, {}).get(prop["iri"], {})})
                     edges.append((name_of[iri], name_of[rng]))
 
     # ---- junction entities --------------------------------------------------
@@ -842,9 +882,13 @@ def main():
         rels = []
         for rel in sorted(relationships.get(ename, []), key=lambda r: r["prop"]["iri"]):
             rname = normalize(rel["prop"]["iri"], "field", taken_fields, register, owner=ename)
-            rels.append({"name": rname, "target": rel["target"],
-                         "cardinality": rel["cardinality"],
-                         "provenance": {"from": [rel["prop"]["iri"]], "derivation": "direct"}})
+            entry = {"name": rname, "target": rel["target"],
+                     "cardinality": rel["cardinality"],
+                     "provenance": {"from": [rel["prop"]["iri"]], "derivation": "direct"}}
+            entry.update(relationship_constraints(
+                rel["prop"], rel.get("shape") or {}, f"{ename}.{rname}", is_master,
+                register, mode_predicate, replicas.get(ename)))
+            rels.append(entry)
 
         # Lowest-sorting, so the pick does not depend on construction order. Never
         # falls back to Id: the display field decides what renders in every picker,
