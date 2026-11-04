@@ -17,11 +17,11 @@ Choose the target `.flow` in this order:
 3. A new flow, and `IsCurrentFileEmpty` is `true`: fill the open `.flow`.
 4. A new flow otherwise: write a new `<Name>.flow` in the open project. At the end, tell the user to open `<Name>.flow` in the Explorer. A write refreshes the canvas only for the open file.
 
-Below, `<Project>` is the folder of the target and `<Name>` is the file name of the target without `.flow` (`new` for `new.flow`).
+Below, `<Project>` is the folder of the target and `<Name>` is the file name of the target without `.flow` (`new` for `new.flow`). `<Draft>` is `/tmp/flow-draft/<Project>/<Name>`.
 
 **The target `.flow` is the single source of truth.** The user can change it on the canvas between your turns. So never use a `.flow.ts` from an earlier turn: decompile a fresh one every turn.
 
-**Drafts live in the `.flow-sdk/` folder of the project.** Keep the source and every intermediate `.flow` in `/solution/<Project>/.flow-sdk/`: `<Name>.flow.ts`, `original/<Name>.flow`, `baseline/<Name>.flow` and `edited/<Name>.flow`. `prepare` writes `connectors-local/` and `bindings.json` there too. Each compile writes inline-agent files next to its output, so keep each intermediate `.flow` in its own folder ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
+**Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `original/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
 
 **Never delete or rename a file under `/solution`.** The project file system refuses both. Overwrite the file instead.
 
@@ -89,17 +89,17 @@ Every change — a new flow or an edit — is the same round trip through the ta
 
 ```bash
 cd /solution/<Project>
-mkdir -p .flow-sdk/original .flow-sdk/baseline .flow-sdk/edited
+mkdir -p .flow-sdk/original <Draft>/baseline <Draft>/edited
 # 1. Seed, every turn: a copy of the target, a fresh source, the pristine baseline
 cp <Name>.flow .flow-sdk/original/<Name>.flow
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
-uip maestro flow compile .flow-sdk/<Name>.flow.ts -o .flow-sdk/baseline/<Name>.flow
+uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Draft>/baseline/<Name>.flow
 # 2. Edit .flow-sdk/<Name>.flow.ts narrowly (no .layout() for added steps: merge places them), then check until clean
 #    (refused, or step 1 stopped: references/brownfield.md#check-only-what-you-changed-check---baseline)
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline .flow-sdk/original/<Name>.flow
 # 3. Compile the edit (no check: step 2 is the gate), then merge the delta into the target
-uip maestro flow compile .flow-sdk/<Name>.flow.ts -o .flow-sdk/edited/<Name>.flow
-uip maestro flow merge .flow-sdk/edited/<Name>.flow --original <Name>.flow --baseline .flow-sdk/baseline/<Name>.flow -o <Name>.flow
+uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Draft>/edited/<Name>.flow
+uip maestro flow merge <Draft>/edited/<Name>.flow --original <Name>.flow --baseline <Draft>/baseline/<Name>.flow -o <Name>.flow
 # 4. The product's own static check on the file the canvas shows
 uip maestro flow validate <Name>.flow --output json
 ```
@@ -119,7 +119,7 @@ Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "
 <!--skill-flavor:sdk-lifecycle:end-->
 
 <!--skill-flavor:sdk-editing:start-->
-In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Edit the decompiled source narrowly and let the merge carry only that delta back ([Lifecycle](#lifecycle)). Validate the merged target `.flow`, never `.flow-sdk/edited/`. Studio Web has no pipeline helper: `decompile` here never writes one.
+In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Edit the decompiled source narrowly and let the merge carry only that delta back ([Lifecycle](#lifecycle)). Validate the merged target `.flow`, never `<Draft>/edited/`. Studio Web has no pipeline helper: `decompile` here never writes one.
 
 **True-brownfield procedure:**
 **[`references/brownfield.md`](references/brownfield.md)** — read its judgments. Its shell sequences assume a terminal, so use the round trip above instead.
