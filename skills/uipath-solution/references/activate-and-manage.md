@@ -12,13 +12,6 @@ Activate deployed solutions, uninstall deployments, and manage published solutio
 - Managing published package versions in the solution feed
 - Removing solutions from Studio Web
 
-Successful `deploy activate` and completed `deploy upgrade` also add
-`Data.OrchestratorUrl` and, when the installed folder is known, `Data.FolderUrl`,
-using the same [deployment links](pack-and-deploy.md#open-the-deployment-in-orchestrator)
-as `deploy run`. The CLI logs `Deployed: <OrchestratorUrl>` to stderr (or the
-configured log file). `deploy upgrade --no-wait` only confirms acceptance and
-omits these links and the completion line.
-
 ## Prerequisites
 
 - Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
@@ -58,6 +51,8 @@ uip solution deploy activate "MyDeployment" --timeout 600 --poll-interval 10000 
 | `<deployment-name>` | Name of the deployment to activate (required) | -- |
 | `--timeout <seconds>` | Polling timeout | 360 |
 | `--poll-interval <ms>` | Polling interval | 5000 |
+
+Successful activation returns `Data.OrchestratorUrl` and, when the installed folder key is known, `Data.FolderUrl`; use these [deployment links](pack-and-deploy.md#open-the-deployment-in-orchestrator) to open the deployment.
 
 ## Step 2: Check Deployment Status
 
@@ -118,10 +113,12 @@ uip solution deploy upgrade <deployment-key> --version 2.0.0 --discard-draft --o
 uip solution deploy upgrade <deployment-key> --version 2.0.0 --acknowledge-permanent-deletion --output json
 ```
 
-Find the deployment's key, name and package with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, Operation, DeploymentName, ToVersion, PipelineDeploymentId, DeploymentKey, DeploymentStatus, Actions, ActivationStatus }`, plus `PendingResources` (each with its `Reason` and `FolderPaths`) and `NextSteps` when the deployment is not live; the key form adds `FromVersion` (the version left behind) and `InstallDeploymentKey` — the key that stays the same across upgrades, so a pipeline that comes back later should store that one, not `DeploymentKey`, which changes with every upgrade. `Status` is the pipeline run's terminal status — `DeploymentSucceeded` once the upgrade landed, or `Accepted` with `--no-wait` (where `Operation`, `DeploymentKey` and the state fields are absent, because no run has finished to report them). `DeploymentStatus` and `ActivationStatus` are the second axis: whether the new version **runs** (see below). `PipelineDeploymentId` is what `uip solution deploy status` reads. With `--discard-draft`, `DiscardedDraftKey` names the draft that was deleted first; it is absent when there was none. With `--acknowledge-permanent-deletion`, `PermanentlyDeletedResources` names each installed copy (`kind 'name'`) that was confirmed and deleted; it is absent otherwise.
+Find the deployment's key, name and package with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, Operation, DeploymentName, ToVersion, PipelineDeploymentId, DeploymentKey, DeploymentStatus, Actions, ActivationStatus, OrchestratorUrl, FolderUrl }`, plus `PendingResources` (each with its `Reason` and `FolderPaths`) and `NextSteps` when the deployment is not live; the key form adds `FromVersion` (the version left behind) and `InstallDeploymentKey` — the key that stays the same across upgrades, so a pipeline that comes back later should store that one, not `DeploymentKey`, which changes with every upgrade. `Status` is the pipeline run's terminal status — `DeploymentSucceeded` once the upgrade landed, or `Accepted` with `--no-wait` (where `Operation`, `DeploymentKey`, the state fields, and the links are absent, because no run has finished to report them). `DeploymentStatus` and `ActivationStatus` are the second axis: whether the new version **runs** (see below). `PipelineDeploymentId` is what `uip solution deploy status` reads. With `--discard-draft`, `DiscardedDraftKey` names the draft that was deleted first; it is absent when there was none. With `--acknowledge-permanent-deletion`, `PermanentlyDeletedResources` names each installed copy (`kind 'name'`) that was confirmed and deleted; it is absent otherwise.
 
 **Behavior and limits:**
 - The deployment's **existing configuration is preserved** — the server carries each unchanged resource's configuration forward and takes only changed specs from the new package, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.
+Use the returned [deployment links](pack-and-deploy.md#open-the-deployment-in-orchestrator); `FolderUrl` is present only when the installed folder key is known.
+
 - **Both forms work from CI/CD.** The key form resolves the key through a Pipelines lookup that external apps (client-credentials) can call, so it needs neither `--package-name` nor `--personal-workspace`: name, package and feed come from the deployment itself, and a key stored before an earlier upgrade still resolves to the deployment's current generation — so pass either the `Key` from `deploy list` or an `InstallDeploymentKey` you stored; both reach the live deployment. The name form needs `--package-name` because nothing name-keyed in Pipelines reports the package; with `--version` as well it makes no version lookup. It does check the name exists first — the install route treats an unknown name as a fresh install, so a typo fails with `ErrorCode: not_found` instead of creating a deployment. On a server that predates the by-key lookup, a key answers `ErrorCode: not_found` and the message points at the name form.
 - **An external app can only upgrade tenant-feed deployments.** The server ignores the feed header on client-credentials requests, so a Personal Workspace or folder-feed deployment — addressed by key, or by name with `--personal-workspace` — is refused (`ErrorCode: permission_denied`) rather than silently creating a new tenant-feed deployment under the same name. Run those upgrades with a user session.
 - **`Operation` is what tells you a version moved.** The install endpoint is unified, so asking for the version *already* deployed is a configuration change, not an upgrade. `Operation: "VersionChange"` means the version moved; `"ConfigurationChange"` means it did not and the configuration was re-applied instead. Read it rather than treating `DeploymentSucceeded` as proof of a new version — there is no pre-flight refusal: the name form makes no read that knows the deployed version, and the key form reports what the server did rather than second-guessing it (its `FromVersion` is there for the comparison if you want one).
