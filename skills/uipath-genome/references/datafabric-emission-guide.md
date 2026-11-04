@@ -11,26 +11,54 @@ federated rules belongs to `uipath-platform` → `references/data-fabric/`. This
 states only what is specific to emitting a derived model: the local-authoring route,
 the resource shape the CLI cannot write, and the gates.
 
-## Everything stays local
+## The two tiers
 
 `uip df entities create --local` authors into the solution on disk — no login, no
-tenant, and the entity becomes a real table at deploy. That is the only route Author
-mode uses; nothing is written to a tenant
-([data-model-guide.md § Boundaries](data-model-guide.md)).
+tenant, and the entity becomes a real table at deploy. Author mode writes nothing to
+a tenant ([data-model-guide.md § Boundaries](data-model-guide.md)).
 
-**The CLI refuses `RELATIONSHIP`, `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` on
-the local path. The resource file accepts them.** Only the CLI refuses. So the
-applier scaffolds each entity with its scalar fields through the CLI, then appends
-the complex fields to the resource file it wrote.
+**The local path carries scalar fields only.** `RELATIONSHIP`, `CHOICE_SET_SINGLE`
+and `CHOICE_SET_MULTIPLE` cannot be authored into a solution at all — not through the
+CLI, and not by hand-editing the resource file either.
 
-This is the one place the skill deliberately breaks the standing "drive it through
-the commands, never hand-edit the resource files" rule, and it is bounded: the CLI
-still creates both halves of the file pair and establishes the envelope; the applier
-only appends field objects and dependency rows. **Never author a `.entity` stub or a
-whole resource file from scratch.**
+| Tier | Holds | Route |
+|---|---|---|
+| **Local** | every entity, with its scalar fields and their options | `uip df entities create <Name> --local`; ships in the solution, becomes a table at deploy |
+| **Open item** | every relationship field, every choice-set field, every choice set | the engineer runs `uip df entities update` / `choice-sets create` against the target tenant after deploy |
 
-When `--local` gains the two field types, delete the append step and call the CLI
-throughout. Nothing else in this guide changes.
+> **Measured, not assumed.** Hand-authoring the field objects into
+> `resources/solution_folder/entity/native/<Name>.json` and running
+> `uip df entities validate --local` fails:
+>
+> ```
+> FIELD_TYPE_NOT_ALLOWED  Field 'Supplier' uses an unsupported type combination
+>                         (Relationship / UNIQUEIDENTIFIER).
+> FIELD_TYPE_NOT_ALLOWED  Field 'Tier' uses an unsupported type combination
+>                         (ChoiceSetSingle / INT).
+> ```
+>
+> `uip df choice-sets` has no `--local` flag, so a choice set has no solution-side
+> representation to point at even if the field validated. The fixture at
+> `tests/tasks/uipath-platform/integration-service/_setup/df_local_solution/` carries
+> a hand-written `ReferenceChoiceSet` and looks like a counter-example; it is a test's
+> `_setup` input and is never validated or packed.
+
+**So the applier never edits a resource file.** The CLI owns both halves of the pair
+and nothing else writes them — the standing rule holds with no exception. The complex
+tier leaves the solution as open items instead
+([open-items-guide.md § Data Fabric](open-items-guide.md) already carries the
+instruction shape).
+
+**One consequence the genome must carry:** a workflow that traverses a relationship
+cannot be built until that field exists, because the generated entity types come from
+the schema. Any Workflow step whose `**Data:**` line has a `via` clause is flagged in
+the completion report as blocked on its open item
+([data-model-consumption-guide.md](data-model-consumption-guide.md)).
+
+When `--local` gains the two field types — support is in progress — the open-item
+tier collapses into the local one: `entities.json` already carries the fields, so the
+change is to emit them in pass 3's body and delete pass 4
+([datafabric-cli-ask.md](datafabric-cli-ask.md)).
 
 ## entities.json
 
@@ -95,11 +123,42 @@ what stops a later run silently remapping records that are already deployed: the
 stored record value is the integer, so renumbering changes what every existing row
 means. This is a one-way door ([data-model-guide.md § Commitment ladder](data-model-guide.md)).
 
-## Hand-authored resource shape
+## The resource shape the CLI writes
 
-Two files per entity that must agree: a `<Name>.entity` stub in the Entity project,
-and the definition resource. The schema lives **JSON-escaped inside
-`spec.resourceJson`**.
+Read-only knowledge: the applier never writes these files, but a reviewer and a
+diagnosis need to know what the CLI produced. Two files per entity that must agree —
+a `<Name>.entity` stub in the Entity project, and the definition resource whose
+schema lives **JSON-escaped inside `spec.resourceJson`**.
+
+Measured from a real `uip df entities create --local`, not from a fixture:
+
+- the envelope carries `docVersion`, then `resource` with `name`, `kind`, `type`,
+  `apiVersion`, `isOverridable`, `dependencies`, `runtimeDependencies`, `folders`,
+  `spec`, `locks`, `key`, `files`;
+- `resource.key` equals `resourceJson.Id`, a random GUID the CLI mints;
+- `resourceJson` carries `EntityTypeId`, `Description`, `Data`, `ExternalFields`,
+  `SourceJoinCriterias`, `RecordCount`, `StorageSizeInMB`, `UsedStorageSizeInMB`,
+  `AttachmentSizeInByte`, `IsRbacEnabled`, `InvalidIdentifiers`, `IsModelReserved`
+  and `CategoryId` beside the obvious keys, and is serialized **compactly, in
+  insertion order** — not sorted, not indented;
+- the five system fields (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`,
+  `UpdatedBy`) are materialized with `IsSystemField: true`;
+- every field object carries eighteen keys, and a non-system field five more
+  (`DefaultValue`, `ReferenceChoiceSet`, `ReferenceEntity`, `ReferenceField`,
+  `ReferenceName`), all present and mostly null;
+- `FolderId` sits at entity level inside `resourceJson`, holding the unassigned-folder
+  sentinel `99999999-9999-9999-9999-999999999999`;
+- `dependencies` is written empty and is not populated by the CLI.
+
+The practical reading: **the shape is the CLI's to own, and it is wider and more
+particular than it looks.** That is the second reason the applier does not edit it —
+even setting aside the validator, a partial field object written by hand diverges
+from what the CLI and the deploy expect.
+
+### For reference: the shape a hand-authored field would need
+
+Kept because the open-item instructions have to name the equivalent values, and
+because this is what changes when the CLI gains local support.
 
 `resources/solution_folder/entity/native/<Name>.json`:
 
@@ -177,30 +236,67 @@ entity level in `resourceJson` and inside every `ReferenceEntity`.
 python3 "<SKILL_DIR>/scripts/apply-entities.py" \
   --entities entities.json \
   --solution "<SOLUTION_DIR>" \
+  --open-items "<HANDOFF_DIR>/open-items/data-fabric.md" \
   [--dry-run]
 ```
 
-Five passes. All local — no login, no tenant, no UUID round trip, so ordering is
-about emission only.
+Four passes. All local — no login, no tenant, no UUID round trip.
 
 | # | Pass | Does |
 |---|---|---|
-| 0 | validate graph | discard self-references; compute components; topologically sort within each; **fail hard** on any remaining cycle, naming its members |
-| 1 | mint ids | one GUID per entity, reused as `resource.key` and `resourceJson.Id`; derived from the entity name so a re-run mints the same id |
-| 2 | choice sets | write `resources/solution_folder/choiceSet/<Name>.json` |
-| 3 | entities | `uip df entities create <Name> --local --project-name <P>` with **scalar fields only** — the CLI writes both halves of the pair |
-| 4 | complex fields | re-open the entity resource, append the `Relationship` / `ChoiceSet` field objects into `spec.resourceJson`, add the matching `resource.dependencies` rows |
+| 0 | validate graph | discard self-references; **fail hard** on any remaining cycle, naming its members; check every relationship target exists |
+| 1 | entities | `uip df entities create <Name> --local --project-name <P>` with **scalar fields only** — the CLI writes both halves of the pair and mints the ids |
+| 2 | gate | `uip df entities validate --local`; a failure stops the run with the diagnostics |
+| 3 | open items | write the complex tier — every choice set, every relationship field, every choice-set field — as an ordered checklist with the exact commands |
 
 Rules:
 
-- **Re-read and re-escape.** `spec.resourceJson` is an escaped JSON string: parse it,
-  append to `Fields`, re-serialize, re-escape. Never string-patch it.
-- **Idempotent.** Pass 3 skips an entity whose resource file exists; pass 4 appends
-  only fields whose `Name` is absent. Re-running changes nothing.
+- **Never write into `resources/solution_folder/`.** The CLI owns those files
+  (§ The two tiers). The applier reads them only to resolve a minted id for the
+  open-items text.
+- **Idempotent.** Pass 1 skips an entity whose resource file exists; pass 3 rewrites
+  the open-items file wholesale from `entities.json`, so it is always current.
+- **Ordered open items.** Choice sets first, then entity updates that reference them,
+  then relationship fields in dependency order — the engineer runs the file top to
+  bottom.
 - **`--dry-run`** prints every command and every file write without performing them.
-  Use it before the first real run on a solution that already holds entities.
-- Mint ids deterministically from the entity name, so two runs produce identical
-  files and the determinism gate holds.
+
+## Open items for the complex tier
+
+One section per kind, each row naming the entity, the field, the target and the exact
+command. Ids are not knowable before deploy, so every command resolves its own:
+
+```markdown
+## Data Fabric — complex fields
+
+These could not ship in the solution: the local authoring path carries scalar fields
+only. Run them against the target tenant after the solution deploys.
+
+- [ ] Create the choice set `<ChoiceSetName>` with its values, in this order —
+      the position fixes each value's immutable NumberId:
+      `uip df choice-sets create "<ChoiceSetName>" --output json`
+      `uip df choice-set-values create <choice-set-id> "<VALUE_1>" --output json`
+      …then re-read with `choice-sets list-values <choice-set-id>` and check the
+      numbers against the table below before any record is written.
+- [ ] Add `<EntityName>.<FieldName>` as a choice-set field:
+      `uip df entities update <entity-id> --body '{"addFields":[{"name":"<FieldName>",
+      "type":"CHOICE_SET_SINGLE","choiceSetId":"<choice-set-id>"}]}' --output json`
+- [ ] Add `<EntityName>.<FieldName>` as a relationship to `<TargetEntity>`,
+      displaying `<TargetDisplayField>`:
+      `uip df entities update <entity-id> --body '{"addFields":[{"name":"<FieldName>",
+      "type":"RELATIONSHIP","referenceEntityId":"<target-entity-id>",
+      "referenceFieldId":"<target-display-field-id>"}]}' --output json`
+```
+
+Three things the text must carry, because they are decisions rather than mechanics:
+
+1. **Value order fixes `NumberId`.** It is assigned 0-based by creation order and is
+   immutable, so the table of intended numbers travels with the checklist and is
+   checked against `list-values` before records exist.
+2. **`referenceFieldId` is the target's display field**, not its `Id` — it decides
+   what renders in pickers. `entities.json` carries `displayField` per entity so the
+   engineer does not have to choose.
+3. **Which workflows are blocked** until each field exists (§ The two tiers).
 
 ## Validation gates
 
@@ -210,24 +306,17 @@ All must pass before edits are offered.
 |---|---|---|
 | Schema | `uip df entities validate --local` | `ENTITY_NAME_INVALID`, `ENTITY_NAME_NOT_UNIQUE`, `FIELD_NAME_INVALID`, `DUPLICATE_FIELD_NAME`, `FIELD_TYPE_NOT_ALLOWED`, `NAME_RESERVED`, `SYSTEM_FIELD_MISSING`, `SYSTEM_FIELD_MODIFIED`, `FIELDS_MALFORMED`, `TOO_MANY_MULTILINE_MAX`, and the stub↔resource pairing |
 | Pack | `uip solution pack "<SOLUTION>" --dry-run` | the same rules at the shipping boundary |
-| Determinism | two applier runs → identical files | a non-stable id or ordering |
+| Completeness | every complex field in `entities.json` has an open-item row | a field silently dropped rather than deferred |
 
 `entities validate --local` needs no login and runs the same checks `solution pack`
 runs. Run it after **every** edit — it is the only check between an authored
-document and a deploy.
+document and a deploy. It is also the gate that settled the two tiers: it rejects a
+hand-authored relationship or choice-set field, which is why the applier does not
+write one (§ The two tiers).
 
-> **S19 — de-risk before relying on this route.** `FIELD_TYPE_NOT_ALLOWED` is in that
-> diagnostic set, and the hand-authored fields are exactly the types the CLI refuses.
-> A fixture in this repository proves the shape is *writable*
-> (`tests/tasks/uipath-platform/integration-service/_setup/df_local_solution/`), but
-> that fixture is a test's `_setup` input and is never packed — so it does not prove
-> `validate --local` and `pack` accept it. One run of both gates against a
-> two-entity hand-authored solution settles it. **If it rejects, complex fields move
-> to the tenant lane**: entities holding a relationship or choice-set field become
-> open items created by the engineer with `uip df entities create "<Entity>" --file`,
-> and the local tier keeps only the scalar entities
-> ([open-items-guide.md § Data Fabric](open-items-guide.md) already carries that
-> instruction).
+Two environment notes for a probe: `uip solution init` and `uip df entities create
+--local` need no login, but the CLI's daily tool-update check does reach the network
+and fails without an npm token — set `UIPATH_CLI_DISABLE_VERSION_SYNC=1` to skip it.
 
 ## What reaches the genome
 

@@ -52,11 +52,12 @@ guide that states its rule in full.
 - [ ] E1 `entities.json` written and validated against its schema — [datafabric-emission-guide.md](datafabric-emission-guide.md) § entities.json
 - [ ] E2 Choice-set `numberId` values pinned, unique within the set, `nextNumberId` recorded — § Choice sets
 - [ ] E3 Entities created with `uip df entities create --local`, scalar fields only — § The applier
-- [ ] E4 Complex fields hand-authored into the resource file; `resource.key` equals `resourceJson.Id` — § Hand-authored resource shape
-- [ ] E5 Every `Reference*` pointer has a matching `resource.dependencies` row — § Hand-authored resource shape
+- [ ] E4 Relationship and choice-set fields emitted as **open items**, never written into the resource file — § The two tiers
+- [ ] E5 Each open item names the entity, the field, the target and the exact command the engineer runs — § Open items for the complex tier
 - [ ] E6 `uip df entities validate --local` exits 0 — § Validation gates
 - [ ] E7 `uip solution pack --dry-run` exits 0 — § Validation gates
 - [ ] E8 Nothing was written to a tenant — [data-model-guide.md](data-model-guide.md) § Boundaries
+- [ ] E9 Every Workflow step whose `**Data:**` line traverses a relationship is flagged as unbuildable until that field exists — § The two tiers
 
 ## F — Genome integration
 
@@ -87,5 +88,9 @@ Tracked while the extension itself is authored. Not run at runtime.
 - [x] S15 `## Data Model` in both templates
 - [ ] S16 `check-genome.py` grades the `## Data Model` section — *deferred: needs the section contract to settle on a real bundle first*
 - [ ] S17 Task under `tests/tasks/uipath-genome/data_model/` — *deferred: write after S16*
-- [ ] S18 Verify no native query-time join against a live tenant — *blocks the hop-cost rule in `normalization-guide.md` § Platform limits*
-- [ ] S19 Verify `validate --local` and `pack --dry-run` accept hand-authored complex fields — *blocks § Everything stays local; if it fails, complex fields move to the tenant lane*
+- [ ] S18 Verify no native query-time join against a live tenant — *blocks the hop-cost rule in `normalization-guide.md` § Platform limits. Needs a tenant; not settled.*
+- [x] S19 Verify `validate --local` accepts hand-authored complex fields — **FALSIFIED.** Probed against `uip` on a throwaway solution: a hand-authored `RELATIONSHIP` fails `FIELD_TYPE_NOT_ALLOWED — Field 'X' uses an unsupported type combination (Relationship / UNIQUEIDENTIFIER)`, and a hand-authored `CHOICE_SET_SINGLE` fails the same way (`ChoiceSetSingle / INT`). `uip df choice-sets` has no `--local` flag at all. The repo fixture that suggested otherwise is a test's `_setup` input and is never validated. **Design changed to the two tiers** — [datafabric-emission-guide.md § The two tiers](datafabric-emission-guide.md).
+- [x] S20 Verify the real CLI resource shape against the spec — **done, spec corrected.** The CLI emits a far richer field object than the repo fixture (18 keys per field plus 5 reference keys on non-system fields), materializes the five system fields, adds `locks`/`files`/`EntityTypeId` to the envelope, sets `resource.key` equal to `resourceJson.Id`, writes the folder sentinel at entity level, and serializes `resourceJson` compactly in insertion order.
+- [x] S21 CLI enhancement ask, scoped and written — `references/datafabric-cli-ask.md`
+- [ ] S22 Enforcement-locus literature folded into the register — *iteration 3*
+- [ ] S23 Worked example (OFN + SHACL + R2RML + process description) shipped as an asset — *iteration 3*

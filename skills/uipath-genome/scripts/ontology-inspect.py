@@ -267,8 +267,40 @@ OFN_PREFIX_RE = re.compile(r"Prefix\(\s*([A-Za-z_][\w.\-]*)?:\s*=\s*<([^>]*)>\s*
 
 
 def strip_ofn_comments(text):
-    return "\n".join(line.split("#", 1)[0] if not line.strip().startswith("<") else line
-                     for line in text.splitlines())
+    """Drop `#` comments, but never a `#` inside an <IRI> or a "literal".
+
+    Naive line splitting on `#` truncates `Prefix(:=<http://…/p2p#>)` and leaves an
+    unbalanced paren, which silently swallows the rest of the file.
+    """
+    out, in_iri, in_str, i, n = [], False, False, 0, len(text)
+    while i < n:
+        ch = text[i]
+        if in_str:
+            out.append(ch)
+            if ch == "\\" and i + 1 < n:
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if ch == '"':
+                in_str = False
+        elif in_iri:
+            out.append(ch)
+            if ch == ">":
+                in_iri = False
+        elif ch == '"':
+            in_str = True
+            out.append(ch)
+        elif ch == "<":
+            in_iri = True
+            out.append(ch)
+        elif ch == "#":
+            while i < n and text[i] != "\n":
+                i += 1
+            continue
+        else:
+            out.append(ch)
+        i += 1
+    return "".join(out)
 
 
 def top_level_exprs(text):

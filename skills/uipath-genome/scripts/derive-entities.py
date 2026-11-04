@@ -381,6 +381,9 @@ def main():
     junction_entities = []
     for prop, dom, rng in sorted(junctions, key=lambda j: (j[0]["iri"], j[1], j[2])):
         jname = normalize(f"{name_of[dom]}{name_of[rng]}", "entity", taken_entities, register)
+        jtaken = set()
+        dom_field = normalize(dom, "field", jtaken, register, owner=jname)
+        rng_field = normalize(rng, "field", jtaken, register, owner=jname)
         junction_entities.append({
             "name": jname,
             "displayName": jname,
@@ -393,11 +396,11 @@ def main():
             },
             "fields": [],
             "relationships": [
-                {"name": normalize(dom, "field", set(), Register(), jname), "target": name_of[dom],
-                 "cardinality": "many-to-one",
+                {"name": dom_field, "target": name_of[dom], "cardinality": "many-to-one",
+                 "isRequired": True,
                  "provenance": {"from": [dom], "derivation": "direct"}},
-                {"name": normalize(rng, "field", set(), Register(), jname), "target": name_of[rng],
-                 "cardinality": "many-to-one",
+                {"name": rng_field, "target": name_of[rng], "cardinality": "many-to-one",
+                 "isRequired": True,
                  "provenance": {"from": [rng], "derivation": "direct"}},
             ],
             "choiceSetFields": [],
@@ -455,10 +458,61 @@ def main():
             subject = f"{ename}.{fname}"
             shape = shapes.get(iri, {}).get(prop["iri"], {})
 
+            # Constraints are classified for EVERY field kind before the field is
+            # shaped. A choice-set field carries sh:minCount and sh:pattern like any
+            # other, and skipping them here is how a constraint disappears silently.
+            required = None
+            min_count = shape.get("minCount") or 0
+            if min_count >= 1:
+                required = locus == "uipath"
+                register.add(
+                    source="process", from_iri=prop["iri"], subject=subject,
+                    statement=f"sh:minCount {min_count}: mandatory in the domain",
+                    expressible="yes", locus=locus, level=None,
+                    candidate="state" if locus == "uipath" else "assumed",
+                    resolution="default-applied" if locus == "uipath" else "override",
+                    evidence={"replicaOf": replicas.get(ename)} if is_replica else {},
+                    note=("isRequired left false: the entity is a replica and the system of "
+                          "record holds the guarantee" if is_replica else
+                          "isRequired set from the system-of-record default (D1); Phase 2 must "
+                          "confirm records are written whole, not completed incrementally"))
+            if shape.get("pattern"):
+                register.add(source="process", from_iri=prop["iri"], subject=subject,
+                             statement=f"sh:pattern {shape['pattern']!r} must hold",
+                             expressible="no", locus=locus, level=None,
+                             candidate="transition", resolution="deferred",
+                             note="no Data Fabric field option states a pattern")
+            if shape.get("minLength"):
+                register.add(source="process", from_iri=prop["iri"], subject=subject,
+                             statement=f"sh:minLength {shape['minLength']} must hold",
+                             expressible="no", locus=locus, level=None,
+                             candidate="transition", resolution="deferred")
+            for unsupported in shape.get("unsupported", []):
+                register.add(source="process", from_iri=prop["iri"], subject=subject,
+                             statement=f"sh:{unsupported} must hold",
+                             expressible="no", locus=locus, level=None,
+                             candidate="transition", resolution="deferred")
+            for key_group in cls.get("hasKey", []):
+                if len(key_group) > 1 and prop["iri"] in key_group:
+                    register.add(source="domain", from_iri=iri, subject=subject,
+                                 statement="composite key cannot be expressed: isUnique is per "
+                                           "field",
+                                 expressible="no", locus=locus, level=None,
+                                 candidate="transition", resolution="deferred")
+
             if shape.get("in"):
                 cs_name = choice_set_for(prop["iri"], shape["in"])
-                cs_fields.append({"name": fname, "choiceSet": cs_name, "multiple": False,
-                                  "provenance": {"from": [prop["iri"]], "derivation": "direct"}})
+                entry = {"name": fname, "choiceSet": cs_name, "multiple": False,
+                         "provenance": {"from": [prop["iri"]], "derivation": "direct"}}
+                if required is not None:
+                    entry["isRequired"] = required
+                if shape.get("maxLength"):
+                    register.add(source="metadata", from_iri=prop["iri"], subject=subject,
+                                 statement=f"sh:maxLength {shape['maxLength']} is not expressible "
+                                           f"on a choice-set field; the value set bounds it",
+                                 expressible="no", locus=locus, level=None,
+                                 candidate="assumed", resolution="default-applied")
+                cs_fields.append(entry)
                 register.add(source="domain", from_iri=prop["iri"], subject=subject,
                              statement=f"closed value set of {len(shape['in'])} values became a "
                                        f"choice set (default D4)",
@@ -481,49 +535,11 @@ def main():
                         except (TypeError, ValueError):
                             pass
 
-            min_count = shape.get("minCount") or 0
-            if min_count >= 1:
-                field["isRequired"] = locus == "uipath"
-                register.add(
-                    source="process", from_iri=prop["iri"], subject=subject,
-                    statement=f"sh:minCount {min_count}: mandatory in the domain",
-                    expressible="yes", locus=locus, level=None,
-                    candidate="state" if locus == "uipath" else "assumed",
-                    resolution="default-applied" if locus == "uipath" else "override",
-                    evidence={"replicaOf": replicas.get(ename)} if is_replica else {},
-                    note=("isRequired left false: the entity is a replica and the system of "
-                          "record holds the guarantee" if is_replica else
-                          "isRequired set from the system-of-record default (D1); Phase 2 must "
-                          "confirm records are written whole, not completed incrementally"))
-
-            if any(prop["iri"] in key for key in cls.get("hasKey", [])):
-                field["isUnique"] = True
+            if required is not None:
+                field["isRequired"] = required
             for key_group in cls.get("hasKey", []):
                 if len(key_group) == 1 and key_group[0] == prop["iri"]:
                     field["isUnique"] = True
-                elif len(key_group) > 1 and prop["iri"] in key_group:
-                    register.add(source="domain", from_iri=iri, subject=subject,
-                                 statement="composite key cannot be expressed: isUnique is per "
-                                           "field",
-                                 expressible="no", locus=locus, level=None,
-                                 candidate="transition", resolution="deferred")
-
-            if shape.get("pattern"):
-                register.add(source="process", from_iri=prop["iri"], subject=subject,
-                             statement=f"sh:pattern {shape['pattern']!r} must hold",
-                             expressible="no", locus=locus, level=None,
-                             candidate="transition", resolution="deferred",
-                             note="no Data Fabric field option states a pattern")
-            if shape.get("minLength"):
-                register.add(source="process", from_iri=prop["iri"], subject=subject,
-                             statement=f"sh:minLength {shape['minLength']} must hold",
-                             expressible="no", locus=locus, level=None,
-                             candidate="transition", resolution="deferred")
-            for unsupported in shape.get("unsupported", []):
-                register.add(source="process", from_iri=prop["iri"], subject=subject,
-                             statement=f"sh:{unsupported} must hold",
-                             expressible="no", locus=locus, level=None,
-                             candidate="transition", resolution="deferred")
 
             prov = r2rml.get((iri, prop["iri"]))
             if prov:

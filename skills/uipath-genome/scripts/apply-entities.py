@@ -2,22 +2,23 @@
 """Apply a derived entity set into a UiPath solution on disk, locally.
 
 Usage:
-  apply-entities.py --entities entities.json --solution <SOLUTION_DIR> [--dry-run]
+  apply-entities.py --entities entities.json --solution <SOLUTION_DIR>
+                    [--open-items <PATH>] [--dry-run]
 
-Five passes (references/datafabric-emission-guide.md § The applier):
-  0  validate the graph   self-references discarded, cycles fail hard
-  1  mint ids             deterministic per entity name, reused as resource.key and Id
-  2  choice sets          write resources/solution_folder/choiceSet/<Name>.json
-  3  entities             uip df entities create <Name> --local, SCALAR FIELDS ONLY
-  4  complex fields       append Relationship / ChoiceSet fields to the resource the CLI
-                          wrote, plus the matching resource.dependencies rows
+Four passes (references/datafabric-emission-guide.md § The applier):
+  0  validate the graph   self-references discarded, cycles fail hard, targets exist
+  1  entities             uip df entities create <Name> --local, SCALAR FIELDS ONLY
+  2  gate                 uip df entities validate --local
+  3  open items           the complex tier, as an ordered checklist with commands
 
-Local only: no login, no tenant, no record is written. The CLI refuses RELATIONSHIP
-and CHOICE_SET_* on the local path but the resource file accepts them, which is why
-pass 4 edits the file the CLI produced rather than authoring one from scratch.
+The local authoring path carries scalar fields only. RELATIONSHIP and CHOICE_SET_*
+cannot be authored into a solution — not by the CLI, and not by editing the resource
+file either: `validate --local` rejects both with FIELD_TYPE_NOT_ALLOWED, and
+`uip df choice-sets` has no --local flag. So this script never writes into
+resources/solution_folder/; the CLI owns those files. The complex tier leaves as
+open items for the engineer to run against the target tenant after deploy.
 
-Idempotent: pass 3 skips an entity whose resource exists, pass 4 appends only fields
-whose Name is absent. Re-running changes nothing.
+Local only: no login, no tenant, no record is written.
 
 Exit 0 when every pass completed; exit 1 with one line per failure.
 """
@@ -28,35 +29,15 @@ import os
 import shutil
 import subprocess
 import sys
-import uuid
 
-UNASSIGNED_FOLDER = "99999999-9999-9999-9999-999999999999"
-NS = uuid.UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8")  # RFC 4122 URL namespace
+CLI_ENV = dict(os.environ, UIPATH_CLI_DISABLE_VERSION_SYNC="1")
 
-SQL_FOR_CLI = {
-    "STRING": "NVARCHAR", "MULTILINE_TEXT": "NVARCHAR", "MULTILINE_MAX": "NVARCHAR",
-    "DECIMAL": "DECIMAL", "AUTO_NUMBER": "DECIMAL", "BOOLEAN": "BIT", "DATE": "DATE",
-    "DATETIME_WITH_TZ": "DATETIMEOFFSET", "CHOICE_SET_SINGLE": "INT",
-    "CHOICE_SET_MULTIPLE": "NVARCHAR", "RELATIONSHIP": "UNIQUEIDENTIFIER",
-    "FILE": "UNIQUEIDENTIFIER",
-}
-
-FIELD_FLAGS = (("isRequired", "IsRequired"), ("isUnique", "IsUnique"),
-               ("isEncrypted", "IsEncrypted"))
-SQL_EXTRAS = (("lengthLimit", "LengthLimit"), ("minValue", "MinValue"),
-              ("maxValue", "MaxValue"), ("decimalPrecision", "DecimalPrecision"))
+SCALAR_TYPES = {"STRING", "MULTILINE_TEXT", "MULTILINE_MAX", "DECIMAL", "BOOLEAN",
+                "DATE", "DATETIME_WITH_TZ", "AUTO_NUMBER", "FILE"}
 
 
 class ApplyError(Exception):
     pass
-
-
-def entity_guid(project, name):
-    return str(uuid.uuid5(NS, f"uipath-genome:entity:{project}:{name}"))
-
-
-def choiceset_guid(project, name):
-    return str(uuid.uuid5(NS, f"uipath-genome:choiceSet:{project}:{name}"))
 
 
 def find_cycle(edges):
@@ -87,47 +68,30 @@ def find_cycle(edges):
     return None
 
 
-def sql_type_for(field):
-    cli = field["type"]
-    if cli not in SQL_FOR_CLI:
-        raise ApplyError(f"field {field['name']}: unknown type {cli!r}")
-    sql = {"Name": SQL_FOR_CLI[cli]}
-    for key, out in SQL_EXTRAS:
-        if field.get(key) is not None:
-            sql[out] = field[key]
-    return sql
-
-
 def scalar_field_body(field):
     """The CLI write shape for `uip df entities create --body`."""
+    if field["type"] not in SCALAR_TYPES:
+        raise ApplyError(f"field {field['name']}: {field['type']} is not a scalar type; "
+                         f"complex fields are open items, not solution content")
     body = {"name": field["name"], "type": field["type"]}
     for key in ("displayName", "description", "lengthLimit", "decimalPrecision",
                 "minValue", "maxValue", "defaultValue"):
         if field.get(key) is not None:
             body[key] = field[key]
-    for key, _ in FIELD_FLAGS:
+    for key in ("isRequired", "isUnique", "isEncrypted"):
         if field.get(key):
             body[key] = True
     return body
 
 
-def resource_field(field):
-    """The on-disk resourceJson shape."""
-    out = {"Name": field["name"], "DisplayName": field.get("displayName") or field["name"],
-           "SqlType": sql_type_for(field), "IsSystemField": False}
-    for key, out_key in FIELD_FLAGS:
-        out[out_key] = bool(field.get(key))
-    return out
-
-
-def run_cli(cmd, dry_run):
+def run_cli(cmd, dry_run, cwd):
     printable = " ".join(cmd)
     if dry_run:
         print(f"  [dry-run] {printable}")
         return None
     if shutil.which(cmd[0]) is None:
         raise ApplyError(f"{cmd[0]} not found on PATH; install the UiPath CLI or use --dry-run")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, env=CLI_ENV)
     if proc.returncode != 0:
         raise ApplyError(f"{printable}\n{proc.stdout.strip()}\n{proc.stderr.strip()}")
     return proc.stdout
@@ -138,18 +102,84 @@ def entity_resource_path(solution, name):
                         f"{name}.json")
 
 
-def choiceset_resource_path(solution, name):
-    return os.path.join(solution, "resources", "solution_folder", "choiceSet", f"{name}.json")
+def minted_id(solution, name):
+    """Read back the id the CLI minted. Returns None before the entity exists."""
+    path = entity_resource_path(solution, name)
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)["resource"].get("key")
 
 
-def write_json(path, payload, dry_run):
-    if dry_run:
-        print(f"  [dry-run] write {path}")
-        return
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(payload, fh, indent=2, sort_keys=True)
-        fh.write("\n")
+def open_items_text(model, solution):
+    entities = {e["name"]: e for e in model["entities"]}
+    lines = ["## Data Fabric — complex fields", "",
+             "These could not ship in the solution: the local authoring path carries scalar",
+             "fields only, and `uip df choice-sets` has no local form. Run them against the",
+             "target tenant after the solution deploys, top to bottom.", ""]
+
+    if model.get("choiceSets"):
+        lines += ["### Choice sets", "",
+                  "Value order fixes each value's `NumberId`, which is immutable once records",
+                  "exist. Create them in the order listed, then re-read and check the numbers",
+                  "before any record is written.", ""]
+        for cs in model["choiceSets"]:
+            values = ", ".join(f"`{v['name']}`={v['numberId']}" for v in cs["values"])
+            lines.append(f"- [ ] Create **`{cs['name']}`** — expected numbers: {values}")
+            lines.append(f"      `uip df choice-sets create \"{cs['name']}\" --output json`")
+            for value in cs["values"]:
+                lines.append(f"      `uip df choice-set-values create <choice-set-id> "
+                             f"\"{value['name']}\" --output json`")
+            lines.append(f"      `uip df choice-sets list-values <choice-set-id> --output json` "
+                         f"— check every number against the list above.")
+        lines.append("")
+
+    cs_fields = [(e, f) for e in model["entities"] for f in e.get("choiceSetFields", [])]
+    if cs_fields:
+        lines += ["### Choice-set fields", ""]
+        for entity, field in cs_fields:
+            kind = "CHOICE_SET_MULTIPLE" if field.get("multiple") else "CHOICE_SET_SINGLE"
+            lines.append(f"- [ ] Add **`{entity['name']}.{field['name']}`** → choice set "
+                         f"`{field['choiceSet']}`")
+            lines.append(f"      `uip df entities update <{entity['name']}-id> --body "
+                         f"'{{\"addFields\":[{{\"name\":\"{field['name']}\","
+                         f"\"type\":\"{kind}\",\"choiceSetId\":\"<choice-set-id>\"}}]}}' "
+                         f"--output json`")
+        lines.append("")
+
+    rels = [(e, r) for e in model["entities"] for r in e.get("relationships", [])]
+    if rels:
+        lines += ["### Relationship fields", "",
+                  "`referenceFieldId` is the **display field** of the target — it decides what",
+                  "renders in pickers, and it is not the target's `Id`.", ""]
+        for entity, rel in rels:
+            target = entities.get(rel["target"], {})
+            display = target.get("displayField", "<display field>")
+            lines.append(f"- [ ] Add **`{entity['name']}.{rel['name']}`** → `{rel['target']}`, "
+                         f"displaying `{display}`")
+            lines.append(f"      `uip df entities update <{entity['name']}-id> --body "
+                         f"'{{\"addFields\":[{{\"name\":\"{rel['name']}\","
+                         f"\"type\":\"RELATIONSHIP\","
+                         f"\"referenceEntityId\":\"<{rel['target']}-id>\","
+                         f"\"referenceFieldId\":\"<{rel['target']}.{display}-field-id>\"}}]}}' "
+                         f"--output json`")
+        lines.append("")
+        blocked = sorted({e["name"] for e, _r in rels})
+        lines += ["### Blocked until the fields above exist", "",
+                  "A workflow that traverses a relationship cannot be built before the field",
+                  "exists, because the generated entity types come from the schema. Entities "
+                  "affected: " + ", ".join(f"`{n}`" for n in blocked) + ".", ""]
+
+    ids = {name: minted_id(solution, name) for name in sorted(entities)}
+    known = {k: v for k, v in ids.items() if v}
+    if known:
+        lines += ["### Ids minted in the solution", "",
+                  "These are the ids the solution ships with; after deploy, confirm each against",
+                  "`uip df entities list --folder-key <new-folder> --output json`.", "",
+                  "| Entity | Id in the solution |", "|---|---|"]
+        lines += [f"| `{name}` | `{value}` |" for name, value in sorted(known.items())]
+        lines.append("")
+    return "\n".join(lines)
 
 
 def main():
@@ -157,6 +187,7 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--entities", required=True)
     ap.add_argument("--solution", required=True)
+    ap.add_argument("--open-items")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -166,136 +197,63 @@ def main():
     entities = {e["name"]: e for e in model["entities"]}
 
     # ---- pass 0: validate the graph ----------------------------------------
-    edges = sorted({(e["name"], r["target"]) for e in model["entities"]
-                    for r in e.get("relationships", [])
-                    if r["target"] != e["name"] and r["target"] in entities})
     missing = sorted({r["target"] for e in model["entities"]
                       for r in e.get("relationships", []) if r["target"] not in entities})
     if missing:
         raise ApplyError("relationship targets not in the model: " + ", ".join(missing))
+    edges = sorted({(e["name"], r["target"]) for e in model["entities"]
+                    for r in e.get("relationships", []) if r["target"] != e["name"]})
     cycle = find_cycle(edges)
     if cycle:
-        raise ApplyError("relationship cycle: " + " -> ".join(cycle))
-    print(f"pass 0: {len(entities)} entities, {len(edges)} edges, no cycle")
+        raise ApplyError("relationship cycle: " + " -> ".join(cycle) +
+                         "; normalize the ontology further before modelling it")
+    print(f"pass 0: {len(entities)} entities, {len(edges)} edge(s), no cycle")
 
-    # ---- pass 1: mint ids ---------------------------------------------------
-    ids = {name: entity_guid(project, name) for name in sorted(entities)}
-    cs_ids = {cs["name"]: choiceset_guid(project, cs["name"]) for cs in model["choiceSets"]}
-    print(f"pass 1: minted {len(ids)} entity id(s), {len(cs_ids)} choice-set id(s)")
-
-    # ---- pass 2: choice sets ------------------------------------------------
-    for cs in sorted(model["choiceSets"], key=lambda c: c["name"]):
-        path = choiceset_resource_path(args.solution, cs["name"])
-        if os.path.exists(path):
-            print(f"  = choiceSet {cs['name']} exists")
-            continue
-        resource_json = {
-            "Name": cs["name"], "DisplayName": cs.get("displayName") or cs["name"],
-            "Data": [{"Name": v["name"], "DisplayName": v.get("displayName") or v["name"],
-                      "NumberId": v["numberId"]} for v in cs["values"]],
-        }
-        write_json(path, {
-            "docVersion": "1.0.0",
-            "resource": {
-                "key": cs_ids[cs["name"]], "name": cs["name"], "kind": "choiceSet",
-                "apiVersion": "dataservice.uipath.com/v2",
-                "dependencies": [], "isOverridable": True, "runtimeDependencies": [],
-                "folders": [{"fullyQualifiedName": "solution_folder"}],
-                "spec": {"resourceJson": json.dumps(resource_json, sort_keys=True),
-                         "name": cs["name"],
-                         "displayName": cs.get("displayName") or cs["name"],
-                         "description": ""},
-            }}, args.dry_run)
-        print(f"  + choiceSet {cs['name']} ({len(cs['values'])} values)")
-    print(f"pass 2: {len(model['choiceSets'])} choice set(s)")
-
-    # ---- pass 3: entities, scalar fields only -------------------------------
+    # ---- pass 1: entities, scalar fields only -------------------------------
     created = 0
     for name in sorted(entities):
         entity = entities[name]
-        path = entity_resource_path(args.solution, name)
-        if os.path.exists(path):
-            print(f"  = entity {name} exists")
+        if os.path.exists(entity_resource_path(args.solution, name)):
+            print(f"  = {name} exists")
             continue
         body = {"displayName": entity.get("displayName") or name,
                 "description": entity.get("description") or "",
                 "fields": [scalar_field_body(f) for f in entity["fields"]]}
         run_cli(["uip", "df", "entities", "create", name, "--local",
                  "--project-name", project, "--body", json.dumps(body, sort_keys=True),
-                 "--output", "json"], args.dry_run)
+                 "--output", "json"], args.dry_run, args.solution)
         created += 1
-        print(f"  + entity {name} ({len(entity['fields'])} scalar field(s))")
-    print(f"pass 3: {created} entity/entities created, "
-          f"{len(entities) - created} already present")
+        print(f"  + {name} ({len(entity['fields'])} scalar field(s))")
+    print(f"pass 1: {created} created, {len(entities) - created} already present")
 
-    # ---- pass 4: complex fields --------------------------------------------
-    touched = 0
-    for name in sorted(entities):
-        entity = entities[name]
-        complex_fields = entity.get("relationships", []) + entity.get("choiceSetFields", [])
-        if not complex_fields:
-            continue
-        path = entity_resource_path(args.solution, name)
-        if not os.path.exists(path):
-            if args.dry_run:
-                print(f"  [dry-run] would append {len(complex_fields)} complex field(s) to {name}")
-                continue
-            raise ApplyError(f"{path} missing; pass 3 did not create {name}")
+    # ---- pass 2: gate -------------------------------------------------------
+    if args.dry_run:
+        print("pass 2: [dry-run] uip df entities validate --local")
+    else:
+        run_cli(["uip", "df", "entities", "validate", "--local", "--output", "json"],
+                False, args.solution)
+        print("pass 2: validate --local passed")
 
-        with open(path, encoding="utf-8") as fh:
-            doc = json.load(fh)
-        resource = doc["resource"]
-        spec = resource["spec"]
-        schema = json.loads(spec["resourceJson"])
-        schema.setdefault("Fields", [])
-        schema.setdefault("Id", resource.get("key") or ids[name])
-        schema["FolderId"] = UNASSIGNED_FOLDER
-        resource["key"] = schema["Id"]
-        present = {f.get("Name", "").lower() for f in schema["Fields"]}
-        deps = {(d.get("kind"), d.get("name")) for d in resource.get("dependencies", [])}
-        added = 0
+    # ---- pass 3: open items -------------------------------------------------
+    complex_count = sum(len(e.get("relationships", [])) + len(e.get("choiceSetFields", []))
+                        for e in model["entities"]) + len(model.get("choiceSets", []))
+    if not complex_count:
+        print("pass 3: no complex tier — the model ships whole")
+    elif not args.open_items:
+        print(f"pass 3: {complex_count} complex item(s) and no --open-items path given; "
+              f"nothing written", file=sys.stderr)
+        return 1
+    else:
+        text = open_items_text(model, args.solution)
+        if args.dry_run:
+            print(f"  [dry-run] write {args.open_items} ({len(text.splitlines())} lines)")
+        else:
+            os.makedirs(os.path.dirname(os.path.abspath(args.open_items)), exist_ok=True)
+            with open(args.open_items, "w", encoding="utf-8") as fh:
+                fh.write(text + "\n")
+        print(f"pass 3: {complex_count} complex item(s) -> {args.open_items}")
 
-        for rel in sorted(entity.get("relationships", []), key=lambda r: r["name"]):
-            if rel["name"].lower() in present:
-                continue
-            schema["Fields"].append({
-                "Name": rel["name"], "DisplayName": rel["name"],
-                "SqlType": {"Name": "UNIQUEIDENTIFIER"}, "IsSystemField": False,
-                "IsRequired": bool(rel.get("isRequired")),
-                "FieldDisplayType": "Relationship",
-                "ReferenceEntity": {"Name": rel["target"],
-                                    "Id": ids[rel["target"]],
-                                    "FolderId": UNASSIGNED_FOLDER}})
-            deps.add(("Entity", rel["target"]))
-            added += 1
-
-        for csf in sorted(entity.get("choiceSetFields", []), key=lambda c: c["name"]):
-            if csf["name"].lower() in present:
-                continue
-            multiple = bool(csf.get("multiple"))
-            schema["Fields"].append({
-                "Name": csf["name"], "DisplayName": csf["name"],
-                "SqlType": {"Name": "NVARCHAR" if multiple else "INT"},
-                "IsSystemField": False, "IsRequired": bool(csf.get("isRequired")),
-                "FieldDisplayType": "ChoiceSetMultiple" if multiple else "ChoiceSetSingle",
-                "ReferenceChoiceSet": {"Name": csf["choiceSet"]}})
-            deps.add(("ChoiceSet", csf["choiceSet"]))
-            added += 1
-
-        if not added:
-            print(f"  = {name} complex fields already present")
-            continue
-        schema["Fields"].sort(key=lambda f: f.get("Name", ""))
-        spec["resourceJson"] = json.dumps(schema, sort_keys=True)
-        resource["dependencies"] = [{"kind": k, "name": n} for k, n in sorted(deps)]
-        write_json(path, doc, args.dry_run)
-        touched += 1
-        print(f"  ~ {name}: +{added} complex field(s), "
-              f"{len(resource['dependencies'])} dependency row(s)")
-    print(f"pass 4: {touched} entity/entities amended")
-
-    print("\nNext: uip df entities validate --local"
-          f"\n      uip solution pack \"{args.solution}\" --dry-run")
+    print(f"\nNext: uip solution pack \"{args.solution}\" --dry-run")
     return 0
 
 
