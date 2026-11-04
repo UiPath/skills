@@ -148,6 +148,14 @@ target connector and folder from the connection. The element binds Studio
 Web's implicit connection for a manual request and the target connection for a
 connector one. Its outputs are `code`, `headers` and `body`, plus `Error`.
 
+A request that must reach a connection's webhook takes the webhook URL, not
+`uip is connections base-url`. Read `ElementInstanceId` from
+`uip is connections list <connector-key> --connection-id <id>`, then run
+`uip is webhooks config <connector-key> --connection-id <id>
+--element-instance-id <n> --output json` and write `Data.WebhookUrl` as a
+literal manual-mode `url`. See uipath-platform
+`references/integration-service/triggers.md#webhook-url-retrieval`.
+
 When `registry get` says an object has no activity in the catalog
 (`Cannot identify the V2 element`, e.g. Slack's `emoji_list_GET`), the
 endpoint is not a catalog activity: send it as a connector-mode HTTP request
