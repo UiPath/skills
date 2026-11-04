@@ -72,15 +72,22 @@ confirmation — see
 
 A `.bpmn` that already had a `bpmndi:BPMNDiagram` when this task started
 carries the user's layout: pools, lanes, colors, box sizes, placement and arrow
-routing. `uip maestro bpmn format` deletes that diagram and draws a new one —
-it drops every pool and lane shape, re-targets the plane from the collaboration
-to the process, strips `bioc:*`/`color:*` colors and resets every size — and
-`validate` still passes afterwards, so nothing warns you. On such a file:
+routing. `uip maestro bpmn format` may redraw that diagram and drop all of it,
+while `validate` still passes. On such a file:
 
-1. Before the first write, copy the file outside the project folder, e.g.
-   `cp <file.bpmn> "$(mktemp -d)/before.bpmn"`, and keep that path.
-2. Do NOT run `uip maestro bpmn format` on it, unless the user explicitly asks
-   to re-layout or tidy the diagram.
+<!--skill-flavor:diagram-snapshot:start-->
+1. Before the first write, copy the file outside the project folder and print
+   the copy's path:
+   `SNAP="$(mktemp -d)/before.bpmn" && cp "<FILE>" "$SNAP" && echo "$SNAP"`.
+   Record the printed path as `<SNAPSHOT_PATH>`; shell variables do not carry
+   between tool calls.
+<!--skill-flavor:diagram-snapshot:end-->
+2. Do NOT run `uip maestro bpmn format` on it. Exception: the user explicitly
+   asks to re-layout or tidy the diagram. Then run
+   `uip maestro bpmn format <file.bpmn> --relayout` if
+   `uip maestro bpmn format --help` lists `--relayout`; otherwise tell the user
+   that `format` would drop the pools, lanes and colors, and run it only after
+   they confirm.
 3. Leave every existing `BPMNShape`, `BPMNEdge` and `BPMNLabel` exactly as it
    is — bounds, waypoints, colors, `isHorizontal` — and never change the
    plane's `bpmnElement`.
@@ -89,18 +96,29 @@ to the process, strips `bioc:*`/`color:*` colors and resets every size — and
    `bpmn:flowNodeRef` to that lane) and draw it inside that lane's bounds, in
    free space that overlaps no other shape. If there is no room, shift every
    shape, label and waypoint right of the insertion point by one common
-   distance and widen the pool and its lanes by that distance; never move
-   shapes one by one.
+   distance and widen the pool, its lanes and any expanded subprocess around
+   the insertion point by that distance; never move shapes one by one.
 5. For each flow you add or re-target, write only that flow's `BPMNEdge`, with
    orthogonal waypoints from the source's edge to the target's edge.
 6. For each node or flow you delete, delete its shape or edge, and remove the
    node's `bpmn:flowNodeRef` from its lane.
+<!--skill-flavor:diagram-preserved-check:start-->
 7. After the last write, and before `validate`, run
-   [scripts/check-diagram-preserved.py](scripts/check-diagram-preserved.py):
+   [scripts/check-diagram-preserved.py](scripts/check-diagram-preserved.py)
+   from this skill's folder (`<SKILL_DIR>`, the directory holding this
+   SKILL.md):
    `python3 "<SKILL_DIR>/scripts/check-diagram-preserved.py" "<SNAPSHOT_PATH>" <file.bpmn> --removed <REMOVED_IDS>`,
    where `<REMOVED_IDS>` is a comma-separated list of the ids you deleted (omit
-   `--removed` when you deleted nothing). If it reports losses, restore the lost diagram entries from the snapshot and
-   run it again. Do not finish while it fails.
+   `--removed` when you deleted nothing). Use `python` or `py -3` when
+   `python3` is missing; with no Python at all, compare the two files by hand
+   against the list the script's docstring gives. For each reported loss:
+   - the user asked for that diagram change (a color, a move, a re-layout):
+     keep it and name it in the summary;
+   - otherwise restore the lost entry from the snapshot.
+
+   Re-run the check after restoring, at most twice. If losses remain, list
+   them in the summary instead of finishing silently.
+<!--skill-flavor:diagram-preserved-check:end-->
 
 A file this task created — an `init` scaffold or a greenfield draft — has no
 user layout yet; run `format` as rule 5 says.
@@ -137,8 +155,8 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
    the last write to the `.bpmn` and before `validate` or `refresh`, both of
    which error on a node with no shape. Exception: a file that already had a
-   diagram when the task started — `format` destroys the user's layout there;
-   follow [Keep the user's diagram](#keep-the-users-diagram) instead.
+   diagram when the task started: follow
+   [Keep the user's diagram](#keep-the-users-diagram) instead.
 6. **Declare the node type as a `<uipath:type>` child.** Every
    `uipath:activity` / `uipath:event` / `uipath:mapping` sits inside
    `<bpmn:extensionElements>` and carries
@@ -718,8 +736,7 @@ Draft mode only.
    It overwrites the file's `bpmndi:BPMNDiagram` in place, so the canvas
    renders the process arranged instead of stacked at the origin. Every
    deliverable this task created gets this, source-only drafts included. A
-   brownfield file that already had a diagram does NOT: `format` would delete
-   the user's pools, lanes, colors and layout — follow
+   brownfield file that already had a diagram does NOT: follow
    [Keep the user's diagram](#keep-the-users-diagram) and run its check
    instead. It is also a hard
    precondition for the next two steps, not a cosmetic pass: a node with no

@@ -717,9 +717,9 @@ auth, schema, or enrichment decision is missing).
    gateway conditions/defaults, event definitions, boundary events,
    subprocess/call-activity containers, multi-instance markers.
 5. Generate the `bpmndi:BPMNDiagram`, after the final source edit:
-   `uip maestro bpmn format <file.bpmn>`. Not on a file that already had a
-   diagram — there, add only the shapes and edges you changed, per
-   [Keep the user's diagram](../SKILL.md#keep-the-users-diagram).
+   `uip maestro bpmn format <file.bpmn>`. On a file that already had a
+   diagram, see [Keep the user's diagram](../SKILL.md#keep-the-users-diagram)
+   instead.
 6. Validate (see [structural-bpmn.md#validation](structural-bpmn.md#validation)).
    Re-run step 5 after any later source edit — `validate` errors on a node with
    no shape, so a stale diagram fails it.

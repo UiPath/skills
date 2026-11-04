@@ -10,11 +10,20 @@ anything of the user's that was lost or re-laid out:
 - the plane re-targeted (e.g. from the collaboration to the process)
 - a pool or lane shape missing, a lane deleted, or a node dropped from its lane
 - a text annotation or group deleted, or its shape missing
-- a surviving shape whose colors changed, or a surviving node shape whose size changed
+- a surviving shape or edge whose colors changed
+- a surviving node shape whose size changed, or that lost its bounds; pools,
+  lanes and expanded subprocesses may grow to fit an insertion
 - surviving node shapes moved by different offsets (a re-layout); moving all of
   them by one common offset to make room for an insertion is allowed
+- a surviving flow or association that lost its edge
 
-`--removed` names element ids the edit was asked to delete.
+`--removed` names element ids the edit was asked to delete. An id named there
+that is still in the edited model is reported, so it cannot hide a loss.
+
+Not checked: edge waypoints (a re-targeted flow is re-routed) and labels.
+
+tests/tasks/uipath-maestro-bpmn/_shared/edit_check.py `assert_diagram_preserved`
+holds the same rules for the evals; keep the two in step.
 
 Prints a JSON object. Exit 0 when nothing was lost, 1 when something was,
 2 on bad input. Standard library only.
@@ -50,9 +59,22 @@ def shapes(root: ET.Element) -> dict[str, ET.Element]:
     return {s.get("bpmnElement"): s for s in root.iter() if local(s.tag) == "BPMNShape"}
 
 
-def bounds(shape: ET.Element) -> tuple[int, int, int, int]:
-    b = next(c for c in shape if local(c.tag) == "Bounds")
-    return tuple(round(float(b.get(k))) for k in ("x", "y", "width", "height"))
+def edges(root: ET.Element) -> dict[str, ET.Element]:
+    return {e.get("bpmnElement"): e for e in root.iter() if local(e.tag) == "BPMNEdge"}
+
+
+def bounds(shape: ET.Element) -> tuple[int, int, int, int] | None:
+    b = next((c for c in shape if local(c.tag) == "Bounds"), None)
+    if b is None:
+        return None
+    try:
+        return tuple(round(float(b.get(k))) for k in ("x", "y", "width", "height"))
+    except (TypeError, ValueError):
+        return None
+
+
+def resizable(kind: str | None, shape: ET.Element) -> bool:
+    return kind in CONTAINERS or shape.get("isExpanded") == "true"
 
 
 def colors(shape: ET.Element) -> tuple:
@@ -90,6 +112,9 @@ def main() -> None:
 
     kind, s0, s1 = kinds(before), shapes(before), shapes(after)
     after_ids = set(kinds(after))
+    for el_id in sorted(removed & after_ids):
+        losses.append(f"{el_id!r} is named in --removed but is still in the model")
+    removed -= after_ids
     for el_id, k in kind.items():
         if el_id in removed:
             continue
@@ -118,16 +143,31 @@ def main() -> None:
             continue
         if colors(shape) != colors(s1[el_id]):
             losses.append(f"{el_id!r} lost or changed its colors")
+        b0, b1 = bounds(shape), bounds(s1[el_id])
+        if b0 is None:
+            continue
+        if b1 is None:
+            losses.append(f"{el_id!r} lost its bounds")
+            continue
         if kind.get(el_id) in CONTAINERS:
             continue
-        x0, y0, w0, h0 = bounds(shape)
-        x1, y1, w1, h1 = bounds(s1[el_id])
-        if (w0, h0) != (w1, h1):
+        x0, y0, w0, h0 = b0
+        x1, y1, w1, h1 = b1
+        if (w0, h0) != (w1, h1) and not resizable(kind.get(el_id), shape):
             losses.append(f"{el_id!r} resized from {w0}x{h0} to {w1}x{h1}")
         if (x0, y0) != (x1, y1):
             offsets.add((x1 - x0, y1 - y0))
     if len(offsets) > 1:
         losses.append(f"existing shapes were re-laid out ({len(offsets)} different moves)")
+
+    e0, e1 = edges(before), edges(after)
+    for el_id, edge in e0.items():
+        if el_id in removed or el_id not in after_ids:
+            continue
+        if el_id not in e1:
+            losses.append(f"{kind.get(el_id, 'flow')} {el_id!r} lost its diagram edge")
+        elif colors(edge) != colors(e1[el_id]):
+            losses.append(f"{el_id!r} lost or changed its edge colors")
 
     print(json.dumps({"Result": "Failure" if losses else "Success", "Losses": losses}, indent=2))
     sys.exit(1 if losses else 0)

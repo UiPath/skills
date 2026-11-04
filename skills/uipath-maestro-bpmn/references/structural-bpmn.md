@@ -678,11 +678,9 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
 — see [SKILL.md](../SKILL.md#editing-an-existing-bpmn-preserve-what-you-did-not-author)).
 
 **Updating the diagram after an edit.** If the file already had a diagram when
-the task started, do NOT run `uip maestro bpmn format` — it deletes the user's
-pools, lanes, colors and layout. Add, move or remove only the shapes and edges
-of what you changed, as
-[Keep the user's diagram](../SKILL.md#keep-the-users-diagram) prescribes, and
-run its check. Run `format` only on a file this task created.
+the task started, follow
+[Keep the user's diagram](../SKILL.md#keep-the-users-diagram). Run `format`
+only on a file this task created.
 
 - **Add / delete / reconnect a node**: add the element with a stable id and its
   `<bpmn:incoming>`/`<bpmn:outgoing>` refs, add the sequence-flow elements in the

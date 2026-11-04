@@ -91,8 +91,8 @@ Do not derive metadata from stale package files first. Use existing generated fi
 3. Lay out the diagram after the last source edit: `uip maestro bpmn format
    <file.bpmn>`. `refresh` validates before it writes, so a node added since
    the previous run fails step 4 with `MISSING_DI_SHAPE`. On a file that
-   already had a diagram, do not run `format`; add only the new shapes and
-   edges per [Keep the user's diagram](../../SKILL.md#keep-the-users-diagram).
+   already had a diagram, see
+   [Keep the user's diagram](../../SKILL.md#keep-the-users-diagram) instead.
 4. Regenerate package metadata from the BPMN source:
 
    ```bash

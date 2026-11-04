@@ -481,6 +481,8 @@ def elements_local(root: ET.Element, local_name: str) -> list[ET.Element]:
 # The canvas renders from the diagram, so a user's pools, lanes, colors, box sizes and
 # placement live there. Regenerating the diagram (`uip maestro bpmn format` on an
 # existing file) drops every one of them while the model still validates.
+# skills/uipath-maestro-bpmn/scripts/check-diagram-preserved.py ships the same rules
+# to agents; keep the two in step.
 
 _CONTAINER_KINDS = frozenset({"participant", "lane"})
 _ARTIFACT_KINDS = frozenset({"textAnnotation", "group"})
@@ -494,8 +496,14 @@ def _shapes(root: ET.Element) -> dict[str, ET.Element]:
     return {s.attrib.get("bpmnElement", ""): s for s in root.iter() if local(s.tag) == "BPMNShape"}
 
 
-def _bounds(shape: ET.Element) -> tuple[float, float, float, float]:
-    b = next(c for c in shape if local(c.tag) == "Bounds")
+def _edges(root: ET.Element) -> dict[str, ET.Element]:
+    return {e.attrib.get("bpmnElement", ""): e for e in root.iter() if local(e.tag) == "BPMNEdge"}
+
+
+def _bounds(shape: ET.Element) -> tuple[float, float, float, float] | None:
+    b = next((c for c in shape if local(c.tag) == "Bounds"), None)
+    if b is None:
+        return None
     return tuple(float(b.attrib[k]) for k in ("x", "y", "width", "height"))
 
 
@@ -515,9 +523,11 @@ def assert_diagram_preserved(original: ET.Element, edited: ET.Element, removed: 
     - The plane still targets the same root (collaboration stays collaboration).
     - Every pool/lane keeps its shape, and every lane keeps the nodes it held.
     - Annotations and groups survive in the model and on the canvas.
-    - Every surviving shape keeps its colors; every surviving node shape its size.
+    - Every surviving shape and edge keeps its colors; every surviving node shape its
+      size (pools, lanes and expanded subprocesses may grow).
     - Surviving node shapes either stay put or all move by ONE common offset (making
       room for an insertion); an independent re-layout of everything fails.
+    - Every surviving flow keeps its edge.
 
     ``removed`` lists element ids the edit was asked to delete.
     """
@@ -528,7 +538,7 @@ def assert_diagram_preserved(original: ET.Element, edited: ET.Element, removed: 
     before, after = _shapes(original), _shapes(edited)
 
     for el_id, kind in kinds.items():
-        if kind in _CONTAINER_KINDS and el_id in before and el_id not in after:
+        if kind in _CONTAINER_KINDS and el_id not in removed and el_id in before and el_id not in after:
             fail(f"{kind} {el_id!r} lost its diagram shape")
         if kind in _ARTIFACT_KINDS and el_id not in removed:
             if by_id(edited, el_id) is None:
@@ -542,6 +552,8 @@ def assert_diagram_preserved(original: ET.Element, edited: ET.Element, removed: 
     }
     for lane in elements_local(original, "lane"):
         lane_id = lane.attrib.get("id")
+        if lane_id in removed:
+            continue
         if lane_id not in edited_lanes:
             fail(f"lane {lane_id!r} was deleted from the model")
         for ref in lane:
@@ -555,13 +567,28 @@ def assert_diagram_preserved(original: ET.Element, edited: ET.Element, removed: 
             continue
         if _style(shape) != _style(after[el_id]):
             fail(f"{el_id!r} lost or changed its colors")
+        b0, b1 = _bounds(shape), _bounds(after[el_id])
+        if b0 is None:
+            continue
+        if b1 is None:
+            fail(f"{el_id!r} lost its bounds")
         if kinds.get(el_id) in _CONTAINER_KINDS:
             continue  # pools and lanes may grow to fit an insertion
-        x0, y0, w0, h0 = _bounds(shape)
-        x1, y1, w1, h1 = _bounds(after[el_id])
-        if (round(w0), round(h0)) != (round(w1), round(h1)):
+        x0, y0, w0, h0 = b0
+        x1, y1, w1, h1 = b1
+        grows = shape.attrib.get("isExpanded") == "true"
+        if not grows and (round(w0), round(h0)) != (round(w1), round(h1)):
             fail(f"{el_id!r} resized from {w0:g}x{h0:g} to {w1:g}x{h1:g}")
         if (round(x0), round(y0)) != (round(x1), round(y1)):
             offsets.add((round(x1 - x0), round(y1 - y0)))
     if len(offsets) > 1:
         fail(f"existing shapes were re-laid out independently ({len(offsets)} different moves)")
+
+    edges_after = _edges(edited)
+    for el_id, edge in _edges(original).items():
+        if el_id in removed or by_id(edited, el_id) is None:
+            continue
+        if el_id not in edges_after:
+            fail(f"{kinds.get(el_id, 'flow')} {el_id!r} lost its diagram edge")
+        if _style(edge) != _style(edges_after[el_id]):
+            fail(f"{el_id!r} lost or changed its edge colors")
