@@ -183,6 +183,8 @@ tools = [search_company_docs]
 
 ## Common Patterns
 
+Both patterns below are single-shot: one query, one answer. When one lookup structurally cannot cover the answer set, use a bounded search loop instead — [../../agentic-search/planning.md](../../agentic-search/planning.md).
+
 ### Question-Answer System
 
 ```python
