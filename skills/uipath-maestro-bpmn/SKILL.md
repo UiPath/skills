@@ -340,7 +340,9 @@ never changes what a step does.
 | Phase | Steps | What happens | Reference |
 | --- | --- | --- | --- |
 | **0 — Surface** | — | Nothing to do yet; surface detection is future work. | Below |
+<!--skill-flavor:phase-table-preflight:start-->
 | **1 — Preflight** | 1a–1c | Check login, scan for an existing solution and project, start from its cloud copy. Changes nothing in the project, so it runs in every mode. | Below |
+<!--skill-flavor:phase-table-preflight:end-->
 | **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
 | **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, name each box's resource, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
 | **4 — Wire it up** | 4a–4g | Discover, fetch templates, paste real payloads into the existing boxes, lay out, validate, refresh, show. | Below |

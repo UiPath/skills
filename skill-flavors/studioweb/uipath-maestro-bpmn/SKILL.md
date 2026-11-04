@@ -94,3 +94,7 @@ solution and never run `uip solution upload`.
   workspace root and is the only copy: never run `uip solution download` and
   never ask the user which copy to keep.
 <!--skill-flavor:cloud-copy-download:end-->
+
+<!--skill-flavor:phase-table-preflight:start-->
+| **1 — Preflight** | 1a–1c | Read the toolbox kinds (login is supplied), scan the open solution and project. Changes nothing in the project, so it runs in every mode. | Below |
+<!--skill-flavor:phase-table-preflight:end-->
