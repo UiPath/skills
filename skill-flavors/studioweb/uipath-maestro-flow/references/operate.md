@@ -7,7 +7,8 @@ there is no login step.
 <!--skill-flavor:operate-format:start-->
 **Never run `format` on a merged file.** In Studio Web almost every write is a
 merge into the canvas of the user. The `layout` of the original holds the
-positions of the user, and `merge` keeps them and places each added node.
+positions of the user, and `merge` keeps them and places each added node,
+moving later nodes right or down and growing containers only to fit added ones.
 `format` lays out every node again and discards them.
 
 A new `.flow` that `compile` wrote straight, with no merge, is different.
@@ -45,17 +46,24 @@ shared-location publish does not: deploy it with `uip solution deploy run`
 
 <!--skill-flavor:operate-debug:start-->
 ```bash
-uip maestro flow debug "<Project>"
+uip maestro flow debug "<Project>" --inputs '{}'
 ```
 
 `<Project>` is a project name in the open solution, not a path; it defaults to
-the open project. Debug runs the saved project, so there is no pack or upload
-step.
+the open project. Debug runs the saved copy of the flow open in the designer,
+so there is no pack or upload step. To run another flow of the project, ask the
+user to open it in the Explorer first.
+
+**Always pass `--inputs`:** the flow's input values as JSON, or `'{}'` when the
+flow takes none. Without it, Studio Web opens its Debug configuration dialog by
+default, and the run waits for the user to click **Save & Debug**.
 
 `flow debug` executes the flow for real: it sends the emails, posts the
-messages, calls the APIs. It is not a validation step — `validate` is. Run it
-when the request is for a flow that works; ask when the request stops at build
-or validate; and with nobody to ask, report the flow as unverified rather than
+messages, calls the APIs. It is not a validation step — `validate` is. When a
+user can answer and did not ask for the run, ask before each run, even when the
+request is for a flow that works. With nobody to ask, run it when the request is
+for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from));
+otherwise report the flow as unverified rather than
 letting a passing `validate` stand as the result. The reply is plain text:
 [CLI-LOOP.md — Reading the reply](CLI-LOOP.md#reading-the-reply).
 <!--skill-flavor:operate-debug:end-->
@@ -65,7 +73,9 @@ letting a passing `validate` stand as the result. The reply is plain text:
   from 10 to 150.
 - **`TimedOut after <N>s` is not a failure.** The run continues in the host,
   and the timeout does not stop it: do not troubleshoot it, and do not re-run
-  it. The reply has no instance id: when it gives a `Trace ID`, read the result
+  it. The exception: when the reply says Studio Web may be waiting for
+  Save & Debug, the run has not started. Ask the user to click **Save & Debug**
+  in the Debug configuration dialog. The reply has no instance id: when it gives a `Trace ID`, read the result
   later with `uip traces spans get <Trace ID>`; otherwise tell the user to
   follow the run in Studio Web.
 - **Run debug again only after a fresh AskUserQuestion** that says it executes
@@ -104,11 +114,12 @@ For a flow that is `content/<file>.bpmn#<triggerNodeId>`; the `content/` prefix
 is optional:
 
 ```bash
-uip maestro flow debug "<Project>" --entry-point "content/<file>.bpmn#<triggerNodeId>"
+uip maestro flow debug "<Project>" --entry-point "content/<file>.bpmn#<triggerNodeId>" --inputs '{}'
 ```
 
 A wrong value fails and lists the valid paths. A bare trigger node id is not a
-valid value here.
+valid value here. `--entry-point` cannot run another flow: Studio Web always
+runs the flow open in the designer.
 <!--skill-flavor:operate-debug-entry-point:end-->
 
 <!--skill-flavor:operate-debug-report:start-->
@@ -124,7 +135,7 @@ long reply, redirect it to a file as you start the run, then search the file:
 <!--skill-flavor:operate-debug-redirect:start-->
 ```bash
 cd /solution/<Project>
-uip maestro flow debug "<Project>" > .flow-sdk/flow-debug.txt
+uip maestro flow debug "<Project>" --inputs '{}' > .flow-sdk/flow-debug.txt
 ```
 <!--skill-flavor:operate-debug-redirect:end-->
 

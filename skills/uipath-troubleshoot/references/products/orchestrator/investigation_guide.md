@@ -5,11 +5,13 @@
 Follow the generic guide § Output Capture (filter at source; `| tee` for small/filtered results, `>` + selective read-back for heavy/unfilterable ones; filter-failure fallback; anti-patterns). Orchestrator-specific filter expressions appear inline in each command below. Reference shape:
 
 ```
-uip or jobs list --folder-key <key> --state Faulted \
+uip or jobs list --limit 50 --folder-key <key> --state Faulted \
   --output json \
-  --output-filter '[].{Key:Key,State:State,StartTime:StartTime,ReleaseName:ReleaseName}' \
+  --output-filter '[].{Key:Key,State:State,StartTime:StartTime,ProcessName:ProcessName}' \
   | tee .local/investigations/raw/triage-jobs-list.json
 ```
+
+Filtered lists and logs need an explicit `--limit`. The examples use 50 jobs/logs and 500 folders/queues per page. Inspect the envelope's `Pagination.HasMore`; for a complete lookup, repeat with `--offset` increased by the limit until it is false. An empty filtered `Data` does not prove absence while more pages remain.
 
 If `--output-filter` cannot express the shape you need, see `scripts/` for skill-provided filter helpers, or fetch a minimal field set first and re-fetch more only when a gap forces it.
 
@@ -30,7 +32,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
 
    **Step A — User named a folder.** Resolve its key:
    ```
-   uip or folders list --output json \
+   uip or folders list --limit 500 --output json \
      --output-filter "[?Name=='<name>'].{Key:Key,Path:Path,Type:Type}" \
      | tee .local/investigations/raw/triage-folders-list.json
    ```
@@ -42,7 +44,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
 
    1. Run folders list ONCE to get candidates:
       ```
-      uip or folders list --output json \
+      uip or folders list --limit 500 --output json \
         --output-filter "[].{Key:Key,Name:Name,Path:Path,Type:Type}" \
         | tee .local/investigations/raw/triage-folders-list.json
       ```
@@ -50,12 +52,21 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
    3. Do NOT continue with any data fetch until the user answers.
    4. Record the chosen folder in `.local/investigations/notes.md` and proceed to step 2 (Process).
 
-   **Bounded fallback** — applies ONLY when the user explicitly answers step B.3 with "I don't know" / "no preference" / equivalent. Run ONCE without folder filter, pick the most-recent, record the folder, proceed:
+   **Bounded fallback** — applies ONLY when the user explicitly answers step B.3 with "I don't know" / "no preference" / equivalent. Run ONCE across accessible folders and pick the newest-created matching job. This bounded fallback only needs the first page because `--sort-by "CreationTime desc"` orders newest-first; it is not a complete inventory:
    ```
-   uip or jobs list --state <state> --output json \
-     --output-filter "[].{Key:Key,State:State,StartTime:StartTime,FolderName:FolderName}" \
+   uip or jobs list --all-folders --limit 50 --state <state> \
+     --sort-by "CreationTime desc" --output json \
+     --output-filter "[].{Key:Key,State:State,CreationTime:CreationTime,StartTime:StartTime,ProcessName:ProcessName,ReleaseKey:ReleaseKey}" \
      | tee .local/investigations/raw/triage-jobs-cross-folder.json
    ```
+   `jobs list` returns `ProcessName` and `ReleaseKey`, not `ReleaseName` or `FolderName`. Resolve the selected job's folder from its details before proceeding:
+   ```
+   uip or jobs get <JOB_KEY> --no-download --output json \
+     --output-filter '{Key:Key,FolderKey:FolderKey}' \
+     | tee .local/investigations/raw/triage-job-folder.json
+   ```
+   Match `FolderKey` to the captured folder list and record its `Path`. If it is missing or inaccessible, ask the user; do not infer the folder from the process name.
+
    `<state>` is the state the user named (`Faulted` for "failed", `Pending` for "stuck", etc.). If this returns nothing, report and stop — do NOT relax the state filter and do NOT retry against per-folder keys.
 
    ---
@@ -66,7 +77,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
 
 Only after identity is resolved, fetch data and verify every result against it:
 
-- **Process/Release** — job release name matches the identified process
+- **Process/Release** — job `ProcessName` from `jobs list` (`ReleaseName` from `jobs get`) matches the identified process
 - **Queue** — queue name matches what the user reported (if queue-related)
 - **Robot/Machine** — if the user mentioned a specific robot or machine, verify the data belongs to it
 - **Timestamps** — fall within the established time window
@@ -74,7 +85,7 @@ Only after identity is resolved, fetch data and verify every result against it:
 If data doesn't match: **discard it**. Do NOT fetch details for jobs or items from other processes. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
 4. **Job selection** — if multiple jobs exist for the identified process, present the list to the user (showing state, timestamp, error summary) and ask which one to investigate. If the user said "latest" or didn't specify, default to the most recent faulted job and state this assumption explicitly. Do NOT fetch details for multiple jobs — investigate one at a time. **If the user gave no job key but described the job by state + folder** (e.g. "my pending job in Shared"), resolve it by enumeration: `uip or jobs list --folder-key <key> --state <State> --output json`. If exactly one candidate matches, proceed with it; if several, present them and ask. Do not ask the user for a key you can discover this way.
-5. **Queue item** — if the issue is queue-related, resolve the queue and item. Use `uip or queues list --folder-key <key> --name <name>` to find the queue definition key. If this exact-name request returns `Result=Failure` / `HTTP 400: Invalid OData query options`, preserve that failed response and retry once without `--name`, using `--output-filter "[?Name=='<name>'].{Key:Key,Name:Name}"`; never treat the HTTP 400 as an empty queue list. If the user provided a queue item key, use `uip or queue-items get <item-key> --folder-key <key>` to confirm it exists and extract the queue name, error details, and retry status. If the queue item is not found in the first folder, try other folders from `folders list`.
+5. **Queue item** — if the issue is queue-related, resolve the queue and item. Use `uip or queues list --folder-key <key> --name <name>` to find the queue definition key. If this exact-name request returns `Result=Failure` / `HTTP 400: Invalid OData query options`, preserve that failed response and retry once without `--name`, using `--limit 500 --output json --output-filter "[?Name=='<name>'].{Key:Key,Name:Name}"`; never treat the HTTP 400 as an empty queue list. If the user provided a queue item key, use `uip or queue-items get <item-key> --folder-key <key>` to confirm it exists and extract the queue name, error details, and retry status. If the queue item is not found in the first folder, try other folders from `folders list`.
 
 ## Job Data Bundle
 
@@ -86,9 +97,9 @@ For every job under investigation, gather these in order. Follow the generic gui
      --output-filter '{Key:Key,State:State,StartTime:StartTime,EndTime:EndTime,Info:Info,JobError:JobError,InputArguments:InputArguments,OutputArguments:OutputArguments}' \
      | tee .local/investigations/raw/triage-job-get.json
    ```
-2. **Job logs** — robot execution logs, newest-first. Folder is inferred from the job key. Use `--level Error` to find errors quickly. `--limit` controls entry count (default 50).
+2. **Job logs** — robot execution logs, newest-first. Folder is inferred from the job key. Use `--level Error` to find errors quickly. The command below requests up to 50 entries.
    ```
-   uip or jobs logs <key> --level Error --output json \
+   uip or jobs logs <key> --level Error --limit 50 --output json \
      --output-filter '[].{Level:Level,TimeStamp:TimeStamp,Message:Message}' \
      | tee .local/investigations/raw/triage-job-logs.json
    ```
@@ -126,11 +137,11 @@ For comparison investigations (e.g., queue-items-failing playbook), also gather 
 When investigating service tasks, child jobs, or multi-job processes, use `jobs list` with `--state` ALWAYS set when the user named a state in their prompt ("failed" → `--state Faulted`, "stuck" → `--state Pending`, etc.). Filter at the source:
 
 ```
-uip or jobs list --folder-key <folder-key> --state Faulted \
+uip or jobs list --limit 50 --folder-key <folder-key> --state Faulted \
   --process-name <name> \
   --created-after <start> --created-before <end> \
   --output json \
-  --output-filter '[].{Key:Key,State:State,StartTime:StartTime,ReleaseName:ReleaseName}' \
+  --output-filter '[].{Key:Key,State:State,StartTime:StartTime,ProcessName:ProcessName}' \
   | tee .local/investigations/raw/triage-jobs-list.json
 ```
 

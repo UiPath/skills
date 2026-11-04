@@ -106,3 +106,47 @@ def test_brief_naming_the_tokens_does_not_count(project):
 def test_open_items_inside_the_project_fail(project):
     (project / "open-items.md").write_text(f"# Open items: Sales\n\n{' '.join(NAMES)}\n", encoding="utf-8")
     assert open_items() == 1
+
+
+def handoff(*flags: str) -> int:
+    return execute_check.cmd_handoff(argparse.Namespace(open_items="--open-items" in flags))
+
+
+def handoff_folder(parent: Path, readme: str | None = "# Sales: hand-off\n\n## Status\n- ok\n\n## Configuration answers\n") -> Path:
+    folder = parent / "sales-handoff"
+    folder.mkdir()
+    if readme is not None:
+        (folder / "README.md").write_text(readme, encoding="utf-8")
+    return folder
+
+
+def test_handoff_readme_counts(project):
+    handoff_folder(project.parent)
+    assert handoff() == 0
+
+
+def test_handoff_without_status_fails(project):
+    handoff_folder(project.parent, "# Sales: hand-off\n\n## Configuration answers\n")
+    assert handoff() == 1
+
+
+def test_handoff_without_readme_fails(project):
+    handoff_folder(project.parent, None)
+    assert handoff() == 1
+
+
+def test_handoff_inside_the_project_fails(project):
+    handoff_folder(project)
+    assert handoff() == 1
+
+
+def test_handoff_open_items_inside_it_count(project):
+    folder = handoff_folder(project.parent)
+    (folder / "open-items.md").write_text(f"# Open items: Sales\n\n{' '.join(NAMES)}\n", encoding="utf-8")
+    assert handoff("--open-items") == 0
+
+
+def test_handoff_open_items_beside_it_fail(project):
+    handoff_folder(project.parent)
+    (project.parent / "sales-open-items.md").write_text(f"# Open items: Sales\n\n{' '.join(NAMES)}\n", encoding="utf-8")
+    assert handoff("--open-items") == 1

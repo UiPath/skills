@@ -86,8 +86,12 @@ uip maestro bpmn registry get Intsvc.EventTrigger \
   tenant, binds it into `--solution-folder`, and reads it through root
   bindings. When the name is in several folders the command fails
   `invalid_argument`, `A resource picker in --input-details did not resolve`,
-  and lists each folder key; add `"<field>_folderKey": "<FolderKey>"` next to
-  the name and run it again.
+  and lists each folder key; add `"<field>_folderKey": "<FolderKey>"` and run
+  it again. Put it under the list its `Type` in the describe output names
+  (`uip is resources describe` for activities, `uip is triggers describe` for
+  triggers and waits), which can differ from the name's (Orchestrator Get
+  Asset: `id` in `pathParameters`, `id_folderKey` in `queryParameters`); a
+  companion in the wrong list is refused. Not listed: put it next to the name.
 - A `*_V3` object's `RequestFields` (the folder entity's columns, for
   `bodyParameters`) are empty until `describe` gets the picker the same way:
   `uip is resources describe uipath-uipath-dataservice <Object>_V3
@@ -115,9 +119,31 @@ uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --connection-id <connect
     --output json
 ```
 
-`--input-details` is the request: `authentication` (`manual` or `connector`),
-`method`, `url`, and optional `headers` and `query` objects and a `body`
-(sent for `POST`, `PUT` and `PATCH`). In connector mode the command takes the
+`--input-details` is the request. `registry get` copies its `url` as written
+and there is no `pathParameters`: fill every `{placeholder}` in `url`, such as
+a catalog path's (`uip is resources list`'s `Path`), before you run it. A
+known value (discovered or given, Rule 2) goes in as text; an unknown one, or
+one known only at run time, is read through a `=js:` url from what sets it. The whole url is one
+`=js:` expression with `=js:` first; `=js:` or `vars.` inside a plain url is
+sent as text. The url never keeps a placeholder, `<project-id>` included. If
+the CLI refuses the url, fix it and run `registry get` again; never edit the
+url in the element. For `/projects/{projectId}/items/{id}`:
+
+```json
+{"authentication":"connector","method":"GET","url":"=js:\"/projects/\" + vars.Var_ProjectId + \"/items/\" + vars.Var_ItemId"}
+```
+
+Write those variables before this node: a start-event input mapping (the
+`<uipath:mapping>` on the start event in
+[the minimal file](structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples))
+or an earlier node's output.
+`validate` warning `read but never assigned` on one is never expected, unlike
+`VARIABLE_NOT_SET` on a start-event input: it means the url is empty there, so
+write the variable before this node.
+
+The other keys are `authentication` (`manual` or `connector`), `method`, and
+optional `headers` and `query` objects and a `body` (sent for `POST`, `PUT`
+and `PATCH`). In connector mode the command takes the
 target connector and folder from the connection. The element binds Studio
 Web's implicit connection for a manual request and the target connection for a
 connector one. Its outputs are `code`, `headers` and `body`, plus `Error`.
