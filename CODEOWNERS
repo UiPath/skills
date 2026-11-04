@@ -93,6 +93,7 @@
 # Guardrail checkers relocated to _shared/ during the host-path-removal migration (test: d61fa9d52) —
 # still owned by the guardrails team, not the broader _shared/ default.
 /tests/tasks/uipath-agents/_shared/check_byog_middleware.py @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/_shared/coded_file_guardrail_assertions.py @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/_shared/check_escalation.py @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/_shared/check_intellectual_property_coded.py @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/_shared/check_llm_as_judge.py @apetraru-uipath @valentinabojan @ctiliescuuipath
