@@ -66,8 +66,8 @@ DECLARATIONS: tuple[Declaration, ...] = (
         generators=((sys.executable, str(CASE_SHARED / "task_types.py"), "--write-guide"),),
         tests=(str(CASE_SHARED / "test_task_types.py"),),
         copies=(
-            "skills/uipath-planner/references/case/case-design-layers-guide.md (§ Task types table and count)",
-            "skills/uipath-planner/references/case/case-sdd-conformance-checklist.md (item 8 count, item 6 detail markers)",
+            "skills/uipath-planner/references/design/case-product-guide.md (§ Task types table and count)",
+            "skills/uipath-planner/references/design/case-product-guide.md § SDD Conformance Checklist (item 8 count, item 6 detail markers)",
             "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS, STUDIO_WEB_ONLY, NOT_TASK_TYPES)",
             "tests/tasks/uipath-planner/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS, STUDIO_WEB_ONLY, NOT_TASK_TYPES)",
         ),
@@ -80,7 +80,7 @@ DECLARATIONS: tuple[Declaration, ...] = (
         snapshot=CASE_SHARED / "rule_types.json",
         tests=(str(CASE_SHARED / "test_rule_types.py"),),
         copies=(
-            "skills/uipath-planner/references/case/case-design-layers-guide.md (§ Lifecycle gates: Legal WHEN rules and Marks complete)",
+            "skills/uipath-planner/references/design/case-product-guide.md (§ Lifecycle gates: Legal WHEN rules and Marks complete)",
             "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (STAGE_ENTRY, TASK_ENTRY, … gate sets)",
             "tests/tasks/uipath-planner/_shared/sdd_check.py (STAGE_ENTRY, TASK_ENTRY, … gate sets)",
         ),
