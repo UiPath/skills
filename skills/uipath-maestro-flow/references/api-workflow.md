@@ -71,7 +71,7 @@ and `projectId` instead of `folderPath`:
   `location: 'in-solution'`. Keep it that way when editing; never add a
   `folderPath`.
 
-Needs `@uipath/maestro-builder-sdk` SDK_VERSION or later: check that
+Needs `@uipath/maestro-builder-sdk` 6.71.1 or later: check that
 `dist/nodes/process/flow/spec.d.ts` of the SDK copy in use declares `projectId`
 on `ApiWorkflowInputs`. An older SDK has no `location` on `apiWorkflow()`:
 `check` reports `APIWF_NO_FOLDER`, but `compile` alone (6.64.0 on, it no longer
