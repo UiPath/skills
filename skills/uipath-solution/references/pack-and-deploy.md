@@ -81,11 +81,9 @@ Upload the packed .zip so it appears in the UiPath solution feed:
 
 ```bash
 uip solution publish ./output/MySolution_2.0.0.zip --output json
-
-# Target another tenant: switch the login session first (publish has no tenant option)
-uip login tenant set "<TENANT_NAME>" --output json
-uip solution publish ./output/MySolution_2.0.0.zip --output json
 ```
+
+`publish` has no tenant option: it publishes to the tenant of the current login. To publish to another tenant, switch first, as in [Environment Promotion](#environment-promotion).
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
 
