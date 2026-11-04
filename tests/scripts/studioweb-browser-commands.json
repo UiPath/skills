@@ -150,6 +150,21 @@
       "login tenant set": 1
     }
   },
+  "uipath-genome": {
+    "allow": [],
+    "ceiling": {
+      "codedagent run": 1,
+      "login status": 1,
+      "rpa build": 2,
+      "rpa data-fabric-entities install": 1,
+      "rpa debug start": 1,
+      "rpa pack": 1,
+      "rpa packages inspect": 1,
+      "rpa run": 4,
+      "rpa uia": 7,
+      "rpa validate": 1
+    }
+  },
   "uipath-coded-apps": {
     "allow": [],
     "ceiling": {
@@ -216,21 +231,6 @@
       "function serve": 12,
       "login": 2,
       "solution pack": 2
-    }
-  },
-  "uipath-genome": {
-    "allow": [],
-    "ceiling": {
-      "codedagent run": 1,
-      "login status": 1,
-      "rpa build": 2,
-      "rpa data-fabric-entities install": 1,
-      "rpa debug start": 1,
-      "rpa pack": 1,
-      "rpa packages inspect": 1,
-      "rpa run": 4,
-      "rpa uia": 7,
-      "rpa validate": 1
     }
   },
   "uipath-governance": {
@@ -426,6 +426,8 @@
       "function new": 1,
       "login": 15,
       "login status": 5,
+      "or processes": 1,
+      "or queues": 1,
       "rules debug": 1,
       "solution pack": 1
     }
