@@ -864,7 +864,7 @@ template shows it (see its 3c section).
   judgment call.** Count the `-` change lines before you send:
   when there are more than five, merge related steps into one line each, and
   fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
-  Check the message against the template as the guide's 3c section says.
+  Before sending, check the message against the template line by line and delete every line the template does not have.
 
 ## Operate and diagnose
 
