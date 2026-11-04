@@ -142,7 +142,7 @@ The Phase 4 retry-cap, Phase 5 publish, Phase 6 debug-consent, and Phase 7 publi
 Print (before the prompt on the pause branch; as the continuation line otherwise):
 
 1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / unresolved resources.
-2. Validate result and profile: `skeleton-v2: <N> errors, <M> warnings` or `skeleton (fallback; rules/SLA deferred to Phase 4): <N> errors, <M> warnings`. Surfacing counts is enough; do not dump the full list unless the user asks.
+2. Validate result and profile: `skeleton-v2: <N> errors, <M> warnings` or `skeleton (fallback; rules/SLA deferred to Phase 4): <N> errors, <M> warnings`. Surfacing counts is enough; do not dump the full list unless the user asks. Every connector-bound rule is still a stub here, so `skeleton-v2` counts include their `CONNECTOR_ACTIVITY_MISSING` errors; they are expected, and Phase 3 Step 10.5 upgrades the resolved ones. Do not repair them in Phase 2.
 3. Paths: `caseplan.case`, `sdd.md`, `registry-resolved.json`.
 4. Suggested next steps:
    - Straight-through: `Suggested next steps: I'll continue wiring the implementation now; say stop if you want to inspect the skeleton first.`
@@ -230,7 +230,7 @@ On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "V
 
 On failure: output lists `[error]` and `[warning]` entries with path and message. Fix reported issues (usually via targeted re-run of earlier step) and re-run `validate`.
 
-**Permanent connector-rule stubs never validate.** Each one earns `CONNECTOR_ACTIVITY_MISSING`, plus `STRICT_CONNECTOR_CONTEXT_INCOMPLETE` on a stage or task condition ([connector-trigger-impl.md § What validate reports for a stub](connector-trigger-impl.md#what-validate-reports-for-a-stub)). Leave those errors out of the repair loop and the error count below. When every remaining error maps to a logged unresolved connector, Phase 4 has passed: say `strict: <E> errors, all from <N> unresolved connector rules` and proceed to Phase 5, listing each connector under Open Items.
+**Permanent connector-rule stubs never validate.** Leave their errors ([connector-trigger-impl.md § What validate reports for a stub](connector-trigger-impl.md#what-validate-reports-for-a-stub)) out of the repair loop and the error count below. When every remaining error comes from a logged stub, Phase 4 has passed: say `strict: <E> errors, all from <N> unresolved connector rules`, list each connector under Open Items, and proceed to the Phase 4 issue-log summary step, then Phase 5.
 
 ### Validate-loop guard — no re-validate without an intervening edit
 
