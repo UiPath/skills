@@ -3,12 +3,15 @@
 
 Validates:
 - UiPathPIIDetectionMiddleware is imported from uipath_langchain.guardrails
-- GuardrailScope is imported from uipath.core.guardrails
-- The middleware is spread (*) into create_agent(middleware=[...])
-- At least one entry covers Agent scope (GuardrailScope.AGENT)
-- At least one entry covers Tool scope (GuardrailScope.TOOL) with tools=[...]
-- LogAction (not just BlockAction) is used
-- PIIDetectionEntityType.EMAIL and PIIDetectionEntityType.PHONE_NUMBER are referenced
+- The middleware is spread (*) into create_agent(middleware=[...]), inline or through a variable
+- One wired entry covers Agent scope (GuardrailScope.AGENT) and does not run at POST only
+- One wired entry covers Tool scope (GuardrailScope.TOOL) with tools=[lookup_account_info]
+- Every wired PII entry logs (action=LogAction(...)), not blocks
+- The entities cover PIIDetectionEntityType.EMAIL and PIIDetectionEntityType.PHONE_NUMBER
+- The Input model declares an Attachment field and render_attachments_block puts it
+  into the user message (the uploaded statement)
+- The Agent-scope entry sets detection_scope to Both (text and file); any other
+  detection_scope is a valid value
 """
 
 import ast
@@ -17,9 +20,20 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.guardrail_middleware import call_name, spread_middleware_calls  # noqa: E402
+from _shared.coded_file_guardrail_assertions import (
+    DETECTION_SCOPE_VALUES,
+    detection_scope_value,
+    imported_from,
+    module_constants,
+    require_attachment_input,
+    require_detection_scope,
+    require_rendered_attachments,
+    wired_middleware_calls,
+)
+from _shared.guardrail_middleware import call_kwarg, call_name
 
 GRAPH = Path("graph.py")
+TOOL = "lookup_account_info"
 
 
 def read() -> str:
@@ -28,9 +42,22 @@ def read() -> str:
     return GRAPH.read_text()
 
 
-def check(condition: bool, msg: str) -> None:
+def check(condition: object, msg: str) -> None:
     if not condition:
         sys.exit(f"FAIL: {msg}")
+
+
+def resolve(node: ast.expr | None, consts: dict[str, ast.expr]) -> ast.expr | None:
+    seen = 0
+    while isinstance(node, ast.Name) and node.id in consts and seen < 5:
+        node = consts[node.id]
+        seen += 1
+    return node
+
+
+def resolved_text(node: ast.expr | None, consts: dict[str, ast.expr]) -> str:
+    node = resolve(node, consts)
+    return ast.unparse(node) if node is not None else ""
 
 
 def main() -> None:
@@ -39,70 +66,69 @@ def main() -> None:
         tree = ast.parse(src)
     except SyntaxError as exc:
         sys.exit(f"FAIL: graph.py no longer parses as Python: {exc}")
+    consts = module_constants(tree)
 
     check(
-        "UiPathPIIDetectionMiddleware" in src,
-        "UiPathPIIDetectionMiddleware not found in graph.py — missing import or usage",
+        imported_from(tree, "uipath_langchain.guardrails", "UiPathPIIDetectionMiddleware"),
+        "UiPathPIIDetectionMiddleware is not imported from uipath_langchain.guardrails",
     )
-    print("OK: UiPathPIIDetectionMiddleware referenced")
+    print("OK: UiPathPIIDetectionMiddleware imported from uipath_langchain.guardrails")
 
+    pii_calls = [c for c in wired_middleware_calls(tree) if call_name(c) == "UiPathPIIDetectionMiddleware"]
     check(
-        "GuardrailScope" in src,
-        "GuardrailScope not found — import from uipath.core.guardrails is missing",
-    )
-    print("OK: GuardrailScope referenced")
-
-    # Spread pattern — accept inline `[*UiPathPIIDetectionMiddleware(...)]` OR the
-    # equivalent variable form `m = UiPathPIIDetectionMiddleware(...); middleware=[*m]`.
-    check(
-        any(call_name(c) == "UiPathPIIDetectionMiddleware" for c in spread_middleware_calls(tree)),
-        "UiPathPIIDetectionMiddleware not spread with * into the middleware list "
+        pii_calls,
+        "UiPathPIIDetectionMiddleware not spread with * into create_agent(middleware=[...]) "
         "(accepts inline `[*UiPathPIIDetectionMiddleware(...)]` or a variable "
         "`m = UiPathPIIDetectionMiddleware(...); middleware=[*m]`)",
     )
-    print("OK: UiPathPIIDetectionMiddleware spread with * into middleware list")
+    print("OK: UiPathPIIDetectionMiddleware spread with * into create_agent(middleware=[...])")
 
-    check(
-        "middleware=" in src,
-        "create_agent() has no middleware= argument",
-    )
-    print("OK: middleware= argument present in create_agent()")
+    def scopes(c: ast.Call) -> str:
+        return resolved_text(call_kwarg(c, "scopes") or (c.args[0] if c.args else None), consts)
 
-    check(
-        "GuardrailScope.AGENT" in src,
-        "GuardrailScope.AGENT not present — Agent scope not configured",
-    )
-    print("OK: GuardrailScope.AGENT used")
+    agent_calls = [c for c in pii_calls if "GuardrailScope.AGENT" in scopes(c)]
+    check(agent_calls, "no wired UiPathPIIDetectionMiddleware with GuardrailScope.AGENT in scopes")
+    print("OK: Agent scope configured")
 
-    check(
-        "GuardrailScope.TOOL" in src,
-        "GuardrailScope.TOOL not present — Tool scope not configured",
-    )
-    print("OK: GuardrailScope.TOOL used")
+    tool_calls = [c for c in pii_calls if "GuardrailScope.TOOL" in scopes(c) and TOOL in resolved_text(call_kwarg(c, "tools"), consts)]
+    check(tool_calls, f"no wired UiPathPIIDetectionMiddleware with GuardrailScope.TOOL in scopes and tools=[{TOOL}]")
+    print(f"OK: Tool scope configured on {TOOL}")
 
-    check(
-        "tools=" in src,
-        "tools= argument not found — Tool-scoped middleware missing tools=[...] parameter",
-    )
-    print("OK: tools= parameter present for Tool-scoped middleware")
-
-    check(
-        "LogAction" in src,
-        "LogAction not found — expected log (not block) action for PII detection",
-    )
+    for c in pii_calls:
+        action = resolve(call_kwarg(c, "action"), consts)
+        check(
+            isinstance(action, ast.Call) and call_name(action) == "LogAction",
+            f"expected a log (not block) action for PII detection, got action={ast.unparse(action) if action is not None else None}",
+        )
     print("OK: LogAction used")
 
-    check(
-        "EMAIL" in src,
-        "PIIDetectionEntityType.EMAIL not referenced",
-    )
-    print("OK: EMAIL entity referenced")
+    entities = " ".join(resolved_text(call_kwarg(c, "entities"), consts) for c in pii_calls)
+    for entity in ("EMAIL", "PHONE_NUMBER"):
+        check(f"PIIDetectionEntityType.{entity}" in entities, f"PIIDetectionEntityType.{entity} is not in the middleware entities")
+    print("OK: EMAIL and PHONE_NUMBER entities configured")
 
+    require_attachment_input(tree)
+    require_rendered_attachments(tree)
+
+    for c in pii_calls:
+        value = detection_scope_value(call_kwarg(c, "detection_scope"), consts)
+        check(
+            value is None or value in DETECTION_SCOPE_VALUES,
+            f"detection_scope must be DetectionScope.TEXT/FILES/BOTH or exactly {', '.join(DETECTION_SCOPE_VALUES)}; got {value!r}",
+        )
+    with_scope = [c for c in agent_calls if "detection_scope" in {kw.arg for kw in c.keywords}]
+    agent_call = with_scope[0] if with_scope else agent_calls[0]
+    stage = resolved_text(call_kwarg(agent_call, "stage"), consts)
     check(
-        "PHONE_NUMBER" in src,
-        "PIIDetectionEntityType.PHONE_NUMBER not referenced",
+        not stage.endswith("GuardrailExecutionStage.POST"),
+        "the Agent-scope PII middleware runs at POST only, so it never reads the uploaded statement",
     )
-    print("OK: PHONE_NUMBER entity referenced")
+    require_detection_scope(
+        agent_call,
+        "Both",
+        consts,
+        "the user asked for both the typed text and the uploaded statement",
+    )
 
     print("OK: PII middleware guardrail correctly added to graph.py")
 
