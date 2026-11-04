@@ -134,7 +134,7 @@
       "ah automations schema get": 3,
       "ah automations update": 2,
       "ah categories get": 3,
-      "ah comments": 3,
+      "ah comments": 7,
       "ah comments create": 3,
       "ah comments list": 3,
       "ah components list": 2,
