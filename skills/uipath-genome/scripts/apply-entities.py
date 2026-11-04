@@ -195,7 +195,7 @@ def open_items_text(model, solution):
         lines += ["### Choice-set fields", ""]
         for entity, field in cs_fields:
             kind = "CHOICE_SET_MULTIPLE" if field.get("multiple") else "CHOICE_SET_SINGLE"
-            req = ',\\"isRequired\\":true' if field.get("isRequired") else ""
+            req = ',"isRequired":true' if field.get("isRequired") else ""
             lines.append(f"- [ ] Add **`{entity['name']}.{field['name']}`** → choice set "
                          f"`{field['choiceSet']}`"
                          f"{' (required)' if field.get('isRequired') else ''}")
@@ -215,7 +215,7 @@ def open_items_text(model, solution):
             display = target.get("displayField") or "<CHOOSE A DISPLAY FIELD — none proposed>"
             lines.append(f"- [ ] Add **`{entity['name']}.{rel['name']}`** → `{rel['target']}`, "
                          f"displaying `{display}`")
-            req = ',\\"isRequired\\":true' if rel.get("isRequired") else ""
+            req = ',"isRequired":true' if rel.get("isRequired") else ""
             lines.append(f"      `uip df entities update <{entity['name']}-id> --body "
                          f"'{{\"addFields\":[{{\"name\":\"{rel['name']}\","
                          f"\"type\":\"RELATIONSHIP\","
