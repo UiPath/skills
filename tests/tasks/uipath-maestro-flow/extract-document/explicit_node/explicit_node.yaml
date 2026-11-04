@@ -2,9 +2,9 @@ task_id: skill-flow-extract-document-explicit-node
 description: >
   Smoke: the user asks for the Extract document node by name. Tests that the
   agent adds `uipath.ixp.extract-document-builder` rather than a published IXP
-  model node, points its `fileRef` at a declared file input, wires it from the
-  trigger, and leaves a flow that validates in a project without builder-SDK
-  source, without starting an IXP project.
+  model node, points its `fileRef` at a declared file input, wires an edge into
+  it, and leaves a flow that validates in a project without builder-SDK source,
+  without starting an IXP project.
 
   Graded on the final `.flow`, so a node that a compile from `.flow-sdk/`
   source drops counts as missing; a `.flow-sdk/` left beside the flow fails

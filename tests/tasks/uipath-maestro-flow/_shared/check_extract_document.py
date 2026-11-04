@@ -35,7 +35,7 @@ EXTRACT_NODE_TYPE = "uipath.ixp.extract-document-builder"
 IXP_NODE_PREFIX = "uipath.ixp."
 
 
-def _expression(value: object) -> str:
+def _extract_expression(value: object) -> str:
     """The ``$vars`` expression of a ``=js:`` string or a ``jsExpression`` object."""
     if isinstance(value, dict) and value.get("type") == "jsExpression":
         value = value.get("expression")
@@ -49,7 +49,7 @@ def check_file_ref(flow: dict, node: dict, _: list[str]) -> str | None:
         if v.get("direction") == "in" and v.get("type") == "file"
     ]
     file_ref = (node.get("inputs") or {}).get("fileRef")
-    if _expression(file_ref) in declared:
+    if _extract_expression(file_ref) in declared:
         return None
     return (
         f"fileRef is {json.dumps(file_ref)}, which reads no declared file input "
