@@ -49,6 +49,8 @@ REGISTRY = {"Data": {"ExtensionTypes": [
     {"ExtensionType": "Intsvc.ActivityExecution", "Label": "Execute connector activity"},
     {"ExtensionType": "Orchestrator.BusinessRules", "Label": "Execute business rule [Preview]"},
     {"ExtensionType": "Maestro.NotificationService", "Label": "Notification service"},
+    {"ExtensionType": "Intsvc.HttpExecution", "Label": "Execute HTTP request (Legacy)"},
+    {"ExtensionType": "BPMN.TimerTrigger", "Label": "Timer trigger", "BpmnElement": "bpmn:StartEvent"},
     {"ExtensionType": "Maestro.CaseManagerPlaceholder", "Label": "Case manager placeholder"},
     {"ExtensionType": "BPMN.Variables", "Label": "BPMN Variables"},
 ]}}
@@ -56,34 +58,47 @@ REGISTRY = {"Data": {"ExtensionTypes": [
 
 class KindTests(unittest.TestCase):
     def setUp(self):
-        self.toolbox, self.case_only = kinds.kind_sets(REGISTRY["Data"]["ExtensionTypes"])
+        self.toolbox, self.dropped, self.table_labels = kinds.kind_sets(REGISTRY["Data"]["ExtensionTypes"])
 
     def check(self, boxes):
-        return kinds.check(boxes, self.toolbox, self.case_only)
+        return kinds.check(boxes, self.toolbox, self.dropped, self.table_labels)
 
     def test_table_kinds_and_other_labels_pass(self):
         self.assertEqual(self.check(BOXES + ["Score risk [Business rule]",
                                              "Classify [RPA workflow] → Classification",
                                              "Review [action app]",
-                                             "Notify [Execute connector activity]",
+                                             "Post to the channel [Slack]",
+                                             "Send the mail [Outlook]",
+                                             "Notify the owner [Connector]",
+                                             "Open ticket [Jira] → TicketId",
                                              "Start child [Maestro Flow]"]), [])
 
     def test_long_label_of_a_table_type_fails(self):
-        errors = self.check(["Score risk [Execute business rule [Preview]]", "Review [Create action app task]"])
-        self.assertEqual(len(errors), 2, errors)
+        errors = self.check(["Score risk [Execute business rule [Preview]]", "Review [Create action app task]",
+                             "Notify [Execute connector activity]"])
+        self.assertEqual(len(errors), 3, errors)
         self.assertTrue(all("neither a toolbox kind" in e for e in errors), errors)
 
     def test_box_without_a_kind_fails(self):
         self.assertTrue(self.check(["Record invoice"]))
 
-    def test_invented_kind_fails(self):
-        errors = self.check(["Send summary [Email]"])
-        self.assertIn("neither a toolbox kind", errors[0])
+    def test_app_name_for_a_connector_box_passes(self):
+        self.assertEqual(self.check(["Post [Slack]", "Mail [Microsoft Outlook 365]", "Notify [Connector]"]), [])
+
+    def test_long_or_empty_kind_fails(self):
+        errors = self.check(["Send summary [Send the summary to the team]", "Send [ ]"])
+        self.assertEqual(len(errors), 2, errors)
+        self.assertTrue(all("neither a toolbox kind" in e for e in errors), errors)
+
+    def test_types_the_1a_filter_drops_fail(self):
+        errors = self.check(["Call API [Execute HTTP request (Legacy)]", "Wait [Timer trigger]"])
+        self.assertEqual(len(errors), 2, errors)
+        self.assertTrue(all("filter drops" in e for e in errors), errors)
 
     def test_case_only_type_fails(self):
         errors = self.check(["Tell the manager [Notification service]", "Hold [Case manager placeholder]"])
         self.assertEqual(len(errors), 2)
-        self.assertTrue(all("case-management" in e for e in errors), errors)
+        self.assertTrue(all("filter drops" in e for e in errors), errors)
 
     def test_cli_entry_point_on_a_skeleton(self):
         bpmn = """<?xml version="1.0" encoding="UTF-8"?>
@@ -100,7 +115,7 @@ class KindTests(unittest.TestCase):
             (Path(d) / "reg.json").write_text(json.dumps(REGISTRY))
             with _cwd(d):
                 self.assertEqual(kinds.main(["P", "--registry-json", "reg.json"]), 0)
-                (Path(d) / "P" / "P.bpmn").write_text(bpmn.replace("[Action app]", "[Approval]"))
+                (Path(d) / "P" / "P.bpmn").write_text(bpmn.replace("[Action app]", "[Create action app task]"))
                 self.assertEqual(kinds.main(["P", "--registry-json", "reg.json"]), 1)
 
 

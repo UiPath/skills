@@ -6,11 +6,15 @@ Usage (cwd = sandbox root): check_skeleton_kinds.py <ProjectName> [--registry-js
 Phase 2 labels every box ``<action> [<kind>]``. The kind is the short name
 Studio Web's BPMN toolbox shows, from the skill's "Toolbox kinds" table
 (phase-2-skeleton-guide.md) for the types that table lists, and the type's
-registry ``Label`` for every other type. This passes when every task box
-carries a bracketed kind and each one is such a name. It fails on a box with
-no kind, on a name that is neither (an invented or paraphrased one, or the
-long ``Label`` of a type the table names), and on a case-management-only
-type (the ones 1a's filter drops), which the BPMN toolbox does not offer.
+registry ``Label`` for every other type. A connector box
+(``Intsvc.ActivityExecution``) is labeled with the app it calls (``Slack``,
+``Outlook``, ``Jira``), or ``Connector`` when no app is named; app names are
+open-ended, so any short bracket text that is not another type's name passes
+as one. This passes when every task box carries a bracketed kind and each one
+is such a name. It fails on a box with no kind, on the long ``Label`` of a type
+the table names, and on a type 1a's filter drops (case management, A2A, the
+legacy HTTP request and external agents, and non-task elements such as
+triggers), which the BPMN toolbox does not offer.
 
 The table is embedded below (TOOLBOX_KINDS), not parsed from the skill: the
 grader cannot assume where an agent harness installed the skill, and the
@@ -51,6 +55,13 @@ REGISTRY_TIMEOUT_SECONDS = 30
 CASE_ONLY_EXACT = {"Maestro.UpdateCaseState", "Maestro.RetrieveCaseState", "Maestro.NotificationService",
                    "Maestro.AcquireLock", "Maestro.ReleaseLock", "BPMN.Variables", "uipath:Activity"}
 CASE_ONLY_PREFIX = "Maestro.Case"
+# SKILL.md 1a also drops these (A2A, the legacy HTTP request, the older
+# external agents) and keeps only task / call-activity elements.
+OTHER_DROPPED_EXACT = {"A2A.AgentExecution", "Intsvc.HttpExecution", "Intsvc.SyncAgentExecution",
+                       "Intsvc.AsyncAgentExecution", "Intsvc.SyncWorkflowExecution"}
+CONNECTOR_TYPE = "Intsvc.ActivityExecution"
+CONNECTOR_KIND = "Connector"
+MAX_APP_NAME_WORDS = 3
 
 # phase-2-skeleton-guide.md "Toolbox kinds": the toolbox's short name for
 # these types, used instead of their registry Label.
@@ -61,6 +72,7 @@ TOOLBOX_KINDS = {
     "Orchestrator.ExecuteApiWorkflowAsync": "API workflow",
     "Orchestrator.ExecuteFunctionAsync": "Function",
     "Orchestrator.BusinessRules": "Business rule",
+    CONNECTOR_TYPE: CONNECTOR_KIND,
     "Orchestrator.StartAgenticProcess": "Maestro BPMN",
     "Orchestrator.StartAgenticProcessAsync": "Maestro BPMN",
     "Orchestrator.StartCaseMgmtProcess": "Maestro Case",
@@ -81,6 +93,15 @@ def _norm(text: str) -> str:
 
 def is_case_only(extension_type: str) -> bool:
     return extension_type.startswith(CASE_ONLY_PREFIX) or extension_type in CASE_ONLY_EXACT
+
+
+def is_dropped(t: dict) -> bool:
+    """True for a type 1a's filter drops: case-only, A2A/legacy, or not a task element."""
+    ext = t.get("ExtensionType") or ""
+    if is_case_only(ext) or ext in OTHER_DROPPED_EXACT:
+        return True
+    element = t.get("BpmnElement")
+    return bool(element) and not (element.endswith("Task") or element == "bpmn:CallActivity")
 
 
 def load_registry(saved: str | None) -> list[dict]:
@@ -105,25 +126,30 @@ def load_registry(saved: str | None) -> list[dict]:
     return types
 
 
-def kind_sets(types: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
-    """(toolbox kinds, case-only kinds), each mapping normalized text -> display text.
+def kind_sets(types: list[dict]) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    """(toolbox kinds, dropped kinds, table types' long Labels), each normalized text -> display text.
 
-    A type the table lists contributes only its table kind; any other type
-    contributes its registry Label. The table's kinds are allowed even when
-    the installed CLI does not list the type.
+    A type the table lists contributes only its table kind (its registry Label
+    goes in the third map); any other type contributes its registry Label,
+    to the dropped map when 1a's filter drops it. The table's kinds are
+    allowed even when the installed CLI does not list the type.
     """
     toolbox: dict[str, str] = {_norm(k): k for k in TOOLBOX_KINDS.values()}
-    case_only: dict[str, str] = {}
+    dropped: dict[str, str] = {}
+    table_labels: dict[str, str] = {}
     for t in types:
         ext = t.get("ExtensionType") or ""
-        if ext in TOOLBOX_KINDS:
-            continue
         label = t.get("Label")
-        if label:
-            (case_only if is_case_only(ext) else toolbox).setdefault(_norm(label), label)
+        if not label:
+            continue
+        if ext in TOOLBOX_KINDS:
+            table_labels.setdefault(_norm(label), label)
+        else:
+            (dropped if is_dropped(t) else toolbox).setdefault(_norm(label), label)
     for key in toolbox:
-        case_only.pop(key, None)
-    return toolbox, case_only
+        dropped.pop(key, None)
+        table_labels.pop(key, None)
+    return toolbox, dropped, table_labels
 
 
 def bracket_candidates(name: str) -> list[str]:
@@ -150,7 +176,9 @@ def find_bpmn(name: str) -> str:
     return chosen[0]
 
 
-def check(boxes: list[str], toolbox: dict[str, str], case_only: dict[str, str]) -> list[str]:
+def check(boxes: list[str], toolbox: dict[str, str], dropped: dict[str, str],
+          table_labels: dict[str, str] | None = None) -> list[str]:
+    table_labels = table_labels or {}
     errors = []
     for box in boxes:
         candidates = bracket_candidates(box)
@@ -159,12 +187,17 @@ def check(boxes: list[str], toolbox: dict[str, str], case_only: dict[str, str]) 
             continue
         if any(_norm(c) in toolbox for c in candidates):
             continue
-        shown = candidates[-1]
-        hit = next((case_only[_norm(c)] for c in candidates if _norm(c) in case_only), None)
+        hit = next((dropped[_norm(c)] for c in candidates if _norm(c) in dropped), None)
         if hit:
-            errors.append(f"box {box!r} uses {hit!r}, a case-management type the BPMN toolbox does not offer")
-        else:
-            errors.append(f"box {box!r}: {shown!r} is neither a toolbox kind from the table nor a `registry list` Label")
+            errors.append(f"box {box!r} uses {hit!r}, a type 1a's filter drops that the BPMN toolbox does not offer")
+            continue
+        # Anything else must be a connector box's app name: the longest
+        # bracket suffix, short, and not the long Label of a table type.
+        longest = candidates[0].strip()
+        if _norm(longest) in table_labels or not longest or len(longest.split()) > MAX_APP_NAME_WORDS \
+                or "[" in longest:
+            errors.append(f"box {box!r}: {longest!r} is neither a toolbox kind from the table, a `registry list` "
+                          "Label, nor a short app name for a connector box")
     return errors
 
 
@@ -185,11 +218,11 @@ def main(argv: list[str]) -> int:
     if not boxes:
         fail(f"{path} has no task boxes")
 
-    toolbox, case_only = kind_sets(load_registry(args.registry_json))
-    errors = check(boxes, toolbox, case_only)
+    toolbox, dropped, table_labels = kind_sets(load_registry(args.registry_json))
+    errors = check(boxes, toolbox, dropped, table_labels)
     if errors:
         print("FAIL:\n" + "\n".join(f"  - {e}" for e in errors))
-        print("toolbox kinds: " + ", ".join(sorted(toolbox.values())))
+        print("toolbox kinds: " + ", ".join(sorted(toolbox.values())) + " (or the app name, for a connector box)")
         return 1
     print(f"OK: {len(boxes)} box(es) in {path} carry toolbox kinds: {boxes}")
     return 0

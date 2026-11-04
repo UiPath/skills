@@ -129,7 +129,7 @@ success_criteria:
   - type: command_not_executed
     description: "Every resource lookup is filtered with --search"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+list\b(?!(?:[^;&|\n]|\\\n|(?<= )\n)*--search)'
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+list\b(?!(?:"[^"\n]*"|''[^''\n]*''|[^;&|\n]|\\\n|(?<= )\n)*--search)'
     weight: 1.0
     pass_threshold: 1.0
 
@@ -176,8 +176,9 @@ success_criteria:
       2. The second line is an `https://` link to the solution in Studio Web
          (bare or as a markdown link), and nothing else.
       3. Then at most five lines starting with `- `, each one change.
-      4. Then optionally `Assumed:` and `Unverified:` lines (on one line or
-         two), and nothing after them.
+      4. Then optionally `Needs:`, `Assumed:` and `Unverified:` lines, in
+         that order (each on its own line, or the last two on one line), and
+         nothing after them.
       5. No other line exists in the graded text: no status sentence, no
          heading, no table, no numbered list, no suggested next steps, and no
          question to the user (no line ending in `?`).
