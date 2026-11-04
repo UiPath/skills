@@ -501,7 +501,6 @@ Upload a packed solution `.zip` to UiPath Pipelines for tenant deployment.
 
 ```bash
 uip solution publish <packagePath> \
-  [--tenant <tenant-name>] \
   [--login-validity <minutes>] \
   [--output json]
 ```
@@ -509,8 +508,9 @@ uip solution publish <packagePath> \
 | Argument / Flag | Required | Description |
 |-----------------|----------|-------------|
 | `<packagePath>` | yes | Path to `.zip` from `uip solution pack`. Non-zip files reject. |
-| `-t, --tenant <tenant>` | no | Tenant name. Defaults to the tenant chosen during `uip login`. |
 | `--login-validity <minutes>` | no | Min minutes before token refresh. Default `10`. |
+
+Publishes to the tenant of the current login; there is no tenant option. To publish elsewhere, run `uip login tenant set "<TENANT_NAME>" --output json` first.
 
 Requires `uip login`. Failure modes:
 - `"File not found: <path>"`
