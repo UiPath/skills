@@ -373,7 +373,7 @@ Studio expects every body/branch slot to be a `<Sequence>` drop zone, even for o
 | `TryCatch` | `TryCatch.Try` | `<Sequence DisplayName="Try">` |
 | `TryCatch` | each `Catch` → `ActivityAction<T>` body | `<Sequence DisplayName="Catch">` |
 | `TryCatch` | `TryCatch.Finally` | `<Sequence DisplayName="Finally">` |
-| `Switch<T>` | `Switch.Default`, each `<x:String x:Key="...">` case | `<Sequence>` per case |
+| `Switch<T>` | `Switch.Default`, each case | `<Sequence>` per slot; a case's `Sequence` carries `x:Key="..."` |
 | `Pick` | each `PickBranch.Trigger`, `PickBranch.Action` | `<Sequence>` per slot |
 | `NApplicationCard` | `Body` → `ActivityAction<...>` | `<Sequence DisplayName="Do">` |
 | Any activity with `Body` typed `Activity` | body | `<Sequence>` |

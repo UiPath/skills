@@ -8,7 +8,7 @@ Per-operation and per-activity catalogs for XAML authoring: editing operations (
 
 ### Adding Arguments (In/Out/InOut)
 
-Add `x:Property` elements inside `<x:Members>` with `InArgument`, `OutArgument`, or `InOutArgument`; prefix names `in_`, `out_`, or `io_`:
+Add `x:Property` elements inside `<x:Members>` with `InArgument`, `OutArgument`, or `InOutArgument`, named per SKILL.md Common Rule 4c:
 
 ```xml
 <x:Members>
@@ -164,9 +164,6 @@ VB project with core workflow activities. Shows If/Then/Else branching and Assig
   xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
   xmlns:ui="http://schemas.uipath.com/workflow/activities"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <x:Members>
-    <x:Property Name="isWeekend" Type="InArgument(x:String)" />
-  </x:Members>
   <VisualBasic.Settings>
     <x:Null />
   </VisualBasic.Settings>

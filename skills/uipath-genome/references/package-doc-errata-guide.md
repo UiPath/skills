@@ -7,6 +7,7 @@ The owning skill's contract reads the installed package's per-activity doc for e
 | Activity | Installed doc says | The activity does |
 |---|---|---|
 | Log Message, Message Box | the example sets `Message` / `Text` (`InArgument<Object>`) as an attribute | An attribute value on an `InArgument<Object>` is compiled as a VB expression. A C# library compiles only C# expressions, so every consumer fails at run time with ``…'VisualBasicValue`1 (…)' requires compilation in order to run``, while the library validates, builds and packs. In a C# project the value goes in element form: `<InArgument x:TypeArguments="x:Object"><CSharpValue x:TypeArguments="x:Object">"text"</CSharpValue></InArgument>` |
+| Add Log Fields | fields "persist for the lifetime of the workflow execution until explicitly removed" | A field added in an invoked workflow ends when that workflow returns; one added in the entry workflow is on the messages of every workflow it invokes, during the invoke and after it. A field of the whole run is added in the entry workflow |
 | Set Transaction Status | `Output` and `Analytics` take inline key-value data, with no limit on the keys | A key named like one of the activity's own arguments (`Status`, `Reason`, `Details`, `ErrorType`, `TransactionItem`, …) fails validation (`A variable, RuntimeArgument or a DelegateArgument already exists with the name '<key>'`); such keys go through `OutputVariable` or `AnalyticsVariable`, which accept any key |
 
 ## `UiPath.System.Activities` — docs shipped with 26.8.2 and earlier
