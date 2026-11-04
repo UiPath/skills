@@ -47,10 +47,11 @@ uip or jobs stop <jobId> --output json                  # cancel a running job
 
 ## Diagnose a failed cloud run
 
-The local diagnose loop catches structure/expression faults **before** publish — always run it first:
+The local diagnose loop catches structure/expression faults **before** publish. Always validate first; run only after consent (SKILL.md rule 21):
 
 ```bash
 uip api-workflow validate ./Workflow.json --output json   # static: schema + semantic
+# Ask for consent, then run if approved:
 uip api-workflow run ./Workflow.json --no-auth --output json  # runtime: expression / logic
 ```
 
@@ -84,5 +85,5 @@ Map the surfaced error back to a fix using the category catalog in [troubleshoot
 |------|--------------------------|-------------------------|
 | **Build** | `init`, edit, `validate`, `registry resolve`/`stub`, `pack` | — |
 | **Operate** | `run` (local execution) | `uip or jobs start <process-key>`/`list`/`stop`, `uip or triggers` (need `--folder-path`/`--folder-key`), `uip is connections` |
-| **Diagnose** | `validate` → `run --no-auth` loop, `uip is connections ping` | `uip or jobs get` — `Data.Info` carries the fault; `jobs logs` and `traces spans get` do NOT work for API-workflow jobs. Then uipath-troubleshoot |
+| **Diagnose** | `validate` → `run --no-auth` loop (run after consent), `uip is connections ping` | `uip or jobs get` — `Data.Info` carries the fault; `jobs logs` and `traces spans get` do NOT work for API-workflow jobs. Then uipath-troubleshoot |
 <!--skill-flavor:published-operations:end-->

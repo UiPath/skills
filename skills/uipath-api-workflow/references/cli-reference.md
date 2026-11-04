@@ -541,7 +541,7 @@ cd ./MySolution
 uip api-workflow init MyApiProject --output json
 # ... edit MyApiProject/Workflow.json to add tasks ...
 
-# 2. Local smoke test
+# 2. Local smoke test — ask for consent, then run if approved
 uip api-workflow run ./MyApiProject/Workflow.json --no-auth --output json
 
 # 3. Authenticate (only needed for publish / deploy)
