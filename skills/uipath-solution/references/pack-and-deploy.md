@@ -182,34 +182,6 @@ uip or packages upload "<TESTS_NUPKG_PATH>" --folder-path "<FOLDER_PATH>" --outp
 `<FOLDER_PATH>` is the `Data.FolderPath` that `deploy run` returned. Orchestrator creates the testing process from the upload, so skip `uip or processes create`: it is refused (`A testing process already exists for this package`).
 <!--skill-flavor:tests-upload:end-->
 
-### A folder with no runtime for a process
-
-On newer CLI builds, once the package is installed, `deploy run` (and `deploy upgrade`) checks that the deployment's folder has a runtime its processes can start on. The check counts machines the folder inherits from its parents. Only the processes whose jobs need something in the folder are checked:
-
-| Process type | Starts on (any one, with slots in the folder) |
-|---|---|
-| RPA process, web app | Serverless, Unattended, NonProduction, TestAutomation, AutomationCloud, AutomationCloudTestAutomation, AppTest, PerformanceTest (plus Development in a Personal Workspace) |
-| Test case | Serverless, ServerlessTestAutomation, TestAutomation, AutomationCloud, AutomationCloudTestAutomation, AppTest, Unattended |
-| MCP server | Serverless |
-
-Agents, flows, API workflows, functions, cases, business rules and BPMN processes are not checked: Orchestrator picks a tenant machine for their jobs when they start.
-
-Each process the folder cannot run is one line in `Data.Warnings`, also printed on stderr:
-
-```text
-Folder 'Shared/MySolutionFolder' has no runtime for the Process process 'InvoiceBot', so its jobs will not start: ... Check with: uip or folders runtimes --folder-path 'Shared/MySolutionFolder'
-```
-
-The run is still `Result: Success` with its usual exit code. The deployment exists, so do **not** deploy again; fix the folder instead:
-
-```bash
-uip or machines list --output json                                   # pick a machine with Unattended slots (or the serverless machine)
-uip or machines assign "<MACHINE_KEY>" --folder-path "<FOLDER_PATH>" --output json
-uip or folders runtimes --folder-path "<FOLDER_PATH>" --process-type Process --output json   # Total > 0 now
-```
-
-`<FOLDER_PATH>` is the `Data.FolderPath` the deploy returned. When the check itself cannot run — the login cannot read the folder's runtimes (an external app without the `OR.Machines` scope, say) or the folder lookup fails — the single `Data.Warnings` line starts `Could not check that folder ...` and gives the reason. Run `uip or folders runtimes` yourself before you rely on the folder. `Data.Warnings` is absent when there is nothing to report.
-
 To skip auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`):
 
 ```bash
@@ -239,6 +211,34 @@ Key options:
 On successful `deploy run`, `Data.OrchestratorUrl` opens the deployment overview in Orchestrator's Solutions tab. `Data.FolderUrl` opens the automations page in the installed solution folder when its key is known. With `--log-level info`, the CLI also writes `Deployed: <OrchestratorUrl>` to stderr through the logger, or to the configured log file.
 
 Use the returned links: they use the session's base URL, organization name and tenant name, and select the right tenant or folder feed. Browser routes are `orchestrator_/solutions-management` and `orchestrator_/folder-solutions-management`; `automationsolutions_` serves the API and remote module, and the deprecated `solutions_` route does not work. If the deployment key is unavailable, the link opens the feed's Solutions tab. A missing folder key omits `FolderUrl`; missing browser session coordinates or a URL construction error omit both links without changing the deploy result. If links are absent, direct the user to Orchestrator → Tenant (or the target folder feed) → Solutions → Deployments; never construct a URL by hand.
+
+### A folder with no runtime for a process
+
+On newer CLI builds, once the package is installed, `deploy run` (and `deploy upgrade`) checks that the deployment's folder has a runtime its processes can start on. The check counts machines the folder inherits from its parents. Only the processes whose jobs need something in the folder are checked:
+
+| Process type | Starts on (any one, with slots in the folder) |
+|---|---|
+| RPA process, web app | Serverless, Unattended, NonProduction, TestAutomation, AutomationCloud, AutomationCloudTestAutomation, AppTest, PerformanceTest (plus Development in a Personal Workspace) |
+| Test case | Serverless, ServerlessTestAutomation, TestAutomation, AutomationCloud, AutomationCloudTestAutomation, AppTest, Unattended |
+| MCP server | Serverless |
+
+Agents, flows, API workflows, functions, cases, business rules and BPMN processes are not checked: Orchestrator picks a tenant machine for their jobs when they start.
+
+Each process the folder cannot run is one line in `Data.Warnings`, also printed on stderr:
+
+```text
+Folder 'Shared/MySolutionFolder' has no runtime for the Process process 'InvoiceBot', so its jobs will not start: ... Check with: uip or folders runtimes --folder-path 'Shared/MySolutionFolder'
+```
+
+The run is still `Result: Success` with its usual exit code. The deployment exists, so do **not** deploy again; fix the folder instead:
+
+```bash
+uip or machines list --output json                                   # pick a machine with slots of a type from the table row for the warned process
+uip or machines assign "<MACHINE_KEY>" --folder-path "<FOLDER_PATH>" --output json
+uip or folders runtimes --folder-path "<FOLDER_PATH>" --process-type "<PROCESS_TYPE>" --output json   # that type's row now has Total > 0
+```
+
+`<FOLDER_PATH>` is the `Data.FolderPath` the deploy returned. `<PROCESS_TYPE>` is the type the warning names (`Process` for an RPA process, `WebApp`, `TestAutomationProcess`, `MCPServer`). Pick the machine by that row of the table: Unattended or serverless slots for an RPA process or web app, test slots (TestAutomation, ServerlessTestAutomation, AppTest) or Unattended for a test case, the serverless machine for an MCP server. When the check itself cannot run — the login cannot read the folder's runtimes (an external app without the `OR.Machines` scope, say) or the folder lookup fails — the single `Data.Warnings` line starts `Could not check that folder ...` and gives the reason. Run `uip or folders runtimes` yourself before you rely on the folder. `Data.Warnings` is absent when there is nothing to report.
 
 ### A deploy that stops in `Draft`
 
