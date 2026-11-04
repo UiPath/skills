@@ -404,6 +404,8 @@ Wraps activities in error handling.
 
 **Required fields:** `try` (array of activities), `catch.as` (error variable name), `catch.do` (array of error-handling activities), `export.as`, `metadata`
 
+**Optional:** `catch.retry` — retry policy that re-runs the whole `try` list before `catch.do` runs (Studio Web **Retry** section). See [Retry](#retry-catchretry) below.
+
 **Export pattern:**
 ```
 { ...$context, outputs: { ...$context?.outputs, "Try_Catch_N": $output } }
@@ -441,16 +443,38 @@ Wraps activities in error handling.
 The bound value is a **ProblemDetails-shaped object**, NOT a JavaScript Error. Useful keys:
 - `$error.title` — short message (e.g., `"Worker operation failed: <user error message>"`)
 - `$error.detail` — full detail including stack trace
-- `$error.status` — HTTP-style status code (`500` for runtime errors, `400` for validation)
+- `$error.status` — the **real HTTP status** (`404`, `429`, `503`, …) when an HTTP, Connector, or Connector-event call failed; otherwise an HTTP-style code (`500` for runtime errors, `400` for validation)
+- `$error.data.cause` — full failed HTTP response, for HTTP / Connector failures
 - `$error.originatingTaskName` — which task threw
 - `$error.type` — RFC 7807 error type URL
 
 There is **no** `.message` / `.name` / `.stack` property — those would return `undefined`. Always use `.title` or `.detail` for the human-readable text.
 
+### Retry (`catch.retry`)
+
+Retry section on: `catch` gets `retry` beside `as` and `do`. Studio Web writes this exact shape (defaults shown) and no `when`, so every caught error is retried:
+
+```json
+"catch": {
+  "as": "error",
+  "retry": { "delay": { "milliseconds": 1000 }, "backoff": { "constant": {} }, "limit": { "attempt": { "count": 3 } } },
+  "do": [ ... ]
+}
+```
+
+- `limit.attempt.count` counts retries after the first failure; `backoff` is `constant`, `linear`, or `exponential` (each `{}`).
+- Optional `"when": "${ [429, 503].includes($error.status) }"` restricts retries; use the catch's own `as` name.
+- `catch.do` runs once, after retries are exhausted or `when` rejects the error.
+- The policy replaces workflow-level `httpRetryConfig` for every call inside `try`.
+
+**HTTP Request with Retry.** Studio Web stores an HTTP Request whose own Retry section is on as a `try` task keyed `<id>#Retry`: `try` holds only the call, `catch` is `{ "as": "__retryError", "retry": { "when": <status filter>, ... } }` with **no `do`**, and the wrapper carries the HTTP Request `metadata`. It is not a Try/Catch activity: keep it as is, never add `catch.do`. Full shapes, defaults, precedence, and the validator gap: [http-retry-config.md](http-retry-config.md#task-level-retry-catchretry).
+
 **Common mistakes:**
 - Missing `catch.as`
 - Empty `catch.do` without any error handling
 - Forgetting the export on the TryCatch wrapper itself
+- Putting `retry` on the inner activity, or at the TryCatch top level, instead of in `catch`
+- Retrying a non-idempotent POST / PUT / DELETE without confirming duplicate side effects are acceptable
 
 **Nesting:**
 - **TryCatch around a loop:** wraps the entire loop. If any iteration throws, the loop stops and execution jumps to `catch.do`. Use this when one bad item should abort the whole batch.

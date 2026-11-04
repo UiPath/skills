@@ -45,7 +45,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 2. **WorkflowStart.** It is first in the root sequence, hydrates variable defaults into `$context.variables`, forwards inputs to `$input`, and must not be removed, renamed, or modified. Only it uses `isTransparent: true`.
 
-3. **Activity objects and keys.** Each activity is one single-key object in a `do` array. Keys are globally unique, including wrapper suffixes such as `#Wrapper`, `#Then`, `#Else`, and `#Body`.
+3. **Activity objects and keys.** Each activity is one single-key object in a `do` array. Keys are globally unique, including wrapper suffixes such as `#Wrapper`, `#Then`, `#Else`, `#Body`, and `#Retry`.
 
 4. **Exports.** Every activity except Log Message should export output. Assign uses `{ ...$context, variables: { ...$context.variables, ...$output } }`; all others use `{ ...$context, outputs: { ...$context?.outputs, "<ActivityKey>": $output } }`. See [references/expressions-and-context.md](references/expressions-and-context.md).
 
@@ -133,6 +133,13 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 <!--skill-flavor:file-run-cli:end-->
     Shapes, worked examples, and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
 
+24. **Per-activity retry is `catch.retry` on a `try` task — never a `retry` key on the activity.** Two Studio Web shapes:
+    - **Try/Catch with Retry:** `catch` gets `retry` (`delay`, `backoff`, `limit.attempt.count`) beside `as` and `do`; the whole `try` block re-runs, then `catch.do` gets the last error.
+    - **HTTP Request with Retry:** the call is wrapped in a `try` task keyed `<id>#Retry` with display `metadata`, `catch.as: "__retryError"`, a `retry` whose `when` is the status filter, and **no `catch.do`**; exhausted retries fail like the bare call. Preserve existing wrappers. Until `validate` accepts the wrapper, author new HTTP retries as a Try/Catch with retry.
+    - Defaults: 3 retries, 1000 ms, constant backoff; HTTP Request filters on `[408, 429, 500, 502, 503, 504]`. `$<catch.as>.status` is the real HTTP status.
+    - A retrying `try` **replaces** `httpRetryConfig` for every call inside it; they never stack. Task-level retry also re-sends POST/PUT/DELETE — confirm idempotency.
+    - Shapes, precedence, runtime behavior, and the known `#Retry` validator errors: [references/http-retry-config.md](references/http-retry-config.md).
+
 ## Workflow Phases
 
 ### Phase 0: Discovery
@@ -206,7 +213,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 | File | Use |
 |---|---|
 | [references/workflow-file-format.md](references/workflow-file-format.md) | JSON skeleton, schemas, variables, `WorkflowStart`, Studio Web structure |
-| [references/http-retry-config.md](references/http-retry-config.md) | Workflow-level HTTP retry/backoff |
+| [references/http-retry-config.md](references/http-retry-config.md) | Retries: task-level `catch.retry` (Try/Catch and HTTP Request `#Retry`), workflow-level `httpRetryConfig`, precedence, backoff |
 | [references/task-types.md](references/task-types.md) | Activity shapes, required fields, exports, mistakes |
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Nested If, loops, TryCatch, Break, branching, key uniqueness |
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — discovery flow, connection verification, field-shape rules, paging, multipart |
@@ -235,6 +242,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 <!--skill-flavor:template-execution-proof:start-->
 - [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) — registry-generated HTTP with `ImplicitConnection`.
 <!--skill-flavor:template-execution-proof:end-->
+- [assets/templates/retry-http-request-example.json](assets/templates/retry-http-request-example.json) — HTTP Request retried on 429/503 by a Try/Catch with `catch.retry`, recording the final status in `catch.do` (rule 24).
 - [assets/templates/vendor-curated-call-example.json](assets/templates/vendor-curated-call-example.json) — IntSvc activity; replace its connection sentinel before writing.
 <!--skill-flavor:solution-resource-template:start-->
 - [assets/templates/solution-connection-resource-template.json](assets/templates/solution-connection-resource-template.json) — Solutions-mode IntSvc connection resource.
