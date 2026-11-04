@@ -47,9 +47,9 @@
 <!--skill-flavor:login-status-check:end-->
 
 <!--skill-flavor:wellformed-check:start-->
-   The sandbox has no `python3`, so `validate` is the parse check: a
-   `ParseError` or `XML_NOT_WELL_FORMED` finding is a source defect to fix
-   before anything else. Run the CLI validator, which runs the full
+   The sandbox has no `python3`, so `validate` is the parse check: an
+   `XML_NOT_WELL_FORMED` finding is a source defect to fix before anything
+   else. Run the CLI validator, which runs the full
    PO.Frontend canvas rule set (structural rules plus variable, method-call,
    input-type, and event-object checks) offline, plus deploy-readiness checks:
 

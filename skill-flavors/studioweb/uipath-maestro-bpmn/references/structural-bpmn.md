@@ -7,6 +7,6 @@
 
 <!--skill-flavor:wellformed-parse:start-->
 The sandbox has no `python3`: do not run a separate XML parse. `validate` is
-the parse check, and a `ParseError` or `XML_NOT_WELL_FORMED` finding is a
-source defect to fix before anything else.
+the parse check, and an `XML_NOT_WELL_FORMED` finding is a source defect to
+fix before anything else.
 <!--skill-flavor:wellformed-parse:end-->
