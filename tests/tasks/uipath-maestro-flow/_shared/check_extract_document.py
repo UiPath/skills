@@ -3,6 +3,7 @@
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow <NAME> <CHECK> [--only] [VALUE ...]
+    python3 $REFERENCE_DIR/_shared/check_extract_document.py no-node
 
 ``--flow NAME`` selects the discovered ``NAME.flow`` (discovery is
 :func:`flow_check.find_flow_files`, as in ``flow_contains.py --flow-name``).
@@ -25,6 +26,9 @@ Checks:
     defs                 the six built-in field types are still in $defs; with
                          --only, $defs holds nothing else
     node                 the flow holds an Extract document node
+    no-node              no .flow anywhere in the sandbox holds an Extract
+                         document node; takes no --flow, and passes when no
+                         .flow was built
     no-other-ixp         no other uipath.ixp.* node: no published model, no
                          processor, no second Extract document node
     file-ref             the node's fileRef reads a file input that
@@ -52,7 +56,7 @@ import sys
 from functools import cached_property
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from flow_check import find_flow_files  # noqa: E402
+from flow_check import _rglob_pruned, find_flow_files  # noqa: E402
 
 EXTRACT_NODE_TYPE = "uipath.ixp.extract-document-builder"
 IXP_NODE_PREFIX = "uipath.ixp."
@@ -70,6 +74,7 @@ VALIDATE_TIMEOUT_SECONDS = 150
 FIELD_KEYS = {"name", "type", "says", "group", "id", "repeats"}
 PATTERN_KEYS = ("name", "says", "group")
 ONLY_CHECKS = ("fields", "defs")
+SANDBOX_CHECKS = ("no-node",)
 
 
 class CheckError(Exception):
@@ -275,6 +280,23 @@ def check_node(flow: Flow, _: argparse.Namespace) -> list[str]:
     return []
 
 
+def check_no_node(_: None, __: argparse.Namespace) -> list[str]:
+    """Every .flow in the sandbox, found the way ``assert_no_flow_files`` scans."""
+    flows = _rglob_pruned("**/*.flow")
+    if not flows:
+        print("note: no .flow in the sandbox, so none holds an Extract document node")
+        return []
+    problems = []
+    for path in flows:
+        nodes = uip("maestro", "flow", "nodes", "list", path).get("Nodes") or []
+        problems += [
+            f"{path} holds {n.get('Id')}, an Extract document node"
+            for n in nodes
+            if n.get("Type") == EXTRACT_NODE_TYPE
+        ]
+    return problems
+
+
 def check_no_other_ixp(flow: Flow, _: argparse.Namespace) -> list[str]:
     under_test = flow.node["Id"]
     return [
@@ -357,6 +379,7 @@ CHECKS = {
     "described": (check_described, False),
     "defs": (check_defs, False),
     "node": (check_node, False),
+    "no-node": (check_no_node, False),
     "no-other-ixp": (check_no_other_ixp, False),
     "file-ref": (check_file_ref, False),
     "edge": (check_edge, True),
@@ -369,13 +392,17 @@ CHECKS = {
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--flow", required=True, help="flow name, without .flow")
+    parser.add_argument("--flow", help="flow name, without .flow (every check but no-node)")
     parser.add_argument("--only", action="store_true", help="fields, defs: and nothing else")
     parser.add_argument("check", choices=sorted(CHECKS))
     parser.add_argument("values", nargs="*")
     args = parser.parse_args(argv)
 
     run, takes_values = CHECKS[args.check]
+    if (args.check in SANDBOX_CHECKS) == (args.flow is not None):
+        need = "takes no --flow" if args.check in SANDBOX_CHECKS else "needs --flow"
+        print(f"FAIL: {args.check} {need}", file=sys.stderr)
+        return 2
     if takes_values != bool(args.values):
         need = "needs values" if takes_values else "takes no values"
         print(f"FAIL: {args.check} {need}", file=sys.stderr)
@@ -392,7 +419,7 @@ def main(argv: list[str]) -> int:
             print(f"FAIL: {exc}", file=sys.stderr)
             return 2
     try:
-        problems = run(Flow(args.flow), args)
+        problems = run(None if args.check in SANDBOX_CHECKS else Flow(args.flow), args)
     except CheckError as exc:
         problems = [str(exc)]
     for problem in problems:

@@ -252,6 +252,40 @@ def test_node(sandbox, monkeypatch, capsys):
     assert "(node types: core.trigger.manual)" in capsys.readouterr().err
 
 
+def _stub_each_flow(monkeypatch, nodes_by_flow):
+    """Answer ``nodes list`` per flow file name."""
+    def fake(*args, timeout=60):
+        assert args[2:4] == ("nodes", "list"), args
+        return {"Nodes": nodes_by_flow[os.path.basename(args[4])]}
+    monkeypatch.setattr(ced, "uip", fake)
+
+
+def test_no_node_passes_when_nothing_was_built(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    assert main(["no-node"]) == 0
+    assert "no .flow in the sandbox" in capsys.readouterr().out
+
+
+def test_no_node_passes_on_flows_without_the_node(sandbox, monkeypatch):
+    _stub_each_flow(monkeypatch, {"InvoiceFields.flow": [{"Id": "mock1", "Type": "core.logic.mock"}]})
+    assert main(["no-node"]) == 0
+
+
+def test_no_node_reads_every_flow_whatever_its_name(sandbox, monkeypatch, capsys):
+    (sandbox.parent.parent / "Scratch.flow").write_text("{}")
+    _stub_each_flow(monkeypatch, {
+        "InvoiceFields.flow": [{"Id": "start", "Type": "core.trigger.manual"}],
+        "Scratch.flow": [{"Id": NODE_ID, "Type": ced.EXTRACT_NODE_TYPE}],
+    })
+    assert main(["no-node"]) == 1
+    assert f"Scratch.flow holds {NODE_ID}, an Extract document node" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("argv", [["--flow", "InvoiceFields", "no-node"], ["described"]])
+def test_flow_is_given_to_every_check_but_no_node(sandbox, argv):
+    assert main(argv) == 2
+
+
 @pytest.mark.parametrize("other", ["uipath.ixp.invoices.1-shared", "uipath.ixp.processor.abc", ced.EXTRACT_NODE_TYPE])
 def test_no_other_ixp_node(sandbox, monkeypatch, capsys, other):
     _stub(monkeypatch)
