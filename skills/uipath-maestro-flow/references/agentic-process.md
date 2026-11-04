@@ -71,8 +71,11 @@ with `form: 'flow'` — set `location: 'in-solution'` and `projectId`, and omit
   inputs: { message: input('who') }, returns: { echoed: 'string' } }))
 ```
 
-- **Where the two ids come from.** Register the sibling and refresh resources
+- **Where the two ids come from.**
+<!--skill-flavor:agentic-sibling-register:start-->
+  Register the sibling and refresh resources
   (`uip solution projects add`, then `uip solution resources refresh`), then
+<!--skill-flavor:agentic-sibling-register:end-->
   run `uip maestro flow registry list --local --output json` from the Flow
   project directory. The generated
   `resources/solution_folder/process/<type>/<Project>.json` carries the same

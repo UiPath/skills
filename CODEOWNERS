@@ -2,8 +2,8 @@
 * @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
 
 # CI workflows and review config
-/.github/ @uipreliga @bai-uipath @akshaylive
-/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive
+/.github/ @uipreliga @bai-uipath @akshaylive @CarlesUIPath
+/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive @CarlesUIPath
 
 # Azure Pipelines (nightly FOSSA scan, release gate that signs the hooks)
 /.pipelines/ @RaduAna-Maria @gabrielavaduva
@@ -127,9 +127,6 @@
 
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
-# Previous Flow generation (JSON authoring), kept only because the Studio Web
-# flavor pins it (skill-flavors/studioweb/uipath-maestro-flow/.canonical).
-/classic/skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team @astridstaicu
 # Flow test tasks (general) — more specific subfolder rules below override this
 /tests/tasks/uipath-maestro-flow/ @UiPath/maestro-cli-team
 /tests/tasks/activation/uipath-maestro-flow.jsonl @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
@@ -190,6 +187,10 @@
 # IXP
 /skills/uipath-maestro-flow/references/ixp.md @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
+
+# Extract document — the node and the taxonomy it carries inline
+/skills/uipath-maestro-flow/references/extract-document-node.md @UiPath/communications-mining @cezara98t @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/extract-document-taxonomy.md @UiPath/communications-mining @cezara98t @UiPath/maestro-cli-team
 
 # Chat — inline conversational agent node + the conversation trigger and message nodes
 /skills/uipath-maestro-flow/references/conversational.md @UiPath/jarvis @UiPath/maestro-cli-team

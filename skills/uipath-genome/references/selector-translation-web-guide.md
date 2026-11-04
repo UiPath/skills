@@ -99,14 +99,14 @@ The column comes from the header caption: `colName` on web (`ui5-colLabel`, `sap
 
 `url` keeps the host and wildcards the path — a host the source reads from configuration (an environment switch) is a selector variable in the screen's scope, bound to that setting's scheme, host and port by an argument of every workflow whose card attaches to the screen, never the value the setting held at build, which stops every attach once the setting points elsewhere.
 
-On a single-page web application, one scope for its tab (rule 9) is the difference between one scope and thirty: the page title changes with every task, so title-derived scopes fragment into `'*App*'`, `'*App *'`, `'*App_Common*'`, `'Create Thing - App'` … each a separate object with its own failure mode, while the host never changed.
+On a single-page web application, one scope for its tab (rule 9) is the difference between one scope and thirty: the page title changes with every task, so titles derived per screen fragment into `'*App*'`, `'*App *'`, `'*App_Common*'`, `'Create Thing - App'` … each a separate object with its own failure mode, while the host never changed. The title's stable part there is the application's word, which every page's title shows, so the tab's one scope carries it. `html`'s `title` is the tab's page title, not the browser window's caption: a window caption the source recorded ends with the browser's name (` - Google Chrome`), which the scope drops.
 
 | Technology | Scope on | Shape |
 |---|---|---|
-| Web | `url` — host kept, path wildcarded | `<html app='chrome.exe' url='https://host.example.com/*' />` |
-| Web, two tabs of the **same** host open at once | `url` **plus** a title fragment | add `title='*Fragment*'` to the shared url scope |
+| Web | `url` — host kept, path wildcarded — plus the title's stable part | `<html app='chrome.exe' title='*App*' url='https://host.example.com/*' />` |
+| Web, two tabs of the **same** host open at once | the same, with the title fragment that tells the tabs apart | `title='*Fragment*'` in place of the application's word |
 
-**`url` values are case-sensitive** (only `app`, and `tag` on `webctrl`, are not), so `url='*Site*'` and `url='*site*'` are different selectors and at most one of them matches. The driver's own default for a browser tab is `<html app='chrome.exe' title='*<App>*' url='https://<host>/<tenant path>*' />` — host plus the first path segment, title reduced to the application's word; take that shape, and drop `title` when a second tab of the same host is never open.
+**`url` values are case-sensitive** (only `app`, and `tag` on `webctrl`, are not), so `url='*Site*'` and `url='*site*'` are different selectors and at most one of them matches. The driver's own default for a browser tab is `<html app='chrome.exe' title='*<App>*' url='https://<host>/<tenant path>*' />` — host plus the first path segment, title reduced to the application's word; take that shape.
 
 ## Rule 14 — web
 
@@ -161,6 +161,6 @@ Three traps follow from the cast. **The value display and the popup entry often 
 | A `data-*` type identifier is the only discriminator and the selector carries `idx` | attributes | 7, 14 |
 | `tag='DIV'` that no source recording and no known role vouches for, on a control the source typed as a button, input, checkbox or link — and the mirror case, a type-implied `tag` that contradicts the tag the source recorded | attributes + source control type + the recorded tag | 14 |
 | A caption-only target on a control whose source row also carried a role identifier (the id was dropped as a wrapper's when the role is a leaf's) | attributes + the source row's identifiers | 14 |
-| More than one distinct `ScopeSelectorArgument` per host across the project; `url` values differing only by case; a web scope with `title` and no `url` | all definitions | 9 |
+| More than one distinct `ScopeSelectorArgument` per host across the project, unless a second tab of the host tells them apart; `url` values differing only by case; a web scope with `title` and no `url`, or with no title fragment where every page's title shares one | all definitions + the titles the source recorded | 9 |
 | `colName` written as the bare caption on a grid whose headers carry hidden suffixes | live attribute listing on one cell | 8 |
 | A control the source located by a positional web path, carried as `idx`, as ancestor tags or with the path's indexes dropped | attributes + the source's path | 7 |

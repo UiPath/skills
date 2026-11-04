@@ -124,7 +124,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | {alternative unit} | C | … | {…} |
 
 **Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
-**Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
+**Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
 **Traceability:** {per-item record and where it lands; screenshot on system exception; run summary}.
 
 *Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's; a {Flow, API workflow, agent} that works its items itself}."*
@@ -153,7 +153,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
-*A component of a process genome inherits the Source framework, Source export, Inventory, Not covered and Related resources rows from the process genome; a standalone component genome carries them itself.*
+*A component of a process genome inherits the Source framework, Source export, Inventory, Not covered, Unused and Related resources rows from the process genome; a standalone component genome carries them itself.*
 
 ### Steps
 
