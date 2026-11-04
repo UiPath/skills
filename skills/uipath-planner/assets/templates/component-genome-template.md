@@ -1,15 +1,17 @@
 <!-- UIPATH-AUTOMATION-GENOME: component | This file is a build specification for one UiPath automation project.
-     To build it, invoke the uipath-genome skill (Execute mode): it asks the configuration questions,
+     To build it, invoke the uipath-build-from-genome skill: it asks the configuration questions,
      then invokes the skills referenced in Build With. Do NOT execute these steps directly, and do NOT
-     start from a Build With skill. -->
+     start from a Build With skill. To change it, invoke the uipath-planner skill. -->
 
 # Genome: {Name}
 
 > {One-line description of what this automation does}
 
-> **This is a UiPath automation blueprint.** Do not execute these steps directly. Build it with the **uipath-genome** skill, which hands each part to the skill listed in **Build With** below.
+> **This is a UiPath automation blueprint.** Do not execute these steps directly. Build it with the **uipath-build-from-genome** skill, which hands each part to the skill listed in **Build With** below.
 
 > Part of: {Process name} — {one line on this component's role in the process}. *(Write the process name as a markdown link to `../{process-slug}-genome.md`. Omit this line for a standalone automation.)*
+
+> Designed in: [{SDD title}]({relative path to the SDD}) *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 
 ## Overview
 
@@ -112,7 +114,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Business exception | Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
-**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
+**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists (a flow with a `Decided:` line: that one row alone), each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted beyond the `Decided:` line. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|
@@ -124,6 +126,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | {alternative unit} | C | … | {…} |
 
 **Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
+**Decided:** {only when the SDD or the request already chose the split: option and unit — source}
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
 **Traceability:** {per-item record and where it lands; screenshot on system exception; run summary}.
 
