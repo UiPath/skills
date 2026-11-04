@@ -10,8 +10,9 @@ description: >
   Ported from Flow `connector_features/testmanager_crud_grounded.yaml`; the
   connector node is modeled as a bpmn:sendTask carrying the registry
   Intsvc.ActivityExecution wrapper (create = TestCase/POST, get =
-  TestCase/GETBYID|GET) instead of Flow's two per-operation connector node
-  types.
+  TestCase/GETBYID|GET), or a connector-mode HTTP request through the Test
+  Manager connection matched by method + path, instead of Flow's two
+  per-operation connector node types.
 tags:
   - uipath-maestro-bpmn
   - e2e
