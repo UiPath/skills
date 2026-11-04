@@ -294,7 +294,7 @@ Pass `scopes=[GuardrailScope.LLM]` or `[GuardrailScope.AGENT]`. No `tools=`.
 
 Middleware classes for the **fixed-stage** validators take no `stage` argument: `UiPathUserPromptAttacksMiddleware`, `UiPathPromptInjectionMiddleware` (both PRE-only) and `UiPathIntellectualPropertyMiddleware` (POST-only). Passing `stage=` to those raises `TypeError` — their stage is a property of the validator, not a choice.
 
-> Validators whose stage genuinely varies **do** accept `stage=` on the middleware (defaulting to `PRE_AND_POST`) — PII, harmful content, LLM-as-judge, deterministic, and BYO. Confirm against the fetched `langchain/guardrails/` page for the validator you're wiring rather than assuming either way.
+> Validators whose stage genuinely varies **do** accept `stage=` on the middleware (defaulting to `PRE_AND_POST`) — PII, harmful content, LLM-as-judge, and BYO. `UiPathDeterministicGuardrailMiddleware` requires `stage` (no default). Confirm against the fetched `langchain/guardrails/` page for the validator you're wiring rather than assuming either way.
 
 For BYO middleware specifically, see [BYO (bring-your-own) validators](#byo-bring-your-own-validators).
 
@@ -413,7 +413,7 @@ like `BlockAction`). Get the exact parameters / supported scopes / stages from t
 **The same `EscalateAction` works in both styles** — pass it as the `action`:
 
 ```python
-# Middleware (no stage= — fixed by the validator)
+# Middleware
 *UiPathPIIDetectionMiddleware(
     name="PII escalation",
     scopes=[GuardrailScope.AGENT],
