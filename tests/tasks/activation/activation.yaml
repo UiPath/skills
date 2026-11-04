@@ -15,7 +15,7 @@ dataset:
     - uipath-api-workflow.jsonl
     - uipath-coded-apps.jsonl
     - uipath-functions.jsonl
-    - uipath-genome.jsonl
+    - uipath-build-from-genome.jsonl
     - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
@@ -227,8 +227,8 @@ success_criteria:
     stop_early:
       on_pass: stop
   - type: skill_triggered
-    description: "uipath-genome activation"
-    skill_name: uipath-genome
+    description: "uipath-build-from-genome activation"
+    skill_name: uipath-build-from-genome
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:
