@@ -103,7 +103,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
 | **lifecycle** | `lifecycle:X`, required | Coding Agents Scorecard lifecycle phase | `discover` (read-only exploration: list/get/inspect existing state), `generate` (produce a new local artifact: pack, scaffold, render), `setup` (mutate tenant state: create/edit/delete resources, deploy, configure) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
-| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (omit `script`/`http` — ubiquitous) |
+| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (a published IXP model), `extract-document` (the Extract document node and its inline taxonomy) (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
@@ -254,12 +254,25 @@ docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 
-`agent.allowed_tools` is an **auto-approval** list, not a restriction: it reaches
-`ClaudeAgentOptions.allowed_tools`, which names the tools that skip a permission
-prompt. A tool left off it is still callable — on 2026-09-08 flow runs used
-`Agent` and `TaskOutput`, neither of which is listed, and one spent 420s of a
-900s turn blocked on `TaskOutput`. Use `agent.disallowed_tools` to actually
-withhold a tool.
+The experiments set no `agent.allowed_tools` and no `agent.permission_mode`, so each
+harness uses its own defaults. On Claude Code the agent is offered the CLI's own tool
+set and runs `bypassPermissions`.
+
+On Claude Code, `agent.allowed_tools` **restricts and pre-approves**: the agent is
+offered only the listed built-in tools, and they run without a prompt. Set it on a
+task only when the restriction is part of what the task measures, because a shorter
+list changes what the agent does (with only 7 tools it calls `Skill` first more
+often). A task that stages the plugin must keep `Skill` on its list, or `coder-eval
+plan` refuses it. `Glob` and `Grep` are not in the CLI's own set; name them on the
+list if the task needs them. Use `agent.disallowed_tools` to withhold a tool from
+the full set.
+
+On codex, opencode, pi and antigravity, `allowed_tools` and `permission_mode` are
+ignored with a warning, and `--strict` refuses them.
+
+coder-eval 0.12.x differs: there `allowed_tools` only pre-approves, so a tool left
+off the list is still offered, and its own default experiment adds
+`permission_mode: acceptEdits` and the 7-tool list under every experiment.
 
 Task files should **not** duplicate the full `agent:` block — the experiment provides the defaults. Only specify fields that differ from the experiment:
 

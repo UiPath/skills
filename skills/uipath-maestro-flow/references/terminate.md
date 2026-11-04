@@ -27,8 +27,11 @@ A Terminate's name is a step name, so another path can stop there with
 `.stepToRef(name)` instead of getting a Terminate of its own. The flow then has
 ONE Terminate with several incoming edges, as the canvas draws it.
 Needs `@uipath/maestro-builder-sdk` 6.32.2 or later; an older SDK refuses the
-ref as `REF_INTO_PORT_LIST`, so upgrade with
+ref as `REF_INTO_PORT_LIST`,
+<!--skill-flavor:terminate-ref-sdk-upgrade:start-->
+so upgrade with
 `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:terminate-ref-sdk-upgrade:end-->
 
 ```ts
 .stepToList('branch-missing', (b) => b.step('reportMissing', script({ code })).terminate('stopFailed'))
@@ -40,7 +43,7 @@ ref as `REF_INTO_PORT_LIST`, so upgrade with
   into a STEP inside a `branch-*` or `outcome-*` list is still
   `REF_INTO_PORT_LIST`; a Terminate runs nothing after itself, so it is allowed.
 - Spell each Terminate ONCE. Two `.terminate`s asking for the same name are
-  refused (`DUP_STEP`; `compile --no-check` throws). They are not renamed
+  refused (`DUP_STEP`, by `check` and by `compile`). They are not renamed
   `stopFailed2`. Stop the other paths with `.stepToRef('<name>')`. A step and a
   Terminate with one name are `DUP_STEP` too: rename one of them.
 - A decompiled brownfield flow uses this form when a second path runs into a

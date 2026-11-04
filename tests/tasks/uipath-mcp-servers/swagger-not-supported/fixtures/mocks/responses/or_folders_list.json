@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "OrFoldersList",
+  "Data": [
+    { "Key": "folder-mock-shared",    "DisplayName": "Shared",                           "FullyQualifiedName": "Shared", "FolderType": "Standard" },
+    { "Key": "folder-mock-workspace", "DisplayName": "mock.user@example.com's workspace", "FullyQualifiedName": "Personal/mock.user@example.com", "FolderType": "Personal" }
+  ]
+}

@@ -103,6 +103,22 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Human task outcomes
 
+<!-- RULE:bpmn.hitl.inline-form-default -->
+- Unless the request names a deployed Action App, write a human task as an inline form: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`.
+  The form travels in the `.bpmn`, so nothing on the tenant has to exist; `app` is for a named, deployed app, and an app id the tenant does not have fails `uip maestro bpmn validate` with `MISSING_BINDING` / `MISSING_RESOURCE`.
+  Never swap a human task for a plain `.task()` to get past that — use the form.
+- A field is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back).
+  The call refuses a form that breaks any of these:
+  - Every field id is a plain identifier that is not a reserved word: `reviewNote`, not `review-note` or `default`.
+  - No field is called `Action`; that is the outcome picked.
+  - Outcome ids are unique, including derived ones: `Needs review` and `Needs-review` collide.
+  - Each variable has one writer: two answers never share a `variable`, and an `outputs` key is never an answer's variable (a field named `decision` beside `outputs: { decision: '=Action' }` is refused).
+  - A picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) has `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
+- The cloud engine takes the inline-form path only on a tenant with its quick-form flag on.
+  With the flag off, the run fails at the human task with a HITL incident: `170004` "Invalid input for the HITL task" on current engines, or `170015` "No app … found" on engines from before mid-September 2026.
+  Then tell the user to enable the quick-form flag on the tenant, or to name a deployed Action App for `app`; do not fall back to `.task()`.
+- Studio Web's "Edit Schema" canvas does not open for an inline form.
+
 <!-- RULE:bpmn.hitl.output-map -->
 - Map any decision used by later routing through `outputs`; the typed platform
   output is not populated by the local runtime. Exercise each important outcome.
@@ -162,6 +178,18 @@ binding half, which is the same for every connector-backed node.
   hand-filled node gets `objectName`, the parameter targets and the folder binding
   wrong in ways `validate` does not report. `examples/ContractRegistry.bpmn.ts` is
   the full lifecycle.
+
+<!-- RULE:bpmn.connector.data-service-folder-entity -->
+- An entity that lives in an Orchestrator folder (the picker shows it under a folder; the request says "folder entity" or "entity scope: folder") is `entity: { name, folderKey }`, not a plain name.
+  `folderKey` is the KEY of the folder holding the ENTITY (a GUID, not the folder path): run `uip or folders list --all --path <FolderPath> --output json` and take the `Key` of the row whose `Path` equals `<FolderPath>` exactly.
+  `--path` is a prefix filter, so the list also holds that folder's subfolders, and a subfolder's key compiles and validates but addresses the wrong folder.
+  `folder` stays the folder holding the CONNECTION; the two are often the same key and are still two options.
+- The record operations (`create`, `update`, `get`, `query`, `delete`) then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …) with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows.
+  Do not hand-fill that through `.activity()`, and do not pass a folder entity's name as a plain `entity` string: that writes the tenant-scope operation, which validates but does not address the folder entity.
+- The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
+  Tell the user the file operation is not supported on a folder-scoped entity; do not fall back to a plain entity name, which addresses a tenant-level entity instead, or hand-fill `.activity()`.
+- The entity and its folder are literals in the compiled task, not deploy-time bindings.
+  Do not add `Entity` bindings for it or promise per-environment re-pointing; tell the user the entity is fixed at compile time.
 
 <!-- RULE:bpmn.connector.parameter-rows -->
 - A connector's path and query parameters are one `uipath:input` row each, under
