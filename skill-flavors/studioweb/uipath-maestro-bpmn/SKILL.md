@@ -88,3 +88,9 @@ solution and never run `uip solution upload`.
 <!--skill-flavor:final-first-line:start-->
   <Name>: built, validated<, run> (<draft|auto> mode). <One sentence if you kept the user's online changes.>
 <!--skill-flavor:final-first-line:end-->
+
+<!--skill-flavor:cloud-copy-download:start-->
+- **1c Skip the cloud copy.** The open solution is already mounted as the
+  workspace root and is the only copy: never run `uip solution download` and
+  never ask the user which copy to keep.
+<!--skill-flavor:cloud-copy-download:end-->

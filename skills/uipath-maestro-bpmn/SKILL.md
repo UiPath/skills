@@ -426,6 +426,7 @@ Nothing to do yet. Surface detection is future work.
 
   The result decides whether 2a creates or adopts. Record it; do not scan again
   in phase 2.
+<!--skill-flavor:cloud-copy-download:start-->
 - **1c Start from the cloud copy.** When 1b found a solution (skip this for
   discovery-only), download it by the `SolutionId` in its `.uipx` into a
   separate directory:
@@ -444,6 +445,7 @@ Nothing to do yet. Surface detection is future work.
   they match, carry on. If they differ, ask the user which copy to keep before
   authoring, because a later `upload` replaces the cloud copy with the local
   one and would erase edits made in Studio Web.
+<!--skill-flavor:cloud-copy-download:end-->
 
 ### Phase 2 — Skeleton
 
@@ -465,9 +467,9 @@ below, because it is the one step that depends on phase 1's scan.
   Either way, author only into the `.bpmn` at the returned `Data.Path`;
   never write a second `.bpmn` elsewhere.
 
+<!--skill-flavor:adopt-solution-question:start-->
   If one is found, stop and ask the user which to use, as a pick list if the
   host has one: one option per solution found, plus "Create a new solution".
-<!--skill-flavor:adopt-solution-question:start-->
   Never silently
   adopt, initialize, or repair an existing solution. Say in that question that
   adopting one means a later `upload` overwrites its cloud copy, because this is
