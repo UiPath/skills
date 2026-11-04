@@ -42,41 +42,36 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "nodes list reports an Extract document node in InvoiceReader.flow"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader node
-    timeout: 60
+    description: "InvoiceReader.flow holds an Extract document node"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceReader '\"uipath.ixp.extract-document-builder\"'"
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "nodes list reports no other uipath.ixp.* node (published model, processor or a second Extract document node)"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader no-other-ixp
-    timeout: 60
+    description: "No other uipath.ixp.* node (published model, processor or a second Extract document node)"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader no-other-ixp
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "The node's fileRef reads a file input declared on InvoiceReader.flow"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader file-ref
-    timeout: 60
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader file-ref
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "edges list reports an edge into the Extract document node"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader edge in input
-    timeout: 60
+    description: "An edge enters the Extract document node"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader edge in input
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "The project was initialised without --sdk-source (no .flow-sdk/ beside the flow)"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader no-sdk
-    timeout: 30
+    command: "! find . -type d -name .flow-sdk -not -path '*/node_modules/*' | grep -q ."
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -90,7 +85,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes on InvoiceReader.flow with no warnings"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader validate
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
