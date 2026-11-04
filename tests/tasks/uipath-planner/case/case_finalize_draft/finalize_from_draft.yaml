@@ -1,7 +1,7 @@
 task_id: skill-case-phase-0-finalize-draft
 description: >
-  CASE DRAFT FINALIZATION ONLY (planner Case Design Lane) — a complete CandidateInterview interview draft
-  (sdd.draft.md) is staged into the sandbox; the planner's Case Design Lane resumes from the
+  CASE DRAFT FINALIZATION ONLY (planner `design`, Case Management) — a complete CandidateInterview interview draft
+  (sdd.draft.md) is staged into the sandbox; the planner's `design` resumes from the
   draft, runs the Finalization checks, and renames it to an approved sdd.md. Decoupled from the
   interview (covered by candidate_interview) so the heavy finalization step runs
   in one bounded turn. Grades mechanical validity of the produced sdd.md
@@ -36,8 +36,8 @@ run_limits:
   max_turns: 150
   turn_timeout: 3600
 
-# Inherit agent from the experiment; override only allowed_tools. The lane's
-# Template conformance gate runs its 37-item walk in ONE subagent when the
+# Inherit agent from the experiment; override only allowed_tools. The case
+# SDD Conformance Checklist runs its 37-item walk in ONE subagent when the
 # Agent tool is present, keeping the read-only verdict out of the authoring
 # context. All seven case tasks carry this override: it began as a two-task
 # treatment against three controls, and the controls were retired once run
@@ -68,9 +68,8 @@ initial_prompt: |
 
   This is a Maestro case-management SDD finalization. Keep it inside the Case
   Management SDD template shape; finalize the draft into `sdd.md` in this
-  folder. Use the direct draft-finalization fast path: read the draft and the
-  case SDD template, write the finalized `sdd.md`, and do not spawn subagents,
-  run tenant discovery, or derive implementation tasks.
+  folder. Write the finalized `sdd.md`; do not run tenant discovery or derive
+  implementation tasks.
 
 success_criteria:
   # No validator archaeology before the write. The § Validation gate is a checklist the
@@ -255,7 +254,6 @@ simulation:
     - "If it asks how you want to proceed with the existing draft, tell it to use the draft as-is and finalize it — you don't want to be re-interviewed or redo the design."
     - "When the agent presents the finalized sdd.md for approval, approve it on the first pass ('looks good — approved'). If it warns about high-severity review items, unresolved/tenant-default connector IDs, or unresolved agent identities, approve anyway — the unresolved identities are intentional for this design spec, but the concrete agent resource names must remain."
     - "Do not request design changes or add new requirements — the draft is settled. Do not ask the agent to re-run the interview."
-    - "Decline or skip any optional HTML-preview offer."
     - "Keep the agent at design/finalization only. If it offers to build a caseplan or move to a later phase, tell it to stop at the approved sdd.md."
     - "Once sdd.md is approved, the task is done — end the conversation; do not open new topics."
     - "Keep replies short — one sentence or a single option pick."
