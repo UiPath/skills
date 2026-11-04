@@ -132,6 +132,9 @@ def open_items_text(model, solution):
                              f"\"{value['name']}\" --output json`")
             lines.append(f"      `uip df choice-sets list-values <choice-set-id> --output json` "
                          f"— check every number against the list above.")
+            lines.append(f"      `uip solution resources add --source remote --kind ChoiceSet "
+                         f"--name \"{cs['name']}\" --output json` — brings it into the solution "
+                         f"as a referenced resource, so later deploys carry it.")
         lines.append("")
 
     cs_fields = [(e, f) for e in model["entities"] for f in e.get("choiceSetFields", [])]

@@ -91,7 +91,8 @@ stated here is only their consequence for how far to decompose.
 > multi-entity joins on federated reads. It is not a positive statement that native
 > joins are unsupported. One query against a live tenant settles it. If native joins
 > exist, the anti-normalization bias weakens substantially and § Priority changes.
-> Tracked as S18 in [data-model-checklist.md](data-model-checklist.md).
+> Until it is settled, state the assumption in the report rather than relying on it
+> silently.
 
 ### Materialize or virtualize
 

@@ -524,9 +524,26 @@ SH_SCALARS = {
     "maxLength": "maxLength", "minLength": "minLength", "pattern": "pattern",
     "minInclusive": "minInclusive", "maxInclusive": "maxInclusive",
     "nodeKind": "nodeKind", "class": "class", "name": "name",
+    # enforcement metadata: SHACL's own way of saying "documented, not enforced"
+    # and "surface, do not block" — read before any locus default is applied.
+    "severity": "severity", "deactivated": "deactivated",
 }
-SH_KNOWN = set(SH_SCALARS) | {"path", "in", "property", "targetClass", "severity",
+SH_KNOWN = set(SH_SCALARS) | {"path", "in", "property", "targetClass",
                               "message", "description", "order", "group"}
+
+
+def annotations_on(triples, node):
+    """Predicates outside the SHACL namespace, carried as-is.
+
+    The authoritative-source and enforcement-mode predicates are not standardized —
+    every bundle names them in its own vocabulary — so they are recorded rather than
+    interpreted, and the derivation is told which IRIs to read.
+    """
+    out = {}
+    for (s, p, o) in triples:
+        if s == node and not p.startswith(SH) and p != RDF + "type":
+            out.setdefault(p, []).append(lit_value(o))
+    return {k: sorted(set(map(str, v))) for k, v in sorted(out.items())}
 
 
 def extract_shapes(triples, notes):
@@ -558,11 +575,13 @@ def extract_shapes(triples, notes):
                         notes.append(f"shacl: non-integer sh:{key} on {path}")
                         entry[key] = None
             entry["unsupported"].sort()
+            entry["annotations"] = annotations_on(triples, pnode)
             props.append(entry)
         target = one(triples, node, SH + "targetClass")
         shapes.append({
             "iri": node,
             "targetClass": target if isinstance(target, str) else None,
+            "annotations": annotations_on(triples, node),
             "properties": sorted(props, key=lambda p: (p["path"] or "")),
         })
     return shapes

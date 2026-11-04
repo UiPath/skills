@@ -148,18 +148,111 @@ class Register:
         return [{k: row[k] for k in sorted(row)} for row in ordered]
 
 
+# How two property shapes on the same path combine. SHACL conjoins them — every
+# shape must be satisfied — so the merge takes the most restrictive of each bound,
+# never the last one seen. Overwriting silently drops constraints.
+MERGE_MAX = ("minCount", "minLength", "minInclusive")   # most restrictive = largest
+MERGE_MIN = ("maxCount", "maxLength", "maxInclusive")   # most restrictive = smallest
+MERGE_FIRST = ("datatype", "nodeKind", "class", "name", "severity")
+
+
+def _numeric(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def merge_property_shapes(shapes):
+    """Conjoin several property shapes on one path into one."""
+    out = {"path": shapes[0].get("path"), "in": [], "patterns": [],
+           "unsupported": [], "annotations": {}}
+    for shape in shapes:
+        for key in MERGE_FIRST:
+            if out.get(key) is None and shape.get(key) is not None:
+                out[key] = shape[key]
+        for key in MERGE_MAX:
+            new, old = _numeric(shape.get(key)), _numeric(out.get(key))
+            if new is not None and (old is None or new > old):
+                out[key] = shape[key]
+        for key in MERGE_MIN:
+            new, old = _numeric(shape.get(key)), _numeric(out.get(key))
+            if new is not None and (old is None or new < old):
+                out[key] = shape[key]
+        if shape.get("pattern"):
+            out["patterns"].append(shape["pattern"])
+        if shape.get("in"):
+            # Conjunction of two closed sets is their intersection; the first
+            # non-empty set wins when they are disjoint, and that is a modelling
+            # error worth surfacing rather than silently emptying.
+            out["in"] = ([v for v in out["in"] if v in shape["in"]]
+                         if out["in"] else list(shape["in"]))
+        out["unsupported"] = sorted(set(out["unsupported"]) | set(shape.get("unsupported") or []))
+        out["annotations"].update(shape.get("annotations") or {})
+    for key in MERGE_MAX + MERGE_MIN:
+        out.setdefault(key, None)
+    out["pattern"] = out["patterns"][0] if out["patterns"] else None
+    return out
+
+
+def is_deactivated(shape):
+    return str(shape.get("deactivated") or "").lower() == "true"
+
+
 def shape_index(inventory):
-    """class IRI -> { property path -> property shape }"""
-    out = {}
+    """class IRI -> { property path -> merged, active property shape }
+
+    A deactivated shape contributes nothing to validation, so it is excluded from
+    the merge entirely — it is recorded separately so the register still gets its
+    'documented, not enforced' row.
+    """
+    grouped = {}
     for shape in inventory.get("shapes", []):
         target = shape.get("targetClass")
         if not target:
             continue
-        bucket = out.setdefault(target, {})
         for prop in shape.get("properties", []):
             if prop.get("path"):
-                bucket[prop["path"]] = prop
+                grouped.setdefault(target, {}).setdefault(prop["path"], []).append(prop)
+    out = {}
+    for target, paths in grouped.items():
+        for path, props in paths.items():
+            active = [p for p in props if not is_deactivated(p)]
+            merged = merge_property_shapes(active or props)
+            # True only when EVERY shape on this path is deactivated. One active
+            # shape beside a deactivated one keeps the path enforced.
+            merged["allDeactivated"] = not active
+            merged["deactivatedCount"] = len(props) - len(active)
+            out.setdefault(target, {})[path] = merged
     return out
+
+
+def shape_annotations(inventory):
+    """class IRI -> the node shape's non-SHACL annotations"""
+    return {s["targetClass"]: s.get("annotations", {})
+            for s in inventory.get("shapes", []) if s.get("targetClass")}
+
+
+def first_annotation(annotations, predicate_iri):
+    if not predicate_iri:
+        return None
+    values = annotations.get(predicate_iri) or []
+    return values[0] if values else None
+
+
+def declared_level_for(shape, mode_predicate):
+    """The level the shapes themselves declare, or None.
+
+    OWL cannot express enforcement; SHACL can. A bundle that says so is believed in
+    preference to any default — see constraint-register-guide.md § Read the
+    enforcement annotations before defaulting.
+    """
+    mode = first_annotation(shape.get("annotations") or {}, mode_predicate)
+    if mode:
+        return {"authoritative": "state", "precheck": "transition",
+                "monitor": "monitor"}.get(mode.lower())
+    severity = (shape.get("severity") or "").rsplit("#", 1)[-1]
+    return "monitor" if severity in ("Warning", "Info") else None
 
 
 def r2rml_index(inventory):
@@ -292,9 +385,14 @@ def main():
 
     register = Register()
     shapes = shape_index(inv)
+    node_annotations = shape_annotations(inv)
     r2rml = r2rml_index(inv)
-    replicas = overrides.get("replicas", {})
+    replicas = dict(overrides.get("replicas", {}))
     lookup_classes = set(overrides.get("lookupEntities", []))
+    annotation_map = overrides.get("annotations", {})
+    source_predicate = annotation_map.get("authoritativeSource")
+    mode_predicate = annotation_map.get("enforcementMode")
+    declared_sources = {}   # class IRI -> the system named in the shapes
 
     classes = {c["iri"]: c for c in inv.get("classes", [])}
     dprops = inv.get("datatypeProperties", [])
@@ -325,6 +423,29 @@ def main():
     name_of = {}
     for iri in entity_classes:
         name_of[iri] = normalize(iri, "entity", taken_entities, register)
+
+    # A shape that names an authoritative source declares the entity a replica.
+    # A declared answer beats the D1 default; an override beats both, and the
+    # disagreement is recorded rather than silently resolved.
+    for iri in entity_classes:
+        declared = first_annotation(node_annotations.get(iri, {}), source_predicate)
+        if not declared:
+            continue
+        declared_sources[iri] = declared
+        ename = name_of[iri]
+        if ename in replicas and replicas[ename] != declared:
+            register.add(source="domain", from_iri=iri, subject=ename,
+                         statement=f"the shapes name {declared!r} as the authoritative source; "
+                                   f"the override names {replicas[ename]!r}; the override wins",
+                         expressible="yes", locus="external", level=None,
+                         resolution="override")
+        elif ename not in replicas:
+            replicas[ename] = declared
+            register.add(source="domain", from_iri=iri, subject=ename,
+                         statement=f"the shapes name {declared!r} as the authoritative source, "
+                                   f"so this entity is a replica and D1 does not apply",
+                         expressible="yes", locus="external", level=None,
+                         resolution="override")
 
     # ---- object properties: direction and junctions -------------------------
     relationships = {}          # entity name -> list of relationship dicts
@@ -461,37 +582,62 @@ def main():
             # Constraints are classified for EVERY field kind before the field is
             # shaped. A choice-set field carries sh:minCount and sh:pattern like any
             # other, and skipping them here is how a constraint disappears silently.
+            declared_level = declared_level_for(shape, mode_predicate)
+            deactivated = bool(shape.get("allDeactivated"))
+            field_locus = "none" if deactivated else locus
+            # An inexpressible constraint cannot be enforced by the schema, so its
+            # candidate is an operation, a surfaced finding, or trust. For a replica
+            # the default is to surface rather than block: rejecting data the system
+            # of record accepted creates divergence, not a catch.
+            soft = declared_level or ("monitor" if field_locus == "external" else "transition")
+            hard = declared_level or ("state" if field_locus == "uipath" else "monitor")
+            resolution = "override" if (deactivated or declared_level) else None
+
+            # A deactivated shape is excluded from the merge so it cannot weaken an
+            # active one, but it is still something the business wrote down. Record
+            # it, or a deliberate decision becomes indistinguishable from an omission.
+            if shape.get("deactivatedCount"):
+                register.add(
+                    source="domain", from_iri=prop["iri"], subject=subject,
+                    statement=(f"{shape['deactivatedCount']} shape(s) on this path are "
+                               f"deactivated: documented, deliberately not enforced"),
+                    expressible="yes", locus="none" if deactivated else locus,
+                    level="assumed", candidate="assumed", resolution="override",
+                    note=("every shape on this path is deactivated" if deactivated else
+                          "an active shape on the same path still applies"))
+
             required = None
             min_count = shape.get("minCount") or 0
             if min_count >= 1:
-                required = locus == "uipath"
+                required = field_locus == "uipath" and not deactivated
                 register.add(
                     source="process", from_iri=prop["iri"], subject=subject,
                     statement=f"sh:minCount {min_count}: mandatory in the domain",
-                    expressible="yes", locus=locus, level=None,
-                    candidate="state" if locus == "uipath" else "assumed",
-                    resolution="default-applied" if locus == "uipath" else "override",
+                    expressible="yes", locus=field_locus, level=None,
+                    candidate=hard,
+                    resolution=resolution or ("default-applied" if field_locus == "uipath"
+                                              else "override"),
                     evidence={"replicaOf": replicas.get(ename)} if is_replica else {},
                     note=("isRequired left false: the entity is a replica and the system of "
-                          "record holds the guarantee" if is_replica else
+                          "record holds the guarantee; surface a violation, do not block"
+                          if is_replica else
                           "isRequired set from the system-of-record default (D1); Phase 2 must "
                           "confirm records are written whole, not completed incrementally"))
-            if shape.get("pattern"):
-                register.add(source="process", from_iri=prop["iri"], subject=subject,
-                             statement=f"sh:pattern {shape['pattern']!r} must hold",
-                             expressible="no", locus=locus, level=None,
-                             candidate="transition", resolution="deferred",
-                             note="no Data Fabric field option states a pattern")
+            statements = [f"sh:pattern {p!r} must hold" for p in shape.get("patterns") or []]
             if shape.get("minLength"):
+                statements.append(f"sh:minLength {shape['minLength']} must hold")
+            for statement in statements:
                 register.add(source="process", from_iri=prop["iri"], subject=subject,
-                             statement=f"sh:minLength {shape['minLength']} must hold",
-                             expressible="no", locus=locus, level=None,
-                             candidate="transition", resolution="deferred")
+                             statement=statement, expressible="no", locus=field_locus,
+                             level="assumed" if deactivated else None, candidate=soft,
+                             resolution=resolution or "deferred",
+                             note="no Data Fabric field option states this")
             for unsupported in shape.get("unsupported", []):
                 register.add(source="process", from_iri=prop["iri"], subject=subject,
                              statement=f"sh:{unsupported} must hold",
-                             expressible="no", locus=locus, level=None,
-                             candidate="transition", resolution="deferred")
+                             expressible="no", locus=field_locus,
+                             level="assumed" if deactivated else None, candidate=soft,
+                             resolution=resolution or "deferred")
             for key_group in cls.get("hasKey", []):
                 if len(key_group) > 1 and prop["iri"] in key_group:
                     register.add(source="domain", from_iri=iri, subject=subject,

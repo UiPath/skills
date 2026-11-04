@@ -28,7 +28,6 @@ produces a data model and a genome whose Workflow is `*[Inferred]*` — say so.
 | after the inventory exists | the inventory reports ≥1 SHACL shape | [constraint-register-guide.md](constraint-register-guide.md) |
 | after the inventory exists | the inventory reports ≥2 classes with an object property between them | [normalization-guide.md](normalization-guide.md) |
 | before writing any solution resource | always | [datafabric-emission-guide.md](datafabric-emission-guide.md) |
-| before offering edits | always | [data-model-checklist.md](data-model-checklist.md) |
 | any Data Fabric field type, choice-set mechanic, federated rule or relationship wiring | always | `uipath-platform` → `references/data-fabric/` — **named, never restated here** |
 
 The last row is the standing rule: the Data Fabric surface belongs to
@@ -255,14 +254,36 @@ worklist rather than a re-derivation.
 ## Closing the run
 
 Before offering edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)),
-work [data-model-checklist.md](data-model-checklist.md) and tell the user, in this
-order:
+work § Closing checks, then tell the user, in this order:
 
-1. what was emitted — entities, fields, junctions, choice sets, by count;
-2. the four defaults that were applied, and how to override each;
+1. what was emitted — entities, fields, junctions, choice sets, by count and by
+   component;
+2. the four defaults that were applied, and how to override each — and whether the
+   bundle declared any enforcement of its own
+   ([constraint-register-guide.md](constraint-register-guide.md));
 3. the deferred set, by category, with what would resolve it;
-4. anything in `notCovered`, with why no construct holds it;
-5. the gates that passed.
+4. the complex tier that could not ship, and the open-items file that carries it;
+5. anything in `notCovered` and every `parserNotes` line, with why;
+6. the gates that passed.
 
 A run that emitted a model and listed no deferred decisions has almost certainly
 guessed at something. Check the register before reporting it.
+
+## Closing checks
+
+Work these before offering edits. Each names the guide that states its rule.
+
+| # | Check | Rule |
+|---|---|---|
+| 1 | `source.r2rml` was copied to `target.r2rml` and never written again | § Artifacts |
+| 2 | the inventory was the only reading of the three inputs | § The inventory is the contract |
+| 3 | every class is in a `from[]` or in `notCovered`, and the index runs both ways | [entity-derivation-guide.md § Coverage](entity-derivation-guide.md) |
+| 4 | no `consolidation`, `decomposition` or `federated-view` was emitted | § What Author mode decides |
+| 5 | every non-`direct` derivation carries a `because` | [entity-derivation-guide.md § Provenance](entity-derivation-guide.md) |
+| 6 | every rename and every applied default has a register row | [constraint-register-guide.md § The register row](constraint-register-guide.md) |
+| 7 | no `source: process` row carries a `level` | [constraint-register-guide.md § What Author mode may not decide](constraint-register-guide.md) |
+| 8 | `isRequired` was never set from `sh:minCount` alone | [constraint-register-guide.md § The isRequired trap](constraint-register-guide.md) |
+| 9 | two derivation runs are byte-identical | § Determinism |
+| 10 | `validate --local` and `pack --dry-run` both pass | [datafabric-emission-guide.md § Validation gates](datafabric-emission-guide.md) |
+| 11 | every complex field has an open-item row, and every `via` step is flagged blocked | [datafabric-emission-guide.md § The two tiers](datafabric-emission-guide.md) |
+| 12 | nothing was written to a tenant | § Boundaries |

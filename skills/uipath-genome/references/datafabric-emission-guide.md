@@ -43,11 +43,16 @@ CLI, and not by hand-editing the resource file either.
 > a hand-written `ReferenceChoiceSet` and looks like a counter-example; it is a test's
 > `_setup` input and is never validated or packed.
 
+**Writing one by hand does not merely fail a gate — it bricks the entity.** The
+validator checks the *stored document*, not the create body, so the field is rejected
+however it got there. Three verbs then refuse it: `validate --local`, `solution pack`
+(same check), and `entities update --local`, which declines **even an unrelated
+edit** rather than leave the entity invalid. `get` and `list` still read it, so the
+damage is quiet until pack.
+
 **So the applier never edits a resource file.** The CLI owns both halves of the pair
 and nothing else writes them — the standing rule holds with no exception. The complex
-tier leaves the solution as open items instead
-([open-items-guide.md § Data Fabric](open-items-guide.md) already carries the
-instruction shape).
+tier leaves the solution as open items instead.
 
 **One consequence the genome must carry:** a workflow that traverses a relationship
 cannot be built until that field exists, because the generated entity types come from
@@ -55,10 +60,13 @@ the schema. Any Workflow step whose `**Data:**` line has a `via` clause is flagg
 the completion report as blocked on its open item
 ([data-model-consumption-guide.md](data-model-consumption-guide.md)).
 
-When `--local` gains the two field types — support is in progress — the open-item
-tier collapses into the local one: `entities.json` already carries the fields, so the
-change is to emit them in pass 3's body and delete pass 4
-([datafabric-cli-ask.md](datafabric-cli-ask.md)).
+The restriction is a hard allowlist, not a flag to find: a type map in the authoring
+path, a second membership check against an external package's pair list, and a
+tenant-only classification of the reference keys. There is no environment variable
+and no preview mode that lifts it. When local support lands, the open-item tier
+collapses into the local one — `entities.json` already carries the fields with
+symbolic targets, so the change here is to emit them in pass 1's body and delete
+pass 3.
 
 ## entities.json
 
