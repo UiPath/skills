@@ -11,7 +11,7 @@ Never write or patch the `.flow` yourself. Merge renumbers every edge
 its normal output, not drift to undo. The changes to act on are the
 [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
-Validate the target `.flow`, not `.flow-sdk/edited/`: that folder holds only
+Validate the target `.flow`, not `/tmp/flow-draft/<Project>/<Name>/edited/`: that folder holds only
 the agent files merge changed. If validate fails, copy
 `.flow-sdk/original/<Name>.flow` back over the target, fix the source, and
 merge again.
@@ -20,6 +20,23 @@ merge again.
 <!--skill-flavor:merge-check-sdk-upgrade:start-->
 so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:merge-check-sdk-upgrade:end-->
+
+<!--skill-flavor:check-baseline-lowering:start-->
+- **`(pre-existing)` worded as a probable SDK defect** (JSON
+  `class: "lowering"`): `compile` refuses that node, so the round trip stops at
+  the baseline compile (run this check before you edit to tell this case
+  apart). Studio Web has no `merge --baseline-from` to keep the
+  node as saved. Do not edit the node to get around it. Stop, name the node,
+  and tell the user it is a probable SDK defect to report at
+  <https://github.com/UiPath/builder-sdk/issues>.
+<!--skill-flavor:check-baseline-lowering:end-->
+
+<!--skill-flavor:check-baseline-sdk-upgrade:start-->
+and Studio Web owns the SDK copy, so tell the user. Until it is upgraded, run
+`check --source` without `--baseline` and fix only the errors on nodes you
+changed. If a compile then stops on a node you did not change, stop: name the
+node and its code to the user.
+<!--skill-flavor:check-baseline-sdk-upgrade:end-->
 
 <!--skill-flavor:install-agent-files:start-->
 `merge -o` into the target writes the `.flow` and every agent file merge
@@ -39,11 +56,14 @@ carried. Fields the round trip does not reproduce (such as `maxIterations`, or a
 <!--skill-flavor:draft-nodes:start-->
 A canvas-saved flow often holds **draft** nodes: a connector with no connection
 yet, a required input left empty, or a generic operation with no object picked.
-`compile` refuses them even with `--no-check`, so the round trip stops at the
-baseline compile. In a terminal the fix is `merge --baseline-from` through the
-`flow-sdk` bin of the SDK; Studio Web has neither. Name each draft node that the
-refusal lists, and ask the user to finish it on the canvas, or to remove it.
-Then run the round trip again.
+Decompile carries the definition of each draft the canvas saved, so `compile`
+writes it with a warning (`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`)
+and the round trip gets past it. A generic operation with no object
+(`CONNECTOR_OBJECT_REQUIRED`) still stops the baseline compile. In a terminal
+the fix is `merge --baseline-from` through the `flow-sdk` bin of the SDK;
+Studio Web has neither. Name each draft node that the refusal lists, and ask
+the user to finish it on the canvas, or to remove it. Then run the round trip
+again.
 <!--skill-flavor:draft-nodes:end-->
 
 <!--skill-flavor:generated-pipeline:start-->
@@ -82,3 +102,11 @@ so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:subflow-layout-sdk-upgrade:start-->
 so tell the user, since Studio Web owns the SDK copy).
 <!--skill-flavor:subflow-layout-sdk-upgrade:end-->
+
+<!--skill-flavor:fresh-decompile-cleanup:start-->
+<!--skill-flavor:fresh-decompile-cleanup:end-->
+
+<!--skill-flavor:supplied-source:start-->
+In Studio Web the target `.flow` is the source: use the round trip in
+[SKILL.md — Lifecycle](../SKILL.md#lifecycle).
+<!--skill-flavor:supplied-source:end-->
