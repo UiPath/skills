@@ -213,6 +213,7 @@ After collecting all answers, scaffold the project. **[assets/templates/action-a
 
 The sections below describe the schema-driven adaptations; copy the CSS files verbatim (per rules 4–5) and copy the small TS scaffolding (`main.tsx`, `vite.config.ts`, `App.tsx`) from the template for the parts they don't override.
 
+<!--skill-flavor:scaffold-commands:start-->
 ```bash
 npx --yes create-vite@latest <app-name> --no-interactive --template react-ts && node -e "require('fs').existsSync('<app-name>/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
 ```
@@ -227,6 +228,7 @@ If SDK services are needed:
 ```bash
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 ```
+<!--skill-flavor:scaffold-commands:end-->
 ---
 
 ## Generated Files

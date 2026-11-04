@@ -10,6 +10,8 @@ The substitution table in [Step 5.1](../../references/create-web-app.md#51--writ
 
 ---
 
+<!--skill-flavor:host-base-files:start-->
+<!--skill-flavor:host-base-files:end-->
 ## `vite.config.ts`
 
 Shared by both paths. `base: './'` is **always required** — the platform handles URL routing; the app must use relative asset paths. The `uipathCodedApps()` plugin reads `uipath.json` and injects `<meta name="uipath:*">` tags during local dev, so `new UiPath()` (no config) sees the same values in dev that the platform injects in production.
