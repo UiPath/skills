@@ -37,7 +37,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## HTTP requests
 
-`.httpRequest({ method, url, ... })` sends one HTTP call from a task. Without `connector` the request goes to `url` unauthenticated. With `connector: { key, connection, folder }` it reuses that connection's auth, and `path` replaces `url`. Outputs are the fixed four: `code`, `headers`, `body`, `Error`; `.outputs({ v: '=response.body' })` maps one to a case variable. Compile refuses a credential header (`Authorization`, `Cookie`, API keys) and a body on `GET`/`HEAD`/`OPTIONS`/`DELETE`.
+`.httpRequest({ method, url, ... })` sends one HTTP call from a task. Without `connector` the request goes to `url` unauthenticated. With `connector: { key, connection, folder }` it reuses that connection's auth, and `path` replaces `url`. Outputs are the fixed four: `code`, `headers`, `body`, `Error`; `.outputs({ v: '=response.body' })` maps one to a case variable. `check` reports a credential header (`Authorization`, `Cookie`, API keys) and a body on `GET`/`HEAD`/`OPTIONS`/`DELETE`; compile writes both as authored, so run `check` before `compile`. Compile refuses a `url` through a connector or a `path` without one, which it would drop.
 
 ## Connections and external work
 
