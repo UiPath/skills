@@ -78,7 +78,18 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-case": 95,
     "uipath-api-workflow": 100,
     "uipath-functions": 100,
-    "uipath-genome": 90,
+    # uipath-build-from-genome: measured, not inherited. The 90 it started with was uipath-genome's, a single
+    # skill whose name matched every "genome" prompt. The gate's agent sees this catalog by name only (at a
+    # 200K-token context the listing budget drops every plugin skill's description; reproduced locally with
+    # CLAUDE_CODE_DISABLE_1M_CONTEXT=1), so routing follows names: rows that say "build"/"genome" reach the
+    # builder, rows that only say implement / execute / run the migration (-002, -003, -005, -008) do not on
+    # turn 1. Measured 76.9% (actions/runs/41067457790), 69.2% (41068490366, 41069665561) and 69.2% locally
+    # at 200K; 100% locally with descriptions shown (1M context). Main's uipath-genome scored 85.0% on its
+    # own set under the same 200K conditions. 65 sits at the nearest 5% below the measurement, as for
+    # uipath-platform above. Those runs measured the builder under its first name ("genome builder"); it was
+    # renamed because name-only routing at 200K reached it on 10/13 build prompts under this name against
+    # 4/13 under the first. Re-baseline after the next full activation run.
+    "uipath-build-from-genome": 65,
 }
 
 DROP_PP = 10
