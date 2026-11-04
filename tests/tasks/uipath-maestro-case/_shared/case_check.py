@@ -209,7 +209,7 @@ def normalize_audit_entry(entry: dict) -> dict:
 def registry_audit_entries(payload: object) -> list[dict]:
     """Read every legal registry-audit representation as one list of entries.
 
-    Accepts a bare list (hand-written, and the planner lane's verbatim ledger),
+    Accepts a bare list (hand-written, and the planner's verbatim ledger),
     a `resolutions` / `resources` envelope, and `uip maestro case sdd resolve`'s
     own `{resolved, unresolved, scope}` object. Entries come back normalized by
     `normalize_audit_entry`, so a grader asserts one shape whichever wrote it.
