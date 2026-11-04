@@ -139,6 +139,6 @@ success_criteria:
   - type: command_not_executed
     description: "Every 3c resource lookup is filtered with --search"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+list\b(?!(?:"[^"\n]*"|''[^''\n]*''|[^;&|\n]|\\\n|(?<= )\n)*--search)'
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+list\b(?!(?:\\\n|(?<= )\n|(?!\n|(?:^|[\s;&|(`])(?:uip|\$UIP)\s).)*--search)'
     weight: 1.0
     pass_threshold: 1.0

@@ -58,19 +58,16 @@ REGISTRY = {"Data": {"ExtensionTypes": [
 
 class KindTests(unittest.TestCase):
     def setUp(self):
-        self.toolbox, self.dropped, self.table_labels = kinds.kind_sets(REGISTRY["Data"]["ExtensionTypes"])
+        self.toolbox, self.dropped = kinds.kind_sets(REGISTRY["Data"]["ExtensionTypes"])
 
-    def check(self, boxes):
-        return kinds.check(boxes, self.toolbox, self.dropped, self.table_labels)
+    def check(self, boxes, apps=()):
+        return kinds.check(boxes, self.toolbox, self.dropped, apps)
 
     def test_table_kinds_and_other_labels_pass(self):
         self.assertEqual(self.check(BOXES + ["Score risk [Business rule]",
                                              "Classify [RPA workflow] → Classification",
                                              "Review [action app]",
-                                             "Post to the channel [Slack]",
-                                             "Send the mail [Outlook]",
                                              "Notify the owner [Connector]",
-                                             "Open ticket [Jira] → TicketId",
                                              "Start child [Maestro Flow]"]), [])
 
     def test_long_label_of_a_table_type_fails(self):
@@ -82,8 +79,20 @@ class KindTests(unittest.TestCase):
     def test_box_without_a_kind_fails(self):
         self.assertTrue(self.check(["Record invoice"]))
 
-    def test_app_name_for_a_connector_box_passes(self):
-        self.assertEqual(self.check(["Post [Slack]", "Mail [Microsoft Outlook 365]", "Notify [Connector]"]), [])
+    def test_connector_label_passes_without_apps(self):
+        self.assertEqual(self.check(["Notify [Connector]"]), [])
+
+    def test_app_name_fails_without_apps_and_passes_when_listed(self):
+        self.assertEqual(len(self.check(["Post [Slack]"])), 1)
+        self.assertEqual(self.check(["Post [Slack]", "Open ticket [jira] → TicketId"], apps=["Slack", "Jira"]), [])
+        self.assertEqual(self.check(["Save [Microsoft OneDrive & SharePoint]"],
+                                    apps=["Microsoft OneDrive & SharePoint"]), [])
+        self.assertEqual(len(self.check(["Post [Teams]"], apps=["Slack"])), 1)
+
+    def test_invented_kind_fails(self):
+        errors = self.check(["A [Robot]", "B [Approval]", "C [Decision table]", "D [Script]"])
+        self.assertEqual(len(errors), 4, errors)
+        self.assertTrue(all("neither a toolbox kind" in e for e in errors), errors)
 
     def test_long_or_empty_kind_fails(self):
         errors = self.check(["Send summary [Send the summary to the team]", "Send [ ]"])

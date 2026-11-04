@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Grade the kinds a draft skeleton's boxes are labeled with.
 
-Usage (cwd = sandbox root): check_skeleton_kinds.py <ProjectName> [--registry-json <file>]
+Usage (cwd = sandbox root): check_skeleton_kinds.py <ProjectName> [--apps <name> ...] [--registry-json <file>]
 
 Phase 2 labels every box ``<action> [<kind>]``. The kind is the short name
 Studio Web's BPMN toolbox shows, from the skill's "Toolbox kinds" table
 (phase-2-skeleton-guide.md) for the types that table lists, and the type's
 registry ``Label`` for every other type. A connector box
 (``Intsvc.ActivityExecution``) is labeled with the app it calls (``Slack``,
-``Outlook``, ``Jira``), or ``Connector`` when no app is named; app names are
-open-ended, so any short bracket text that is not another type's name passes
-as one. This passes when every task box carries a bracketed kind and each one
-is such a name. It fails on a box with no kind, on the long ``Label`` of a type
+``Outlook``, ``Jira``), or ``Connector`` when the request names no app. App
+names are open-ended, so they are opt-in: ``--apps`` lists the names the task's
+prompt gives (case-insensitive, any word count); without it a connector box
+must be ``[Connector]``. This passes when every task box carries a bracketed
+kind from the table, a ``registry list`` Label, or a listed app name. It fails on a box with no kind, on the long ``Label`` of a type
 the table names, and on a type 1a's filter drops (case management, A2A, the
 legacy HTTP request and external agents, and non-task elements such as
 triggers), which the BPMN toolbox does not offer.
@@ -61,7 +62,6 @@ OTHER_DROPPED_EXACT = {"A2A.AgentExecution", "Intsvc.HttpExecution", "Intsvc.Syn
                        "Intsvc.AsyncAgentExecution", "Intsvc.SyncWorkflowExecution"}
 CONNECTOR_TYPE = "Intsvc.ActivityExecution"
 CONNECTOR_KIND = "Connector"
-MAX_APP_NAME_WORDS = 3
 
 # phase-2-skeleton-guide.md "Toolbox kinds": the toolbox's short name for
 # these types, used instead of their registry Label.
@@ -126,30 +126,26 @@ def load_registry(saved: str | None) -> list[dict]:
     return types
 
 
-def kind_sets(types: list[dict]) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
-    """(toolbox kinds, dropped kinds, table types' long Labels), each normalized text -> display text.
+def kind_sets(types: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
+    """(toolbox kinds, dropped kinds), each normalized text -> display text.
 
-    A type the table lists contributes only its table kind (its registry Label
-    goes in the third map); any other type contributes its registry Label,
+    A type the table lists contributes only its table kind (its long
+    registry Label is not accepted); any other type contributes its registry Label,
     to the dropped map when 1a's filter drops it. The table's kinds are
     allowed even when the installed CLI does not list the type.
     """
     toolbox: dict[str, str] = {_norm(k): k for k in TOOLBOX_KINDS.values()}
     dropped: dict[str, str] = {}
-    table_labels: dict[str, str] = {}
     for t in types:
         ext = t.get("ExtensionType") or ""
         label = t.get("Label")
         if not label:
             continue
-        if ext in TOOLBOX_KINDS:
-            table_labels.setdefault(_norm(label), label)
-        else:
+        if ext not in TOOLBOX_KINDS:
             (dropped if is_dropped(t) else toolbox).setdefault(_norm(label), label)
     for key in toolbox:
         dropped.pop(key, None)
-        table_labels.pop(key, None)
-    return toolbox, dropped, table_labels
+    return toolbox, dropped
 
 
 def bracket_candidates(name: str) -> list[str]:
@@ -177,8 +173,8 @@ def find_bpmn(name: str) -> str:
 
 
 def check(boxes: list[str], toolbox: dict[str, str], dropped: dict[str, str],
-          table_labels: dict[str, str] | None = None) -> list[str]:
-    table_labels = table_labels or {}
+          apps: set[str] | None = None) -> list[str]:
+    apps = {_norm(a) for a in (apps or ())}
     errors = []
     for box in boxes:
         candidates = bracket_candidates(box)
@@ -191,19 +187,19 @@ def check(boxes: list[str], toolbox: dict[str, str], dropped: dict[str, str],
         if hit:
             errors.append(f"box {box!r} uses {hit!r}, a type 1a's filter drops that the BPMN toolbox does not offer")
             continue
-        # Anything else must be a connector box's app name: the longest
-        # bracket suffix, short, and not the long Label of a table type.
-        longest = candidates[0].strip()
-        if _norm(longest) in table_labels or not longest or len(longest.split()) > MAX_APP_NAME_WORDS \
-                or "[" in longest:
-            errors.append(f"box {box!r}: {longest!r} is neither a toolbox kind from the table, a `registry list` "
-                          "Label, nor a short app name for a connector box")
+        # Anything else is valid only as a connector box's app name the task listed.
+        if any(_norm(c) in apps for c in candidates):
+            continue
+        errors.append(f"box {box!r}: {candidates[0].strip()!r} is neither a toolbox kind from the table, a "
+                      "`registry list` Label, nor a listed app name (a connector box is `[Connector]` "
+                      "unless the request names the app)")
     return errors
 
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("name")
+    ap.add_argument("--apps", nargs="*", default=[], help="app names a connector box may carry")
     ap.add_argument("--registry-json")
     args = ap.parse_args(argv)
 
@@ -218,11 +214,11 @@ def main(argv: list[str]) -> int:
     if not boxes:
         fail(f"{path} has no task boxes")
 
-    toolbox, dropped, table_labels = kind_sets(load_registry(args.registry_json))
-    errors = check(boxes, toolbox, dropped, table_labels)
+    toolbox, dropped = kind_sets(load_registry(args.registry_json))
+    errors = check(boxes, toolbox, dropped, args.apps)
     if errors:
         print("FAIL:\n" + "\n".join(f"  - {e}" for e in errors))
-        print("toolbox kinds: " + ", ".join(sorted(toolbox.values())) + " (or the app name, for a connector box)")
+        print("toolbox kinds: " + ", ".join(sorted(toolbox.values())) + " (or a listed app name, for a connector box)")
         return 1
     print(f"OK: {len(boxes)} box(es) in {path} carry toolbox kinds: {boxes}")
     return 0
