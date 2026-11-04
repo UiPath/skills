@@ -169,7 +169,7 @@ uip admin robot-accounts create "InvoiceRunner" --output json   # capture .Data.
 uip or users import --directory-id <id-from-above> --type DirectoryRobot --domain autogen --output json
 
 # External application — requires --directory-id (the IS UUID)
-uip admin external-apps list --search "MyApp" --output json   # capture .id
+uip admin external-apps list --output json   # find the app by .name, capture its .id
 uip or users import --directory-id <id-from-above> --type DirectoryExternalApplication --domain autogen --output json
 ```
 

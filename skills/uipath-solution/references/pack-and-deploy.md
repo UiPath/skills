@@ -82,8 +82,9 @@ Upload the packed .zip so it appears in the UiPath solution feed:
 ```bash
 uip solution publish ./output/MySolution_2.0.0.zip --output json
 
-# Target a specific tenant
-uip solution publish ./output/MySolution_2.0.0.zip --tenant "Production" --output json
+# Target another tenant: switch the login session first (publish has no tenant option)
+uip login tenant set "<TENANT_NAME>" --output json
+uip solution publish ./output/MySolution_2.0.0.zip --output json
 ```
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
@@ -429,7 +430,7 @@ uip solution deploy run -n "MySolution-Staging" --package-name "MySolution" --pa
   --folder-name "MySolution" --config-file staging-config.json --output json
 
 # Production (after validation)
-uip login tenant set "Production" --output json
+uip login tenant set "<TENANT_NAME>" --output json
 uip solution publish ./output/MySolution_1.2.0.zip --output json
 uip solution deploy run -n "MySolution-Prod" --package-name "MySolution" --package-version "1.2.0" \
   --folder-name "MySolution" --config-file production-config.json --output json

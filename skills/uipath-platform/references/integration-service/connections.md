@@ -178,10 +178,10 @@ For webhook URL retrieval after the trigger is configured, see [triggers.md — 
 
 even though a connection exists in another folder.
 
-**Cross-folder pattern** — pass `--folder` explicitly:
+**Cross-folder pattern** — pass `--folder-key` explicitly (a folder key GUID from `uip or folders list`; folder names are rejected):
 
 ```bash
-uip is connections list "<connector-key>" --folder "<folder-name-or-key>" --output json
+uip is connections list "<connector-key>" --folder-key "<FOLDER_KEY>" --output json
 ```
 
 **Enumerate every folder** — iterate folders and list per folder:
@@ -189,10 +189,10 @@ uip is connections list "<connector-key>" --folder "<folder-name-or-key>" --outp
 ```bash
 uip or folders list --output json
 # → for each folder, call:
-uip is connections list "<connector-key>" --folder "<folder-name-or-key>" --output json
+uip is connections list "<connector-key>" --folder-key "<FOLDER_KEY>" --output json
 ```
 
-> If the user reports "connection exists in my personal workspace but CLI can't see it", suspect default folder filtering — re-list with `--folder` set to that workspace before creating a new connection.
+> If the user reports "connection exists in my personal workspace but CLI can't see it", suspect default folder filtering — re-list with `--folder-key` set to that workspace's key before creating a new connection.
 
 ---
 

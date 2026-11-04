@@ -558,7 +558,6 @@ uip solution pack . ./build \
 
 # 6. Publish — pack names the zip <name>_<version>.zip
 uip solution publish ./build/MyApiSolution_1.0.0.zip \
-  --tenant MyTenant \
   --output json
 ```
 <!--skill-flavor:local-solution-lifecycle:end-->

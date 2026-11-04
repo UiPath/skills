@@ -56,8 +56,7 @@ What to look for:
 4. **Check whether AI Trust Layer policy is overriding routing:**
 
    ```bash
-   uip gov aops-policy deployed-policy resolve \
-     --product AITrustLayer --license-type <type> --tenant <name> --output json
+   uip gov aops-policy deployed-policy get <LICENSE_TYPE> AITrustLayer <TENANT_IDENTIFIER> --output json
    ```
 
    If a deployed policy blocks the vendor or model the BYO record references, the gateway will fall back to default. Route to [`uipath-governance`](/uipath:uipath-governance) for full AOps policy investigation.
