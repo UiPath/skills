@@ -67,6 +67,8 @@ uip vss deploy packages --no-interactive --output json
 
 `Data` has one row per package: `Vertical`, `PackageName`, and `DisplayName` and `LatestVersion` when the service sends them. This list is the only source for which verticals and packages exist. The vertical files do not decide it: a package can be on the list with no file, and a file can name a package this tenant does not have.
 
+`Data: []` means this tenant has nothing to deploy. It is a successful read, not a failure: do not use the fallback. Tell the user, and suggest another tenant (`uip login tenant set <TENANT_NAME>`, then list again) or asking the package's author whether it is published.
+
 Ask one question at a time, and skip any the user already answered.
 
 1. **Which vertical.** A *vertical* is the industry the solution is built for, such as FINS (Financial Services). List the `Vertical` values from the list, by the full name in [verticals-guide.md](references/verticals/verticals-guide.md) when it has one (`fins` is FINS (Financial Services)), and ask which. When the list has one vertical, name it and go on to the solution question in the same message.
