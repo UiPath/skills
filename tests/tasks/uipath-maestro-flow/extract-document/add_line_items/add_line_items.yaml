@@ -40,9 +40,8 @@ success_criteria:
   - type: run_command
     description: "A repeating (array) group holds the line-item description, quantity and amount"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
       '[{"name": "desc", "repeats": true}, {"name": "quant|qty", "repeats": true}, {"name": "amount", "repeats": true}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -50,10 +49,9 @@ success_criteria:
   - type: run_command
     description: "The line items are nested under the Invoice group by name (\"Invoice > ...\")"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
       '[{"name": "desc", "group": "^Invoice > "}, {"name": "quant|qty", "group": "^Invoice > "},
       {"name": "amount", "group": "^Invoice > "}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -61,9 +59,8 @@ success_criteria:
   - type: run_command
     description: "A PO number field was added to the Invoice group"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
       '[{"name": "(^|[^a-z])P[.]?O([^a-z]|$)|purchase order", "group": "^Invoice$"}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -71,28 +68,25 @@ success_criteria:
   - type: run_command
     description: "The four original fields are still in the Invoice group, with their ids"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
       '[{"name": "^Invoice Number$", "group": "^Invoice$", "id": "9fbb50a5-5b7a-442b-bc48-4d528c82e200"},
       {"name": "^Invoice Date$", "group": "^Invoice$", "id": "9ad17b9e-17ce-4410-a4d8-2d19bec3f25d"},
       {"name": "^Vendor Name$", "group": "^Invoice$", "id": "d246a961-e9bc-452a-9ff5-f86178bb535c"},
       {"name": "^Total$", "group": "^Invoice$", "id": "059158da-1564-4680-a208-ce02de660518"}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "The overall prompt survived, and every group and field, old and new, carries instructions"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader described
-    timeout: 60
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader described
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "$defs still holds the six built-in field types and nothing else"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader defs --only
-    timeout: 60
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader defs --only
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
@@ -107,7 +101,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes on InvoiceReader.flow with no warnings"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader validate
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

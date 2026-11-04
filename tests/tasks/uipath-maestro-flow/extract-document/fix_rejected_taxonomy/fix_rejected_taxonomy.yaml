@@ -41,10 +41,9 @@ success_criteria:
   - type: run_command
     description: "The node carries the user's fields, with the over-long year-of-hatch field kept under a shorter name"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields
       '[{"name": "^Licence Number$"}, {"name": "^Licence Expiry$"}, {"name": "^Falconer$"},
       {"name": "^Licence Status$"}, {"name": "^Ring Number$"}, {"name": "^Species$"}, {"name": "hatch"}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -52,18 +51,16 @@ success_criteria:
   - type: run_command
     description: "The bird's fields still sit in a group nested under a licence group by name"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields
       '[{"name": "^Ring Number$", "group": "^Licence.* > "}, {"name": "^Species$", "group": "^Licence.* > "},
       {"name": "hatch", "group": "^Licence.* > "}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "The undefined type was replaced by a built-in one: $defs holds the six built-in field types and nothing else"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader defs --only
-    timeout: 60
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader defs --only
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -71,17 +68,16 @@ success_criteria:
   - type: run_command
     description: "The user's field instructions were carried over, not rewritten"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields
       '[{"name": "^Licence Expiry$", "says": "^The date the licence expires, not the date it was issued[.]$"},
       {"name": "^Ring Number$", "says": "^The ring number fitted to the bird[.]$"}]'
-    timeout: 60
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "uip maestro flow validate passes on LicenceReader.flow with no warnings"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader validate
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
