@@ -281,7 +281,7 @@ uip solution deploy config set <config.json> <Ontology> conflictFixingAction Ren
 uip solution deploy config set <config.json> <Ontology> name <NewName>
 ```
 
-`Replace` keeps the existing ontology's id and replaces its artifacts. `RenameInSolution` creates a new ontology under the new name. The ontology service never offers `UseExisting`, `MergeConfiguration` or `RenameExisting` for an ontology: never set them, and never set an ontology's action with `--all`.
+`Replace` keeps the existing ontology's id and replaces its artifacts. `RenameInSolution` creates a new ontology under the new name. The ontology name is read only while authoring and in Studio Web; it can be changed only in the deployment configuration, and no other ontology property changes at deploy. The ontology service never offers `UseExisting`, `MergeConfiguration` or `RenameExisting` for an ontology: never set them, and never set an ontology's action with `--all`.
 
 **Post-deploy check.** After `deploy run`, confirm the ontology landed with two read-only calls in the deployment folder:
 

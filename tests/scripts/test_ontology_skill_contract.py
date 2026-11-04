@@ -60,12 +60,21 @@ def section(text: str, heading: str) -> str:
             break
     assert start is not None, f"heading not found: {heading}"
     out = []
+    in_fence = False
     for line in lines[start:]:
-        m = re.match(r"(#+)\s", line)
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+        m = None if in_fence else re.match(r"(#+)\s", line)
         if m and len(m.group(1)) <= level:
             break
         out.append(line)
     return "\n".join(out)
+
+
+def test_section_ignores_headings_inside_code_fences():
+    text = "## A\n\n```bash\n# comment\nrun\n```\n\nafter\n\n## B\n\nother"
+    body = section(text, "A")
+    assert "# comment" in body and "after" in body and "other" not in body
 
 
 def test_skills_registered_in_development():
@@ -438,7 +447,8 @@ def test_solution_ontology_conflict_is_replace_or_rename():
     assert re.search(r"uip solution deploy config set <config\.json> <Ontology> conflictFixingAction Replace", sec)
     assert re.search(r"uip solution deploy config set <config\.json> <Ontology> conflictFixingAction RenameInSolution", sec)
     assert re.search(r"uip solution deploy config set <config\.json> <Ontology> name <NewName>", sec)
-    assert "InstallError" in sec and "read only while authoring" not in sec
+    assert "InstallError" in sec
+    assert "read only while authoring" in sec and "deployment configuration" in sec
     for l in unnegated_lines_of(sec, re.compile(r"UseExisting|MergeConfiguration|RenameExisting|--all")):
         raise AssertionError(l)
     old = read(SOLUTION_DIR_SKILL / "references/pack-and-deploy.md")
