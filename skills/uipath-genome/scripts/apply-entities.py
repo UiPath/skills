@@ -26,6 +26,7 @@ Exit 0 when every pass completed; exit 1 with one line per failure.
 import argparse
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -34,6 +35,12 @@ CLI_ENV = dict(os.environ, UIPATH_CLI_DISABLE_VERSION_SYNC="1")
 
 SCALAR_TYPES = {"STRING", "MULTILINE_TEXT", "MULTILINE_MAX", "DECIMAL", "BOOLEAN",
                 "DATE", "DATETIME_WITH_TZ", "AUTO_NUMBER", "FILE"}
+
+SQL_FOR_CLI = {
+    "STRING": "NVARCHAR", "MULTILINE_TEXT": "MULTILINE", "MULTILINE_MAX": "MULTILINE_MAX",
+    "DECIMAL": "DECIMAL", "AUTO_NUMBER": "DECIMAL", "BOOLEAN": "BIT", "DATE": "DATE",
+    "DATETIME_WITH_TZ": "DATETIMEOFFSET",
+}
 
 
 class ApplyError(Exception):
@@ -85,7 +92,7 @@ def scalar_field_body(field):
 
 
 def run_cli(cmd, dry_run, cwd):
-    printable = " ".join(cmd)
+    printable = shlex.join(cmd)
     if dry_run:
         print(f"  [dry-run] {printable}")
         return None
@@ -102,13 +109,59 @@ def entity_resource_path(solution, name):
                         f"{name}.json")
 
 
-def minted_id(solution, name):
-    """Read back the id the CLI minted. Returns None before the entity exists."""
+def read_resource(solution, name):
     path = entity_resource_path(solution, name)
     if not os.path.exists(path):
         return None
-    with open(path, encoding="utf-8") as fh:
-        return json.load(fh)["resource"].get("key")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh).get("resource") or {}
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ApplyError(f"{path}: {exc}")
+
+
+def minted_id(solution, name):
+    """Read back the id the CLI minted. Returns None before the entity exists."""
+    resource = read_resource(solution, name)
+    return resource.get("key") if resource else None
+
+
+def scalar_drift(solution, name, entity):
+    """What the solution ships minus what the model says. Empty when they agree.
+
+    Existence is not agreement: a re-derived model applied over an older one
+    would otherwise report success while shipping the stale schema.
+    """
+    resource = read_resource(solution, name)
+    if not resource:
+        return []
+    try:
+        schema = json.loads(resource.get("spec", {}).get("resourceJson") or "{}")
+    except json.JSONDecodeError as exc:
+        return [f"resourceJson is not readable ({exc})"]
+    on_disk = {f["Name"]: f for f in schema.get("Fields", [])
+               if isinstance(f, dict) and not f.get("IsSystemField") and f.get("Name")}
+    wanted = {f["name"]: f for f in entity.get("fields", [])}
+    delta = []
+    for missing in sorted(set(wanted) - set(on_disk)):
+        delta.append(f"{missing} is in the model and not in the solution")
+    for extra in sorted(set(on_disk) - set(wanted)):
+        if extra not in {r["name"] for r in entity.get("relationships", [])} and \
+           extra not in {c["name"] for c in entity.get("choiceSetFields", [])}:
+            delta.append(f"{extra} is in the solution and not in the model")
+    for shared in sorted(set(wanted) & set(on_disk)):
+        want, have = wanted[shared], on_disk[shared]
+        want_sql = SQL_FOR_CLI.get(want["type"])
+        have_sql = (have.get("SqlType") or {}).get("Name")
+        if want_sql and have_sql and want_sql != have_sql:
+            delta.append(f"{shared} is {have_sql}, the model says {want_sql}")
+        want_len, have_len = want.get("lengthLimit"), (have.get("SqlType") or {}).get("LengthLimit")
+        if want_len is not None and have_len is not None and int(want_len) != int(have_len):
+            delta.append(f"{shared} lengthLimit is {have_len}, the model says {want_len}")
+        if bool(want.get("isRequired")) != bool(have.get("IsRequired")):
+            delta.append(f"{shared} isRequired is {bool(have.get('IsRequired'))}, "
+                         f"the model says {bool(want.get('isRequired'))}")
+    return delta
 
 
 def open_items_text(model, solution):
@@ -142,12 +195,14 @@ def open_items_text(model, solution):
         lines += ["### Choice-set fields", ""]
         for entity, field in cs_fields:
             kind = "CHOICE_SET_MULTIPLE" if field.get("multiple") else "CHOICE_SET_SINGLE"
+            req = ',\\"isRequired\\":true' if field.get("isRequired") else ""
             lines.append(f"- [ ] Add **`{entity['name']}.{field['name']}`** → choice set "
-                         f"`{field['choiceSet']}`")
+                         f"`{field['choiceSet']}`"
+                         f"{' (required)' if field.get('isRequired') else ''}")
             lines.append(f"      `uip df entities update <{entity['name']}-id> --body "
                          f"'{{\"addFields\":[{{\"name\":\"{field['name']}\","
-                         f"\"type\":\"{kind}\",\"choiceSetId\":\"<choice-set-id>\"}}]}}' "
-                         f"--output json`")
+                         f"\"type\":\"{kind}\",\"choiceSetId\":\"<choice-set-id>\""
+                         f"{req}}}]}}' --output json`")
         lines.append("")
 
     rels = [(e, r) for e in model["entities"] for r in e.get("relationships", [])]
@@ -157,16 +212,24 @@ def open_items_text(model, solution):
                   "renders in pickers, and it is not the target's `Id`.", ""]
         for entity, rel in rels:
             target = entities.get(rel["target"], {})
-            display = target.get("displayField", "<display field>")
+            display = target.get("displayField") or "<CHOOSE A DISPLAY FIELD — none proposed>"
             lines.append(f"- [ ] Add **`{entity['name']}.{rel['name']}`** → `{rel['target']}`, "
                          f"displaying `{display}`")
+            req = ',\\"isRequired\\":true' if rel.get("isRequired") else ""
             lines.append(f"      `uip df entities update <{entity['name']}-id> --body "
                          f"'{{\"addFields\":[{{\"name\":\"{rel['name']}\","
                          f"\"type\":\"RELATIONSHIP\","
                          f"\"referenceEntityId\":\"<{rel['target']}-id>\","
-                         f"\"referenceFieldId\":\"<{rel['target']}.{display}-field-id>\"}}]}}' "
-                         f"--output json`")
+                         f"\"referenceFieldId\":\"<{rel['target']}.{display}-field-id>\""
+                         f"{req}}}]}}' --output json`")
         lines.append("")
+        undecided = sorted({r["target"] for _e, r in rels
+                            if not entities.get(r["target"], {}).get("displayField")})
+        if undecided:
+            lines += ["**Choose a display field first** for " +
+                      ", ".join(f"`{n}`" for n in undecided) +
+                      " — no STRING field was available to propose one, and the display field "
+                      "decides what renders in every picker.", ""]
         blocked = sorted({e["name"] for e, _r in rels})
         lines += ["### Blocked until the fields above exist", "",
                   "A workflow that traverses a relationship cannot be built before the field",
@@ -194,8 +257,16 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    with open(args.entities, encoding="utf-8") as fh:
-        model = json.load(fh)
+    try:
+        with open(args.entities, encoding="utf-8") as fh:
+            model = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ApplyError(f"--entities {args.entities}: {exc}")
+    for key in ("project", "entities"):
+        if key not in model:
+            raise ApplyError(f"--entities {args.entities}: no {key!r} key")
+    if not os.path.isdir(args.solution):
+        raise ApplyError(f"--solution {args.solution} is not a directory")
     project = model["project"]
     entities = {e["name"]: e for e in model["entities"]}
 
@@ -213,11 +284,16 @@ def main():
     print(f"pass 0: {len(entities)} entities, {len(edges)} edge(s), no cycle")
 
     # ---- pass 1: entities, scalar fields only -------------------------------
-    created = 0
+    created, drifted = 0, []
     for name in sorted(entities):
         entity = entities[name]
         if os.path.exists(entity_resource_path(args.solution, name)):
-            print(f"  = {name} exists")
+            delta = scalar_drift(args.solution, name, entity)
+            if delta:
+                drifted.append((name, delta))
+                print(f"  ! {name} differs from the model: {'; '.join(delta)}")
+            else:
+                print(f"  = {name} matches")
             continue
         body = {"displayName": entity.get("displayName") or name,
                 "description": entity.get("description") or "",
@@ -228,6 +304,13 @@ def main():
         created += 1
         print(f"  + {name} ({len(entity['fields'])} scalar field(s))")
     print(f"pass 1: {created} created, {len(entities) - created} already present")
+    if drifted:
+        raise ApplyError(
+            "the solution's entities no longer match the model:\n  " +
+            "\n  ".join(f"{n}: {'; '.join(d)}" for n, d in drifted) +
+            "\nRe-applying would ship the stale schema and report success. Update them with "
+            "`uip df entities update <Name> --local --body '{\"addFields\":[…]}'`, or delete "
+            "and re-create, then run again.")
 
     # ---- pass 2: gate -------------------------------------------------------
     if args.dry_run:

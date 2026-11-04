@@ -187,16 +187,23 @@ def merge_property_shapes(shapes):
         if shape.get("pattern"):
             out["patterns"].append(shape["pattern"])
         if shape.get("in"):
-            # Conjunction of two closed sets is their intersection; the first
-            # non-empty set wins when they are disjoint, and that is a modelling
-            # error worth surfacing rather than silently emptying.
-            out["in"] = ([v for v in out["in"] if v in shape["in"]]
-                         if out["in"] else list(shape["in"]))
+            # Conjunction of two closed sets is their intersection. Disjoint sets
+            # would intersect to nothing and the field would silently become a
+            # plain STRING, so keep the first and flag the conflict instead.
+            if not out["in"]:
+                out["in"] = list(shape["in"])
+            else:
+                both = [v for v in out["in"] if v in shape["in"]]
+                if both:
+                    out["in"] = both
+                else:
+                    out.setdefault("inConflicts", []).append(list(shape["in"]))
         out["unsupported"] = sorted(set(out["unsupported"]) | set(shape.get("unsupported") or []))
         out["annotations"].update(shape.get("annotations") or {})
     for key in MERGE_MAX + MERGE_MIN:
         out.setdefault(key, None)
     out["pattern"] = out["patterns"][0] if out["patterns"] else None
+    out.setdefault("inConflicts", [])
     return out
 
 
@@ -336,33 +343,37 @@ def components(entity_names, edges):
 
 
 def find_cycle(edges):
-    """Directed cycle over edges [(child, parent)], self-loops already removed."""
+    """Directed cycle over edges [(child, parent)], self-loops already removed.
+
+    Iterative: a recursive walk overflows on the long chains real ontologies have.
+    """
     graph = {}
     for a, b in edges:
         graph.setdefault(a, set()).add(b)
     WHITE, GREY, BLACK = 0, 1, 2
-    colour, stack = {}, []
+    colour = {}
 
-    def visit(node):
-        colour[node] = GREY
-        stack.append(node)
-        for nxt in sorted(graph.get(node, ())):
+    for root in sorted(graph):
+        if colour.get(root, WHITE) != WHITE:
+            continue
+        stack = [(root, iter(sorted(graph.get(root, ()))))]
+        path = [root]
+        colour[root] = GREY
+        while stack:
+            node, children = stack[-1]
+            nxt = next(children, None)
+            if nxt is None:
+                colour[node] = BLACK
+                stack.pop()
+                path.pop()
+                continue
             state = colour.get(nxt, WHITE)
             if state == GREY:
-                return stack[stack.index(nxt):] + [nxt]
+                return path[path.index(nxt):] + [nxt]
             if state == WHITE:
-                found = visit(nxt)
-                if found:
-                    return found
-        stack.pop()
-        colour[node] = BLACK
-        return None
-
-    for node in sorted(graph):
-        if colour.get(node, WHITE) == WHITE:
-            found = visit(node)
-            if found:
-                return found
+                colour[nxt] = GREY
+                path.append(nxt)
+                stack.append((nxt, iter(sorted(graph.get(nxt, ())))))
     return None
 
 
@@ -377,23 +388,27 @@ def main():
     ap.add_argument("--scope", default="tenant", choices=("tenant", "folder"))
     args = ap.parse_args()
 
-    with open(args.inventory, encoding="utf-8") as fh:
-        inv = json.load(fh)
-    overrides = {}
-    if args.overrides:
-        with open(args.overrides, encoding="utf-8") as fh:
-            overrides = json.load(fh)
-    previous = {}
-    if args.previous:
-        with open(args.previous, encoding="utf-8") as fh:
-            previous = json.load(fh)
+    def load(path, what):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                return json.load(fh)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise DeriveError(f"{what} {path}: {exc}")
+
+    inv = load(args.inventory, "--inventory")
+    overrides = load(args.overrides, "--overrides") if args.overrides else {}
+    previous = load(args.previous, "--previous") if args.previous else {}
+    unknown = sorted(set(overrides) - {"systemsOfRecord", "replicas", "folderScoped",
+                                       "displayFields", "lookupEntities", "annotations"})
+    if unknown:
+        raise DeriveError(f"--overrides {args.overrides}: unknown key(s) "
+                          f"{', '.join(unknown)}; a typo here is silently ignored otherwise")
 
     register = Register()
     shapes = shape_index(inv)
     node_annotations = shape_annotations(inv)
     r2rml = r2rml_index(inv)
     replicas = dict(overrides.get("replicas", {}))
-    lookup_classes = set(overrides.get("lookupEntities", []))
     annotation_map = overrides.get("annotations", {})
     source_predicate = annotation_map.get("authoritativeSource")
     mode_predicate = annotation_map.get("enforcementMode")
@@ -401,9 +416,61 @@ def main():
     declared_sources = {}   # class IRI -> the system named in the shapes
 
     classes = {c["iri"]: c for c in inv.get("classes", [])}
-    dprops = inv.get("datatypeProperties", [])
-    oprops = inv.get("objectProperties", [])
+    dprops = list(inv.get("datatypeProperties", []))
+    oprops = list(inv.get("objectProperties", []))
     reified = {r["iri"]: r for r in inv.get("reifiedRelations", [])}
+
+    # A bundle is any ONE of the three inputs. Classes and properties the OWL
+    # does not declare, but the shapes or the mappings name, are synthesised
+    # here so a SHACL-only or R2RML-only bundle still yields a model.
+    def ensure_class(iri, whence):
+        if iri and iri not in classes:
+            classes[iri] = {"iri": iri, "label": None, "comment": None,
+                            "superClasses": [], "hasKey": []}
+            register.add(source="metadata", from_iri=iri, subject=local_name(iri),
+                         statement=f"class not declared in the ontology; taken from {whence}",
+                         expressible="yes", resolution="default-applied")
+
+    known_d = {p["iri"] for p in dprops}
+    known_o = {p["iri"] for p in oprops}
+
+    for shape in inv.get("shapes", []):
+        target = shape.get("targetClass")
+        ensure_class(target, "a SHACL node shape")
+        if not target:
+            register.add(source="metadata", from_iri=shape.get("iri"),
+                         statement=f"node shape with no sh:targetClass; its "
+                                   f"{len(shape.get('properties') or [])} property shape(s) "
+                                   f"could not be attached to an entity",
+                         expressible="no", candidate="assumed", resolution="deferred")
+            continue
+        for ps in shape.get("properties", []):
+            path = ps.get("path")
+            if not path or path in known_d or path in known_o:
+                continue
+            if ps.get("class"):
+                oprops.append({"iri": path, "label": ps.get("name"), "domain": [target],
+                               "range": [ps["class"]], "functional": ps.get("maxCount") == 1,
+                               "inverseFunctional": False})
+                known_o.add(path)
+                ensure_class(ps["class"], "a SHACL sh:class")
+            else:
+                dprops.append({"iri": path, "label": ps.get("name"), "domain": [target],
+                               "range": ps.get("datatype"), "functional": True})
+                known_d.add(path)
+
+    for tmap in inv.get("triplesMaps", []):
+        subject_class = tmap.get("subjectClass")
+        ensure_class(subject_class, "an R2RML subject map")
+        if not subject_class:
+            continue
+        for pom in tmap.get("predicateObjectMaps", []):
+            pred = pom.get("predicate")
+            if not pred or pred in known_d or pred in known_o or not pom.get("column"):
+                continue
+            dprops.append({"iri": pred, "label": None, "domain": [subject_class],
+                           "range": None, "functional": True})
+            known_d.add(pred)
 
     for note in inv.get("parserNotes", []):
         register.add(source="metadata", statement=f"input construct not interpreted: {note}",
@@ -416,14 +483,24 @@ def main():
         for dom in prop.get("domain", []):
             props_by_class.setdefault(dom, []).append(prop)
 
+    linked = set()
+    for prop in oprops:
+        linked.update(prop.get("domain") or [])
+        linked.update(prop.get("range") or [])
     entity_classes = sorted(
         iri for iri in classes
-        if props_by_class.get(iri) or iri in reified
+        if props_by_class.get(iri) or iri in reified or iri in linked
     )
     not_covered = [
-        {"from": iri, "why": "class carries no mapped property"}
+        {"from": iri, "why": "class carries no mapped property and no relationship"}
         for iri in sorted(classes) if iri not in entity_classes
     ]
+    # S2-10: a datatype property with no domain, or a domain no class declares,
+    # reaches no entity. Say so rather than letting it disappear.
+    placed = {iri for cls in entity_classes for p in props_by_class.get(cls, [])
+              for iri in [p["iri"]]}
+    not_covered += [{"from": p["iri"], "why": "datatype property with no mapped domain"}
+                    for p in dprops if p["iri"] not in placed]
 
     taken_entities = set()
     name_of = {}
@@ -467,8 +544,11 @@ def main():
                          statement="object property with no mapped domain or range; not emitted",
                          expressible="no", candidate="assumed", resolution="deferred")
             continue
-        if any(d in reified for d in domains):
-            continue  # participants of a reified class are emitted with that entity
+        # A reified class's participants are emitted with that entity, but the
+        # property may have other domains too — filter, do not bail.
+        domains = [d for d in domains if d not in reified]
+        if not domains:
+            continue
         kind = classify_cardinality(prop, shapes)
         for dom in domains:
             for rng in ranges:
@@ -522,6 +602,7 @@ def main():
                 "because": f"{local_name(prop['iri'])} is many-to-many; a RELATIONSHIP field is "
                            f"single-valued, so a bridge entity is the only representation",
             },
+            "displayField": None,
             "fields": [],
             "relationships": [
                 {"name": dom_field, "target": name_of[dom], "cardinality": "many-to-one",
@@ -545,12 +626,24 @@ def main():
     # ---- choice sets --------------------------------------------------------
     prev_sets = {cs["name"]: cs for cs in previous.get("choiceSets", [])}
     choice_sets = {}
+    choice_set_of_path = {}          # path IRI -> set name, so one property = one set
+    taken_sets = set()
 
     def choice_set_for(path_iri, values):
-        name = pascal(local_name(path_iri)) or "Values"
-        existing = choice_sets.get(name)
-        if existing:
-            return name
+        if path_iri in choice_set_of_path:
+            return choice_set_of_path[path_iri]
+        base = pascal(local_name(path_iri)) or "Values"
+        name, n = base, 2
+        while name.lower() in taken_sets:
+            name = f"{base}{n}"
+            n += 1
+        taken_sets.add(name.lower())
+        choice_set_of_path[path_iri] = name
+        if name != base:
+            register.add(source="convention", from_iri=path_iri, subject=name,
+                         statement=f"choice-set name {base!r} already taken by another "
+                                   f"property; this set is {name!r}",
+                         expressible="yes", resolution="default-applied")
         prev = prev_sets.get(name, {})
         pinned = {v["name"]: v["numberId"] for v in prev.get("values", [])}
         nxt = prev.get("nextNumberId", 0)
@@ -633,12 +726,19 @@ def main():
 
             required = None
             min_count = shape.get("minCount") or 0
+            if min_count > 1:
+                register.add(source="process", from_iri=prop["iri"], subject=subject,
+                             statement=f"sh:minCount {min_count}: at least {min_count} values "
+                                       f"required; no Data Fabric option states a lower bound "
+                                       f"above one",
+                             expressible="no", locus=field_locus, level=None,
+                             candidate=soft, resolution=resolution or "deferred")
             if min_count >= 1:
                 required = field_locus == "uipath" and not deactivated
                 register.add(
                     source="process", from_iri=prop["iri"], subject=subject,
                     statement=f"sh:minCount {min_count}: mandatory in the domain",
-                    expressible="yes", locus=field_locus, level=None,
+                    expressible="yes" if min_count == 1 else "no", locus=field_locus, level=None,
                     candidate=hard,
                     resolution=resolution or ("default-applied" if field_locus == "uipath"
                                               else "override"),
@@ -773,9 +873,15 @@ def main():
                 f"is a decomposition this mode does not make; reduce the bundle's long-text "
                 f"properties or split the class in the ontology.")
 
+        comment = cls.get("comment") or ""
+        if len(comment) > 512:
+            register.add(source="metadata", from_iri=iri, subject=ename,
+                         statement=f"rdfs:comment truncated from {len(comment)} to 512 "
+                                   f"characters, the Data Fabric description cap",
+                         expressible="yes", resolution="default-applied")
         entities.append({
             "name": ename, "displayName": cls.get("label") or ename,
-            "description": (cls.get("comment") or "")[:512],
+            "description": comment[:512],
             "displayField": chosen,
             "provenance": {"from": [iri],
                            "derivation": "direct",

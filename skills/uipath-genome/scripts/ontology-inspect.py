@@ -49,8 +49,9 @@ TOKEN_RE = re.compile(
   | (?P<str>"(?:[^"\\\n]|\\.)*")
   | (?P<iri><[^>\s]*>)
   | (?P<directive>@prefix|@base|(?i:PREFIX|BASE)\b)
+  | (?P<lang>@[A-Za-z]+(?:-[A-Za-z0-9]+)*)
   | (?P<number>[+-]?\d+\.\d*(?:[eE][+-]?\d+)?|[+-]?\.?\d+(?:[eE][+-]?\d+)?)
-  | (?P<pname>[A-Za-z_][\w.\-]*:[\w.\-%]*|:[\w.\-%]*)
+  | (?P<pname>(?:[A-Za-z_](?:[\w.\-]*[\w\-])?)?:(?:[\w\-%](?:[\w.\-%]*[\w\-%])?)?)
   | (?P<akw>\ba\b)
   | (?P<boolean>\btrue\b|\bfalse\b)
   | (?P<punct>[.;,\[\]()^]{1,2})
@@ -84,9 +85,21 @@ def tokenize_turtle(text):
     return out
 
 
+_ESCAPES = {"n": "\n", "t": "\t", "r": "\r", "b": "\b", "f": "\f",
+            '"': '"', "'": "'", "\\": "\\", "/": "/"}
+
+
 def _unescape(s):
-    return (s.replace("\\n", "\n").replace("\\t", "\t").replace('\\"', '"')
-             .replace("\\r", "\r").replace("\\\\", "\\"))
+    """One pass, left to right — a chained str.replace lets \\\\ then n read as a newline."""
+    def repl(m):
+        body = m.group(1)
+        if body[0] in "uU":
+            try:
+                return chr(int(body[1:], 16))
+            except ValueError:
+                return m.group(0)
+        return _ESCAPES.get(body, m.group(0))
+    return re.sub(r"\\(u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|.)", repl, s)
 
 
 class TurtleParser:
@@ -157,7 +170,7 @@ class TurtleParser:
             if self.peek()[0] == "dtmark":
                 self.next()
                 dt = self.term()
-            elif self.peek()[1] and str(self.peek()[1]).startswith("@"):
+            elif self.peek()[0] == "lang":
                 lang = self.next()[1][1:]
             return Lit(text, dt, lang)
         if kind == "number":
