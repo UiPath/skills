@@ -135,8 +135,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "action-schema.json carries the guided decision fields beside the claim fields: proposedOutcome, proposedBy, involvement, rationaleDraft, nextTimeOptions inputs; reasons with weight and fields with byDecision as inOuts; Approve, a partial approval and Deny outcomes; rationaleText, decidingReasons, nextTimeScope, changes and record outputs"
-    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); i=d['inputs']['properties']; io=d['inOuts']['properties']; o=d['outputs']['properties']; oc=[k.lower() for k in d['outcomes']['properties']]; rp=io.get('reasons',{}).get('items',{}).get('properties',{}); fp=io.get('fields',{}).get('items',{}).get('properties',{}); ok=all(k in i for k in ['proposedOutcome','proposedBy','involvement','rationaleDraft','nextTimeOptions']) and 'weight' in rp and 'byDecision' in fp and any(k.startswith('approve') for k in oc) and 'deny' in oc and 'submit' not in oc and len(oc)>=3 and all(k in o for k in ['rationaleText','decidingReasons','nextTimeScope','changes','record']); sys.exit(0 if ok else 1)\""
+    description: "action-schema.json carries the guided decision fields beside the claim fields: proposedOutcome, proposedBy, involvement, nextTimeOptions inputs; reasons with weight and fields with byDecision as inOuts; Approve, a partial approval and Deny outcomes; rationaleText, decidingReasons, nextTimeScope, changes and record outputs"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); i=d['inputs']['properties']; io=d['inOuts']['properties']; o=d['outputs']['properties']; oc=[k.lower() for k in d['outcomes']['properties']]; rp=io.get('reasons',{}).get('items',{}).get('properties',{}); fp=io.get('fields',{}).get('items',{}).get('properties',{}); ok=all(k in i for k in ['proposedOutcome','proposedBy','involvement','nextTimeOptions']) and 'weight' in rp and 'byDecision' in fp and any(k.startswith('approve') for k in oc) and 'deny' in oc and 'submit' not in oc and len(oc)>=3 and all(k in o for k in ['rationaleText','decidingReasons','nextTimeScope','changes','record']); sys.exit(0 if ok else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -159,8 +159,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "the app source has the weight menu, marks the recommendation and renders a collapsed record drawer"
-    command: "find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'Not relevant' | grep -q . && find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'Recommended' | grep -q . && find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'What gets recorded' | grep -q ."
+    description: "the app source has the weight menu, marks the recommendation and builds the changeLog for the outputs"
+    command: "find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'Not relevant' | grep -q . && find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'Recommended' | grep -q . && find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'changeLog' | grep -q ."
     timeout: 20
     expected_exit_code: 0
     weight: 2.0

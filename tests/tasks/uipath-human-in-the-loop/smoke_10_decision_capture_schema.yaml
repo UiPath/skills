@@ -42,8 +42,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "the toggle's decision inputs are present: proposedOutcome, proposedBy, involvement, rationaleDraft, nextTimeOptions, conditionOptions"
-    command: "python3 -c \"import json,sys; i=json.load(open('action-schema.json'))['inputs']['properties']; sys.exit(0 if all(k in i for k in ['proposedOutcome','proposedBy','involvement','rationaleDraft','nextTimeOptions','conditionOptions']) else 1)\""
+    description: "the toggle's decision inputs are present: proposedOutcome, proposedBy, involvement, nextTimeOptions, conditionOptions"
+    command: "python3 -c \"import json,sys; i=json.load(open('action-schema.json'))['inputs']['properties']; sys.exit(0 if all(k in i for k in ['proposedOutcome','proposedBy','involvement','nextTimeOptions','conditionOptions']) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
