@@ -93,6 +93,8 @@ Field meanings are in [debugging.md § Output Format](debugging.md#output-format
 uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json
 ```
 
+Drop `--skip-build` for a XAML test case or when `<FILE>` changed since the last `build` ([§ Smoke Test](#smoke-test)).
+
 Helm:
 
 ```text
@@ -319,7 +321,12 @@ Error-severity analyzer rules fail `analyze`, `build`, and `pack`; per-file `val
 
 ## Smoke Test
 
-Clean `validate` and `build` are not runtime proof: attribute literals, activity CacheMetadata failures, and logic defects may appear only at runtime. After zero validation errors and a clean project build, run the workflow and inspect its output. Use `--skip-build` only when no edits occurred after the successful build; it executes the existing artifact and silently ignores later edits.
+Clean `validate` and `build` are not runtime proof: attribute literals, activity CacheMetadata failures, and logic defects may appear only at runtime. After zero validation errors and a clean project build, run the workflow and inspect its output. On the headless Studio, `--skip-build` executes the artifact the last build left and silently ignores later edits (Studio Desktop ignores the flag), so use it only directly after `build`, with no edits since, and never on a XAML test case.
+
+- **XAML test case: run bare.** `build` leaves XAML test cases out of its artifact: every one in a Process or Library project, and in a Tests project each one whose `fileInfoCollection` entry has `editingStatus: "InProgress"`, the status every new test case gets ([testing-guide.md § project.json Registration](testing-guide.md#projectjson-registration)). `build` → `run --skip-build` (or `debug start --skip-build`) on one fails `The <FILE> workflow cannot be found. Make sure that it is part of the project.` Coded test cases are compiled and unaffected.
+- **After a bare run of a XAML file, `--skip-build` of another file can fail.** That run may build only what its file needs, so `--skip-build` of a file outside it fails `Could not load file or assembly '<ASSEMBLY_NAME>'`. Run that file bare too.
+
+Both are stale-artifact errors, not source defects: do not edit the workflow for them; rerun the XAML file bare.
 
 ```bash
 uip rpa run --file-path "<FILE>" --skip-build --output json

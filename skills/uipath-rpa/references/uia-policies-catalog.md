@@ -19,7 +19,7 @@ This skill's conditional UIA policies, one entry each. Read by entry, never end-
    ```bash
    uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json
    ```
-   A `Suspended` on a fault that a Try Catch or Retry Scope of the workflow handles is not a failure: continue it ([debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless)). If the run fails, follow [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
+   Drop `--skip-build` when `<FILE>` is a XAML test case: `build` leaves it out and the run fails `workflow cannot be found` ([cli-reference.md § Smoke Test](cli-reference.md#smoke-test)). A `Suspended` on a fault that a Try Catch or Retry Scope of the workflow handles is not a failure: continue it ([debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless)). If the run fails, follow [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
 3. **When done** (success or failure) — **cancel the debug session:**
    ```bash
    uip rpa execution cancel --project-dir "<PROJECT_DIR>" --output json

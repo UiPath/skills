@@ -19,7 +19,7 @@ Use, in order:
 
 ## Gate ≠ runtime proof
 
-A clean `validate` + `build` does not prove runtime behavior. Silent failures that pass both include C# `//` in child/CDATA `InvokeCode` `Code` swallowing later code, `WriteTextFile` with explicit `Encoding` emitting a BOM, and stripped UIA `N*` `Version` failing only at runtime ([xaml/common-pitfalls.md](xaml/common-pitfalls.md)). For observable outputs (written files or entry-point out-arguments) with no external systems/UI, run exactly one `uip rpa run --skip-build`, then `cat` every output file; judge that chain in the report turn. Neither run nor output check gets another turn; the journey's gate and report rows ([execution-journeys-catalog.md](execution-journeys-catalog.md)) place them.
+A clean `validate` + `build` does not prove runtime behavior. Silent failures that pass both include C# `//` in child/CDATA `InvokeCode` `Code` swallowing later code, `WriteTextFile` with explicit `Encoding` emitting a BOM, and stripped UIA `N*` `Version` failing only at runtime ([xaml/common-pitfalls.md](xaml/common-pitfalls.md)). For observable outputs (written files or entry-point out-arguments) with no external systems/UI, run exactly one `uip rpa run --skip-build` (bare `run` for a XAML test case, [cli-reference.md § Smoke Test](cli-reference.md#smoke-test)), then `cat` every output file; judge that chain in the report turn. Neither run nor output check gets another turn; the journey's gate and report rows ([execution-journeys-catalog.md](execution-journeys-catalog.md)) place them.
 
 ## Sequential gates — never batch across these
 
