@@ -24,10 +24,8 @@ in. It is not a working process and must never be reported as one.
 3. **Make no new registry calls.** No `registry pull`, `search`, or `get`; `list` already ran in 1a.
    Element types are not being chosen yet. Box kinds come from the list 1a
    already read.
-4. **Control flow is real.** Genuine `bpmn:startEvent` (with a plain
-   `bpmn:timerEventDefinition` or `bpmn:messageEventDefinition` when the
-   process starts that way; it needs no registry call, and phase 4 wires the
-   trigger),
+4. **Control flow is real.** Genuine `bpmn:startEvent` (see
+   [Draw the trigger the user named](#draw-the-trigger-the-user-named)),
    `bpmn:exclusiveGateway` and `bpmn:parallelGateway`, `bpmn:sequenceFlow`s,
    and end events: one that every branch converges on, unless the request
    names separate outcomes. Branches converge through a join gateway, never
@@ -55,9 +53,71 @@ in. It is not a working process and must never be reported as one.
    routes on is part of what the user is approving — three branches out of a
    diamond with no stated basis could mean anything. See
    [Gateways cost more than boxes](#gateways-cost-more-than-boxes).
+8. **Mark a step that runs once per item.** When the request says a step
+   runs for each item ("for every line item", "notify each supplier"), put a
+   multi-instance marker on its box. Do not draw a loop from gateways and
+   boxes instead, and do not leave the marker to phase 4: it is structure,
+   and the user is approving it. See
+   [Multi-instance boxes](#multi-instance-boxes).
+9. **Every error path out of a parallel branch must end the process or
+   rejoin.** A parallel join waits for every branch it forked. When an error
+   boundary or a gateway exit leaves one branch for a plain end event, the
+   join never fires and the instance never completes. End that path in a
+   terminate end event (`<bpmn:terminateEventDefinition />`) when it stops
+   the process, or route it back into the join when the process carries on.
 
 The kind is enough for a label; the type's template is resolved in phase 4.
 The resource each box will use is looked up at 3c.
+
+### Draw the trigger the user named
+
+The start event shows how the process begins, so the user can check it at the
+gate. When the request names the trigger, turn the generated start event into
+that trigger in place. Keep its `id` and its `<uipath:entryPointId>`, add no
+second start, and add one plain event definition:
+
+| The request says | Event definition | Start event `name` |
+|---|---|---|
+| A schedule ("every night", "each Monday at 9") | `<bpmn:timerEventDefinition />` | `Every night [Schedule]` |
+| An event in another system ("when an invoice is updated in Data Fabric", "when an email arrives") | `<bpmn:messageEventDefinition />` | `Invoice updated [Data Fabric]`, `Email received [Outlook]` |
+| A message from another process | `<bpmn:messageEventDefinition />` | `Order message received [Message]` |
+
+Name the start the same way as a box: the event first, then its kind in
+brackets, with a connector event naming its app. Keep the generated manual
+start only when the request names no trigger, or says someone starts it.
+The event definition carries no payload and needs no registry call; phase 4
+wires the trigger.
+
+### Multi-instance boxes
+
+Add `bpmn:multiInstanceLoopCharacteristics` to the bare `bpmn:task`, and
+declare the collection it iterates as a process variable (`type="array"`):
+
+```xml
+<bpmn:task id="Task_CheckStock" name="Check stock [RPA workflow]">
+  <bpmn:incoming>Flow_1</bpmn:incoming>
+  <bpmn:outgoing>Flow_2</bpmn:outgoing>
+  <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+    <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">=vars.OutOfStock</bpmn:completionCondition>
+    <bpmn:extensionElements>
+      <uipath:loopCharacteristics inputCollection="=vars.LineItems" inputElement="item" />
+    </bpmn:extensionElements>
+  </bpmn:multiInstanceLoopCharacteristics>
+</bpmn:task>
+```
+
+- "One at a time" or "in order" is `isSequential="true"`. "All at once",
+  "at the same time" or "in parallel" is `isSequential="false"`. When the
+  request does not say, use parallel.
+- "Stop as soon as …" is a `completionCondition` on the boolean variable the
+  box would set. Declare that variable too. With no stop rule, omit
+  `completionCondition`.
+- The `xsi` namespace rule in
+  [Gateways cost more than boxes](#gateways-cost-more-than-boxes) applies to
+  `completionCondition` too.
+
+The full contract is in
+[structural-bpmn.md](structural-bpmn.md#multi-instance--loop-characteristics-registry-gap--canvas-supports-it).
 
 ### Toolbox kinds
 
@@ -129,8 +189,10 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
 - **2b Author the skeleton** by writing the `.bpmn` that `init`
   generated in this run (`<Name>.bpmn` at 2a's `Data.Path`) whole, in one Write, instead of patching it with a series of edits. Only that fresh starter is written whole; a downloaded or brownfield `.bpmn` is edited in place. Preserve the generated start event's `id`, its
   `<uipath:entryPointId>`, and the four generated JSON files. **Do not rename
-  the start event**: its name feeds the entry-point schema, so renaming it
-  makes `refresh` rewrite `entry-points.json` for no benefit.
+  a manual start event**: its name feeds the entry-point schema, so renaming
+  it makes `refresh` rewrite `entry-points.json` for no benefit. A trigger
+  start takes its trigger's name
+  ([Draw the trigger the user named](#draw-the-trigger-the-user-named)).
 - **2c `uip maestro bpmn format <file>.bpmn`** — generates the diagram. Without
   it no box renders on the canvas (Rule 5).
 - **2d `uip maestro bpmn validate <file>.bpmn --output json`** — must reach
