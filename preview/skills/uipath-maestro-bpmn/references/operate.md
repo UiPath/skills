@@ -56,7 +56,7 @@ all but the reads need `uip login`.
    no tenant URLs, folder keys, connection ids, user data, payloads or local paths.
 
 **Always include folder context on the runtime commands that require it**:
-`process run` takes `<FOLDER_KEY>` as a positional argument, and every
+`process list`, `get` and `run` require `--folder-key`, and every
 `instance` subcommand and `incident get` take `--folder-key` or `-f`.
 
 ## Package
@@ -127,14 +127,16 @@ service mocked) are the offline checks; `debug` executes against real services.
 ## Run a deployed process
 
 ```bash
-uip maestro bpmn process list --output json
-uip maestro bpmn process get <PROCESS_KEY> <FEED_ID> --output json
-uip maestro bpmn process run <PROCESS_KEY> <FOLDER_KEY> --inputs @inputs.json --validate --output json
+uip maestro bpmn process list --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn process get <PROCESS_KEY> --feed-id <FEED_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn process run <PROCESS_KEY> --folder-key <FOLDER_KEY> --release-key <RELEASE_KEY> --inputs @inputs.json --output json
 ```
 
-`process run` takes the folder key as a positional argument. Use
-`--release-key`, `--feed-id` or `--robot-ids` only when the user supplies them or
-the discovery output identifies them.
+`get` also requires `--feed-id`; `run` requires `--release-key`.
+Take `<FOLDER_KEY>` from the user, or the `Key` of `uip or folders list --output json`.
+From the `process list` entry take `<RELEASE_KEY>` (`releaseKey`) and `<FEED_ID>` (`feedId`).
+`<PROCESS_KEY>` is `<processKey>:<processVersion>` from that entry, for example `MyProcess:1.0.0`.
+Add `--feed-id` or `--robot-ids` to `process run` only when the user supplies them or the list entry identifies them.
 
 ## Inspect a job or instance
 
@@ -193,5 +195,5 @@ When the action reveals a modeling or binding problem, the fix is in the
 - **Never fix a packaging error by editing the generated JSON.** Fix the source, recompile, `refresh`.
 - **Never treat package generation as authoring** — the four files are derived from the compiled BPMN.
 - **Never retry a faulted instance before reading its incidents and deployed asset.**
-- **Never omit the folder key** on `process run`, `instance …` and `incident get`.
+- **Never omit the folder key** on `process list`/`get`/`run`, `instance …` and `incident get`.
 - **Never put tenant, folder, feed, connection or payload values in examples or summaries.**

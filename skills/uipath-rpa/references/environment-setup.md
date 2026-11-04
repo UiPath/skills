@@ -317,7 +317,7 @@ UI workflows interact with applications and contain no business rules; business 
 
 #### Composition and argument naming
 
-Compose with `Invoke Workflow File` (coded: `workflows.StepName()`). Use directional process argument prefixes `in_InvoiceId`, `out_Result`, and `io_Browser`; library public workflows omit prefixes ([library-authoring-guide.md § The Public-Workflow Contract](library-authoring-guide.md)).
+Compose with `Invoke Workflow File` (coded: `workflows.StepName()`). Argument names follow SKILL.md Common Rule 4c.
 
 #### Layout and scale-out
 

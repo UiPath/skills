@@ -149,7 +149,7 @@ VB.NET expressions use bracket notation `[expression]` inline in attributes:
 
 **XML escaping required inside expressions:** `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;`, `&` → `&amp;`
 
-**Throw.Exception quote escaping gotcha:** Fully-qualified class names + complex string expressions with multiple `&quot;` in `Throw.Exception` can cause compiler errors. Use short-form class names (`BusinessRuleException` not `UiPath.Core.Activities.BusinessRuleException`) and for complex messages, assign to a variable first then throw with the variable. See [§ VB.NET Quote Escaping in Throw.Exception](#vbnet-quote-escaping-in-throwexception-critical-for-xaml-generation) for the full pattern.
+**Throw.Exception quote escaping gotcha:** Fully-qualified class names + complex string expressions with multiple `&quot;` in `Throw.Exception` can cause compiler errors. Use short-form class names (`BusinessRuleException` not `UiPath.Core.BusinessRuleException`) and for complex messages, assign to a variable first then throw with the variable. See [§ VB.NET Quote Escaping in Throw.Exception](#vbnet-quote-escaping-in-throwexception-critical-for-xaml-generation) for the full pattern.
 
 For comprehensive VB.NET expression patterns (strings, dates, collections, DataTables), see [activity-docs/_PATTERNS.md](./activity-docs/_PATTERNS.md).
 
@@ -589,10 +589,10 @@ The `Throw.Exception` attribute wraps the bracket expression in `VisualBasicValu
 
 ```xml
 <!-- FAILS: Fully-qualified name + complex string concatenation -->
-<Throw Exception="[New UiPath.Core.Activities.BusinessRuleException(&quot;Invalid amount: &quot; &amp; amount.ToString(&quot;F2&quot;) &amp; &quot; for &quot; &amp; txId)]" />
+<Throw Exception="[New UiPath.Core.BusinessRuleException(&quot;Invalid amount: &quot; &amp; amount.ToString(&quot;F2&quot;) &amp; &quot; for &quot; &amp; txId)]" />
 
 <!-- FAILS: String.Format with multiple &quot; inside brackets -->
-<Throw Exception="[New UiPath.Core.Activities.BusinessRuleException(String.Format(&quot;Invalid amount: {0} for {1}&quot;, amount, txId))]" />
+<Throw Exception="[New UiPath.Core.BusinessRuleException(String.Format(&quot;Invalid amount: {0} for {1}&quot;, amount, txId))]" />
 ```
 
 #### What works
@@ -619,7 +619,7 @@ The `Throw.Exception` attribute wraps the bracket expression in `VisualBasicValu
 
 #### Rules
 
-1. **Always use short-form class names** in `Throw.Exception` — `BusinessRuleException` not `UiPath.Core.Activities.BusinessRuleException`. Ensure `UiPath.Core.Activities` is in the namespace imports.
+1. **Always use short-form class names** in `Throw.Exception` — `BusinessRuleException` not `UiPath.Core.BusinessRuleException`. Ensure `UiPath.Core` (the namespace of `BusinessRuleException`) is in the namespace imports.
 2. **For complex messages, use the variable approach** — Assign the message string to a variable first, then pass the variable to the exception constructor.
 3. **For simple messages, inline is fine** — `[New BusinessRuleException(&quot;simple message&quot;)]` works.
 4. **Same rules apply to all exception types** — `Exception`, `BusinessRuleException`, `ArgumentException`, etc.
@@ -692,8 +692,8 @@ These are patterns the agent is likely to produce incorrectly. Check for them af
 
 | Mistake | Fix |
 |---|---|
-| Multiple children directly inside `If.Then` or `If.Else` | Wrap in a single `Sequence` |
-| Activities directly inside `ForEach` body | Use `ActivityAction` wrapper (see Scope Activities section above) |
+| Any activity directly inside `If.Then`/`If.Else`, `TryCatch.Try`/`Finally`, a `Catch` body, a `Switch` case, `Switch.Default`, or a `While`/`DoWhile` body — even just one | Wrap it in a `Sequence` (a `Switch` case's `Sequence` carries the `x:Key`) |
+| Activities directly inside `ForEach` body | Use the `ActivityAction` wrapper holding a `Sequence` (see Scope Activities section above) |
 | Activities directly inside scope activities (Excel, Word, etc.) | Use `ActivityAction<T>` body pattern |
 | ViewState referencing nodes that don't exist in the workflow | Remove orphaned ViewState entries, or add the missing nodes |
 

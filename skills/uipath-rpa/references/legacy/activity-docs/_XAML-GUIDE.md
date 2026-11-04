@@ -92,11 +92,11 @@ Arguments are the workflow's public interface — how data flows between workflo
 ### XAML Declaration
 ```xml
 <x:Members>
-  <x:Property Name="inputName"    Type="InArgument(x:String)" />
-  <x:Property Name="inputAge"     Type="InArgument(x:Int32)" />
-  <x:Property Name="inputData"    Type="InArgument(sd:DataTable)" />
-  <x:Property Name="outputResult" Type="OutArgument(x:String)" />
-  <x:Property Name="ioCounter"    Type="InOutArgument(x:Int32)" />
+  <x:Property Name="in_Name"    Type="InArgument(x:String)" />
+  <x:Property Name="in_Age"     Type="InArgument(x:Int32)" />
+  <x:Property Name="in_Data"    Type="InArgument(sd:DataTable)" />
+  <x:Property Name="out_Result" Type="OutArgument(x:String)" />
+  <x:Property Name="io_Counter" Type="InOutArgument(x:Int32)" />
 </x:Members>
 ```
 
@@ -126,14 +126,14 @@ Arguments are the workflow's public interface — how data flows between workflo
 ### Referencing Arguments in Expressions
 ```xml
 <!-- VB.NET: use [argumentName] brackets -->
-<InArgument x:TypeArguments="x:String">[inputName]</InArgument>
+<InArgument x:TypeArguments="x:String">[in_Name]</InArgument>
 
 <!-- Setting output argument -->
 <Assign.To>
-  <OutArgument x:TypeArguments="x:String">[outputResult]</OutArgument>
+  <OutArgument x:TypeArguments="x:String">[out_Result]</OutArgument>
 </Assign.To>
 <Assign.Value>
-  <InArgument x:TypeArguments="x:String">[inputName + " processed"]</InArgument>
+  <InArgument x:TypeArguments="x:String">[in_Name + " processed"]</InArgument>
 </Assign.Value>
 ```
 
