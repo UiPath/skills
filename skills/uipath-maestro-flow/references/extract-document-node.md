@@ -209,7 +209,7 @@ If a published model fits what the user described, say that Extract document is 
 
 These requests fall outside the skill. Recognise the request, reply with the standard response, route the user. Do NOT enter discovery (`uip --help`, grep, source reading).
 
-Anything not described as supported for the Extract document node is unsupported, even if not listed below ([Extract document documentation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/introduction)). Do not edit the `.flow` or `.flow.ts` to reach it.
+For an Extract document node setting or resource that this guide does not cover, do not look for a CLI path and do not edit the `.flow`, `.flow.ts` or project files to reach it. Say it is not available from here and link the [Extract document documentation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/introduction).
 
 | User request | Standard response |
 |--------------|-------------------|
@@ -222,7 +222,7 @@ Anything not described as supported for the Extract document node is unsupported
 | "Use Rules-based / Model-based attribution" | "I can't change attribution from here. See [Attribution](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#attribution)." |
 | "Add model overrides" / "set the overrides JSON" | "I can't set model configuration overrides from here. See [Overrides](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#overrides)." |
 | "Import this IXP taxonomy file" (a file with `entity_defs` and `label_groups`) / "Export the taxonomy as an IXP file" | "I can't import or export IXP taxonomy files from here. Use Import/Export in Studio Web: [Importing and exporting taxonomies](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/importing-and-exporting-taxonomies). I can show the taxonomy, replace it from a flow-format file, or copy it from another Extract document node." |
-| "Upload these documents" / "delete / download a test file" / "tag these documents" / "find the document named X" / "show the documents not annotated yet" | "I can't manage the node's test documents from here. See [Uploading sample documents](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/uploading-sample-documents)." |
+| "Upload these documents" / "delete a test file" / "tag these documents" / "show the documents not annotated yet" | "I can't manage the node's test documents from here. See [Uploading sample documents](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/uploading-sample-documents)." |
 | "What would it extract from this file?" / "refresh the predictions" | "I can't run or refresh predictions for this node. See [Reviewing predictions](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/generating-and-reviewing-predictions)." |
 | "Confirm these values" / "annotate the documents" | "I can't annotate test documents. See [Validating predicted values](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/validating-extractions)." |
 | "Set up the evaluators" / "how should this field be scored?" | "I can't configure the node's evaluators. See [Running an evaluation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/running-an-evaluation)." |
