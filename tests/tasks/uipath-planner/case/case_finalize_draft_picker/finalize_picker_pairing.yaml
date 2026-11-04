@@ -15,8 +15,8 @@ run_limits:
   max_turns: 60
   turn_timeout: 1500
 
-# Inherit agent from the experiment; override only allowed_tools. The lane's
-# Template conformance gate runs its 37-item walk in ONE subagent when the
+# Inherit agent from the experiment; override only allowed_tools. The case
+# SDD Conformance Checklist runs its 37-item walk in ONE subagent when the
 # Agent tool is present. Run 35267119510 measured the alternative: every task
 # without Agent was killed at exactly its turn wall (picker 1500.0s,
 # response-map 3600.0s, regressions 2700.0s) with 4-6 tool calls, while both
@@ -44,9 +44,8 @@ initial_prompt: |
 
   This is a Maestro case-management SDD finalization. Keep it inside the Case
   Management SDD template shape; finalize the draft into `sdd.md` in this
-  folder. Use the direct draft-finalization fast path: read the draft and the
-  case SDD template, write the finalized `sdd.md`, and do not spawn subagents,
-  run tenant discovery, or derive implementation tasks.
+  folder. Write the finalized `sdd.md`; do not run tenant discovery or derive
+  implementation tasks.
   Repair mechanically required rule pairings without changing business intent:
   a manual stage-picker lane needs `wait-for-user` exposure from every primary
   stage where it may be selected. That exposure is not automatic event, SLA,

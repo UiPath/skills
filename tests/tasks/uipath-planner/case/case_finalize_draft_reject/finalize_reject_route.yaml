@@ -19,8 +19,8 @@ run_limits:
   max_turns: 60
   turn_timeout: 3600
 
-# Inherit agent from the experiment; override only allowed_tools. The lane's
-# Template conformance gate runs its 37-item walk in ONE subagent when the
+# Inherit agent from the experiment; override only allowed_tools. The case
+# SDD Conformance Checklist runs its 37-item walk in ONE subagent when the
 # Agent tool is present. Run 35267119510 scored this task 0.882 FAILURE with
 # time to spare (770s of a 3600s wall) on the one criterion that reads the
 # gate's own stamp: `Template validation: passed` was absent. The gate was
@@ -48,9 +48,8 @@ initial_prompt: |
 
   This is a Maestro case-management SDD finalization. Keep it inside the Case
   Management SDD template shape; finalize the draft into `sdd.md` in this
-  folder. Use the direct draft-finalization fast path: read the draft and the
-  case SDD template, write the finalized `sdd.md`, and do not spawn subagents,
-  run tenant discovery, or derive implementation tasks.
+  folder. Write the finalized `sdd.md`; do not run tenant discovery or derive
+  implementation tasks.
 
 success_criteria:
   # No validator archaeology before the write. The § Validation gate is a checklist the
