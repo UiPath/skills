@@ -204,6 +204,23 @@ Key options:
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI proactively refreshes it before the deploy starts. Useful for long deploys close to token expiry. | 10 |
 | `-t, --tenant <name>` | Tenant override | Current tenant |
 
+### Open the deployment in Orchestrator
+
+On successful `deploy run`, `Data.OrchestratorUrl` opens the deployment overview
+in Orchestrator's Solutions tab. `Data.FolderUrl` opens the installed solution
+folder when its key is known. These are additive fields; existing fields stay
+the same. The CLI also writes `Deployed: <OrchestratorUrl>` to stderr through
+the logger, or to the configured log file.
+
+Use the returned links: they use the session's base URL, organization name and
+tenant name, and select the right tenant or folder feed. Browser routes are
+`orchestrator_/solutions-management` and
+`orchestrator_/folder-solutions-management`; `automationsolutions_` serves the
+API and remote module, and the deprecated `solutions_` route does not work.
+If the deployment key is unavailable, the link opens the feed's Solutions tab.
+A missing folder key omits `FolderUrl`; older embedded hosts without browser
+session coordinates omit both links.
+
 ### A deploy that stops in `Draft`
 
 `Draft` is where the server parks a deployment whose install never completed — nearly always because deploy-time validation rejected something (a virtual resource with no `value`, a resource conflict, a folder that no longer exists). Nothing advances it on its own, and it **cannot be activated**: `deploy activate` on it fails.

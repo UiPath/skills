@@ -12,6 +12,13 @@ Activate deployed solutions, uninstall deployments, and manage published solutio
 - Managing published package versions in the solution feed
 - Removing solutions from Studio Web
 
+Successful `deploy activate` and completed `deploy upgrade` also add
+`Data.OrchestratorUrl` and, when the installed folder is known, `Data.FolderUrl`,
+using the same [deployment links](pack-and-deploy.md#open-the-deployment-in-orchestrator)
+as `deploy run`. The CLI logs `Deployed: <OrchestratorUrl>` to stderr (or the
+configured log file). `deploy upgrade --no-wait` only confirms acceptance and
+omits these links and the completion line.
+
 ## Prerequisites
 
 - Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
