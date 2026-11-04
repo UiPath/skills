@@ -81,7 +81,7 @@ def _fields(node: dict) -> list[tuple[str, str, dict, bool]]:
     return result
 
 
-def _type(field: dict) -> str:
+def _get_field_type(field: dict) -> str:
     return field.get("$ref", "").rsplit("/", 1)[-1] or "no type"
 
 
@@ -89,7 +89,7 @@ def _fits(want: dict, group: str, name: str, field: dict, repeats: bool) -> bool
     text = {"name": name, "says": field.get("description") or "", "group": group}
     if any(k in want and not re.search(want[k], text[k], re.IGNORECASE) for k in PATTERN_KEYS):
         return False
-    if "type" in want and want["type"] != _type(field):
+    if "type" in want and want["type"] != _get_field_type(field):
         return False
     if "id" in want and want["id"] != field.get("x-uipath-field-id"):
         return False
@@ -99,7 +99,7 @@ def _fits(want: dict, group: str, name: str, field: dict, repeats: bool) -> bool
 def _describe(group: str, name: str, field: dict, repeats: bool) -> str:
     table = " (repeats)" if repeats else ""
     field_id = field.get("x-uipath-field-id") or "none"
-    return f"'{group} > {name}'{table} {_type(field)} id {field_id} {(field.get('description') or '')!r}"
+    return f"'{group} > {name}'{table} {_get_field_type(field)} id {field_id} {(field.get('description') or '')!r}"
 
 
 def _match(wanted: list[dict], fields: list[tuple]) -> tuple[list[dict], set[int]]:
