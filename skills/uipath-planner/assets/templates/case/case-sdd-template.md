@@ -360,7 +360,7 @@ the exact stage display name — never the case name. -->
 | <Yes \| No> | <Yes \| No> | <=js: expression or —> |
 ###### Action Task Detail (type: `action`)
 
-**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. -->
+**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. Every named app must exist in the tenant before publish: deployed already (ID + folder resolved), or recorded as `create during build` (ID + folder `<UNRESOLVED>` + a review item), which the build skill turns into a Coded Action App. Naming an app that is neither leaves the task a placeholder. -->
 **Action App ID:** <actionAppId or <UNRESOLVED>>
 **Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>
