@@ -1,0 +1,103 @@
+task_id: skill-flow-extract-document-explicit-node
+description: >
+  Smoke: the user asks for the Extract document node by name. Tests that the
+  agent adds `uipath.ixp.extract-document-builder` rather than a published IXP
+  model node, points its `fileRef` at a declared file input, wires it from the
+  trigger, and leaves a flow that validates in a project without builder-SDK
+  source, without starting an IXP project.
+
+  Graded on the final `.flow`, so a node that a compile from `.flow-sdk/`
+  source drops counts as missing; a `.flow-sdk/` left beside the flow fails
+  too, since its next compile overwrites what the CLI wrote. `flow validate`
+  passes a `fileRef` to an input that was never declared, so the file input is
+  graded on its own. The taxonomy is graded by the taxonomy tasks.
+
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Flow called "InvoiceReader" that takes an invoice PDF as input
+  and uses the Extract document node to pull out the invoice number, invoice
+  date and total. Make sure the flow validates.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    description: "Advisory: agent invoked the uipath-maestro-flow skill"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "nodes list reports an Extract document node in InvoiceReader.flow"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader node
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "nodes list reports no other uipath.ixp.* node (published model, processor or a second Extract document node)"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader no-other-ixp
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The node's fileRef reads a file input declared on InvoiceReader.flow"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader file-ref
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "edges list reports an edge into the Extract document node"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader edge in input
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The project was initialised without --sdk-source (no .flow-sdk/ beside the flow)"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader no-sdk
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not start an IXP project for a node that needs none"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+create'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on InvoiceReader.flow with no warnings"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader validate
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 20
+  max_turns: 40
+  turn_timeout: 900
+  task_timeout: 900

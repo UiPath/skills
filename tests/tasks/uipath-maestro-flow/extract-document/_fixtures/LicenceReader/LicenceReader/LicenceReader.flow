@@ -1,0 +1,1067 @@
+{
+  "id": "cca165c4-2d1f-4e7c-8ec0-717c0deedc87",
+  "version": "1.9",
+  "name": "LicenceReader",
+  "nodes": [
+    {
+      "id": "start",
+      "uniqueId": "d69b93f7-2bb0-46d4-b682-65afd07cbc03",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "704bc02f-73b2-4b09-9168-3e1595fdc1a2",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "extractLicence1",
+      "uniqueId": "cb9f351d-0260-4d8b-8b8b-78f21bcee7f6",
+      "type": "uipath.ixp.extract-document-builder",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Licence"
+      },
+      "inputs": {
+        "modelName": "",
+        "description": "",
+        "projectName": "",
+        "versionTag": "",
+        "folderKey": "",
+        "folderName": "",
+        "fileRef": "=js:$vars.start.output.licence",
+        "pageRange": "",
+        "modelConfig": {
+          "kind": "gpt_ixp",
+          "configuration_mode": "inline",
+          "model_version": "gemini_2_5_flash",
+          "execution_mode": "standard",
+          "attribution_method": "word_ids",
+          "attribution_model_version": "gemini-2.5-flash",
+          "input_config": "none",
+          "language_support": "latin",
+          "layout_parsing": "none",
+          "layout_model_version": null,
+          "system_prompt_override": null,
+          "frequency_penalty": null,
+          "temperature": null,
+          "top_p": null,
+          "seed": null,
+          "experimentalSettings": null,
+          "flags": [
+            "append_taxonomy_descriptions",
+            "append_type_descriptions",
+            "append_group_descriptions",
+            "append_field_descriptions"
+          ]
+        },
+        "source": "2950c970-8f58-4031-baa9-4340c5f5fdad",
+        "schemaDocument": {
+          "config": {
+            "extraction_method": "external_llm",
+            "model": {
+              "family": "gemini",
+              "version": "gemini_2_5_flash"
+            },
+            "execution_mode": "standard",
+            "pre-processing": "none",
+            "attribution": "word_ids",
+            "model_config": {
+              "temperature": null,
+              "top_p": null,
+              "seed": null,
+              "frequency_penalty": null,
+              "prompt_override": null
+            }
+          },
+          "prompt": "",
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [],
+            "properties": {},
+            "$defs": {
+              "ft-exact-text": {
+                "title": "Exact Text",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "verbatim"
+              },
+              "ft-inferred-text": {
+                "title": "Inferred Text",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ft-date": {
+                "title": "Date",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "ft-number": {
+                "title": "Number",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "decimal"
+              },
+              "ft-monetary-quantity": {
+                "title": "Monetary Quantity",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "monetary"
+              },
+              "ft-boolean": {
+                "title": "Boolean",
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-output-extractLicence1-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "extractLicence1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.extract-document-builder",
+      "version": "1.0.0",
+      "takeoverTabs": [
+        "definition",
+        "datasets",
+        "evaluators",
+        "evalRuns"
+      ],
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "Create and configure a document extraction from scratch",
+      "sortOrder": 45,
+      "display": {
+        "canvasLabel": "Extract document",
+        "isPreview": true,
+        "label": "Extract document",
+        "description": "Create and configure a document extraction from scratch",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "source": true,
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IDP.Extraction",
+        "skipBindingsReference": true,
+        "evaluationTarget": {
+          "kind": "documentExtraction",
+          "nodeType": "uipath.ixp.extract-document-builder",
+          "fileInputId": "fileRef",
+          "inputs": [
+            {
+              "id": "fileRef",
+              "direction": "in",
+              "type": "file"
+            }
+          ],
+          "outputs": [
+            {
+              "id": "ExtractionResult",
+              "direction": "out",
+              "type": "object"
+            }
+          ],
+          "runCapability": "unsupported",
+          "attachmentPolicy": {
+            "acceptedExtensions": [
+              ".pdf",
+              ".png",
+              ".jpg",
+              ".jpeg",
+              ".tif",
+              ".tiff"
+            ]
+          }
+        }
+      },
+      "form": {
+        "id": "ixp-extract-document-builder-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model-config",
+            "title": "Model config",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.modelConfig",
+                "type": "custom",
+                "component": "ixp-model-config",
+                "label": ""
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "placeholder": "File to extract data from",
+                "label": "File",
+                "validation": {
+                  "required": true
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "custom",
+                "component": "code-editor",
+                "componentProps": {
+                  "singleLine": true,
+                  "showVariableButton": true,
+                  "showAiButton": false,
+                  "lineNumbers": false,
+                  "placeholder": "e.g. 1-5",
+                  "expectedType": "text",
+                  "defaultToLiteralMode": true
+                },
+                "label": "Page range",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "",
+            "fields": [
+              {
+                "name": "inputs.schemaDocument",
+                "type": "custom",
+                "component": "ixp-model-taxonomy-editable",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "toolbarExtensions": {
+        "evaluation": {
+          "actions": [
+            {
+              "id": "open-extraction-dataset",
+              "icon": "file-search",
+              "label": "Evaluate extraction"
+            }
+          ]
+        }
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string"
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "fileRef": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "File is required"
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          },
+          "modelConfig": {
+            "type": "object"
+          },
+          "schemaDocument": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "fileRef"
+        ]
+      },
+      "inputDefaults": {
+        "modelName": "",
+        "description": "",
+        "projectName": "",
+        "versionTag": "",
+        "folderKey": "",
+        "folderName": "",
+        "fileRef": "",
+        "pageRange": "",
+        "modelConfig": {
+          "kind": "gpt_ixp",
+          "configuration_mode": "inline",
+          "model_version": "gemini_2_5_flash",
+          "execution_mode": "standard",
+          "attribution_method": "word_ids",
+          "attribution_model_version": "gemini-2.5-flash",
+          "input_config": "none",
+          "language_support": "latin",
+          "layout_parsing": "none",
+          "layout_model_version": null,
+          "system_prompt_override": null,
+          "frequency_penalty": null,
+          "temperature": null,
+          "top_p": null,
+          "seed": null,
+          "experimentalSettings": null,
+          "flags": [
+            "append_taxonomy_descriptions",
+            "append_type_descriptions",
+            "append_group_descriptions",
+            "append_field_descriptions"
+          ]
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "description": "Processed document emitted by an IDP processor run.",
+            "properties": {
+              "version": {
+                "type": "string",
+                "description": "Output contract version, for forward evolution and backwards-compatibility handling."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Extraction",
+                  "Classification"
+                ],
+                "description": "Processor kind that produced the document; fixes the shape of result and taxonomy. Possible values: Extraction, Classification."
+              },
+              "result": {
+                "type": "object",
+                "description": "The engine output: the processor values plus their attribution.",
+                "properties": {
+                  "output": {
+                    "type": "object",
+                    "description": "Processor output, one property per taxonomy field, typed by the taxonomy."
+                  },
+                  "attribution": {
+                    "type": "object",
+                    "description": "Per-value provenance keyed by RFC 6901 JSON Pointer into output (e.g. \"/Net pay\").",
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "confidence": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "description": "Where a value was read from; one entry per attachment page.",
+                            "properties": {
+                              "attachmentId": {
+                                "type": "string",
+                                "description": "Attachment (document) the value was read from."
+                              },
+                              "pageNumber": {
+                                "type": "integer"
+                              },
+                              "boundingBoxes": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "xMin": {
+                                      "type": "number"
+                                    },
+                                    "xMax": {
+                                      "type": "number"
+                                    },
+                                    "yMin": {
+                                      "type": "number"
+                                    },
+                                    "yMax": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "xMin",
+                                    "xMax",
+                                    "yMin",
+                                    "yMax"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "attachmentId",
+                              "pageNumber",
+                              "boundingBoxes"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "confidence",
+                        "sources"
+                      ]
+                    }
+                  },
+                  "traceContext": {
+                    "type": "object",
+                    "description": "Trace context of the producing run, as the engine wrote it; the same ids are lifted into metadata.",
+                    "properties": {
+                      "traceId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "W3C trace id of the producing run."
+                      },
+                      "spanId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "The producing span."
+                      },
+                      "folderKey": {
+                        "type": "string",
+                        "description": "Folder the producing run executed in."
+                      }
+                    },
+                    "required": [
+                      "traceId",
+                      "spanId",
+                      "folderKey"
+                    ]
+                  }
+                },
+                "required": [
+                  "output",
+                  "attribution",
+                  "traceContext"
+                ]
+              },
+              "taxonomy": {
+                "type": "object",
+                "description": "The extraction schema the result was produced against; one property per taxonomy field."
+              },
+              "metadata": {
+                "type": "object",
+                "description": "Identifiers of the run and the document, for calling back into the platform, plus the model configuration the run executed with. New run or document descriptors are added here.",
+                "properties": {
+                  "pipelineRunId": {
+                    "type": "string",
+                    "description": "GUID of the IDP pipeline run that produced this output; ties it back to the Processor run for support and debugging."
+                  },
+                  "folderKey": {
+                    "type": "string",
+                    "description": "Folder the producing run executed in; the x-uipath-folderkey for Traces, Buckets and Feedback calls."
+                  },
+                  "traceId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "W3C trace id of the producing run; the key to its spans and artifacts in the Traces service."
+                  },
+                  "spanId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The producing span; the Feedback anchor."
+                  },
+                  "modelConfig": {
+                    "type": "object",
+                    "description": "The processor configuration this run used. It grows with the processor: read the keys you know and tolerate the rest.",
+                    "properties": {
+                      "prompt": {
+                        "type": "string",
+                        "description": "The overall instructions the author wrote for the operation."
+                      },
+                      "extractionStrategy": {
+                        "type": "string",
+                        "description": "The configured extraction strategy (e.g. ZeroShot, DynamicExtract)."
+                      },
+                      "attributionStrategy": {
+                        "type": "string",
+                        "description": "The configured attribution strategy (e.g. WordId, Visual); it decides what result.attribution can carry."
+                      },
+                      "languageSupport": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "The configured language support (e.g. auto): the setting, not the language detected in the document."
+                      },
+                      "layoutParsing": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "The configured layout parsing (e.g. uipath-figure-to-text)."
+                      },
+                      "overrides": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Engine-level overrides set on the processor, as a serialized JSON string; parse it before reading."
+                      },
+                      "modelOverride": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "The model the run was configured with (e.g. gemini-2.5-flash); null when the processor runs on the default."
+                      }
+                    },
+                    "required": [
+                      "prompt",
+                      "languageSupport",
+                      "modelOverride",
+                      "extractionStrategy",
+                      "attributionStrategy"
+                    ]
+                  }
+                },
+                "required": [
+                  "pipelineRunId",
+                  "folderKey",
+                  "traceId",
+                  "spanId",
+                  "modelConfig"
+                ]
+              }
+            },
+            "required": [
+              "version",
+              "type",
+              "result",
+              "taxonomy",
+              "metadata"
+            ]
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "variables": {
+    "globals": [
+      {
+        "id": "licence",
+        "direction": "in",
+        "type": "file",
+        "description": "The licence document to extract",
+        "triggerNodeId": "start"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractLicence1.output",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "description": "Processed document emitted by an IDP processor run.",
+          "properties": {
+            "version": {
+              "type": "string",
+              "description": "Output contract version, for forward evolution and backwards-compatibility handling."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "Extraction",
+                "Classification"
+              ],
+              "description": "Processor kind that produced the document; fixes the shape of result and taxonomy. Possible values: Extraction, Classification."
+            },
+            "result": {
+              "type": "object",
+              "description": "The engine output: the processor values plus their attribution.",
+              "properties": {
+                "output": {
+                  "type": "object",
+                  "description": "Processor output, one property per taxonomy field, typed by the taxonomy."
+                },
+                "attribution": {
+                  "type": "object",
+                  "description": "Per-value provenance keyed by RFC 6901 JSON Pointer into output (e.g. \"/Net pay\").",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "confidence": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "sources": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "description": "Where a value was read from; one entry per attachment page.",
+                          "properties": {
+                            "attachmentId": {
+                              "type": "string",
+                              "description": "Attachment (document) the value was read from."
+                            },
+                            "pageNumber": {
+                              "type": "integer"
+                            },
+                            "boundingBoxes": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "xMin": {
+                                    "type": "number"
+                                  },
+                                  "xMax": {
+                                    "type": "number"
+                                  },
+                                  "yMin": {
+                                    "type": "number"
+                                  },
+                                  "yMax": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "xMin",
+                                  "xMax",
+                                  "yMin",
+                                  "yMax"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "attachmentId",
+                            "pageNumber",
+                            "boundingBoxes"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "confidence",
+                      "sources"
+                    ]
+                  }
+                },
+                "traceContext": {
+                  "type": "object",
+                  "description": "Trace context of the producing run, as the engine wrote it; the same ids are lifted into metadata.",
+                  "properties": {
+                    "traceId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "W3C trace id of the producing run."
+                    },
+                    "spanId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "The producing span."
+                    },
+                    "folderKey": {
+                      "type": "string",
+                      "description": "Folder the producing run executed in."
+                    }
+                  },
+                  "required": [
+                    "traceId",
+                    "spanId",
+                    "folderKey"
+                  ]
+                }
+              },
+              "required": [
+                "output",
+                "attribution",
+                "traceContext"
+              ]
+            },
+            "taxonomy": {
+              "type": "object",
+              "description": "The extraction schema the result was produced against; one property per taxonomy field."
+            },
+            "metadata": {
+              "type": "object",
+              "description": "Identifiers of the run and the document, for calling back into the platform, plus the model configuration the run executed with. New run or document descriptors are added here.",
+              "properties": {
+                "pipelineRunId": {
+                  "type": "string",
+                  "description": "GUID of the IDP pipeline run that produced this output; ties it back to the Processor run for support and debugging."
+                },
+                "folderKey": {
+                  "type": "string",
+                  "description": "Folder the producing run executed in; the x-uipath-folderkey for Traces, Buckets and Feedback calls."
+                },
+                "traceId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "W3C trace id of the producing run; the key to its spans and artifacts in the Traces service."
+                },
+                "spanId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The producing span; the Feedback anchor."
+                },
+                "modelConfig": {
+                  "type": "object",
+                  "description": "The processor configuration this run used. It grows with the processor: read the keys you know and tolerate the rest.",
+                  "properties": {
+                    "prompt": {
+                      "type": "string",
+                      "description": "The overall instructions the author wrote for the operation."
+                    },
+                    "extractionStrategy": {
+                      "type": "string",
+                      "description": "The configured extraction strategy (e.g. ZeroShot, DynamicExtract)."
+                    },
+                    "attributionStrategy": {
+                      "type": "string",
+                      "description": "The configured attribution strategy (e.g. WordId, Visual); it decides what result.attribution can carry."
+                    },
+                    "languageSupport": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The configured language support (e.g. auto): the setting, not the language detected in the document."
+                    },
+                    "layoutParsing": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The configured layout parsing (e.g. uipath-figure-to-text)."
+                    },
+                    "overrides": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Engine-level overrides set on the processor, as a serialized JSON string; parse it before reading."
+                    },
+                    "modelOverride": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The model the run was configured with (e.g. gemini-2.5-flash); null when the processor runs on the default."
+                    }
+                  },
+                  "required": [
+                    "prompt",
+                    "languageSupport",
+                    "modelOverride",
+                    "extractionStrategy",
+                    "attributionStrategy"
+                  ]
+                }
+              },
+              "required": [
+                "pipelineRunId",
+                "folderKey",
+                "traceId",
+                "spanId",
+                "modelConfig"
+              ]
+            }
+          },
+          "required": [
+            "version",
+            "type",
+            "result",
+            "taxonomy",
+            "metadata"
+          ]
+        },
+        "binding": {
+          "nodeId": "extractLicence1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractLicence1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "extractLicence1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        }
+      },
+      "extractLicence1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,93 @@
+task_id: skill-flow-extract-document-fix-rejected-taxonomy
+description: >
+  Integration: the user supplies a taxonomy file that `nodes schema set`
+  refuses with exit 3. It has a nested group whose parent is missing, a `$ref`
+  to a field type it never defines, and a field name over 64 characters, all
+  listed in `Data.Issues`. Tests that the agent fixes what the write rejects
+  and keeps the user's design: their fields, their nesting, their
+  instructions, and only the built-in field types.
+
+  No `flow debug`: a CLI-authored Extract document node extracts nothing
+  until the flow is saved once in Studio Web.
+
+tags: [uipath-maestro-flow, integration, mode:diagnose, lifecycle:generate, shape:single-node, node:extract-document]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/LicenceReader
+      mount_point: LicenceReader
+    - type: template_dir
+      path: ../_fixtures/licence_taxonomy
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Apply the taxonomy I wrote in ./licence_taxonomy.json to the Extract document
+  node in my LicenceReader flow. Make sure the flow validates.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "The node carries the user's fields, with the over-long year-of-hatch field kept under a shorter name"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader fields
+      '[{"name": "^Licence Number$"}, {"name": "^Licence Expiry$"}, {"name": "^Falconer$"},
+      {"name": "^Licence Status$"}, {"name": "^Ring Number$"}, {"name": "^Species$"}, {"name": "hatch"}]'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The bird's fields still sit in a group nested under a licence group by name"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader fields
+      '[{"name": "^Ring Number$", "group": "^Licence.* > "}, {"name": "^Species$", "group": "^Licence.* > "},
+      {"name": "hatch", "group": "^Licence.* > "}]'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The undefined type was replaced by a built-in one: $defs holds the six built-in field types and nothing else"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader defs --only
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The user's field instructions were carried over, not rewritten"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader fields
+      '[{"name": "^Licence Expiry$", "says": "^The date the licence expires, not the date it was issued[.]$"},
+      {"name": "^Ring Number$", "says": "^The ring number fitted to the bird[.]$"}]'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on LicenceReader.flow with no warnings"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader validate
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 15
+  max_turns: 40
+  task_timeout: 900
