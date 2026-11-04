@@ -96,7 +96,7 @@ A `try` with `catch.retry` **replaces** workflow-level `httpRetryConfig` for eve
 ### Verifying Retries at Runtime
 
 <!--skill-flavor:task-retry-runtime:start-->
-Task-level retry needs API workflow executor 13.2.0 or later. A `uip` release whose bundled executor predates it ignores `catch.retry`: the try block runs once, and a `#Retry` wrapper (no `catch.do`) then completes with the error object as its output instead of failing. When a local `uip api-workflow run` shows no `task_retried` events for a failing retried call, report the executor gap rather than changing the policy; verify retry behavior after publish.
+Task-level retry needs an executor that supports `catch.retry`. A `uip` release whose bundled executor predates it ignores `catch.retry`: the try block runs once, and a `#Retry` wrapper (no `catch.do`) then completes with the error object as its output instead of failing. When a local `uip api-workflow run` shows no `task_retried` events for a failing retried call, report the executor gap rather than changing the policy; verify retry behavior after publish.
 <!--skill-flavor:task-retry-runtime:end-->
 
 ## Workflow-Level Retry (`httpRetryConfig`)

@@ -133,12 +133,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 <!--skill-flavor:file-run-cli:end-->
     Shapes, worked examples, and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
 
-24. **Per-activity retry is `catch.retry` on a `try` task — never a `retry` key on the activity.** Two Studio Web shapes:
-    - **Try/Catch with Retry:** `catch` gets `retry` (`delay`, `backoff`, `limit.attempt.count`) beside `as` and `do`; the whole `try` block re-runs, then `catch.do` gets the last error.
-    - **HTTP Request with Retry:** the call is wrapped in a `try` task keyed `<id>#Retry` with display `metadata`, `catch.as: "__retryError"`, a `retry` whose `when` is the status filter, and **no `catch.do`**; exhausted retries fail like the bare call. Preserve existing wrappers. Until `validate` accepts the wrapper, author new HTTP retries as a Try/Catch with retry.
-    - Defaults: 3 retries, 1000 ms, constant backoff; HTTP Request filters on `[408, 429, 500, 502, 503, 504]`. `$<catch.as>.status` is the real HTTP status.
-    - A retrying `try` **replaces** `httpRetryConfig` for every call inside it; they never stack. Task-level retry also re-sends POST/PUT/DELETE — confirm idempotency.
-    - Shapes, precedence, runtime behavior, and the known `#Retry` validator errors: [references/http-retry-config.md](references/http-retry-config.md).
+24. **Per-activity retry lives in `catch.retry` of a `try` task, never on the activity.** A Try/Catch carries it beside `as` and `do`; Studio Web stores an HTTP Request's own Retry section as an `<id>#Retry` wrapper — preserve it and never add `catch.do`. A retrying `try` replaces `httpRetryConfig` for every call inside it. Task-level retry re-sends POST/PUT/DELETE; confirm idempotency first. Before authoring a new HTTP Request retry, read the wrapper's validation note. Shapes, defaults, and that note: [references/http-retry-config.md](references/http-retry-config.md#http-request-with-retry-idretry-wrapper).
 
 ## Workflow Phases
 

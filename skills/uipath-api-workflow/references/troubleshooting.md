@@ -778,7 +778,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 - **Symptom:** At a `…#Retry` task path, `validate` reports `retry.when` "must be object" and/or a Connector task missing `call` / `metadata.configuration`; a Try/Catch with `catch.retry` validates clean.
 - **Cause:** Validator releases without wrapper support treat Studio Web's HTTP Request retry wrapper as a malformed Connector task. The shape is correct for the executor and the designer.
-- **Fix:** Do not unwrap the call, drop `when`, or copy `configuration` onto the wrapper. When these are the only errors, report the validator gap and continue; author new HTTP retries as a Try/Catch with `catch.retry`. See [http-retry-config.md](http-retry-config.md#http-request-with-retry-idretry-wrapper).
+- **Fix:** Do not unwrap the call, drop `when`, or copy `configuration` onto the wrapper. Follow wrapper rule 4 in [http-retry-config.md](http-retry-config.md#http-request-with-retry-idretry-wrapper).
 
 ### Fixing in wrong order
 - **Symptom:** Fixing one error creates more errors; thrashing

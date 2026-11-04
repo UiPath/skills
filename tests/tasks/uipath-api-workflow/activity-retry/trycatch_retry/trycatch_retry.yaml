@@ -3,8 +3,9 @@ description: >
   Build: author a Try/Catch with Studio Web's task-level Retry section
   (`catch.retry`) around a flaky JavaScript activity. Grades the exact shape the
   designer writes — `retry` inside `catch` beside `as` and `do`, never on the
-  activity — with the requested count, delay and linear backoff, plus a non-empty
-  `catch.do` fallback and a Valid `validate`. Before per-activity retry shipped the
+  activity — with the requested count, delay (inline object or ISO 8601) and
+  linear backoff, a `catch.do` Response returning "failed", a success-path
+  Response, the `FlakyCompute` project folder, and a Valid `validate`. Before per-activity retry shipped the
   skill called this an anti-pattern, so the regression is an agent refusing it,
   hand-rolling a DoWhile retry loop, or reaching for workflow-level
   `httpRetryConfig` (GET-only, does not apply to JavaScript).

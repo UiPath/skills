@@ -4,9 +4,12 @@ description: >
   seeded `OrderSync` project holds a registry-shaped `UiPath.Http` GET; the agent
   must put the call inside a `try` whose `catch.retry` has 4 retries, 1500 ms,
   exponential backoff and a `when` filter on exactly 429 and 503 read from
-  `$<catch.as>.status` (the real HTTP status). Both Studio Web shapes pass the
-  structure check — a Try/Catch, or an `HttpRequest_1#Retry` wrapper without
-  `catch.do` — but the call itself must be byte-identical to the seed and no
+  `$<catch.as>.status` (the real HTTP status), in the
+  `[...].includes($<as>.status)` form: the only filter form Studio Web
+  round-trips, so `===` / `||` chains are graded wrong. Both Studio Web shapes
+  pass the structure check — a Try/Catch, or an `HttpRequest_1#Retry` wrapper
+  without `catch.do` — but with that container unwrapped the workflow must equal
+  the seed (call, Response, schemas), and no
   workflow-level `httpRetryConfig` may be added (it would not be per-activity, and
   a retrying `try` replaces it anyway).
 
