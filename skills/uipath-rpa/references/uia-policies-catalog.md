@@ -48,7 +48,7 @@ When a workflow fails at runtime with a selector error:
 1. **The app is already in the right state.** The debug session paused at the failing activity, so the app's current DOM reflects the state that activity needs to target.
 2. **Identify the failing element** -- read the error to find which descriptor/element failed.
 3. **Read the window selector** -- from the Object Repository files, find the screen's selector that scopes the failing element.
-4. **Follow the package's recover selector guide** - check ui-automation-guide.md for information on how to perform the recovery. If nothing relevant is found there, search the package docs for a guide on improving targets or selectors and follow it.
+4. **Follow the package's recover selector guide** -- routed from `ui-automation-guide.md` § Documentation.
 5. **Clean up and re-run** -- follow the procedure above (stop, diff, close leaked windows, re-run).
 
 Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
