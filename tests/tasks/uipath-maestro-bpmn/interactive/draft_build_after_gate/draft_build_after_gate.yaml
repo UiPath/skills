@@ -118,12 +118,12 @@ success_criteria:
   # An open question tool keeps the turn running, and Studio Web locks the
   # canvas while a turn runs. AskUserQuestion is Claude Code's tool; codex and
   # antigravity have none of that name, so this passes vacuously there.
-  # coder_eval cannot scope a criterion to one agent type, so it is advisory.
+  # coder_eval cannot scope a criterion to one agent type, so it is informational (weight 0: no score, no gate).
   - type: command_not_executed
     description: "Claude only (vacuous on other agents): never asked with AskUserQuestion"
     tool_name: "AskUserQuestion"
     command_pattern: '.*'
-    weight: 2.0
+    weight: 0
     pass_threshold: 0
 
   - type: command_not_executed

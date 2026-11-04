@@ -115,13 +115,13 @@ success_criteria:
   # canvas while a turn runs: the gate must be a plain final message.
   # AskUserQuestion is Claude Code's tool; codex and antigravity have no tool
   # of that name, so this passes vacuously there. coder_eval cannot scope a
-  # criterion to one agent type, so it is advisory (pass_threshold 0): it
-  # reports a Claude pick list without failing other agents' runs.
+  # criterion to one agent type, so it is informational (weight 0, so it
+  # adds no score and cannot fail a run): it reports a Claude pick list.
   - type: command_not_executed
     description: "Claude only (vacuous on other agents): the gate question is asked in the final message, not with AskUserQuestion"
     tool_name: "AskUserQuestion"
     command_pattern: '.*'
-    weight: 1.5
+    weight: 0
     pass_threshold: 0
 
   - type: run_command
