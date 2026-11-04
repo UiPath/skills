@@ -29,15 +29,15 @@ One row per API flavor. The model the vendor should serve is the configuration's
 | `AwsBedrockConverse` | `/model/{modelId}/converse`, `/model/{modelId}/converse-stream` | stream path | path `modelId` | `aigateway-aws-bedrock-converse` |
 | `AnthropicMessages` | `/v1/messages` | same path, `"stream": true` | body `model` | `aigateway-anthropic-messages` |
 
-Set the tags string to `custom, <tag>` (comma-separated, as the templates do). A connector serving several flavors lists every tag and exposes every row's paths; one configuration still names one flavor.
+Set the tags string to `custom, <tag>` (comma-separated, as the templates do). The tag is load-bearing: the CLI reads the connector template from it when it saves the configuration (an `aigateway-*` tag means `CustomAiGateway`), and the AI Trust Layer UI lists the connector for the flavor by it. Integration Service reports the tags only once the connector is published. A connector serving several flavors lists every tag and exposes every row's paths; one configuration still names one flavor.
 
 Expose the streaming path even when you cannot translate the stream: a product that streams calls it, and a 404 there reads as an outage. Whether the stream is *usable* depends on the vendor (see [hook-authoring-guide.md](hook-authoring-guide.md) §"Streaming").
 
 ### Other connector templates
 
-A connector cloned from one of the vendor templates in the Integration Service connector builder registers with that template's name, and the gateway treats it as that vendor (Azure OpenAI deployment paths with `api-version`, Vertex `:generateContent`, and so on):
+A connector cloned from one of the vendor templates in the Integration Service connector builder carries that template's tag, the CLI registers it with that template, and the gateway treats it as that vendor (Azure OpenAI deployment paths with `api-version`, Vertex `:generateContent`, and so on):
 
-| `--connector-template` | Tag |
+| Template | Tag |
 |---|---|
 | `OpenAiV1Compliant` | `openai-v1-compliant` |
 | `AzureOpenAi` | `azure-openai` |
@@ -87,7 +87,7 @@ Do not import the reference itself: AI Gateway templates share one key (`design-
 Run after `builder validate` passes, before the first `import` (the version check again before `publish`):
 
 1. **Paths** — every path in the flavor's row exists as a resource `path` with method `POST` (`builder inspect --output json`, `ResourceSummary`). No vendor-only path was used as the resource path.
-2. **Tag** — `element-metadata.json:tags` contains the flavor's tag.
+2. **Tag** — `element-metadata.json:tags` contains the flavor's tag; the CLI reads the connector template from it.
 3. **Version** — `element-metadata.json:latestVersion` is higher than the last published version (first publish: `1.0.0`).
 4. **Hooks** — every hook passes `node --check`, ends every path in `done(...)`, passes a vendor error through with its status, and contains no `console.log`.
 5. **No credentials in URLs** — no credential is a `query`/`path` parameter or part of a URL a hook builds.

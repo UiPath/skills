@@ -6,11 +6,11 @@ An Integration Service connection is one set of vendor credentials on a connecto
 
 | | Test connection | Runtime connection |
 |---|---|---|
-| Purpose | Probe the connector while it is being built and fixed | Serve the product once the configuration is enabled |
+| Purpose | Call the unpublished draft through Integration Service while it is being built and fixed (SKILL.md step 7) | Run the product's probes when the configuration is saved, then serve the product once it is enabled |
 | Made with | `curl` on the Integration Service API — the Connector Builder's Add connection (SKILL.md step 6) | The Integration Service web UI, on the published connector |
 | Connector | The draft (`design-…`); runs whatever was last imported | The published `custom-…` key; runs the published version |
 | Credentials | A sandbox key, or the builder's own | The credentials production must use — ask the user |
-| Who sees it | Only its creator; `uip is connections` never lists it | The shared folder the configuration names in `--folder-key`, so other admins can manage it |
+| Who sees it | Only its creator; `uip is connections` never lists it, so no configuration can be saved on it | The shared folder the configuration names in `--folder-key`, so other admins can manage it |
 | Lifetime | Delete when the runtime connection passes (ask first) | Kept; rotate with `edit` |
 
 Use one set of credentials for both only when the user says the same credentials serve production.
@@ -43,8 +43,10 @@ What the calls answer when something is wrong:
 | `404` "Session expired" | The session was spent or timed out | Open a new session |
 | `401` | The token expired between calls | Run the call again: the helper reads a fresh one; if `uip login refresh` fails, ask the user to run `uip login` |
 | "Argument list too long" | A whole connector record was passed as an argument | Keep the `jq -c '{key, elementId: .sobaId}'` projection |
+| `404` "No API found at that URL for the given token and credentials" on a step 7 call | The connector has no resource at that path | Use the flavor's path ([connector-contract-guide.md](connector-contract-guide.md)); `builder inspect` lists the resources |
+| `404` "Invalid Element Instance Id provided." on a step 7 call | The test connection was deleted | Create it again |
 
-Because it belongs to the draft, a re-import changes what the test connection runs: fix a hook, `import`, re-probe. Nothing is published until step 8. The test connection is not in the connections catalog, so `uip is connections ping` cannot check it — the probe is its test.
+Because it belongs to the draft, a re-import changes what the test connection runs: fix a hook, `import`, call it again. Nothing is published until step 8. The test connection is not in the connections catalog, so `uip is connections ping` cannot check it and no configuration can be saved on it — the step 7 calls are its test.
 
 To change the test connection's credentials, create a new one and delete the old.
 
@@ -94,4 +96,4 @@ A test connection is deleted by its `instanceId` (the list in SKILL.md step 6 ma
 )
 ```
 
-A probe on a deleted test connection answers `VendorModelNotFound` with "Invalid Element Instance Id provided.".
+A call on a deleted test connection answers `404` "Invalid Element Instance Id provided.".
