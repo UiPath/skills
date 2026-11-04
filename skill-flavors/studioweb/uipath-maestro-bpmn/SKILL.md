@@ -42,7 +42,8 @@
 
 <!--skill-flavor:login-status-check:start-->
 - **1a Read the toolbox kinds.** The sandbox supplies login and denies
-  `uip login status`: never run it, and treat the session as logged in.
+  `uip login status`: never run it, and treat the session as logged in. 1a shares one Bash
+  call with 1b's scan, not a turn of its own.
 <!--skill-flavor:login-status-check:end-->
 
 <!--skill-flavor:wellformed-check:start-->
