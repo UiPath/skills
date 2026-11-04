@@ -186,27 +186,34 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     Agent `agent`, Maestro BPMN `processOrchestration`, Maestro Case
     `CaseManagement`, Maestro Flow `Flow`, Function `function`.
   - **Connections:** run this once, whatever the number of connector boxes,
-    and including when the user named no provider. It lists every connection
-    in the tenant, so no connector key is needed:
+    and including when the user named no provider. No connector key is needed,
+    and the command has no `--limit`, so the `--output-filter` row filter keeps
+    the output to the boxes' connectors:
 
     ```bash
-    uip is connections list --all-folders --output-filter "[?ConnectorName=='<CONNECTOR_NAME>'].{Connector:ConnectorName,Connection:Name,State:State,IsDefault:IsDefault,Folder:Folder}" --output json
+    uip is connections list --all-folders --output-filter "[?contains(ConnectorName,'<WORD>')].{Connector:ConnectorName,Connection:Name,State:State,IsDefault:IsDefault,Folder:Folder}" --output json
     ```
 
-    The command has no `--limit`, so the `[?...]` row filter keeps the output
-    to the boxes' connectors: write one `ConnectorName=='<NAME>'` clause per
-    service the boxes use, joined with `||`; for a box that names no
-    provider, one per email service. Match each connector box to the rows whose `Connector` is the service the
-    box uses (`Salesforce`, `Slack`, `Microsoft Outlook 365`, `Gmail`). Match
-    on `Connector` only: a connector's key can contain another service's name
-    (the Slack connector's key contains `salesforce`). A box that names no
-    provider, such as "send an email", takes any connection whose `Connector`
-    is an email service. Prefer `State: Enabled`; among those, the folder the
-    step names, then `IsDefault: Yes`. The
-    list is complete, so a service with no row has no connection: the box's
-    line says so in plain words, such as "No Salesforce connection in this
-    tenant". A connector box is *not checked* only when this command itself
-    exited non-zero.
+    Replace the `contains(...)` test with one per service the boxes use, joined
+    with `||`. `<WORD>` is one distinctive word of the app the user named, in
+    the app's usual capitalization (`Slack`, `Outlook`, `SharePoint`, `Jira`,
+    `Salesforce`); `contains` is case-sensitive and the exact display name is
+    unknown, so never pass a full name for a named app. For a box that names no
+    provider, such as "send an email", use exact names, never `contains(...,'Mail')`
+    (it also matches Mailchimp and Mailgun): `ConnectorName=='Gmail'`,
+    `ConnectorName=='Microsoft Outlook 365'`, `ConnectorName=='Mail'`,
+    `ConnectorName=='Exchange Server'`. When any box is a Data Fabric entity,
+    add `ConnectorName=='UiPath Data Fabric'`.
+
+    Match each connector box to the rows whose `Connector` is the service the
+    box uses. Match on `Connector` only: a connector's key can contain another
+    service's name (the Slack connector's key contains `salesforce`). A box
+    that names no provider takes any row from the exact-name list. Prefer
+    `State: Enabled`; among those, the folder the step names, then
+    `IsDefault: Yes`. A filter can miss through a wrong word, so an empty
+    result for a named app is not proof: say "No <App> connection found",
+    never "No <App> connection in this tenant", and mark the box *not checked*
+    only when this command exited non-zero.
   - **Business rules:** `uip rules list --all-folders --limit 10000
     --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path. A business rule binds by name and folder
     path (Rule 17).
@@ -216,7 +223,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     entity on its name alone and name no folder on its box line. (True as of `uip` 1.207.0: `solution resources list --kind Entity` returns no rows even
     when the entity exists.) A Data Fabric box
     also needs a Data Fabric connection: match `Connector` `UiPath Data
-    Fabric` in the connections list above.
+    Fabric` in the connections list above (its filter clause is required).
 
   Run each lookup exactly as written, adding no flag. `uip` rejects
   `--output-filter` on `uip solution resources list` unless `--limit` comes
