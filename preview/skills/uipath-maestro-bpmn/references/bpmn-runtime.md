@@ -183,6 +183,8 @@ binding half, which is the same for every connector-backed node.
 - An entity that lives in an Orchestrator folder (the picker shows it under a folder; the request says "folder entity" or "entity scope: folder") is `entity: { name, folder: '<folder path>' }`, not a plain name and not hand-found keys.
   `bpmn check --source` reports it as `RESOURCE_UNRESOLVED` and prints the command that records its keys, `uip maestro registry prepare --entity <name> --folder-path <path>`; run it, then `check` again.
   Run it in the directory you run `bpmn check` and `compile` from: it records into `./.flow-sdk/resources.json` there, which is where they read it.
+  Needs `@uipath/maestro-builder-sdk` 6.73.0 or later; an older SDK refuses `{ name, folder }` and has no key-less `prepare`, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+  If `uip maestro registry prepare --entity …` answers `missing required argument 'connector-key'`, the `uip` in use predates key-less `prepare`: run the same command as `npx flow-sdk registry prepare --entity …`.
   With no `folder`, `prepare` searches every folder: it records a single match and names the folder to pin, and lists several without picking one.
 - `entity.folder` is the folder holding the ENTITY; the `folder` option stays the folder holding the CONNECTION.
   They are often the same folder and are still two options.

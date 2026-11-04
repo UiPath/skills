@@ -213,6 +213,9 @@ A **folder-scoped** one is named by its name and the Orchestrator folder **path*
 .step('read', dataFabricRead({ entity: { name: 'Orders', folder: 'Finance/Prod' }, resultMode: 'multiple' }))
 ```
 
+Needs `@uipath/maestro-builder-sdk` 6.73.0 or later; an older SDK refuses `{ name, folder }` and has no key-less `prepare`, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+If `uip maestro registry prepare --entity …` answers `missing required argument 'connector-key'`, the `uip` in use predates key-less `prepare`: run the same command as `npx flow-sdk registry prepare --entity …`.
+
 `check` reports it as `RESOURCE_UNRESOLVED` and prints the command that records its keys; run that command, then `check` again:
 
 ```bash
