@@ -168,6 +168,8 @@ A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: Su
 
 This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes through the same Pipelines install as a tenant one, so it validates the package against the target before installing and waits for the run to reach a terminal state — it does not return early. A configuration the target rejects fails the command (exit `1`, `ErrorCode: invalid_argument`, `ValidationFailed` in `Message`) with the per-resource errors in `Instructions`, and nothing is provisioned — that is a `ValidationFailed` before the install; the one whose record reports `SuccessfulInstall` is the landed case above, and a success. (`--wait` is still accepted and does nothing; older CLI versions needed it on those feeds.)
 
+While `deploy run` waits, progress goes to **stderr**: one plain line per observed status change, plus a heartbeat after at least 30 seconds without an update. Lines include elapsed time and the server's pipeline, operation, deployment and activation statuses when the polled response carries them; there is no estimated percentage. The same progress appears for waiting `deploy upgrade`, `deploy activate` and `deploy uninstall`; `upgrade --no-wait` returns immediately. Terminals and CI both get plain lines, even with `--log-level error` or `--log-file`. **Stdout stays the same final envelope**, so parse stdout alone for `--output json` and keep stderr visible while waiting.
+
 The rejected attempt stays behind as a **pending draft** under that `--name`, and its key is in `Instructions` — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) for how to finish or drop it.
 
 <!--skill-flavor:tests-upload:start-->
