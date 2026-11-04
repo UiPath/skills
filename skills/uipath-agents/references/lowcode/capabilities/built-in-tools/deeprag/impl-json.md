@@ -95,7 +95,14 @@ Without explicit guidance, the agent under-uses DeepRAG or invokes it for tasks 
 
 ## Attachment Ingress
 
-Studio Web forwards conversation attachments to the tool — no schema wiring. Other channels (flow input, Action Center task): confirm the runtime forwards attachments or the tool runs against an empty set.
+deep-rag's own empty schemas never declare where documents come from — the agent's `inputSchema` does. Without an ingress path the tool runs against an empty set.
+
+| Agent variant | Ingress |
+|---|---|
+| Autonomous (`isConversational: false`) | Required: declare one `inputSchema` field holding the documents — `{ "type": "array", "items": { "$ref": "#/definitions/job-attachment" } }` (single file: `{ "$ref": "#/definitions/job-attachment" }`) plus the canonical `job-attachment` block in `inputSchema.definitions` — see [../../../agent-definition.md](../../../agent-definition.md) § File Attachments. Template the field into the user message (`{{input.<FILE_FIELD>}}`; renders metadata only). Caller binds files at run time (`uip agent debug --attachment <FIELD>=<FILE_PATH>`, flow input, job input). |
+| Conversational, Studio Web chat | Chat-uploaded files reach the tool without schema wiring. |
+
+Other channels (flow input, Action Center task): confirm the runtime forwards the attachments.
 
 ## Validation
 
