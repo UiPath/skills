@@ -4,12 +4,12 @@ description: >
   Blueprint shape WITH the `## Planner Handoff` header, Status: ready, resource
   identities deliberately unresolved) is staged into the sandbox, and the run
   is told to stop before tenant work. Two regression targets: the Planner
-  Handoff header must NOT re-route the request into planner Lane A (which would
+  Handoff header must NOT re-route the request into planner `plan` (which would
   emit `planner-returned-invoice-case-tasks.md`), and the design-only stop must
   NOT produce a substitute plan file — SKILL.md Rule 7 and the Anti-patterns
   section forbid `tasks/tasks.md` or any other T-numbered restatement of the
   SDD. The staged SDD must never be rewritten, renamed, or regenerated.
-  Its legacy `| Tasks file |` handoff row is deliberate bait for the Lane A
+  Its legacy `| Tasks file |` handoff row is deliberate bait for the `plan`
   hijack — do not modernize it to the template's `Build handoff` row.
   Because every artifact check here is a negation, the positive signal is
   graded on the run itself: the maestro-case skill must fire, and the final
@@ -57,7 +57,7 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Advisory: agent invoked the uipath-maestro-case skill (not planner Lane A)"
+    description: "Advisory: agent invoked the uipath-maestro-case skill (not planner `plan`)"
     skill_name: "uipath-maestro-case"
     expected_skill: "uipath-maestro-case"
     weight: 2.0
@@ -103,7 +103,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Planner Handoff header did not hijack the run into Lane A task derivation (no <case>-tasks.md at the root)"
+    description: "Planner Handoff header did not hijack the run into `plan` task derivation (no <case>-tasks.md at the root)"
     command: "! ls ./*-tasks.md 2>/dev/null | grep -q ."
     timeout: 10
     expected_exit_code: 0
