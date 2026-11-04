@@ -143,6 +143,21 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 {comma-separated: domain, applications, platform features}
 
+## Data Model
+
+{Summary and contract only — never the schema, which lives in `entities.json` and the solution resources (data-model-guide.md). Each entity also gets a Platform Dependencies row; each `locus: uipath, level: transition` register row gets a Business Rule and an acceptance criterion.}
+
+Derived from `{bundle}` ({n} classes, {n} shapes, {n} triples maps) into {n} entities across {n} component(s), {n} choice set(s). Entity project `{NAME}`, scope {tenant | folder}.
+
+| | |
+|---|---|
+| Artifacts | `entities.json`, `target.r2rml` |
+| Defaults applied | D1 system of record: all but {…} · D2 scope · D3 displayField · D4 choice sets |
+| Deferred | {n} register rows: {n} awaiting a write site, {n} awaiting an access pattern |
+| Not covered | {n} ontology objects, listed in `entities.json` |
+
+*Stub when none: "No ontology bundle: the automation's data lives in the systems named in Target Applications."*
+
 ## Source Map
 
 *Extraction only — omit for authored genomes. Delete on request when the genome is shared as a reusable blueprint.*

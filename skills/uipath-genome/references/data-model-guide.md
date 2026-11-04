@@ -1,0 +1,268 @@
+# Data Model Guide — ontology bundle to Data Fabric entities
+
+Router for the data-model extension of Author mode. An **ontology bundle** — an OWL
+ontology, an R2RML mapping and SHACL shapes — describes the business world as data.
+This extension turns it into a Data Fabric entity set that ships inside the
+solution, plus a record of every decision taken and every one deferred.
+
+This file routes. Each subject is stated in full in exactly one guide below.
+
+## When this engages
+
+Author mode, when the request supplies an ontology bundle alongside (or instead of)
+a prose description. Detection: [ontology-sources-guide.md § Detection](ontology-sources-guide.md).
+
+Without a bundle, the genome's `## Data Model` section carries its stub line and
+nothing here is read.
+
+A bundle **never replaces the process description**. It says what the data is; the
+genome still says what the automation does. A bundle with no described process
+produces a data model and a genome whose Workflow is `*[Inferred]*` — say so.
+
+## Discovery — which guide, when
+
+| At | Condition | Read |
+|---|---|---|
+| start | a bundle is present | this file, [ontology-sources-guide.md](ontology-sources-guide.md) |
+| after the inventory exists | always | [entity-derivation-guide.md](entity-derivation-guide.md) |
+| after the inventory exists | the inventory reports ≥1 SHACL shape | [constraint-register-guide.md](constraint-register-guide.md) |
+| after the inventory exists | the inventory reports ≥2 classes with an object property between them | [normalization-guide.md](normalization-guide.md) |
+| before writing any solution resource | always | [datafabric-emission-guide.md](datafabric-emission-guide.md) |
+| before offering edits | always | [data-model-checklist.md](data-model-checklist.md) |
+| any Data Fabric field type, choice-set mechanic, federated rule or relationship wiring | always | `uipath-platform` → `references/data-fabric/` — **named, never restated here** |
+
+The last row is the standing rule: the Data Fabric surface belongs to
+`uipath-platform`. This extension names a capability and routes; it does not copy a
+type table, an operator matrix or a command's flags. When that skill is not
+installed, the deterministic tools still run — they encode the field-shape rules
+they need — and the run says which guidance it could not consult.
+
+## Artifacts
+
+```
+          ontology (.ofn) ─┐
+  SHACL shapes ────────────┼──▶  entities.json  ──▶  solution resources
+   source.r2rml ───────────┘            ▲
+        │                               │
+        └──▶ target.r2rml ──────────────┘
+```
+
+| Artifact | Written by | Mutable | Means |
+|---|---|---|---|
+| `<name>.ofn` | the user | no | the business world |
+| SHACL shapes | the user | no | what is true of the business world |
+| `source.r2rml` | the user | **no** | how the source realizes the ontology — executable against the source |
+| `target.r2rml` | this extension | yes, from Phase 2 on | the relational design the entity set derives from |
+| `<bundle>-inventory.json` | `ontology-inspect.py` | derived | the parsed, normalized reading of the three inputs |
+| `entities.json` | `derive-entities.py` | derived | the entity set, register and provenance |
+| solution resources | `apply-entities.py` | derived | what ships |
+
+**Copy `source.r2rml` to `target.r2rml` before any derivation, and do not write
+`target.r2rml` again in Author mode.** The two files are byte-identical when Author
+mode ends. Everything downstream derives from `target.r2rml`, so later phases revise
+one file and the diff against `source.r2rml` is the whole normalization decision
+record — machine-readable, replayable, and reviewable as a diff rather than as a
+model someone must re-derive.
+
+Keeping `source.r2rml` immutable preserves the one artifact that can still be checked
+against reality: it is the only document that remains executable against the source
+database. A single mutable mapping drifts from "how the source realizes the ontology"
+to "the relational design for Data Fabric" with no marker saying when it crossed over.
+
+## The inventory is the contract
+
+Run the inspector once; derive everything from its output. Do not re-read the `.ofn`,
+the R2RML or the SHACL files during derivation.
+
+```bash
+python3 "<SKILL_DIR>/scripts/ontology-inspect.py" \
+  --ontology "<ONTOLOGY_FILE>" --r2rml "<R2RML_FILE>" --shacl "<SHACL_FILE>" \
+  --out "<BUNDLE_SLUG>-inventory.json"
+```
+
+Three reasons the inventory, not the source files, is what the derivation reads:
+the parsers' limits are then stated once and visible
+([ontology-sources-guide.md § Parser limits](ontology-sources-guide.md)); the
+derivation is reproducible from a small artifact a reviewer can read; and a bundle
+too large to hold in context still yields a derivation, because the inventory is
+orders of magnitude smaller than the sources.
+
+## Three schemas, three completeness assumptions
+
+Two pieces of standing theory decide most of the junctures below. Both are worth
+knowing before writing anything.
+
+### The three-schema architecture
+
+The pipeline is the ANSI/SPARC three-level architecture, and the artifacts line up
+one-to-one:
+
+| ANSI/SPARC level | Here | Locked |
+|---|---|---|
+| Conceptual — the community view: entities, attributes, relationships | the ontology | **input; never written by us** |
+| Internal — how data is actually stored | the Data Fabric entity set | derived, revisable until first binding |
+| External — the views each user of the data needs | the automation's access patterns | discovered last, in Phase 2 |
+
+The architecture's claim is that **explicit mappings between levels are what deliver
+independence** — conceptual↔internal changes do not ripple outward. That is exactly
+why `source.r2rml` and `target.r2rml` are two documents. Collapsing them into one
+mutable file destroys the only mapping that still ties the internal level back to
+something checkable.
+
+Practical consequence: **never let an internal-level concern edit the conceptual
+level.** A Data Fabric limit is not a reason to change the ontology. It is a reason
+for a register row.
+
+### Three completeness assumptions in a row
+
+OWL makes the **open-world assumption**: what is not stated is unknown, not false.
+SHACL validates under the **closed-world assumption**: it treats the graph as
+complete, which is why `sh:minCount 1` can fail at all. Those are different worlds,
+and the mismatch is a known, actively researched problem.
+
+Our pipeline adds a **third**: a Data Fabric entity at a point in time, which during
+incremental ingestion is *not* complete — a record may legitimately exist with a
+field the domain considers mandatory still unfilled.
+
+So a constraint crosses two gaps before it can become `isRequired`:
+
+```
+OWL cardinality  ──OWA→CWA──▶  SHACL sh:minCount  ──CWA→store──▶  isRequired
+   "unknown is                  "complete graph                     "complete at
+    not false"                   must satisfy"                       write time"
+```
+
+`sh:minCount 1` already encodes the first crossing. **The second is ours, and nothing
+in the inputs carries it** — it depends on whether this store is a system of record
+or a staging buffer, and on whether records are written whole or completed over time.
+That is the formal statement of "mandatory in the business world ≠ must be enforced
+here", and it is why the register separates `expressible`, `locus` and `level`
+([constraint-register-guide.md](constraint-register-guide.md)).
+
+Sources: [SHACL validation in the presence of ontologies](https://arxiv.org/abs/2507.12286) ·
+[Open world / closed world](https://ontologist.substack.com/p/the-open-worldclosed-world-conundrum) ·
+[ANSI-SPARC three-level architecture](https://www.geeksforgeeks.org/dbms/the-three-level-ansi-sparc-architecture/)
+
+## Authoring order
+
+Strictly sequential. Each step's output is the next step's input, and several steps
+lock a decision that later steps cannot revisit cheaply (§ Commitment ladder).
+
+| # | Step | Produces | Locks |
+|---|---|---|---|
+| 1 | Detect the bundle; copy `source.r2rml` → `target.r2rml` | the baseline | the diff baseline for every later phase |
+| 2 | Run `ontology-inspect.py` | `<slug>-inventory.json` | the reading of the three inputs |
+| 3 | Declare the four defaults; take named overrides | the override list | the category-3 answers |
+| 4 | Fix the naming convention | — | **every entity and field name** |
+| 5 | Run `derive-entities.py` | `entities.json` | entity identity, junctions, components, `numberId`s |
+| 6 | Classify every SHACL shape | the register | `expressible`; `locus` by default |
+| 7 | Run `apply-entities.py` | solution resources | the on-disk shape |
+| 8 | Run the gates | pass/fail | — |
+| 9 | Write `## Data Model`, Platform Dependencies rows, transition-level Business Rules and their criteria | the genome | the contract |
+| 10 | Work the checklist; report | — | — |
+
+**Do not reorder 4 before 3** — an override can rename an entity. **Do not reorder 6
+before 5** — a register row's `subject` names an entity and field that step 5 mints.
+
+## Commitment ladder
+
+What locks when, and what it costs to revisit. This is the table to consult before
+deferring anything "until we know more".
+
+| Decision | Locked at | Why there | Cost of revisiting later |
+|---|---|---|---|
+| The ontology itself | never by us | conceptual level; it is the input | out of scope — a change to the business model |
+| Naming convention | step 4, before the first name | every name, register row and binding keys on it | rename cascade through every workflow binding |
+| Entity identity — what is one entity | step 5 (Author) | provenance, component ids and every register row key on it | full re-derivation |
+| Junction vs reified class | step 5 (Author) | forced by the ontology's own shape, not by consumption | changes the entity set |
+| Component partition | step 5 (Author) | a deterministic function of the relationship graph | recomputed free, but island decisions made inside one move |
+| `numberId` per choice value | step 5, first emission | **immutable once deployed** | silently remaps deployed records — unrecoverable |
+| Tenant vs folder scope | step 7, before the first `--local` create | the resource envelope carries it | regenerate every resource |
+| `locus` — who enforces | step 6 by default; Phase 2 on evidence | **multi-phase by design** | a register edit; cheap |
+| `level` — state / transition / assumed | Phase 2 | needs the write sites | may add or remove field options; moderate |
+| Normalization degree | Phase 2a, refined 2b | **multi-phase by design** | free until the first binding, then a rework of bindings |
+| Federated views | Phase 2b | needs a cost model over access patterns | additive; cheap |
+
+**Three of these are one-way doors**: the naming convention, entity identity, and
+`numberId`. Everything else is revisable, and two are *designed* to be revisited
+across phases rather than settled early. Say which is which when reporting
+(§ Closing the run) — a reader who cannot tell a locked decision from a parked one
+will either re-litigate the first or trust the second.
+
+## Determinism
+
+**The entity set is a deterministic function of `(inventory, convention, overrides)`.**
+Same inputs, same `entities.json`, byte for byte. The tools enforce it: sorted keys,
+stable ordering, no timestamps, no generated ids that vary between runs.
+
+This is the property that makes everything later reviewable as a diff. Protect it:
+anything that would make a second run differ belongs outside the tools.
+
+Check it:
+
+```bash
+python3 "<SKILL_DIR>/scripts/derive-entities.py" --inventory "<INV>" --out /tmp/a.json
+python3 "<SKILL_DIR>/scripts/derive-entities.py" --inventory "<INV>" --out /tmp/b.json
+diff /tmp/a.json /tmp/b.json
+```
+
+## What Author mode decides, and what it does not
+
+Author mode emits **only what the inputs and the platform force**. Anything a
+consumption pattern would justify is deferred, because Author mode has no consumption
+pattern — the genome's Workflow is being written in the same run, and no automation
+exists yet.
+
+| Emitted in Author mode | Deferred |
+|---|---|
+| `direct` entities and fields | `consolidation` — several classes folded into one entity |
+| `junction` entities for many-to-many | `decomposition` — one class split for lifecycle or access |
+| `split-forced` where a platform cap leaves no option | `federated-view` — a read entity over native entities |
+| field options for `expressible: yes` constraints | the `level` axis of every register row |
+| `locus` by declared default | `locus` where the default was overridden on evidence |
+
+The deferred set is not a gap; it is the contract with the later phases. Every
+deferred item is a register row with `resolution: deferred`, so the next phase has a
+worklist rather than a re-derivation.
+
+## Boundaries
+
+1. **Nothing is written to a tenant.** No `uip df` command without `--local`, no
+   `choice-sets create`, no records. Everything the target environment needs goes to
+   the open items, as every other platform resource does
+   ([open-items-guide.md](open-items-guide.md)).
+2. **The genome stays the contract.** The `## Data Model` section is written once by
+   Author mode and is read-only afterwards, like every other section
+   ([execution-guide.md](execution-guide.md) Critical Rule 12).
+3. **The Data Fabric surface is `uipath-platform`'s.** Name capabilities; route for
+   detail. A field type, a choice-set mechanic or a relationship binding rule that is
+   restated here will drift.
+4. **No reasoning over the ontology.** No classification, no inference closure, no
+   materialising of `owl:equivalentClass`. The inspector reads asserted axioms only,
+   and says so.
+
+## Validation gates
+
+| Gate | Command | Blocks |
+|---|---|---|
+| Inventory parsed | `ontology-inspect.py` exit 0 | derivation |
+| Graph sound | `derive-entities.py` exit 0 — cycles fail hard | emission |
+| Determinism | two runs, byte-identical output | offering edits |
+| Schema | `uip df entities validate --local` | offering edits |
+| Pack | `uip solution pack <SOLUTION> --dry-run` | offering edits |
+| Genome | `check-genome.py --profile strict` | offering edits |
+
+## Closing the run
+
+Before offering edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)),
+work [data-model-checklist.md](data-model-checklist.md) and tell the user, in this
+order:
+
+1. what was emitted — entities, fields, junctions, choice sets, by count;
+2. the four defaults that were applied, and how to override each;
+3. the deferred set, by category, with what would resolve it;
+4. anything in `notCovered`, with why no construct holds it;
+5. the gates that passed.
+
+A run that emitted a model and listed no deferred decisions has almost certainly
+guessed at something. Check the register before reporting it.

@@ -55,6 +55,20 @@ From the description, extract: target applications, human actors, workflow steps
 - **Whether the application is reachable at build time.** Note it; execution captures UI targets live when it is and ships placeholders when it is not (an authored genome has no source target catalog).
 - **What the unit of work is.** When the description iterates over items (each invoice, each row, each ticket, each file), name the item, its identifying reference, the daily volume, what produces the items and what consumes them as described, where they live, whether several robots or several sources are involved, and which other granularities are viable; when items are handed on again as items of their own (a second stage, on its own schedule or robot, consumes what the first produces) or several independent item streams exist, each is its own flow — an item's children (a mail's attachments, a file's rows) are a level of that item, not a flow; this is the Transactional Shape ([transactional-shape-guide.md](transactional-shape-guide.md)) — it describes the as-is and lists the split options with their evidence; the split itself is chosen at execution. A run that succeeds or fails as one has none — the stub.
 
+## Step 4a — Derive the data model (ontology bundle only)
+
+When the request supplies an OWL ontology, an R2RML mapping or SHACL shapes in any
+combination, the data model is derived **before the Workflow is written**, because
+the Workflow's `**Data:**` lines name entities and fields this step mints.
+
+Read [data-model-guide.md](data-model-guide.md) and follow its § Authoring order:
+copy `source.r2rml` to `target.r2rml`, run the inspector, declare the four defaults,
+fix the naming convention, derive, classify, apply, gate. The entity set is
+deterministic; nothing a consumption pattern would justify is emitted here.
+
+Without a bundle, skip this step; the genome's `## Data Model` section takes its stub
+line.
+
 ## Step 5 — Suggest platform capabilities
 
 Add these even when the user did not name them:
@@ -70,6 +84,7 @@ Add these even when the user did not name them:
 | Human review, approval, sign-off | Human-in-the-loop checkpoint in coordinator; actor row in Actors and Systems |
 | Screen for end users, dashboard | `uipath-coded-apps` component |
 | Several automations or test suites drive the same application's screens | One `uipath-rpa` library component (screens and shared actions, Interface as per-workflow argument tables) plus consumer components; process genome states the library builds and packs first |
+| Structured business data several components share, a data model, an ontology, "our entities", a schema the business maintains | Data Fabric entities under Platform Dependencies, never a Build With row; with an ontology bundle, the derived set of Step 4a ([data-model-guide.md](data-model-guide.md)) |
 | Regression or test scenarios, "per release", "verify that", data-driven cases | One `uipath-rpa` test-case-group component per business area with data variations, all folders of the single test project ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1); Test Manager under Platform Dependencies (`uipath-test`), never in Build With |
 | Approvals performed as another user, "proxy as", "impersonate", "on behalf of" | Library step that switches user and stops the switch afterwards; one credential asset per persona that can be proxied |
 
