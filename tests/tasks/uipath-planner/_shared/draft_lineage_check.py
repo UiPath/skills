@@ -16,7 +16,7 @@ buildable at all, and nothing about shape:
 * lineage — every consumed row has a producer: an ``In`` category, a Default, a
   trigger source, or a ``-> name`` / ``name =`` producer somewhere.
 
-Both are conditions the SDD's own grammar states (case-design-layers-guide.md
+Both are conditions the SDD's own grammar states (case-product-guide.md
 § Category semantics: `Variable` closes via "producer or Default"), so a draft
 failing them is defective on its own terms rather than merely unpolished.
 """

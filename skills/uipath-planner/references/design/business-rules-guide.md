@@ -55,8 +55,8 @@ Cells (FEEL unary-test subset):
 - **Design intent, not proof.** Hit policy and completeness describe what the table must do. Do not certify a table overlap-free or complete by reading it: the build proves it (see Proof).
 - **Traceable.** Every row cites its BR in `Rule`; a row that only completes the table cites `[DEFAULT]` or `[SME REVIEW]` instead. Every decision BR appears in at least one row.
 - **Independent test cases.** Write one test case per row in the Testing Strategy (RPA §17; BPMN §13 Gateway / Branch Coverage). Take its inputs and expected output from a PDD example or an SME-confirmed value, never from the row itself: a case derived from the row passes even when the row is wrong. When neither source gives one, write the case with `[SME REVIEW]` in place of the expected output.
-- **Proof.** The implementation task that hosts the decision (the BPMN or RPA task) lists its test cases in its `Validate` sub-step ([Plan and Tasks Format](plan-and-tasks-format.md)) and proves the table with tools. For a `.dmn` business rule: `uip rules validate <PROJECT_DIR> --output json`, then `uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json` once per test case. For coded logic in an RPA process: one unit test per test case. A failing case is a defect in the row or in the test case's source; resolve it with the SME, never by editing the expected output to match.
-- **Runs in.** BPMN: the `businessRuleTask` node key; gateways route on its output. RPA: the step, and the coded logic or lookup that evaluates it. Placement: [Product Selection Guide → Per-task component placement](product-selection-guide.md#per-task-component-placement-the-to-be-per-step).
+- **Proof.** The implementation task that hosts the decision (the BPMN or RPA task) lists its test cases in its `Validate` sub-step ([Plan and Tasks Format](../shared/plan-and-tasks-format.md)) and proves the table with tools. For a `.dmn` business rule: `uip rules validate <PROJECT_DIR> --output json`, then `uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json` once per test case. For coded logic in an RPA process: one unit test per test case. A failing case is a defect in the row or in the test case's source; resolve it with the SME, never by editing the expected output to match.
+- **Runs in.** BPMN: the `businessRuleTask` node key; gateways route on its output. RPA: the step, and the coded logic or lookup that evaluates it. Placement: [Product Selection Guide → Per-task component placement](../shared/product-selection-guide.md#per-task-component-placement-the-to-be-per-step).
 - **No decision rules:** write `None. No rule decides an outcome.`
 
 ## 3. Rules that need reasoning
@@ -76,7 +76,7 @@ List every `Reasoning` rule. Example:
 
 ## 4. Coverage
 
-Number BRs `BR-01`, `BR-02`, … across every home. A decision-table row or reasoning row is the rule's definition; no separate register repeats it. In BPMN, a validation rule goes in the variable's `Description` in §7, prefixed with its BR ID.
+Number BRs `BR-01`, `BR-02`, … in source order across every home. A decision-table row or reasoning row is the rule's definition; no separate register repeats it — so the definition carries the rule itself: the row's `Rule` cell reads `BR-12: a blocked vendor's invoice is rejected`, in the source's words, never the ID alone. A home's IDs skip the ones defined in another home; that gap is expected. In BPMN, a validation rule goes in the variable's `Description` in §7, prefixed with its BR ID.
 
 Before closing the section, run this mechanical check:
 1. List the BR IDs extracted from the PDD.
