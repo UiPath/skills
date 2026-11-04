@@ -214,10 +214,11 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     service's name (the Slack connector's key contains `salesforce`). A box
     that names no provider takes any row from the exact-name list. Prefer
     `State: Enabled`; among those, the folder the step names, then
-    `IsDefault: Yes`. A filter can miss through a wrong word, so an empty
-    result for a named app is not proof: say "No <App> connection found",
-    never "No <App> connection in this tenant", and mark the box *not checked*
-    only when this command exited non-zero.
+    `IsDefault: Yes`. An empty result for a box's service marks the box *none
+    yet*, whose line asks the user to create one or name one, so a filter that
+    missed through a wrong word is corrected by the user's reply. Never say
+    the tenant has no such connection. Mark the box *not checked* only when
+    this command exited non-zero.
   - **Business rules:** `uip rules list --all-folders --limit 10000
     --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path. A business rule binds by name and folder
     path (Rule 17).
