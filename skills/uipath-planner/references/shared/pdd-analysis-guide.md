@@ -8,25 +8,24 @@ The input need not be a formal PDD. **Any artifact that describes a business pro
 
 | Source | How to ingest | Notes |
 |---|---|---|
-| **PDD** (`.pdf` / `.docx` / `.md` / `.txt`) | per Supported Input Formats below | richest, most structured source |
-| **Confluence / wiki / SharePoint page** | user exports (→ md/pdf) or pastes it; or `WebFetch` a reachable page; a session-connected Atlassian / Glean / Microsoft-365 connector also works (best-effort) | often an SOP or process write-up |
-| **BPMN model** (`.bpmn` XML, Signavio/Camunda export, or a diagram image) | `Read` the XML/text directly, or Read the diagram image | already a process map — mine its tasks, gateways, events, lanes; it often encodes the *to-be* |
-| **Meeting / Zoom transcript** | `Read` the text file or pasted content; or a session-connected transcript connector (best-effort) | least structured — expect heavy gaps |
-| **SOP / work instructions / requirements doc / email thread** | per its file format (`Read` / `docx-extract`) | scope varies |
+| **PDD** (`.pdf` / `.md` / `.txt`) | per Supported Input Formats below | richest, most structured source |
+| **Confluence / wiki / SharePoint page** | user exports (→ md/pdf) or pastes it; or web-fetch a reachable page; a session-connected Atlassian / Glean / Microsoft-365 connector also works (best-effort) | often an SOP or process write-up |
+| **BPMN model** (`.bpmn` XML, Signavio/Camunda export, or a diagram image) | read the XML/text directly, or read the diagram image | already a process map — mine its tasks, gateways, events, lanes; it often encodes the *to-be* |
+| **Meeting / Zoom transcript** | read the text file or pasted content; or a session-connected transcript connector (best-effort) | least structured — expect heavy gaps |
+| **SOP / work instructions / requirements doc / email thread** | per its file format (file-read tool) | scope varies |
 
-**Less-structured sources need more elicitation.** A formal PDD is near-complete; a transcript or a thin wiki page is not — run heavier Phase 1 gap-detection and `AskUserQuestion` to fill missing steps, applications, exceptions, rules, and the to-be. Never invent business rules; flag gaps `[SME REVIEW]`.
+**Less-structured sources need more elicitation.** A formal PDD is near-complete; a transcript or a thin wiki page is not — run heavier Phase 1 gap-detection and structured questions to fill missing steps, applications, exceptions, rules, and the to-be. Never invent business rules; flag gaps `[SME REVIEW]`.
 
 ## Supported Input Formats
 
 | Format | Tool | How to Read | Notes |
 |---|---|---|---|
-| Markdown (`.md`) | `Read` | Read the file directly. | Easiest — structure already parseable. |
-| Plain text (`.txt`) | `Read` | Read the file directly (same as Markdown). | No conversion. For a very large file, use `Read` offset/limit or the size strategy in [sdd-generation-guide.md Step 1](sdd-generation-guide.md#step-1-read-the-pdd). |
-| PDF (`.pdf`) | `Read` | Use the `pages` parameter, in chunks of up to 20 pages. | Text is extracted; screenshots and scanned/image-only pages render as images — Read them visually (see "Handling Screenshots"). |
-| Word (`.docx`) | `Bash` → `scripts/docx-extract.sh` (pandoc) | Do NOT Read directly — convert first (see [sdd-generation-guide.md Step 1](sdd-generation-guide.md#step-1-read-the-pdd)), then Read the markdown + extracted media. | Complex tables may extract as raw HTML `<table>` — parse them. **Legacy `.doc`** (binary) is not supported by pandoc — ask the user to save as `.docx`/PDF or paste the content. |
+| Markdown (`.md`) | file-read tool | Read the file directly. | Easiest — structure already parseable. |
+| Plain text (`.txt`) | file-read tool | Read the file directly (same as Markdown). | No conversion. For a very large file, read it by line range or use the size strategy in [design-guide.md Step 1](../design/design-guide.md#step-1-read-the-pdd). |
+| PDF (`.pdf`) | file-read tool | Read it by page range, in chunks of up to 20 pages. | Text is extracted; screenshots and scanned/image-only pages render as images — Read them visually (see "Handling Screenshots"). When pages do not render, or a render is too small to read a value, extract the embedded images and text with any tool the machine has, in a scratch folder — a PDD is unreadable only when nothing can extract it. |
 | Pasted text | (conversation) | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
 
-File-based ingestion needs only **`Read`** (Markdown, `.txt`, PDF, images/media) and **`Bash`** (runs `docx-extract.sh` → pandoc for `.docx`); remote pages use **`WebFetch`** — all three are in the skill's `allowed-tools`. Session-connected MCP connectors (Atlassian / Glean / Microsoft 365 / transcript) are best-effort extras — when absent, ask the user to export or paste the content.
+File-based ingestion needs only a **file-read tool** (Markdown, `.txt`, PDF, images/media); remote pages need **web fetch**. Session-connected MCP connectors (Atlassian / Glean / Microsoft 365 / transcript) are best-effort extras — when absent, ask the user to export or paste the content.
 
 ## Handling Screenshots
 
@@ -37,7 +36,7 @@ When you encounter screenshots in the PDD:
 3. **Do NOT extract** selectors, XPath, CSS, coordinates, colors, or visual layout details — these are determined at development time, not from static images.
 4. **Reference** the screenshot content in the relevant process step's "Remarks" field if useful.
 5. **DO extract concrete data values** shown in the screenshot — sample IDs, names, dates, expected outputs, error messages. These are oracles for the test strategy, not selectors. See "Extract Canonical Examples" below.
-6. **Unreadable media formats (.emf, .wmf):** the Read tool cannot render these (common in Word-extracted media). Do not guess their content — ask the user for a PNG export of the figure, or mark every extraction that depended on it as `[SME REVIEW]` naming the file.
+6. **Unreadable media formats (.emf, .wmf):** file-read tools cannot render these. Do not guess their content — ask the user for a PNG export of the figure, or mark every extraction that depended on it as `[SME REVIEW]` naming the file.
 
 ## Extract Canonical Examples
 
@@ -45,55 +44,20 @@ When you encounter screenshots in the PDD:
 
 ### Where to look
 
-Scan every one of these surfaces for concrete values:
+Scan every surface for concrete values — sample IDs, names, codes, dates, amounts, computed outputs, statuses, verbatim error texts:
 
-| Surface | What to look for | Example signals |
-|---|---|---|
-| **Screenshots of input data** | Sample IDs, names, codes, dates, free-form values shown filled into a form or list | `PRO1037`, `Jeanine Frederick`, `Romania`, a `MM/DD/YYYY` date |
-| **Screenshots of expected output** | Hash values, computed outputs, status fields, post-state values | `bde2c5964a3cfbc9b839aef9aa2a2764829d5497` (SHA1), `Confirmed`, `Approved` |
-| **Inline strings in step descriptions** | Quoted literals — anything inside backticks, double quotes, or single quotes that names a value rather than a column | `"the value 'WI5' in the Type column"`, `'PRO1037'` |
-| **Example tables in the Appendix** | Rows where each cell is a concrete value rather than a placeholder | `Vendor: ACME`, `Amount: 1250.00`, `Currency: EUR` |
-| **Validation rule examples** | Concrete inputs paired with expected pass/fail outcomes | `Hash must be 40 lowercase hex chars; e.g., bde2c5964a3...` |
-| **"For example" callouts in prose** | Sentences like "for example, ID PRO1037 produces hash X" | `e.g.`, `for example`, `such as` |
-| **Error message screenshots** | Verbatim error strings the automation must match | `"Hash mismatch — expected ..., got ..."` |
-
-### What to extract
-
-For every concrete value found, capture:
-
-| Field | Description |
+| Surface | What to look for |
 |---|---|
-| **Source location** | PDD page or section (e.g., "page 9 screenshot, Login screen") |
-| **Data role** | Input / Expected output / Validation rule / Error message |
-| **Field name** | Maps to a field in §5 Data Definitions |
-| **Value** | The literal value, quoted exactly as it appears in the PDD |
+| **Screenshots** | Values filled into forms and lists (inputs); results, statuses and computed values (expected outputs); error dialogs. Read data-bearing screenshots first; pure navigation screens (logins, menus) carry no values |
+| **Embedded files** | Sample documents, mails or spreadsheets attached inside the PDD — often the real canonical data |
+| **Step descriptions** | Quoted literals that name a value rather than a column; "for example" / "e.g." callouts |
+| **Example and appendix tables** | Rows whose cells are concrete values, not placeholders |
 
-### Where to write the extracted values
+### What to extract and where it goes
 
-Write the canonical examples into the SDD's §17 Testing Strategy → Canonical Test Case table. Use the field/value rows of that table to capture the input set, and add a separate Expected Output subsection for the output values. The values feed:
+For every value: its source location (page or section, which screenshot), its data role (input, expected output, validation example, error text), the §5 field it maps to, and the value exactly as the PDD shows it. Write them into §17 Testing Strategy → Canonical Test Case (inputs as field/value rows, an Expected Output subsection for outputs). They are the oracles of §4 business rules (`BR-04: SHA1(<input>) == <expected hash>`), the first happy-path row and the output-format checks.
 
-- **§4 Business Rule test oracles** — every business rule with a concrete example becomes a test assertion using these values (e.g., `BR-04: SHA1(input) == '<canonical hash>'`).
-- **§17 Happy Path Assertions** — the canonical case is the first row of happy-path tests.
-- **§17 Output validation tests** — the canonical output value is the oracle for output-format regex checks (see template §4 prompt block).
-
-### Canonical examples are NOT `[SME REVIEW]` items
-
-A canonical example present anywhere in the PDD is **fact**, not user-supplied data. Do not mark it as `[SME REVIEW]`. The `[SME REVIEW]` fallback applies only when:
-
-- The entire PDD has been scanned (all screenshots, all tables, all step descriptions, all appendices) AND
-- No concrete value can be derived for the field.
-
-If scanning finds at least one concrete value, treat it as the canonical case — the gap-detection row "Test data / canonical case" only fires when extraction returns empty.
-
-### Output writing checklist
-
-Before declaring Phase 1 extraction complete:
-
-- [ ] Every screenshot has been visually inspected for concrete values (not just labels and buttons).
-- [ ] Every inline-quoted string in step descriptions has been captured.
-- [ ] Every example table in the PDD body or appendix has been read row by row.
-- [ ] At least one canonical input set + expected output is recorded for the §17 Canonical Test Case (or the `[SME REVIEW]` fallback applies because the PDD genuinely has no examples).
-- [ ] Hash / regex / format-shaped values are paired with the BR they validate (e.g., "SHA1 output: `bde2c596...`" → BR-04 SHA1 format rule).
+**A canonical example in the PDD is fact, not an `[SME REVIEW]` item.** The fallback applies only when the whole PDD — screenshots, embedded files, tables, steps, appendices — has been scanned and no value exists for the field. A pair the agent cannot reproduce (the stated output does not follow from the stated input by the stated rule) is recorded as the PDD gives it, with an `[SME REVIEW]` item naming the mismatch. An unreadable figure (EMF, an illegible render) that carries values is an `[SME REVIEW]` item naming the figure; an icon or decoration is not.
 
 ## Reading Strategy
 
@@ -147,7 +111,7 @@ A PDD (and most process-knowledge sources) carries two views — extract **both*
 - **AS-IS** — the current process as performed today (steps, systems, manual handoffs, pain points). Essential for understanding the process holistically; skipping it pushes cost to UAT scope-creep.
 - **TO-BE (high-level)** — the target the author/BA proposed (what changes, what gets automated). A high-level *intent*, not the technical design.
 
-The SDD authors the **detailed TO-BE** — the technical solution design. **Do not copy the as-is verbatim into the to-be:** re-engineer the process for automation against the [need profile](sdd-generation-guide.md#step-35-synthesize-the-need)'s target KPI (cycle time, manual effort, quality, cost, throughput, compliance). Reconcile with the PDD's high-level to-be; where they differ, or the to-be is absent, flag `[SME REVIEW]` and confirm with the user. When a source carries only one view (a transcript describing today's process = as-is only; a BPMN model of the target = to-be only), capture what's present and elicit the missing side.
+The SDD authors the **detailed TO-BE** — the technical solution design. **Do not copy the as-is verbatim into the to-be:** re-engineer the process for automation against the [need profile](../design/design-guide.md#step-35-synthesize-the-need)'s target KPI (cycle time, manual effort, quality, cost, throughput, compliance). Reconcile with the PDD's high-level to-be; where they differ, or the to-be is absent, flag `[SME REVIEW]` and confirm with the user. When a source carries only one view (a transcript describing today's process = as-is only; a BPMN model of the target = to-be only), capture what's present and elicit the missing side.
 
 ### Detailed Process Map
 
@@ -176,7 +140,7 @@ This is the most important section. For each step, extract:
 
 Watch for:
 - **Embedded business rules** — rules are often buried in the "Remarks" column or in step descriptions rather than in a dedicated section. Extract and number them (BR-01, BR-02, etc.).
-- **Typed business rules** — a PDD Business Rules table may give each rule a type (`Deterministic`, `Reasoning: agent`, `Reasoning: person`, possibly in the document's language) and its `inputs → output`. Carry both into the SDD: they decide whether the rule becomes a decision table or a reasoning-list row ([Business Rules Guide](business-rules-guide.md)).
+- **Typed business rules** — a PDD Business Rules table may give each rule a type (`Deterministic`, `Reasoning: agent`, `Reasoning: person`, possibly in the document's language) and its `inputs → output`. Carry both into the SDD: they decide whether the rule becomes a decision table or a reasoning-list row ([Business Rules Guide](../design/business-rules-guide.md)).
 - **Data field references** — step descriptions mention specific field names, variable names, or data values. Collect these for the data model definitions.
 - **Value mappings** — when a step says "map X to Y" or shows a conversion table, capture the full mapping.
 - **Implicit ordering constraints** — some steps must happen before others but the PDD doesn't explicitly say so. Note these for the workflow decomposition.
@@ -225,7 +189,7 @@ Extract into a table:
 Watch for:
 - URLs may be environment-specific (localhost for dev, internal DNS for prod). Note both if available.
 - SPA details (hash routing, pushState) affect how the robot navigates. Capture these.
-- **Email protocol** — when email is an application, extract the protocol signal: IMAP, Exchange/EWS, O365 Graph API, POP3, SMTP. Look for keywords like "IMAP", "Exchange", "O365", "Graph API", "dedicated mailbox". If not specified, mark as `[SME REVIEW]` — do not default to O365.
+- **Email protocol** — when email is an application, extract the protocol signal: IMAP, Exchange/EWS, O365 Graph API, POP3, SMTP. Look for keywords like "IMAP", "Exchange", "O365", "Graph API", "dedicated mailbox". If not specified: an unattended run on Microsoft 365 mailboxes defaults to the Outlook 365 connector (Graph) — never the desktop Outlook client, which needs a signed-in profile on every robot — and an unknown mail platform defaults to IMAP/SMTP; either default is `[DEFAULT]` with an `[SME REVIEW]` item to confirm.
 - **FTP/SFTP** — note whether the PDD specifies FTP, SFTP, or cloud storage (S3, Azure Blob). Capture host/path if mentioned.
 
 ### Environment & Constraint Signals
@@ -243,9 +207,8 @@ Watch for:
 
 Destinations:
 
-- Delivery model + product exclusions → Phase 1 Step 0 skip rules and the [Constraint Gate](product-selection-guide.md#constraint-gate).
+- Delivery model + product exclusions → the skip rule of [platform-availability-guide.md § Resolving the Delivery Model](platform-availability-guide.md#resolving-the-delivery-model) and the [Constraint Gate](product-selection-guide.md#constraint-gate).
 - Signing modality, document storage, robot attendance → §9 Application Inventory / §16 Deployment Environment (or product equivalents); `[SME REVIEW]` when the PDD handles documents or signatures but leaves the modality ambiguous.
-- **Human-only login (physical hardware 2FA token, smart card, biometric, non-scriptable interactive sign-in)** → do NOT stop at `[SME REVIEW]`. Emit the §9 *Interactive Authentication / Re-auth Handoff* subsection (RPA template) with the handoff contract, set §16 Robot type = Attended, and route the build to `uipath-rpa` per the [attended re-authentication pattern](attended-reauth-pattern-guide.md). A **soft** second factor the robot can read (Google/MS/Okta TOTP, SMS/email code) is scripted by `uipath-rpa` — no handoff subsection.
 
 ### Development Details
 
@@ -275,21 +238,12 @@ Extract:
 
 Watch for:
 - Reporting requirements are often in a separate section or table near the end of the PDD. They are easy to miss.
-- If the PDD mentions reporting, this is a signal for a dedicated Reporting project in the project decomposition decision (see [RPA Product Guide](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) Level 2.5 Part A).
+- If the PDD mentions reporting, this is a signal for a dedicated Reporting project in the project decomposition decision (see [RPA Product Guide](../design/rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) Level 2.5 Part A).
 - If the PDD has no reporting section but mentions logging or monitoring, mark reporting as `[DEFAULT]` — Orchestrator logs only.
 
 ### Project Decomposition Signals
 
-While extracting data, watch for signals that indicate the process should be split into multiple projects. These feed into Level 2.5 Part A of the [RPA Product Guide](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals):
-
-1. **Distinct processing stages** — does the process have clearly separate phases (e.g., "collect emails" → "extract data" → "generate output")? Note stage boundaries.
-2. **Per-item transactional processing** — are items processed independently where one failure should not block others? Note where per-item processing starts/ends.
-3. **Document Understanding with human validation** — does the process use DU extraction followed by Action Centre / human review? This is a common split point.
-4. **Multiple output channels** — does the process produce output to multiple unrelated systems (e.g., XML to MQ + files to FTP + report to email)?
-5. **Reporting** — does the PDD specify reporting requirements? This often warrants a dedicated project.
-6. **Queue mentions** — does the PDD mention queues, batches, or "items to process"? This suggests queue-based architecture.
-
-Capture these signals as a structured list in your internal model. They will be used during product selection.
+While extracting, record in the internal model every signal of [RPA Product Guide → Level 2.5 Part A](../design/rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) — stage boundaries, where per-item processing starts and ends, DU with human validation, multiple output channels, reporting — plus any mention of queues, batches or "items to process". Product selection decides from them.
 
 ## Gap Detection Checklist
 
@@ -310,7 +264,7 @@ After extraction, verify these items exist. Flag missing ones:
 | Credential rotation policy | `[DEFAULT]` — assume Orchestrator asset management |
 | Test data / canonical case | Run "Extract Canonical Examples" first. Only mark `[SME REVIEW]` if scanning every screenshot, every inline-quoted string, and every example table genuinely returns zero concrete values. Most PDDs carry at least one example. |
 | Reporting requirements | `[DEFAULT]` — Orchestrator logs only (no dedicated report) |
-| Email protocol (when email is used) | `[SME REVIEW]` — needed for package selection (IMAP vs O365 vs Exchange) |
+| Email protocol (when email is used) | `[DEFAULT]` per § Application Details (Outlook 365 connector for Microsoft 365 mailboxes, IMAP/SMTP otherwise) + an `[SME REVIEW]` item |
 | Delivery model | Asked at Phase 1 Step 0 when the PDD doesn't state it — never silently default. Gates product availability. |
 | Document storage location (when the process handles documents) | `[SME REVIEW]` — never default to SharePoint |
 | Signing modality (when signatures are mentioned) | `[SME REVIEW]` — embedded e-signature service vs local token-based signing changes the architecture |
