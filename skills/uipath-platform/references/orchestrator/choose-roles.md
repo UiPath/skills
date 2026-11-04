@@ -21,7 +21,7 @@ For the role and assignment commands in full (create, update, delete, audit), se
 2. **Assign standard roles in pairs.** Each folder role has a matching `Allow to be …` tenant role. Assign both: the folder role in each folder, the tenant role once at tenant level.
 3. **Standard roles cannot be changed.** `roles list` / `roles get` show them with `IsEditable: false`; `roles get` also shows `IsStatic: true`. Never `roles update` or `roles delete` them. Organization-level Identity roles (`uip admin authorization roles`) follow their own read-only rule — see [uipath-admin](/uipath:uipath-admin).
 4. **Create a custom role only after naming the missing permission.** Run `roles get` on the closest standard role, find the permission it lacks in `roles permissions list`, and state that permission to the user before creating anything.
-5. **All three assign commands replace.** `users assign-roles`, `users assign`, and `roles assign` overwrite the principal's role list at their scope. Read current roles first and pass the full union.
+5. **All three assign commands replace.** `users assign-roles`, `users assign`, and `roles assign` overwrite the principal's role list at their scope. Read current roles first and pass the full union. Full warning and the additive `roles users set` alternative: [setup-environment.md § Step 3](setup-environment.md#step-3-create-roles).
 6. **Never assign the legacy `Administrator` or `Robot` roles.** Both are mixed roles, unavailable on new tenants. Use their replacements in the table below.
 
 ---
@@ -35,8 +35,8 @@ Pick the first row that matches the need.
 | Run processes unattended or from Assistant (robot account, business user) | `Automation User` | `Allow to be Automation User` |
 | Create automation projects, publish packages, and run them in the folder (developer) | `Automation Developer` | `Allow to be Automation Developer` |
 | Publish packages only, no job start (CI/CD publisher) | `Automation Publisher` | `Allow to be Automation Publisher` |
-| Publish **and** run | `Automation Publisher` + `Automation User` | `Allow to be Automation Publisher` + `Allow to be Automation User` |
-| Manage one folder and its subfolders | `Folder Administrator` | `Allow to Be Folder Administrator` |
+| Publish **and** run, no project creation | `Automation Publisher` + `Automation User` | `Allow to be Automation Publisher` + `Allow to be Automation User` |
+| Manage one folder and its subfolders | `Folder Administrator` | `Allow to Be Folder Administrator` (capital `B` in the docs; match case-insensitively, Step 2) |
 | Manage all tenant entities (tenant-wide admin) | `Folder Administrator` in each folder to manage | `Orchestrator Administrator` |
 | Create, edit, delete solution packages and manage solution deployments | — | `Solutions Administrator` |
 | View, edit, create solution packages and package versions | — | `Solutions Contributor` |
@@ -66,14 +66,14 @@ uip or roles user-roles list "<USERNAME>" --output json
 
 ### Step 2: Find the role keys
 
-Assign commands take role keys (GUIDs), and Step 1 gives names. Look up the new standard roles **and** the roles from Step 1 by `Name`:
+Assign commands take role keys (GUIDs), and Step 1 gives names. Look up the new standard roles **and** the roles from Step 1. Filter on the shared part of the pair's name — one call returns the folder role and its `Allow to be …` tenant role:
 
 ```bash
 uip or roles list --limit 1000 --output json \
-  --output-filter "[?Name=='Automation User' || Name=='Allow to be Automation User'].{Key: Key, Name: Name, Type: Type, IsEditable: IsEditable}"
+  --output-filter "[?contains(Name, 'Automation User')].{Key: Key, Name: Name, Type: Type, IsEditable: IsEditable}"
 ```
 
-`Type` tells which assign command takes the key: `Tenant` → `users assign-roles`, `Folder` → `users assign` / `roles assign`. Empty result → role name differs on this tenant; rerun without `--output-filter` and match on `Name` or `DisplayName`.
+`Type` tells which assign command takes the key: `Tenant` → `users assign-roles`, `Folder` → `users assign` / `roles assign`. `contains` is case-sensitive: use a fragment with no varying case (`'Folder Administrator'`, not `'Allow to be Folder'`). Empty result → rerun without `--output-filter` and match `Name` or `DisplayName` ignoring case.
 
 ### Step 3: Assign the tenant role
 
@@ -81,7 +81,7 @@ uip or roles list --limit 1000 --output json \
 uip or users assign-roles <USER_KEY> --role-keys <TENANT_ROLE_KEYS> --output json
 ```
 
-`<TENANT_ROLE_KEYS>`: comma-separated GUIDs — the new tenant role **plus** every `Tenant`-scope role from Step 1.
+`<TENANT_ROLE_KEYS>`: comma-separated GUIDs — the new tenant role **plus** every `Tenant`-scope role from Step 1. To add one tenant role without rebuilding the list, `uip or roles users set <TENANT_ROLE_KEY> --add-user-keys <USER_KEY> --output json` is additive.
 
 ### Step 4: Assign the folder role
 
