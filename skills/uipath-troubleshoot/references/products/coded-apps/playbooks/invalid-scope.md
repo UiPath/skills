@@ -32,7 +32,7 @@ What to look for:
 
    ```bash
    uip admin external-apps get <client-id> --output json \
-     --output-filter "scopes"
+     --output-filter "Scopes"
    ```
 
 3. The rejected scope is one requested in step 1 but missing in step 2. Confirm every service the app uses has its scope registered — grep the source for SDK service construction:

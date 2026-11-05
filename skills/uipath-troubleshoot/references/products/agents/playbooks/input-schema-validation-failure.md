@@ -44,7 +44,7 @@ What to look for:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?spanType == 'agentRun'].attributes.error"
+     --output-filter "[?SpanType == 'agentRun'].Attributes.Error"
    ```
 
 3. Determine the variant from the error prefix:

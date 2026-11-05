@@ -33,7 +33,7 @@ If not logged in, run `uip login`.
 - Before `services add`, `enable`, `disable`, or `remove`, run `tenants get <ID> --output json`, resolve `<TENANT_ID>`, and echo the tenant name, especially for `remove`. These commands silently default `--tenant-id` to the login tenant.
 - Disable is not honored for Integration Service (`connections`), Data Fabric (`dataservice`), or Insights (`insights`). Remove is rejected or not honored for Orchestrator (`orchestrator`), Maestro (`maestro`), Integration Service (`connections`), Data Fabric (`dataservice`), Insights (`insights`), or Test Manager (`testmanager`).
 - Before submitting an unsupported disable/remove, warn: *"Service `<X>` cannot be {disabled|removed} via the CLI — it's pinned by the platform. The call will return Success but the service will stay {Enabled|provisioned}. To deprovision, revoke the org entitlement via the UiPath Portal. Continue anyway, or skip `<X>`?"* Skip it or continue only with the user's choice. If continuing, warn again in the post-state summary.
-- After every `services disable` or `services remove`, run `tenants get <TENANT_ID> --output-filter "tenantServiceInstances[?serviceType=='<SVC>']"` and inspect the instance `status`; HTTP 200 or `Success` does not prove a state change.
+- After every `services disable` or `services remove`, run `tenants get <TENANT_ID> --output-filter "TenantServiceInstances[?ServiceType=='<SVC>']"` and inspect the instance `status`; HTTP 200 or `Success` does not prove a state change.
 
 ## Tenant Lifecycle — `uip admin tenants`
 
@@ -196,7 +196,7 @@ Run this default-provision filter for the target region. The root is the `Data` 
 
 ```bash
 uip admin tenants services list-available --region "<REGION>" --output json \
-  --output-filter "[?provisioningMode=='Implicit' && isVisible==\`true\` && isAlwaysProvision==\`false\`].name"
+  --output-filter "[?ProvisioningMode=='Implicit' && IsVisible==\`true\` && IsAlwaysProvision==\`false\`].Name"
 ```
 
 Render results as create defaults, let the user remove unwanted entries or explicitly add services, and pass confirmed catalog `name` values—not `id` values—as the create body's string-array `services` field. Output code: `OmsTenantServicesAvailable`.
