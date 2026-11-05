@@ -165,6 +165,12 @@ vocabulary is the designer's, and each form compiles to the same
 | `contains`, `startsWith`, `endsWith` | text | `contains(subject,'Invoice')` |
 | `equals`, `notEquals` | text, number or boolean | `status=='open'`, ``priority==`3` `` |
 | `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual` | number, or an ISO date string | ``priority>`3` ``, `to_number(dueDate)<to_number('2026-08-04')` |
+| `is`, `isNot` | always `true` | ``hasAttachments==`true` ``, ``isRead!=`true` `` |
+
+`is` / `isNot` are the designer's boolean tests ("Is" / "Is not" on the
+canvas). They always test against `true`, so `isNot: true` also matches an
+event that lacks the field. For "is false" write `equals: false`; any other
+value for `is` / `isNot` is refused (`EVENT_FILTER_BAD_VALUE`).
 
 Ordering a plain string is refused (`EVENT_FILTER_BAD_VALUE`): JMESPath
 compares numbers only, so the subscription would match nothing. Write the
