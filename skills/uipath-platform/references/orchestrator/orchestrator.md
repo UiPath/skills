@@ -32,6 +32,7 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 | Workflow | File | Covers |
 |----------|------|--------|
 | Setup Environment | [setup-environment.md](setup-environment.md) | Folders, users, roles, machines, licenses |
+| Choose Roles | [choose-roles.md](choose-roles.md) | Standard role per need, tenant + folder pairs, when a custom role is justified |
 | Run Jobs | [run-jobs.md](run-jobs.md) | Packages, processes, jobs, logs, traces |
 | Manage Sessions | [manage-sessions.md](manage-sessions.md) | Sessions, runtimes, maintenance mode |
 | Tenant Admin | [tenant-admin.md](tenant-admin.md) | Settings, calendars, audit logs, credential stores, feeds, attachments |

@@ -80,7 +80,7 @@ Case-level event triggers (`type: "uipath.case.trigger"` with `data.inputs.servi
 
 ### Connector condition rules
 
-When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
+When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that fails `validate`, Studio Web, debug and run until replaced. Its validate errors are expected: report them as unresolved connectors, never repair them ([connector-trigger-impl.md § What validate reports for a stub](connector-trigger-impl.md#what-validate-reports-for-a-stub)). Full recipe + skip behavior + upgrade path: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
 
 ## `registry-resolved.json` Entry Shape
 
