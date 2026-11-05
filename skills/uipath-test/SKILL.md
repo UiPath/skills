@@ -13,7 +13,7 @@ Manage UiPath Test Manager projects, requirements (including AI test case genera
 
 Test Manager CRUD; CI runs of every test in an uploaded package; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; load-testing an automated test case and finding why a load run failed; and shareable QA-engineer, developer, or release-manager reports.
 
-When the request names the Test Manager Integration Service connector rather than the `uip tm` commands, use `uip is resources run` as described in `/uipath-platform` (`references/integration-service/resources.md`), not `uip tm`.
+When the request asks to operate Test Manager through its Integration Service connector (not `uip tm`), run `uip is resources run` per `/uipath-platform` (`references/integration-service/resources.md`). Building a `.flow`/`.bpmn`/API workflow that uses the connector→its authoring skill.
 
 ## Critical Rules
 
