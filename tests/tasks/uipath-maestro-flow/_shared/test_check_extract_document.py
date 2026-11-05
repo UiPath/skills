@@ -176,8 +176,29 @@ def test_type_and_instructions_are_checked_on_the_named_field(write, capsys):
     assert _fields({"name_contains": "number", "says_contains": "prefix"}) == 1
     assert _fields({"name_contains": "invoice date", "type": "ft-date"}) == 1
     err = capsys.readouterr().err
-    assert 'no field fits {"name_contains": "invoice date", "type": "ft-date"}' in err
+    assert 'no field left fits {"name_contains": "invoice date", "type": "ft-date"}' in err
     assert "'G > Invoice Date' ft-inferred-text" in err
+
+
+def test_one_field_cannot_answer_two_entries(write, capsys):
+    write(_flow(schema=_schema({"Invoice": {"description": "d", "properties": {
+        "Vendor ID": _field("ft-exact-text"),
+        "Invoice Date": _field("ft-date"),
+        "Total": _field("ft-monetary-quantity"),
+    }}})))
+    vendor, number = {"name_contains": "vendor|supplier|seller"}, {"name_contains": "number|(^|[^a-z])(no|id)([^a-z]|$)|#"}
+    assert _fields(vendor) == 0 and _fields(number) == 0
+    assert _fields(vendor, number) == 1
+    assert 'no field left fits {"name_contains": "number|' in capsys.readouterr().err
+
+
+def test_only_counts_claimed_fields(write, capsys):
+    write(_flow(schema=_schema({"G": {"description": "d", "properties": {
+        "Vendor Name": _field("ft-inferred-text"),
+        "Vendor ID": _field("ft-exact-text"),
+    }}})))
+    assert _fields({"name_contains": "vendor"}, only=True) == 1
+    assert "'G > Vendor ID' is a field no entry asks for" in capsys.readouterr().err
 
 
 def test_every_missing_entry_is_reported(write, capsys):

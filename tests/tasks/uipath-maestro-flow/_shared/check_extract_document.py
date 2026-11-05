@@ -10,14 +10,15 @@ Usage (from a task's run_command, cwd = sandbox root):
 ``inputs.schemaDocument``, the document ``nodes schema get`` prints.
 
 Checks:
-    fields JSON          each entry of the JSON array fits a field:
+    fields JSON          each entry of the JSON array claims a field it fits:
                          '[{"name_contains": "date", "type": "ft-date"}, {"name": "Total"}]'
                          "name", "type" and "id" must equal the field's name,
                          type and x-uipath-field-id. "name_contains" and
                          "says_contains" are case-insensitive regexes searched
                          in the field's name and instructions. An entry may
-                         give any of these keys. With --only, every field
-                         fits an entry.
+                         give any of these keys. Entries claim in order, each
+                         taking the first field no earlier entry took. With
+                         --only, every field is claimed.
     has-instructions     the overall prompt, every group and every field have
                          instructions (a non-empty prompt or description)
     defs                 the six built-in field types are still in $defs; with
@@ -141,17 +142,16 @@ def parse_fields(values: list[str]) -> list[dict]:
 
 def check_fields(_: dict, node: dict, args: argparse.Namespace) -> str | None:
     fields = _list_fields(node)
-    problems = [
-        f"no field fits {json.dumps(want)}"
-        for want in args.wanted
-        if not any(_fits(want, n, f) for _, n, f in fields)
-    ]
+    unclaimed = list(range(len(fields)))
+    problems = []
+    for want in args.wanted:
+        claim = next((i for i in unclaimed if _fits(want, fields[i][1], fields[i][2])), None)
+        if claim is None:
+            problems.append(f"no field left fits {json.dumps(want)}")
+        else:
+            unclaimed.remove(claim)
     if args.only:
-        problems += [
-            f"'{g} > {n}' is a field no entry asks for"
-            for g, n, f in fields
-            if not any(_fits(want, n, f) for want in args.wanted)
-        ]
+        problems += [f"'{fields[i][0]} > {fields[i][1]}' is a field no entry asks for" for i in unclaimed]
     if not problems:
         return None
     found = "; ".join(_describe(*entry) for entry in fields)

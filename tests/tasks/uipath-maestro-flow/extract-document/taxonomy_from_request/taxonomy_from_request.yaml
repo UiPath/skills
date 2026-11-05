@@ -3,8 +3,9 @@ description: >
   Smoke: the user names the Extract document node, the fields, and one rule
   about one field. Tests that the agent writes the taxonomy with `nodes schema
   set`: the fields with fitting types, instructions throughout, and the user's
-  rule in the field's instructions. Only the taxonomy is graded: the node,
-  its wiring and `flow validate` are graded by `explicit_node`.
+  rule in the field's instructions, and `flow validate` passing on the
+  result. Only the taxonomy is graded: the node and its wiring are graded by
+  `explicit_node`.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
 
@@ -70,6 +71,14 @@ success_criteria:
     command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceFields has-instructions
     expected_exit_code: 0
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The taxonomy on disk is well formed: uip maestro flow validate passes on InvoiceFields.flow with no warnings (a rejected last set or a hand edit fails here)"
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
 run_limits:
