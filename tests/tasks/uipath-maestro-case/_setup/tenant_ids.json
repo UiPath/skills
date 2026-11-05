@@ -31,9 +31,16 @@
       "name": "CountLetters",
       "folder": "Shared/uipath-maestro-flow/CountLetters CodedAgent"
     },
+    "4356ada1-0db4-4efe-b787-3a08a4b79bde": {
+      "name": "ContractObligationTracking",
+      "folder": "Shared/uipath-maestro-case/ContractObligationTrackingSolution"
+    },
     "486edc26-0658-4ac1-92c9-1ef953927151": {
       "name": "ProjectEuler",
-      "folder": "Shared/uipath-maestro-flow/ProjectEuler RPA"
+      "folder": "Shared/uipath-maestro-flow/ProjectEuler RPA",
+      "aliases": [
+        "RPA Workflow"
+      ]
     },
     "4d5c6aa7-a1a6-4dd9-aa4d-6304a22014e8": {
       "name": "HelpDeskLookup",
@@ -70,6 +77,10 @@
     "dc377f10-090c-43a9-9e19-2ab935ba0489": {
       "name": "Maestro Case",
       "folder": "Shared/uipath-maestro-case/CaseTest"
+    },
+    "deecae87-ce5a-4351-b777-92348aff3226": {
+      "name": "Task agentic case",
+      "folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106"
     }
   },
   "apps": {

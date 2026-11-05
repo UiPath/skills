@@ -479,7 +479,9 @@ def _python_verbs(node: ast.AST) -> set[str]:
                     verbs.add(verb)
         elif isinstance(n, ast.Call) and "uip" in _call_name(n).lower():
             words = []
-            for arg in n.args:
+            # `_uip(["maestro", "case", ...], 240)` passes the words as one list literal.
+            args = n.args[0].elts if n.args and isinstance(n.args[0], (ast.List, ast.Tuple)) else n.args
+            for arg in args:
                 if not (isinstance(arg, ast.Constant) and isinstance(arg.value, str)) or arg.value.startswith("-"):
                     break
                 words.append(arg.value)
@@ -666,7 +668,7 @@ def extract_sdd_resources(text: str) -> list[tuple[str, str | None, str, str | N
         label, value = match.group(1).strip().lower(), match.group(2)
         if label == "type":
             last_type = clean_value(value).lower()
-        elif label == "resolved resource":
+        elif label in ("resolved resource", "child case"):
             fields = _block_fields(lines, index)
             name = clean_value(value)
             folder = clean_value(fields.get("folder path", ""))
@@ -676,6 +678,8 @@ def extract_sdd_resources(text: str) -> list[tuple[str, str | None, str, str | N
             sub_type = SDD_SUBTYPES.get(sub_raw) if sub_raw and not PLACEHOLDER_RE.match(sub_raw) else None
             if sub_type is None and last_type:
                 sub_type = SDD_SUBTYPES.get(last_type)
+            if sub_type is None and label == "child case":
+                sub_type = "casemanagement"
             identity = GUID_RE.search(fields.get("resource identity", ""))
             results.append(("process", sub_type, name, folder, identity.group(0) if identity else None, index + 1))
         elif label == "action app id":

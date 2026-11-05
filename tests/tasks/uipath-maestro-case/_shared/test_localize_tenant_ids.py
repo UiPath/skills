@@ -111,8 +111,8 @@ def test_a_process_maps_by_name_and_folder(module, sandbox, monkeypatch):
     assert ["maestro", "case", "registry", "pull", "--force"] in calls
 
 
-def test_a_folder_holding_one_process_matches_under_another_name(module, sandbox, monkeypatch):
-    # The ETE deploys ProjectEuler RPA's process as "RPA Workflow".
+def test_a_renamed_process_matches_by_its_manifest_alias(module, sandbox, monkeypatch):
+    # The ETE deploys ProjectEuler RPA's process as "RPA Workflow"; the manifest names that alias.
     (sandbox / "sdd.md").write_text(f"{PROJECT_EULER}\n")
     _stub_uip(module, monkeypatch, {})
     _index(sandbox, "process", [_process(LIVE_EULER, "RPA Workflow", "Shared/uipath-maestro-flow/ProjectEuler RPA")])
@@ -120,6 +120,19 @@ def test_a_folder_holding_one_process_matches_under_another_name(module, sandbox
     assert module.main() == 0
 
     assert (sandbox / "sdd.md").read_text() == f"{LIVE_EULER}\n"
+
+
+def test_another_process_in_the_folder_is_not_taken_for_a_missing_one(module, sandbox, monkeypatch, capsys):
+    """A partial pull can index only the RPA process of a folder that also holds the agent."""
+    folder = "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106"
+    (sandbox / "sdd.md").write_text(f"{AGENT}\n")
+    _stub_uip(module, monkeypatch, {})
+    _index(sandbox, "process", [_process(LIVE_HELPDESK, "RPA Workflow", folder)])
+
+    assert module.main() == 0
+
+    assert (sandbox / "sdd.md").read_text() == f"{AGENT}\n"
+    assert AGENT in capsys.readouterr().err
 
 
 def test_an_unresolvable_id_stays_and_is_reported(module, sandbox, monkeypatch, capsys):
@@ -226,3 +239,19 @@ def test_two_pinned_connections_of_one_connector_map_to_two_live_ones(module, sa
     assert module.main() == 0
 
     assert (sandbox / "sdd.md").read_text() == f"{live_flow}\n{live_shared}\n"
+
+
+def test_a_pinned_connection_the_tenant_kept_is_not_given_to_another_pin(module, sandbox, monkeypatch):
+    """The named pin is resolved first; it must not take the record the other pin still owns."""
+    first, second = "6a817d24-cbbd-4389-b10d-4329214ffb8d", "bad8a81c-410f-4ee6-a642-c5679acf0c98"
+    live_flow = "55555555-5555-5555-5555-555555555555"
+    (sandbox / "sdd.md").write_text(f"{first}\n{second}\n")
+    _stub_uip(module, monkeypatch, {"uipath-http-webhook": [
+        {"Id": first, "Name": "auto", "Folder": "Shared", "State": "Enabled"},
+        {"Id": live_flow, "Name": "other", "Folder": "uipath-maestro-flow", "State": "Enabled"},
+    ]})
+
+    assert module.main() == 0
+
+    assert (sandbox / "sdd.md").read_text() == f"{first}\n{live_flow}\n"
+

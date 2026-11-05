@@ -85,10 +85,23 @@ def _read_text(path: Path) -> str | None:
         return None
 
 
+_CONNECTIONS: dict[str, list[dict]] = {}
+
+
+def _connections(connector: str) -> list[dict]:
+    if connector not in _CONNECTIONS:
+        _CONNECTIONS[connector] = _uip(["is", "connections", "list", connector, "--all-folders"], 90).get("Data") or []
+    return _CONNECTIONS[connector]
+
+
+def _exists(cloud_id: str, connections: list[dict]) -> bool:
+    return any(str(c.get("Id", "")).lower() == cloud_id for c in connections)
+
+
 def _resolve_connection(cloud_id: str, spec: dict, taken: set[str]) -> str | None:
-    """``taken`` holds live IDs already given to another pinned ID: two pinned connections stay two."""
-    connections = _uip(["is", "connections", "list", spec["connector"], "--all-folders"], 90).get("Data") or []
-    if any(str(c.get("Id", "")).lower() == cloud_id for c in connections):
+    """``taken`` holds every live ID another pinned ID keeps or was given: two pinned connections stay two."""
+    connections = _connections(spec["connector"])
+    if _exists(cloud_id, connections):
         return cloud_id
     enabled = [c for c in connections if c.get("State") == "Enabled" and str(c.get("Id", "")).lower() not in taken]
     named = [c for c in enabled if spec.get("name") and c.get("Name") == spec["name"]]
@@ -119,12 +132,12 @@ def _folder_paths(entry: dict) -> set[str]:
 def _resolve_process(cloud_id: str, spec: dict, entries: list[dict]) -> str | None:
     if any(str(e.get("entityKey", "")).lower() == cloud_id for e in entries):
         return cloud_id
-    in_folder = [e for e in entries if spec["folder"] in _folder_paths(e)]
-    named = [e for e in in_folder if e.get("name") == spec["name"]]
     # A solution can deploy its process under a name other than the SDD's (ProjectEuler RPA deploys
-    # "RPA Workflow"), so a folder holding exactly one process is still an unambiguous match.
-    match = named if len(named) == 1 else in_folder if len(in_folder) == 1 else []
-    return str(match[0]["entityKey"]) if match else None
+    # "RPA Workflow"): the manifest names it in `aliases`. Another process in the same folder is
+    # never a match, or a partial pull would bind the wrong resource.
+    names = {spec["name"], *spec.get("aliases", [])}
+    named = [e for e in entries if spec["folder"] in _folder_paths(e) and e.get("name") in names]
+    return str(named[0]["entityKey"]) if len(named) == 1 else None
 
 
 def _resolve_app(cloud_id: str, spec: dict, apps: list[dict]) -> str | None:
@@ -194,11 +207,21 @@ def main() -> int:
 
     mapping: dict[str, str] = {}
     unresolved: list[str] = []
+    # A pinned connection the tenant still has keeps its ID, so no other pin may take it.
+    kept: set[str] = set()
+    for cloud_id, (kind, spec) in pinned.items():
+        if kind == "connections":
+            try:
+                if _exists(cloud_id, _connections(spec["connector"])):
+                    kept.add(cloud_id)
+            except (RuntimeError, subprocess.TimeoutExpired):
+                pass
     # Named connections first, so an unnamed one cannot take the record a name points at.
     for cloud_id, (kind, spec) in sorted(pinned.items(), key=lambda item: ("name" not in item[1][1], item[0])):
         try:
             if kind == "connections":
-                live = _resolve_connection(cloud_id, spec, {v for k, v in mapping.items() if k != cloud_id})
+                taken = {v for k, v in mapping.items() if k != cloud_id} | (kept - {cloud_id})
+                live = _resolve_connection(cloud_id, spec, taken)
             elif kind == "processes":
                 live = _resolve_process(cloud_id, spec, processes)
             else:
