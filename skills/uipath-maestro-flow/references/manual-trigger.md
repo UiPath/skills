@@ -115,7 +115,28 @@ default root still omits `.trigger(...)`.
 | `SHARED_INPUT_ROOT_MISSING` | warning | some root feeds nothing and the variable has no default |
 
 Decompile turns a trigger-level copy of exactly this shape back into
-`{ shared }`; any other update on a trigger node is reported, not dropped.
+`{ shared }`; any other update on a trigger node comes back as that trigger's
+own `{ updates }` (below).
+
+### Other variable updates on a trigger
+
+`.trigger(spec, { updates })` and `.entryPoint(id, spec, { updates })` write any
+other row on that root's trigger node. The rows run when the root fires, after
+its `{ shared }` copies, in the order written, and can read what the trigger
+published. For instance, take a field of the payload and keep the variable's
+own value when the field is missing:
+
+```ts
+flow('investigate')
+  .input({ payload: types.object })
+  .var('doc', types.object)
+  .trigger(manual(), { updates: { doc: js`${input('payload')}.document ?? ${v('doc')}` } })
+```
+
+This writes `doc ← $vars.start.output.payload.document ?? $vars.doc` under
+`variableUpdates.start`. `check` judges the targets as it does a step's
+(`UPDATE_INPUT_READONLY`, `UPDATE_UNKNOWN_VAR`). A subflow child's
+`.trigger(manual(), { updates })` writes the rows on its Start node.
 
 ### Reshaping per root: a prefix
 
