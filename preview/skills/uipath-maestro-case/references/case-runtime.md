@@ -48,9 +48,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   a blank body or one that does not parse.
 
 <!-- RULE:case.script.outputs -->
-- `.outputs({ v: '=result.response' })` maps the script's return value to a
-  case variable. `=result.response.total` reaches a single field when the
-  return is an object. The output key is `SCRIPT_OUTPUT` in the compiled plan.
+- `.outputs({ scriptResult: '=result.response' })` maps the whole return value
+  to a case variable. Compile refuses any source except `=result.response` and
+  `=Error` (code `SCRIPT_OUTPUT`). To reach a single field, read
+  `vars.scriptResult.<field>` downstream. The compiled output row is named
+  `scriptResponse`.
 
 ## Connections and external work
 
