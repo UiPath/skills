@@ -131,6 +131,16 @@ def test_flow_without_the_node_fails_every_check(write, capsys):
     assert "no Extract document node" in capsys.readouterr().err
 
 
+def test_flow_name_matches_studio_webs_project_flow(tmp_path, monkeypatch):
+    proj = tmp_path / "InvoiceReader" / "InvoiceReader"
+    proj.mkdir(parents=True)
+    (proj / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
+    (proj / "new.flow").write_text(json.dumps(_flow()))
+    monkeypatch.chdir(tmp_path)
+
+    assert _run("file-ref") == 0
+
+
 def test_other_flow_name_fails(write, capsys):
     write(_flow())
     assert main(["--flow-name", "Other", "file-ref"]) == 1

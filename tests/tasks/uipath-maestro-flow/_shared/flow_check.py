@@ -1864,6 +1864,10 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
     return _find_project(pattern)
 
 
+_STUDIO_WEB_FLOW_FILE = "new.flow"
+"""The file name Studio Web gives every Flow project's flow."""
+
+
 def find_flow_files(
     project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
 ) -> list[str]:
@@ -1912,7 +1916,7 @@ def find_flow_files(
         project_dir = _find_project(project_pattern)
         matches = sorted(
             path
-            for path in glob.glob(os.path.join(project_dir, "**", "*.flow"), recursive=True)
+            for path in glob.glob(os.path.join(glob.escape(project_dir), "**", "*.flow"), recursive=True)
             if flow_file_matches(path, flow_glob)
         )
         if not matches:
@@ -1951,17 +1955,19 @@ def flow_file_matches(path: str, flow_glob: str) -> bool:
     """Return True iff the ``.flow`` file at ``path`` answers to ``flow_glob``.
 
     A file answers by its own name, as the Node CLI's ``<Name>/<Name>.flow``
-    does. The one root ``.flow`` of a Flow project folder also answers by the
-    folder's name: Studio Web names every Flow project's file ``new.flow``,
-    inside a folder named after the project (``<Name>/new.flow``), so
-    ``Name.flow`` and ``Name*.flow`` find it as well.
+    does. Studio Web names every Flow project's file ``new.flow``, inside a
+    folder named after the project (``<Name>/new.flow``), so a ``new.flow``
+    that is the one root ``.flow`` of a Flow project folder also answers by
+    the folder's name. Any other file name still has to match itself, so a
+    misnamed Node CLI flow fails as before.
     """
     pattern = os.path.basename(flow_glob)
     if fnmatch.fnmatchcase(os.path.basename(path), pattern):
         return True
     project_dir = os.path.dirname(path)
     return (
-        _is_flow_project(os.path.join(project_dir, "project.uiproj"))
+        os.path.basename(path) == _STUDIO_WEB_FLOW_FILE
+        and _is_flow_project(os.path.join(project_dir, "project.uiproj"))
         and len(glob.glob(os.path.join(glob.escape(project_dir), "*.flow"))) == 1
         and fnmatch.fnmatchcase(f"{os.path.basename(project_dir)}.flow", pattern)
     )

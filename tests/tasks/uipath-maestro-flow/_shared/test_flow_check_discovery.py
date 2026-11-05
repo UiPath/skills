@@ -320,3 +320,14 @@ def test_project_name_covers_only_a_lone_root_flow(tmp_path, monkeypatch):
 
     with pytest.raises(SystemExit, match="No .flow file matching"):
         find_flow_file(flow_glob="ScheduledReport.flow")
+
+
+def test_project_name_does_not_cover_a_misnamed_cli_flow(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    _make_flow_project(tmp_path, "Reports", "ScheduledReport", 1)
+    (tmp_path / "Reports" / "ScheduledReport" / "ScheduledReport.flow").rename(
+        tmp_path / "Reports" / "ScheduledReport" / "Other.flow"
+    )
+
+    with pytest.raises(SystemExit, match="No .flow file matching"):
+        find_flow_file(flow_glob="ScheduledReport.flow")
