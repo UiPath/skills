@@ -222,7 +222,7 @@ On newer CLI builds, once the package is installed, `deploy run` (and `deploy up
 | Test case | Serverless, ServerlessTestAutomation, TestAutomation, AutomationCloud, AutomationCloudTestAutomation, AppTest, Unattended |
 | MCP server | Serverless |
 
-Agents, flows, API workflows, functions, cases, business rules and BPMN processes are not checked: Orchestrator picks a tenant machine for their jobs when they start.
+Agents, flows, API workflows, functions, cases, business rules and BPMN processes are not checked: Orchestrator picks a tenant machine for their jobs when they start. Neither is a process the deployment links to an existing one (`deploy config link`): its jobs run in the linked process's folder. When the CLI cannot read the deployment's links (an external app upgrading, for example), the warning ends by saying the process may be linked. Then check the linked folder instead.
 
 Each process the folder cannot run is one line in `Data.Warnings`, also printed on stderr:
 
