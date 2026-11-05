@@ -19,7 +19,7 @@ All three use the same TypeCache (`typecache-triggers-index.json`), same single-
 
 ### 1. Find the trigger in TypeCache
 
-If `~/.uip/case-resources/typecache-triggers-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 18 gate does not apply). If still absent after pull, the tenant has no connector triggers — mark `<UNRESOLVED>` and fall through to [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
+If `~/.uip/case-resources/typecache-triggers-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 18 gate does not apply). If still absent after a pull whose `Data.Errors` lists `typecache-triggers` with a 5xx, the catalog is unavailable ([connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx)): no Rule 18 gate, mark `<UNRESOLVED: connector catalog unavailable (TypeCache <status>)>` and fall through to [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback). If the pull synced it and the file is still absent, the tenant has no connector triggers — mark `<UNRESOLVED>` and fall through the same way.
 
 Read `~/.uip/case-resources/typecache-triggers-index.json` directly. Match on `displayName`, `connectorKey`, or `eventOperation` from sdd.md. Record `uiPathActivityTypeId`.
 
@@ -130,7 +130,7 @@ A field listed under `inputs.queryParameters` / `inputs.pathParameters` (Step 3)
 
 **filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values, and each row's `operator` is one of that field's `operators[]` (with `freeformOperators`, one of those). A field with no `operators[]` (older CLI, or a field the builder doesn't list): pick from the operator table by its type. `operators: []`: write no row on it.
 
-`groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the platform examples use string.
+`groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the [examples](case-spec-input-details.md#filter-examples) use string.
 
 The filter tree goes into `registry-resolved.json` under `filter` as a literal JSON object — Phase 3 passes it to `case spec --input-details.filter`. The CLI compiles it into all three trigger filter sinks (see § Trigger filter sinks below).
 

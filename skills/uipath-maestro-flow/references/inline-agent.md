@@ -49,7 +49,9 @@ Context signature:
 
 Resolve the index from the tenant.
 Know the name: use `solution resources list` below.
+<!--skill-flavor:cg-discover:start-->
 Discovering what exists: use the `uip context-grounding` bridge, which reports every index with its folder.
+<!--skill-flavor:cg-discover:end-->
 Not `uip maestro flow registry` (node manifests), not `uip maestro registry` (the connector library), not `uip or folders list`.
 
 ```bash
@@ -57,13 +59,14 @@ uip solution resources list --kind Index --source remote --search "<index-name>"
 ```
 
 Maps onto the signature as `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, `FolderKey` → `folderKey`.
-`id` is the index's GUID (`Key`): it is the tail of the resource node's type. `check` reports `AGENT_CONTEXT_NO_ID` for a blank or non-GUID `id`, and compile refuses it even with `--no-check`.
+`id` is the index's GUID (`Key`): it is the tail of the resource node's type. `check` reports `AGENT_CONTEXT_NO_ID` for a blank or non-GUID `id`, and `compile` refuses it too.
 Give `folderPath`: the resource file carries no index id, so the type and the folder together locate the index.
 Resource entries may carry `nodeId` / `source` / `label` from decompile; see [brownfield.md](brownfield.md). Omit them in new flows.
 
 Local execution has no semantic retrieval service, so an inline-agent answer is ungrounded even when the resource wiring is present.
 Platform evidence must establish that the intended index was used and that its retrieved knowledge influenced the answer.
 
+<!--skill-flavor:cg-bridge:start-->
 The `uip context-grounding` bridge runs in the project's Python environment.
 Activate the existing environment and run setup once before list/search; setup
 is the command itself, not a `setup --help` probe:
@@ -81,6 +84,7 @@ Use `--folder-key` instead of `--folder-path` when that is the known identity.
 The delegated command uses `--format json`; it does not use the outer CLI's
 `--output json` spelling. One search that answers the stated grounding claim is
 enough; do not repeat paraphrases solely for confidence.
+<!--skill-flavor:cg-bridge:end-->
 
 ## Tools
 

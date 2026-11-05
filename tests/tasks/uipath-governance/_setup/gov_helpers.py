@@ -246,8 +246,9 @@ def owned_by_this_run(name: str) -> bool:
 #   create -> Code PolicyCreated, Data.UpsertedPolicy{Id, ...}
 #   get    -> Code PolicyGet,     Data{Id, Name, Status, Selectors, ...} (PascalCase)
 #   update -> Code PolicyUpdated
-#   delete -> Code PolicyDeleted, Data.PolicyIds[]  — a SOFT delete: `get` keeps
-#             succeeding with Status "Deleted" + DeletedOn, and the row leaves `list`.
+#   delete -> Code PolicyDeleted, Data.PolicyIds[]  — a HARD delete: `get` then
+#             answers HTTP 404 and the row leaves `list`. (The service has a
+#             softDelete query flag, default false; the CLI never sends it.)
 #
 # Two traps the tests are built around:
 #   * `update` needs the COMPLETE definition in recursive camelCase, including
@@ -299,11 +300,32 @@ def ap_create(definition: dict) -> dict | None:
 
 
 def ap_get(policy_id: str) -> dict | None:
-    """Fetch one access policy. Returns the record even after a soft delete."""
+    """Fetch one access policy, or None when it does not exist (hard-deleted)."""
     data = run_cli(["gov", "access-policy", "get", policy_id])
     if not data or data.get("Result") != "Success":
         return None
     return data.get("Data") or None
+
+
+def ap_gone(policy_id: str) -> bool:
+    """True only when `get` answers HTTP 404 for the id.
+
+    A verifier that treated every failed read as "deleted" would hand a pass to
+    an agent that did nothing whenever the service is briefly unavailable, so a
+    5xx, a timeout or a parse error all count as "not proven gone".
+    """
+    try:
+        result = subprocess.run(
+            ["uip", "gov", "access-policy", "get", policy_id, "--output", "json"],
+            capture_output=True, text=True, timeout=60,
+        )
+    except (subprocess.TimeoutExpired, OSError) as e:
+        logger.warning("CLI call failed: %s", e)
+        return False
+    if result.returncode == 0:
+        return False
+    text = f"{result.stdout}\n{result.stderr}"
+    return "404" in text or "Not Found" in text
 
 
 def ap_delete(policy_id: str) -> bool:
@@ -338,7 +360,7 @@ def ap_by_name(name: str) -> dict | None:
 #
 # Envelopes verified against the live service:
 #   create -> Code AopsPolicyCreate, Data{Name, Identifier, Priority, Availability, Product, Data}
-#   get    -> Code AopsPolicyGet    (HTTP 404 once deleted — a HARD delete, unlike access-policy)
+#   get    -> Code AopsPolicyGet    (HTTP 404 once deleted — a hard delete, like access-policy)
 #   update -> Code AopsPolicyUpdate (full replace: omitted flags are cleared)
 #   list   -> Code AopsPolicyList,  Data{TotalCount, Result[]}; --search works server-side
 #

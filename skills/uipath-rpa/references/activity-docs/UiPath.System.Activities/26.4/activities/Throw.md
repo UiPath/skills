@@ -35,6 +35,6 @@ Throws a new exception. Used to signal a business rule violation or an unrecover
 
 - `Exception` is a constructor expression, not a string. `Throw.Exception = "message"` is invalid — the expression must evaluate to an `Exception` instance: `new BusinessRuleException("…")`, `new InvalidOperationException("…")`, etc.
 - Use `Throw` when you want a fresh exception with a new stack trace; use `Rethrow` (only valid inside a `Catch` body) to re-raise the currently-caught exception with its original stack trace preserved.
-- For business-rule violations, prefer a domain-specific exception type (e.g., `UiPath.Core.Activities.BusinessRuleException`) over `Exception` directly — it gives downstream `Catch` handlers a way to distinguish business errors from system errors.
+- For business-rule violations, prefer a domain-specific exception type (e.g., `UiPath.Core.BusinessRuleException`) over `Exception` directly — it gives downstream `Catch` handlers a way to distinguish business errors from system errors.
 - `activities get-default-xaml` for `Throw` returns `<Throw />` only — the `Exception` argument is invisible to the CLI.
 - `Throw` is a leaf activity. Its parent container slot must be `<Sequence>`-wrapped per Rule 24.

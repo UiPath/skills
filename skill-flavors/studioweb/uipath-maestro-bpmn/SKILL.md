@@ -28,3 +28,38 @@
    `bpmn refresh`: skip the `uip solution resources refresh` step that
    `Data.V2.Instructions` ends with. It is Node-CLI-only and is not run here.
 <!--skill-flavor:v2-solution-resources-refresh:end-->
+
+<!--skill-flavor:debug-node-output:start-->
+   (5) Unless the task forbids
+   live runs or asks for a draft or handoff, run the process
+   (`uip maestro bpmn debug "<ProjectName>"`) and read the node's output in the
+   execution trace it prints. Map `=result.<key>` to the key that output
+   used; a scalar can surface under a generic key instead of the schema
+   property name. Without a run, use the schema name and report the mapping
+   as unverified. A business rule maps its whole result as one `output` from
+   `=result`, never one output per decision or column.
+<!--skill-flavor:debug-node-output:end-->
+
+<!--skill-flavor:diagram-snapshot:start-->
+1. Before the first write, copy the file to `/tmp`:
+   `cp "<FILE>" "/tmp/<FILE_NAME>.before.bpmn"`. Record that path as
+   `<SNAPSHOT_PATH>`.
+<!--skill-flavor:diagram-snapshot:end-->
+<!--skill-flavor:diagram-preserved-check:start-->
+7. After the last write, and before `validate`, compare `<SNAPSHOT_PATH>` with
+   the edited file. Studio Web has no Python, so check by hand that, apart
+   from the ids you deleted:
+   - the `BPMNPlane` still targets the same `bpmnElement`;
+   - every pool and lane still has its shape, and every lane keeps its
+     `bpmn:flowNodeRef`s;
+   - every annotation and group survives, with its shape;
+   - every surviving shape and edge keeps its color attributes;
+   - every surviving node shape keeps its size (only pools, lanes and
+     expanded subprocesses may grow);
+   - surviving node shapes either stay put or all move by one common offset;
+   - every surviving flow still has its `BPMNEdge`.
+
+   For each loss: if the user asked for that diagram change, keep it and name
+   it in the summary; otherwise restore the entry from the snapshot. Re-check
+   at most twice, then list any remaining losses in the summary.
+<!--skill-flavor:diagram-preserved-check:end-->

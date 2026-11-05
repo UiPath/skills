@@ -142,7 +142,7 @@ The Phase 4 retry-cap, Phase 5 publish, Phase 6 debug-consent, and Phase 7 publi
 Print (before the prompt on the pause branch; as the continuation line otherwise):
 
 1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / unresolved resources.
-2. Validate result and profile: `skeleton-v2: <N> errors, <M> warnings` or `skeleton (fallback; rules/SLA deferred to Phase 4): <N> errors, <M> warnings`. Surfacing counts is enough; do not dump the full list unless the user asks.
+2. Validate result and profile: `skeleton-v2: <N> errors, <M> warnings` or `skeleton (fallback; rules/SLA deferred to Phase 4): <N> errors, <M> warnings`. Surfacing counts is enough; do not dump the full list unless the user asks. Every connector-bound rule is still a stub here, so `skeleton-v2` counts include their `CONNECTOR_ACTIVITY_MISSING` errors; they are expected, and Phase 3 Step 10.5 upgrades the resolved ones. Do not repair them in Phase 2.
 3. Paths: `caseplan.case`, `sdd.md`, `registry-resolved.json`.
 4. Suggested next steps:
    - Straight-through: `Suggested next steps: I'll continue wiring the implementation now; say stop if you want to inspect the skeleton first.`
@@ -230,6 +230,8 @@ On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "V
 
 On failure: output lists `[error]` and `[warning]` entries with path and message. Fix reported issues (usually via targeted re-run of earlier step) and re-run `validate`.
 
+**Permanent connector-rule stubs never validate.** Leave their errors ([connector-trigger-impl.md § What validate reports for a stub](connector-trigger-impl.md#what-validate-reports-for-a-stub)) out of the repair loop and the error count below. When every remaining error comes from a logged stub, Phase 4 has passed: say `strict: <E> errors, all from <N> unresolved connector rules`, list each connector under Open Items, and proceed to the Phase 4 issue-log summary step, then Phase 5.
+
 ### Validate-loop guard — no re-validate without an intervening edit
 
 **Never re-run `uip maestro case validate` unless `caseplan.case` (or a sidecar it validates) changed since the last run.** A validate that follows another validate with zero edits in between is a no-op that costs a full CLI round-trip and a turn — observed worst case: 20 validates in one session, 14 of 19 re-runs with no intervening edit, 36% of wall clock. The guard applies in every phase: Phase 2's informational validate runs once, Phase 4's authoritative validate runs once per fix. Fix → edit → validate is the only legal loop shape; validate → validate is a defect.
@@ -243,7 +245,7 @@ Read these four from this table, not from the code name — each has sent a repa
 | Code | What the name suggests | What it actually means |
 |---|---|---|
 | `CASE_MGMT_ROOT_CASE_CONDITION_RULE_USER_SELECTED_STAGE_MISSING` | the rule's selector points at nothing | it does **not** check the selector. It checks whether **any other stage** carries an exit condition of type `wait-for-user`. The finding names the stage that cannot be entered while the missing half sits on a **different stage** — repair the other stage, not the named one. |
-| `STRICT_CONNECTOR_CONTEXT_INCOMPLETE` | the context entries hold wrong values | keyed on an entry being **present by name**, never on its value. All seven of `connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `operation`, `metadata` must exist; an entry holding `""` satisfies it. "Seven of seven present" and "the context is complete" are different claims — values are other rules' job (`CASE_MGMT_CONNECTOR_RESOURCE_KEY_UNRESOLVED`, `STRICT_CONNECTOR_ACTIVITY_TYPE_ID`). |
+| `STRICT_CONNECTOR_CONTEXT_INCOMPLETE` | the context entries hold wrong values | keyed on an entry being **present by name**, never on its value. All seven of `connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `operation`, `metadata` must exist; an entry holding `""` satisfies it. "Seven of seven present" and "the context is complete" are different claims — values are other rules' job (`CASE_MGMT_CONNECTOR_RESOURCE_KEY_UNRESOLVED`, `STRICT_CONNECTOR_ACTIVITY_TYPE_ID`). On a rule whose context is the two-entry `"placeholder"` stub, it means "connector unresolved", not "half-spliced": report it, never repair it ([connector-trigger-impl.md § What validate reports for a stub](connector-trigger-impl.md#what-validate-reports-for-a-stub)). |
 | `CASE_MGMT_STAGE_ALL_EXIT_CONDITIONS_MISSING_ERROR` | an error | a **warning**. The `_ERROR` suffix is part of the upstream name, not its severity. |
 | `TASK_NOT_CONFIGURED` | the task is incompletely configured | fires only when `data` has **zero keys**. `data: { inputs: [] }` does not fire it. It is a placeholder detector, not a completeness check. |
 
@@ -283,6 +285,7 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + `wiringNotes` from `tasks/registry-resolved.json`. Also list, under **Not covered**, anything `sdd.md` referenced that is outside the scope of `caseplan.case` (e.g. Data Fabric entity schemas). Also list **agents / API workflows / business rules built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
 6. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
+7. Environment gaps — platform failures outside the build, named with status, endpoint and time (connector catalog unavailable: Studio Web TypeCache `Search/Catalog` HTTP 5xx). Listed apart from placeholders caused by missing resources, so a reader does not file a build defect. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 
 ### Publish notes
 
@@ -313,9 +316,13 @@ Before this prompt, include `Suggested next steps: run a debug session if you ar
 
 ### Debug notes
 
+<!--skill-flavor:phase-six-refresh-note:start-->
 - `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 15).
+<!--skill-flavor:phase-six-refresh-note:end-->
 - Debug verifies the build actually runs end-to-end. If debug surfaces a fixable issue, see [Step 15a — Troubleshoot failed case](implementation.md#step-15a--troubleshoot-failed-case) and re-run; if the case was already published, re-publish afterwards so the published build carries the fix.
+<!--skill-flavor:phase-six-inline-siblings:start-->
 - **Inline-built siblings (agent, api-workflow, business-rule) are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found"; agent and api-workflow) or `300400` ("the job carries no debug session properties"; business rule) by design. Verifying that task's runtime needs a full solution deploy (`uip maestro case pack` → `uip solution pack` → `uip solution publish` → `uip solution deploy run` — `case pack` first, always, per [§ Phase 7](#why-case-pack-is-mandatory)) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline) / [business-rule/planning.md § Creating a business rule inline](plugins/tasks/business-rule/planning.md#creating-a-business-rule-inline).
+<!--skill-flavor:phase-six-inline-siblings:end-->
 
 ## Phase 7 — Publish to Orchestrator
 

@@ -61,17 +61,20 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # The next three checks search only the code of script nodes (the "script" strings in the .flow), not the
+  # HITL field definitions or End-node mappings. They pass when that code contains .approved and .reviewcomments
+  # (direct or through an alias of $vars.<id>.output) and no .legalApproval / .legalNotes (a by-name read).
   - type: run_command
-    description: "Downstream script references output by field ID .approved"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '.output.approved'"
+    description: "Downstream script reads the field ID .approved (e.g. $vars.<id>.output.approved, or output.approved after const output = $vars.<id>.output)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --regex '\"script\"\\s*:\\s*\"(?:[^\"\\\\]|\\\\.)*?\\.approved\\b'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Downstream script references output by field ID .reviewcomments"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '.output.reviewcomments'"
+    description: "Downstream script reads the field ID .reviewcomments (directly or through a local alias of $vars.<id>.output)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --regex '\"script\"\\s*:\\s*\"(?:[^\"\\\\]|\\\\.)*?\\.reviewcomments\\b'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -81,8 +84,8 @@ success_criteria:
   # the ContractReview flow was read, and the forbidden pattern is absent —
   # a missing or unreadable flow can never score these points.
   - type: run_command
-    description: "Script does NOT reference output by variable name (.output.legalApproval or .output.legalNotes)"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --absent-regex '\\.output\\.(legalApproval|legalNotes)'"
+    description: "Script code does not read by variable name (.legalApproval / .legalNotes, including the global $vars.legalApproval)"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview --absent-regex '\"script\"\\s*:\\s*\"(?:[^\"\\\\]|\\\\.)*?\\.(?:legalApproval|legalNotes)\\b'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
