@@ -53,7 +53,7 @@ Although most of the lifecycle and capabilities are shared between both autonomo
 Standard workflow for any low-code agent task:
 
 <!--skill-flavor:scaffold-step:start-->
-1. **Scaffold** — `uip solution init "<SOLUTION_NAME>" --output json` (if no solution exists), then `uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json` per agent. Bare `"<AGENT_NAME>"` outside a solution auto-creates a separate `<AGENT_NAME>Solution/` (response carries `Data.AutoCreatedSolution`). `uip solution projects import` copies, not moves — delete stray `<AGENT_NAME>Solution/` folders after importing. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
+1. **Scaffold** — `uip solution init "<SOLUTION_NAME>" --output json` (if no solution exists), then `uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json` per agent. Bare `"<AGENT_NAME>"` outside a solution auto-creates a separate `<AGENT_NAME>Solution/` (response carries `Data.AutoCreatedSolution`). Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
 <!--skill-flavor:scaffold-step:end-->
 2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md). **Override the scaffold model** (`gpt-4o-2024-11-20`) per [model-selection-guide.md](model-selection-guide.md) and write robust prompts per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) — the scaffold ships a stale model and toy prompts.
 3. **Add capabilities** — pick from the Capability Registry below. Most add `resources/{Name}/resource.json`; memory uses `uip agent memory` and writes `features/{Name}/feature.json`.

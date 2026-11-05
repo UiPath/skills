@@ -102,8 +102,6 @@ deep-rag's own empty schemas never declare where documents come from — the age
 | Autonomous (`isConversational: false`) | Required: declare one `inputSchema` field holding the documents — `{ "type": "array", "items": { "$ref": "#/definitions/job-attachment" } }` (single file: `{ "$ref": "#/definitions/job-attachment" }`) plus the canonical `job-attachment` block in `inputSchema.definitions` — see [../../../agent-definition.md](../../../agent-definition.md) § File Attachments. Template the field into the user message (`{{input.<FILE_FIELD>}}`; renders metadata only). Caller binds files at run time (`uip agent debug --attachment <FIELD>=<FILE_PATH>`, flow input, job input). |
 | Conversational, Studio Web chat | Chat-uploaded files reach the tool without schema wiring. |
 
-Other channels (flow input, Action Center task): confirm the runtime forwards the attachments.
-
 ## Validation
 
 | Check | How |
