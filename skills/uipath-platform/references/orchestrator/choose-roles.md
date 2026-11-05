@@ -35,8 +35,8 @@ Pick the first row that matches the need.
 | Run processes unattended or from Assistant (robot account, business user) | `Automation User` | `Allow to be Automation User` |
 | Create automation projects, publish packages, and run them in the folder (developer) | `Automation Developer` | `Allow to be Automation Developer` |
 | Publish packages only, no job start (CI/CD publisher) | `Automation Publisher` | `Allow to be Automation Publisher` |
-| Publish **and** run, no project creation | `Automation Publisher` + `Automation User` | `Allow to be Automation Publisher` + `Allow to be Automation User` |
-| Manage one folder and its subfolders | `Folder Administrator` | `Allow to Be Folder Administrator` (capital `B` in the docs; match case-insensitively, Step 2) |
+| Publish packages and start jobs of **existing** processes (no process create or update) | `Automation Publisher` + `Automation User` | `Allow to be Automation Publisher` + `Allow to be Automation User` |
+| Manage one folder and its subfolders | `Folder Administrator` | `Allow to be Folder Administrator` |
 | Manage all tenant entities (tenant-wide admin) | `Folder Administrator` in each folder to manage | `Orchestrator Administrator` |
 | Create, edit, delete solution packages and manage solution deployments | — | `Solutions Administrator` |
 | View, edit, create solution packages and package versions | — | `Solutions Contributor` |
@@ -45,7 +45,8 @@ Pick the first row that matches the need.
 Notes:
 
 - `Automation Developer` has no direct access to expensive resources such as storage buckets. Need those → custom role for the missing permission (Rule 4).
-- `Automation Publisher` has no `Jobs` permissions. Pair it with `Automation User` to run what it publishes.
+- `Automation Publisher` has no `Jobs` permissions. Pair it with `Automation User` to start jobs. The pair cannot create a process or move one to a newly published package version: `Automation User` has only `Processes` view, `Automation Publisher` no `Processes` create or edit. Need that → `Automation Developer`.
+- `Solutions Administrator` and `Solutions Contributor` are hidden when Automation Solutions is not enabled on the tenant, so they can be missing from `roles list`.
 - `Orchestrator Administrator` holds all tenant-level permissions. The legacy `Administrator` role maps to `Orchestrator Administrator` (tenant) + `Folder Administrator` (folder); `Robot` maps to `Allow to be Automation User` + `Automation User`.
 - **Tenant Administrator** is an Automation Cloud tenant role (Admin portal, `uip admin`), not an Orchestrator role. It holds the same Orchestrator permissions as `Orchestrator Administrator`. It does not appear in `uip or roles list`.
 
