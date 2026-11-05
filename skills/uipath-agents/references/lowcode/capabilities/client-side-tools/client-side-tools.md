@@ -12,13 +12,11 @@ Per the docs, when the agent needs data or capabilities that only exist on the c
 - **Trigger client-side actions** — navigate to a page, open a dialog, create a record in the local UI.
 - **Leverage client-specific capabilities** — clipboard, local storage, geolocation.
 
-Not for calling a server-side API — that is a process or Integration Service tool.
-
 ## Key Difference from Server-Side Tools
 
 Execution belongs to the surface, not the runtime. The docs state that a surface must support client-side tool handling and **register a handler for each tool — a tool without one returns an error to the agent.**
 
-Pre-built surfaces (Instance Management, iFrame embedding) instead render a form from the `outputSchema` for the user to fill in manually. Custom surfaces on the UiPath TypeScript SDK answer programmatically.
+Pre-built surfaces (Instance Management, iFrame embedding) render a form from the `outputSchema` for the user to fill in. Custom surfaces built on the UiPath TypeScript SDK can run custom handlers.
 
 ## Agent-Level Resource Shape
 
@@ -49,7 +47,7 @@ The agent designer has a first-class flow — **Add tool → Client-side tools**
 }
 ```
 
-Field requirements, confirmed against `clientSideToolResourceSchema` (the zod schema backing the designer) and `uip agent validate`:
+Field requirements:
 
 | Field | Requirement |
 |---|---|
@@ -59,7 +57,7 @@ Field requirements, confirmed against `clientSideToolResourceSchema` (the zod sc
 | `properties.folderPath` | `"solution_folder"`. Validation reports *"solution tools must use folderPath"* otherwise |
 | `settings`, `guardrail`, `inputSchema`, `outputSchema` | Declared without `.optional()` — include all four, using an empty `policies` array when no guardrails apply |
 
-Setting `properties.requireConversationalConfirmation` to `true` corresponds to the designer's **Require confirmation** option. Per the docs the agent then pauses before executing and shows the user the proposed **input parameters**, which the user can approve, modify, or reject. This is distinct from the form generated on pre-built surfaces: confirmation reviews the agent's *input*, the form collects the *output*.
+Setting `properties.requireConversationalConfirmation` to `true` corresponds to the designer's **Require confirmation** option. Per the docs the agent then pauses before executing and shows the user the proposed **input parameters**, which the user can approve, modify, or reject. Tool-call confirmation is for reviewing the agent's inputs and is distinct from client-side tools, which collect the output.
 
 ## Input and Output Schemas
 
