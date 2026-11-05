@@ -5,9 +5,11 @@
  * the fields from `extracted.ExtractionResult`.
  *
  * The deployment's values are stand-ins, not a tenant's. Read real ones from
- * `uip ixp deployments list <project-name> --output json` (model, deployment,
- * folderKey) and `uip solution resources list --kind IxpDeployment --source
- * remote --output json` (deploymentKey).
+ * `uip ixp deployments list <project-name> --output json`, given the IXP
+ * project's Name (model, deployment, folderKey), and from the row of `uip
+ * solution resources list --kind IxpDeployment --source remote --output json`
+ * whose Name is the deployment and whose FolderKey matches (deploymentKey,
+ * folder).
  */
 import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 

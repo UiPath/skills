@@ -38,23 +38,32 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Document extraction
 
 <!-- RULE:case.docextraction.discovery -->
-- Discovery is two commands: `uip ixp projects list --output json` first,
-  then `uip ixp deployments list <project-name> --output json`. The first
-  gives the project name (positional argument for the second). The second
-  gives model (`DeploymentName`), deployment (`DeploymentTitle`), and
-  `folderKey`. `uip solution resources list --kind IxpDeployment --source
-  remote --output json` gives `deploymentKey`. Ask the user if no match.
-  `sdd resolve` does not resolve them.
+- Discovery: `uip ixp projects list --output json` first. Pass the project's
+  **`Name`** (not `Title`) to `uip ixp deployments list <Name> --output json`.
+  That listing gives model (`DeploymentName`), deployment (`DeploymentTitle`),
+  and `folderKey`. For `deploymentKey` and `folder`: run
+  `uip solution resources list --kind IxpDeployment --source remote
+  --output json` and take the row whose `Name` equals `DeploymentTitle` and
+  whose `FolderKey` matches — its `Key` is `deploymentKey`, its `Folder` is
+  `folder`. Ask the user if no match. `sdd resolve` does not resolve them.
 
 <!-- RULE:case.docextraction.folder -->
-- `folderKey` is what `check` requires; `folder` is written as `folderName`
-  in the compiled plan and is the display label. Both come from the
-  deployments listing.
+- `folderKey` comes from the deployments listing; `folder` is the resources
+  row's `Folder`. `folder` is written as `folderName` in the compiled plan.
 
 <!-- RULE:case.docextraction.check -->
-- `check` reports a blank model or a missing `folderKey` (the task would
-  pack to a no-op) and a missing `file`. Compile refuses a missing
-  `deploymentKey`.
+- `check` reports a blank model (`DOCUMENT_EXTRACTION_NO_MODEL`), a blank
+  deployment (`DOCUMENT_EXTRACTION_NO_DEPLOYMENT`), a missing `folderKey`,
+  and a missing `file`. Compile refuses a missing `deploymentKey`.
+
+<!-- RULE:case.docextraction.legacy -->
+- Decompile refuses the older flat document-extraction format by name
+  (`DOCUMENT_EXTRACTION_LEGACY_SHAPE`). Re-save the task in the Designer, or
+  author `.documentExtraction(...)` from scratch.
+
+<!-- RULE:case.docextraction.floor -->
+- `uip maestro case validate` needs uip 1.206.0+ for document-extraction
+  tasks. Older versions reject with `CASE_MGMT_BINDING_PAIR_INCOMPLETE`.
 
 ## Connections and external work
 
