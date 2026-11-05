@@ -23,9 +23,10 @@ own ``fixtures/sdd.md``:
   - no dotted access off a ``vars.`` reference is unguarded
   - every extract output's ``=<root>.<field>`` source path uses an SDD field
     name, with the SDD's exact casing
-  - the webhook response output's JSON-schema property keys are exactly the
-    SDD's declared event output fields (this is where a PascalCasing
-    ``--output json`` serializer leaks its key casing into the artifact)
+  - the webhook response output's JSON-schema property keys include every
+    SDD-declared event output field, with no re-cased duplicate of one (this
+    is where a PascalCasing ``--output json`` serializer leaks its key casing
+    into the artifact); extra keys the connector spec adds are allowed
   - every SDD-declared dotted access is actually present, so the checker
     cannot pass by the build simply dropping the expressions
 """
@@ -255,7 +256,14 @@ def _check_event_schema(plan: dict, fixture: dict):
     if not isinstance(properties, dict) or not properties:
         _fail("the webhook event output schema declares no properties")
     actual = set(properties)
-    if actual != fixture["event_fields"]:
+    expected = fixture["event_fields"]
+    # The connector spec may add event fields beyond the SDD's (newer CLIs emit
+    # extra webhook keys). Those are fine; what must not happen is an SDD key
+    # missing or present only in another casing.
+    variants = {
+        key for key in actual - expected if any(_norm(key) == _norm(name) for name in expected)
+    }
+    if not expected <= actual or variants:
         _fail(
             "webhook event output schema property keys differ from the SDD's declared "
             "event output fields - a PascalCasing `--output json` serializer leaks its "
@@ -275,7 +283,7 @@ def main():
         "OK: every task-output dereference is null-guarded and uses the SDD's exact "
         f"property casing ({sorted(fixture['dotted'])}), every extract source path "
         f"matches the SDD ({sorted(fixture['extract_paths'])}), and the webhook event "
-        f"schema keys are {sorted(fixture['event_fields'])}"
+        f"schema keys include {sorted(fixture['event_fields'])} with no re-cased duplicate"
     )
 
 

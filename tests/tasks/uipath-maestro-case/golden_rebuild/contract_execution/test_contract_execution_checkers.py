@@ -703,6 +703,29 @@ class FieldNameCheckerTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("event output schema property keys differ", result.stdout + result.stderr)
 
+    def test_accepts_extra_event_schema_keys(self) -> None:
+        """Newer connector specs emit more event fields than the SDD lists."""
+        plan = fieldname_caseplan()
+        webhook = plan["nodes"][0]["data"]["tasks"][0][0]
+        webhook["data"]["outputs"][0]["body"]["properties"]["request_query_parameters"] = {
+            "title": "Query parameter"
+        }
+
+        result = self._run(plan)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_rejects_re_cased_duplicate_event_schema_key(self) -> None:
+        plan = fieldname_caseplan()
+        webhook = plan["nodes"][0]["data"]["tasks"][0][0]
+        properties = webhook["data"]["outputs"][0]["body"]["properties"]
+        properties["RequestBody"] = properties["request_body"]
+
+        result = self._run(plan)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("event output schema property keys differ", result.stdout + result.stderr)
+
     def test_rejects_dropped_gate_expression(self) -> None:
         plan = fieldname_caseplan()
         rule = plan["nodes"][0]["data"]["exitConditions"][0]["rules"][0][0]
