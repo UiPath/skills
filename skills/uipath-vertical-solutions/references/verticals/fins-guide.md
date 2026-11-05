@@ -9,7 +9,7 @@ What a first deploy of a FINS package needs, the access a **user login** needs t
 | Lending QA/QC | `fins.qaqc-uipath` | PRE_VERIFY, SOLUTION, BUCKET_FILES, ASSETS, PROCESS_CONFIG, TRIGGERS |
 | Loan Setup | `fins.loan-setup` | PRE_VERIFY, SOLUTION, PROCESS_CONFIG, TRIGGERS |
 
-Package names are the ones the service lists for the `fins` vertical at the time of writing. The picker in `uip vss deploy` shows the current list.
+Package names are the ones the service listed for the `fins` vertical when this file was written. `uip vss deploy packages --vertical fins --no-interactive --output json` shows what the tenant offers now; that list wins over this table.
 
 Both packages install their Data Fabric entities inside the solution folder, so they are folder-level, not tenant-level.
 
