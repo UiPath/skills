@@ -304,6 +304,19 @@ binding half, which is the same for every connector-backed node.
   extension block from the edited file. Pass `--keep-unused-bindings` when you need the
   decompiled source to match the original row for row instead.
 
+<!-- RULE:bpmn.brownfield.palette-elements -->
+- How `bpmn decompile` writes the palette elements that carry no `uipath:*` payload:
+  - a complex gateway becomes `.complexGateway(id, { name, default })`;
+  - a bare call activity becomes `.plainTask(id, { element: 'bpmn:callActivity' })`;
+  - data objects, data object references and data store references are left out of the
+    source. A header comment lists each one. `bpmn merge` keeps them from the original,
+    with their data associations and shapes, so finish a brownfield edit with `merge`.
+    A bare `compile` drops them.
+
+  Decompile refuses a complex gateway with an `activationCondition` or a bare call
+  activity with a `calledElement`, and names the attribute in the error. Neither form
+  can carry it yet.
+
 <!-- RULE:bpmn.brownfield.format -->
 - Format after adding elements that need diagram shapes. Avoid formatting a
   metadata-only edit because it replaces preserved geometry.
