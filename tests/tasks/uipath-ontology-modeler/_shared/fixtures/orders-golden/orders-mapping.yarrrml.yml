@@ -1,28 +1,35 @@
+# ============================================================================
+# USAGE POLICY  (how to use the constructs; facts live in orders.ofn)
+# ============================================================================
+# JOIN GRAPH (join only what the question needs):
+#   SalesOrder → Customer via SalesOrder.customer = Customer.Id
+# ROUTING (canonical property for ambiguous phrases):
+#   "customer name" → Customer.customerName
+# LITERALS are case-sensitive. Copy status values exactly as annotated in orders.ofn.
+# ============================================================================
+
 prefixes:
   ont: https://ontology.uipath.com/orders#
 
 mappings:
-  Order:
+  SalesOrder:
     sources:
       - access: datafabric
-        table: Order
+        table: SalesOrder
         referenceFormulation: rr:SQL2008
-    s: ont:Order/$(Id)
+    s: ont:SalesOrder/$(Id)
     po:
-      - - a
-        - ont:Order
-      - - ont:Order.orderNumber
-        - $(orderNumber)
+      - [a, ont:SalesOrder]
+      - [ont:SalesOrder.orderNumber, $(orderNumber)]
+      - [ont:SalesOrder.status, $(status), xsd:string]
       - p: ont:placedBy
         o:
           mapping: Customer
           condition:
             function: equal
             parameters:
-              - - str1
-                - $(customerId)
-              - - str2
-                - $(Id)
+              - [str1, $(customer)]
+              - [str2, $(Id)]
   Customer:
     sources:
       - access: datafabric
@@ -30,7 +37,5 @@ mappings:
         referenceFormulation: rr:SQL2008
     s: ont:Customer/$(Id)
     po:
-      - - a
-        - ont:Customer
-      - - ont:Customer.customerName
-        - $(customerName)
+      - [a, ont:Customer]
+      - [ont:Customer.customerName, $(customerName)]

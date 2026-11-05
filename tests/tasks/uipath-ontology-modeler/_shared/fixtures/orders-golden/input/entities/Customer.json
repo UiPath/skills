@@ -1,1 +1,1 @@
-{"displayName": "Customer", "description": "ONE row per customer.", "addFields": [{"name": "customerName", "type": "STRING", "lengthLimit": 200}]}
+{"displayName": "Customer", "description": "ONE row per customer.", "fields": [{"name": "customerName", "type": "STRING", "lengthLimit": 200}]}

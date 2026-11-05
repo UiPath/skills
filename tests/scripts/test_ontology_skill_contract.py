@@ -235,6 +235,14 @@ def test_entity_guide_authors_locally_in_order():
     assert "entity/federated/" in t and "choiceSet/" in t
 
 
+def test_entity_guide_reserves_order_and_group():
+    t = read(MODELER_DIR / "references/entity-guide.md")
+    assert re.search(r"`Order` and `Group` are never entity names", t) and "NAME_RESERVED" in t
+    lines = [l for p in guidance_files() for l in read(p).splitlines()
+             if re.search(r"entities create (Order|Group)\b|referenceEntityName\": \"(Order|Group)\"|table: (Order|Group)\b", l)]
+    assert lines == [], lines
+
+
 def test_relationship_guide_forbids_second_field():
     t = read(MODELER_DIR / "references/relationships-guide.md")
     assert "InverseObjectProperties" in t and "XF-017" in t
@@ -277,7 +285,9 @@ C1_CODES = ("NoParentSolution", "OntologyNotFound", "OntologyNameTaken", "Invali
     "ServiceValidationFailed")
 # local authoring codes of the `uip df … --local` commands the modeler can meet
 DF_LOCAL_CODES = ("CONNECTION_NOT_FOUND", "REFERENCE_TARGET_NOT_FOUND", "CHOICE_SET_NOT_FOUND", "RELATIONSHIP_TARGET_FEDERATED",
-    "FEDERATED_UPDATE_NOT_SUPPORTED", "ENTITY_IN_USE", "CHOICE_SET_IN_USE", "CHOICE_SET_NAME_TAKEN", "CHOICE_SET_VALUE_NAME_TAKEN")
+    "FEDERATED_UPDATE_NOT_SUPPORTED", "ENTITY_IN_USE", "CHOICE_SET_IN_USE", "CHOICE_SET_NAME_TAKEN", "CHOICE_SET_VALUE_NAME_TAKEN",
+    "NAME_RESERVED", "RELATIONSHIP_CYCLE", "ENTITY_NAME_TAKEN", "INVALID_NAME", "INVALID_FEDERATED_SOURCE", "INVALID_JOIN",
+    "UNSUPPORTED_SOURCE_COLUMN")
 RECOVERY_IDS = PER_FILE_RULES + ("MAP-012",) + tuple(f"XF-{n:03d}" for n in range(1, 16) if n != 11) + \
     ("ZIP-001", "XF-017", "XF-019", "SVC-001", "ENTITY_ID_IGNORED") + C1_CODES + DF_LOCAL_CODES + \
     ("Not logged in", "Ambiguous match", "EntityConflict", "Missing in the target folder",
