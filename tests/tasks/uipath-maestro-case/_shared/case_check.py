@@ -122,6 +122,24 @@ def read_caseplan(path: str | None = None) -> dict:
         return json.load(f)
 
 
+# Written by `_setup/localize_tenant_ids.py` in the sandbox when the task ran it.
+TENANT_ID_MAP = os.path.join("_setup", ".tenant-ids.map.json")
+
+
+def localize_ids(text: str, map_path: str = TENANT_ID_MAP) -> str:
+    """Rewrite the cloud-tenant IDs in a reference fixture the way the task's pre_run
+    rewrote the sandbox copy, so a checker compares against the IDs the agent saw.
+    Returns ``text`` unchanged when the task did not localize."""
+    if not os.path.isfile(map_path):
+        return text
+    with open(map_path, encoding="utf-8") as f:
+        changed = {cloud: live for cloud, live in json.load(f).items() if cloud != live}
+    if not changed:
+        return text
+    pattern = re.compile("|".join(re.escape(cloud) for cloud in changed), re.IGNORECASE)
+    return pattern.sub(lambda m: changed[m.group(0).lower()], text)
+
+
 def exit_type(condition: dict) -> str:
     """A stage exit condition's type, reading an absent `type` as `exit-only`.
 

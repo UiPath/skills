@@ -13,6 +13,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -355,6 +356,8 @@ class SeedTests(unittest.TestCase):
                 cwd=directory,
                 check=True,
                 capture_output=True,
+                # The issue-type id is read from the tenant; this test runs offline.
+                env={**os.environ, "ESCALATION_JIRA_ISSUETYPE_ID": "10009"},
             )
             seed = json.loads((Path(directory) / "seed.json").read_text())
         self.assertEqual(set(seed["inputs"]), set(SEED["inputs"]))

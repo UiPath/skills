@@ -11,6 +11,7 @@ created (not fabricated identifiers) really exist in the tenant.
 from __future__ import annotations
 
 import json
+import os
 import secrets
 from pathlib import Path
 
@@ -27,7 +28,8 @@ seed = {
         "workaroundAvailable": False,
         "correlationId": correlation,
         "jiraProjectKey": escalation_is.PROJECT_KEY,
-        "jiraIssueTypeId": escalation_is.ISSUETYPE_ID,
+        "jiraIssueTypeId": os.environ.get("ESCALATION_JIRA_ISSUETYPE_ID")
+        or escalation_is.issuetype_id(escalation_is.connection_ids()[escalation_is.JIRA_CONNECTOR]),
         "slackChannelId": escalation_is.SLACK_CHANNEL,
     },
     # jiraIssueKey is asserted against the created issue's actual key, so only
