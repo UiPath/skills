@@ -39,11 +39,10 @@ These activities **must** be placed inside a specific parent scope:
 
 ## Use Excel File Outside an Excel Process Scope
 
-`Use Excel File` (`ExcelApplicationCard`) raises `UiPath recommends using "Use Excel File" inside an "Excel Process Scope"` when no `ExcelProcessScopeX` encloses it. It is a validation warning of the activity, reported by `validate` and `build`, not a numbered analyzer rule; any enclosing scope clears it. The scope's body type argument is `ui:IExcelProcess`; its properties and `ProcessMode` values (`AlwaysCreateNew`, `AttendedUser`, `ReuseIfExists`, `OnlyIfExists`) are in [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
+`Use Excel File` (`ExcelApplicationCard`) with no `ExcelProcessScopeX` or `SequenceX` around it raises `UiPath recommends using “Use Excel File” inside an “Excel Process Scope"`. It is a validation warning of the activity, reported by `validate` and not by `build`, and not a numbered analyzer rule; an enclosing scope clears it whatever its `ProcessMode`. The scope's properties and modes: [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
 
-- Put the Use Excel File activities of one step inside one scope: one Excel process serves them and the scope quits it at the end.
-- Leave a workflow unscoped when it hands an open workbook to later workflows, such as a library that keeps workbook handles between calls: the scope would quit Excel under the handle. The warning stays; it is expected there.
-- Around a sequence that opens and closes a workbook through such a library within one workflow, set `ProcessMode` to `AlwaysCreateNew`: the scope starts its own Excel process, so quitting it leaves other workbooks alone.
+- Put the Use Excel File activities of one step inside one scope: one Excel process serves them. At its end the scope quits that process if it started it and no workbook is left open; an Excel it reused keeps running.
+- Leave a workflow unscoped when it hands an open workbook to later workflows, such as a library that keeps workbook handles between calls. The warning stays; it is expected there.
 
 ## Conflicting Property Pairs
 
@@ -566,24 +565,24 @@ Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/
   <!-- Legacy (.NET Framework 4.6.1):
        xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
        xmlns:s="clr-namespace:System;assembly=mscorlib" -->
-  <Variable x:TypeArguments="sd:DataTable" Name="dt" Default="[New System.Data.DataTable()]" />
+  <Variable x:TypeArguments="sd:DataTable" Name="dt_Data" Default="[New System.Data.DataTable()]" />
   ...
   <InvokeMethod MethodName="Add">
     <InvokeMethod.TargetObject>
-      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt_Data.Columns]</InArgument>
     </InvokeMethod.TargetObject>
     <InArgument x:TypeArguments="x:String">Name</InArgument>
     <InArgument x:TypeArguments="s:Type">[GetType(System.String)]</InArgument>
   </InvokeMethod>
   <InvokeMethod MethodName="Add">
     <InvokeMethod.TargetObject>
-      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt_Data.Columns]</InArgument>
     </InvokeMethod.TargetObject>
     <InArgument x:TypeArguments="x:String">Amount</InArgument>
     <InArgument x:TypeArguments="s:Type">[GetType(System.Decimal)]</InArgument>
   </InvokeMethod>
   ```
-  `TargetObject` MUST be the typed property-element form (`InArgument x:TypeArguments="sd:DataColumnCollection"`) — the attribute shorthand `TargetObject="[dt.Columns]"` fails validation with `Set property 'InvokeMethod.TargetObject' threw an exception` because overload resolution can't see `Add` on the untyped target.
+  `TargetObject` MUST be the typed property-element form (`InArgument x:TypeArguments="sd:DataColumnCollection"`) — the attribute shorthand `TargetObject="[dt_Data.Columns]"` fails validation with `Set property 'InvokeMethod.TargetObject' threw an exception` because overload resolution can't see `Add` on the untyped target.
   **C# XAML** (`expressionLanguage: CSharp`): replace bracket-shorthand expressions with `<CSharpValue x:TypeArguments="T">...</CSharpValue>` / `<CSharpReference x:TypeArguments="T">...</CSharpReference>` wrappers inside the `<InArgument>`/`<Default>` elements. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the full binding form per property.
 
   Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
