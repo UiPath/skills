@@ -1,8 +1,10 @@
 /**
  * A Case document-extraction task: an invoice file case variable run through
- * an IXP deployment, its extraction mapped to the `extracted` variable. The
- * deployment's values are the alpha Designer save's stand-ins (UiPath/cli
- * tests/fixtures/document-extraction/designer-saved.json), not a tenant's.
+ * an IXP deployment, its extraction mapped to the `extracted` variable.
+ * `=result` is `{ ExtractionResult, Taxonomy }`. Discovery commands:
+ *   uip ixp projects list --output json
+ *   uip ixp deployments list <project-name> --output json
+ * The deployment values below are stand-ins, not a live tenant's.
  */
 import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 

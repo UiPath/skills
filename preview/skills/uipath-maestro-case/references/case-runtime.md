@@ -37,7 +37,24 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Document extraction
 
-The values come from the tenant: `uip ixp deployments list <PROJECT>` gives model (`DeploymentName`), deployment (`DeploymentTitle`) and `folderKey`, and `uip solution resources list --kind IxpDeployment --source remote` gives `deploymentKey`. `sdd resolve` does not resolve them. `check` reports a blank model or a missing `folderKey` (the task would pack to a no-op) and a missing `file`. Compile refuses a missing `deploymentKey`.
+<!-- RULE:case.docextraction.discovery -->
+- Discovery is two commands: `uip ixp projects list --output json` first,
+  then `uip ixp deployments list <project-name> --output json`. The first
+  gives the project name (positional argument for the second). The second
+  gives model (`DeploymentName`), deployment (`DeploymentTitle`), and
+  `folderKey`. `uip solution resources list --kind IxpDeployment --source
+  remote --output json` gives `deploymentKey`. Ask the user if no match.
+  `sdd resolve` does not resolve them.
+
+<!-- RULE:case.docextraction.folder -->
+- `folderKey` is what `check` requires; `folder` is written as `folderName`
+  in the compiled plan and is the display label. Both come from the
+  deployments listing.
+
+<!-- RULE:case.docextraction.check -->
+- `check` reports a blank model or a missing `folderKey` (the task would
+  pack to a no-op) and a missing `file`. Compile refuses a missing
+  `deploymentKey`.
 
 ## Connections and external work
 
