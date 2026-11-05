@@ -1,0 +1,119 @@
+{
+  "id": "agents-tool-call",
+  "description": "Agents forces one call to tool2 with the arguments the prompt gives. The gateway sends tool2, not tool1, because EnableByoGeminiForAgents is on in every environment; it accepts one or two calls because EnableParallelToolCallsExemption is on.",
+  "source": "AgentsChatCompatibilityProbe",
+  "apiFlavor": "GeminiGenerateContent",
+  "excludeFeatures": [
+    "agents-autopilot"
+  ],
+  "replaces": [
+    "base-chat"
+  ],
+  "order": 90,
+  "path": "/models/{{model}}:generateContent",
+  "body": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Please process the following:\n1. A string input: \"This is a test.\"\n2. A numeric input: 42"
+          }
+        ]
+      }
+    ],
+    "generation_config": {
+      "max_output_tokens": 2048
+    },
+    "tools": [
+      {
+        "function_declarations": [
+          {
+            "name": "tool2",
+            "description": "Processes a generic user input, either string or numeric. Use option1 for string input and option2 for numeric input.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "parameter1": {
+                  "type": "string",
+                  "enum": [
+                    "option1",
+                    "option2"
+                  ]
+                },
+                "parameter2": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "parameter1",
+                "parameter2"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "tool_config": {
+      "function_calling_config": {
+        "mode": "ANY"
+      }
+    },
+    "safety_settings": [
+      {
+        "category": 1,
+        "threshold": 3
+      },
+      {
+        "category": 2,
+        "threshold": 3
+      },
+      {
+        "category": 3,
+        "threshold": 3
+      },
+      {
+        "category": 4,
+        "threshold": 3
+      }
+    ]
+  },
+  "retries": [
+    {
+      "status": 400,
+      "ifBodyContains": [
+        "tool_choice: type",
+        "are not supported for this model"
+      ],
+      "edit": ".tool_config.function_calling_config.mode = \"AUTO\"",
+      "why": "the model refuses a forced tool choice; the gateway sends it once more with tool choice auto"
+    }
+  ],
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "candidates is an array of objects whose content.parts is an array",
+      "jq": "((.candidates // []) | type) == \"array\" and all((.candidates // [])[]; (.content.parts // []) | type == \"array\")"
+    },
+    {
+      "reason": "MULTIPLE_RESPONSES",
+      "says": "exactly one choice, index 0",
+      "jq": "((.candidates // []) | length) as $n | ($n == 1 and (.candidates[0].index // 0) == 0) or ($n == 0 and .promptFeedback.blockReason != null)"
+    },
+    {
+      "reason": "INCORRECT_RESPONSE",
+      "says": "the answer comes from the assistant",
+      "jq": "((.candidates[0].content.role // \"model\") | IN(\"model\", \"assistant\"))"
+    },
+    {
+      "reason": "MISSING_TOOL_CALL",
+      "says": "the answer calls a tool",
+      "jq": "([.candidates[0].content.parts[]? | (.functionCall // .function_call) | select(. != null) | {name, args}] | length) > 0"
+    },
+    {
+      "reason": "INCORRECT_TOOL_CALL",
+      "says": "every call is tool2; one call carries one of the two expected argument sets, two calls carry both",
+      "jq": "[.candidates[0].content.parts[]? | (.functionCall // .function_call) | select(. != null) | {name, args}] as $calls | [{\"parameter1\": \"option1\", \"parameter2\": \"This is a test.\"}, {\"parameter1\": \"option2\", \"parameter2\": \"42\"}] as $expected | ($calls | length) as $n | $n > 0 and all($calls[]; .name == \"tool2\" and .args != null) and (if $n == 1 then any($expected[]; . == $calls[0].args) elif $n == 2 then ($calls | map(.args) | sort) == ($expected | sort) else false end)"
+    }
+  ]
+}

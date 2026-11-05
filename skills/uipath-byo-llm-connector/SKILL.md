@@ -60,7 +60,14 @@ From the row read (the CLI returns these keys PascalCase): `ModelsConfigurationO
 
 Ask for (unless already given): the vendor base URL; how it authenticates (API key header, bearer token, OAuth2 client credentials, AWS SigV4, custom token exchange); its request and response format, or one sample of each; whether the product's calls stream; the model identifier the vendor expects (becomes `--llm-identifier`). Pick the flavor from the model's `AllowedApiFlavors` that is closest to the vendor's own format — the closer it is, the less the hooks translate. Then read the flavor's resource paths, tag and template in [references/connector-contract-guide.md](references/connector-contract-guide.md).
 
-Check the vendor can do what the product's probes ask before building: Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`), and other products' probes send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
+Check the vendor can do what the product's probes ask before building. List the requests they send for this mapping, offline (`<SKILL_DIR>` is the folder holding this SKILL.md; `--default-model` only when the model replaces another, as a generic alternative):
+
+```bash
+bash <SKILL_DIR>/scripts/run-probes.sh --product <PRODUCT> --feature <FEATURE> --flavor <API_FLAVOR> \
+  --llm-name <CATALOG_MODEL> [--default-model <REPLACED_MODEL>] --list
+```
+
+Each line names a file under `<SKILL_DIR>/assets/probes/` holding the request body and what the answer must show. Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); other products' probes send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
 
 ### 2. Scaffold the connector
 
@@ -188,28 +195,31 @@ The connection belongs to the draft, so `uip is connections list` and `ping` do 
 
 ### 7. Call the draft through Integration Service
 
-Send the test requests to the test connection at the flavor's resource path: the same `POST …/v3/element/instances/{connectionId}{flavor path}` the gateway makes for a product call, with the model the vendor expects (`<VENDOR_MODEL_ID>`) in the body or the path, as the flavor puts it. Write each body, with made-up content, to `<WORK_DIR>/calls/`. [references/probes-guide.md](references/probes-guide.md) §"Test calls on the draft" lists the calls, their bodies and what a pass looks like:
+Send the product's probe requests to the test connection, the way the gateway sends them when the configuration is saved: the same bodies, at the flavor's resource path (`POST …/v3/element/instances/{connectionId}{flavor path}`), with the model the vendor expects in the body or the path, and the same checks on each answer. `run-probes.sh` does it with the step 6 helper, so the token stays in `api`:
+
+```bash
+bash <SKILL_DIR>/scripts/run-probes.sh --product <PRODUCT> --feature <FEATURE> --flavor <API_FLAVOR> \
+  --llm-name <CATALOG_MODEL> [--default-model <REPLACED_MODEL>] --model <VENDOR_MODEL_ID> \
+  --connection <TEST_CONNECTION_ID> --helper <WORK_DIR>/is-api.sh --out <WORK_DIR>/probes
+```
+
+Each probe prints `PASS`, `INCOMPATIBLE <reason>` (the reason the gateway would give, and what the check wants), `UNAVAILABLE` with the HTTP status and the start of the answer, or `RETRY` when the gateway would send it once more with an edited body. Every request and answer is kept in `<WORK_DIR>/probes/` (`<name>.request.json`, `<name>.response.json`). Exit 0 means every probe passed. Which files run, their format and how to add one: [references/probes-guide.md](references/probes-guide.md).
+
+Probes never stream. If the product streams, also send one streamed request with the header the gateway sends with a stream: for chat completions, Responses and Messages, a probe's request with `"stream": true` at the same path; for Gemini and Bedrock, the same body at the flavor's stream path ([references/connector-contract-guide.md](references/connector-contract-guide.md), `?alt=sse` for Gemini). It passes when the events arrive in the flavor's own stream format:
 
 ```bash
 ( set -o pipefail; source <WORK_DIR>/is-api.sh &&
-  api "$T/elements_/v3/element/instances/<TEST_CONNECTION_ID><FLAVOR_PATH>" --data-binary @<WORK_DIR>/calls/basic.json | jq .
+  jq '. + {stream: true}' <WORK_DIR>/probes/<PROBE_NAME>.request.json >"<WORK_DIR>/probes/stream.request.json" &&
+  api -N "$T/elements_/v3/element/instances/<TEST_CONNECTION_ID><FLAVOR_STREAM_PATH>" -H 'Accept: text/event-stream' \
+    --data-binary @<WORK_DIR>/probes/stream.request.json
 )
 ```
 
-A streamed call adds the header the gateway sends with a stream:
-
-```bash
-( set -o pipefail; source <WORK_DIR>/is-api.sh &&
-  api -N "$T/elements_/v3/element/instances/<TEST_CONNECTION_ID><FLAVOR_PATH>" -H 'Accept: text/event-stream' \
-    --data-binary @<WORK_DIR>/calls/stream.json
-)
-```
-
-A call passes when it answers 200 in the flavor's response shape with the content the guide names. Otherwise read the answer, fix the hook or the config entry it points at, `builder validate`, `import` (the test connection runs the new import at once) and send the same call again. Integration Service answers two failures itself, both `404`: "No API found at that URL for the given token and credentials" (no resource at that path, Rule 1) and "Invalid Element Instance Id provided." (the test connection is gone). Every other answer comes from the vendor through your hooks.
+When a probe fails, read its answer in `<WORK_DIR>/probes/`, fix the hook or the config entry it points at, `builder validate`, `import` (the test connection runs the new import at once) and run the probes again. Integration Service answers two failures itself, both `404`: "No API found at that URL for the given token and credentials" (no resource at that path, Rule 1) and "Invalid Element Instance Id provided." (the test connection is gone). Every other answer comes from the vendor through your hooks.
 
 ### 8. Publish
 
-Only once every call the product needs passes on the test connection:
+Only once every probe passes on the test connection (and the streamed call, if the product streams):
 
 ```bash
 uip is connectors publish --connector-dir <CONNECTOR_DIR> --wait --output json   # Data.Status == "SUCCESS"; note Data.PublishedKey
@@ -235,8 +245,8 @@ uip llm-configuration byo-connections create --product <PRODUCT> --feature <FEAT
 ```
 
 Use repeated `--mapping '…,connector-type=Custom'` for `AllModels` / `AnyModel` features. The CLI first reads the connector template from the connection's connector tags and stops, before any probe, on a connection Integration Service does not list or a connector whose tags name no template. Exit 0 with every model `isAvailable: true` and `isCompatible: true` is a pass. Otherwise read `unavailabilityReason` / `incompatibilityReason` / `vendorRawResponse` per [references/probes-guide.md](references/probes-guide.md). To fix:
-- reproduce the failing request as a step 7 call on the test connection;
-- fix the hook and re-import until that call passes;
+- reproduce it with step 7's `run-probes.sh` on the test connection, which sends the same requests;
+- fix the hook and re-import until that probe passes;
 - bump `latestVersion`, then `import` and `publish --wait`;
 - run the probes again: `create` again (a failed one saved nothing) or `update <CONFIG_ID>` with the same mapping.
 
@@ -257,7 +267,8 @@ uip login refresh                                        # token for the curl ca
 curl … elements_/v1/elements/normalized-instances        # the draft's test connection (Workflow 6)
   POST applications/default/sessions | GET applications/sessions/<id> | POST authenticate
 curl … elements_/elements/api-v2/elements/<element-id>/instances   # list | DELETE …/<instance-id>
-curl … elements_/v3/element/instances/<connection-id><flavor-path>  # call the draft (Workflow 7)
+bash <SKILL_DIR>/scripts/run-probes.sh … --list | --connection <id> --helper …  # the product's probes (Workflow 1, 7)
+curl … elements_/v3/element/instances/<connection-id><flavor-path>  # what run-probes sends; a streamed call (Workflow 7)
 uip is connections list <custom-key> --all-folders | ping <id> | edit <id> --no-wait | delete <id> --yes
 uip or folders list                                      # folder Type (Personal vs Standard)
 ```
@@ -270,7 +281,7 @@ uip or folders list                                      # folder Type (Personal
 | Hook runtime, variables, URL/model rewrites, token exchange, streaming, error handling | [references/hook-authoring-guide.md](references/hook-authoring-guide.md) |
 | Translating between OpenAI, Gemini, Anthropic and Bedrock bodies (messages, tools, usage, finish reasons, media) | [references/format-mapping-guide.md](references/format-mapping-guide.md) |
 | The draft's test connection vs the runtime connection, folders, credential rotation | [references/connections-guide.md](references/connections-guide.md) |
-| The test calls on the draft; reading a probe verdict and fixing each failure reason | [references/probes-guide.md](references/probes-guide.md) |
+| Which probes a product runs, the probe file format and adding one; reading a probe verdict and fixing each failure reason | [references/probes-guide.md](references/probes-guide.md) |
 
 For general connector authoring depth (every auth type, `state patch` semantics, system resources), the `uipath-connector-builder` skill covers the builder; this skill carries everything a BYO LLM connector needs on its own.
 

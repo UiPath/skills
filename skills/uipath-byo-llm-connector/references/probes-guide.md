@@ -1,23 +1,59 @@
 # Probes Guide
 
-The product's compatibility probes are the acceptance test for a BYO LLM connector. They are the same requests the product's own features depend on — a plain completion, tool calling, a forced tool choice, several choices, an image, an embedding — chosen per product, feature and API flavor by the gateway. They run when the configuration is saved, on the published connector's runtime connection. Before that, the unpublished draft gets the same kinds of requests through Integration Service.
+The product's compatibility probes are the acceptance test for a BYO LLM connector. They are the same requests the product's own features depend on — a plain completion, tool calling, a forced tool choice, several choices, an image, an embedding — chosen per product, feature and API flavor by the gateway. They run when the configuration is saved, on the published connector's runtime connection. Before that, the unpublished draft gets the same requests, with the same checks, through Integration Service (below).
 
-## Test calls on the draft
+## The probe requests (`assets/probes/`)
 
-SKILL.md step 7 sends these to the draft's test connection at the flavor's path, the call the gateway makes. The bodies below are for `OpenAiChatCompletions`. For another flavor, send the same request in that flavor's own format ([format-mapping-guide.md](format-mapping-guide.md)) to its path ([connector-contract-guide.md](connector-contract-guide.md)), with the model in the path where the flavor puts it there (`/models/<VENDOR_MODEL_ID>:generateContent`).
+The gateway's probes are fixed requests with fixed checks. `assets/probes/` holds them as one JSON file per request, and `scripts/run-probes.sh` sends the ones a mapping gets to any connection (SKILL.md steps 1 and 7), so the draft meets the same requests and checks before it is published.
 
-| Call | Send it when | Body | Passes when |
-|---|---|---|---|
-| `basic` | Always | `{"model": "<VENDOR_MODEL_ID>", "messages": [{"role": "user", "content": "Give me the first capital letter of the English alphabet and this letter only"}]}` | 200; exactly one choice, `message.role` `assistant`, content `A`; `usage` with token counts |
-| `tools` | The product calls tools (Agents always does) | `model`, a user message that needs the tool, one function in `tools` with a small JSON-schema `parameters`, `"tool_choice": "required"`, `"parallel_tool_calls": false` | Exactly one `tool_calls` entry naming that function, its `arguments` a JSON **string** that parses |
-| `choices` | The product asks for several choices | `tools` plus `"n": 2` | Exactly 2 choices |
-| `image` | The product sends images | A user message whose `content` holds a `text` part and an `image_url` part with a small `data:image/png;base64,…` URL | 200 with an answer |
-| `stream` | The product streams | `basic` plus `"stream": true`, sent with `-N -H 'Accept: text/event-stream'` | `text/event-stream` in the flavor's own event format, ending as the flavor's stream ends (`data: [DONE]` for chat completions) |
-| `embeddings` | The flavor is an embeddings flavor (in place of the calls above) | `{"model": "<VENDOR_MODEL_ID>", "input": ["first text", "second text"]}` | One embedding per input |
+### Which files run
+
+For `--product P --feature F --flavor X --llm-name M [--default-model D]` the runner reads `_all/*.json` and `P/*.json` and keeps a file when:
+
+- its `apiFlavor` is `X`;
+- it has no `match`, or one `match` entry fits: `feature` is `F`, `llmName` is `M`, and `replacing` is `D` with `M` a different model (a generic alternative); a key left out fits anything;
+- `F` is not in its `excludeFeatures`.
+
+A kept file's `replaces` then drops the kept files with those ids: Agents' `agents-tool-call` replaces `_all`'s `base-chat`, as the gateway does. The rest run in `order` (product-listed probes `10`, code-built ones `90`), and every one is reported. The gateway stops at the first failure; the runner goes on so you see them all.
+
+| Folder | Holds |
+|---|---|
+| `_all/` | The probe the gateway's code runs for every product, unless a product folder replaces it: `base-chat` (one per chat flavor), `base-responses`, `base-embeddings` |
+| `<product>/` | The probes that product's configuration lists per feature, named by the gateway's `ProbeId`, and the product's own code-built probe (`agents/agents-tool-call.*`, `uia/uia-screenplay.*`). The folder name is the product (`agents`, `uipath-ecs`) and `match` names features as the CLI's `--feature` does (`agents-design-eval-deploy`) |
+
+A product or feature with no file of its own gets `_all/` alone, which is what the gateway runs for it too.
+
+### File format
+
+```json
+{
+  "id": "agents-tool-call",
+  "description": "What the probe sends and wants, in a sentence.",
+  "source": "Where the gateway defines it (class or payload file).",
+  "apiFlavor": "OpenAiChatCompletions",
+  "match": [{"feature": "agents-design-eval-deploy"}, {"feature": "uipath-ecs-search", "replacing": "gemini-2.5-flash"}],
+  "excludeFeatures": ["agents-autopilot"],
+  "replaces": ["base-chat"],
+  "order": 90,
+  "path": "/v1/chat/completions",
+  "body": {"model": "{{model}}", "messages": [{"role": "user", "content": "…"}]},
+  "retries": [{"status": 400, "ifBodyContains": ["…"], "edit": ".tool_choice = \"auto\"", "why": "…"}],
+  "checks": [{"reason": "MISSING_TOOL_CALL", "says": "the answer calls a tool", "jq": ".choices[0].message.tool_calls != null"}]
+}
+```
+
+- `path` and `body` are what the gateway sends to the connection. `{{model}}` anywhere in either becomes `--model`, the vendor's model id: the gateway puts it in the body for the OpenAI and Anthropic flavors and in the path for Gemini and Bedrock.
+- `checks` run in order on the answer to a 2xx call, each a jq condition that is true when the answer is fine. The first false one is the verdict, with the gateway's reason. With no checks, any 2xx passes; with checks, an answer that is not JSON is `MALFORMED_RESPONSE`. A non-2xx answer is `UNAVAILABLE`.
+- `retries`: when the answer has that status and contains every string listed, the runner applies the jq `edit` to the body and sends it once more, as the gateway does (`max_completion_tokens` instead of `max_tokens`; tool choice `auto` when a model refuses a forced one).
+- `id`, `apiFlavor`, `path`, `body` are required; the rest are optional.
+
+### Adding a probe
+
+When a product's configuration lists a new probe, or a new product gets one: copy the gateway's payload into `<product>/<ProbeId>.json` as `body`, set `path` to the flavor's resource path ([connector-contract-guide.md](connector-contract-guide.md)), add `model: "{{model}}"` to the body for the OpenAI and Anthropic flavors, list the features in `match`, and write the gateway validator's checks in order. Check the selection offline with `--list`.
+
+The files mirror the gateway (UiPath/Arima `develop`, November 2026) and production's Model Hub configuration (UiPath/llm-gateway-config `environments/first-party-service/model-hub-configuration/<product>/prd/`), and carry the request the flags in production select: Agents sends `tool2` and accepts one or two calls. Staging or alpha can list other probes for a feature; when a probe's verdict in step 9 names a request no file holds, the configuration there differs.
 
 A call the vendor cannot serve, refused by the hook's own `continue: false`, fails the matching probe too. Do not work around it: tell the user which product feature needs it (SKILL.md step 1).
-
-The test calls do not replace the probes, which use the product's own requests and checks. A connector that passes every call can still fail a probe; read its reason below.
 
 ## How the probes run
 
@@ -90,7 +126,7 @@ The verdict is keyed by catalog model (`validation.<model>` on success; in the f
 
 ## The fix loop
 
-1. Change one thing — the hook or config entry the reason points at. Reproduce the failing request as a test call on the draft's test connection (it runs what was last imported); `builder validate` and `import` until that call passes.
+1. Change one thing — the hook or config entry the reason points at. Run `run-probes.sh` on the draft's test connection (it runs what was last imported) to reproduce it; `builder validate` and `import` until that probe passes.
 2. Bump `latestVersion`, `import`, `publish --wait`: the runtime connection runs only the published version.
 3. Re-probe: the same `update <CONFIG_ID>` (or `create` if nothing was saved).
 4. Three failures on the same reason → stop and show the user the verdict and the hook.

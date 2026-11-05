@@ -1,0 +1,95 @@
+{
+  "id": "ecs_tool_calling_gemini_probe",
+  "description": "A forced call (mode ANY) to TransformOutput on one row of data, with a thinking budget.",
+  "source": "ProductDefinedProbes/Payloads/ecs_tool_calling_gemini_probe.json",
+  "apiFlavor": "GeminiGenerateContent",
+  "match": [
+    {
+      "feature": "uipath-ecs-advanced-ingestion"
+    },
+    {
+      "feature": "uipath-ecs-batch-transform"
+    },
+    {
+      "feature": "uipath-ecs-deeprag"
+    },
+    {
+      "feature": "uipath-ecs-search"
+    }
+  ],
+  "order": 10,
+  "path": "/models/{{model}}:generateContent",
+  "body": {
+    "systemInstruction": {
+      "parts": [
+        {
+          "text": "You are a data transformation assistant."
+        }
+      ]
+    },
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Transform the following row of data.\n\nRow: {\"name\": \"Alice\", \"age\": 30}"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "functionDeclarations": [
+          {
+            "name": "TransformOutput",
+            "description": "Structured output for the transformed row.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "summary": {
+                  "type": "string",
+                  "description": "A one-sentence summary of the row"
+                }
+              },
+              "required": [
+                "summary"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "toolConfig": {
+      "functionCallingConfig": {
+        "mode": "ANY"
+      }
+    },
+    "generationConfig": {
+      "thinkingConfig": {
+        "thinkingBudget": 1000
+      }
+    }
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "candidates is an array of objects whose content.parts is an array",
+      "jq": "((.candidates // []) | type) == \"array\" and all((.candidates // [])[]; (.content.parts // []) | type == \"array\")"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "at least one candidate",
+      "jq": "((.candidates // []) | length) > 0"
+    },
+    {
+      "reason": "MISSING_TOOL_CALL",
+      "says": "the first candidate calls a tool",
+      "jq": "([.candidates[0].content.parts[] | (.functionCall // .function_call) | select(. != null)] | length) > 0"
+    },
+    {
+      "reason": "INCORRECT_TOOL_CALL",
+      "says": "one of the calls is TransformOutput",
+      "jq": "any(.candidates[0].content.parts[] | (.functionCall // .function_call) | select(. != null); .name == \"TransformOutput\")"
+    }
+  ]
+}
