@@ -158,10 +158,12 @@ Redact tenant, user, connection, folder, URL, payload and secret values.
 
 ## Failure modes that reach the runtime
 
-The builder removes a class of BPMN defects at compile time — unparsable XML, an
-element with no id, a flow to nowhere, a `vars.<id>` read of an undeclared
-variable, a gateway with every flow conditioned (`NO_DEFAULT_FLOW`) — so a
-compiled process does not carry them. These are the ones that survive:
+The builder removes a class of BPMN defects before the process runs. `compile`
+refuses unparsable XML, an element with no id and a flow to nowhere. `check`
+reports a `vars.<id>` read of an undeclared variable (`EXPR_UNDECLARED_REF`) and
+a gateway with every flow conditioned (`NO_DEFAULT_FLOW`); `compile` writes those
+as authored, so a process compiled without a clean `check` can carry them. These
+are the ones that survive both:
 
 - **Binding resolution** — a node reads `=bindings.<id>` and the resource the
   binding names is not reachable from the folder the process ran in, or the
