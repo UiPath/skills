@@ -62,6 +62,8 @@ BODY_PADDING = {"x": 144, "y": 96}
 
 def load_project(project_dir: Path) -> tuple[dict, dict[str, dict]]:
     flow_path = project_dir / f"{project_dir.name}.flow"
+    if not flow_path.is_file() and (project_dir / "new.flow").is_file():
+        flow_path = project_dir / "new.flow"  # Studio Web's name for the main file
     if not flow_path.is_file():
         raise SystemExit(f"FAIL: {flow_path} not found")
     flow = json.loads(flow_path.read_text(encoding="utf-8"))

@@ -33,6 +33,7 @@ Two distinct sources with two casings:
 
 from __future__ import annotations
 
+import fnmatch
 import glob
 import hashlib
 import json
@@ -1863,6 +1864,23 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
     return _find_project(pattern)
 
 
+STUDIO_WEB_FLOW_FILE = "new.flow"
+"""Studio Web names every Flow project's main file ``new.flow``; the Node CLI names it after the project."""
+
+
+def flow_file_is_named(path: str, name: str) -> bool:
+    """Whether ``path`` is the main file of the Flow called ``name``.
+
+    ``<name>.flow`` as ``uip maestro flow init`` writes it, or ``new.flow`` in a
+    ``<name>`` project as Studio Web writes it (the studio-web eval harness).
+    """
+    base = os.path.basename(path)
+    return base == f"{name}.flow" or (
+        base == STUDIO_WEB_FLOW_FILE
+        and os.path.basename(os.path.dirname(path)) == name
+    )
+
+
 def find_flow_files(
     project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
 ) -> list[str]:
@@ -1915,6 +1933,17 @@ def find_flow_files(
                 recursive=True,
             )
         )
+        # A name-shaped glob (`Billing*.flow`) also takes Studio Web's
+        # `new.flow` when the project itself carries that name.
+        studio_web_main = os.path.join(project_dir, STUDIO_WEB_FLOW_FILE)
+        stem = os.path.basename(flow_glob)[: -len(".flow")]
+        if (
+            not matches
+            and stem not in ("", "*")
+            and fnmatch.fnmatch(os.path.basename(project_dir), stem)
+            and os.path.isfile(studio_web_main)
+        ):
+            matches = [studio_web_main]
         if not matches:
             _fail(
                 f"No .flow file matching {flow_glob!r} under selected Flow "

@@ -79,11 +79,11 @@ BPMN yet (no agent targets — the CLI rejects `--parent`, UiPath/cli#5169).
 | `evaluate/inline_agent_eval/inline_agent_eval.yaml` | — | not ported: inline agents are Flow-only (BPMN agents are published via `Orchestrator.StartAgentJob`) |
 
 Divergences from the Flow tasks, forced by the BPMN eval contract (verified
-against `maestro-tool` on `feat/maestro-bpmn-eval-clean`): every `Llm` simulation
-passes `--output-schema` (the CLI rejects it otherwise); simulation targets are
-component ids, not nodes that must exist in the `.bpmn` (BPMN never resolves the
-node when a schema is supplied); the entry point is a start-event id and
-CLI-authored sets are always `flow`-scoped. Graders are near-verbatim ports — the
+against `maestro-tool` on `main`): every `Llm` simulation passes
+`--output-schema` (the CLI rejects it otherwise); a simulation target must be an
+element id that exists in the `.bpmn` (`locateComponent` rejects an id that is
+not a real element); the entry point is a start-event id and CLI-authored sets
+are always `flow`-scoped. Graders are near-verbatim ports — the
 on-disk eval JSON shapes are the shared eval-sdk's, so they match Flow's. Tasks
 pending a `run-coder-eval.yml` run to record pass ids.
 

@@ -29,6 +29,12 @@ initial_prompt: |
   Declare a string input variable named `name` on the process before adding the
   data point.
 
+  Put both simulation targets in the process before adding any simulation: an
+  agent node with id `agentLookup` declaring one string output variable
+  `result`, and an element with id `connectorSendEmail` standing in for an email
+  connector that is not published yet. The project does not have to pass `uip
+  maestro bpmn validate`.
+
   Create an eval set named `Sim Set` in the BPMN project, using its default
   entry point and current evaluators.
 
@@ -41,9 +47,8 @@ initial_prompt: |
 
   Add an `Llm` simulation on the same data point targeting the agent component
   id `agentLookup` (component type `agent`), with instructions
-  `Return a plausible lookup result.` The BPMN CLI cannot auto-resolve the
-  component's output schema, so pass it explicitly:
-  `--output-schema '{"type":"object","properties":{"result":{"type":"string"}}}'`.
+  `Return a plausible lookup result.` Its simulated output is a single string
+  field `result`.
 
   Inspect the simulations to confirm both are present.
 
@@ -75,6 +80,14 @@ success_criteria:
   - type: run_command
     description: "SimEval BPMN artifact exists"
     command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py SimEval"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN artifact carries both simulation target component ids"
+    command: "python3 $REFERENCE_DIR/evaluate/simulation/check_bpmn_contains.py --bpmn-name SimEval agentLookup connectorSendEmail"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

@@ -188,9 +188,8 @@ a prompt or process change is shown to have helped rather than asserted to have.
 and **uploads it to Studio Web, creating or overwriting the solution that
 matches the local `.uipx` `SolutionId`**, then provisions it for execution — the
 eval backend runs *deployed* resources, not merely published ones. There is no
-separate upload step to run, and no prompt before the overwrite. (Flow's `eval
-run start` does the same; this is the shared deploy-before-run path, and it
-mirrors `maestro bpmn debug`.)
+separate upload step to run, and no prompt before the overwrite. This mirrors
+`maestro bpmn debug`, which also deploys before it runs.
 
 So `eval run start` costs real work in the same three cases a manual `uip
 solution upload` would:
