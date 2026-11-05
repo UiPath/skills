@@ -201,16 +201,18 @@ binding half, which is the same for every connector-backed node.
   Do not add bindings by hand or promise per-environment re-pointing; tell the user the entity is fixed at compile time.
 
 <!-- RULE:bpmn.connector.parameter-rows -->
-- `.connector()` and `.dataService()` write a V2 task (`activityConfigurationVersion: v2`), the shape Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds.
+- `.connector()`, `.dataService()`, `.eventTrigger()` and `.waitForEvent()` write a V2 task (`activityConfigurationVersion: v2`), the shape Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds.
+  If `compile` writes a new `.connector()` task with one `target="path"` / `target="query"` row per parameter and an `operation` context row, the installed SDK predates V2: upgrade it with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again; do not hand-convert its rows.
   Its path parameters are one json row, `pathParameters` (`target="pathParameters"`), and its query parameters another, `queryParameters` (`target="queryParameters"`), each keyed by the library's own parameter names (`send_as`, not `sendAs`); the request body is the one json `target="body"` row, and a multipart file part is its own `target="file"` row.
   The Data Fabric file operations (`downloadFile`, `uploadFile`, `deleteFile`) are the exception: their `_V3` operations have no field-name parameter, so `.dataService()` still writes them as V1 tasks.
 - An imported process can also carry V1 tasks, with one `target="path"` / `target="query"` row per parameter and an `operation` context row.
   Leave them as they are: a task you add beside them is V2, and a file may mix the two.
-  Do not add a process-level `uipath:intsvcActivityConfig` marker: Studio Web would then read every unversioned V1 task in the file as V2.
-- Through `.activity()`, copy the context `registry get --input-details` prints, `activityConfigurationVersion: 'v2'` included.
+  Leave the process-level `uipath:intsvcActivityConfig` marker as you found it, as `registry get --input-details` instructs: a new workflow from `bpmn init` has it, and an existing workflow without it needs none.
+  Do not add it to an existing workflow: Studio Web would then read every unversioned V1 task in the file as V2.
+- Through `.activity()`, copy the `<uipath:context>` rows of the element `registry get --input-details` returns (`Data.V2.ElementXml`), `activityConfigurationVersion: 'v2'` included; see [§4 of the connectors reference](connectors.md#4-when-the-connector-is-not-in-the-library).
   A request field goes in `inputs: { field: value }` and is folded into the body row (`inputs: { script }` on a JDBC query becomes `{"script": …}` in the body); path and query parameters go in `inputs: { pathParameters: { … }, queryParameters: { … } }`, which become the two json rows.
-  `inputRows`, when present, replaces `inputs`: spell every row, the body row included (`{ name: 'body', type: 'json', target: 'body', body: { script } }`), each **with its `target`**, or the request fields are silently dropped.
-  A row without `target` is never sent; `check` refuses it (`CONNECTOR_INPUT_ROW_NO_TARGET`).
+  `inputRows`, when present, replaces `inputs`: spell every row, the body row included (`{ name: 'body', type: 'json', target: 'body', body: { script } }`), or the request fields are silently dropped.
+  Give each row its `target`: a row without one is never sent, and `check` refuses it (`CONNECTOR_INPUT_ROW_NO_TARGET`).
 
 ## Registry extension types
 
@@ -271,6 +273,7 @@ binding half, which is the same for every connector-backed node.
   A lift is written only after that one call has been compiled on its own and its task compared with the original, so a lift that lost an input or picked the wrong action is refused per element, not approximated.
   The lifted form is the one to copy when adding a connector task to an import. What stays verbatim: a body field the static library does not declare (a Data Fabric update's entity columns; `registry prepare` loads them), a `connection` that is not a `=bindings.<id>` reference, a designer row with an attribute no option spells. A lifted task's variables keep the file's own `jsonSchema` declaration as an explicit `.vars([…])` entry rather than a row the call no longer has.
   A lifted task's canvas metadata is regenerated on compile, so a no-edit decompile, compile and merge is not byte-identical for those tasks; `--connectors verbatim` keeps every task as written, for a byte-identical brownfield edit. `examples/InvoiceApproval.bpmn.ts` shows both forms side by side.
+  That file was decompiled before the lift became V2-only: its six `.connector()` calls came from V1 tasks and now compile to V2 tasks beside the six verbatim V1 ones, while a fresh decompile of the same export keeps all twelve verbatim.
 
 <!-- RULE:bpmn.brownfield.unused-bindings -->
 - `bpmn decompile` DROPS a binding nothing references, and names what it dropped. The

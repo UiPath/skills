@@ -132,15 +132,18 @@ The identity comes from the catalog, never from the connector's OpenAPI document
 uip is connections list <connector-key> --all-folders --output json      # the connection id
 uip is activities list <connector-key> --output json                     # Name + ObjectName + MethodName + IsCurated
 uip maestro bpmn registry get Intsvc.ActivityExecution \
-    --connection-id <id> --object-name <ObjectName> --operation <Verb> --output json   # the node template, with the describe
+    --connection-id <id> --object-name <ObjectName> --operation <Verb> \
+    --input-details '{}' --output json                                     # the V2 element (Data.V2.ElementXml), with the describe
 ```
 
 `objectName` is the **catalog's** object (`UploadAttachment`, `TestSet`) and `method` its verb (`POST`, `GETBYID`, `PATCH`, `DELETE`).
 Neither is the connector's REST slug.
 A node carrying `objectName="v2::attachment::upload"` validates and then dispatches to nothing — the platform matches on the curated pair, and so do the graders that compare against a real export.
 `check` holds a hand-filled task to the catalog (`INTSVC_*`), which `validate` does not; fix what it reports.
-Keep the template's context, `activityConfigurationVersion: 'v2'` included.
-A `{param}` in the path goes in `inputs: { pathParameters: { <param>: … } }` and a query parameter in `inputs: { queryParameters: { … } }`, the template's two json rows; a bare `inputs: { <param> }` lands in the body (see [the parameter rows](bpmn-runtime.md#connectors-and-bindings)).
+Copy the `<uipath:context>` rows of `Data.V2.ElementXml` into the `.activity()` context, `activityConfigurationVersion: 'v2'` included.
+Without `--input-details` the command returns only the extension type's V1 template (`activityConfigurationVersion` defaults to `v1` there), whose context a V2 task does not carry.
+`--input-details` takes the node's values as JSON, `'{}'` when you have none yet; `Data.V2.MissingRequired` lists the required inputs still unset.
+A `{param}` in the path goes in `inputs: { pathParameters: { <param>: … } }` and a query parameter in `inputs: { queryParameters: { … } }`, the element's two json rows; a bare `inputs: { <param> }` lands in the body (see [the parameter rows](bpmn-runtime.md#connectors-and-bindings)).
 For a generic record verb (`Create Record`, `Delete Record`), the catalog row's `N/A` is not the answer: `objectName` is the object you pick from `uip is resources list <key> --connection-id <id> --output json`, `method` is the catalog's **Integration Service method** for that verb (`GETBYID` for a single record (Retrieve), `GET` for a list, `POST` to create, `PATCH`/`PUT` to update, `DELETE`), not the HTTP verb (both retrieval and listing travel as HTTP GET; the platform matches on `GETBYID` vs `GET`), and `path` comes from `uip is resources describe <key> <object> --operation <Verb> --connection-id <id> --output json`.
 
 ## 5. Data Fabric is not this
@@ -167,5 +170,4 @@ uip is triggers describe <connector> <EVENT> <object> --connection-id <id> --out
 - The payload lands in `outputVar` (default `<id>_result`) and a failure in `<id>_Error`; the node declares both, so `=vars.<id>_result.subject` reads a payload field downstream.
   `outputs` maps payload fields onto variables of their own, and its sources read the payload under `response`: `outputs: { subject: '=response.subject' }`.
   A bare `'=subject'` reads nothing: the payload is not at the top level.
-- There is no `folderPath` option: the task names its folder by the `folder` binding alone.
-  The SDK still accepts `folderPath` and ignores it; drop it.
+- `folderPath` is deprecated and ignored: the task names its folder by the `folder` binding alone, so drop it.
