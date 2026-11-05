@@ -147,7 +147,7 @@ class DriftTests(unittest.TestCase):
         text = _read_or_skip(GUIDE)
         match = re.search(r"^### Toolbox kinds\n(.*?)(?=^#{1,3} )", text, re.S | re.M)
         if not match:
-            raise unittest.SkipTest("phase-2-skeleton-guide.md has no '### Toolbox kinds' section on this branch")
+            self.fail("phase-2-skeleton-guide.md has no '### Toolbox kinds' section; the skill changed shape")
         table = {}
         for row in re.findall(r"^\|(.+?)\|(.+?)\|\s*$", match.group(1), re.M):
             types = re.findall(r"`([^`]+)`", row[0])
@@ -164,7 +164,7 @@ class DriftTests(unittest.TestCase):
         text = _read_or_skip(SKILL_MD)
         match = re.search(r'registry list[^\n]*--output-filter "ExtensionTypes\[\?([^"]*)"', text)
         if not match:
-            raise unittest.SkipTest("SKILL.md has no 1a `registry list --output-filter` on this branch")
+            self.fail("SKILL.md has no 1a `registry list --output-filter`; the skill changed shape")
         expr = match.group(1)
         prefixes = re.findall(r"starts_with\(ExtensionType,'([^']+)'\)", expr)
         listed = re.search(r"contains\(\[([^\]]*)\],ExtensionType\)", expr)
