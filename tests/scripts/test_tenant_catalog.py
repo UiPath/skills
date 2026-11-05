@@ -139,6 +139,52 @@ def test_wrapper_calls_with_literal_arguments_are_tenant_verbs(tasks_root: Path)
     assert "maestro case processes" in entry["tier_evidence"][0]
 
 
+def test_a_wrapper_that_takes_one_list_of_words_is_a_tenant_verb(tasks_root: Path) -> None:
+    write(
+        tasks_root / "demo" / "pull" / "check.py",
+        """
+        def _uip(args, timeout):
+            pass
+        _uip(["maestro", "case", "registry", "pull", "--force"], 240)
+        """,
+    )
+    write(
+        tasks_root / "demo" / "pull" / "pull.yaml",
+        task_yaml(
+            "demo-pull",
+            """
+            success_criteria:
+              - type: run_command
+                command: "python3 $REFERENCE_DIR/check.py"
+            """,
+        ),
+    )
+    entry = task(report(tasks_root), "demo-pull")
+    assert entry["tier"] == "hard"
+    assert "maestro case registry" in entry["tier_evidence"][0]
+
+
+def test_a_child_case_block_is_a_case_management_resource() -> None:
+    sdd = textwrap.dedent(
+        """
+        **Child Case:** Task agentic case
+        **Folder Path:** Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106
+        **Resource Identity:** caseManagementId `deecae87-ce5a-4351-b777-92348aff3226` (v1.0.6)
+        **Binding Sub-Type:** CaseManagement
+        """
+    )
+    assert tc.extract_sdd_resources(sdd) == [
+        (
+            "process",
+            "casemanagement",
+            "Task agentic case",
+            "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+            "deecae87-ce5a-4351-b777-92348aff3226",
+            2,
+        )
+    ]
+
+
 def test_post_run_cleanup_does_not_raise_the_tier(tasks_root: Path) -> None:
     write(
         tasks_root / "demo" / "_setup" / "cleanup.py",
