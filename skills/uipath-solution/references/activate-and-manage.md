@@ -119,6 +119,8 @@ Find the deployment's key, name and package with `uip solution deploy list`. On 
 
 Use the returned [deployment links](pack-and-deploy.md#open-the-deployment-in-orchestrator); `FolderUrl` is present only when the installed folder key is known.
 
+On newer CLI builds a successful upgrade also checks that the deployment's folder can run the unattended jobs of the new version's RPA processes, test cases and MCP servers. It reports any missing runtime in `Data.Warnings` (also logged on stderr unless `--log-level` or `--log-file` says otherwise) and still exits as a success. Assign a machine to the folder instead of upgrading again — see [Folder runtime check](deploy-folder-runtimes.md).
+
 **Behavior and limits:**
 
 - The deployment's **existing configuration is preserved** — the server carries each unchanged resource's configuration forward and takes only changed specs from the new package, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.

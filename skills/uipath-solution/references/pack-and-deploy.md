@@ -212,6 +212,10 @@ On successful `deploy run`, `Data.OrchestratorUrl` opens the deployment overview
 
 Use the returned links: they use the session's base URL, organization name and tenant name, and select the right tenant or folder feed. Browser routes are `orchestrator_/solutions-management` and `orchestrator_/folder-solutions-management`; `automationsolutions_` serves the API and remote module, and the deprecated `solutions_` route does not work. If the deployment key is unavailable, the link opens the feed's Solutions tab. A missing folder key omits `FolderUrl`; missing browser session coordinates or a URL construction error omit both links without changing the deploy result. If links are absent, direct the user to Orchestrator → Tenant (or the target folder feed) → Solutions → Deployments; never construct a URL by hand.
 
+### A folder with no runtime for a process
+
+On newer CLI builds, once the package is installed, `deploy run` and `deploy upgrade` check that the deployment's folder has a runtime for the unattended jobs of its RPA processes, test cases and MCP servers. A missing one is reported in `Data.Warnings`, and the deploy still exits as a success: do **not** deploy again, assign a machine to the folder. What is checked, the warning texts and the fix are in [Folder runtime check](deploy-folder-runtimes.md).
+
 ### A deploy that stops in `Draft`
 
 `Draft` is where the server parks a deployment whose install never completed — nearly always because deploy-time validation rejected something (a virtual resource with no `value`, a resource conflict, a folder that no longer exists). Nothing advances it on its own, and it **cannot be activated**: `deploy activate` on it fails.
