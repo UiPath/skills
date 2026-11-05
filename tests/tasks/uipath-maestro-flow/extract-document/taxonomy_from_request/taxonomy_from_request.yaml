@@ -3,8 +3,8 @@ description: >
   Smoke: the user names the Extract document node, the fields, and one rule
   about one field. Tests that the agent writes the taxonomy with `nodes schema
   set`: the fields with fitting types, instructions throughout, and the user's
-  rule in the field's instructions. The node itself is graded by
-  `explicit_node`.
+  rule in the field's instructions. Only the taxonomy is graded: the node,
+  its wiring and `flow validate` are graded by `explicit_node`.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
 
@@ -29,13 +29,6 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: skill_triggered
-    skill_name: "uipath-maestro-flow"
-    expected_skill: "uipath-maestro-flow"
-    description: "Advisory: agent invoked the uipath-maestro-flow skill"
-    weight: 1.0
-    pass_threshold: 0.0
-
   - type: command_executed
     description: "Agent wrote the taxonomy with nodes schema set"
     tool_name: "Bash"
@@ -76,14 +69,6 @@ success_criteria:
     command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceFields described
     expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "uip maestro flow validate passes on InvoiceFields.flow with no warnings"
-    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
-    timeout: 180
-    expected_exit_code: 0
-    weight: 3.0
     pass_threshold: 1.0
 
 run_limits:
