@@ -47,10 +47,12 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:case.http.body -->
 - An `=` value inside an object body compiles to the code it reads:
   `body: { id: '=vars.id' }` sends the variable's value, and so does a
-  `'=js:<expr>'` leaf. Both work nested and in arrays. Other `=` forms
-  (`=vars.a + 1`) are refused at compile (`HTTP_REQUEST_BODY_EXPRESSION`);
-  write as `'=js:vars.a + 1'`. A string body must be JSON or an `=`
-  expression; other text is refused at compile (`HTTP_REQUEST_BODY_FORM`).
+  `'=js:<expr>'` leaf. Each `=js:` value must be exactly one expression
+  (acorn-parsed); a statement or unparseable text is refused at compile
+  (`HTTP_REQUEST_BODY_EXPRESSION`). Both work nested and in arrays. Other
+  `=` forms (`=vars.a + 1`) are also refused with the same code; write as
+  `'=js:vars.a + 1'`. A string body must be JSON or an `=` expression;
+  other text is refused at compile (`HTTP_REQUEST_BODY_FORM`).
 
 <!-- RULE:case.http.credentials -->
 - `check` reports a literal credential header (`Authorization`, `Cookie`, API
