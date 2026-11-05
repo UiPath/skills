@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from _shared.coded_file_guardrail_assertions import (
+from _shared.guardrails.coded_file_guardrail_assertions import (
     imported_from,
     module_constants,
     require_attachment_input,
@@ -31,7 +31,7 @@ from _shared.coded_file_guardrail_assertions import (
     require_rendered_attachments,
     wired_middleware_calls,
 )
-from _shared.guardrail_middleware import call_kwarg, call_name
+from _shared.guardrails.guardrail_middleware import call_kwarg, call_name
 
 GRAPH = Path("graph.py")
 TOOL = "review_contract"

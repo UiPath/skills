@@ -46,7 +46,7 @@ success_criteria:
 
   - type: run_command
     description: "User prompt attacks middleware guardrail correctly added to graph.py"
-    command: "python3 $REFERENCE_DIR/_shared/check_user_prompt_attacks_middleware.py"
+    command: "python3 $REFERENCE_DIR/_shared/guardrails/check_user_prompt_attacks_middleware.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

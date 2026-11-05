@@ -90,17 +90,8 @@
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
 # Guardrails in lowcode/conversational (more specific than /lowcode/conversational/ above — wins via last-match)
 /tests/tasks/uipath-agents/lowcode/conversational/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
-# Guardrail checkers relocated to _shared/ during the host-path-removal migration (test: d61fa9d52) —
-# still owned by the guardrails team, not the broader _shared/ default.
-/tests/tasks/uipath-agents/_shared/check_byog_middleware.py @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
-/tests/tasks/uipath-agents/_shared/coded_file_guardrail_assertions.py @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
-/tests/tasks/uipath-agents/_shared/check_escalation.py @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
-/tests/tasks/uipath-agents/_shared/check_intellectual_property_coded.py @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
-/tests/tasks/uipath-agents/_shared/check_llm_as_judge.py @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
-/tests/tasks/uipath-agents/_shared/check_pii_middleware.py @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
-/tests/tasks/uipath-agents/_shared/check_recommend_all.py @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
-/tests/tasks/uipath-agents/_shared/check_recommend_scoped.py @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
-/tests/tasks/uipath-agents/_shared/check_user_prompt_attacks_middleware.py @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
+# Guardrail checkers and the helpers they share (more specific than /tests/tasks/uipath-agents/ above — wins via last-match)
+/tests/tasks/uipath-agents/_shared/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
 
 # Functions skill (JS/TS → @lucarachiteanu, Python → @UiPath/team-agents-cli; shared surfaces → both)
 /skills/uipath-functions/ @lucarachiteanu @UiPath/team-agents-cli

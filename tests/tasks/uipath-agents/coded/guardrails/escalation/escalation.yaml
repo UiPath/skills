@@ -75,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "Escalation Action App declared as a well-formed app binding"
-    command: "python3 $REFERENCE_DIR/_shared/check_escalation.py"
+    command: "python3 $REFERENCE_DIR/_shared/guardrails/check_escalation.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

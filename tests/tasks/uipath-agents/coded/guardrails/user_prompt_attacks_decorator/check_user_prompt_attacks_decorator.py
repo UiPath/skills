@@ -19,14 +19,14 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from _shared.coded_file_guardrail_assertions import (
+from _shared.guardrails.coded_file_guardrail_assertions import (
     imported_from,
     module_constants,
     require_attachment_input,
     require_detection_scope,
     require_rendered_attachments,
 )
-from _shared.guardrail_middleware import call_kwarg, call_name, spread_middleware_calls
+from _shared.guardrails.guardrail_middleware import call_kwarg, call_name, spread_middleware_calls
 
 GRAPH = Path("graph.py")
 LANGCHAIN_GUARDRAILS = "uipath_langchain.guardrails"
