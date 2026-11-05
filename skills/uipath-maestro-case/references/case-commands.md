@@ -475,12 +475,10 @@ Manage and run Case processes. **Requires `uip login`.**
 
 ```bash
 # List available Case processes
-uip maestro case process list
 uip maestro case process list --folder-key <guid>
-uip maestro case process list --filter "Name eq 'MyCase'"
+uip maestro case process list --folder-key <guid> --filter "Name eq 'MyCase'"
 
 # Get process schema and entry point details
-uip maestro case process get <process-key> <feed-id>
 uip maestro case process get <process-key> <feed-id> --folder-key <guid>
 
 # Run a Case process
