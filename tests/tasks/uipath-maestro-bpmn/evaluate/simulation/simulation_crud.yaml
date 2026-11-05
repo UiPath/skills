@@ -118,12 +118,12 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: command_executed
-    description: "Llm simulation carries an explicit --output-schema (BPMN cannot auto-resolve it)"
+    description: "Llm simulation carries an explicit --output-schema (report only; the persisted --check llm-simulation below is the gate)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+eval\s+simulation\s+add\s+(?=.*--strategy\s+Llm\b)(?=.*--output-schema\b)'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "The Llm agentLookup simulation persists with its explicit output schema"
