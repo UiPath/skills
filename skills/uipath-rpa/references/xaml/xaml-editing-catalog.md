@@ -14,7 +14,7 @@ Add `x:Property` elements inside `<x:Members>` with `InArgument`, `OutArgument`,
 <x:Members>
   <x:Property Name="in_CustomerName" Type="InArgument(x:String)" />
   <x:Property Name="out_ProcessedCount" Type="OutArgument(x:Int32)" />
-  <x:Property Name="io_DataTable" Type="InOutArgument(scg:List(x:String))" />
+  <x:Property Name="io_Names" Type="InOutArgument(scg:List(x:String))" />
 </x:Members>
 ```
 

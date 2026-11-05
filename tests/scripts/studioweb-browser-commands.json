@@ -134,7 +134,7 @@
       "ah automations schema get": 3,
       "ah automations update": 2,
       "ah categories get": 3,
-      "ah comments": 3,
+      "ah comments": 7,
       "ah comments create": 3,
       "ah comments list": 3,
       "ah components list": 2,
@@ -643,7 +643,7 @@
       "login status": 9,
       "login tenant set": 2,
       "rpa build": 1,
-      "rpa pack": 3,
+      "rpa pack": 4,
       "tm customfield": 2,
       "tm defects": 1,
       "tm migration": 1,
@@ -705,7 +705,18 @@
     }
   },
   "uipath-vertical-solutions": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "vss deploy",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra, cli-ready) says `uip vss deploy` is not in this host and tells the agent to stop and send the user to a terminal, so these steps are never run here."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "login tenant set",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra, cli-ready) says `uip vss deploy` is not in this host and tells the agent to stop and send the user to a terminal, so these steps are never run here."
+      }
+    ],
     "ceiling": {
       "login": 9,
       "login status": 6,
