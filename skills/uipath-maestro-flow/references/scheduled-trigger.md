@@ -53,8 +53,11 @@ deployed run observed at the requested cadence.
 
 `every` is an ISO-8601 repeating interval (`R/PT30M`, `R/PT1H`, `R/P1W`) or a
 Quartz cron expression (`0 0 2 * * ?`, `0 30 9 ? * MON-FRI`). Cron and a
-single-unit interval (`R/PT45M`, `R/P1D`) are written at the trigger's 1.2
-definition, in `timerValue`. 1.2 takes one unit within its range, so an interval
-such as `R/PT90M` or `R/P1DT12H` is written at 1.1. Pinning 1.2 with one is a
-compile error (`SCHEDULE_INTERVAL_VERSION`), and so is pinning 1.1 with cron. A
-decompiled node keeps its version.
+single-unit interval are written at the trigger's 1.2 definition, in
+`timerValue`. 1.2 takes exactly one unit within these ranges: `PT1S`–`PT59S`,
+`PT1M`–`PT59M`, `PT1H`–`PT23H`, `P1D`–`P31D`, `P1W`–`P52W`, `P1M`–`P12M`, or
+`P1Y`–`P9999Y` (so `R/PT45M`, `R/PT2H` and `R/P2W` are 1.2). Any other ISO
+interval, such as `R/PT90M`, `R/PT24H` or `R/P1DT12H`, is written at 1.1.
+Pinning `{ version: '1.2' }` with such an interval is a compile error
+(`SCHEDULE_INTERVAL_VERSION`), and so is pinning `{ version: '1.1' }` with cron.
+A decompiled node keeps its version, e.g. `{ version: '1.1' }`.
