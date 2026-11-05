@@ -37,7 +37,30 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## HTTP requests
 
-`.httpRequest({ method, url, ... })` sends one HTTP call from a task. Without `connector` the request goes to `url` unauthenticated. With `connector: { key, connection, folder }` it reuses that connection's auth, and `path` replaces `url`. Outputs are the fixed four: `code`, `headers`, `body`, `Error`; `.outputs({ v: '=response.body' })` maps one to a case variable. `check` reports a credential header (`Authorization`, `Cookie`, API keys) and a body on `GET`/`HEAD`/`OPTIONS`/`DELETE`; compile writes both as authored, so run `check` before `compile`. Compile refuses a `url` through a connector or a `path` without one, which it would drop.
+<!-- RULE:case.http.modes -->
+- `.httpRequest({ method, url, ... })` sends one HTTP call. Without `connector`
+  the request goes to `url` unauthenticated. With
+  `connector: { key, connection, folder }` it reuses that connection's auth and
+  `path` replaces `url`. Compile refuses `url` through a connector or `path`
+  without one.
+
+<!-- RULE:case.http.body -->
+- An `=` value inside an object body compiles to the code it reads:
+  `body: { id: '=vars.id' }` sends the variable's value, and so does a
+  `'=js:<expr>'` leaf. Both work nested and in arrays. Other `=` forms
+  (`=vars.a + 1`) are refused at compile (`HTTP_REQUEST_BODY_EXPRESSION`);
+  write as `'=js:vars.a + 1'`. A string body must be JSON or an `=`
+  expression; other text is refused at compile (`HTTP_REQUEST_BODY_FORM`).
+
+<!-- RULE:case.http.credentials -->
+- `check` reports a literal credential header (`Authorization`, `Cookie`, API
+  keys) and a literal credential query parameter (`api_key`, `token`, `secret`,
+  `password`). An `=vars.` value is not reported. Compile writes both as
+  authored, so run `check` before `compile`.
+
+<!-- RULE:case.http.outputs -->
+- Outputs are the fixed four: `code`, `headers`, `body`, `Error`.
+  `.outputs({ v: '=response.body' })` maps one to a case variable.
 
 ## Connections and external work
 
