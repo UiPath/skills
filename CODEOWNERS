@@ -170,6 +170,7 @@
 
 # BYO LLM connector skill (LLM Gateway)
 /skills/uipath-byo-llm-connector/ @denispetre @vstoleru-uipath @dragosvelcea
+/skill-flavors/studioweb/uipath-byo-llm-connector/ @denispetre @vstoleru-uipath @dragosvelcea
 /tests/tasks/uipath-byo-llm-connector/ @denispetre @vstoleru-uipath @dragosvelcea
 /tests/tasks/activation/uipath-byo-llm-connector.jsonl @denispetre @vstoleru-uipath @dragosvelcea
 

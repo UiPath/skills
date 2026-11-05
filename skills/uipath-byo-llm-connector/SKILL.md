@@ -16,6 +16,10 @@ UiPath product ──(API flavor body)──▶ LLM Gateway ──▶ Integratio
 
 Everything here runs through `uip`: `uip is connectors builder` (author on disk), `uip is connectors import` and `publish` (tenant), `uip is connections` (the runtime connection), `uip llm-configuration byo-connections` (probe + save). The one exception is the unpublished draft: `curl` creates its test connection and calls the connector through it, on the Integration Service API, with the token from `uip login refresh`. The draft is tested that way and stays unpublished until those calls pass; the product's probes run once, on the published connector's runtime connection, when the configuration is saved.
 
+<!--skill-flavor:host-availability-extra:start-->
+
+<!--skill-flavor:host-availability-extra:end-->
+
 ## When to Use This Skill
 
 - A customer wants a UiPath product (Agents, Autopilot, a feature listed by `list-product-configs`) to use an LLM endpoint that no built-in BYO connector covers.

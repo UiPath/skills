@@ -148,6 +148,41 @@
       "login tenant set": 1
     }
   },
+  "uipath-byo-llm-connector": {
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "login",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra) says this skill runs in a terminal on the user's machine (`uip login`, curl, jq) and tells the agent not to run its steps here."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "login refresh",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra) says this skill runs in a terminal on the user's machine (`uip login`, curl, jq) and tells the agent not to run its steps here."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "login status",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra) says this skill runs in a terminal on the user's machine (`uip login`, curl, jq) and tells the agent not to run its steps here."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "update",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra) says this skill runs in a terminal on the user's machine (`uip login`, curl, jq) and tells the agent not to run its steps here."
+      },
+      {
+        "file": "references/connections-guide.md",
+        "command": "login",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra) says this skill runs in a terminal on the user's machine (`uip login`, curl, jq) and tells the agent not to run its steps here."
+      },
+      {
+        "file": "references/connections-guide.md",
+        "command": "login refresh",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra) says this skill runs in a terminal on the user's machine (`uip login`, curl, jq) and tells the agent not to run its steps here."
+      }
+    ],
+    "ceiling": {}
+  },
   "uipath-coded-apps": {
     "allow": [],
     "ceiling": {
