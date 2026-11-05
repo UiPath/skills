@@ -35,6 +35,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+## Document extraction
+
+The values come from the tenant: `uip ixp deployments list <PROJECT>` gives model (`DeploymentName`), deployment (`DeploymentTitle`) and `folderKey`, and `uip solution resources list --kind IxpDeployment --source remote` gives `deploymentKey`. `sdd resolve` does not resolve them. `check` reports a blank model or a missing `folderKey` (the task would pack to a no-op) and a missing `file`. Compile refuses a missing `deploymentKey`.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
