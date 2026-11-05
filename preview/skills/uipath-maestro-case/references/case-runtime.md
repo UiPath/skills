@@ -53,13 +53,15 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:case.docextraction.check -->
 - `check` reports a blank model (`DOCUMENT_EXTRACTION_NO_MODEL`), a blank
-  deployment (`DOCUMENT_EXTRACTION_NO_DEPLOYMENT`), a missing `folderKey`,
-  and a missing `file`. Compile refuses a missing `deploymentKey`.
+  deployment (`DOCUMENT_EXTRACTION_NO_DEPLOYMENT`), a blank folder
+  (`DOCUMENT_EXTRACTION_NO_FOLDER`), a missing `folderKey`, and a missing
+  `file`. Compile refuses a missing `deploymentKey`.
 
 <!-- RULE:case.docextraction.legacy -->
-- Decompile refuses the older flat document-extraction format by name
-  (`DOCUMENT_EXTRACTION_LEGACY_SHAPE`). Re-save the task in the Designer, or
-  author `.documentExtraction(...)` from scratch.
+- The older flat document-extraction format is carried through: decompile
+  emits `.savedDocumentExtraction()`, compile writes it back byte for byte.
+  `check` warns `DOCUMENT_EXTRACTION_OLDER_SHAPE`, suggesting a Designer
+  re-save to the nested format.
 
 <!-- RULE:case.docextraction.floor -->
 - `uip maestro case validate` needs uip 1.206.0+ for document-extraction
