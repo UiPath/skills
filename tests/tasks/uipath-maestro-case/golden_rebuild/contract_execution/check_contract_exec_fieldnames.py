@@ -26,7 +26,7 @@ own ``fixtures/sdd.md``:
   - the webhook response output's JSON-schema property keys include every
     SDD-declared event output field, with no re-cased duplicate of one (this
     is where a PascalCasing ``--output json`` serializer leaks its key casing
-    into the artifact); extra keys the connector spec adds are allowed
+    into the artifact); extra keys from the connector's event metadata are allowed
   - every SDD-declared dotted access is actually present, so the checker
     cannot pass by the build simply dropping the expressions
 """
@@ -257,9 +257,9 @@ def _check_event_schema(plan: dict, fixture: dict):
         _fail("the webhook event output schema declares no properties")
     actual = set(properties)
     expected = fixture["event_fields"]
-    # The connector spec may add event fields beyond the SDD's (newer CLIs emit
-    # extra webhook keys). Those are fine; what must not happen is an SDD key
-    # missing or present only in another casing.
+    # The webhook connector's event metadata may list fields the SDD does not
+    # (for example request_query_parameters). Those are fine; what must not
+    # happen is an SDD key missing or present only in another casing.
     variants = {
         key for key in actual - expected if any(_norm(key) == _norm(name) for name in expected)
     }
