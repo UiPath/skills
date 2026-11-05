@@ -136,6 +136,11 @@
 /skills/uipath-maestro-flow/references/batch-transform.md @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
 
+# IXP team — Extract document node tasks + their _shared checkers
+/tests/tasks/uipath-maestro-flow/extract-document/ @Chibionos @samuelfekete @richsilv @misupantea-uipath @cezara98t @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/_shared/check_extract_document.py @Chibionos @samuelfekete @richsilv @misupantea-uipath @cezara98t @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/_shared/test_check_extract_document.py @Chibionos @samuelfekete @richsilv @misupantea-uipath @cezara98t @UiPath/maestro-cli-team
+
 # Maestro BPMN skill
 /skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
