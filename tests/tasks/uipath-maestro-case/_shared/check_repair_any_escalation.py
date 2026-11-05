@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""T4 — repair the FE `"any"` escalation sentinel into a plain breach rule.
+"""T4 — repair an SLA lane entry whose status contradicts the lane's stated intent.
 
-The staged caseplan is exactly one defect away from valid: its lane entry carries
-``escalationId: "any"``, which the Case Designer accepts but released ``validate`` rejects
-("The escalation referenced by rule ... no longer exists"). The fix is to drop the key —
-a breach rule references the SLA alone — not to invent an escalation to satisfy it.
+The staged caseplan's Escalation Review lane is meant to be entered when the case SLA
+**breaches** (the prompt says so, and so does the lane's description), but its
+``sla-status-change`` entry carries ``escalationId: "any"``. That is the Case Designer's at-risk
+wildcard: a valid rule that fires on every at-risk escalation of the SLA (here at 80%), not on
+the breach. ``validate`` accepts it, so a green validate proves nothing.
+
+The fix is to drop the key: a breach rule references the SLA alone (an absent
+``escalationId`` is the persisted representation of Breached). Repointing it at a concrete
+escalation, or inventing one, keeps the lane at-risk and is graded wrong.
 """
 
 import os
@@ -36,7 +41,7 @@ def main() -> None:
         where = [(label_of(n), c.get("displayName")) for n, c, _ in hits]
         fail(
             f"the staged case had exactly 1 sla-status-change entry; found {len(hits)}: {where}. "
-            "The repair removes a bad reference, it does not restructure the lane."
+            "The repair changes that rule's status; it does not restructure the lane."
         )
     lane, cond, rule = hits[0]
     where = f"{label_of(lane)} entry condition {cond.get('displayName')!r}"
@@ -44,13 +49,13 @@ def main() -> None:
     assert_sla_resolves(plan, rule, where, owner="root")
     assert_breach_shape(rule, where)
 
-    # The cheap wrong fix is inventing an escalation so "any" resolves to something.
+    # Inventing an escalation for the rule to point at keeps it at-risk; the lane is a breach lane.
     names = {e["displayName"] for e in escalation_map(plan).values()}
     invented = names - BASELINE_ESCALATIONS
     if invented:
         fail(
-            f"new escalation(s) {sorted(invented)} were invented to satisfy the reference. "
-            "A breach rule needs no escalation — drop the escalationId instead."
+            f"new escalation(s) {sorted(invented)} were added for the rule to point at. "
+            "A breach rule needs no escalation; drop the escalationId instead."
         )
 
     print(f"PASS: {where} repaired to a plain breach rule on {rule['slaId']}; no escalation invented")

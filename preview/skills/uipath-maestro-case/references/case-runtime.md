@@ -71,13 +71,15 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:case.sla.escalation-absent -->
 - An ABSENT `escalation` is the persisted representation of Breached — not a
-  missing field. So when a plan carries a dangling escalation reference (a
-  hand-written `"any"` sentinel, or an id no escalation defines), the repair is
-  to drop the reference and leave a plain breach rule on the SLA. Do not invent
-  an escalation to make the reference resolve: that silently converts a breach
-  response into an at-risk one, which fires at a different time. Only an at-risk
-  response needs a concrete escalation, and it must be one declared on that same
-  SLA.
+  missing field. Any escalation reference makes the rule at-risk, including the
+  Case Designer's `escalationId: "any"`: a valid wildcard that fires on every
+  at-risk escalation of that SLA (in SDK source, `escalation: ANY_ESCALATION`).
+  Do not author the wildcard; name the escalation the requirement means.
+  Repair an existing rule by the requirement's status, never by what the plan
+  already carries: a breach response drops the reference and leaves a plain
+  breach rule on the SLA; repointing it at, or inventing, an escalation keeps it
+  at-risk, which fires at a different time. Only an at-risk response needs a
+  concrete escalation, and it must be one declared on that same SLA.
 
 <!-- RULE:case.sla.lane-exit -->
 - A secondary lane's exit type is a routing decision, and the two shapes are not
