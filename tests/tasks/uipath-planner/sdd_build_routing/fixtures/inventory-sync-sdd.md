@@ -58,4 +58,4 @@ and updates the ERP per SKU.
 
 ## 18. Next Steps
 
-Load `uipath-planner` with this SDD path to derive the implementation task list.
+Load `uipath-planner` with this SDD path to build it.

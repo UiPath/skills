@@ -3,8 +3,8 @@
 //
 //   node sdd-fingerprint.mjs <sdd.md>
 //
-// sha256 of the SDD with LF line endings and without its `Tasks file` and `Genome` handoff rows,
-// which `plan` and `author` write after the SDD is agreed. uipath-build-from-genome's checker
+// sha256 of the SDD with LF line endings and without its `Genome` handoff row, which `author` writes
+// after the SDD is agreed, or an older SDD's `Tasks file` row. uipath-build-from-genome's checker
 // computes the same value to tell whether the SDD changed since the genome was written.
 //
 // Exit codes: 0 success · 1 usage error or unreadable file

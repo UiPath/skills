@@ -8,7 +8,7 @@ These add to the Critical Rules in [SKILL.md](../../SKILL.md).
 
 1. **Select scope before designing architecture — and gate every product by platform constraints.** Single product (RPA Process/Library/Test Auto, Maestro Flow, Maestro BPMN, Case, Agents, Coded Apps, API Workflows) vs multi-project Solution determines the template(s) and project structure. Use the [Product Selection Guide](../shared/product-selection-guide.md): Constraint Gate → Level 1 → 1.5 (RPA sub-type) → 1.75 (Solution composition) → 2.5 (project decomposition) — 1.75 and 2.5 in [solution-composition-guide.md](solution-composition-guide.md). The delivery model (Cloud / Automation Suite / standalone — asked at `design` entry) blocks unavailable products via [platform-availability-guide.md](../shared/platform-availability-guide.md); user-excluded products are never re-offered.
 <!--skill-flavor:sdd-no-task-lists:start-->
-2. **The SDD is architecture only — no task lists.** `design` produces the SDD (Project Structure, Data Definitions, Testing Strategy, …). Task derivation is `plan`'s job. Never put Task 1 / Task N templates or *implementation* tasks created with the task-list tool in the SDD. End the SDD with a `## Next Steps` section. (Progress-tracking tasks created with the task-list tool are a separate, allowed use.)
+2. **The SDD is architecture only — no task lists.** `design` produces the SDD (Project Structure, Data Definitions, Testing Strategy, …). The implementation input is the genome `author` writes from it. Never put Task 1 / Task N templates or *implementation* tasks created with the task-list tool in the SDD. End the SDD with a `## Next Steps` section. (Progress-tracking tasks created with the task-list tool are a separate, allowed use.)
 <!--skill-flavor:sdd-no-task-lists:end-->
 3. **Write the `## Planner Handoff` header AND the `<!-- planner-handoff:v1 -->` marker into every SDD.** They are the load-bearing detection contract — § Choosing the Verb detects either signal, so keep both. The fields and their rules: [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 2.
 4. **Honour the template section structure as a hard superset contract.** Write single-product scope to `<PROCESS_NAME_KEBAB>-sdd.md`; write Solution scope to a `<SOLUTION_NAME_KEBAB>-solution-sdd.md` overview plus one `<PROJECT_NAME_KEBAB>-sdd.md` per project. If the user specifies an output path for the SDD, use it instead of these defaults. After writing, diff the generated H2/H3 headings against the template TOC — the generated set MUST be a superset. A missing template-required H2/H3 is an SDD defect, not an `[SME REVIEW]` item — regenerate it.
@@ -18,7 +18,7 @@ These add to the Critical Rules in [SKILL.md](../../SKILL.md).
 <!--skill-flavor:solution-terminal-artifact:end-->
 7. **Design resolves identities only.** A resource the design names is looked up (the Level 0 estate sweep, the tenant library search) and adopted when one match is confident; anything ambiguous or missing is written as the intended name with an `[SME REVIEW]` item. Schema discovery, project scaffolding and create-on-missing are build concerns, recorded as decisions for the build — `design` never runs them.
 8. **Every `ready` SDD gets its genome on the next turn, a design-only request included** — except a design a build skill handed over, which goes back to that skill. The sequence and every condition on it: [sdd-writing-guide.md](sdd-writing-guide.md) § Step 3.
-9. **Write the SDD skeleton first and flip `ready` last; the SDD write is a turn boundary.** The skeleton goes to disk before any other Phase 3 section, so a turn that ends early still leaves a gradeable file; `[SME REVIEW]` items gate the `ready` flip, never the skeleton write. Procedure: [sdd-writing-guide.md](sdd-writing-guide.md) Step 0; what the next turns run: its § Step 3. Scope and UI answers resolved in `design` flow forward to `plan` through the SDD.
+9. **Write the SDD skeleton first and flip `ready` last; the SDD write is a turn boundary.** The skeleton goes to disk before any other Phase 3 section, so a turn that ends early still leaves a gradeable file; `[SME REVIEW]` items gate the `ready` flip, never the skeleton write. Procedure: [sdd-writing-guide.md](sdd-writing-guide.md) Step 0; what the next turns run: its § Step 3. Scope and UI answers resolved in `design` flow forward to the genome through the SDD.
 10. **Keep the source's words.** Roles, domain nouns, stage and step labels, decision outcomes and system names are written exactly as the source writes them (`CFO`, `Vendor`, `Needs Info`, `Workday`) — never homogenised to a synonym (`Approver`, `Supplier`, `the HR system`). Only mechanical derivations change a name: PascalCase project and case names, kebab-case file names, camelCase variables.
 11. **When sources conflict, the higher one wins:** platform constraints (the delivery model, a product's schema) → a regulatory or compliance constraint the source states or implies → tenant evidence (a deployed resource matching the described work) → what the user said → the source documents → the template's and product guide's defaults. A lower source overridden is a Decisions Made row (autonomous) or a line of the Step 5 review.
 12. **A product the user names is the primary**, unless the Constraint Gate blocks it or Level 0 finds the work should not be automated: Level 1 confirms it instead of selecting, and Levels 1.5–3 still run inside it.
@@ -52,7 +52,7 @@ These add to the Critical Rules in [SKILL.md](../../SKILL.md).
 
 1. **Copying the PDD structure into the SDD.** The SDD reorganizes content for implementation — it does not mirror the PDD's document flow.
 2. **Defaulting to RPA Process when the need profile points elsewhere.** Use the Product Selection Guide decision tree on the synthesized need, not keywords: genuine judgment/reasoning → Agents; stages/SLA/approval lifecycle → Case Management ("AI" over a rule-expressible decision is still RPA). Forcing single-product scope when the PDD describes multiple coordinated projects is the same mistake — offer Solution.
-3. **Renaming the `## Planner Handoff` heading or stripping the `<!-- planner-handoff:v1 -->` marker.** Either signal alone is sufficient for detection, but both should remain — removing both breaks `plan` detection silently.
+3. **Renaming the `## Planner Handoff` heading or stripping the `<!-- planner-handoff:v1 -->` marker.** Either signal alone is sufficient for detection, but both should remain — removing both breaks SDD detection silently.
 
 ## Phase 1 — PDD Analysis & Scope Selection
 
@@ -71,7 +71,7 @@ Before reading the PDD in full, search it for platform signals ("Automation Suit
 
 **Skip Question 1 symmetrically** when the request already states the execution mode ("autonomous", "don't pause for checkpoints", "interactive review"). When both questions are resolved from context, skip the structured prompt entirely and record both values.
 
-Record both choices — they go into the SDD's `## Planner Handoff` header ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2) and propagate to `plan` (task derivation): execution mode drives task review behavior; delivery model is passed to specialists as a platform constraint.
+Record both choices — they go into the SDD's `## Planner Handoff` header ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2) and propagate to the genome (`author` from the SDD): execution mode decides whether the genome gets follow-up rounds; the delivery model holds for every component the genome names.
 
 In **Autonomous** mode:
 - Skip Phase 1 summary presentation (generate internally, do not wait for confirmation) — the `## Recommended Scope` block still persists into the SDD ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 3)
@@ -102,7 +102,7 @@ The genome task stays `pending` when the SDD write ends the turn; the genome tur
 
 Mark each task `in_progress` when its step starts and `completed` when it ends. Creating and updating them is best-effort and never blocks the SDD: if a task-list call fails, warn the user once, continue without progress tasks and never retry. The skeleton write is task 4, never the last task ([sdd-writing-guide.md](sdd-writing-guide.md#step-0-write-the-sdd-skeleton-to-disk--hard-gate) Step 0).
 
-These tasks track SDD generation. Implementation tasks are owned by `plan` (task derivation), which runs after `design` writes the SDD and its genome — do NOT create implementation tasks here.
+These tasks track SDD generation. The genome `author` writes after the SDD is the implementation input — do NOT create implementation tasks here.
 <!--skill-flavor:progress-tasks:end-->
 
 ### Step 1: Read the PDD
@@ -246,7 +246,7 @@ Load from the [Template Mapping table](scope-recommendation-guide.md#template-ma
 
 Generate the sections the template's `Phase 2 sections:` line names (the Case template: Sections 1–4). What they hinge on:
 
-- **RPA:** §10 applies Level 2.5 Part A ([rpa-product-guide.md](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals)) — Single vs Master Project, sub-projects, queue schema; §11 Project Structure is the most load-bearing section — `plan` derives tasks from it; §13 applies Level 2 ([rpa-product-guide.md](rpa-product-guide.md#level-2--authoring-mode)); §14 infers NuGet packages from §9 and the process steps.
+- **RPA:** §10 applies Level 2.5 Part A ([rpa-product-guide.md](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals)) — Single vs Master Project, sub-projects, queue schema; §11 Project Structure is the most load-bearing section — the genome's components come from it; §13 applies Level 2 ([rpa-product-guide.md](rpa-product-guide.md#level-2--authoring-mode)); §14 infers NuGet packages from §9 and the process steps.
 - **Maestro BPMN:** §5 Gateways carries the decision tables and the reasoning list ([Business Rules Guide](business-rules-guide.md)).
 - **Agents:** §9 Project Structure states Coded vs Low-code. **API Workflows:** §4 Execution Flow is high-level steps, no JavaScript.
 - **Case Management:** Sections 1–4 per [case-product-guide.md](case-product-guide.md) and [case-data-and-time-guide.md](case-data-and-time-guide.md). Headings render in the template's long form (`## Section 1: Case Definition`, …): `uipath-maestro-case` parses the heading TEXT verbatim, and `§N` is notation in planner documents only.

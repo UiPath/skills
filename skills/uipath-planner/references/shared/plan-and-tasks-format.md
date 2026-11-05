@@ -1,11 +1,6 @@
 # Plan and Tasks Format
 
-Format spec for the planner's two output artifacts:
-
-- `<feature>.md` — `decompose` plan file (combines lightweight architecture notes + task list)
-- `<process>-tasks.md` — `plan` task file (task list only; architecture lives in the SDD)
-
-Both share the same task row schema. The difference is the prelude — `<feature>.md` carries an architecture summary; `<process>-tasks.md` does not (the SDD is the architecture).
+Format spec for the `decompose` plan file, `<feature>.md`: lightweight architecture notes plus the task list.
 
 ## Header schema
 
@@ -51,31 +46,9 @@ In `interactive` mode this section is optional — the user is available to reso
 "Scope feels large", "many tool calls used", "natural pause point", and "partial result looks usable" are NOT stop conditions. If it is not in this list, the executor continues.>
 ```
 
-### `plan` (`<process>-tasks.md`)
-
-```markdown
-# <Process Name> — Implementation Tasks
-
-**Source SDD:** `<process>-sdd.md`
-**SDD scope:** <single-product / solution>
-**Execution autonomy:** <autonomous / interactive>
-**Delivery model:** <cloud / automation-suite <version> / standalone / unspecified>
-**App type:** <web / desktop / citrix / N/A>
-**App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
-**UI targeting:** <agent-builds-you-review / user-indicates / N/A>
-**Generation date:** <YYYY-MM-DD>
-
-> Tasks below are derived from the SDD. The SDD remains the architectural source of truth.
-> When `Execution autonomy: interactive`, the planner enters plan mode for review before execution.
-
-## Stop conditions
-
-<Only when `Execution autonomy` is `autonomous`: the hard blockers that interrupt execution, as in the `decompose` header above.>
-```
-
 ## Task row schema
 
-Every task — in both file types — uses this exact structure. The fields below are load-bearing for the regenerate-with-preservation flow (see "Regenerate logic" below).
+Every task uses this exact structure. The fields below are load-bearing for the regenerate-with-preservation flow (see "Regenerate logic" below).
 
 ```markdown
 ## Task T<N> — <skill-name> — <short description>
@@ -86,8 +59,8 @@ Every task — in both file types — uses this exact structure. The fields belo
 **Blocked by:** <T1, T2 / none>
 **Skill prompt:**
 
-> <Imperative prompt that activates the specialist skill. Include exact SDD section
->  references when in `plan`. End with the anti-hallucination rule.>
+> <Imperative prompt that activates the specialist skill. End with the
+>  anti-hallucination rule.>
 
 - [ ] <concrete sub-step: action + file paths / activity names / commands>
 - [ ] <concrete sub-step: expected outcome or verification>
@@ -100,7 +73,7 @@ Every task — in both file types — uses this exact structure. The fields belo
 |---|---|---|
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
 <!--skill-flavor:task-row-tool-fields:start-->
-| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`, `uipath-build-from-genome` (Pattern 7 only: the build of a genome). The planner names this skill in the live task it creates with the task-list tool. |
+| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The planner names this skill in the live task it creates with the task-list tool. |
 | `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its task status update flips the checkbox; `human` only when the user manually edits the file. |
@@ -112,14 +85,10 @@ Every task — in both file types — uses this exact structure. The fields belo
 
 ## Anti-hallucination rule (mandatory in every Skill prompt)
 
-Append this exact line to every `Skill prompt` block, with the SDD path filled in for `plan`:
-
-```
-Use values, mappings, and structure exactly as documented in the SDD at <sdd-path>. Do not infer or guess.
-```
+Append this exact line to every `Skill prompt` block:
 
 <!--skill-flavor:decompose-plan-reference:start-->
-For `decompose`, reference the plan file **by path** — never "this plan" (prompts are copied verbatim into the live tasks):
+Reference the plan file **by path** — never "this plan" (prompts are copied verbatim into the live tasks):
 
 ```
 Use values, mappings, and structure exactly as documented in the plan at <PLAN_FILE_PATH>. Do not infer or guess.
@@ -128,7 +97,7 @@ Use values, mappings, and structure exactly as documented in the plan at <PLAN_F
 
 ## Testing task is mandatory
 
-Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-agents`, `uipath-coded-apps`, `uipath-api-workflow`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops). Under Pattern 7 the Testing task is the `uipath-build-from-genome` testing task of [multi-skill-patterns-guide.md](multi-skill-patterns-guide.md) Pattern 7 step 2, not one per skill the genome names, and the validation tasks below are its build's own acceptance criteria, not tasks of their own. A header field whose question was skipped (the UI answers under Pattern 7) reads `N/A`.
+Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-agents`, `uipath-coded-apps`, `uipath-api-workflow`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops). A header field whose question was skipped reads `N/A`.
 
 Plans that build a **custom connector** (`uipath-connector-builder`), an **IXP model** (`uipath-ixp`), a **decision table** (`uipath-rules`) or a **Coded Function** (`uipath-functions`) also get a validation task per artifact — connector validate/import check, IXP model metrics review, rule or function validate — placed immediately after that build task and **before** any consumer's build task.
 
@@ -151,31 +120,31 @@ Plans that build a **custom connector** (`uipath-connector-builder`), an **IXP m
 
 ## Regenerate logic
 
-When the user picks "Regenerate from the SDD" on the planner's resume question, preserve completed work via identity matching.
+When the user picks "Regenerate from the current request" on the resume question, preserve completed work via identity matching.
 
 ### Algorithm
 
 ```
-1. Read old <process>-tasks.md → list of (identity_tuple, status, completed_by, completed_date)
-2. Parse the (possibly updated) SDD → list of new tasks with identities
+1. Read old plan file → list of (identity_tuple, status, completed_by, completed_date)
+2. Parse the (possibly updated) request → list of new tasks with identities
 3. For each new task:
    - Match against old tasks by identity_tuple
    - matched & old status == [x] completed → preserve as completed (carry over Completed line)
    - matched & old status == [~] in_progress → preserve as in_progress
    - matched & old status == [ ] pending → keep pending (no change)
-   - unmatched (new in SDD) → pending
-4. Old tasks unmatched in new SDD → write to "Archive" footer (see below)
+   - unmatched (new in request) → pending
+4. Old tasks unmatched in new request → write to "Archive" footer (see below)
 5. Renumber tasks T1..TN in the new order
-6. Write the new <process>-tasks.md
+6. Write the new plan file
 7. Show user a summary diff (preserved counts, added, archived)
 <!--skill-flavor:regenerate-emit:start-->
-8. Create the live tasks with the task-list tool per the new tasks.md
+8. Create the live tasks with the task-list tool per the new plan file
 <!--skill-flavor:regenerate-emit:end-->
 ```
 
 ### Archive footer format
 
-When the new SDD removes tasks that existed in the old plan, append them to a section at the bottom of the file:
+When the new request removes tasks that existed in the old plan, append them to a section at the bottom of the file:
 
 ```markdown
 ---
@@ -186,7 +155,7 @@ When the new SDD removes tasks that existed in the old plan, append them to a se
 |---|---|---|---|
 | T7 | `rpa:VendorInvoice_OldReporting:Main.xaml` | [x] completed | <YYYY-MM-DD> |
 
-> These tasks existed in a previous version of this file but are no longer in the SDD.
+> These tasks existed in a previous version of this file but are no longer in the request.
 > Completed work is not deleted — historical record only.
 ```
 
@@ -195,14 +164,14 @@ When the new SDD removes tasks that existed in the old plan, append them to a se
 After regeneration, output a one-block summary:
 
 ```
-Regenerated <process>-tasks.md from SDD.
+Regenerated <feature>.md from the request.
 - 4 tasks preserved as completed
 - 1 task preserved as in_progress
 - 3 tasks unchanged pending
-- 2 tasks added (new in SDD)
-- 1 task archived (removed from SDD)
-- SDD content may have changed since completed tasks ran. Sanity-check those
-  implementations against the current SDD before continuing.
+- 2 tasks added (new in request)
+- 1 task archived (removed from request)
+- Requirements may have changed since completed tasks ran. Sanity-check those
+  implementations against the current request before continuing.
 ```
 
 <!--skill-flavor:live-tasks-and-plan-mode:start-->
@@ -221,15 +190,12 @@ The planner creates live tasks with the task-list tool that mirror the file. Map
 | `Blocked by:` | blocked-by links (after all tasks are created) |
 | `Completed:` | metadata `completed_by`, `completed_date` |
 
-**Task-list calls are best-effort:** if one fails, log a single warning, continue without live tasks, and do not retry. The markdown plan / tasks file is the authoritative deliverable.
+**Task-list calls are best-effort:** if one fails, log a single warning, continue without live tasks, and do not retry. The markdown plan file is the authoritative deliverable.
 
 ## Plan-mode integration
 
-Both files are valid plan-mode content.
-
-- **`decompose` explore-first:** enter plan mode with the full `<feature>.md` content. User approves → exit plan mode → create the live tasks with the task-list tool.
-- **`plan` interactive:** enter plan mode with the full `<process>-tasks.md` content. User approves → exit plan mode → create the live tasks with the task-list tool.
-- **`decompose` simultaneous / `plan` autonomous:** skip plan mode. Emit the file as text, then immediately create the live tasks with the task-list tool.
+- **Explore-first:** enter plan mode with the full `<feature>.md` content. User approves → exit plan mode → create the live tasks with the task-list tool.
+- **Simultaneous:** skip plan mode. Emit the file as text, then immediately create the live tasks with the task-list tool.
 <!--skill-flavor:live-tasks-and-plan-mode:end-->
 
 ## Quality rules (applied during self-review before saving)
@@ -245,4 +211,4 @@ Both files are valid plan-mode content.
 9. **No specialist-internal flow leakage.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe the skill's internal flow (target-configuration, OR registration, XAML authoring pipelines, auth flows, testing procedures). Each specialist's own docs own those details.
 10. **Autonomous plans MUST include a populated Stop conditions section.** Without concrete stop items, downstream specialists have no way to distinguish "keep going" from "ask the user" and will default to asking — defeating autonomous mode. Populate with hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources); never leave a generic placeholder.
 11. **Authoring surfaces are never plan fields.** Studio, Studio Web, VS Code are presentation layers — no plan-header field, task condition, or routing decision references them; each specialist owns its surface. A user-stated surface preference travels as ordinary requirement prose inside the relevant task prompt.
-12. **Coverage.** Every requirement of the request or the SDD appears in at least one task.
+12. **Coverage.** Every requirement of the request appears in at least one task.

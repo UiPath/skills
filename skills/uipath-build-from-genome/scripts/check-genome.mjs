@@ -688,7 +688,7 @@ function loadInventory(path, what) {
 // the preamble marker, matched anywhere in the file as checkCommon matches it; the first match decides the level
 const MARKER = /UIPATH-AUTOMATION-GENOME:\s*(component|process)\b/i;
 const DESIGNED_IN = /^>\s*Designed in:\s*\[[^\]]*\]\(([^)]+)\)(?:[^\n]*?\bsdd-sha256\s+([0-9a-f]{64})\b)?/m;
-// the SDD's `Tasks file` and `Genome` handoff rows are written after the genome's fingerprint; uipath-planner's
+// the SDD's `Genome` handoff row (and an older SDD's `Tasks file` row) is written after the genome's fingerprint; uipath-planner's
 // sdd-fingerprint.mjs computes the same value
 const LATE_ROWS = /^\|\s*\*\*(Tasks file|Genome)\*\*\s*\|.*\n?/gm;
 
