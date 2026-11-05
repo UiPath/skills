@@ -28,7 +28,7 @@ These rows add to the rows of [author-guide.md § Read Plan](author-guide.md) th
    - **A single-product SDD:** `<PROCESS_NAME_KEBAB>-genome.md` beside the SDD.
    - **A solution SDD** (a root `<SOLUTION_NAME_KEBAB>-solution-sdd.md` and its child SDDs): ONE genome for the whole solution, named after the root — `<SOLUTION_NAME_KEBAB>-genome.md` beside the root SDD. It is a process genome with its component genomes in `<SOLUTION_NAME_KEBAB>-genome/` when Step 2 counts two or more projects, and a component genome otherwise ([genome-format-guide.md § File Naming and Location](../shared/genome-format-guide.md)). Never write one genome per child SDD.
 
-   Write the `Designed in:` line, linking the SDD the genome is named after and carrying its fingerprint ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)), and record the genome as `| **Genome** | <path> |` after `Tasks file` in that SDD's Planner Handoff — for a solution, the ROOT SDD's handoff only; the child SDDs are not edited.
+   Write the `Designed in:` line, linking the SDD the genome is named after and carrying its fingerprint ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)), and record the genome as `| **Genome** | <path> |`, the last row of that SDD's Planner Handoff table — for a solution, the ROOT SDD's handoff only; the child SDDs are not edited.
 8. **The genome write is a turn boundary.** What follows it: [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Step 3 item 4 when `design` ran; otherwise [SKILL.md](../../SKILL.md) § Chaining.
 
 Continue at [author-guide.md](author-guide.md) Step 2.

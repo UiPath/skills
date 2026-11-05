@@ -29,7 +29,7 @@ Rules:
 
 ## Level 3 — Capability Add-ons
 
-These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section. `plan` (task derivation) reads the flags from the SDD when it derives the task list and routes the work to the correct skill.
+These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section. The genome reads the flags from the SDD and routes the work to the correct skill.
 
 ### HITL (Human-in-the-Loop)
 

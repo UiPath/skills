@@ -117,4 +117,4 @@ Write the file named by the slug rule ([genome-format-guide.md § File Naming an
 
 ## Step 9 — Hand the genome to the build
 
-When the request asks for a build ("build", "implement", "create the automation"), hand the written genome path to `uipath-genome` on the next turn, once the user's edits are in; an unattended run hands it over straight away. `author` never writes a workflow file. When `uipath-genome` is not installed, stop after Step 8 and say that the build needs it. A genome written from an SDD inside `design` reaches the build through `plan` instead ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Step 3).
+When the request asks for a build ("build", "implement", "create the automation"), hand the written genome path to `uipath-genome` on the next turn, once the user's edits are in; an unattended run hands it over straight away. `author` never writes a workflow file. When `uipath-genome` is not installed, stop after Step 8 and say that the build needs it. A genome written from an SDD inside `design` follows [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Step 3 item 4 instead.

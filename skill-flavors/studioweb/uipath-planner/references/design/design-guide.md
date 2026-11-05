@@ -3,11 +3,11 @@ Studio Web has no task-creation tool, so `design` creates no progress tasks: ski
 
 **The disk write is never last.** [Phase 3 Step 0](sdd-writing-guide.md#step-0-write-the-sdd-skeleton-to-disk--hard-gate) is a hard gate, so the SDD skeleton must be on disk before you generate a single Phase 3 section. Do NOT defer every write to the end. A long autonomous turn can be hard-killed by the per-turn watchdog mid-generation; a run that defers the only deliverable to its final write loses everything, while a skeleton already on disk leaves a detectable, gradeable `Status: draft` SDD.
 
-Implementation tasks are owned by `plan` (task derivation), which runs after `design` writes the SDD and its genome (the genome is written from the `ready` SDD on the next turn) — do NOT plan implementation tasks here.
+The genome `author` writes from the `ready` SDD on the next turn is the implementation input — do NOT plan implementation tasks here.
 <!--skill-flavor:progress-tasks:end-->
 
 <!--skill-flavor:sdd-no-task-lists:start-->
-2. **The SDD is architecture only — no task lists.** `design` produces the SDD (Project Structure, Data Definitions, Testing Strategy, …). Task derivation is `plan`'s job. Never put Task 1 / Task N templates or implementation tasks in the SDD. End the SDD with a `## Next Steps` section.
+2. **The SDD is architecture only — no task lists.** `design` produces the SDD (Project Structure, Data Definitions, Testing Strategy, …). The implementation input is the genome `author` writes from it. Never put Task 1 / Task N templates or implementation tasks in the SDD. End the SDD with a `## Next Steps` section.
 <!--skill-flavor:sdd-no-task-lists:end-->
 
 <!--skill-flavor:solution-terminal-artifact:start-->

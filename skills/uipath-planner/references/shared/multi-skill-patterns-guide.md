@@ -4,7 +4,7 @@ Which specialist owns what, and the common request shapes that span more than on
 
 ## Skill capability map — which specialist owns what
 
-What each specialist owns, for the plans `plan` and `decompose` write; genomes take their Build With names from [skill-mapping-guide.md](skill-mapping-guide.md). **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
+What each specialist owns, for the plans `decompose` writes; genomes take their Build With names from [skill-mapping-guide.md](skill-mapping-guide.md). **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
 
 | Skill | What it owns | Handles auth? | Handles deploy? |
 |---|---|---|---|
@@ -57,7 +57,7 @@ A request is **single-skill** when:
 
 `uipath-rpa` does not deploy. The deploy skill follows the project, never a default: outside a solution → `uipath-platform`; inside a solution → `uipath-solution`.
 
-> **Attended re-auth handoff is inside the RPA build step, not a separate skill.** When the SDD carries a §9 *Interactive Authentication / Re-auth Handoff* subsection (human-only login — hardware token, smart card, biometric), the `uipath-rpa` build task implements the pause/handoff/state-verified-resume per [attended-reauth-pattern-guide.md](../design/attended-reauth-pattern-guide.md). Pass the handoff contract as business intent; do not split it into its own task or describe the activities.
+> **Attended re-auth handoff is inside the RPA build step, not a separate skill.** When the request needs an attended re-auth handoff (human-only login — hardware token, smart card, biometric), the `uipath-rpa` build task implements the pause/handoff/state-verified-resume per [attended-reauth-pattern-guide.md](../design/attended-reauth-pattern-guide.md). Pass the handoff contract as business intent; do not split it into its own task or describe the activities.
 
 ## Pattern 2 — Flow with local resources
 
@@ -133,28 +133,9 @@ Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution
 2. uipath-mcp-servers → register the server with asset-substituted headers
 ```
 
-## Pattern 7 — Build from the genome
-
-**When it applies:** the SDD's Planner Handoff names a `Genome` that exists (which SDDs get one: [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Step 3) and `uipath-genome` is installed. When it is not installed, the genome stays on disk for a later build and the plan derives per-skill tasks from the SDD with the patterns below. The genome carries every component, its skill, its steps and its acceptance criteria; `uipath-genome` invokes each owning skill itself, in the genome's order, so the plan does not fan out per skill.
-
-```
-1. uipath-genome   → build the genome: configuration questions the SDD left open, then every component through its owning skill
-2. uipath-genome   → testing (mandatory): a verdict on every acceptance criterion, built as runnable spec tests
-```
-
-<!--skill-flavor:genome-build-deploy-step:start-->
-3. **Publish and deploy — only when asked, constraint-gated.** `uipath-genome` packs a process genome's solution itself as its last local gate (the packed `.uipx` is the terminal artefact of a Solution build — [design-guide.md](../design/design-guide.md) Verb Rule 6) and writes nothing to a tenant unasked. Add a `uipath-solution` → publish, deploy task only when the SDD's deployment section (RPA §16, Agent §6 Orchestrator Bindings, the Deployment Target section of the others) or the request carries a deploy hint; with no hint, drop it, as [plan-guide.md](../plan/plan-guide.md) Step 4 drops deploy steps. When Solutions (`.uipx`) are blocked for the handoff's `Delivery model` — standalone, Automation Suite older than 2.2510, or a user exclusion — the publish goes per package to Orchestrator through `uipath-platform` instead ([plan-guide.md](../plan/plan-guide.md) Step 4, deploy routing).
-<!--skill-flavor:genome-build-deploy-step:end-->
-
-The task prompt names the genome path and the SDD path. It carries no `Execution autonomy` line: that answer covered the design, and the builder asks its own configuration questions unless the build request says to take the defaults. It carries the delivery-model line and the SDD's open SME items as assumptions like any task. The plan asks no UI targeting batch for Pattern 7 ([plan-guide.md](../plan/plan-guide.md) Step 5): the builder asks its own. Shared resources the SDD lists (queues, assets, connections) are created by step 1 from the genome's platform dependencies — no separate tasks. A fix the build finds in the genome is a planner `edit`, then the build again — `uipath-genome` never edits the genome.
-
-## Pattern routing for `plan`
-
-Which pattern an SDD shape takes: [plan-guide.md](../plan/plan-guide.md) Step 4.
-
 ## Pattern composition for Solutions
 
-Solution-scope SDDs produce a unified project list. The planner walks the list and emits one pattern segment per project, then sequences them so that integrated components are built before their consumers:
+A multi-project plan emits one pattern segment per project, then sequences them so that integrated components are built before their consumers:
 
 1. Build all leaf resources (libraries, custom connectors, IXP models, Coded Functions, callable API Workflows, RPA processes used as agent tools).
 2. Run testing for each leaf.

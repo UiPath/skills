@@ -23,7 +23,6 @@ These add to the Critical Rules in [SKILL.md](../../SKILL.md).
 | Step 1 sub-step 4 | no filesystem signal or explicit naming decides the project type | [product-selection-guide.md](../shared/product-selection-guide.md) § Level 1 — Primary Scope Selection and § Maestro disambiguation |
 | Step 1 sub-step 5 | the delivery model must be resolved, or a delivery-gated product is a candidate | [platform-availability-guide.md](../shared/platform-availability-guide.md) § Resolving the Delivery Model; [product-selection-guide.md](../shared/product-selection-guide.md) § Constraint Gate; [platform-availability-guide.md](../shared/platform-availability-guide.md) |
 | Step 3 | a generation skill is in the plan | [product-selection-guide.md](../shared/product-selection-guide.md) § How selection works — four layers (Packaging) |
-| Step 3 | a question is asked | [plan-guide.md](../plan/plan-guide.md) § Step 5 (the question phrasing rules; the UI questions Step 4 asks when the plan includes UI automation) |
 | Step 5 | — | [plan-and-tasks-format.md](../shared/plan-and-tasks-format.md) whole |
 
 ## Step 1 — Detect before asking (no prompts)
@@ -86,7 +85,11 @@ If Step 1 resolves the request to **one project owned end-to-end by one speciali
 
 Bundle every unresolved question from the table below into **one** structured prompt. Do not ask one at a time; do not split across turns. If a question is already resolved (user's request, context doc, Step 1 detection), omit it from the batch. If **all** are resolved, do not ask at all and record the inferred values in the plan header with a one-line note in Decisions & Trade-offs.
 
-Question phrasing follows the rules in [plan-guide.md → Step 5](../plan/plan-guide.md#step-5--ui-element-targeting-only-when-9-contains-ui-applications): no internal jargon, no domain or app names in question text.
+Question phrasing rules (govern every user-facing question in `decompose`):
+
+1. **No internal jargon** (snapshot, hand-wire, AutomationId, selector candidate, autonomous capture, target configuration) — plain developer language only.
+2. **No domain or app names in question text** ("What kind of application", not "What kind of HR application") — domain lives in the plan header.
+3. **Never invent a third option for the Step 4 targeting question** — its two options are the contract.
 
 ### Skip-rules table (apply before building the batch)
 
@@ -153,7 +156,29 @@ Always use **VB.NET** for XAML workflows. Note this in the plan. Do not ask.
 
 ## Step 4 — UI element targeting (only when the plan includes UI automation)
 
-If the plan loads `uipath-rpa` for a workflow that clicks, types into, or reads elements in a desktop or browser app, ask the three UI questions in **one batched** structured prompt (see [plan-guide.md → Step 5](../plan/plan-guide.md#step-5--ui-element-targeting-only-when-9-contains-ui-applications) for the exact wording — same questions, same skip rules apply). Skip any question already resolved from the user's request.
+If the plan loads `uipath-rpa` for a workflow that clicks, types into, or reads elements in a desktop or browser app, ask the three UI questions in **one batched** structured prompt:
+
+> *Question 1 — App type:* What kind of application are we automating?
+> 1. Web / browser app
+> 2. Desktop app
+> 3. Citrix / remote session
+>
+> *Question 2 — Targeting approach:* How should I handle the UI elements?
+> 1. **I build it, you review it** *(recommended)*
+> 2. **You indicate each element** in Studio's Selector editor
+>
+> *Question 3 — App state:* Is the app open on your machine?
+> 1. **Yes, it's open and ready**
+> 2. **No, I'll open it first** — tell me when ready
+> 3. **Skip discovery for now** — scaffold with placeholder selectors
+
+Skip individual questions:
+
+- **Skip Q1** if the request or a context document names the app kind (web / desktop / Citrix).
+- **Skip Q2** only if the user explicitly asked for one targeting approach.
+- **Skip Q3** if the user already stated the app is running, not yet open, or asked to skip discovery.
+
+**Resumed session:** Q2 and Q3 are session-bound — re-ask them when the current conversation lacks their answers.
 
 Skip the entire batch for non-UI plans (pure data processing, API calls, agent-only, flow-only).
 
@@ -162,9 +187,9 @@ Record the answers in the plan header AND summarize them in the relevant task's 
 ## Step 5 — Write the plan
 
 <!--skill-flavor:write-plan-target:start-->
-Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → `decompose`](../shared/plan-and-tasks-format.md#decompose-featuremd). Plan body holds the task list with the same task row schema as `plan`.
+Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → `decompose`](../shared/plan-and-tasks-format.md#decompose-featuremd). Plan body holds the task list in the task row schema.
 
-**Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of the file written below (mirroring `plan`'s embedded SDD path). Live tasks copy prompts verbatim; a bare "this plan" leaves a resumed task with no way to find its values.
+**Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of the file written below. Live tasks copy prompts verbatim; a bare "this plan" leaves a resumed task with no way to find its values.
 <!--skill-flavor:write-plan-target:end-->
 
 ### Self-review before saving
@@ -197,7 +222,7 @@ If a plan file already exists at the target path, ask the user with a structured
 
 <!--skill-flavor:resume-choices:start-->
 Option 1: read existing plan → recreate the live tasks with the task-list tool, status preserved → done.
-Option 2: parse the request fresh, run identity-matching against the old file (preserve completed work), write the new plan, emit live tasks. Same regenerate algorithm as `plan` — see [plan-and-tasks-format.md → Regenerate logic](../shared/plan-and-tasks-format.md#regenerate-logic).
+Option 2: parse the request fresh, run identity-matching against the old file (preserve completed work), write the new plan, emit live tasks, per [plan-and-tasks-format.md → Regenerate logic](../shared/plan-and-tasks-format.md#regenerate-logic).
 <!--skill-flavor:resume-choices:end-->
 
 ## Step 6 — Present the plan

@@ -89,7 +89,7 @@ Confirm the outcome with the user, then write `<PROCESS_NAME_KEBAB>-findings.md`
 4. `## Revisit Triggers` — what would change the decision (volume growth, a stable API appearing, process stabilization)
 5. `## Action Required — SME Review Items` — only when open questions remain
 
-The note carries NO `## Planner Handoff` header and NO `planner-handoff:v1` marker — it is terminal: it must never route to `plan` and needs no Status field. `partial` does not produce a findings note — dropped steps are recorded in the SDD's Recommended Scope reasoning.
+The note carries NO `## Planner Handoff` header and NO `planner-handoff:v1` marker — it is terminal: it must never route to `author` as an SDD and needs no Status field. `partial` does not produce a findings note — dropped steps are recorded in the SDD's Recommended Scope reasoning.
 
 ## Level 1 — Primary Scope Selection
 
@@ -125,7 +125,7 @@ The note carries NO `## Planner Handoff` header and NO `planner-handoff:v1` mark
 | Coded App | Backend calls to published API Workflows / processes / agents — the app coordinates its own backend |
 | Agent | Tools planned at runtime (RPA, API Workflows, Functions, connectors) — ONLY under the coordinator exception below |
 
-Absorbed steps become integrated components (Level 3 + template inventory), not orchestration triggers. **Absorbed ≠ not built:** a consumed IXP model, custom connector, Library, or API Workflow can still be its own buildable project and plan task, ordered before its host — absorption is a runtime statement, not a build statement.
+Absorbed steps become integrated components (Level 3 + template inventory), not orchestration triggers. **Absorbed ≠ not built:** a consumed IXP model, custom connector, Library, or API Workflow can still be its own buildable project and genome component, built before its host — absorption is a runtime statement, not a build statement.
 
 The folded map decides WHICH rows are even eligible as primaries:
 
