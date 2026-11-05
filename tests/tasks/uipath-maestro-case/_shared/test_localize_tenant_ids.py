@@ -255,3 +255,40 @@ def test_a_pinned_connection_the_tenant_kept_is_not_given_to_another_pin(module,
 
     assert (sandbox / "sdd.md").read_text() == f"{first}\n{live_flow}\n"
 
+
+def test_a_crlf_fixture_keeps_its_line_endings(module, sandbox, monkeypatch):
+    (sandbox / "bindings.json").write_bytes(f'{{"id": "{OUTLOOK}"}}\r\n{{}}\r\n'.encode())
+    _stub_uip(module, monkeypatch, {"uipath-microsoft-outlook365": [
+        {"Id": LIVE_OUTLOOK, "Name": "a", "Folder": "uipath-maestro-flow", "State": "Enabled"},
+    ]})
+
+    assert module.main() == 0
+
+    assert (sandbox / "bindings.json").read_bytes() == f'{{"id": "{LIVE_OUTLOOK}"}}\r\n{{}}\r\n'.encode()
+
+
+def test_a_manifest_key_in_capitals_still_matches(module, sandbox, monkeypatch):
+    manifest = sandbox / "manifest.json"
+    manifest.write_text(json.dumps({"connections": {OUTLOOK.upper(): {"connector": "uipath-microsoft-outlook365", "folder": "uipath-maestro-flow"}}, "processes": {}, "apps": {}}))
+    monkeypatch.setattr(module, "MANIFEST", manifest)
+    (sandbox / "sdd.md").write_text(f"{OUTLOOK}\n")
+    _stub_uip(module, monkeypatch, {"uipath-microsoft-outlook365": [
+        {"Id": LIVE_OUTLOOK, "Name": "a", "Folder": "uipath-maestro-flow", "State": "Enabled"},
+    ]})
+
+    assert module.main() == 0
+
+    assert (sandbox / "sdd.md").read_text() == f"{LIVE_OUTLOOK}\n"
+
+
+def test_the_sandbox_copy_of_the_manifest_is_removed_once_read(module, sandbox, monkeypatch):
+    staged = sandbox / "_setup" / "tenant_ids.json"
+    staged.write_text((CASE_ROOT / "_setup" / "tenant_ids.json").read_text())
+    monkeypatch.setattr(module, "MANIFEST", staged.resolve())
+    _stub_uip(module, monkeypatch, {})
+
+    assert module.main() == 0
+
+    assert not staged.exists()
+    assert (CASE_ROOT / "_setup" / "tenant_ids.json").is_file()
+

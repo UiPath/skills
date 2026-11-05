@@ -390,7 +390,8 @@ The dependency kinds are:
 - Data Fabric entities
 - setup helpers that call the tenant
 
-A dependency that no rule covers is `unclassified`. `--strict` exits 1 on it, and
+A dependency that no rule covers is `unclassified`. `--strict` exits 1 on a tenant task's
+unclassified dependency, and
 `test_tenant_catalog.py` fails on it for the case suite. When you add a tenant
 dependency to a task, add its rule in the same change.
 

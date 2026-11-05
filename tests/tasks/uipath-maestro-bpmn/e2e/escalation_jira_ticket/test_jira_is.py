@@ -139,4 +139,7 @@ def test_every_jira_helper_copy_resolves_the_issue_type_the_same_way() -> None:
     reference = resolver(HERE / "_setup" / "jira_is.py")
     for path in copies:
         assert resolver(path) == reference, path
-        assert "11457" not in path.read_text(encoding="utf-8"), path
+    # No Jira helper of any name pins the cloud site's Task id.
+    for path in sorted(tasks.glob("uipath-maestro-*/**/*_is.py")):
+        if not path.name.startswith("test_"):
+            assert "11457" not in path.read_text(encoding="utf-8"), path

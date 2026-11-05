@@ -65,6 +65,37 @@ def test_pre_run_helper_makes_the_task_hard_and_records_helper_and_connector(tas
     assert entry["runs_on_automation_suite"] is False
 
 
+def test_a_uip_family_without_a_services_rule_still_calls_the_tenant(tasks_root: Path) -> None:
+    write(
+        tasks_root / "demo" / "api" / "api.yaml",
+        task_yaml(
+            "demo-api",
+            """
+            pre_run:
+              - command: "uip api-workflow run Main --output json"
+            """,
+        ),
+    )
+    entry = task(report(tasks_root), "demo-api")
+    assert entry["tier"] == "hard"
+    assert "api-workflow run" in entry["tier_evidence"][0]
+
+
+def test_a_builder_sdk_check_is_offline(tasks_root: Path) -> None:
+    write(
+        tasks_root / "demo" / "sdk" / "sdk.yaml",
+        task_yaml(
+            "demo-sdk",
+            """
+            success_criteria:
+              - type: run_command
+                command: "uip maestro bpmn check Process.bpmn.ts --output json"
+            """,
+        ),
+    )
+    assert task(report(tasks_root), "demo-sdk")["tier"] == "local"
+
+
 def test_offline_grader_keeps_the_task_local(tasks_root: Path) -> None:
     write(
         tasks_root / "demo" / "offline" / "offline.yaml",

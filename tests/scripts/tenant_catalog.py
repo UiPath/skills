@@ -3,8 +3,8 @@
 
 The catalog is derived from ``tests/tasks/`` on every run, never hand-maintained:
 
-* each task is tiered ``hard`` (a pre_run, post_run or grader command calls the
-  tenant), ``soft`` (graded locally, but the prompt sends the agent to the tenant)
+* each task is tiered ``hard`` (a pre_run or grader command calls the tenant),
+  ``soft`` (graded locally, but the prompt sends the agent to the tenant)
   or ``local``;
 * each dependency the task's own files name — Integration Service connectors and
   pinned connection ids, solution resources (SDD task details, caseplan bindings,
@@ -12,8 +12,9 @@ The catalog is derived from ``tests/tasks/`` on every run, never hand-maintained
   recorded with the tasks that reference it;
 * each dependency gets a disposition from ``RULES`` below: ``creatable``,
   ``substitutable`` or ``unavailable``, with its reason and the tenant services it
-  needs. A dependency no rule covers is ``unclassified``; ``--strict`` fails on it,
-  so a dependency added to a task later cannot go unreviewed.
+  needs. A dependency no rule covers is ``unclassified``; ``--strict`` fails on a
+  tenant task's unclassified dependency, so one added to a task later cannot go
+  unreviewed.
 
 Usage:
   python3 tests/scripts/tenant_catalog.py [--skill uipath-maestro-case] \
@@ -64,6 +65,18 @@ OFFLINE_VERBS = (
     "maestro flow init",
     "maestro flow compile",
     "maestro bpmn validate",
+    # The builder SDK's local verbs: they compile, check or merge files and call no tenant.
+    "maestro case compile",
+    "maestro case check",
+    "maestro case decompile",
+    "maestro case merge",
+    "maestro bpmn compile",
+    "maestro bpmn check",
+    "maestro bpmn decompile",
+    "maestro bpmn merge",
+    "maestro flow check",
+    "maestro flow decompile",
+    "maestro flow merge",
     "solution init",
     "solution pack",
     "solution project",
@@ -363,8 +376,7 @@ def classify_verb(words: list[str]) -> str | None:
         return None
     if any(verb == v or verb.startswith(v + " ") for v in OFFLINE_VERBS):
         return None
-    if words[0] not in {prefix.split()[0] for prefix, _ in VERB_SERVICES}:
-        return None
+    # A family with no VERB_SERVICES entry still calls the tenant: it counts, with no services.
     return verb
 
 

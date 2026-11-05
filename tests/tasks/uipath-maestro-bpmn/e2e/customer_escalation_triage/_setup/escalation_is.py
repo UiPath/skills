@@ -46,7 +46,7 @@ CONNECTION_NAMES = {
 FOLDER_PATH = "Shared/uipath-maestro-flow"
 FOLDER_NAME = "uipath-maestro-flow"  # leaf of the path, as reported
 PROJECT_KEY = "CE"  # "Coder Eval" project on uipath-sandbox-380
-ISSUETYPE_ID = "11457"  # "Task" issue type, scoped to the CE project
+ISSUETYPE_NAME = "Task"  # its id is per site and per project, so it is read at run time
 # The flow suite's identified target on this same connection
 # (escalation_slack_alert/check_escalation_slack_alert.py).
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
@@ -185,6 +185,51 @@ def connection_ids(*, timeout: int = CONNECTIONS_LIST_TIMEOUT) -> dict[str, str]
             raise CheckFailure(f"{connector_key} connection has no id")
         ids[connector_key] = identifier
     return ids
+
+
+def _jira_records(connection_id: str, resource: str) -> list[dict]:
+    """The records of a Jira `run list` answer: a list, a wrapper's list, or one record."""
+    listed = run_cli(
+        ["uip", "is", "resources", "run", "list", JIRA_CONNECTOR, resource, "--connection-id", connection_id],
+        timeout=JIRA_READ_TIMEOUT,
+    )
+    _payload, data = payload_data(listed, f"list Jira {resource}")
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    if isinstance(data, dict):
+        if not any(data.get(field) for field in ("id", "Id", "key")):
+            held = [item for value in data.values() if isinstance(value, list) for item in value]
+            if held:
+                return [item for item in held if isinstance(item, dict)]
+        return [data]
+    return []
+
+
+def issuetype_id(connection_id: str) -> str:
+    """The id of the Task issue type in PROJECT_KEY on the connection's Jira site.
+
+    A project-scoped type wins; a global type counts only when the project has none."""
+    project_ids = [
+        str(get_ci(p, "id"))
+        for p in _jira_records(connection_id, "project")
+        if str(get_ci(p, "key") or "").casefold() == PROJECT_KEY.casefold() and get_ci(p, "id")
+    ]
+    if not project_ids:
+        raise CheckFailure(f"project {PROJECT_KEY} is not on the connection's Jira site")
+    named = [
+        t
+        for t in _jira_records(connection_id, "issuetype")
+        if str(get_ci(t, "name") or "").casefold() == ISSUETYPE_NAME.casefold() and get_ci(t, "id") is not None
+    ]
+
+    def scope(t: dict) -> str:
+        project = (t.get("scope") or {}).get("project") or {}
+        return str(project.get("id") or "")
+
+    chosen = [t for t in named if scope(t) == project_ids[0]] or [t for t in named if not scope(t)]
+    if not chosen:
+        raise CheckFailure(f"no {ISSUETYPE_NAME!r} issue type in project {PROJECT_KEY} on the connection's Jira site")
+    return str(get_ci(chosen[0], "id"))
 
 
 def get_issue_fields(connection_id: str, issue_key: str) -> dict:

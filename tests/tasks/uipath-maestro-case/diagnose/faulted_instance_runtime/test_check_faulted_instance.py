@@ -87,3 +87,22 @@ def test_camel_cased_executions_are_read_too(grader, monkeypatch):
 
     assert grader.truth()["i1"][0]["taskNames"] == ["Post ledger entry"]
     assert calls
+
+
+def test_a_faulted_status_counts_as_failed(grader, monkeypatch):
+    _stub(grader, monkeypatch, "tasksEventSubProcess", executions=[
+        {"ElementId": TASK_ID, "Status": "Faulted", "ParentElementId": "tasksEventSubProcess"},
+    ])
+
+    assert grader.truth()["i1"][0]["taskNames"] == ["Post ledger entry"]
+
+
+def test_a_blank_answer_fails_when_no_task_can_be_identified(grader, monkeypatch, tmp_path):
+    _stub(grader, monkeypatch, "tasksEventSubProcess", executions=[])
+    answer = tmp_path / "answer.json"
+    answer.write_text('{"instanceId": "i1", "errorCode": "400300", "taskName": ""}')
+    monkeypatch.setattr(grader, "ANSWER", str(answer))
+
+    with pytest.raises(SystemExit, match="could not identify the incident's task"):
+        grader.main()
+

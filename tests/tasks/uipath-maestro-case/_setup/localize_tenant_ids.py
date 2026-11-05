@@ -4,14 +4,10 @@
 Usage:
     localize_tenant_ids.py
 
-Run as a ``pre_run`` step from the sandbox root. The fixtures were authored on
-the shared cloud tenant, and some of them name a resource by its GUID: a
-connection ID, a process ``entityKey``, an action app ID. A provisioned tenant
-(an ETE) creates the same resources under new GUIDs, so those fixtures point at
-nothing there:
-
-  skill-case-e2e-outcome-external      Outlook/Jira ping: Result=Failure
-  skill-case-golden-rebuild-cm-expense No process entry found with entityKey ...
+Run as a ``pre_run`` step from the sandbox root. Some fixtures name a resource
+by the GUID it has on the shared cloud tenant: a connection ID, a process
+``entityKey``, an action app ID. A provisioned tenant creates the same resources
+under new GUIDs, so this script rewrites the fixtures to the running tenant's.
 
 ``tenant_ids.json`` records what each pinned ID IS (connector and folder, or
 process name and folder, or app name). This script finds that resource on the
@@ -79,10 +75,17 @@ def _sandbox_files() -> list[Path]:
 
 
 def _read_text(path: Path) -> str | None:
+    # newline="" keeps CRLF fixtures byte-for-byte apart from the rewritten IDs.
     try:
-        return path.read_text(encoding="utf-8")
+        with open(path, encoding="utf-8", newline="") as fh:
+            return fh.read()
     except (UnicodeDecodeError, OSError):
         return None
+
+
+def _write_text(path: Path, text: str) -> None:
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(text)
 
 
 _CONNECTIONS: dict[str, list[dict]] = {}
@@ -185,8 +188,28 @@ def _load_registry() -> tuple[list[dict], list[dict], str | None]:
         _restore(RESOURCE_DIR, snapshot)
 
 
+def _hide_manifest() -> None:
+    """Remove the sandbox copy of the manifest once it is read.
+
+    It names each pinned resource and its folder, which a task that grades registry
+    resolution must not hand the agent. Only a copy under the sandbox is removed; the
+    checkers read the map this script writes, not the manifest.
+    """
+    try:
+        MANIFEST.relative_to(Path.cwd().resolve())
+    except ValueError:
+        return
+    MANIFEST.unlink(missing_ok=True)
+
+
 def main() -> int:
-    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    # The corpus is matched lowercased, so a key added in capitals must still match.
+    manifest = {
+        kind: {cloud_id.lower(): spec for cloud_id, spec in entries.items()}
+        for kind, entries in json.loads(MANIFEST.read_text(encoding="utf-8")).items()
+        if isinstance(entries, dict)
+    }
+    _hide_manifest()
     files = {path: text for path in _sandbox_files() if (text := _read_text(path)) is not None}
     corpus = "\n".join(files.values()).lower()
     pinned = {
@@ -243,7 +266,7 @@ def main() -> int:
         for path, text in files.items():
             rewritten = pattern.sub(lambda m: changed[m.group(0).lower()], text)
             if rewritten != text:
-                path.write_text(rewritten, encoding="utf-8")
+                _write_text(path, rewritten)
                 print(f"rewrote {path}")
     MAP_FILE.parent.mkdir(exist_ok=True)
     MAP_FILE.write_text(json.dumps(mapping, indent=2, sort_keys=True) + "\n", encoding="utf-8")

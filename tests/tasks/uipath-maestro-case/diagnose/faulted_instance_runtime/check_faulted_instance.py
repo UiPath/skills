@@ -66,7 +66,7 @@ def failed_tasks_under(element_id, executions, names):
         names[_get_ci(e, "ElementId")]
         for e in executions
         if _get_ci(e, "ParentElementId") == element_id
-        and _get_ci(e, "Status") == "Failed"
+        and str(_get_ci(e, "Status") or "").casefold() in {"failed", "faulted"}
         and _get_ci(e, "ElementId") in names
     )
 
@@ -133,9 +133,11 @@ def main():
     code = str(answer.get("errorCode", "")).strip()
     task = str(answer.get("taskName", "")).strip()
     for incident in faulted[inst]:
-        if code == incident["errorCode"] and task in (incident["taskNames"] or [""]):
+        if code == incident["errorCode"] and task in incident["taskNames"]:
             print(f"PASS: {inst} faulted at {task!r} with {code}")
             return
+    if all(not incident["taskNames"] for incident in faulted[inst]):
+        sys.exit(f"FAIL: could not identify the incident's task for {inst}; incidents {faulted[inst]}")
     sys.exit(f"FAIL: answer {task!r}/{code!r} matches no open incident {faulted[inst]}")
 
 
