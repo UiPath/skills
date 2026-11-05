@@ -20,7 +20,7 @@ Pre-built surfaces (Instance Management, iFrame embedding) render a form from th
 
 ## Agent-Level Resource Shape
 
-The agent designer has a first-class flow — **Add tool → Client-side tools**, then tool name, description, input schema, and output schema. Prefer it when working in the UI. When editing project files directly, write the resource yourself; `uip agent tool add` does not author this type.
+The agent designer has a first-class flow — **Add tool → Client-side tools**, then tool name, description, input schema, and output schema. Prefer it when working in the UI. When editing project files directly, write the resource yourself.
 
 **Path:** `<AgentName>/resources/<ToolName>/resource.json`, mirrored into `<AgentName>/.agent-builder/agent.json` under `resources[]`.
 
