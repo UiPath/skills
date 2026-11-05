@@ -23,7 +23,7 @@ These add to the Critical Rules in [SKILL.md](../../SKILL.md).
 11. **When sources conflict, the higher one wins:** platform constraints (the delivery model, a product's schema) → a regulatory or compliance constraint the source states or implies → tenant evidence (a deployed resource matching the described work) → what the user said → the source documents → the template's and product guide's defaults. A lower source overridden is a Decisions Made row (autonomous) or a line of the Step 5 review.
 12. **A product the user names is the primary**, unless the Constraint Gate blocks it or Level 0 finds the work should not be automated: Level 1 confirms it instead of selecting, and Levels 1.5–3 still run inside it.
 13. **Every key the automation builds is stable across retries.** A file name, sequence number, message ID or queue reference written for an output is built from the item's own identity (its reference, GUID or source ID), never the clock or a counter at write time — so a retry finds what the first attempt wrote instead of writing it twice.
-14. **A caller's design request changes only the steps its guide names.** A `planner-design-request: v1` block fixes the execution mode, holds the run to one checkpoint (the Phase 2 Step 5 review) and ends it with a `planner-design-result: v1` block: [caller-request-guide.md](caller-request-guide.md).
+14. **A caller's design request changes only the steps its guide names.** A `planner-design-request: v1` block carries the execution mode (`execution`), holds an interactive run to one checkpoint (the Phase 2 Step 5 review), lets an autonomous one stop only for a hard blocker, and ends the run with a `planner-design-result: v1` block: [caller-request-guide.md](caller-request-guide.md).
 
 ## Read Plan
 
@@ -71,7 +71,7 @@ Before reading the PDD in full, search it for platform signals ("Automation Suit
 > 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions, generate the full SDD, then write its genome on the next turn. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
 > 2. **Interactive** — I will pause at each phase checkpoint (summary, architecture, final SDD) for your review before proceeding.
 
-**Skip Question 1 symmetrically** when the request already states the execution mode ("autonomous", "don't pause for checkpoints", "interactive review"). When both questions are resolved from context, skip the structured prompt entirely and record both values. A caller's request fixes the execution mode as `interactive` and is never asked it (Verb Rule 14).
+**Skip Question 1 symmetrically** when the request already states the execution mode ("autonomous", "don't pause for checkpoints", "interactive review"). When both questions are resolved from context, skip the structured prompt entirely and record both values. A caller's `execution` key answers Question 1; ask it only when the key is missing (Verb Rule 14).
 
 Record both choices — they go into the SDD's `## Planner Handoff` header ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2) and propagate to the genome (`author` from the SDD): execution mode decides whether the genome gets follow-up rounds; the delivery model holds for every component the genome names.
 
@@ -290,7 +290,7 @@ For each integrated component detected in Phase 1 (and each non-primary placemen
 
 ### Step 5: Present Architecture for Review
 
-Present the architectural core to the user — for Case Management in the shape of [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Presenting the Case Design. Wait for approval or adjustments. A design a build skill handed over presents the build options the caller passed ([sdd-writing-guide.md](sdd-writing-guide.md) § Design Handed Over by a Build Skill). A caller's design request always runs this review, in both modes — it is the run's one checkpoint.
+Present the architectural core to the user — for Case Management in the shape of [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Presenting the Case Design. Wait for approval or adjustments. A design a build skill handed over presents the build options the caller passed ([sdd-writing-guide.md](sdd-writing-guide.md) § Design Handed Over by a Build Skill). A caller's `execution: interactive` request runs this review as its one checkpoint; `autonomous` skips it (Verb Rule 14).
 
 **Approval criteria:** any response without specific change requests. Responses like "looks good", "ok", "proceed", "yes", or a topic change all count as approval. If the user requests specific changes, incorporate them and re-present the architecture (max 3 revisions — after that, proceed with the latest version and tag disagreements as `[SME REVIEW]`).
 
