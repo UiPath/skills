@@ -26,6 +26,8 @@ Run source guide's Detection table against the given path. Decide:
 
 The answers are shared decisions, written into the brief of a reading in parts ([parts-guide.md](parts-guide.md) item 1).
 
+**A preferences file the user supplies** answers these questions as it answers the build's: [execution-guide.md § 1.3](execution-guide.md) rule 9.
+
 ### Step 2 — Inventory
 
 List every file per project, classify with source guide's Inventory table, drop everything in its Exclusions. Record artifact types present; read only those Signals sections of the source guide.
