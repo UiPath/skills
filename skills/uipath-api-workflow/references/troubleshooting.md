@@ -776,7 +776,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### `validate` rejects a retry `when` or an HTTP Request `<id>#Retry` wrapper
 
-- **Symptom:** At `…/catch/retry/when`, `validate` reports `Expected type 'object'` / `'array'`; or at a `…#Retry` task path, a Connector task missing `call` / `metadata.configuration`.
+- **Symptom:** At `…/catch/retry/when` or `…/catch/retry/exceptWhen`, `validate` reports three errors: `Expected type 'object' but got a different type`, `Expected type 'array' but got a different type`, and `Value must match exactly one of the allowed formats`. Or, at a `…#Retry` task path, a Connector task missing `call` / `metadata.configuration`.
 - **Cause:** Validator releases without the task-level retry fix type `retry.when` as an object and treat Studio Web's HTTP Request retry wrapper as a malformed Connector task. Both shapes are correct for the executor and the designer.
 - **Fix:** Follow [http-retry-config.md § Validation Gap](http-retry-config.md#validation-gap).
 

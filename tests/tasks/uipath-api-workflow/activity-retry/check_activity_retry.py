@@ -7,9 +7,10 @@ Modes:
               `catch.do` Response containing "failed", and a success-path Response.
   http        The seeded `HttpRequest_1` call sits inside a `try` whose catch
               carries `retry` (4 retries, 1500 ms, exponential, `when` filtering on
-              exactly 429 and 503 via `$<catch.as>.status`). Accepts both Studio Web
-              shapes: a TryCatch, or an `HttpRequest_1#Retry` wrapper without
-              `catch.do`. With the retry container unwrapped, the workflow must
+              exactly 429 and 503 via `$<catch.as>.status`), as an
+              `HttpRequest_1#Retry` wrapper without `catch.do`. A TryCatch fails:
+              Studio Web's TryCatch has no status filter and drops `when` on its
+              next save. With the retry container unwrapped, the workflow must
               equal the seed, and no workflow-level `httpRetryConfig` may be added.
               The status filter must use the `[...].includes($<as>.status)` form,
               the only form Studio Web round-trips.
@@ -222,8 +223,13 @@ def check_http(document: dict[str, Any], seed: dict[str, Any]) -> None:
                 errors.append("#Retry wrapper must not have catch.do")
             if direct_keys(task["try"]) != ["HttpRequest_1"]:
                 errors.append("#Retry wrapper try must hold only the call")
-        elif (task.get("metadata") or {}).get("activityType") != "TryCatch":
-            errors.append("retrying try is neither a TryCatch nor an <id>#Retry wrapper")
+        elif (task.get("metadata") or {}).get("activityType") == "TryCatch":
+            errors.append(
+                "status filter on a TryCatch: Studio Web drops `when` on save; "
+                "use the HTTP Request's own Retry (HttpRequest_1#Retry)"
+            )
+        else:
+            errors.append("retrying try is not an HttpRequest_1#Retry wrapper")
         if not errors:
             return
         problems.append(f"{key}: {'; '.join(errors)}")

@@ -20,7 +20,7 @@ A `try` task's `catch` may carry a `retry` policy next to `as` and `do`. On a ca
 | `limit.attempt.count` | Retries after the initial failure (`3` = up to four runs). `0` disables retrying. | `3` | `3` |
 | `delay` | Base delay; `{ "milliseconds": N }` or ISO 8601 string | none | `{ "milliseconds": 1000 }` |
 | `backoff` | `{ "constant": {} }`, `{ "linear": {} }` (`delay × attempt`), or `{ "exponential": {} }` (`delay × 2^(attempt − 1)`) | constant | `{ "constant": {} }` |
-| `when` | String expression evaluated against `$<catch.as>`; retry only when truthy | retry every caught error | Try/Catch: absent. HTTP Request: status filter, see below |
+| `when` | String expression evaluated against `$<catch.as>`; retry only when truthy | retry every caught error | Try/Catch: absent, and dropped on save (no status filter). HTTP Request: status filter, see below |
 | `exceptWhen` | Inverse gate of `when` | — | never written |
 | `jitter` | `{ "from": <duration>, "to": <duration> }` random delay added to every wait | none | never written |
 | `limit.duration` | Total retry time budget from first failure | none | never written |
@@ -40,7 +40,7 @@ Studio Web edits only `limit.attempt.count`, `delay.milliseconds`, the backoff k
 
 ### Try/Catch With Retry
 
-Retry section on: the `catch` gets `retry` beside `as` and `do`. Studio Web writes no `when`, so every caught error is retried.
+Retry section on: the `catch` gets `retry` beside `as` and `do`. Studio Web's Try/Catch has no status filter: it writes no `when`, and every caught error is retried.
 
 ```json
 "Try_Catch_1": {
@@ -59,7 +59,7 @@ Retry section on: the `catch` gets `retry` beside `as` and `do`. Studio Web writ
 }
 ```
 
-Add a status filter by hand when only transient failures should retry: `"when": "${ [429, 503].includes($error.status) }"` — reference the catch's own `as` name. Studio Web keeps a `when` it can parse (this exact `[…].includes($<as>.status)` form). Some `validate` releases reject a string `when`; see [Validation Gap](#validation-gap). Complete example: [assets/templates/retry-http-request-example.json](../assets/templates/retry-http-request-example.json).
+Do not add a `when` to a Try/Catch that must stay editable in Studio Web. The executor honors it, but Studio Web reads back only the count, delay, and backoff, so its next save drops the filter and the Try/Catch retries every error again. To retry an HTTP call only on certain statuses, use the HTTP Request's own Retry section (the `#Retry` wrapper below). Complete example: [assets/templates/retry-http-request-example.json](../assets/templates/retry-http-request-example.json).
 
 ### HTTP Request With Retry (`<id>#Retry` Wrapper)
 
@@ -88,12 +88,13 @@ Rules for the wrapper:
 3. The wrapper key `<id>#Retry` is reserved and must be globally unique like `#Wrapper` / `#Body`.
 4. Some `validate` releases reject this shape; see [Validation Gap](#validation-gap).
 5. Edit an existing wrapper in place (count, delay, backoff, status list); do not unwrap or convert it.
+6. Keep `when` in exactly the `${ [<codes>].includes($__retryError.status) }` form. It is the only `when` Studio Web reads back into **Retry on status codes**.
 
 ### Validation Gap
 
 `uip api-workflow validate` releases without UiPath/cli#5785 reject two valid task-level retry forms:
 
-1. A string `retry.when` or `retry.exceptWhen`, on a Try/Catch or a `#Retry` wrapper: `Expected type 'object'` and `Expected type 'array'` at `…/catch/retry/when`.
+1. A string `retry.when` or `retry.exceptWhen`, on a `#Retry` wrapper or a Try/Catch: three errors at `…/catch/retry/when` (or `…/catch/retry/exceptWhen`): `Expected type 'object' but got a different type`, `Expected type 'array' but got a different type`, and `Value must match exactly one of the allowed formats`.
 2. An `<id>#Retry` wrapper: a Connector task missing `call` or `metadata.configuration` at the wrapper path.
 
 When those are the only errors, treat the workflow as valid and report the validator gap; otherwise fix normally. Keep an existing workflow as it is: dropping `when`, unwrapping the call, or copying `configuration` onto the wrapper changes what the workflow does. For a new retry that must validate clean on such a release and needs no status filter, write a Try/Catch whose `retry` has no `when`; it retries every caught error.

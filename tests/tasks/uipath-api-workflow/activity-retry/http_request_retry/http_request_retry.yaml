@@ -6,16 +6,17 @@ description: >
   exponential backoff and a `when` filter on exactly 429 and 503 read from
   `$<catch.as>.status` (the real HTTP status), in the
   `[...].includes($<as>.status)` form: the only filter form Studio Web
-  round-trips, so `===` / `||` chains are graded wrong. Both Studio Web shapes
-  pass the structure check — a Try/Catch, or an `HttpRequest_1#Retry` wrapper
-  without `catch.do` — but with that container unwrapped the workflow must equal
-  the seed (call, Response, schemas), and no
+  round-trips, so `===` / `||` chains are graded wrong. Only the HTTP Request's
+  own Retry shape passes: an `HttpRequest_1#Retry` wrapper without `catch.do`.
+  A Try/Catch fails, because Studio Web's Try/Catch has no status filter and
+  drops a hand-written `when` on its next save. With the wrapper unwrapped, the
+  workflow must equal the seed (call, Response, schemas), and no
   workflow-level `httpRetryConfig` may be added (it would not be per-activity, and
   a retrying `try` replaces it anyway).
 
   The validate criterion requires Valid, so it passes only on a `uip` that
-  includes UiPath/cli#5785: earlier releases reject any string `retry.when`
-  (both shapes) and the #Retry wrapper. The skill tells agents to report that
+  includes UiPath/cli#5785: earlier releases reject a string `retry.when`
+  and the #Retry wrapper. The skill tells agents to report that
   validator gap rather than drop the filter.
 
   Offline: the call is never sent and no registry lookup is needed.
