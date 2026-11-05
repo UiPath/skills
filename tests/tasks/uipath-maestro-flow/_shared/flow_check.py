@@ -33,6 +33,7 @@ Two distinct sources with two casings:
 
 from __future__ import annotations
 
+import fnmatch
 import glob
 import hashlib
 import json
@@ -1910,10 +1911,9 @@ def find_flow_files(
     if flow_projects:
         project_dir = _find_project(project_pattern)
         matches = sorted(
-            glob.glob(
-                os.path.join(project_dir, "**", os.path.basename(flow_glob)),
-                recursive=True,
-            )
+            path
+            for path in glob.glob(os.path.join(project_dir, "**", "*.flow"), recursive=True)
+            if flow_file_matches(path, flow_glob)
         )
         if not matches:
             _fail(
@@ -1945,6 +1945,26 @@ def find_flow_file(
         joined = "\n  - ".join(matches)
         _fail(f"Multiple .flow files match {flow_glob!r}:\n  - {joined}")
     return matches[0]
+
+
+def flow_file_matches(path: str, flow_glob: str) -> bool:
+    """Return True iff the ``.flow`` file at ``path`` answers to ``flow_glob``.
+
+    A file answers by its own name, as the Node CLI's ``<Name>/<Name>.flow``
+    does. The one root ``.flow`` of a Flow project folder also answers by the
+    folder's name: Studio Web names every Flow project's file ``new.flow``,
+    inside a folder named after the project (``<Name>/new.flow``), so
+    ``Name.flow`` and ``Name*.flow`` find it as well.
+    """
+    pattern = os.path.basename(flow_glob)
+    if fnmatch.fnmatchcase(os.path.basename(path), pattern):
+        return True
+    project_dir = os.path.dirname(path)
+    return (
+        _is_flow_project(os.path.join(project_dir, "project.uiproj"))
+        and len(glob.glob(os.path.join(glob.escape(project_dir), "*.flow"))) == 1
+        and fnmatch.fnmatchcase(f"{os.path.basename(project_dir)}.flow", pattern)
+    )
 
 
 def assert_no_flow_files() -> None:

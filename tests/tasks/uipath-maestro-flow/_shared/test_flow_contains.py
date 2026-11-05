@@ -111,6 +111,15 @@ def test_flow_name_mismatch_exits_1(sandbox):
     assert main(["--flow-name", "VendorApproval"]) == 1
 
 
+def test_flow_name_matches_studio_webs_project_flow(tmp_path, monkeypatch):
+    # Studio Web names every Flow project's file new.flow, inside a folder named after the project.
+    _make_project(tmp_path, solution="SimEval", project="SimEval", flows={"new": FLOW_BODY})
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["--flow-name", "SimEval", "quick-form"]) == 0
+    assert main(["--flow-name", "VendorApproval"]) == 1
+
+
 def test_flow_name_scopes_assertions(tmp_path, monkeypatch):
     # "beta" only exists in Sub.flow; scoping to Main must fail on it.
     _make_project(

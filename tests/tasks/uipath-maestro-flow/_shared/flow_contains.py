@@ -14,10 +14,12 @@ Arguments:
     --regex PATTERN      Python regex that must match the same single file as
                          the plain args (repeatable) — the path-agnostic
                          replacement for ``file_matches_regex``
-    --flow-name NAME     restrict assertions to files named ``NAME.flow``;
-                         fails when no discovered file has that basename.
-                         Restores the name enforcement the literal paths had,
-                         while staying wrapper-agnostic
+    --flow-name NAME     restrict assertions to files named ``NAME.flow``, or
+                         to the flow of a Flow project folder named NAME
+                         (Studio Web's ``NAME/new.flow``); fails when no
+                         discovered file answers to that name. Restores the
+                         name enforcement the literal paths had, while staying
+                         wrapper-agnostic
     --absent-regex PAT   negative assertion: exits 0 only when discovery
                          succeeded, every target file was read, and NO target
                          file matches PAT (repeatable). Use this (with
@@ -48,7 +50,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from flow_check import assert_no_flow_files, find_flow_files  # noqa: E402
+from flow_check import assert_no_flow_files, find_flow_files, flow_file_matches  # noqa: E402
 
 
 def _parse(argv: list[str]):
@@ -102,10 +104,11 @@ def main(argv: list[str]) -> int:
     print(f"Found {len(flows)} .flow file(s): {', '.join(flows)}")
 
     if flow_name is not None:
-        targets = [p for p in flows if os.path.basename(p) == f"{flow_name}.flow"]
+        targets = [p for p in flows if flow_file_matches(p, f"{flow_name}.flow")]
         if not targets:
             print(
-                f"FAIL: no discovered .flow file is named {flow_name}.flow",
+                f"FAIL: no discovered .flow file is named {flow_name}.flow "
+                f"or is the flow of a Flow project named {flow_name}",
                 file=sys.stderr,
             )
             return 1

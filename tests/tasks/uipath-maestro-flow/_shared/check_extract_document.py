@@ -49,7 +49,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from flow_check import find_flow_files  # noqa: E402
+from flow_check import find_flow_files, flow_file_matches  # noqa: E402
 
 EXTRACT_NODE_TYPE = "uipath.ixp.extract-document-builder"
 IXP_NODE_PREFIX = "uipath.ixp."
@@ -319,9 +319,12 @@ def main(argv: list[str]) -> int:
         print(f"FAIL: {usage}", file=sys.stderr)
         return 2
     try:
-        paths = [p for p in find_flow_files() if os.path.basename(p) == f"{args.flow_name}.flow"]
+        paths = [p for p in find_flow_files() if flow_file_matches(p, f"{args.flow_name}.flow")]
         if not paths:
-            raise SystemExit(f"FAIL: no discovered .flow file is named {args.flow_name}.flow")
+            raise SystemExit(
+                f"FAIL: no discovered .flow file is named {args.flow_name}.flow "
+                f"or is the flow of a Flow project named {args.flow_name}"
+            )
         with open(paths[0], encoding="utf-8") as fh:
             flow = json.load(fh)
         nodes = flow.get("nodes") or []

@@ -286,3 +286,37 @@ def test_validate_flow_uses_root_fallback(tmp_path, monkeypatch):
     assert kwargs["capture_output"] is True
     assert kwargs["text"] is True
     assert 0 < kwargs["timeout"] <= 80
+
+
+def _make_studio_web_flow_project(root, solution, project, *, extra_flows=()):
+    """Create Studio Web's layout: <root>/<solution>/<project>/{project.uiproj,new.flow}."""
+    proj = root / solution / project
+    proj.mkdir(parents=True)
+    (proj / "project.uiproj").write_text(json.dumps({"Name": project, "ProjectType": "Flow"}))
+    (proj / "new.flow").write_text(json.dumps({"nodes": [{"id": "n0", "type": "core.trigger"}]}))
+    for name in extra_flows:
+        (proj / f"{name}.flow").write_text(json.dumps({"nodes": []}))
+    return proj
+
+
+def test_named_flow_glob_finds_studio_webs_project_flow(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    proj = _make_studio_web_flow_project(tmp_path, "Reports", "ScheduledReport")
+
+    assert find_flow_file(flow_glob="ScheduledReport*.flow") == str(proj.relative_to(tmp_path) / "new.flow")
+
+
+def test_named_flow_glob_rejects_another_projects_flow(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    _make_studio_web_flow_project(tmp_path, "Reports", "WeeklyDigest")
+
+    with pytest.raises(SystemExit, match="No .flow file matching 'ScheduledReport\\*.flow'"):
+        find_flow_file(flow_glob="ScheduledReport*.flow")
+
+
+def test_project_name_covers_only_a_lone_root_flow(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    _make_studio_web_flow_project(tmp_path, "Reports", "ScheduledReport", extra_flows=("Helper",))
+
+    with pytest.raises(SystemExit, match="No .flow file matching"):
+        find_flow_file(flow_glob="ScheduledReport.flow")
