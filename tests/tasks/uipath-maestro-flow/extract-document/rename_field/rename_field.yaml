@@ -31,13 +31,6 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: skill_triggered
-    skill_name: "uipath-maestro-flow"
-    expected_skill: "uipath-maestro-flow"
-    description: "Advisory: agent invoked the uipath-maestro-flow skill"
-    weight: 1.0
-    pass_threshold: 0.0
-
   - type: run_command
     description: "The renamed field \"Total Amount\" kept the id Total had"
     command: >-
