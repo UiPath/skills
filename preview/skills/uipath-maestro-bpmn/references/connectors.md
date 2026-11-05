@@ -118,7 +118,7 @@ prepare-connector: uipath.connector.uipath-uipath-testmanager.create-test-set �
 prepare-connector: next: .connector("<id>", "uipath-uipath-testmanager", "create-test-set", { ProjectId: /* string, required */, name: /* string, required */ }, { connection: "testmanager", folder: "shared" })
 ```
 
-Author the call it prints; `bpmn check` then holds the inputs to the operation's real contract (a Test Manager update is a JSON-patch body, `path` and `value`, not the record's columns, and `execute-test-set` takes `testSetId`, `executionType` and `asyncMode`), and `compile` emits the task the platform matches on: `objectName` and `method` from the catalog, the path and its `target="path"` rows from the describe.
+Author the call it prints; `bpmn check` then holds the inputs to the operation's real contract (a Test Manager update is a JSON-patch body, `path` and `value`, not the record's columns, and `execute-test-set` takes `testSetId`, `executionType` and `asyncMode`), and `compile` emits the task the platform matches on: `objectName` and `method` from the catalog, and the path from the describe, with its parameters in the `pathParameters` row.
 On a Flow project such an entry is refused (`CONNECTOR_NO_FLOW_DEFINITION`); if the source line says the pull failed, run `uip maestro flow registry pull --force` yourself and re-run `prepare` before trusting that the catalog lacks the connector.
 
 An action `prepare` cannot find is refused with the activities Integration Service does list, as action ids; re-run with one of them.
@@ -139,7 +139,8 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
 Neither is the connector's REST slug.
 A node carrying `objectName="v2::attachment::upload"` validates and then dispatches to nothing — the platform matches on the curated pair, and so do the graders that compare against a real export.
 `check` holds a hand-filled task to the catalog (`INTSVC_*`), which `validate` does not; fix what it reports.
-A `{param}` in the path needs `inputs: { pathParameters: { <param>: … } }` or a `target: 'path'` row; a bare `inputs: { <param> }` lands in the body.
+Keep the template's context, `activityConfigurationVersion: 'v2'` included.
+A `{param}` in the path goes in `inputs: { pathParameters: { <param>: … } }` and a query parameter in `inputs: { queryParameters: { … } }`, the template's two json rows; a bare `inputs: { <param> }` lands in the body (see [the parameter rows](bpmn-runtime.md#connectors-and-bindings)).
 For a generic record verb (`Create Record`, `Delete Record`), the catalog row's `N/A` is not the answer: `objectName` is the object you pick from `uip is resources list <key> --connection-id <id> --output json`, `method` is the catalog's **Integration Service method** for that verb (`GETBYID` for a single record (Retrieve), `GET` for a list, `POST` to create, `PATCH`/`PUT` to update, `DELETE`), not the HTTP verb (both retrieval and listing travel as HTTP GET; the platform matches on `GETBYID` vs `GET`), and `path` comes from `uip is resources describe <key> <object> --operation <Verb> --connection-id <id> --output json`.
 
 ## 5. Data Fabric is not this
@@ -162,3 +163,9 @@ Both resolve against the same library and both take the same `connection` / `fol
 uip is triggers objects <connector> <EVENT> --connection-id <id> --output json   # what a generic event can watch
 uip is triggers describe <connector> <EVENT> <object> --connection-id <id> --output json
 ```
+
+- The payload lands in `outputVar` (default `<id>_result`) and a failure in `<id>_Error`; the node declares both, so `=vars.<id>_result.subject` reads a payload field downstream.
+  `outputs` maps payload fields onto variables of their own, and its sources read the payload under `response`: `outputs: { subject: '=response.subject' }`.
+  A bare `'=subject'` reads nothing: the payload is not at the top level.
+- There is no `folderPath` option: the task names its folder by the `folder` binding alone.
+  The SDK still accepts `folderPath` and ignores it; drop it.
