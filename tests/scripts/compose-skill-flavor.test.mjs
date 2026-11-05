@@ -1663,7 +1663,9 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
   assert.match(stableWorkflow, /^\s*uses:\s*\.\/\.github\/workflows\/publish-skill-flavor\.yml\s*$/m);
   assert.match(stableWorkflow, /^\s*flavor:\s*studioweb\s*$/m);
   assert.match(stableWorkflow, /^\s*channel:\s*stable\s*$/m);
-  assert.doesNotMatch(stableWorkflow, /^\s*(push|schedule|release):/m);
+  assert.doesNotMatch(stableWorkflow, /^\s*(push|schedule|release|pull_request):/m);
+  assert.match(stableWorkflow, /^\s*workflow_dispatch:\s*$/m);
+  assert.match(stableWorkflow, /github\.ref == 'refs\/heads\/main'/);
   assert.doesNotMatch(stableWorkflow, /npm publish|id-token\s*:|--provenance/i);
 
   assert.match(flavorWorkflow, /^\s*workflow_call:\s*$/m);

@@ -17,7 +17,7 @@ on:
         type: string
         default: ""
       version:
-        description: stable only. Exact version to publish, <base>-stable.<sprint>
+        description: stable only. Exact version to publish, <base>-stable.<sprint>, or <base>-stable.<sprint>.<n> for a re-cut
         required: false
         type: string
         default: ""
@@ -43,9 +43,9 @@ jobs:
         with:
           # Empty for dev/preview, which build the triggering ref as before.
           ref: ${{ inputs.commit }}
-          # stable checks the commit is on main, which needs the history. Always
-          # full: `cond && 0 || 1` would read 0 as false and give stable depth 1.
-          fetch-depth: 0
+          # stable checks the commit is on main, which needs the history; dev and
+          # preview stay shallow. Strings, because a numeric 0 reads as false.
+          fetch-depth: ${{ inputs.channel == 'stable' && '0' || '1' }}
 
       - uses: actions/setup-node@v4
         with:
@@ -89,8 +89,10 @@ jobs:
                 echo "stable commit is not on main: $COMMIT" >&2
                 exit 1
               fi
-              if [[ ! "$STABLE_VERSION" =~ ^${BASE//./\\.}-stable\.[0-9]+$ ]]; then
-                echo "stable version must be ${BASE}-stable.<sprint> for this commit: $STABLE_VERSION" >&2
+              # An optional trailing counter names a re-cut in the same sprint
+              # (-stable.206.1 sorts above -stable.206); npm versions are immutable.
+              if [[ ! "$STABLE_VERSION" =~ ^${BASE//./\\.}-stable\.[0-9]+(\.[0-9]+)?$ ]]; then
+                echo "stable version must be ${BASE}-stable.<sprint> or ${BASE}-stable.<sprint>.<n> for this commit: $STABLE_VERSION" >&2
                 exit 1
               fi
               VERSION="$STABLE_VERSION"
