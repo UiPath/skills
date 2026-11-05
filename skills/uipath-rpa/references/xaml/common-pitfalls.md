@@ -26,7 +26,7 @@ These activities **must** be placed inside a specific parent scope:
 
 | Activity | Recommended Parent | Notes |
 |----------|-------------------|-------|
-| ExcelApplicationCard | `ExcelProcessScopeX` | Warning if outside process scope |
+| ExcelApplicationCard | `ExcelProcessScopeX` | Warning if outside process scope ([§ Use Excel File Outside an Excel Process Scope](#use-excel-file-outside-an-excel-process-scope)) |
 | DeleteRowsX | NOT inside `ExcelForEachRowX` | Deleting rows during iteration causes unexpected behavior |
 
 **Nesting restrictions:**
@@ -37,6 +37,12 @@ These activities **must** be placed inside a specific parent scope:
 | VerifyControlAttribute | Another `VerifyControlAttribute` | Validation error |
 | InvokeVBAX | Max 20 child `InvokeVBAArgumentX` | Validation error if exceeded |
 
+## Use Excel File Outside an Excel Process Scope
+
+`Use Excel File` (`ExcelApplicationCard`) with no `ExcelProcessScopeX` or `SequenceX` around it raises `UiPath recommends using “Use Excel File” inside an “Excel Process Scope"`. It is a validation warning of the activity, reported by `validate` and not by `build`, and not a numbered analyzer rule; an enclosing scope clears it whatever its `ProcessMode`. The scope's properties and modes: [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
+
+Put the Use Excel File activities of one step inside one scope: one Excel process serves them. At its end the scope quits that process if it started it and no workbook is left open; an Excel it reused keeps running.
+
 ## Conflicting Property Pairs
 
 Setting both properties in these pairs causes a **validation error**:
@@ -45,7 +51,6 @@ Setting both properties in these pairs causes a **validation error**:
 |-----------|-----------|----------|
 | `Password` | `SecurePassword` | ExcelApplicationScope, PDF, Mail activities |
 | `EditPassword` | `SecureEditPassword` | ExcelApplicationScope |
-| `SimulateClick` | `SendWindowMessages` | Click, ExtractData (UIAutomation) |
 
 Only set one from each pair, never both.
 
@@ -106,11 +111,8 @@ Some properties are only required when another property has a specific value:
 
 ## Input Method Constraints (UIAutomation)
 
-- `SimulateClick` cannot be used with `ClickType=Double` or `MouseButton=Right/Middle` — validation error
-- `TypeInto` with `SimulateType=True` **cannot use special keys** (Ctrl, Alt, Shift, etc.) — validation error via `SpecialKeyHelper.IsSpecialKeyUsed()`
-- `SimulateClick=True` AND `SendWindowMessages=True` is always invalid — pick one or neither
-- Input method resolution: `SendWindowMessages` → WINDOW_MESSAGES; else `SimulateClick` → API; else → HARDWARE_EVENTS (physical)
-- These are validated both at design-time (CacheMetadata) and runtime
+- Type Into's `Text` can hold special-key codes (`[k(enter)]` presses Enter; `[d(ctrl)]a[u(ctrl)]` is Ctrl+A). They cannot be typed with `InteractionMode` `Simulate`, set on the activity or inherited from its card: validation fails, and codes that reach `Text` from a variable fail the run. Use `HardwareEvents`, or `DebuggerApi` in Chrome and Edge.
+- Choosing a method per application: the Input Methods task guide, routed from `ui-automation-guide.md` § Documentation.
 
 ## NKeyboardShortcuts: `Shortcuts` vs `ShortcutsArgument`
 
@@ -253,8 +255,8 @@ The path is relative to the project root directory. Use backslashes for subfolde
 <ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
     DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)" UnSafe="False">
   <ui:InvokeWorkflowFile.Arguments>
-    <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
-    <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument1">someValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument2">anotherValue</InArgument>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
 ```
@@ -347,7 +349,7 @@ Or omit `Default` entirely if the variable is assigned before its first read.
 
 ## InvokeCode Code Property — Attribute Form Only
 
-Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs, and a VB body fails to compile with `BC30205: End of statement expected. At line 0`. `validate` and `build` do not compile the Invoke Code body, so both pass either way; a body that does not compile fails only when the activity runs, with `Code: No compiled code to run` and the compiler errors. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
+Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs, and a VB body fails to compile with `BC30205: End of statement expected. At line 0`. A body that no longer compiles fails with the compiler's errors, at `validate` and `build` or at the latest when the activity runs (`No compiled code to run`); one that still compiles with a changed meaning, as the swallowed C# statements do, passes both and misbehaves only when it runs. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
 
 **Correct:**
 ```xml
@@ -374,7 +376,7 @@ The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLang
 Could not load <FILE> file: 'Failed to create a 'Language' from the text 'VisualBasic'.'
 ```
 
-Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails when the activity runs, with VB errors:
+Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails with VB errors, at `validate` or at the latest when the activity runs:
 ```
 error BC30800: Method arguments must be enclosed in parentheses.
 error BC30037: Character is not valid.
@@ -398,6 +400,7 @@ XAML expressions (C# or VB) use the types a project's coded source files (`.cs`)
 
 - **Import and reference:** add `<x:String><Namespace></x:String>` to `TextExpression.NamespacesForImplementation` and `<AssemblyReference><ProjectName>.Core</AssemblyReference>` to `TextExpression.ReferencesForImplementation`, plus `System.Collections` ([§ Assembly References Studio Requires and the CLI Does Not Check](#assembly-references-studio-requires-and-the-cli-does-not-check)).
 - **Type argument:** a variable or argument of the type also needs a root prefix `xmlns:local="clr-namespace:<Namespace>;assembly=<ProjectName>.Core"`, then `x:TypeArguments="local:<Type>"`.
+- **Global variables** cannot take a type the coded source files define; type the global `Dictionary(String, Object)` or `Object` and cast where it is read.
 - **Static `void` method:** an expression must return a value, so a `void` helper is called with Invoke Method — `TargetType` names the class through the same prefix, and one positional `InArgument` child per parameter follows in declaration order:
 
   ```xml
@@ -427,11 +430,7 @@ The project's Studio host compiles the coded files when it loads the project, so
 
 ## CopyFolderX Copies Into `To`, Not As `To`
 
-`CopyFolderX` places the source folder inside `To`: copying folder `case1` with `To` set to folder `done` produces a `case1` folder inside `done`. `To` must already exist; otherwise the activity fails with `Source or destination folder missing.` The package doc's example reads like a copy to a new path. Pass the parent folder as `To`.
-
-## DeleteFileX Raises on a Missing File
-
-`DeleteFileX` raises `The file was not found at the provided path.` when the file is absent, although its package doc says it does not. Where the file may be missing, check it with Path Exists first.
+`CopyFolderX` places the source folder inside `To`: copying folder `case1` with `To` set to folder `done` produces a `case1` folder inside `done`. `To` must already exist; otherwise the activity fails with `Source or destination folder missing.` Pass the parent folder as `To`.
 
 ## `Chr()` / `Asc()` Break at Runtime in Modern Projects — Use `ChrW()` / `AscW()`
 
@@ -493,7 +492,7 @@ To launch a local executable (`.exe`/`.cmd`/`.bat`), use `ui:StartProcess` (prop
 
 Before writing any `<prefix:Tag>` not already in the file:
 
-- **Doc check.** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md`, or `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. No file → no such tag.
+- **Doc check.** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md`, or `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. A missing file does not prove a missing tag: an activity can ship without a per-activity doc, so the CLI lookup decides.
 - **CLI lookup.** `uip rpa activities find --query "<verb>" --output json` → use the returned `ClassName`.
 
 Skipping both produces `Cannot create unknown type` at `build`.
@@ -507,8 +506,8 @@ Skipping both produces `Cannot create unknown type` at `build`.
 | ExcelApplicationScope | `CreateNewFile` | `True` | Creates file if it doesn't exist |
 | Click | `ClickType` | `Single` | Single click (not double) |
 | Click | `MouseButton` | `Left` | Left mouse button |
-| Click | `AlterIfDisabled` | `True` | Alters element even if disabled (legacy compat) |
-| UI Automation activities | `Timeout` | `30` seconds, a double (Check App State: `5`) | How long to wait for the target before failing |
+| Click | `AlterIfDisabled` | `False` | When selected, the activity executes the action even if the target element is disabled. Does not apply if the input mode is Hardware Events |
+| UI Automation activities | `Timeout` | `30` seconds, a double | The amount of time (in seconds) to wait for the operation to be performed before generating an error. Default and meaning vary by activity: check the activity's doc, `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/<Activity>.md` |
 | UI Automation activities | `DelayBefore` | `0.2` seconds | Delay before action |
 | UI Automation activities | `DelayAfter` | `0.3` seconds | Delay after action; classic activities' millisecond values: [legacy/selector-guide.md](../legacy/selector-guide.md) |
 | ExtractData | `DelayBetweenPagesMS` | `300`ms | Between pagination clicks |
@@ -565,24 +564,24 @@ Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/
   <!-- Legacy (.NET Framework 4.6.1):
        xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
        xmlns:s="clr-namespace:System;assembly=mscorlib" -->
-  <Variable x:TypeArguments="sd:DataTable" Name="dt" Default="[New System.Data.DataTable()]" />
+  <Variable x:TypeArguments="sd:DataTable" Name="dt_Data" Default="[New System.Data.DataTable()]" />
   ...
   <InvokeMethod MethodName="Add">
     <InvokeMethod.TargetObject>
-      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt_Data.Columns]</InArgument>
     </InvokeMethod.TargetObject>
     <InArgument x:TypeArguments="x:String">Name</InArgument>
     <InArgument x:TypeArguments="s:Type">[GetType(System.String)]</InArgument>
   </InvokeMethod>
   <InvokeMethod MethodName="Add">
     <InvokeMethod.TargetObject>
-      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt_Data.Columns]</InArgument>
     </InvokeMethod.TargetObject>
     <InArgument x:TypeArguments="x:String">Amount</InArgument>
     <InArgument x:TypeArguments="s:Type">[GetType(System.Decimal)]</InArgument>
   </InvokeMethod>
   ```
-  `TargetObject` MUST be the typed property-element form (`InArgument x:TypeArguments="sd:DataColumnCollection"`) — the attribute shorthand `TargetObject="[dt.Columns]"` fails validation with `Set property 'InvokeMethod.TargetObject' threw an exception` because overload resolution can't see `Add` on the untyped target.
+  `TargetObject` MUST be the typed property-element form (`InArgument x:TypeArguments="sd:DataColumnCollection"`) — the attribute shorthand `TargetObject="[dt_Data.Columns]"` fails validation with `Set property 'InvokeMethod.TargetObject' threw an exception` because overload resolution can't see `Add` on the untyped target.
   **C# XAML** (`expressionLanguage: CSharp`): replace bracket-shorthand expressions with `<CSharpValue x:TypeArguments="T">...</CSharpValue>` / `<CSharpReference x:TypeArguments="T">...</CSharpReference>` wrappers inside the `<InArgument>`/`<Default>` elements. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the full binding form per property.
 
   Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
@@ -858,5 +857,5 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 When reading Excel data with `ReadRangeX`, column types in the resulting `DataTable` may be `String` even when the Excel cells contain numbers. This causes `DataTable.Select("[Amount] > 1000")` to perform string comparison instead of numeric comparison (e.g., `"4200" < "800"` alphabetically), silently dropping rows.
 
 **Workarounds:**
-- Use LINQ with explicit conversion: `dtData.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
+- Use LINQ with explicit conversion: `dt_Data.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
 - Convert the column type after reading: loop through rows and convert values, or clone the DataTable with the correct column types

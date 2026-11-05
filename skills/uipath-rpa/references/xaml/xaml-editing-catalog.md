@@ -8,13 +8,13 @@ Per-operation and per-activity catalogs for XAML authoring: editing operations (
 
 ### Adding Arguments (In/Out/InOut)
 
-Add `x:Property` elements inside `<x:Members>` with `InArgument`, `OutArgument`, or `InOutArgument`; prefix names `in_`, `out_`, or `io_`:
+Add `x:Property` elements inside `<x:Members>` with `InArgument`, `OutArgument`, or `InOutArgument`, named per SKILL.md Common Rule 4c:
 
 ```xml
 <x:Members>
   <x:Property Name="in_CustomerName" Type="InArgument(x:String)" />
   <x:Property Name="out_ProcessedCount" Type="OutArgument(x:Int32)" />
-  <x:Property Name="io_DataTable" Type="InOutArgument(scg:List(x:String))" />
+  <x:Property Name="io_Names" Type="InOutArgument(scg:List(x:String))" />
 </x:Members>
 ```
 
@@ -164,9 +164,6 @@ VB project with core workflow activities. Shows If/Then/Else branching and Assig
   xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
   xmlns:ui="http://schemas.uipath.com/workflow/activities"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <x:Members>
-    <x:Property Name="isWeekend" Type="InArgument(x:String)" />
-  </x:Members>
   <VisualBasic.Settings>
     <x:Null />
   </VisualBasic.Settings>

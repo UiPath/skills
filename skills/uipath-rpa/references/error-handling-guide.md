@@ -72,6 +72,7 @@ new BusinessRuleException($"Invoice {invoiceId} amount {amount:F2} is negative")
 1. `Rethrow` preserves original type and stack trace. Use it inside Catch after logging/screenshot to propagate unchanged. It is Catch-only; outside `Catch.Action` it throws `InvalidOperationException`.
 2. Never use `Throw New Exception(ex.Message)` to resurface an error: it resets the stack and drops the type (`CA2200`). Use `Rethrow`; use `Throw New <Type>(...)` only to translate types, such as wrapping a system error as business.
 3. Put `Rethrow` last in Catch; later activities are unreachable.
+4. **Throwing a caught exception object** (`Throw` with `[storedException]`) outside its Catch keeps its type, message, `Source` and `Data`, but restarts its stack trace; no analyzer rule flags it. It is the only way to raise the original exception once the handler has left the Catch, as a Flowchart's handler on the canvas does ([xaml/canvas-layout-guide.md § Exception Handling Across Nodes](xaml/canvas-layout-guide.md#exception-handling-across-nodes)). Set `Source` (or a `Data` entry) to the failing step first when a later handler reads it (§ 3 rule 7). Inside a Catch, `Rethrow` stays the rule.
 
 ## 5. Retry Scope
 
@@ -187,7 +188,7 @@ Register in `project.json` under `runtimeOptions`:
 | `Continue` | **Re-throw**; normal propagation/local Catch handles it. It does not mean skip. |
 | `Ignore` | Suppress error and continue from the next activity. |
 | `Retry` | Re-execute the failed activity. |
-| `Abort` | Stop the job after the handler. |
+| `Abort` | Stop the job after the handler; the remaining Catch and Finally blocks do not run. |
 
 ### Verdict logic — avoid the runaway loop
 
@@ -199,9 +200,9 @@ GEH re-enters at every call-stack level. Unconditional `Retry` can retry an alwa
 
 ### Interplay and limits
 
-- Caught and handled locally without rethrow: GEH does not fire.
+- GEH runs first-chance: before any local Catch — a Try/Catch around the faulted activity in the same workflow included — then again for every enclosing activity while the exception propagates. A local Try/Catch does not shield it, so a fault the workflow catches as normal flow still reaches the GEH first. Verified under `uip rpa run`; see [UiPath Global Exception Handler docs](https://docs.uipath.com/studio/standalone/latest/user-guide/global-exception-handler).
 - Fully unhandled: GEH fires and verdict applies; verified under `uip rpa run`.
-- Nested/call-stack behavior is version-sensitive: some Studio versions invoke GEH first-chance before local Catch for an activity nested in a `Sequence` inside Try (reported in 25.0.157). Do not assume deeply nested local Try/Catch always shields GEH. See [UiPath Global Exception Handler docs](https://docs.uipath.com/studio/latest/user-guide/global-exception-handler).
+- Activities with `ContinueOnError=True` never reach the GEH.
 - GEH retries activities, not workflows; retry a whole workflow with your own loop / Retry Scope.
 - Do not combine GEH with REFramework: their Try/Catch/retry strategies can fight and loop on business exceptions; choose one.
 - During debugging, Studio pauses/highlights the activity and shows exception in Locals/Call Stack; ribbon offers Continue / Retry / Ignore / Abort. Debug **Retry** does not invoke GEH; only Continue does.

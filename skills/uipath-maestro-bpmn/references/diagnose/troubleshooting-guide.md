@@ -29,9 +29,11 @@ uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
 Parse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.
+<!--skill-flavor:debug-instance-source:start-->
 For debug runs, prefer the `instanceId` returned by
 `uip maestro bpmn debug` and inspect it with `debug-instance` commands. Keep
 deployed-instance status reads and debug-session inspection separate.
+<!--skill-flavor:debug-instance-source:end-->
 
 ## Step 2 - Read incidents
 
@@ -47,8 +49,10 @@ uip maestro bpmn incident summary --output json
 For process-level incident overview:
 
 ```bash
-uip maestro bpmn processes incidents <PROCESS_KEY> --output json
+uip maestro bpmn processes incidents <PROCESS_DEFINITION_KEY> --folder-key <FOLDER_KEY> --output json
 ```
+
+`<PROCESS_DEFINITION_KEY>` is the bare process definition key, without the `:<processVersion>` suffix that `process run` takes.
 
 ## Step 3 - Inspect runtime variables
 
@@ -142,9 +146,11 @@ Return a concise diagnosis:
 - Whether the fix belongs in BPMN source, CLI enrichment, generated package files, or cloud configuration.
 - Safe next action: name the repair owner from the line above and the read-only command that shows the run's state
   before any Operate decision, e.g. "`<OWNER>` fixes `<ELEMENT_ID>`, then re-read
+<!--skill-flavor:safe-next-read:start-->
   `uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`" (for a debug run,
   `uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json`). Name the read; do not run it now. If no repair is needed, the read alone is the next
   action.
+<!--skill-flavor:safe-next-read:end-->
   Retry, cancel, pause, resume, migrate, cursor movement, debug, process run, upload, publish, and deploy are never
   the next action. If one fits later, name it on its own line as an Operate decision outside this diagnosis. When the
   request says not to ask for approval, do not.
@@ -152,7 +158,7 @@ Return a concise diagnosis:
 ## CLI command reference
 
 ```bash
-uip maestro bpmn job status <JOB_KEY> --output json
+uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn job traces <JOB_KEY> --output json
 uip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
@@ -163,7 +169,7 @@ uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --out
 uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn incident summary --output json
-uip maestro bpmn processes incidents <PROCESS_KEY> --output json
+uip maestro bpmn processes incidents <PROCESS_DEFINITION_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
 Lifecycle commands are intentionally absent from this diagnostic command list.

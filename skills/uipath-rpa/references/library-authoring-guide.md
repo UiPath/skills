@@ -22,7 +22,7 @@ Boundaries:
 | Need | Go to |
 |------|-------|
 | Start new projects from a standard baseline | Project templates — [environment-setup.md § Template Selection](environment-setup.md) |
-| Share UI selectors across projects | UI Libraries — [uia-starter-guide.md § Object Repository as a Published UI Library](uia-starter-guide.md) |
+| Share UI selectors across projects | UI Libraries — [uia-policies-catalog.md § Object Repository as a Published UI Library](uia-policies-catalog.md) |
 | Reuse logic inside one project | Separate workflow file — [environment-setup.md § Designing for Reuse](environment-setup.md#designing-for-reuse) |
 
 ## Creating and Structuring
@@ -62,7 +62,8 @@ Private workflows compile into the package and stay invocable from the library's
 
 ### Activity identity
 
-- Activity name and class = workflow file name (`SendInvoiceNotification.xaml` → activity `SendInvoiceNotification`)
+- Activity name and class = workflow file name (`SendInvoiceNotification.xaml` → activity `SendInvoiceNotification`); a coded workflow's = its class name plus `Activity` (class `CopyFolder` → activity `CopyFolderActivity`), its properties named as [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) states
+- Argument defaults reach consumers: a XAML workflow's root-element default ([xaml/xaml-editing-catalog.md § Setting Default Values for Arguments](xaml/xaml-editing-catalog.md)) and a coded workflow's parameter default compile into the package and apply when a consumer leaves the argument unset. `packages inspect` prints no defaults, so each argument's description states its default
 - Activity namespace = library name with dots and hyphens sanitized to underscores (`Company.Email.Utilities` → namespace `Company_Email_Utilities`); the package ID and assembly keep the dotted name. Read the real namespace from `uip rpa packages inspect` on the packed `.nupkg` — never derive it
 - Property tooltip = the argument's description annotation in XAML: `sap2010:Annotation.AnnotationText` on the `x:Property`
 
@@ -131,9 +132,9 @@ Rules:
 Each public workflow is an API surface. Apply every rule:
 
 1. **Name workflows verb-noun PascalCase, no spaces** — `SendNotificationEmail.xaml`, `DownloadInvoices.xaml`. The file name becomes the activity name in the consumer's panel.
-2. **Public arguments: PascalCase, NO `in_`/`out_`/`io_` prefixes** — `InvoiceId`, `RecipientEmail`, `NotificationResult`. Argument names become activity property names; prefixes become noise on the property grid. This inverts the process-workflow convention: workflows invoked via Invoke Workflow File keep directional prefixes ([environment-setup.md § Designing for Reuse](environment-setup.md#designing-for-reuse)); library public workflows drop them.
+2. **Public arguments: PascalCase, NO `in_`/`out_`/`io_` prefixes** — `InvoiceId`, `RecipientEmail`, `NotificationResult`. Argument names become activity property names; prefixes become noise on the property grid. Private workflows follow SKILL.md Common Rule 4c.
 3. **Describe every public argument** via its `sap2010:Annotation.AnnotationText` — descriptions ship as property tooltips. For display names, placeholders, widgets, and grouping, add the layout sidecar ([§ Activity Layout](#activity-layout--the-sidecar-file)).
-4. **Expect — and keep — the analyzer naming warnings.** `build`/`pack` emit `Argument <Name> does not respect the set pattern ^in_...` for prefix-free library arguments. The warning is non-blocking. Do NOT rename arguments to silence it.
+4. **Expect — and keep — the analyzer naming warnings.** `build`/`pack` emit `Argument <Name> does not respect the set pattern ^in_...` for prefix-free library arguments, and a public DataTable argument also draws `doesn't have datatable prefix` (ST-NMG-011). The warnings are non-blocking. Do NOT rename arguments to silence them, `dt_` included.
 5. **Return application handles.** A workflow that opens or attaches to an app outputs the window/browser object; downstream public workflows accept it as an input argument instead of reopening.
 6. **Post-authoring audit:** before packing, re-check every public workflow against rules 1-3 — name form, argument naming, argument descriptions.
 
@@ -143,7 +144,7 @@ Each public workflow is an API surface. Apply every rule:
 - **Never swallow errors**: no empty `Catch` blocks, no `out` boolean success flags in place of exceptions. A swallowed error returns control to a consumer whose target app is in an unknown state.
 - **Never set `ContinueOnError` inside a library** — the consumer decides failure policy.
 - **No hardcoded paths** — accept paths as arguments, or build from `UiPath.Constants.Project.Location` for files packed with the library.
-- **No embedded config or secrets** — read Orchestrator assets at the consumer level and pass them in as arguments. A credential passes as its asset's name, and the library reads it inside the scope that uses it: a `SecureString` argument fails `build` ([cli-reference.md § Analyzer errors](cli-reference.md#analyzer-errors)).
+- **No embedded config or secrets** — read Orchestrator assets at the consumer level and pass them in as arguments; a credential by its asset's name (SKILL.md Common Rule 5a).
 
 ## Versioning
 
@@ -199,6 +200,7 @@ Declare the namespace and use each public workflow as an element — property na
 
 5. **Stale design session after the dependency becomes resolvable:** `build` compiles the consumer but `validate` keeps failing with `Cannot create unknown type` for the library activity. Run `uip rpa project close --project-dir "<CONSUMER_PROJECT_DIR>"` and re-run `validate`; the next command reloads the project.
 6. **Same version repacked:** the package cache keeps the first package under an id and version and ignores a repack, so bump the library version whenever a consumer must see a change.
+7. **Dependency floor:** the consumer's version of each package the library depends on is at least the library's. A consumer pinned lower validates and builds with only a warning, `Detected package downgrade: <PACKAGE_ID> from <LIBRARY_VERSION> to <CONSUMER_VERSION>`, then fails at run time loading the library's assembly version (`Could not load file or assembly '<PACKAGE_ID>, Version=…'`). Treat that warning as an error: raise the consumer's dependency to the version it names.
 
 ## Library Patterns
 

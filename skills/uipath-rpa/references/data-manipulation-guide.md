@@ -2,7 +2,7 @@
 
 Transform data outside activities: DataTable LINQ, strings, RegEx, DateTime, conversion, collections, and JSON.
 
-**Owned elsewhere:** DataTable activity mechanics (BuildDataTable `TableInfo` trap + inline build, FilterDataTable type-compat, LookupDataTable, GetRowItem) → [xaml/common-pitfalls.md § DataTable Activity Gotchas](xaml/common-pitfalls.md); C# XAML expression binding (`CSharpValue`/`CSharpReference`) → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); REFramework Config.xlsx access → [reframework-guide.md](reframework-guide.md); activity properties (ForEachRow, AddDataRow, JoinDataTables, SortDataTable, …) → `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/` or `references/activity-docs/UiPath.System.Activities/`; coded-mode `using` directives → [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
+**Owned elsewhere:** DataTable activity mechanics (BuildDataTable `TableInfo` trap + inline build, FilterDataTable type-compat, LookupDataTable, GetRowItem) → [xaml/common-pitfalls.md § DataTable Activity Gotchas](xaml/common-pitfalls.md); C# XAML expression binding (`CSharpValue`/`CSharpReference`) → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); REFramework configuration access → [reframework-guide.md](reframework-guide.md); activity properties (ForEachRow, AddDataRow, JoinDataTables, SortDataTable, …) → `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/` or `references/activity-docs/UiPath.System.Activities/`; coded-mode `using` directives → [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
 
 ## Where each snippet goes — read first
 
@@ -46,7 +46,7 @@ See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 | Task | Use | Notes |
 |---|---|---|
 | Simple single-condition filter | **Filter Data Table** activity | GUI, no expression. |
-| Expression filter without new columns | `dt.Select("[Amount] > 1000")` | Returns `DataRow()`; string matching is case-INSENSITIVE by default and SQL-like. |
+| Expression filter without new columns | `dt_Data.Select("[Amount] > 1000")` | Returns `DataRow()`; string matching is case-INSENSITIVE by default and SQL-like. |
 | Filter/sort/group/join/project | LINQ in one `Assign` | Most flexible; ~2× faster than Join Data Tables on large sets. |
 | Heavy multi-step transforms, unit-tested logic, safe accessors | coded `.cs` | C# LINQ inline; see § When to move to coded. |
 | Multi-step transform in C#-expression XAML | Coded Source File helper, `Invoke Code`, or coded workflow via `Invoke Workflow File` | Expression trees forbid statements, `out var`, and optional-argument overloads (`CS0854`). |
@@ -106,36 +106,36 @@ Call `.AsEnumerable()` first and `.CopyToDataTable()` to produce a DataTable. Th
 **MANDATORY: guard every possibly empty `CopyToDataTable()` result.** Otherwise it throws `InvalidOperationException: "The source contains no DataRows"`:
 
 ```vb
-[If(q.Any(), q.CopyToDataTable(), dt.Clone())]
+[If(q.Any(), q.CopyToDataTable(), dt_Data.Clone())]
 ```
 
-`dt.Clone()` is an empty same-schema table; `dt.Copy()` includes schema and all rows.
+`dt_Data.Clone()` is an empty same-schema table; `dt_Data.Copy()` includes schema and all rows.
 
 ### Filter, sort, dedup, paginate — each `[expr]`
 
 ```vb
-dt.AsEnumerable().Where(Function(r) r("Status").ToString().Trim().Equals("active", StringComparison.OrdinalIgnoreCase))
-dt.AsEnumerable().OrderByDescending(Function(r) CDbl(r("Amount"))).CopyToDataTable()
-dt.AsEnumerable().Distinct(DataRowComparer.Default).CopyToDataTable()
-dt.AsEnumerable().GroupBy(Function(r) r("Id").ToString()).Select(Function(g) g.First()).CopyToDataTable()
-dt.AsEnumerable().Skip(10).Take(10).CopyToDataTable()
+dt_Data.AsEnumerable().Where(Function(r) r("Status").ToString().Trim().Equals("active", StringComparison.OrdinalIgnoreCase))
+dt_Data.AsEnumerable().OrderByDescending(Function(r) CDbl(r("Amount"))).CopyToDataTable()
+dt_Data.AsEnumerable().Distinct(DataRowComparer.Default).CopyToDataTable()
+dt_Data.AsEnumerable().GroupBy(Function(r) r("Id").ToString()).Select(Function(g) g.First()).CopyToDataTable()
+dt_Data.AsEnumerable().Skip(10).Take(10).CopyToDataTable()
 ```
 
-Guard each `CopyToDataTable()` when no match is possible. `dt.Select`/Filter Data Table matching is case-INSENSITIVE by default; use `StringComparison.Ordinal` for case-sensitive matching. C# equivalents use `r => r["Status"]…` and `g => g.First()`.
+Guard each `CopyToDataTable()` when no match is possible. `dt_Data.Select`/Filter Data Table matching is case-INSENSITIVE by default; use `StringComparison.Ordinal` for case-sensitive matching. C# equivalents use `r => r["Status"]…` and `g => g.First()`.
 
 ### Aggregate — each `[expr]`
 
 ```vb
-dt.AsEnumerable().Sum(Function(r) CDbl(r("Amount")))
-dt.AsEnumerable().Count(Function(r) r("Status").ToString().Trim().Equals("active", StringComparison.OrdinalIgnoreCase))
-dt.AsEnumerable().Any(Function(r) CDbl(r("Amount")) > 10000)
+dt_Data.AsEnumerable().Sum(Function(r) CDbl(r("Amount")))
+dt_Data.AsEnumerable().Count(Function(r) r("Status").ToString().Trim().Equals("active", StringComparison.OrdinalIgnoreCase))
+dt_Data.AsEnumerable().Any(Function(r) CDbl(r("Amount")) > 10000)
 ```
 
 ### Compare two DataTables (diff) — each `[expr]`
 
 ```vb
-dtA.AsEnumerable().Except(dtB.AsEnumerable(), DataRowComparer.Default)
-dtA.AsEnumerable().Where(Function(a) Not dtB.AsEnumerable().Any(Function(b) b("Id").ToString() = a("Id").ToString()))
+dt_A.AsEnumerable().Except(dt_B.AsEnumerable(), DataRowComparer.Default)
+dt_A.AsEnumerable().Where(Function(a) Not dt_B.AsEnumerable().Any(Function(b) b("Id").ToString() = a("Id").ToString()))
 ```
 
 The first returns rows in A not in B by whole row; guard and copy it when producing a DataTable. The second returns A rows whose key is absent from B.
@@ -149,8 +149,8 @@ The first returns rows in A not in B by whole row; guard and copy it when produc
 | Combine/filter/shape in one pass | LINQ join |
 
 ```vb
-(From a In dtA.AsEnumerable()
- Join b In dtB.AsEnumerable() On a("Id").ToString() Equals b("Id").ToString()
+(From a In dt_A.AsEnumerable()
+ Join b In dt_B.AsEnumerable() On a("Id").ToString() Equals b("Id").ToString()
  Select New Object(){ a("Id"), a("Name"), b("Region") }).ToList()
 ```
 
@@ -161,28 +161,28 @@ The first returns rows in A not in B by whole row; guard and copy it when produc
 Remove trailing all-empty Excel/scraping rows because they pollute counts/output and break numeric/date casts:
 
 ```vb
-dt.AsEnumerable().Where(Function(r) Not r.ItemArray.All(Function(f) f Is DBNull.Value OrElse String.IsNullOrWhiteSpace(f.ToString())))
+dt_Data.AsEnumerable().Where(Function(r) Not r.ItemArray.All(Function(f) f Is DBNull.Value OrElse String.IsNullOrWhiteSpace(f.ToString())))
 ```
 
 Guard and `CopyToDataTable()` the result.
 
 ### Group-by-sum into a NEW DataTable — `[seq]` (or `[coded]`)
 
-This is not an `Assign`: use `For Each` over groups and `Add Data Row`. `grouped` must already contain `Category(String)` and `Total(Decimal)` columns.
+This is not an `Assign`: use `For Each` over groups and `Add Data Row`. `dt_Grouped` must already contain `Category(String)` and `Total(Decimal)` columns.
 
 ```vb
-For Each g In dt.AsEnumerable().GroupBy(Function(r) r("Category").ToString())
-    grouped.Rows.Add(g.Key, g.Sum(Function(r) CDec(r("Amount"))))
+For Each g In dt_Data.AsEnumerable().GroupBy(Function(r) r("Category").ToString())
+    dt_Grouped.Rows.Add(g.Key, g.Sum(Function(r) CDec(r("Amount"))))
 Next
 ```
 
-In XAML, use `ui:ForEach` with `<ui:ForEach.Body>` over `…GroupBy(...).Select(Function(g) New Object(){g.Key, g.Sum(...)}).ToList()`, with `Add Data Row` into `grouped`.
+In XAML, use `ui:ForEach` with `<ui:ForEach.Body>` over `…GroupBy(...).Select(Function(g) New Object(){g.Key, g.Sum(...)}).ToList()`, with `Add Data Row` into `dt_Grouped`.
 
 ### Convert DataTable ↔ collections / JSON — `[expr]`
 
 ```vb
-dt.Columns.Cast(Of DataColumn)().ToDictionary(Function(c) c.ColumnName, Function(c) dt.Rows(0)(c.ColumnName).ToString())
-Newtonsoft.Json.JsonConvert.SerializeObject(dt)
+dt_Data.Columns.Cast(Of DataColumn)().ToDictionary(Function(c) c.ColumnName, Function(c) dt_Data.Rows(0)(c.ColumnName).ToString())
+Newtonsoft.Json.JsonConvert.SerializeObject(dt_Data)
 Newtonsoft.Json.JsonConvert.DeserializeObject(Of System.Data.DataTable)(jsonString)
 ```
 
@@ -191,13 +191,13 @@ Newtonsoft.Json.JsonConvert.DeserializeObject(Of System.Data.DataTable)(jsonStri
 ## Iterating rows & common errors
 
 - Use **For Each Row in Data Table** for row work; `CurrentRow` is a `DataRow`. It does not support persistence; inside a Long Running Workflow use coded code ([xaml/long-running-workflow-guide.md](xaml/long-running-workflow-guide.md)).
-- **MANDATORY modify-during-iteration rule:** never add/remove rows from the table being iterated; it throws `Collection was modified; enumeration operation may not execute`. Iterate a fresh array (`dt.Select()`), then call `AcceptChanges()` after `[seq]`/`[coded]`:
+- **MANDATORY modify-during-iteration rule:** never add/remove rows from the table being iterated; it throws `Collection was modified; enumeration operation may not execute`. Iterate a fresh array (`dt_Data.Select()`), then call `AcceptChanges()` after `[seq]`/`[coded]`:
 
 ```vb
-For Each r In dt.Select()
+For Each r In dt_Data.Select()
     If r("Status").ToString() = "drop" Then r.Delete()
 Next
-dt.AcceptChanges()
+dt_Data.AcceptChanges()
 ```
 
 - A null cell is `DBNull.Value`, not `Nothing`; use § Safe data access first.

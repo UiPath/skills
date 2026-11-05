@@ -4,7 +4,7 @@ A genome extracted from a UiPath source is built only to refactor that automatio
 
 ## The contract
 
-1. **Kept:** every rule, outcome, wait, retry and attempt count, every message, mail and log text word for word — a log line in the log the target keeps, wherever that is — the schedule and its time zone, and every output the source leaves — the records, files, mails, messages, tags and statuses it writes, with their names, fields, recipients and formats. Readers outside the export can depend on any output, so none is reshaped or dropped because nothing in the export reads it. A date the source takes from the clock keeps the source's clock: a rebuild that starts at another hour or in another time zone computes the date the source's run would have used.
+1. **Kept:** every rule, outcome, wait, retry and attempt count, every message, mail and log text word for word — a log line in the log the target keeps, wherever that is — the schedule and its time zone, and every output the source leaves — the records, files, mails, messages, tags and statuses it writes, with their names, fields, recipients and formats, the source's own run log aside, which the genome's Error Handling and Configuration Questions decide. Readers outside the export can depend on any output, so none is reshaped or dropped because nothing in the export reads it. A date the source takes from the clock keeps the source's clock: a rebuild that starts at another hour or in another time zone computes the date the source's run would have used.
 2. **Changed only with a reason**, and each change is a row of the refactor plan (§ Refactor plan) or of the correspondence table:
    - a source defect, as the genome's defect index says the rebuild follows ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md));
    - a user ruling written in the genome;
@@ -58,7 +58,7 @@ The target is chosen per component in two moves. First each step is typed with [
 
 ## Refactor plan
 
-Written to `migration/refactor-plan.md` once the questions are answered and before any project is created, and read by every group:
+Written to `refactor-plan.md` in the hand-off folder ([execution-guide.md § 3.3](execution-guide.md)) once the questions are answered and before any project is created, and read by every group:
 
 1. **Decisions:** the refactor answer line of each component (§ Refactor questions rule 1), then the projects the answers materialise, with the target's reason. Where the answers change the genome's Build With, Components or Handoffs rows, the build follows the plan: projects are created ([execution-guide.md § 1.4](execution-guide.md)), groups planned (§ 2.1), built through the target's owning skill (§ 2.2) and wired (§ 2.3) from the plan's projects and the handoffs it keeps, and the genome stays as written.
 2. **Differences:** one row per output the rebuild produces differently from the source — `# | Source | Rebuild | Reason` — the reason one of the contract's (a defect with its index row, a ruling with its date, an answer, a platform limit with its finding, a retry made safe). A change of how that leaves every output the same is a row of the correspondence table, not of this table.
@@ -106,7 +106,7 @@ The refactor's open-items file for the solution ([open-items-guide.md](open-item
 
 ## Done
 
-Beyond [execution-guide.md](execution-guide.md)'s list, a refactor is done when the refactor plan is written, every step's characterization tests run with their results in the report, the run modes and the comparison are built where the answer asked for them, and the Cutover section is written. The completion report adds one line: `Refactor: <component → target | folded into X | retired>, …; plan migration/refactor-plan.md (<n> differences, <m> unproven); characterization <passed>/<total>; modes <both | dry run | none>; comparison <built | not built>`.
+Beyond [execution-guide.md](execution-guide.md)'s list, a refactor is done when the refactor plan is written, every step's characterization tests run with their results in the report, the run modes and the comparison are built where the answer asked for them, and the Cutover section is written. The completion report adds one line: `Refactor: <component → target | folded into X | retired>, …; plan refactor-plan.md (<n> differences, <m> unproven); characterization <passed>/<total>; modes <both | dry run | none>; comparison <built | not built>`.
 
 ## Anti-patterns
 

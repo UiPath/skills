@@ -19,6 +19,7 @@ Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic ac
 9. **Never generate Flowchart/StateMachine without ViewState** — Studio stacks all nodes at (0,0) without it.
 10. **Never retry failing CLI commands blindly** — diagnose the root cause before retrying.
 11. **Probe the `rpa-legacy` packaging verb once per session, before the first pack.** Run `uip rpa-legacy pack --help --output json`. Result `Success` → use `pack` (post-rename, default). `unknown command` / non-zero exit → CLI predates the closed-verb-set rename; use `uip rpa-legacy package` instead with the same arguments and flags. Both surfaces produce the same `.nupkg`.
+12. **Wrap every container body/branch in `<Sequence>`, even a single activity** — `If.Then`/`If.Else`, `TryCatch.Try`/each `Catch` body/`Finally`, each `Switch` case and `Switch.Default`, and `While`/`DoWhile`/`ForEach` bodies. Studio's designer expects the `Sequence` as the branch's drop zone; `validate` accepts the bare form, so it never flags a missing wrapper. Copy the wrapped shapes in `_BUILT-IN-ACTIVITIES.md`.
 
 ---
 
