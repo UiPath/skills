@@ -248,7 +248,11 @@ binding half, which is the same for every connector-backed node.
   `RegistryTypeSpec` — the BPMN element and `uipath:*` tag, the context fields
   with their types and defaults, the payload `inputPattern`, and the output row.
   The spec is used as is, in place of the snapshot and the tenant. `decompile`
-  cannot recover it, so keep it in the source.
+  writes one for an imported node whose type the registry does not list, read off
+  the file itself (the element, the payload tag, nothing to derive) with every
+  context, input and output row spelled out beside it. That carries the node
+  through an edit unchanged; leave both as they are. It does not say which fields
+  the type needs, so for a new node of that type, write the full spec.
 
 <!-- RULE:bpmn.activity.offsnapshot-resolve -->
 - You do not have to transcribe the shape by hand: a type outside the SDK's
