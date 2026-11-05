@@ -26,6 +26,8 @@ Run source guide's Detection table against the given path. Decide:
 
 The answers are shared decisions, written into the brief of a reading in parts ([parts-guide.md](parts-guide.md) item 1).
 
+**A preferences file the user supplies** is read before these questions: it answers the ones it covers, which are not asked, and steers the decisions it names, within this skill's rules; a conflict with a rule is reported to the user, never resolved silently.
+
 ### Step 2 — Inventory
 
 List every file per project, classify with source guide's Inventory table, drop everything in its Exclusions. Record artifact types present; read only those Signals sections of the source guide.
