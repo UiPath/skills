@@ -74,7 +74,9 @@ warns about any other shape, so it will not catch a bare JSON-Schema object
 with `properties` alone for you — the format, with a worked example, is in
 [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
-Classification lands at `out('classify', ...)`. What the node emits at run time
+Classification lands at `out('classify', 'result.output')`: classify emits the
+same processed-document envelope (`version`, `type`, `result`, `taxonomy`,
+`metadata`), so read its answer under `result.output`. What Extract v2 emits at run time
 is a processed document, with the extracted values at `result.output`, one
 property per taxonomy field, and their page provenance under
 `result.attribution` ([Reading what it extracts](extract-document-node.md#reading-what-it-extracts)).

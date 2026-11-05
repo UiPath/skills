@@ -79,6 +79,8 @@ export default flow('seed-packet-reader')
 
 function summarize($vars: FlowVars) {
   const extracted = $vars.extractSowing.output;
-  return "type:" + String($vars.classifyPacket.output.ClassificationResult ?? "?")
+  // Classify's output is the ProcessedDocument envelope; the answer is under result.output.
+  const classified = $vars.classifyPacket.output?.result?.output;
+  return "type:" + String(classified?.document_type ?? "?")
     + " extracted:" + Object.keys(extracted ?? {}).length;
 }
