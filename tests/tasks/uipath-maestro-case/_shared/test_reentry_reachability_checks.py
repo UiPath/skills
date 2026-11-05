@@ -154,6 +154,10 @@ class TaskYamlAssertionTest(unittest.TestCase):
         plan = self.envelope_plan(freeze=True, reminder=False, escalation=None)
         self.assertTrue(all(self.evaluate(ENVELOPE_YAML, plan)))
 
+    def test_envelope_gate_passes_when_every_falsy_key_is_omitted(self) -> None:
+        plan = self.envelope_plan(freeze=True, reminder=None, escalation=None)
+        self.assertTrue(all(self.evaluate(ENVELOPE_YAML, plan)))
+
     def test_envelope_gate_still_fails_when_the_stated_yes_row_is_omitted(self) -> None:
         # `Run Only Once: Yes` was explicit in the SDD — omitting it there is a behavior change.
         plan = self.envelope_plan(freeze=None, reminder=False, escalation=False)
@@ -162,14 +166,9 @@ class TaskYamlAssertionTest(unittest.TestCase):
     def test_add_task_gate_passes_when_the_falsy_key_is_omitted(self) -> None:
         self.assertTrue(all(self.evaluate(ADD_TASK_YAML, self.linear_plan(None, added=True))))
 
-    def test_envelope_gate_passes_when_every_falsy_key_is_omitted(self) -> None:
-        plan = self.envelope_plan(freeze=True, reminder=None, escalation=None)
-        self.assertTrue(all(self.evaluate(ENVELOPE_YAML, plan)))
-
     def test_no_criterion_tells_an_omitted_key_from_an_explicit_false(self) -> None:
-        # Every json_check — gating or advisory, both carry score weight — must give the same
-        # verdict on the two shapes. The 2026-11-05 same-ground run lost v2 0.14 / 0.06 to a
-        # weighted advisory that required the explicit key.
+        # Every json_check, gating or advisory, carries score weight, so it must give the same
+        # verdict on the two shapes.
         import jmespath  # noqa: PLC0415
 
         cases = [
