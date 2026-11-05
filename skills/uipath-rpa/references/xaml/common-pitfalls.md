@@ -26,7 +26,7 @@ These activities **must** be placed inside a specific parent scope:
 
 | Activity | Recommended Parent | Notes |
 |----------|-------------------|-------|
-| ExcelApplicationCard | `ExcelProcessScopeX` | Warning if outside process scope |
+| ExcelApplicationCard | `ExcelProcessScopeX` | Warning if outside process scope ([§ Use Excel File Outside an Excel Process Scope](#use-excel-file-outside-an-excel-process-scope)) |
 | DeleteRowsX | NOT inside `ExcelForEachRowX` | Deleting rows during iteration causes unexpected behavior |
 
 **Nesting restrictions:**
@@ -36,6 +36,14 @@ These activities **must** be placed inside a specific parent scope:
 | SequenceX | Another `SequenceX` or `ExcelProcessScopeX` | Validation error |
 | VerifyControlAttribute | Another `VerifyControlAttribute` | Validation error |
 | InvokeVBAX | Max 20 child `InvokeVBAArgumentX` | Validation error if exceeded |
+
+## Use Excel File Outside an Excel Process Scope
+
+`Use Excel File` (`ExcelApplicationCard`) raises `UiPath recommends using "Use Excel File" inside an "Excel Process Scope"` when no `ExcelProcessScopeX` encloses it. It is a validation warning of the activity, reported by `validate` and `build`, not a numbered analyzer rule; any enclosing scope clears it. The scope's body type argument is `ui:IExcelProcess`; its properties and `ProcessMode` values (`AlwaysCreateNew`, `AttendedUser`, `ReuseIfExists`, `OnlyIfExists`) are in [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
+
+- Put the Use Excel File activities of one step inside one scope: one Excel process serves them and the scope quits it at the end.
+- Leave a workflow unscoped when it hands an open workbook to later workflows, such as a library that keeps workbook handles between calls: the scope would quit Excel under the handle. The warning stays; it is expected there.
+- Around a sequence that opens and closes a workbook through such a library within one workflow, set `ProcessMode` to `AlwaysCreateNew`: the scope starts its own Excel process, so quitting it leaves other workbooks alone.
 
 ## Conflicting Property Pairs
 
