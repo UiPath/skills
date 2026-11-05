@@ -62,20 +62,26 @@ _ISSUETYPE_IDS: dict[str, str] = {}
 
 
 def _listed(conn_id: str, resource: str) -> list[dict]:
-    """Every object in a `uip is resources run list` answer, at any depth."""
+    """The records in a `uip is resources run list` answer: the objects its lists hold.
+
+    A record's own nested objects (a type's `scope.project`) are not records, so they are not
+    returned. A bare object answer is one record.
+    """
     env = _run("is", "resources", "run", "list", CONNECTOR, resource, "--connection-id", conn_id)
     if env.get("Result") != "Success" or "Data" not in env:
         raise RuntimeError(f"uip is resources run list {resource} failed: {env.get('Message') or env.get('Result')}")
-    found: list[dict] = []
-    stack = [env["Data"]]
-    while stack:
-        node = stack.pop()
-        if isinstance(node, dict):
-            found.append(node)
-            stack.extend(node.values())
-        elif isinstance(node, list):
-            stack.extend(node)
-    return found
+    data = env["Data"]
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    if not isinstance(data, dict):
+        return []
+    # A wrapper such as {"values": [...]} has no identity of its own; a record (even one that
+    # holds lists, like a project's issueTypes) does.
+    if not any(data.get(field) for field in ("id", "Id", "key")):
+        held = [item for value in data.values() if isinstance(value, list) for item in value]
+        if held:
+            return [item for item in held if isinstance(item, dict)]
+    return [data]
 
 
 def issuetype_id(conn_id: str) -> str:

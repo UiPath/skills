@@ -64,14 +64,13 @@ sandbox:
     - type: template_dir
       path: fixtures
 
-# Graders live beside this file and import ../../_shared/case_check.py, so the
-# reference root is the skill's task tree (never staged into the agent's sandbox).
-
 # Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs.
 pre_run:
   - command: "python3 _setup/localize_tenant_ids.py"
     timeout: 300
 
+# Graders live beside this file and import ../../_shared/case_check.py, so the
+# reference root is the skill's task tree (never staged into the agent's sandbox).
 reference:
   directory: ../..
 

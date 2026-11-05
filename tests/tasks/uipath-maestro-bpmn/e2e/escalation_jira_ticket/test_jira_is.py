@@ -105,6 +105,14 @@ def test_the_issue_type_id_is_read_from_the_connections_site(monkeypatch: pytest
     assert len(seen) == 2  # one project list, one issuetype list, then cached
 
 
+def test_a_record_s_nested_objects_are_not_records(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A type's `scope.project` is not an issue type, and a wrapper's list holds the records."""
+    jira_is = _load_module()
+    wrapped = {"Result": "Success", "Data": {"values": [{"id": "10009", "name": "Task", "scope": {"project": {"id": "10000"}}}]}}
+    _stub_lists(monkeypatch, jira_is, wrapped)
+    assert [t["id"] for t in jira_is._listed("conn-1", "issuetype")] == ["10009"]
+
+
 def test_a_global_type_is_used_only_when_the_project_has_none(monkeypatch: pytest.MonkeyPatch) -> None:
     jira_is = _load_module()
     _stub_lists(monkeypatch, jira_is, _types({"id": "3", "name": "Task"}))
