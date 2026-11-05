@@ -270,6 +270,7 @@ def _check_event_schema(plan: dict, fixture: dict):
             "own key casing here\n"
             f"  actual={sorted(actual)}\n"
             f"  expected={sorted(fixture['event_fields'])}"
+            + (f"\n  re-cased duplicates={sorted(variants)}" if variants else "")
         )
 
 

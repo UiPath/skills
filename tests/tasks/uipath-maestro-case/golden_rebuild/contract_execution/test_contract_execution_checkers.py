@@ -724,7 +724,18 @@ class FieldNameCheckerTests(unittest.TestCase):
         result = self._run(plan)
 
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("event output schema property keys differ", result.stdout + result.stderr)
+        self.assertIn("re-cased duplicates=['RequestBody']", result.stdout + result.stderr)
+
+    def test_rejects_separator_variant_event_schema_key(self) -> None:
+        plan = fieldname_caseplan()
+        webhook = plan["nodes"][0]["data"]["tasks"][0][0]
+        properties = webhook["data"]["outputs"][0]["body"]["properties"]
+        properties["request-body"] = properties["request_body"]
+
+        result = self._run(plan)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("re-cased duplicates=['request-body']", result.stdout + result.stderr)
 
     def test_rejects_dropped_gate_expression(self) -> None:
         plan = fieldname_caseplan()
