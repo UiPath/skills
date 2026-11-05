@@ -23,7 +23,7 @@ Choose `start-task` versus `enter-stage` by where the work lives, not whether it
 | Breached | `slaId` only—an **absent `escalationId` is the persisted representation of Breached** | none; a breach response needs no escalation |
 | At-risk | `slaId` + concrete `escalationId` | the escalation is declared **on the same SLA** and has `triggerInfo.type: "at-risk"` |
 
-Never author the Case Designer's `"any"` escalation sentinel.
+`escalationId: "any"` is the Case Designer's **at-risk wildcard**: the Designer writes it when a rule's status is At risk and no single escalation is picked, and the platform fires it on every at-risk escalation of that SLA. It is a valid at-risk rule, never a breach rule. Do not author it: name the escalation the requirement means, because a wildcard also starts firing on any at-risk escalation added to that SLA later. When an existing plan carries it, keep or change it by the requirement's status (§5, defect 3).
 
 ## 3. Where the rule lives
 
@@ -53,7 +53,7 @@ A non-interrupting SLA lane remains a secondary stage: keep `stageType: "seconda
 
 1. **A task with no entry condition never starts.** `validate` accepts `entryConditions: []` and a missing key. Every task added for `start-task` carries its own entry condition (§3).
 2. **A non-interrupting lane emitted as a regular stage** (§4) silently changes the completion contract.
-3. **`escalationId: "any"` repaired by repointing.** Removing the key is the fix; substituting a concrete escalation also turns `validate` green but converts a Breached rule into an at-risk rule — a behavior change the user never asked for. The same conversion happens when a correct breach rule is "completed" by adding an escalation because a checklist looked like it required one: a breach rule carrying only `slaId` is finished, not missing a field.
+3. **A rule whose status is not the requirement's.** The status lives only in `escalationId` (§2), and every spelling validates, so the CLI cannot see a wrong status. Read the status off the requirement, never off what the plan already carries. For example, a lane the requirement enters **on breach** whose rule carries `escalationId: "any"` (the Designer's at-risk wildcard) fires at the at-risk threshold instead; the fix is to remove the key. Repointing it at a concrete escalation keeps it at-risk. The same mistake happens when a correct breach rule is "completed" by adding an escalation because a checklist looked like it required one: a breach rule carrying only `slaId` is finished, not missing a field.
 4. **`start-task` authored as stage re-entry** (§3) reruns every `shouldRunOnlyOnce: false` task in the breached stage instead of only the follow-up.
 
 ## Verified
@@ -67,7 +67,7 @@ Probed with `uip maestro case validate` on **uip 1.198.0-preview.102** (2026-07-
 | breach / at-risk on a **task's** `entryConditions` (stage SLA and root SLA) | valid |
 | at-risk with an escalation declared on that SLA | valid |
 | at-risk borrowing another SLA's escalation | **invalid**—"The escalation referenced by rule … no longer exists" |
-| `escalationId: "any"` | **invalid**—same error |
+| `escalationId: "any"` | valid—an **at-risk** rule on every at-risk escalation of that SLA. Re-verified from source, not by this probe: the Designer validator `validate` bundles skips `"any"` since MST-12222 (2026-07-21) |
 | dangling `slaId` | **invalid**—"The SLA referenced by rule … no longer exists" |
 | task with `entryConditions: []` or the key absent | valid (defect is invisible to the CLI) |
 

@@ -1,12 +1,12 @@
 task_id: skill-case-sla-repair-any-escalation
 description: >
-  T4 of the SLA-response battery — diagnose mode. The staged caseplan's SLA lane entry
-  still carries the Case Designer's `escalationId: "any"` sentinel — a frontend-only
-  placeholder that must not ship in an exported caseplan.json, whether or not
-  `uip maestro case validate` currently flags it. The correct repair is to drop the key,
-  because a breach rule references the SLA alone. The tempting wrong repair — inventing an
-  escalation so the reference resolves — also turns validate green, so the checker fails it
-  explicitly.
+  T4 of the SLA-response battery — diagnose mode. The Escalation Review lane must be
+  entered when the case SLA breaches, but its staged entry rule carries the Case Designer's
+  `escalationId: "any"`: the at-risk wildcard, which fires on every at-risk escalation of the
+  SLA (here at 80%), not on the breach. `validate` accepts that rule, so a green validate
+  proves nothing. The correct repair is to drop the key, because a breach rule references the
+  SLA alone. Repointing the rule at a concrete escalation, or inventing one, also keeps
+  validate green but leaves the lane at-risk, so the checker fails it explicitly.
 tags: [uipath-maestro-case, smoke, mode:diagnose, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
 max_iterations: 1
 
@@ -24,12 +24,14 @@ reference:
   directory: ../..
 
 initial_prompt: |
-  The SLA lane in `SlaResponse/SlaResponse/caseplan.json` has an `sla-status-change` entry
-  rule left over from the Case Designer with `escalationId: "any"`. Diagnose whether that's
-  safe to ship and fix it. `uip maestro case validate` may already report the file Valid —
+  Requirement: enter the Escalation Review lane when the case SLA breaches.
+
+  In `SlaResponse/SlaResponse/caseplan.json`, that lane's `sla-status-change` entry rule was
+  left over from the Case Designer with `escalationId: "any"`. Diagnose whether the rule meets
+  the requirement and fix it. `uip maestro case validate` may already report the file Valid —
   that alone does not mean there is nothing to fix.
 
-  The Escalation Review lane and the fact that it is entered on a case-SLA event are both
+  The Escalation Review lane, its entry rule, and the case SLA it reacts to are all
   intentional — do not restructure the case, and do not delete the lane or its entry rule.
 
   Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
@@ -47,7 +49,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The \"any\" sentinel is gone and the lane's entry is a plain breach rule (slaId, no escalationId); the lane and its single sla-status-change entry survive, and no escalation was invented to make the reference resolve"
+    description: "The lane's entry is a plain breach rule (slaId, no escalationId, so no \"any\" wildcard); the lane and its single sla-status-change entry survive, and no escalation was added for the rule to point at"
     command: "python3 $REFERENCE_DIR/_shared/check_repair_any_escalation.py"
     timeout: 60
     expected_exit_code: 0

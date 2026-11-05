@@ -47,9 +47,9 @@ SLA_RESPONSE_MODEL = [
         [r"never the SLA's scope", r"stops, pauses, takes over, or reroutes"],
     ),
     (
-        "an `any` escalation reference is invalid",
-        [r"`any` escalation reference \| invalid"],
-        [r'escalationId: "any"'],
+        "an `any` escalation reference is the at-risk wildcard, never a breach",
+        [r"`any` escalation reference \| valid — at-risk"],
+        [r'`escalationId: "any"` is the Case Designer\'s \*\*at-risk wildcard\*\*'],
     ),
     (
         "a dangling SLA reference is invalid",
