@@ -42,7 +42,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   names. Compiling into a scaffolded project regenerates its existing
   `bindings_v2.json`; then run `uip solution resources refresh --solution-folder
   {solution} --output json`. A live run is the evidence that those environment
-  resources resolve.
+  resources resolve. A `CONNECTION_STUB` warning from `case check` or `case
+  compile` means a connection or folder label compiles to a value that is not
+  a real id; it still compiles (fine for an offline or validate-only task), but
+  bind it with the `registry prepare` command the warning prints before a live
+  run.
 
 <!-- RULE:case.resources.live -->
 - Published process, agent, RPA, API workflow, sub-case, connector, and folder

@@ -36,6 +36,25 @@ class BindingsV2MetadataTests(unittest.TestCase):
             }
         )
 
+    def test_ignores_sync_emitted_role_metadata(self) -> None:
+        _assert_bindings_v2_metadata(
+            {
+                "version": "2.0",
+                "resources": [
+                    {
+                        "resource": "Role",
+                        "key": "Manager-stages-1",
+                        "metadata": {
+                            "displayName": "Manager",
+                            "description": "Owns the manager-approval stage.",
+                            "BindingsVersion": "2.2",
+                            "Stages": ["Manager Approval"],
+                        },
+                    }
+                ],
+            }
+        )
+
     def test_rejects_bindings_version_metadata(self) -> None:
         with self.assertRaisesRegex(SystemExit, "bindingsVersion"):
             _assert_bindings_v2_metadata(
