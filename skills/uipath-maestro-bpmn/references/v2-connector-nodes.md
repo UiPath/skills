@@ -150,11 +150,12 @@ connector one. Its outputs are `code`, `headers` and `body`, plus `Error`.
 
 A request that must reach a connection's webhook takes the webhook URL, not
 `uip is connections base-url`. Read `ElementInstanceId` from
-`uip is connections list <connector-key> --connection-id <id>`, then run
-`uip is webhooks config <connector-key> --connection-id <id>
+`uip is connections list <connector-key> --connection-id <id> --output json`,
+then run `uip is webhooks config <connector-key> --connection-id <id>
 --element-instance-id <n> --output json` and write `Data.WebhookUrl` as a
-literal manual-mode `url`. See uipath-platform
-`references/integration-service/triggers.md#webhook-url-retrieval`.
+literal manual-mode `url`. An empty `ElementInstanceId` means the connection
+cannot receive webhooks: use the connector's webhook connection, never
+`base-url`.
 
 When `registry get` says an object has no activity in the catalog
 (`Cannot identify the V2 element`, e.g. Slack's `emoji_list_GET`), the
