@@ -128,7 +128,8 @@ conversationalAgent({
 })
 ```
 
-`check` uses the inline agent's rules and codes for them; there is no `memory`.
+`check` uses the inline agent's rules for them, under the shared `FLOW_AGENT_*`
+codes, and each message names the conversational agent; there is no `memory`.
 A connector tool does not decompile yet: decompile writes a `TODO` for its edge.
 
 ## Evidence boundary

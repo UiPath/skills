@@ -132,7 +132,7 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `controlType` turns the dropdown into a text box. A decompiled canvas form
   keeps all of these, and you can edit the node like any other. `check`
   reports a value the platform refuses as `HITL_FIELD_SETTING_INVALID`
-  (`INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent's quick-form
+  (`FLOW_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent's quick-form
   escalation).
   These keys need `@uipath/maestro-builder-sdk` 6.35.0 or later;
   an older SDK drops them on decompile and does not write them on compile,

@@ -94,8 +94,8 @@ Each one becomes a resource node on the agent's `tool`, `context` or
 }))
 ```
 
-`check` uses the inline agent's rules and codes for them (`INLINE_AGENT_TOOL_*`,
-`INLINE_AGENT_ESCALATION_*`, `AGENT_CONTEXT_*`). There is no `memory`. A
+`check` uses the inline agent's rules for them, under the shared codes (`FLOW_AGENT_TOOL_*`,
+`FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_CONTEXT_*`). There is no `memory`. A
 decompiled canvas flow carries its tools in these options. A connector tool
 does not decompile yet: decompile writes a `TODO` for its edge, so keep that
 tool's node by editing the `.flow` directly.
