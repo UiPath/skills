@@ -185,36 +185,50 @@ And `level` stays `null` until Phase 2 confirms the write sites. A `uipath` row 
 Phase 2 evidence shows incremental writes is flipped to `transition`, and the field
 option is dropped.
 
-## Read the enforcement annotations before defaulting
+## Deriving the verdict
 
-OWL cannot carry enforcement: under open-world semantics a cardinality axiom
-documents an expectation, it does not check anything. **SHACL can**, and a bundle
-whose author thought about this will say so. Read these before applying any default —
-a declared answer beats a defaulted one.
+**The enforcement decision is genome's, never the bundle's.** Whether a constraint
+is enforced by the schema, enforced on the write, surfaced, or trusted is derived
+from two things the pipeline establishes itself: who owns the record, and what the
+process does with the column.
 
-| In the shapes | Read as |
+A bundle that pre-states it — an enforcement-mode annotation, a severity read as
+"surface, don't block" — has made the decision this pipeline exists to make, and is
+not believed. OWL cannot express enforcement under open-world semantics, and SHACL's
+`sh:severity` is about how a violation is *reported*, not about who owes the
+guarantee.
+
+**`locus`, from the access pattern** ([process-resolution-guide.md](process-resolution-guide.md)):
+
+| The process | `locus` |
 |---|---|
-| `sh:deactivated true` | documented, deliberately not enforced → `locus: none`, `level: assumed`, `resolution: override` |
-| `sh:severity sh:Violation` (or absent) | enforce where the locus allows → `candidate: state` or `transition` |
-| `sh:severity sh:Warning` / `sh:Info` | **surface, do not block** → `candidate: monitor` |
-| an authoritative-source annotation on the shape or its target class | that system is the system of record → `locus: external`, and the entity is a replica of it |
-| an enforcement-mode annotation (`authoritative` / `precheck` / `monitor`) | `level` directly: `state`-or-`transition` / `transition` on write-back / `monitor` |
+| creates or writes the table | `uipath` — this solution owns the record |
+| only reads the table | `external` — the system of record is elsewhere |
+| no table realizes the class at all | `uipath` — it exists nowhere else |
+| no process description was resolved | default D1, every entity a replica |
 
-The authoritative-source and enforcement-mode predicates are **not standardized** —
-every bundle names them in its own vocabulary. The inspector records any annotation
-on a shape it does not otherwise interpret, and the derivation accepts the predicate
-IRIs to treat as authoritative-source and enforcement-mode through the overrides
-file:
+**`level`, from the write sites and the branches:**
 
-```jsonc
-{ "annotations": {
-    "authoritativeSource": "https://example.invalid/meta#authoritativeSource",
-    "enforcementMode":     "https://example.invalid/meta#enforcementMode" } }
-```
+| `locus` | The process | `level` | Because |
+|---|---|---|---|
+| `uipath` | sets the column when the row is created | `state` | the schema can hold it; a row never exists without it |
+| `uipath` | writes the column only in a later step | `transition` | the record is legitimately incomplete first — a field option would reject the insert |
+| `uipath` | never writes the column | `assumed` | nothing here sets it |
+| `external` | a branch turns on the column | `monitor` | a bad value changes what the automation does, so surface it |
+| `external` | only carries the column | `assumed` | the system of record owes it and nothing here depends on it |
 
-Given none, every row falls through to the defaults below, and the report says the
-bundle carried no enforcement metadata — which is itself worth telling the user,
-because adding it upstream is cheaper than answering per entity forever.
+The `uipath` + later-write row is the one that pays for the whole mechanism. A
+resolution note written only when an exception is rejected is mandatory in the
+domain and must not be `isRequired`: the row exists from the moment the exception is
+raised, hours before anyone rejects it.
+
+The `external` + branch row is the second. A supplier's country is SAP's to
+guarantee, and re-checking it catches nothing SAP let through — but an approval
+gateway branches on it, so a wrong value routes an invoice to the wrong reviewer.
+That is worth a finding and not worth a block.
+
+**An override still wins.** `systemsOfRecord` names entities the process evidence
+would have called replicas, and the row records the disagreement.
 
 ## Defaults and overrides
 

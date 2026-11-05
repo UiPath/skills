@@ -239,8 +239,8 @@ def shape_index(inventory):
     return out
 
 
-def relationship_constraints(prop, shape, subject, is_master, register, mode_predicate,
-                             replica_of):
+def relationship_constraints(prop, shape, subject, is_master, register, facts,
+                             column, table):
     """Classify an OBJECT property's shape, the way a datatype property's is.
 
     Without this an `sh:minCount 1` on a relationship is parsed into the inventory
@@ -251,27 +251,26 @@ def relationship_constraints(prop, shape, subject, is_master, register, mode_pre
     if not shape:
         return {}
     locus = "uipath" if is_master else "external"
-    declared = declared_level_for(shape, mode_predicate)
+    level, may_require = verdict_for(column, facts, is_master)
     out = {}
     min_count = shape.get("minCount") or 0
     if min_count >= 1:
-        out["isRequired"] = is_master
+        out["isRequired"] = may_require if facts is not None else is_master
         register.add(
             source="process", from_iri=prop["iri"], subject=subject,
             statement=f"sh:minCount {min_count}: the relationship is mandatory in the domain",
             expressible="yes" if min_count == 1 else "no",
-            locus=locus, level=None,
-            candidate=declared or ("state" if is_master else "monitor"),
-            resolution="default-applied" if is_master else "override",
-            evidence={"replicaOf": replica_of} if not is_master else {},
-            note=("isRequired left false: the entity is a replica and the system of "
-                  "record holds the guarantee" if not is_master else
-                  "isRequired set from the system-of-record default (D1)"))
+            locus=locus, level=None if facts is None else level,
+            candidate=level or ("state" if is_master else "monitor"),
+            resolution="decided" if facts is not None else
+                       ("default-applied" if is_master else "override"),
+            evidence={"table": table, "column": column} if facts is not None else {},
+            note=level_note(level, column, table, not is_master, facts))
     for unsupported in shape.get("unsupported", []):
         register.add(source="process", from_iri=prop["iri"], subject=subject,
                      statement=f"sh:{unsupported} must hold on the relationship",
                      expressible="no", locus=locus, level=None,
-                     candidate=declared or ("monitor" if not is_master else "transition"),
+                     candidate=level or ("monitor" if not is_master else "transition"),
                      resolution="deferred")
     return out
 
@@ -289,19 +288,51 @@ def first_annotation(annotations, predicate_iri):
     return values[0] if values else None
 
 
-def declared_level_for(shape, mode_predicate):
-    """The level the shapes themselves declare, or None.
+def level_note(level, column, table, is_replica, facts):
+    """Say why the verdict is what it is, in the process's own terms."""
+    if facts is None:
+        return ("isRequired left false: the entity is a replica and the system of "
+                "record holds the guarantee" if is_replica else
+                "isRequired set from the system-of-record default; no process "
+                "description was resolved, so the write sites are unknown")
+    if level == "state":
+        return (f"`{table}.{column}` is set when the row is created, so the schema "
+                f"can hold the constraint")
+    if level == "transition":
+        return (f"`{table}.{column}` is written only after the row exists, so the "
+                f"record is legitimately incomplete first; enforce on the write, "
+                f"not on the schema")
+    if level == "monitor":
+        return (f"a branch turns on `{table}.{column}` and the system of record owns "
+                f"it: surface a violation, do not block")
+    return (f"nothing in the process writes or branches on "
+            f"`{table}.{column or '?'}`; the value is carried, not judged")
 
-    OWL cannot express enforcement; SHACL can. A bundle that says so is believed in
-    preference to any default — see constraint-register-guide.md § Read the
-    enforcement annotations before defaulting.
+
+def verdict_for(column, table_facts, is_master):
+    """(level, isRequired-eligible) from the access pattern — genome's own call.
+
+    Whether a constraint is enforced, surfaced or trusted is derived here, never
+    read out of the bundle. A shape that pre-states it has already made the
+    decision this pipeline exists to make.
+
+      ours + set at creation          -> state      the schema can hold it
+      ours + written only later       -> transition the record exists incomplete
+      ours + never written            -> assumed    nothing here sets it
+      theirs + a branch turns on it   -> monitor    a bad value changes behaviour
+      theirs + only carried           -> assumed    the source of record owes it
     """
-    mode = first_annotation(shape.get("annotations") or {}, mode_predicate)
-    if mode:
-        return {"authoritative": "state", "precheck": "transition",
-                "monitor": "monitor"}.get(mode.lower())
-    severity = (shape.get("severity") or "").rsplit("#", 1)[-1]
-    return "monitor" if severity in ("Warning", "Info") else None
+    if table_facts is None:
+        return (None, False)
+    if is_master:
+        if column and column in table_facts.get("columnsCreatedWith", []):
+            return ("state", True)
+        if column and column in table_facts.get("columnsWritten", []):
+            return ("transition", False)
+        return ("assumed", False)
+    if column and column in table_facts.get("decidedOn", []):
+        return ("monitor", False)
+    return ("assumed", False)
 
 
 def r2rml_index(inventory):
@@ -422,6 +453,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--overrides")
     ap.add_argument("--previous")
+    ap.add_argument("--access-patterns", dest="access_patterns")
     ap.add_argument("--scope", default="tenant", choices=("tenant", "folder"))
     args = ap.parse_args()
 
@@ -435,6 +467,7 @@ def main():
     inv = load(args.inventory, "--inventory")
     overrides = load(args.overrides, "--overrides") if args.overrides else {}
     previous = load(args.previous, "--previous") if args.previous else {}
+    access = load(args.access_patterns, "--access-patterns") if args.access_patterns else {}
     unknown = sorted(set(overrides) - {"systemsOfRecord", "replicas", "folderScoped",
                                        "displayFields", "lookupEntities", "annotations"})
     if unknown:
@@ -450,6 +483,13 @@ def main():
     source_predicate = annotation_map.get("authoritativeSource")
     mode_predicate = annotation_map.get("enforcementMode")
     systems_of_record = set(overrides.get("systemsOfRecord", []))
+    # The resolved process description decides ownership: a table it only reads is
+    # a replica, one it creates or writes is ours, and a class the mapping does not
+    # carry at all exists nowhere else, so nothing but this solution can own it.
+    table_of_class = {tm["subjectClass"]: tm["logicalTable"]
+                      for tm in inv.get("triplesMaps", [])
+                      if tm.get("subjectClass") and tm.get("logicalTable")}
+    access_tables = access.get("tables", {})
     declared_sources = {}   # class IRI -> the system named in the shapes
 
     classes = {c["iri"]: c for c in inv.get("classes", [])}
@@ -714,17 +754,32 @@ def main():
         # record. The asymmetry of harm decides the direction — a constraint left
         # unenforced is recoverable, a wrongly required field rejects data the source
         # already accepted and cannot be ingested at all.
-        is_master = ename in systems_of_record
+        table = table_of_class.get(iri)
+        facts = access_tables.get(table) if table else None
+        if ename in systems_of_record:
+            is_master, why = True, "named under systemsOfRecord"
+        elif access_tables and table is None:
+            is_master, why = True, ("no relational table realizes this class, so it "
+                                    "exists nowhere but here")
+        elif facts is not None:
+            is_master = not facts["readOnly"]
+            why = (f"the process writes `{table}` at step(s) "
+                   f"{', '.join(map(str, facts['writtenIn']))}" if is_master else
+                   f"the process only reads `{table}`")
+        else:
+            is_master, why = False, "no process description was resolved (default D1)"
         is_replica = not is_master
         locus = "uipath" if is_master else "external"
-        if is_replica and ename not in replicas:
-            register.add(source="domain", from_iri=iri, subject=ename,
-                         statement="no system of record declared for this entity, so it is "
-                                   "treated as a replica and nothing on it is enforced here "
-                                   "(default D1)",
-                         expressible="yes", locus="external", level=None,
-                         resolution="default-applied",
-                         note="name it under systemsOfRecord to enforce its constraints")
+        register.add(source="process" if facts is not None or access_tables else "domain",
+                     from_iri=iri, subject=ename,
+                     statement=("this solution is the system of record: " + why
+                                if is_master else "this entity is a replica: " + why),
+                     expressible="yes", locus=locus, level=None,
+                     resolution="decided" if (access_tables and
+                                              ename not in systems_of_record)
+                     else ("override" if ename in systems_of_record
+                           else "default-applied"),
+                     evidence={"table": table} if table else {})
         taken_fields, fields, cs_fields = set(), [], []
 
         for prop in sorted(props_by_class.get(iri, []), key=lambda p: p["iri"]):
@@ -735,21 +790,23 @@ def main():
             # Constraints are classified for EVERY field kind before the field is
             # shaped. A choice-set field carries sh:minCount and sh:pattern like any
             # other, and skipping them here is how a constraint disappears silently.
-            declared_level = declared_level_for(shape, mode_predicate)
+            column = (r2rml.get((iri, prop["iri"])) or {}).get("column")
+            level, may_require = verdict_for(column, facts, is_master)
             deactivated = bool(shape.get("allDeactivated"))
             field_locus = "none" if deactivated else locus
             # An inexpressible constraint cannot be enforced by the schema, so its
             # candidate is an operation, a surfaced finding, or trust. For a replica
             # the default is to surface rather than block: rejecting data the system
             # of record accepted creates divergence, not a catch.
-            soft = declared_level or ("monitor" if field_locus == "external" else "transition")
-            hard = declared_level or ("state" if field_locus == "uipath" else "monitor")
+            soft = level or ("monitor" if field_locus == "external" else "transition")
+            hard = level or ("state" if field_locus == "uipath" else "monitor")
             # expressible: no forecloses state, including when the shapes declare
             # `authoritative`. A constraint the schema cannot hold is enforced by an
             # operation, surfaced, or trusted — never by the schema.
             if soft == "state":
                 soft = "transition"
-            resolution = "override" if (deactivated or declared_level) else None
+            resolution = ("override" if deactivated else
+                          "decided" if level else None)
 
             # A deactivated shape is excluded from the merge so it cannot weaken an
             # active one, but it is still something the business wrote down. Record
@@ -774,20 +831,19 @@ def main():
                              expressible="no", locus=field_locus, level=None,
                              candidate=soft, resolution=resolution or "deferred")
             if min_count >= 1:
-                required = field_locus == "uipath" and not deactivated
+                required = (may_require and not deactivated) if facts is not None \
+                    else (field_locus == "uipath" and not deactivated)
                 register.add(
                     source="process", from_iri=prop["iri"], subject=subject,
                     statement=f"sh:minCount {min_count}: mandatory in the domain",
-                    expressible="yes" if min_count == 1 else "no", locus=field_locus, level=None,
+                    expressible="yes" if min_count == 1 else "no", locus=field_locus,
+                    level=None if facts is None else level,
                     candidate=hard,
                     resolution=resolution or ("default-applied" if field_locus == "uipath"
                                               else "override"),
-                    evidence={"replicaOf": replicas.get(ename)} if is_replica else {},
-                    note=("isRequired left false: the entity is a replica and the system of "
-                          "record holds the guarantee; surface a violation, do not block"
-                          if is_replica else
-                          "isRequired set from the system-of-record default (D1); Phase 2 must "
-                          "confirm records are written whole, not completed incrementally"))
+                    evidence=({"table": table, "column": column} if facts is not None
+                              else {"replicaOf": replicas.get(ename)} if is_replica else {}),
+                    note=level_note(level, column, table, is_replica, facts))
             statements = [f"sh:pattern {p!r} must hold" for p in shape.get("patterns") or []]
             if shape.get("minLength"):
                 statements.append(f"sh:minLength {shape['minLength']} must hold")
@@ -885,9 +941,10 @@ def main():
             entry = {"name": rname, "target": rel["target"],
                      "cardinality": rel["cardinality"],
                      "provenance": {"from": [rel["prop"]["iri"]], "derivation": "direct"}}
+            rel_col = (r2rml.get((iri, rel["prop"]["iri"])) or {}).get("column")
             entry.update(relationship_constraints(
                 rel["prop"], rel.get("shape") or {}, f"{ename}.{rname}", is_master,
-                register, mode_predicate, replicas.get(ename)))
+                register, facts, rel_col, table))
             rels.append(entry)
 
         # Lowest-sorting, so the pick does not depend on construction order. Never
@@ -981,7 +1038,32 @@ def main():
                 "kind": "consolidation", "members": sorted(members), "verdict": "candidate",
                 "evidence": {"sharedLogicalTable": table},
                 "why": "the source keeps these in one table; evidence only — whether this "
-                       "automation reads them together is a Phase 2 question"})
+                       "automation reads them together is a later phase's question"})
+    # A co-read is this process's evidence, not the source's layout: two tables
+    # fetched in one step are a real candidate, and the step says so.
+    class_of_table = {v: k for k, v in table_of_class.items()}
+    for co in access.get("coReads", []):
+        members = sorted({name_of[class_of_table[t]] for t in co["tables"]
+                          if class_of_table.get(t) in name_of})
+        if len(members) > 1:
+            envelope.append({
+                "kind": "consolidation", "members": members, "verdict": "candidate",
+                "evidence": {"coReadInStep": co["step"], "tables": co["tables"]},
+                "why": f"the process reads these together at step {co['step']}; whether "
+                       f"the read pattern justifies a fold is a later phase's question"})
+    step_of = {s["n"]: s for s in access.get("steps", [])}
+    for hot in access.get("hotPaths", []):
+        step = step_of.get(hot["step"], {})
+        on_path = sorted({name_of[class_of_table[t]]
+                          for v in step.get("traversals", [])
+                          for t in (v["from"].split(".")[0], v["to"].split(".")[0])
+                          if class_of_table.get(t) in name_of})
+        envelope.append({
+            "kind": "hot-path", "members": on_path, "verdict": "evidence",
+            "evidence": {"step": hot["step"], "hops": hot["hops"], "runs": hot["runs"]},
+            "why": f"step {hot['step']} traverses {hot['hops']} join(s)"
+                   f"{' at ' + hot['runs'] if hot['runs'] else ''}; each hop is a "
+                   f"round trip, because native entities have no query-time join"})
 
     coverage = {}
     for entity in entities:

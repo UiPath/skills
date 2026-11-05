@@ -47,7 +47,9 @@ rules they need; the run then says which guidance it could not consult.
 | SHACL shapes | the user | no | what is true of the business world |
 | `source.r2rml` | the user | **no** | how the source realizes the ontology — executable against the source |
 | `target.r2rml` | this extension | yes, from Phase 2 on | the relational design the entity set derives from |
+| `process-resolved.md` | the agent, in phase 2a | no, once resolved | the process named against the mapping's tables — an **input** to the model |
 | `<bundle>-inventory.json` | `ontology-inspect.py` | derived | the parsed, normalized reading of the three inputs |
+| `access-patterns.json` | `resolve-process.py` | derived | who writes what, what a branch turns on, what is read together |
 | `entities.json` | `derive-entities.py` | derived | the entity set, register and provenance |
 | solution resources | `apply-entities.py` | derived | what ships |
 
@@ -142,7 +144,8 @@ lock a decision that later steps cannot revisit cheaply (§ Commitment ladder).
 |---|---|---|---|
 | 1 | Detect the bundle; copy `source.r2rml` → `target.r2rml` | the baseline | the diff baseline for every later phase |
 | 2 | Run `ontology-inspect.py` | `<slug>-inventory.json` | the reading of the three inputs |
-| 3 | Declare the four defaults; take named overrides | the override list | the category-3 answers |
+| 2a | **Resolve the process description against the mapping's tables; run `resolve-process.py`** | `access-patterns.json` | **which entities this solution owns, and where each constraint is enforced** ([process-resolution-guide.md](process-resolution-guide.md)) |
+| 3 | Declare the four defaults for whatever 2a left open; take named overrides | the override list | the remaining category-3 answers |
 | 4 | Fix the naming convention | — | **every entity and field name** |
 | 5 | Run `derive-entities.py` | `entities.json` | entity identity, junctions, components, `numberId`s |
 | 6 | Classify every SHACL shape | the register | `expressible`; `locus` by default |
