@@ -10,20 +10,23 @@ Usage (from a task's run_command, cwd = sandbox root):
 ``inputs.schemaDocument``, the document ``nodes schema get`` prints.
 
 Checks:
-    fields JSON          each entry of the JSON array fits a different field:
+    fields JSON          each entry of the JSON array fits a field:
                          '[{"name": "date", "type": "ft-date"}, {"says": "prefix"}]'
-                         "name" is searched in the field name, "says" in its
-                         instructions and "group" in the name of the group
-                         holding it (case-insensitive regex, so a plain word
-                         means "contains"). "type" must equal the field type
-                         and "id" its x-uipath-field-id. "repeats" (true or
-                         false) says whether that group is a repeating one.
-                         An entry may give any of these keys. With --only,
-                         the taxonomy has no field beyond the entries.
+                         "name" is searched in the field name and "says" in
+                         its instructions (case-insensitive regex, so a plain
+                         word means "contains"). "type" must equal the field
+                         type and "id" its x-uipath-field-id. An entry may
+                         give any of these keys. With --only, every field
+                         fits an entry.
     described            the overall prompt, every group and every field have
                          a description
     defs                 the six built-in field types are still in $defs; with
                          --only, $defs holds nothing else
+    unchanged ORIGINAL [OLD=NEW ...]
+                         the taxonomy equals the one in the ORIGINAL .flow,
+                         with each OLD field renamed to NEW (same id, type and
+                         instructions): prompt, config, groups, fields, ids
+                         and $defs. The order of "required" lists is ignored.
     file-ref             the node's inputs.fileRef reads a declared
                          ``direction: in``, ``type: file`` global
                          (``flow validate`` passes a fileRef to an input that
@@ -57,70 +60,54 @@ BUILT_IN_TYPES = (
     "ft-monetary-quantity",
     "ft-boolean",
 )
-FIELD_KEYS = {"name", "type", "says", "group", "id", "repeats"}
-PATTERN_KEYS = ("name", "says", "group")
+FIELD_KEYS = {"name", "type", "says", "id"}
+PATTERN_KEYS = ("name", "says")
+MAX_DIFFERENCES = 10
 ONLY_CHECKS = ("fields", "defs")
 
 
-def _output_schema(node: dict) -> dict:
-    return ((node.get("inputs") or {}).get("schemaDocument") or {}).get("outputSchema") or {}
+def _read_schema_document(node: dict) -> dict:
+    return (node.get("inputs") or {}).get("schemaDocument") or {}
 
 
-def _groups(node: dict) -> dict:
-    return _output_schema(node).get("properties") or {}
+def _read_output_schema(node: dict) -> dict:
+    return _read_schema_document(node).get("outputSchema") or {}
 
 
-def _fields(node: dict) -> list[tuple[str, str, dict, bool]]:
-    """``(group, field, spec, repeats)`` for every field, in plain and table groups."""
-    result = []
-    for group, spec in _groups(node).items():
-        props = spec.get("properties") or (spec.get("items") or {}).get("properties") or {}
-        kind = spec.get("type")
-        repeats = "array" in (kind if isinstance(kind, list) else [kind])
-        result.extend((group, name, field, repeats) for name, field in props.items())
-    return result
+def _list_groups(node: dict) -> dict:
+    return _read_output_schema(node).get("properties") or {}
+
+
+def _find_field_holder(group: dict) -> dict:
+    """The part of a group that holds its fields: the group, or its ``items`` for a table."""
+    return group if "properties" in group else group.get("items") or {}
+
+
+def _list_fields(node: dict) -> list[tuple[str, str, dict]]:
+    """``(group, field, spec)`` for every field, in plain and table groups."""
+    return [
+        (group, name, field)
+        for group, spec in _list_groups(node).items()
+        for name, field in (_find_field_holder(spec).get("properties") or {}).items()
+    ]
 
 
 def _get_field_type(field: dict) -> str:
     return field.get("$ref", "").rsplit("/", 1)[-1] or "no type"
 
 
-def _fits(want: dict, group: str, name: str, field: dict, repeats: bool) -> bool:
-    text = {"name": name, "says": field.get("description") or "", "group": group}
+def _fits(want: dict, name: str, field: dict) -> bool:
+    text = {"name": name, "says": field.get("description") or ""}
     if any(k in want and not re.search(want[k], text[k], re.IGNORECASE) for k in PATTERN_KEYS):
         return False
     if "type" in want and want["type"] != _get_field_type(field):
         return False
-    if "id" in want and want["id"] != field.get("x-uipath-field-id"):
-        return False
-    return "repeats" not in want or want["repeats"] == repeats
+    return "id" not in want or want["id"] == field.get("x-uipath-field-id")
 
 
-def _describe(group: str, name: str, field: dict, repeats: bool) -> str:
-    table = " (repeats)" if repeats else ""
+def _describe(group: str, name: str, field: dict) -> str:
     field_id = field.get("x-uipath-field-id") or "none"
-    return f"'{group} > {name}'{table} {_get_field_type(field)} id {field_id} {(field.get('description') or '')!r}"
-
-
-def _match(wanted: list[dict], fields: list[tuple]) -> tuple[list[dict], set[int]]:
-    """Give each wanted entry a different field (bipartite matching, so not greedy).
-
-    Returns the entries left without one, and the indexes of the fields given out.
-    """
-    owner: dict[int, int] = {}
-
-    def place(w: int, seen: set[int]) -> bool:
-        for f, entry in enumerate(fields):
-            if f in seen or not _fits(wanted[w], *entry):
-                continue
-            seen.add(f)
-            if f not in owner or place(owner[f], seen):
-                owner[f] = w
-                return True
-        return False
-
-    missing = [wanted[w] for w in range(len(wanted)) if not place(w, set())]
-    return missing, set(owner)
+    return f"'{group} > {name}' {_get_field_type(field)} id {field_id} {(field.get('description') or '')!r}"
 
 
 def parse_fields(values: list[str]) -> list[dict]:
@@ -138,12 +125,9 @@ def parse_fields(values: list[str]) -> list[dict]:
             not isinstance(want, dict)
             or not want
             or set(want) - FIELD_KEYS
-            or not all(isinstance(v, bool if k == "repeats" else str) for k, v in want.items())
+            or not all(isinstance(v, str) for v in want.values())
         ):
-            raise ValueError(
-                "each entry has string name, type, says, group or id keys and a true or "
-                f"false repeats, not {json.dumps(want)}"
-            )
+            raise ValueError(f"each entry has string name, type, says or id keys, not {json.dumps(want)}")
         for key in PATTERN_KEYS:
             if key in want:
                 try:
@@ -154,20 +138,17 @@ def parse_fields(values: list[str]) -> list[dict]:
 
 
 def check_fields(_: dict, node: dict, args: argparse.Namespace) -> str | None:
-    fields = _fields(node)
-    missing, used = _match(args.wanted, fields)
-    problems = []
-    for want in missing:
-        fitting = [f"{g} > {n}" for g, n, f, r in fields if _fits(want, g, n, f, r)]
-        if fitting:
-            problems.append(f"{json.dumps(want)} fits only {fitting}, already used by another entry")
-        else:
-            problems.append(f"no field fits {json.dumps(want)}")
+    fields = _list_fields(node)
+    problems = [
+        f"no field fits {json.dumps(want)}"
+        for want in args.wanted
+        if not any(_fits(want, n, f) for _, n, f in fields)
+    ]
     if args.only:
         problems += [
             f"'{g} > {n}' is a field no entry asks for"
-            for i, (g, n, _, _) in enumerate(fields)
-            if i not in used
+            for g, n, f in fields
+            if not any(_fits(want, n, f) for want in args.wanted)
         ]
     if not problems:
         return None
@@ -177,19 +158,75 @@ def check_fields(_: dict, node: dict, args: argparse.Namespace) -> str | None:
 
 def check_described(_: dict, node: dict, __: argparse.Namespace) -> str | None:
     problems = []
-    if not ((node.get("inputs") or {}).get("schemaDocument") or {}).get("prompt"):
+    if not _read_schema_document(node).get("prompt"):
         problems.append("the overall prompt is empty")
-    problems += [f"group {g!r} has no description" for g, s in _groups(node).items() if not s.get("description")]
-    problems += [f"field '{g} > {n}' has no description" for g, n, f, _ in _fields(node) if not f.get("description")]
+    problems += [f"group {g!r} has no description" for g, s in _list_groups(node).items() if not s.get("description")]
+    problems += [f"field '{g} > {n}' has no description" for g, n, f in _list_fields(node) if not f.get("description")]
     return "; ".join(problems) or None
 
 
 def check_defs(_: dict, node: dict, args: argparse.Namespace) -> str | None:
-    defs = _output_schema(node).get("$defs") or {}
+    defs = _read_output_schema(node).get("$defs") or {}
     problems = [f"$defs is missing {t} (has: {', '.join(defs) or 'none'})" for t in BUILT_IN_TYPES if t not in defs]
     if args.only:
         problems += [f"$defs also has {k}, which is not a built-in field type" for k in defs if k not in BUILT_IN_TYPES]
     return "; ".join(problems) or None
+
+
+def _rename_field(node: dict, old: str, new: str) -> bool:
+    """Rename field ``old`` to ``new`` in place, in its group's properties and required list."""
+    for spec in _list_groups(node).values():
+        holder = _find_field_holder(spec)
+        props = holder.get("properties") or {}
+        if old in props:
+            holder["properties"] = {new if k == old else k: v for k, v in props.items()}
+            if isinstance(holder.get("required"), list):
+                holder["required"] = [new if k == old else k for k in holder["required"]]
+            return True
+    return False
+
+
+def _find_differences(want: object, got: object, path: str = "") -> list[str]:
+    """Each JSON path where ``got`` differs from ``want``; ``required`` lists compare as sets."""
+    if isinstance(want, dict) and isinstance(got, dict):
+        found = []
+        for key in sorted(set(want) | set(got)):
+            where = f"{path}.{key}" if path else key
+            if key not in got:
+                found.append(f"{where} was dropped")
+            elif key not in want:
+                found.append(f"{where} was added: {json.dumps(got[key])[:80]}")
+            else:
+                found += _find_differences(want[key], got[key], where)
+        return found
+    if path.endswith(".required") and isinstance(want, list) and isinstance(got, list):
+        want, got = sorted(map(str, want)), sorted(map(str, got))
+    if want == got:
+        return []
+    return [f"{path} was {json.dumps(want)[:80]}, now {json.dumps(got)[:80]}"]
+
+
+def _read_extract_node(path: str) -> dict:
+    with open(path, encoding="utf-8") as fh:
+        flow = json.load(fh)
+    node = next((n for n in flow.get("nodes") or [] if n.get("type") == EXTRACT_NODE_TYPE), None)
+    if node is None:
+        raise SystemExit(f"FAIL: no Extract document node in the original {path}")
+    return node
+
+
+def check_unchanged(_: dict, node: dict, args: argparse.Namespace) -> str | None:
+    original, *renames = args.values
+    expected = _read_extract_node(original)
+    for rename in renames:
+        old, new = rename.split("=", 1)
+        if not _rename_field(expected, old, new):
+            raise SystemExit(f"FAIL: the original taxonomy has no field named {old!r}")
+    found = _find_differences(_read_schema_document(expected), _read_schema_document(node))
+    if not found:
+        return None
+    more = f"; and {len(found) - MAX_DIFFERENCES} more" if len(found) > MAX_DIFFERENCES else ""
+    return "the taxonomy differs from the original: " + "; ".join(found[:MAX_DIFFERENCES]) + more
 
 
 def _extract_expression(value: object) -> str:
@@ -241,13 +278,14 @@ CHECKS = {
     "fields": check_fields,
     "described": check_described,
     "defs": check_defs,
+    "unchanged": check_unchanged,
     "file-ref": check_file_ref,
     "edge": check_edge,
     "no-other-ixp": check_no_other_ixp,
 }
 
 
-def _usage_error(args: argparse.Namespace) -> str | None:
+def _find_usage_error(args: argparse.Namespace) -> str | None:
     if args.only and args.check not in ONLY_CHECKS:
         return f"--only applies to {' and '.join(ONLY_CHECKS)}, not {args.check}"
     if args.check == "fields":
@@ -258,6 +296,9 @@ def _usage_error(args: argparse.Namespace) -> str | None:
     elif args.check == "edge":
         if len(args.values) != 2 or args.values[0] not in ("in", "out"):
             return "edge takes: in|out PORT"
+    elif args.check == "unchanged":
+        if not args.values or not all(re.fullmatch(r"[^=]+=[^=]+", v) for v in args.values[1:]):
+            return "unchanged takes: ORIGINAL [OLD=NEW ...]"
     elif args.values:
         return f"{args.check} takes no values"
     return None
@@ -271,7 +312,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("values", nargs="*")
     args = parser.parse_args(argv)
 
-    usage = _usage_error(args)
+    usage = _find_usage_error(args)
     if usage:
         print(f"FAIL: {usage}", file=sys.stderr)
         return 2

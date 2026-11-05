@@ -48,6 +48,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "Apart from the rename, the taxonomy equals the seeded one: prompt, config, group, every field's type, instructions and id, $defs"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader unchanged
+      $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader/InvoiceReader.flow
+      'Total=Total Amount'
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "The other three fields kept their names and ids"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields

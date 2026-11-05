@@ -186,20 +186,6 @@ def test_every_missing_entry_is_reported(write, capsys):
     assert "Line Items > Quantity" in err
 
 
-def test_one_field_cannot_answer_two_entries(write, capsys):
-    write(_flow(schema=_schema({"G": {"description": "d", "properties": {"Vendor Number": _field("ft-exact-text")}}})))
-    assert _fields({"name": "vendor"}, {"name": "number"}) == 1
-    assert "fits only ['G > Vendor Number'], already used" in capsys.readouterr().err
-
-
-def test_pairing_is_not_greedy(write):
-    write(_flow(schema=_schema({"G": {"description": "d", "properties": {
-        "Invoice Number": _field("ft-exact-text"),
-        "Invoice Date": _field("ft-date"),
-    }}})))
-    assert _fields({"name": "invoice"}, {"name": "number"}) == 0
-
-
 def test_id_is_checked_on_the_named_field(write, capsys):
     write(_flow(schema=_schema({"Invoice": {"description": "d", "properties": {
         "Total Amount": {**_field("ft-monetary-quantity"), "x-uipath-field-id": "id-total"},
@@ -208,15 +194,6 @@ def test_id_is_checked_on_the_named_field(write, capsys):
     assert _fields({"name": "^Total Amount$", "id": "id-total"}) == 0
     assert _fields({"name": "^Total Amount$", "id": "id-vendor"}) == 1
     assert "'Invoice > Total Amount' ft-monetary-quantity id id-total" in capsys.readouterr().err
-
-
-def test_group_and_repeats_place_the_field(write):
-    write(_flow())
-    assert _fields({"name": "quant", "repeats": True, "group": "line"}) == 0
-    assert _fields({"name": "vendor", "repeats": False, "group": "^Invoice$"}) == 0
-    assert _fields({"name": "quant", "repeats": False}) == 1
-    assert _fields({"name": "vendor", "repeats": True}) == 1
-    assert _fields({"name": "vendor", "group": "line"}) == 1
 
 
 def test_only_fails_on_a_field_no_entry_asks_for(write, capsys):
@@ -229,7 +206,7 @@ def test_only_fails_on_a_field_no_entry_asks_for(write, capsys):
 
 @pytest.mark.parametrize("value", [
     "vendor", "[]", "{}", "[{}]", '[{"label": "x"}]', '[{"name": 1}]', '[{"name": "("}]',
-    '[{"repeats": "yes"}]', '[{"id": true}]', '[{"group": "["}]',
+    '[{"id": true}]', '[{"says": "["}]', '[{"group": "Invoice"}]',
 ])
 def test_malformed_fields_value_is_a_usage_error(write, value):
     write(_flow())
@@ -278,3 +255,107 @@ def test_only_applies_to_fields_and_defs(write):
 def test_checks_without_values_refuse_them(write):
     write(_flow())
     assert _run("described", "extra") == 2
+
+
+def _seeded_schema():
+    """A taxonomy shaped like the InvoiceReader fixture: ids, required lists, config."""
+    schema = _schema()
+    schema["config"] = {"model": {"family": "gemini"}}
+    invoice = schema["outputSchema"]["properties"]["Invoice"]
+    invoice["x-uipath-field-group-id"] = "id-group"
+    invoice["required"] = list(invoice["properties"])
+    for n, field in enumerate(invoice["properties"].values()):
+        field["x-uipath-field-id"] = f"id-{n}"
+    return schema
+
+
+def _rename(schema, old, new):
+    invoice = schema["outputSchema"]["properties"]["Invoice"]
+    invoice["properties"] = {new if k == old else k: v for k, v in invoice["properties"].items()}
+    invoice["required"] = [new if k == old else k for k in invoice["required"]]
+    return schema
+
+
+@pytest.fixture()
+def original(tmp_path):
+    path = tmp_path / "original.flow"
+    path.write_text(json.dumps(_flow(schema=_seeded_schema())))
+    return str(path)
+
+
+def test_unchanged_passes_the_same_taxonomy(write, original):
+    write(_flow(schema=_seeded_schema()))
+    assert _run("unchanged", original) == 0
+
+
+def test_unchanged_passes_only_the_requested_rename(write, original):
+    write(_flow(schema=_rename(_seeded_schema(), "Total", "Total Amount")))
+    assert _run("unchanged", original, "Total=Total Amount") == 0
+    assert _run("unchanged", original) == 1
+
+
+def test_unchanged_ignores_the_order_of_required(write, original):
+    schema = _seeded_schema()
+    schema["outputSchema"]["properties"]["Invoice"]["required"].reverse()
+    write(_flow(schema=schema))
+    assert _run("unchanged", original) == 0
+
+
+def _change_prompt(schema):
+    schema["prompt"] = "Extract everything."
+
+
+def _change_type(schema):
+    schema["outputSchema"]["properties"]["Invoice"]["properties"]["Total Amount"]["$ref"] = "#/$defs/ft-number"
+
+
+def _change_instructions(schema):
+    schema["outputSchema"]["properties"]["Invoice"]["properties"]["Vendor Name"]["description"] = "The vendor."
+
+
+def _rename_group_and_drop_its_id(schema):
+    groups = schema["outputSchema"]["properties"]
+    header = groups.pop("Invoice")
+    del header["x-uipath-field-group-id"]
+    groups["Header"] = header
+
+
+def _drop_field_id(schema):
+    del schema["outputSchema"]["properties"]["Invoice"]["properties"]["Total Amount"]["x-uipath-field-id"]
+
+
+def _change_config(schema):
+    schema["config"]["model"]["family"] = "gpt"
+
+
+def _add_def(schema):
+    schema["outputSchema"]["$defs"]["ft-text"] = {}
+
+
+@pytest.mark.parametrize("change, named", [
+    (_change_prompt, "prompt was"),
+    (_change_type, "Total Amount.$ref was"),
+    (_change_instructions, "Vendor Name.description was"),
+    (_rename_group_and_drop_its_id, "outputSchema.properties.Invoice was dropped"),
+    (_drop_field_id, "Total Amount.x-uipath-field-id was dropped"),
+    (_change_config, "config.model.family was"),
+    (_add_def, "$defs.ft-text was added"),
+])
+def test_unchanged_names_each_other_change(write, original, capsys, change, named):
+    schema = _rename(_seeded_schema(), "Total", "Total Amount")
+    change(schema)
+    write(_flow(schema=schema))
+    assert _run("unchanged", original, "Total=Total Amount") == 1
+    assert named in capsys.readouterr().err
+
+
+def test_unchanged_rename_of_a_field_the_original_lacks_fails(write, original, capsys):
+    write(_flow(schema=_seeded_schema()))
+    assert _run("unchanged", original, "Grand Total=Total Amount") == 1
+    assert "the original taxonomy has no field named 'Grand Total'" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("values", [(), ("orig.flow", "Total"), ("orig.flow", "=Total Amount")])
+def test_unchanged_with_bad_values_is_a_usage_error(write, values):
+    write(_flow())
+    assert _run("unchanged", *values) == 2
