@@ -214,20 +214,20 @@ Use the returned links: they use the session's base URL, organization name and t
 
 ### A folder with no runtime for a process
 
-On newer CLI builds, once the package is installed, `deploy run` (and `deploy upgrade`) checks that the deployment's folder has a runtime its processes can start on. The check counts machines the folder inherits from its parents. Only the processes whose jobs need something in the folder are checked:
+On newer CLI builds, once the package is installed, `deploy run` (and `deploy upgrade`) checks that the deployment's folder has a runtime its processes' **unattended** jobs can start on. The check counts machines the folder inherits from its parents. Only the processes whose unattended jobs need a machine in the folder are checked:
 
-| Process type | Starts on (any one, with slots in the folder) |
+| Process type | Starts unattended on (any one, with slots in the folder) |
 |---|---|
-| RPA process, web app | Serverless, Unattended, NonProduction, TestAutomation, AutomationCloud, AutomationCloudTestAutomation, AppTest, PerformanceTest (plus Development in a Personal Workspace) |
+| RPA process | Serverless, Unattended, NonProduction, TestAutomation, AutomationCloud, AutomationCloudTestAutomation, AppTest, PerformanceTest (plus Development in a Personal Workspace) |
 | Test case | Serverless, ServerlessTestAutomation, TestAutomation, AutomationCloud, AutomationCloudTestAutomation, AppTest, Unattended |
 | MCP server | Serverless |
 
-Agents, flows, API workflows, functions, cases, business rules and BPMN processes are not checked: Orchestrator picks a tenant machine for their jobs when they start. Neither is a process the deployment links to an existing one (`deploy config link`): its jobs run in the linked process's folder. When the CLI cannot read the deployment's links (an external app upgrading, for example), the warning ends by saying the process may be linked. Then check the linked folder instead.
+Apps, agents, flows, API workflows, functions, cases, business rules and BPMN processes are not checked: they need no machine in the folder. Neither is a process the deployment links to an existing one (`deploy config link`): its jobs run in the linked process's folder. Attended runs are licensed per user, not per folder, so the check says nothing about running the process attended from Assistant.
 
-Each process the folder cannot run is one line in `Data.Warnings`, also printed on stderr:
+Each process the folder cannot run unattended is one line in `Data.Warnings`, also printed on stderr:
 
 ```text
-Folder 'Shared/MySolutionFolder' has no runtime for the Process process 'InvoiceBot', so its jobs will not start: ... Check with: uip or folders runtimes --folder-path 'Shared/MySolutionFolder'
+Folder 'Shared/MySolutionFolder' has no runtime for unattended jobs of the Process process 'InvoiceBot' (none of ... has slots there): its triggers and the jobs Orchestrator starts will not run until one is assigned. Running it attended from Assistant is not affected. ... Check with: uip or folders runtimes --folder-path 'Shared/MySolutionFolder'
 ```
 
 The run is still `Result: Success` with its usual exit code. The deployment exists, so do **not** deploy again; fix the folder instead:
@@ -238,7 +238,9 @@ uip or machines assign "<MACHINE_KEY>" --folder-path "<FOLDER_PATH>" --output js
 uip or folders runtimes --folder-path "<FOLDER_PATH>" --process-type "<PROCESS_TYPE>" --output json   # that type's row now has Total > 0
 ```
 
-`<FOLDER_PATH>` is the `Data.FolderPath` the deploy returned. `<PROCESS_TYPE>` is the type the warning names (`Process` for an RPA process, `WebApp`, `TestAutomationProcess`, `MCPServer`). Pick the machine by that row of the table: Unattended or serverless slots for an RPA process or web app, test slots (TestAutomation, ServerlessTestAutomation, AppTest) or Unattended for a test case, the serverless machine for an MCP server. When the check itself cannot run — the login cannot read the folder's runtimes (an external app without the `OR.Machines` scope, say) or the folder lookup fails — the single `Data.Warnings` line starts `Could not check that folder ...` and gives the reason. Run `uip or folders runtimes` yourself before you rely on the folder. `Data.Warnings` is absent when there is nothing to report.
+`<FOLDER_PATH>` is the `Data.FolderPath` the deploy returned. `<PROCESS_TYPE>` is the type the warning names (`Process` for an RPA process, `TestAutomationProcess`, `MCPServer`). Pick the machine by that row of the table: Unattended or serverless slots for an RPA process, test slots (TestAutomation, ServerlessTestAutomation, AppTest) or Unattended for a test case, the serverless machine for an MCP server. A brand-new top-level folder often already has the tenant's serverless machine, so a deploy there may report nothing.
+
+When the check itself cannot run, the single `Data.Warnings` line starts `Could not check that folder ...` and gives the reason. That happens when the login cannot read the folder's runtimes (an external app without the `OR.Machines` scope, say), a lookup fails, or the check does not finish within 10 seconds. Run `uip or folders runtimes` yourself before you rely on the folder. When a user session's read of the deployment's links fails, the warning ends by saying the process may be linked. Then check the linked folder instead. `Data.Warnings` is absent when there is nothing to report.
 
 ### A deploy that stops in `Draft`
 
