@@ -126,6 +126,9 @@ jobs:
       - name: Run pytest
         run: pytest tests/tasks/uipath-planner/ -v
 
+      - name: Run SDD caller-contract guard
+        run: pytest tests/scripts/test_planner_sdd_contract.py -v
+
   pytest-agents-check:
     runs-on: uipath-ubuntu-latest
     name: uipath-agents checker unit tests

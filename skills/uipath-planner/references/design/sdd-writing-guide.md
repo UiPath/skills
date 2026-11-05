@@ -20,7 +20,7 @@ Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME 
 
 **Write the file to disk now, before generating any Phase 3 section.** This is an action, not advice: Step 1 does not begin until a file write has created the SDD file (Step 2 item 7 resolves the path and the Solution-scope file set). Do NOT hold the entire SDD in context and write only at the very end.
 
-**First, run the collision check — the skeleton write is the write that can clobber.** Before writing anything, apply the re-run handling in Step 2 item 6: if a target file already exists, resolve it with that structured question (keep / regenerate / resume / write as `-v2-`) and honour the answer here. "Keep the existing SDD and stop" ends `design` with no write at all; "Resume generation" patches the existing draft instead of overwriting it. Only "Regenerate" and the no-file-exists case write a fresh skeleton. Item 6 then has nothing left to ask.
+**First, run the collision check — the skeleton write is the write that can clobber.** Before writing anything, apply the re-run handling in Step 2 item 6: if a target file already exists, resolve it with that structured question (keep / regenerate / resume / write as `-v2-`) and honour the answer here. "Keep the existing SDD and stop" ends `design` with no write at all; "Resume generation" patches the existing draft instead of overwriting it. Only "Regenerate" and the no-file-exists case write a fresh skeleton. Item 6 then has nothing left to ask. A caller's `existing-output: replace` is the answer "Regenerate": ask nothing ([caller-request-guide.md](caller-request-guide.md)).
 
 The skeleton write contains, in this order:
 
@@ -85,7 +85,7 @@ Before finalizing the SDD (the skeleton is already on disk from Step 0), collect
 5. **Classify every surviving item:** `default-carried` (a recorded default is applied in its section — the normal case) or `blocking` — only when no defensible default exists AND the answer changes the architecture: the source says the platform is self-hosted but not which one (Automation Suite or standalone) while a selected product's availability differs between them — an unknown delivery model with no such signal is `unspecified — assumed cloud`, default-carried ([product-selection-guide.md](../shared/product-selection-guide.md) § Constraint Gate); an in-scope system has no access route the source or a default can supply (no API, no UI and no file interface known); the source's scope statements contradict each other and Level 0/1 could not resolve them; the user rejected the Level 1 recommendation without choosing an alternative. An access *detail* that is unknown (a mail protocol, an API version) takes its default and is default-carried. An item answered with "use defaults" stays `[SME REVIEW]`, default-carried: a default nobody with business knowledge confirmed is still a gap. Record the class in the Action Required table (Step 2 item 4). Blocking items keep the SDD at `Status: draft` (Step 2 item 8 rule 4).
 6. If there are zero `[SME REVIEW]` items, skip this step entirely.
 
-This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker to producing a complete SDD.
+This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker to producing a complete SDD. A caller's design request asks nothing here: every item keeps its default and class, and `blocking` items go to the caller in the result ([caller-request-guide.md](caller-request-guide.md) § The Run).
 
 ### Step 2: Finalize the SDD File(s)
 
@@ -98,9 +98,11 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - **Execution autonomy**, **Delivery model** — from Phase 1 Step 0; append the Suite version when known (`automation-suite 2025.1`).
    - **Solution root SDD**, **Solution ID**, **Project SDD role**, **Independently executable** — solution scope ONLY, written into EVERY SDD (the root names itself; `root` in the overview, `child` in each per-project SDD; `Independently executable: no` on children, so a child is built only through the Solution root's genome). Omit all four for single-product.
    - **Genome** — never written by `design`: the genome turn adds it as the table's last row (Step 3 item 3).
-   - **Template validation** — set to `passed` together with the `ready` flip (item 8).
+   - **Template validation** — set to `passed` as soon as the item 8 template-superset check passes, whatever the `Status`: it records that every required section is present. A `draft` held by a blocking item is complete and reads `passed`; only an unfinished run leaves `pending`.
 
    Do NOT rename the heading or strip the marker. They are redundant on purpose — keeping both means a hand-edit of one signal does not silently break SDD detection.
+
+   **Keep the `<!-- planner-sdd-body:v1 -->` line** the template places directly above the first body section, after the Table of Contents. It is not a template instruction: a caller's host reads every H2 above it as front matter ([caller-request-guide.md](caller-request-guide.md) § SDD Signals a Caller's Host May Read).
 
 3. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or product body. It sits before the Table of Contents in every template. The block makes the highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
 
@@ -169,11 +171,11 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    1. Regenerate that section from the template + Phase 1 extraction data + Phase 2 architecture.
    2. If the template's contents for that section depend on a Phase 1 / Phase 2 input that is genuinely absent (e.g. §4 Business Rules but the PDD has zero rule signals), emit the section with an explicit "No business rules extracted from the PDD" note plus an `[SME REVIEW]` row asking the user to supply any.
    3. Never silently drop a section.
-   4. **Ready flip — the final write of `design`.** When every required heading is present and every remaining `[SME REVIEW]` item is classified `default-carried` (Step 1.5 rule 5), update the handoff: `Status: ready`, `Template validation: passed`. Open default-carried items do NOT block ready — they gate production sign-off, not the genome or the build. Any `blocking` item keeps `Status: draft`; the item 9 summary names it and asks. Skipping the flip leaves the file at `draft` and `author` will refuse to write its genome.
+   4. **Ready flip — the final write of `design`.** When every required heading is present and every remaining `[SME REVIEW]` item is classified `default-carried` (Step 1.5 rule 5), update the handoff: `Status: ready` (`Template validation: passed` is already set — item 2). Open default-carried items do NOT block ready — they gate production sign-off, not the genome or the build. Any `blocking` item keeps `Status: draft` with `Template validation: passed`; the item 9 summary names it and asks. Skipping the flip leaves the file at `draft` and `author` will refuse to write its genome.
 
    Common slip-fail: skipping §4 Business Rules because the PDD has no dedicated "Business Rules" section. Rules are usually buried in "Remarks", step descriptions, or screenshots — the PDD analysis guide's "Embedded business rules" pointer applies. Treat zero rules in §4 as a regeneration trigger, not a finished section.
 
-9. Output a summary in the conversation:
+9. Output a summary in the conversation. A caller's design request replaces it with the `planner-design-result: v1` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
 
 ```markdown
 ## SDD Generated
@@ -190,6 +192,8 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 ```
 
 ### Step 3: Next Turns — the Genome, then the Build
+
+**A caller's request with `stop-after: sdd` skips this whole step**, the turn boundary included: its result ends the run in the same turn and the caller continues ([caller-request-guide.md](caller-request-guide.md)).
 
 <!--skill-flavor:design-deliverable:start-->
 The SDD is the deliverable of `design`. **Do not generate an Implementation Plan section inside the SDD. Do not create implementation tasks with the task-list tool during `design`. Do not start executing.**

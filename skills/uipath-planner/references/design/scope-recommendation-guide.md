@@ -44,6 +44,8 @@ The solution overview SDD includes:
 5. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
 6. Per-Project SDD Index — filename + one-line scope per project
 
+Put the `<!-- planner-sdd-body:v1 -->` line on its own directly above item 3: items 1–2 are the overview's front matter ([caller-request-guide.md](caller-request-guide.md) § SDD Signals a Caller's Host May Read).
+
 ## Gap Handling for Agent / Coded App
 
 When the primary product is Agents or Coded Apps and the PDD is missing required information ([product-selection-guide.md](../shared/product-selection-guide.md) § Signals per product):
