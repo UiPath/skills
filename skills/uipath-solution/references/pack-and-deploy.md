@@ -206,7 +206,7 @@ Key options:
 
 ### Open the deployment in Orchestrator
 
-On successful `deploy run`, `Data.OrchestratorUrl` opens the deployment overview in Orchestrator's Solutions tab. `Data.FolderUrl` opens the installed solution folder when its key is known. The CLI also writes `Deployed: <OrchestratorUrl>` to stderr through the logger, or to the configured log file.
+On successful `deploy run`, `Data.OrchestratorUrl` opens the deployment overview in Orchestrator's Solutions tab. `Data.FolderUrl` opens the automations page in the installed solution folder when its key is known. With `--log-level info`, the CLI also writes `Deployed: <OrchestratorUrl>` to stderr through the logger, or to the configured log file.
 
 Use the returned links: they use the session's base URL, organization name and tenant name, and select the right tenant or folder feed. Browser routes are `orchestrator_/solutions-management` and `orchestrator_/folder-solutions-management`; `automationsolutions_` serves the API and remote module, and the deprecated `solutions_` route does not work. If the deployment key is unavailable, the link opens the feed's Solutions tab. A missing folder key omits `FolderUrl`; older embedded hosts without browser session coordinates omit both links. If links are absent, direct the user to Orchestrator → Tenant (or the target folder feed) → Solutions → Deployments; never construct a URL by hand.
 
