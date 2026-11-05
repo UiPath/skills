@@ -11,6 +11,7 @@ Accept anything from one sentence to several pages. Do not ask the user to elabo
 - **Contradictions:** name the specific conflict in the follow-up round. Do not guess which requirement wins.
 - **Existing documents (SOP, PDD, process map, transcript):** treat the document as the description — when the user asked for a genome or blueprint; otherwise it is `uipath-planner`'s ([SKILL.md § Mode Detection](../SKILL.md)).
 - **A goal, not a process** (a self-paced workshop, a demo, trying a product or an application): propose scenarios first (Step 1a); the picked scenario is the description.
+- **A preferences file beside the description:** it answers the scenario and follow-up questions it covers, as it answers the build's ([execution-guide.md § 1.3](execution-guide.md) rule 9).
 
 ## Step 1a — Propose scenarios for a goal
 
