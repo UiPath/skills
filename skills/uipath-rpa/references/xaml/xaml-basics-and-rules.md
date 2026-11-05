@@ -207,7 +207,7 @@ Run one Bash call, chaining phases with `&&` so a `validate` failure stops befor
 uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --project-dir "<PROJECT_DIR>" --output json \
   && uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
-`--file-path` must be **relative to the project directory**. Clean `validate` is only half-done; clean `build` exits the loop. For observable outputs, finish with one `uip rpa run --skip-build` and inspect outputs ([execution-maps-guide.md § Gate ≠ runtime proof](../execution-maps-guide.md#gate--runtime-proof)).
+`--file-path` must be **relative to the project directory**. Clean `validate` is only half-done; clean `build` exits the loop. For observable outputs, finish with one `uip rpa run --skip-build` (bare `run` for a XAML test case) and inspect outputs ([execution-maps-guide.md § Gate ≠ runtime proof](../execution-maps-guide.md#gate--runtime-proof)).
 
 Fix in order: (1) Package—install/update and make docs available; (2) Structure—use [§ XAML File Anatomy](#xaml-file-anatomy) and [§ XAML Safety Rules](#xaml-safety-rules); (3) Type—check docs, types, enum values, and [jit-custom-types-schema.md](jit-custom-types-schema.md); (4) Activity Properties—read docs for properties, conditional groups, valid configurations, and use starter XAML as fallback; watch OverloadGroup conflicts; (5) Logic—match expression language; for UIA run `debug start` and follow [../uia-policies-catalog.md § Running UI Automation Workflows](../uia-policies-catalog.md). When stuck, defer minor configuration details to the user; use InvokeCode only as a last resort.
 
