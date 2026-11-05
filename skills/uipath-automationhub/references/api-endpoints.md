@@ -181,6 +181,12 @@ The comments on an idea or Business Process, as they appear in its Comments sect
 ### POST `/automations/{id}/comments`  *(RPANAV-19227)*
 Post a comment or a reply. Body: `{ "text": "<plain text>", "parent_comment_id": <top-level comment id, optional>, "submitter": "<email, optional>" }`. `text` must contain a non-whitespace character and be at most **2000** characters. Line breaks (LF or CRLF) are kept, and Markdown is not rendered. A `parent_comment_id` that is a reply, or belongs to another automation, is a **400**. The author is the token's user. Only a token with **no** associated user uses `submitter`, which must be an active AH user who can view the automation. It notifies followers exactly as a UI comment does. Not idempotent: re-read before re-posting after a timeout. Returns the created comment (same shape as above). *(Used by the comments flow.)*
 
+### PUT `/automations/{id}/comments/{commentId}`  *(RPANAV-19248)*
+Replace the text of a comment or reply. Body: `{ "text": "<plain text>", "submitter": "<email, optional>" }`, with the same text rules as POST. The new text replaces the whole comment, including any mentions or formatting made in the UI. Only the comment's **author** may edit it: the token's user, or — for a token with no associated user — the active user named by `submitter`; anyone else gets a **403** `error_non_poster_attempting_edit`. The author must also be able to view the automation (**403**). A comment that doesn't exist on that automation, is already deleted, or isn't in its Comments section (a question or document comment) is a **404** `error_comment_not_found`. Newly mentioned users are notified as for a UI edit. Idempotent. Returns the edited comment (same shape as above). *(Used by the comments flow.)*
+
+### DELETE `/automations/{id}/comments/{commentId}`  *(RPANAV-19248)*
+Soft-delete a comment or reply. `submitter` (token with no user only) goes in the **query** (`?submitter=<email>`) or a JSON body; the body wins when both are sent. Same author-only rule, 403s and 404s as PUT; a repeated delete is a 404. Deleting a reply updates its parent's reply count; deleting a top-level comment hides its replies too. Also updates the automation's comment count and last-updated date. Returns `{ "comment_id": <id>, "deleted": true }`. *(Used by the comments flow.)*
+
 ## Errors
 
 | Status | Meaning |
