@@ -110,12 +110,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Static-simulation creation telemetry (report only; its requested removal leaves no durable witness)"
+    description: "Static simulation was created — gating because its later removal leaves no durable artifact, so static-absent alone cannot tell a created-then-removed sim from one never added. (The short --mock-value makes this transcript check far less line-split-prone than the Llm one, which stays advisory.)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+eval\s+simulation\s+add\s+(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
     min_count: 1
     weight: 3.0
-    pass_threshold: 0.0
+    pass_threshold: 1.0
 
   - type: command_executed
     description: "Llm simulation carries an explicit --output-schema (report only; the persisted --check llm-simulation below is the gate)"
