@@ -28,7 +28,9 @@ Never use `UUID`, `INTEGER` or `DATETIME`: the Data Fabric UI renders them broke
 The data property's `DataPropertyRange` stays the xsd type: an integer column is `xsd:integer` in the schema and `DECIMAL` with `decimalPrecision: 0` in the entity.
 
 - Entity names match `^[a-zA-Z][a-zA-Z0-9_]{2,99}$` and are unique in the solution.
-- **Field names match `^[a-zA-Z][a-zA-Z0-9]{2,99}$`, with no underscores.** Write `orderDate`, not `order_date`.
+- **`Order` and `Group` are never entity names.** They are reserved SQL keywords, and the local entity create refuses them (`NAME_RESERVED`). Name the entity for the domain instead: `SalesOrder`, `PurchaseOrder`, `TeamGroup`. The class's `rdfs:label` may still say "Order".
+- C# and VB keywords (`Case`, `Class`, `New`, …) are refused as entity, field and choice-set names. Pick a domain word (`WorkItem`, `Category`, `IsNew`).
+- **Field names match `^[a-zA-Z][a-zA-Z0-9]{2,99}$`, with no underscores.** Write `orderDate`, not `order_date`. `RecordOwner` and `Version` are reserved field names, like the system fields below.
 - `defaultValue` is text for every type: a `DECIMAL` default is `"0"`, not `0`.
 - **System fields are never declared:** `Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`. Use `Id` as the key in the mapping subject template and in joins.
 
@@ -109,7 +111,8 @@ uip df entities create SalesOrder --local --body '<BODY>' --output json
 - A `RELATIONSHIP` field carries `"referenceEntityName": "<E>"`, a native local entity in the same solution, and optionally `"referenceFieldName"` (default `Id`).
 - A choice-set field carries `"choiceSetName": "<C>"`, a local choice set in the same solution.
 - Other field keys: `name`, `type`, `displayName`, `description`, `isRequired`, `isUnique`, `lengthLimit`, `decimalPrecision`, `minValue`, `maxValue`, `defaultValue`.
-- If the CLI refuses a local `RELATIONSHIP` or choice-set field, or has no local choice sets or federated entities, the CLI build is too old: stop and tell the user.
+- A target that is not in the solution is refused with `REFERENCE_TARGET_NOT_FOUND` or `CHOICE_SET_NOT_FOUND`, a federated target with `RELATIONSHIP_TARGET_FEDERATED`, and a field that would close a reference cycle with `RELATIONSHIP_CYCLE`. Fix the create order or the name; the codes are in the modeler's recovery table.
+- If the CLI does not know `referenceEntityName` or `choiceSetName` at all, or has no local choice sets or federated entities, the CLI build is too old: stop and tell the user.
 
 Change an existing entity with `uip df entities update <E> --local --body '<CHANGE>' --output json`, where the body takes `addFields`, `updateFields` and `removeFields` plus `displayName` and `description`. A changed field type is rejected when the entity is deployed into a folder that already holds it. A federated entity cannot be updated: delete it and create it again. After any create or update, validate and fix what is reported with `uip df entities update <E> --local`.
 

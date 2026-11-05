@@ -103,7 +103,7 @@ When not logged in, ask the user to run `uip login` and wait. The connection imp
 
 Collect only what is missing: the domain or source files, any entity definitions the user has, `ONTOLOGY_NAME`, optional display name and description, the solution (new name or existing folder) and the base directory. Resolve every path to an absolute path and reject a name that fails the `ONTOLOGY_NAME` pattern, nested `WORKDIR` and `SOLUTION_DIR`, or a `WORKDIR` holding files you did not write. In Delegated mode, apply the same checks to the handoff and start from its confirmed model.
 
-Show one reviewable model: classes with grain and entity name, data properties with xsd and field types ([entity-guide.md](references/entity-guide.md)), relationships ([relationships-guide.md](references/relationships-guide.md)), choice sets with their value names, federated sources and joins, and constraints. The confirmed model fixes the entity, field, relationship and choice-set names.
+Show one reviewable model: classes with grain and entity name (never `Order` or `Group`, which the CLI refuses: propose `SalesOrder`-style names, see [entity-guide.md](references/entity-guide.md)), data properties with xsd and field types ([entity-guide.md](references/entity-guide.md)), relationships ([relationships-guide.md](references/relationships-guide.md)), choice sets with their value names, federated sources and joins, and constraints. The confirmed model fixes the entity, field, relationship and choice-set names.
 
 After confirmation, run `mkdir -p "<WORKDIR>/input/entities"` and write one entity definition per entity to `<WORKDIR>/input/entities/<Entity>.json` (Files mode derives them from the supplied mapping), with names in place of ids.
 
@@ -167,7 +167,7 @@ uip ont create <Name> --local --entity <E1> --entity <E2> [--display-name "<DISP
 uip ont files add <Name> <FILES…> --local --solution-folder "<SOLUTION_DIR>" --output json
 ```
 
-`files add` checks every file again; one ERROR attaches nothing. Re-adding a file name replaces it.
+`files add` checks every file again; one ERROR attaches nothing. Re-adding a file name replaces it (`Replaced`). The cross-file rules (`XF-…`) run at validate.
 
 ### Stage 7 — Validate until clean
 
@@ -175,7 +175,7 @@ uip ont files add <Name> <FILES…> --local --solution-folder "<SOLUTION_DIR>" -
 uip ont validate --local --solution-folder "<SOLUTION_DIR>" --output json
 ```
 
-Clean means no ERROR and `ServiceValidation` is `"Done"`. Validation always calls the service; logged out it fails `ServiceValidationUnavailable`.
+Clean means no ERROR and `ServiceValidation` is `"Done"`. Validation always calls the service; logged out it fails `ServiceValidationUnavailable`. A local ERROR skips the service call (`ServiceValidation` is `"Skipped"`). When the service fails or cannot validate, `Data` still holds the local results.
 
 - An entity fix is a local edit: `uip df entities update <E> --local --body '<CHANGE>' --output json`, then validate. A federated entity: `uip df entities delete <F> --local --yes`, then create it again. A choice-set fix: `uip df choice-set-values create <C> <VALUE> --local --output json`.
 - An artifact fix: edit the file in `WORKDIR`, `artifacts check`, `files add`, then validate.
@@ -208,7 +208,7 @@ Return the block above. When the user asks to deploy, hand off to `uipath-soluti
 
 ## Errors
 
-Act on each violation's `rule`, `file` and `suggestion`; never re-implement a check. Per-file rules come from `artifacts check`, `files add` and `validate`; error codes come in the `Code` of a failure envelope.
+Act on each violation's `rule`, `file` and `suggestion` (`Rule`, `File`, `Suggestion` in a success envelope; lower case in a failure's `Data`); never re-implement a check. Per-file rules come from `artifacts check`, `files add` and `validate`; cross-file rules from `validate`. Error codes come in the `Code` of a failure envelope; `NAME_RESERVED` and the field-name rules of `uip df` come in its `Instructions`.
 
 ### Recovery table
 
@@ -229,14 +229,14 @@ Act on each violation's `rule`, `file` and `suggestion`; never re-implement a ch
 | `XF-010` | local | Map every property; give every class a `sh:targetClass` shape |
 | `XF-012`, `XF-013` | local | The entity is missing from the solution or the column isn't a field. Add the local entity (`uip df entities create <E> --local --body '<BODY>'`) and link it (`uip ont update <Name> --local --add-entity <E>`), or fix the name; when the field is genuinely missing, after confirmation `uip df entities update <E> --local --body '<CHANGE>'` adding it, then validate |
 | `XF-014`, `XF-015` | local | Declare the object property or add the join per [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md#joins) |
-| `XF-017` | local | Remove the second RELATIONSHIP field locally (`uip df entities update <E> --local --body '<CHANGE>'` with `removeFields`, after confirmation), keep the inverse in the schema ([owl-patterns-guide.md](references/owl-patterns-guide.md#inverse-properties)), then validate |
+| `XF-017` | local | A relationship cycle among the ontology's entities. After confirmation, remove one RELATIONSHIP field of the loop locally (`uip df entities update <E> --local --body '<CHANGE>'` with `removeFields`), keep the inverse in the schema ([owl-patterns-guide.md](references/owl-patterns-guide.md#inverse-properties)), then validate |
 | `XF-019` | local | Copy the choice-set value names exactly into `sh:in`; add a missing value with `uip df choice-set-values create <C> <VALUE> --local`, or author a missing choice set with `uip df choice-sets create <C> --local` and its values, then validate |
 | `ZIP-001` | local | The zip exceeds the service limits. Split large constraint files or trim summary and context, then `uip ont files add` again |
-| `SVC-001` | service | Fix the syntax in the named file; same loop |
-| `ENTITY_ID_IGNORED` | service | WARNING; same fix as `MAP-012` |
+| `SVC-001` | service | Every service finding is `SVC-001` on the named file. Fix the syntax it names; same loop |
+| `ENTITY_ID_IGNORED` | service | An `SVC-001` WARNING naming it; same fix as `MAP-012` |
 | `ValidationFailed` | CLI | The ERRORs are in `Data`; fix each per the rows above, then validate |
 | `ServiceValidationUnavailable` | CLI | Service validation needs `uip login`; ask for it, then validate again; stop if the service stays unreachable |
-| `ServiceValidationFailed` | CLI | The service could not validate. Stop and tell the user; never pack as validated |
+| `ServiceValidationFailed` | CLI | The service could not validate; `Instructions` carries its answer (`Not Found` when the tenant has no validate endpoint) and `Data` the local results. Stop and tell the user; never pack as validated |
 | `ArtifactCheckFailed` | CLI | The ERRORs are in `Data.violations`; nothing was attached. Fix them, then `files add` again |
 | `ArtifactTypeUnresolved`, `InvalidArtifactFileName` | CLI | Rename the file to the `{name}-…` convention (`{name}-summary.json`, `{name}-context.json`) or pass `--type`; never name a file `ontology.json` |
 | `ArtifactTypeAlreadyPresent` | CLI | Re-add under the existing file name, or `files remove` the old one first |
@@ -258,12 +258,16 @@ Act on each violation's `rule`, `file` and `suggestion`; never re-implement a ch
 | `Ambiguous match`, `No remote resource found with key` | connection import | Pass `--folder-path "<CONNECTION_FOLDER>"` to the `--kind Connection` import, or `--cloud-key` from the listed candidates |
 | `CONNECTION_NOT_FOUND`, or a federated connection missing from the solution | `uip df` | Import the connection (Stage 3), then create the federated entity again |
 | `Not logged in` on a federated `uip df entities create … --local` | `uip df` | A connector source makes that create read the connection and the source object's fields from the tenant; ask for `uip login`, then retry. A federated entity over local native sources only never needs it |
+| `NAME_RESERVED` (in `Instructions`) | `uip df` | The entity is named `Order` or `Group`. Propose a domain name (`SalesOrder`), confirm it, use it in the class map, every body and the mapping, then create it |
 | `REFERENCE_TARGET_NOT_FOUND`, `CHOICE_SET_NOT_FOUND` | `uip df` | The create order is wrong or a name is misspelled: create the target entity or choice set first, then retry |
+| `RELATIONSHIP_CYCLE` | `uip df` | The field would close a reference cycle. Keep the relationship on one side and express the inverse with `InverseObjectProperties` ([relationships-guide.md](references/relationships-guide.md)) |
 | `RELATIONSHIP_TARGET_FEDERATED` | `uip df` | A federated entity can't be a `RELATIONSHIP` target: use a plain column joined to its key column |
 | `FEDERATED_UPDATE_NOT_SUPPORTED` | `uip df` | After confirmation, `uip df entities delete <F> --local --yes`, then create it again with the changed body |
 | `ENTITY_IN_USE`, `CHOICE_SET_IN_USE` | `uip df` | Another entity's field still references it: after confirmation, change that field first (`uip df entities update <E> --local`) |
-| `CHOICE_SET_NAME_TAKEN`, `CHOICE_SET_VALUE_NAME_TAKEN` | `uip df` | The duplicate check was skipped: reuse the existing choice set or value |
-| A local `RELATIONSHIP` or choice-set field refused, or local choice sets or federated create unknown | `uip df` | The `uip` build cannot author these locally. Stop and ask for a newer CLI; never substitute `STRING` |
+| `CHOICE_SET_NAME_TAKEN`, `CHOICE_SET_VALUE_NAME_TAKEN`, `ENTITY_NAME_TAKEN`, "Entity '<E>' already exists" | `uip df` | The duplicate check was skipped: reuse the existing choice set, value or entity (names are unique regardless of case) |
+| `INVALID_NAME` | `uip df` | The choice-set name breaks the naming rules or is a reserved keyword: pick a domain name per [entity-guide.md](references/entity-guide.md) |
+| `INVALID_FEDERATED_SOURCE`, `INVALID_JOIN`, `UNSUPPORTED_SOURCE_COLUMN` | `uip df` | Fix the federated body: each source names an `entityName` or a `connectionName` + `object`, each join side names a source of this entity, and no source column is a relationship or choice-set field |
+| `referenceEntityName` or `choiceSetName` unknown, or local choice sets or federated create unknown | `uip df` | The `uip` build cannot author these locally. Stop and ask for a newer CLI; never substitute `STRING` |
 | `EntityConflict` | deploy, via `uipath-solution` | A changed field type met a same-name entity in the target folder. Tell the user; never change a field type silently |
 | `InstallError` "Missing in the target folder" | deploy, via `uipath-solution` | The entity, column or choice set is not in the solution. Add it locally (`uip df entities create|update <E> --local`), validate, pack, and redeploy through `uipath-solution` |
 | `InstallError` "a rename onto a name another ontology holds in that folder" | deploy, via `uipath-solution` | The name set in the deployment configuration is taken in the target folder; the previous version stays installed. Choose another name in the deployment configuration and redeploy through `uipath-solution` |
