@@ -1,10 +1,13 @@
 /**
  * A Case document-extraction task: an invoice file case variable run through
  * an IXP deployment, its extraction mapped to the `extracted` variable.
- * `=result` is `{ ExtractionResult, Taxonomy }`. Discovery commands:
- *   uip ixp projects list --output json
- *   uip ixp deployments list <project-name> --output json
- * The deployment values below are stand-ins, not a live tenant's.
+ * `=result` is the whole extraction, `{ ExtractionResult, Taxonomy }`; read
+ * the fields from `extracted.ExtractionResult`.
+ *
+ * The deployment's values are stand-ins, not a tenant's. Read real ones from
+ * `uip ixp deployments list <project-name> --output json` (model, deployment,
+ * folderKey) and `uip solution resources list --kind IxpDeployment --source
+ * remote --output json` (deploymentKey).
  */
 import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 
