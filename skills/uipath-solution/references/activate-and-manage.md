@@ -2,7 +2,7 @@
 
 Activate deployed solutions, uninstall deployments, and manage published solution packages.
 
-Waiting deployment commands print progress to stderr and leave stdout as the final envelope; see [progress while deploying](pack-and-deploy.md#step-4-deploy-to-orchestrator).
+Waiting deployment commands print progress to stderr (`--log-file` redirects it, `--log-level error` silences it) and leave stdout as the final envelope; see [progress while deploying](pack-and-deploy.md#step-4-deploy-to-orchestrator).
 
 > For full option details on any command, use `--help` (e.g., `uip solution deploy activate --help`).
 
