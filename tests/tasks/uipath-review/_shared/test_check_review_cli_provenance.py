@@ -146,6 +146,30 @@ def test_fails_on_clean_fixture_when_report_evidences_nothing(tmp_path):
     assert "no trace that Step 2.5a ran" in r.stderr
 
 
+
+def test_passes_on_clean_fixture_when_validation_table_shows_zero_cli_counts(tmp_path):
+    uip = _fake_uip(tmp_path, _payload([], grade="A+", score=100))
+    report = textwrap.dedent(
+        """\
+        # Review Report
+
+        ## Automated Validation & Workflow Analyzer Results
+
+        | Project | Command | Errors | Warnings | Info |
+        |---|---|---|---|---|
+        | SampleAgent | `uip agent review` | 0 | 0 | 0 |
+        """
+    )
+    r = run(tmp_path, report, uip)
+    assert r.returncode == 0, r.stderr
+
+
+def test_nonzero_cli_counts_on_clean_fixture_are_not_evidence(tmp_path):
+    uip = _fake_uip(tmp_path, _payload([], grade="A+", score=100))
+    report = "# Review Report\n\n| SampleAgent | `uip agent review` | 2 | 0 | 0 |\n"
+    r = run(tmp_path, report, uip)
+    assert r.returncode != 0
+
 # --- ground truth unobtainable ---------------------------------------------
 
 def test_fails_when_cli_is_down_and_report_is_silent(tmp_path):
