@@ -18,8 +18,7 @@ export default flow('nightly')
 A platform timer starts the flow on a recurring interval.
 
 Signature: `.trigger(scheduled({ every: string }))`. `every` takes an ISO-8601
-repeating interval or a Quartz cron expression (e.g. `'0 0 2 * * ?'`). Both are
-written at the trigger's 1.2 definition.
+repeating interval or a Quartz cron expression (e.g. `'0 0 2 * * ?'`).
 
 Prefer self-contained variables because there may be no caller supplying inputs.
 
@@ -53,6 +52,9 @@ not prove the platform scheduler fired. The scheduling claim requires a
 deployed run observed at the requested cadence.
 
 `every` is an ISO-8601 repeating interval (`R/PT30M`, `R/PT1H`, `R/P1W`) or a
-Quartz cron expression (`0 0 2 * * ?`, `0 30 9 ? * MON-FRI`). Either is written
-at the trigger's 1.2 definition, in `timerValue`. A decompiled 1.1 node keeps its
-`{ version: '1.1' }`; pinning 1.1 with a cron expression is a compile error.
+Quartz cron expression (`0 0 2 * * ?`, `0 30 9 ? * MON-FRI`). Cron and a
+single-unit interval (`R/PT45M`, `R/P1D`) are written at the trigger's 1.2
+definition, in `timerValue`. 1.2 takes one unit within its range, so an interval
+such as `R/PT90M` or `R/P1DT12H` is written at 1.1. Pinning 1.2 with one is a
+compile error (`SCHEDULE_INTERVAL_VERSION`), and so is pinning 1.1 with cron. A
+decompiled node keeps its version.
