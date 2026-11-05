@@ -5,8 +5,9 @@ description: >
   `escalationId: "any"`: the at-risk wildcard, which fires on every at-risk escalation of the
   SLA (here at 80%), not on the breach. `validate` accepts that rule, so a green validate
   proves nothing. The correct repair is to drop the key, because a breach rule references the
-  SLA alone. Repointing the rule at a concrete escalation, or inventing one, also keeps
-  validate green but leaves the lane at-risk, so the checker fails it explicitly.
+  SLA alone. Repointing the rule at the SLA's at-risk escalation also keeps validate green
+  but leaves the lane at-risk, and adding an escalation for the rule to point at is not the
+  repair either, so the checker fails both explicitly.
 tags: [uipath-maestro-case, smoke, mode:diagnose, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
 max_iterations: 1
 
