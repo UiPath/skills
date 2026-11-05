@@ -35,6 +35,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+## Script tasks
+
+The body can be a TypeScript function the compiler checks. Its parameters are renamed to the runtime's `vars` and `metadata`, and it may read only what the engine gives a script, so a module constant or an import is refused at compile. A string body is written as authored. `.outputs({ v: '=result.response' })` maps the return to a case variable. `check` reports a blank body or one that does not parse.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
