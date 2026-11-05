@@ -37,7 +37,20 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Script tasks
 
-The body can be a TypeScript function the compiler checks. Its parameters are renamed to the runtime's `vars` and `metadata`, and it may read only what the engine gives a script, so a module constant or an import is refused at compile. A string body is written as authored. `.outputs({ v: '=result.response' })` maps the return to a case variable. `check` reports a blank body or one that does not parse.
+<!-- RULE:case.script.positional-rename -->
+- The function form's parameters are positional: first parameter becomes
+  `vars`, second becomes `metadata`. Original names do not matter; the
+  mapping is by position, not by name. A function-local `const` is fine;
+  a module-scope constant or an `import` is refused at compile.
+
+<!-- RULE:case.script.string-body -->
+- A string body is written as authored — no transformation. `check` reports
+  a blank body or one that does not parse.
+
+<!-- RULE:case.script.outputs -->
+- `.outputs({ v: '=result.response' })` maps the script's return value to a
+  case variable. `=result.response.total` reaches a single field when the
+  return is an object. The output key is `SCRIPT_OUTPUT` in the compiled plan.
 
 ## Connections and external work
 

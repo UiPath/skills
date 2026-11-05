@@ -1,9 +1,9 @@
 /**
  * A Case script task authored as a TypeScript function (`.script(fn)`): the
  * body doubles a case variable and returns it with the instance id, and
- * `.outputs()` maps the return to the `total` variable. The function is
- * lowered to the body at compile, its parameters renamed to `vars` and
- * `metadata`.
+ * `.outputs()` maps the return to the `scriptResult` variable. The function
+ * is lowered to the body at compile; its parameters are renamed, in order,
+ * to `vars` and `metadata`.
  */
 import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 
@@ -16,7 +16,7 @@ export default casePlan('ScriptCase')
   .name('ScriptCase')
   .identifier('SCR')
   .var('amount', 'double', '21')
-  .var('total', 'object', '{}')
+  .var('scriptResult', 'object', '{}')
   .stage('Work', (s) =>
     s
       .required()
@@ -25,7 +25,7 @@ export default casePlan('ScriptCase')
       .task('Double', (t) =>
         t
           .script(doubled)
-          .outputs({ total: '=result.response' })
+          .outputs({ scriptResult: '=result.response' })
           .required()
           .entryWhen(rule('current-stage-entered')),
       ),
