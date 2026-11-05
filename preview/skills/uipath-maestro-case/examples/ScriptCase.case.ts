@@ -1,9 +1,9 @@
 /**
  * A Case script task authored as a TypeScript function (`.script(fn)`): the
  * body doubles a case variable and returns it with the instance id, and
- * `.outputs()` maps the return to the `scriptResult` variable. The function
- * is lowered to the body at compile; its parameters are renamed, in order,
- * to `vars` and `metadata`.
+ * `.outputs()` maps the whole return to the `scriptResult` variable. The function is
+ * lowered to the body at compile, its parameters renamed, in order, to `vars` and
+ * `metadata`.
  */
 import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 
