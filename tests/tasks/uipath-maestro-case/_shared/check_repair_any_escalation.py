@@ -8,8 +8,9 @@ wildcard: a valid rule that fires on every at-risk escalation of the SLA (here a
 the breach. ``validate`` accepts it, so a green validate proves nothing.
 
 The fix is to drop the key: a breach rule references the SLA alone (an absent
-``escalationId`` is the persisted representation of Breached). Repointing it at a concrete
-escalation, or inventing one, keeps the lane at-risk and is graded wrong.
+``escalationId`` is the persisted representation of Breached). Repointing it at the SLA's
+at-risk escalation keeps the lane at-risk, and adding an escalation for it to point at is not
+the repair; both are graded wrong.
 """
 
 import os
@@ -49,7 +50,7 @@ def main() -> None:
     assert_sla_resolves(plan, rule, where, owner="root")
     assert_breach_shape(rule, where)
 
-    # Inventing an escalation for the rule to point at keeps it at-risk; the lane is a breach lane.
+    # A breach lane needs no escalation, so one added for the rule to point at is not the repair.
     names = {e["displayName"] for e in escalation_map(plan).values()}
     invented = names - BASELINE_ESCALATIONS
     if invented:
