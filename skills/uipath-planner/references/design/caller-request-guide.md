@@ -42,7 +42,7 @@ Ignore a key you do not know. A missing required key, an unreadable `source`, or
 
 ## The Run
 
-The user is present; ask through the host's structured question. Change these steps and nothing else:
+The user is present in this session: ask in the host's own question tool, and do any subagent work inline. Change these steps and nothing else:
 
 1. **Phase 1 Step 0.** Do not ask the execution mode: record `Execution autonomy: interactive`. Ask the delivery model only when its skip rule cannot resolve it from `source` and `facts`.
 2. **Phase 1 Step 6.** Present the scope recommendation only when no `product` was given and the choice is genuinely ambiguous (product-selection-guide.md); otherwise take the recommendation and record it in Decisions Made.
