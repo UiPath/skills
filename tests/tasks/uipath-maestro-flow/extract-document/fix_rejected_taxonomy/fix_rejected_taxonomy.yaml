@@ -4,13 +4,13 @@ description: >
   refuses with exit 3. It has a nested group whose parent is missing, a `$ref`
   to a field type it never defines, and a field name over 64 characters, all
   listed in `Data.Issues`. Tests that the agent fixes what the write rejects
-  and keeps the user's design: their fields, their nesting, their
-  instructions, and only the built-in field types.
+  and keeps the user's design: their fields, types, nesting, prompt and
+  instructions, with only the built-in field types.
 
   No `flow debug`: a CLI-authored Extract document node extracts nothing
   until the flow is saved once in Studio Web.
 
-tags: [uipath-maestro-flow, integration, mode:diagnose, lifecycle:generate, shape:single-node, node:extract-document]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
 
 sandbox:
   template_sources:
@@ -39,23 +39,47 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
-    description: "The node carries the user's fields, with the over-long year-of-hatch field kept under a shorter name"
+    description: "The node holds the user's seven fields and no others, each with the user's type and instructions; the over-long year-of-hatch field is kept under a shorter name"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields
-      '[{"name": "^Licence Number$"}, {"name": "^Licence Expiry$"}, {"name": "^Falconer$"},
-      {"name": "^Licence Status$"}, {"name": "^Ring Number$"}, {"name": "^Species$"}, {"name": "hatch"}]'
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields --only
+      '[{"name": "Licence Number", "type": "ft-exact-text", "says": "The licence number exactly as printed in the licence number box."},
+      {"name": "Licence Expiry", "type": "ft-date", "says": "The date the licence expires, not the date it was issued."},
+      {"name": "Falconer", "says": "The name of the licence holder."},
+      {"name": "Licence Status", "type": "ft-inferred-text", "says": "The status printed on the licence, such as ACTIVE."},
+      {"name": "Ring Number", "type": "ft-exact-text", "says": "The ring number fitted to the bird."},
+      {"name": "Species", "type": "ft-inferred-text", "says": "The species of the bird, as printed."},
+      {"name_contains": "hatch", "type": "ft-number", "says": "The year the bird hatched."}]'
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The bird's fields still sit in a group nested under a licence group by name"
+    description: "The bird's fields sit in a group nested by name under the group that holds the licence fields (the parent renamed to Licence, or the child to Licence Details > ...)"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields
-      '[{"name": "^Ring Number$", "group": "^Licence.* > "}, {"name": "^Species$", "group": "^Licence.* > "},
-      {"name": "hatch", "group": "^Licence.* > "}]'
+      '[{"name": "Licence Number", "group": "Licence"}, {"name": "Ring Number", "group_contains": "^Licence > "},
+      {"name": "Species", "group_contains": "^Licence > "}, {"name_contains": "hatch", "group_contains": "^Licence > "}]' ||
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields
+      '[{"name": "Licence Number", "group": "Licence Details"}, {"name": "Ring Number", "group_contains": "^Licence Details > "},
+      {"name": "Species", "group_contains": "^Licence Details > "}, {"name_contains": "hatch", "group_contains": "^Licence Details > "}]'
     expected_exit_code: 0
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "The user's overall prompt and both group instructions were carried over, not rewritten"
+    path: "LicenceReader/LicenceReader/LicenceReader.flow"
+    assertions:
+      - expression: "nodes[?id=='extractLicence1'] | [0].inputs.schemaDocument.prompt"
+        operator: equals
+        expected: "Extract the licence details as printed on the form."
+      - expression: "contains(values(nodes[?id=='extractLicence1'] | [0].inputs.schemaDocument.outputSchema.properties)[].description, 'The licence form, which appears once per document.')"
+        operator: equals
+        expected: true
+      - expression: "contains(values(nodes[?id=='extractLicence1'] | [0].inputs.schemaDocument.outputSchema.properties)[].description, 'The bird the licence covers.')"
+        operator: equals
+        expected: true
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -66,17 +90,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The user's field instructions were carried over, not rewritten"
-    command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields
-      '[{"name": "^Licence Expiry$", "says": "^The date the licence expires, not the date it was issued[.]$"},
-      {"name": "^Ring Number$", "says": "^The ring number fitted to the bird[.]$"}]'
+    description: "Every node but the Extract document node, and every edge, variable and definition, is unchanged"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/LicenceReader/LicenceReader --project LicenceReader/LicenceReader --changed-node extractLicence1"
+    timeout: 30
     expected_exit_code: 0
-    weight: 1.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro flow validate passes on LicenceReader.flow with no warnings"
+    description: "uip maestro flow validate passes with no warnings: the fixed taxonomy went through nodes schema set (a hand edit leaves the fields without ids)"
     command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0

@@ -37,7 +37,7 @@ def _schema(groups=None, prompt="Extract the invoice.", defs=None):
                 "items": {"properties": {"Quantity": _field("ft-number")}},
             },
         }
-    return {"prompt": prompt, "outputSchema": {"properties": groups, "$defs": ALL_DEFS if defs is None else defs}}
+    return {"prompt": prompt, "outputSchema": {"properties": groups, "$defs": dict(ALL_DEFS) if defs is None else defs}}
 
 
 def _flow(file_ref="=js:$vars.start.output.invoice", globals_=(FILE_INPUT,), extra_nodes=(), edges=None, schema=None):
@@ -217,6 +217,29 @@ def test_name_is_an_exact_match(write):
     assert _fields({"name_contains": "tot"}) == 0
 
 
+def test_group_is_an_exact_match_and_group_contains_a_pattern(write):
+    write(_flow())
+    assert _fields({"name": "Total", "group": "Invoice"}) == 0
+    assert _fields({"name": "Total", "group": "Line Items"}) == 1
+    assert _fields({"name": "Quantity", "group_contains": "^line"}) == 0
+    assert _fields({"name": "Quantity", "group_contains": "^Invoice > "}) == 1
+
+
+def test_repeats_says_whether_the_group_is_a_table(write):
+    write(_flow())
+    assert _fields({"name": "Quantity", "repeats": True}) == 0
+    assert _fields({"name": "Total", "repeats": False}) == 0
+    assert _fields({"name": "Total", "repeats": True}) == 1
+    assert _fields({"name": "Quantity", "repeats": False}) == 1
+
+
+def test_says_is_an_exact_match(write):
+    write(_flow())
+    assert _fields({"name": "Invoice Number", "says": "Drop the No. prefix."}) == 0
+    assert _fields({"name": "Invoice Number", "says": "Drop the No. prefix"}) == 1
+    assert _fields({"name": "Invoice Number", "says": "drop the no. prefix."}) == 1
+
+
 def test_id_is_checked_on_the_named_field(write, capsys):
     write(_flow(schema=_schema({"Invoice": {"description": "d", "properties": {
         "Total Amount": {**_field("ft-monetary-quantity"), "x-uipath-field-id": "id-total"},
@@ -237,7 +260,8 @@ def test_only_fails_on_a_field_no_entry_asks_for(write, capsys):
 
 @pytest.mark.parametrize("value", [
     "vendor", "[]", "{}", "[{}]", '[{"label": "x"}]', '[{"name": 1}]', '[{"name_contains": "("}]',
-    '[{"id": true}]', '[{"says_contains": "["}]', '[{"says": "prefix"}]', '[{"group": "Invoice"}]',
+    '[{"id": true}]', '[{"says_contains": "["}]', '[{"group_contains": "("}]', '[{"repeats": "yes"}]',
+    '[{"group": "Invoice", "table": true}]',
 ])
 def test_malformed_fields_value_is_a_usage_error(write, value):
     write(_flow())
@@ -390,3 +414,65 @@ def test_unchanged_rename_of_a_field_the_original_lacks_fails(write, original, c
 def test_unchanged_with_bad_values_is_a_usage_error(write, values):
     write(_flow())
     assert _run("unchanged", *values) == 2
+
+
+def _grow(schema):
+    """What add_line_items asks for: a header field and a nested table, with a broader prompt."""
+    schema["prompt"] = "Extract the invoice header and every line item."
+    groups = schema["outputSchema"]["properties"]
+    groups["Invoice"]["properties"]["PO Number"] = _field("ft-exact-text")
+    groups["Invoice"]["required"].append("PO Number")
+    groups["Invoice > Lines"] = {
+        "type": "array",
+        "description": "One entry per line.",
+        "items": {"properties": {"Amount": _field("ft-monetary-quantity")}},
+    }
+    schema["outputSchema"]["required"] = ["Invoice", "Invoice > Lines"]
+    return schema
+
+
+def test_extends_passes_the_same_taxonomy_and_one_that_only_adds(write, original):
+    write(_flow(schema=_seeded_schema()))
+    assert _run("extends", original) == 0
+    write(_flow(schema=_grow(_seeded_schema())))
+    assert _run("extends", original) == 0
+    assert _run("unchanged", original) == 1
+
+
+def _drop_required(schema):
+    schema["outputSchema"]["properties"]["Invoice"]["required"].remove("Total")
+
+
+def _drop_group(schema):
+    del schema["outputSchema"]["properties"]["Line Items"]
+
+
+def _drop_def(schema):
+    del schema["outputSchema"]["$defs"]["ft-boolean"]
+
+
+@pytest.mark.parametrize("change, named", [
+    (lambda s: _change_type(_rename(s, "Total", "Total Amount")), "Invoice.properties.Total was dropped"),
+    (lambda s: s["outputSchema"]["properties"]["Invoice"]["properties"]["Total"].update(description="x"),
+     "Total.description was"),
+    (lambda s: s["outputSchema"]["properties"]["Invoice"]["properties"]["Total"].pop("x-uipath-field-id"),
+     "Total.x-uipath-field-id was dropped"),
+    (_rename_group_and_drop_its_id, "outputSchema.properties.Invoice was dropped"),
+    (_drop_group, "outputSchema.properties.Line Items was dropped"),
+    (_drop_required, 'Invoice.required lost ["Total"]'),
+    (_change_config, "config.model.family was"),
+    (_add_def, "$defs.ft-text was added"),
+    (_drop_def, "$defs.ft-boolean was dropped"),
+])
+def test_extends_names_each_change_to_what_was_there(write, original, capsys, change, named):
+    schema = _grow(_seeded_schema())
+    change(schema)
+    write(_flow(schema=schema))
+    assert _run("extends", original) == 1
+    assert named in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("values", [(), ("orig.flow", "Total=Total Amount")])
+def test_extends_with_bad_values_is_a_usage_error(write, values):
+    write(_flow())
+    assert _run("extends", *values) == 2

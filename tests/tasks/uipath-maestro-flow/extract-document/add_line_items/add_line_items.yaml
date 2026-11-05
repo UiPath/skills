@@ -3,8 +3,8 @@ description: >
   Integration: the user extends an existing Extract document taxonomy with a
   table and a header field. Tests that the agent models the line items as a
   repeating (array) group nested under the header group by name, adds the
-  header field, and sends the whole document back: existing entries, the
-  overall prompt and the built-in field types survive the write.
+  header field, and sends the whole document back: every existing group,
+  field, id, instruction and built-in field type survives the write.
 
   No `flow debug`: a CLI-authored Extract document node extracts nothing
   until the flow is saved once in Studio Web.
@@ -38,10 +38,11 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
-    description: "A repeating (array) group holds the line-item description, quantity and amount"
+    description: "A repeating (array) group holds the line-item quantity, amount and description"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
-      '[{"name": "desc", "repeats": true}, {"name": "quant|qty", "repeats": true}, {"name": "amount", "repeats": true}]'
+      '[{"name_contains": "quant|qty|units", "repeats": true}, {"name_contains": "amount|total|price", "repeats": true},
+      {"name_contains": "desc|item|product", "repeats": true}]'
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -50,8 +51,9 @@ success_criteria:
     description: "The line items are nested under the Invoice group by name (\"Invoice > ...\")"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
-      '[{"name": "desc", "group": "^Invoice > "}, {"name": "quant|qty", "group": "^Invoice > "},
-      {"name": "amount", "group": "^Invoice > "}]'
+      '[{"name_contains": "quant|qty|units", "group_contains": "^Invoice > "},
+      {"name_contains": "amount|total|price", "group_contains": "^Invoice > "},
+      {"name_contains": "desc|item|product", "group_contains": "^Invoice > "}]'
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -60,33 +62,21 @@ success_criteria:
     description: "A PO number field was added to the Invoice group"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
-      '[{"name": "(^|[^a-z])P[.]?O([^a-z]|$)|purchase order", "group": "^Invoice$"}]'
+      '[{"name_contains": "(^|[^a-z])p[.]?o([^a-z]|$)|purchase order", "group": "Invoice"}]'
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The four original fields are still in the Invoice group, with their ids"
-    command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
-      '[{"name": "^Invoice Number$", "group": "^Invoice$", "id": "9fbb50a5-5b7a-442b-bc48-4d528c82e200"},
-      {"name": "^Invoice Date$", "group": "^Invoice$", "id": "9ad17b9e-17ce-4410-a4d8-2d19bec3f25d"},
-      {"name": "^Vendor Name$", "group": "^Invoice$", "id": "d246a961-e9bc-452a-9ff5-f86178bb535c"},
-      {"name": "^Total$", "group": "^Invoice$", "id": "059158da-1564-4680-a208-ce02de660518"}]'
+    description: "Nothing seeded was lost or changed: groups, fields, ids, types, instructions, config and $defs; only new groups and fields were added (the overall prompt may be broadened)"
+    command: "python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader extends $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader/InvoiceReader.flow"
     expected_exit_code: 0
-    weight: 1.0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The overall prompt survived, and every group and field, old and new, carries instructions"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader described
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "$defs still holds the six built-in field types and nothing else"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader defs --only
+    description: "The overall prompt, and every group and field, old and new, carries instructions"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader has-instructions
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
@@ -100,7 +90,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro flow validate passes on InvoiceReader.flow with no warnings"
+    description: "uip maestro flow validate passes with no warnings: the taxonomy went through nodes schema set (a hand edit leaves the new fields without ids)"
     command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0
