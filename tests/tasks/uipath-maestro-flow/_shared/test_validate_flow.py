@@ -132,6 +132,32 @@ def test_invalid_flow_fails_without_retry(monkeypatch, capsys):
     assert '"Failure"' in capsys.readouterr().out
 
 
+_WARNED = '{"Result":"Success","Data":{"Status":"Valid","Warnings":"[nodes[n1].inputs.fileRef] Property \'x\' does not exist"}}'
+
+
+def test_warnings_pass_without_the_flag(monkeypatch):
+    _stub(monkeypatch, [_cp(0, _WARNED)])
+    assert validate_flow.main() == 0
+
+
+def test_no_warnings_fails_a_flow_that_validates_with_warnings(monkeypatch, capsys):
+    calls = _stub(monkeypatch, [_cp(0, _WARNED)])
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert calls["n"] == 1
+    assert "a.flow validated with warnings" in capsys.readouterr().err
+
+
+def test_no_warnings_passes_a_clean_flow(monkeypatch):
+    _stub(monkeypatch, [_cp(0, '{"Result":"Success","Data":{"Status":"Valid"}}')])
+    assert validate_flow.main(["--no-warnings"]) == 0
+
+
+def test_no_warnings_fails_output_that_is_not_json(monkeypatch, capsys):
+    _stub(monkeypatch, [_cp(0, "Valid")])
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert "no JSON envelope" in capsys.readouterr().err
+
+
 def test_every_flow_file_is_validated(monkeypatch):
     calls = _stub(
         monkeypatch,

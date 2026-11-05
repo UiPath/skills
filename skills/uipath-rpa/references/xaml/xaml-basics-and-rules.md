@@ -7,7 +7,7 @@ UiPath workflow XAML concepts and the Discovery → Generate/Edit → Validate &
 
 **Read contract (Rule 22):** read this file in full, with no prior lookup, in the same assistant turn as the other T1 reads (card and pitfalls heading lists). For per-operation/activity catalogs (§ Common Editing Operations, § XAML Reference Examples), Grep `^###` in [xaml-editing-catalog.md](xaml-editing-catalog.md) and Read only matching entries; if unsure, read it.
 
-## Critical Rules — XAML (Rules 16–21a, 24, 25)
+## Critical Rules — XAML (Rules 16–21a, 24, 25, 25a)
 
 Mandatory for all XAML authoring and editing. Cited as "Rule N" across this skill. Rule 22 and Rule 23 (`expressionLanguage`/`targetFramework` immutability) are in SKILL.md § XAML-Specific Rules; Common Rules 1–12 are also in SKILL.md.
 
@@ -30,6 +30,7 @@ Mandatory for all XAML authoring and editing. Cited as "Rule N" across this skil
     - Existing activity: NEVER change its IdRef for property, `DisplayName`, expression, move, or wrapping edits. A wrapper gets a new IdRef; the inner keeps its own. NEVER renumber after deleting an activity. Replacing an activity with one of a different type, or duplicating an activity, assigns a new IdRef per the "New activity" rule; a copy never keeps the source's IdRef.
     - Apply to root `<Activity>` (`ActivityBuilder_1`), every activity including `Sequence`, `FlowStep`/`FlowDecision`/`FlowSwitch`, `State`, `Transition`, `Catch`1`, `AssignOperation`, `CSharpValue`1`, and `CSharpReference`1`. Do not apply to `Variable`, `InArgument`/`OutArgument`/`InOutArgument`, `ActivityAction`, `DelegateInArgument`, or `x:Reference`.
     - Format is only `<TypeName>_<N>`; descriptive suffixes such as `Assign_OutputDir` are wrong (`DisplayName` supplies descriptions). The root must declare `xmlns:sap2010` and list `sap2010` in `mc:Ignorable` (§ XAML File Anatomy). Card snippets and `get-default-xaml` output have no IdRefs; add them when inserting.
+25a. **[XAML] Name every activity by what it does, uniquely inside its workflow** — `Set invoice total`, not `Assign`; `Copy statement to archive`, not `Copy File`. The analyzer warns on a repeated display name (ST-NMG-004: `X display name is defined many times`) and on an activity's default one (ST-MRD-002: `Activity X has a default name`). The body Sequences named in § Container Activity Bodies keep those names; neither rule flags them. Names the user dictates, or a source's names kept by request, stay as given, and both warnings are expected there.
 
 ## XAML Task Navigation & Quick Reference
 
@@ -373,7 +374,7 @@ Studio expects every body/branch slot to be a `<Sequence>` drop zone, even for o
 | `TryCatch` | `TryCatch.Try` | `<Sequence DisplayName="Try">` |
 | `TryCatch` | each `Catch` → `ActivityAction<T>` body | `<Sequence DisplayName="Catch">` |
 | `TryCatch` | `TryCatch.Finally` | `<Sequence DisplayName="Finally">` |
-| `Switch<T>` | `Switch.Default`, each `<x:String x:Key="...">` case | `<Sequence>` per case |
+| `Switch<T>` | `Switch.Default`, each case | `<Sequence>` per slot; a case's `Sequence` carries `x:Key="..."` |
 | `Pick` | each `PickBranch.Trigger`, `PickBranch.Action` | `<Sequence>` per slot |
 | `NApplicationCard` | `Body` → `ActivityAction<...>` | `<Sequence DisplayName="Do">` |
 | Any activity with `Body` typed `Activity` | body | `<Sequence>` |

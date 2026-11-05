@@ -200,7 +200,7 @@ This is intentional. Refresh never removes resources, so it cannot silently drop
 
 > A connection can be `Enabled` and pingable and still not be importable: the Resource Catalog is indexed per folder, so `refresh` may warn `Connection <guid> not found in Resource Catalog in the required folder "<folder>"` and import nothing. Membership in `uip is connections list` does not guarantee a connection is refresh-resolvable from a given `folderPath`.
 
-> For single-resource mutations that don't need a full project scan, see [Step 9: Add a Resource Atomically](#step-9-add-a-resource-atomically), [Step 10: Remove a Resource](#step-10-remove-a-resource), and [Step 11: Edit a Resource](#step-11-edit-a-resource). `refresh` and these solve different problems — `refresh` reconciles every binding in every project (and **never overwrites** a resource already in the solution); `add`/`remove`/`edit` operate on one resource at a time. To change an existing resource's spec, `edit` is the only path — `refresh` won't. That includes picking up a change made **in the cloud** after the import: see [Step 11a](#step-11a-pull-a-changed-cloud-definition-source-remote).
+> For single-resource mutations that don't need a full project scan, see [Step 9: Add a Resource Atomically](#step-9-add-a-resource-atomically), [Step 10: Remove a Resource](#step-10-remove-a-resource), and [Step 11: Edit a Resource](#step-11-edit-a-resource). `refresh` and these solve different problems — `refresh` reconciles every binding in every project (and **never overwrites** a resource already in the solution); `add`/`remove`/`edit` operate on one resource at a time. To change an existing resource's spec, `edit` is the only path — `refresh` won't. That includes picking up a change made **in the cloud** after the import: see [Step 11a](#step-11a-pull-a-changed-cloud-definition---source-remote).
 
 ## Step 8: Get a Single Resource Configuration
 
@@ -240,7 +240,7 @@ The local file is what `refresh` (and `solution projects add`) wrote to disk: a 
 | `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` | ❌ | ✅ |
 | `agentMemory`, `targetRuntime`, `environmentVariables` | ❌ | ✅ runtime defaults |
 
-If you need the full server spec for a resource that's already in the solution (e.g., for a deploy override), `--include-dependencies` paired with manual inspection of the dependency graph is one option; the cleaner path is `resources edit <key> --source remote --force`, which pulls the current cloud definition in place ([Step 11a](#step-11a-pull-a-changed-cloud-definition-source-remote)). Deleting the local file and re-running `refresh` also works but discards every local edit rather than the ones you were shown.
+If you need the full server spec for a resource that's already in the solution (e.g., for a deploy override), `--include-dependencies` paired with manual inspection of the dependency graph is one option; the cleaner path is `resources edit <key> --source remote --force`, which pulls the current cloud definition in place ([Step 11a](#step-11a-pull-a-changed-cloud-definition---source-remote)). Deleting the local file and re-running `refresh` also works but discards every local edit rather than the ones you were shown.
 
 ### Why `solution resources list` and `get` aren't symmetric
 
@@ -402,7 +402,7 @@ If the key isn't in the local solution, the command exits with `Failure` and `Re
 
 ## Step 11: Edit a Resource
 
-Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them). Two sources for the new values: `--patch` (you supply them, below) and `--source remote` (the cloud definition supplies them, [Step 11a](#step-11a-pull-a-changed-cloud-definition-source-remote)). Repointing a binding to a different connection is not an edit either: refresh imports the new one and leaves the old behind for you to `remove` — see [Repointing a connection leaves the old resource behind](#repointing-a-connection-leaves-the-old-resource-behind).
+Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them). Two sources for the new values: `--patch` (you supply them, below) and `--source remote` (the cloud definition supplies them, [Step 11a](#step-11a-pull-a-changed-cloud-definition---source-remote)). Repointing a binding to a different connection is not an edit either: refresh imports the new one and leaves the old behind for you to `remove` — see [Repointing a connection leaves the old resource behind](#repointing-a-connection-leaves-the-old-resource-behind).
 
 ```bash
 # Patch a single spec property

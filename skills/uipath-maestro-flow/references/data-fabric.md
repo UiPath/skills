@@ -11,7 +11,7 @@
 
 `resultMode: 'multiple'` publishes matches under `output.results` and selects the read node's 1.4 definition; plain `dataFabricRead()` stays on 1.0 and reads one record.
 **Wrong here fails SILENTLY** — a bad column is dropped, not rejected, so `validate` passing is not evidence. Resolve columns with `uip df entities get` first.
-Delete publishes nothing; system columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable; `fromRead` needs a single-record read; a folder-scoped entity needs `folderKey` AND `resourceKey` — for one the solution authors itself, take both from the solution, not the tenant ([below](#an-entity-the-solution-authors-itself)).
+Delete publishes nothing; system columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable; `fromRead` needs a single-record read; a folder-scoped entity is `entity: { name, folder: '<folder path>' }`, and `check` prints the one `prepare` that records its keys ([below](#a-folder-scoped-entity-name-it-and-its-folder)).
 
 **Still connector-only**: get-by-id when the whole value of a long-text field is needed (native reads return a 10,000-character preview, [see below](#long-text-queries-return-a-10000-character-preview)), file record fields, and Record Created/Updated events — `connector('uipath-uipath-dataservice', …)` + `registry prepare -f entityName=<Entity>`.
 
@@ -203,72 +203,59 @@ is not caught by `validate`.
 `limit`, `skip`, `sort` and `fields` are list-query options: `check` refuses them
 on a single-record read.
 
-## A folder-scoped entity needs its bindings
+## A folder-scoped entity: name it and its folder
 
-A **tenant-scoped** entity needs nothing but `entity` — it serializes as a dotted
-literal.
+A **tenant-scoped** entity needs nothing but `entity: '<Name>'`.
 
-A **folder-scoped** one needs `folderKey` AND `resourceKey` together. With only
-the folder key the entity serializes as a source-org literal: it validates, it
-runs in this org, and it breaks on deploy to another. `check` refuses either half
-alone (`DATAFABRIC_FOLDER_NO_RESOURCE_KEY`).
+A **folder-scoped** one is named by its name and the Orchestrator folder **path** it lives in, never by keys:
 
 ```ts
-.step('read', dataFabricRead({ entity: 'Orders',
-  folderKey: '<the entity\'s folderId>', resourceKey: '<solution resource key>' }))
+.step('read', dataFabricRead({ entity: { name: 'Orders', folder: 'Finance/Prod' }, resultMode: 'multiple' }))
 ```
 
-Supplying both emits the two `resource: 'Entity'` binding rows the platform
-matches on `propertyAttribute` (`name` and `folderKey` — never `folderPath`).
-Resolve the keys from the tenant:
+Needs `@uipath/maestro-builder-sdk` 6.73.0 or later; an older SDK refuses `{ name, folder }` and has no key-less `prepare`,
+<!--skill-flavor:data-fabric-entity-ref-sdk:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+If `uip maestro registry prepare --entity …` answers `missing required argument 'connector-key'`, the `uip` in use predates key-less `prepare`: run the same command as `npx flow-sdk registry prepare --entity …`.
+<!--skill-flavor:data-fabric-entity-ref-sdk:end-->
+
+`check` reports it as `RESOURCE_UNRESOLVED` and prints the command that records its keys; run that command, then `check` again:
 
 ```bash
-uip df entities list --include-folders --output json   # folderId per entity
-uip solution resources list --kind Entity --output json # the resource key
+uip maestro registry prepare --entity Orders --folder-path Finance/Prod
+# Entity    Orders   (Finance/Prod, remote)
+# Recorded  ./.flow-sdk/resources.json
 ```
 
-Nothing mints a resource key into a `.flow.ts`. If you cannot resolve one,
-keep the entity tenant-scoped and omit both — a half-authored folder scope is
-worse than none. **This fallback does not apply to an entity the solution
-authors itself** (below). With no keys the node is tenant-scoped, so at run time
-it looks for the entity on the tenant — where a local entity does not exist
-until the solution deploys — and fails with `Entity <Name> does not exist`.
-`uip maestro flow validate` flags it first as `INLINE_ENTITY_UNBOUND`.
+`compile` then writes the entity's folder key and resource key, the two `resource: 'Entity'` binding rows, and the entity's row in the project's `bindings_v2.json`, so `uip solution resources refresh` declares it in the solution.
+Nothing is typed by hand, and `compile` refuses the step while the entity is unrecorded.
+
+Run `prepare` in the directory you run `check` and `compile` from, normally the Flow project folder (`<Solution>/<Name>/`): it records into `./.flow-sdk/resources.json` there, which is where `check` and `compile` read it.
+Inside a solution (a `.uipx` in that folder or one above it) it looks in the solution before the tenant.
+
+`prepare` lists and stops; it never picks:
+
+- **No `folder`:** it searches every folder.
+  One match in a folder is recorded, and the output names the folder to pin in the source.
+  Several matches are listed with the `folder:` to write for each; write the one the user meant and run `prepare` again.
+- **A tenant-level match** needs no `prepare`: write it as `entity: '<Name>'`, as the output says.
+- **A name matches exactly, case included; a `folder` path ignores case and a leading or trailing slash.** A `folder` that holds no entity of that name is `RESOURCE_NOT_IN_FOLDER`, listing the folders that do.
+- **No match:** it lists near misses and the listings to check.
+  When none of them is the entity meant, ask the user how to resolve it; do not create an entity on your own.
+  Creating one, in the scope the user asks for, follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md), and then `prepare` runs again.
+- **A recorded row older than a day** counts as missing, so `check` asks for `prepare` again.
 
 ### An entity the solution authors itself
 
-An entity created with `uip df entities create <Name> --local` lives only in the
-solution until it is deployed, so the tenant lookup above finds nothing for it.
-Leaving the keys out makes the node tenant-scoped, and the run fails with
-`Entity <Name> does not exist` — naming an entity that does exist. Take both keys
-from the solution instead:
+An entity created with `uip df entities create <Name> --local` lives only in the solution until it is deployed, and resolves the same way.
+Write it as `{ name: '<Name>' }` and run the `prepare` that `check` prints, from the Flow project folder: `prepare` reads the solution as well as the tenant, records the entity in the solution's placeholder folder (`99999999-9999-9999-9999-999999999999`, which `flow debug` and `solution deploy` replace with the folder they provision), and names the folder to pin, `folder: 'solution_folder'`.
+Do not look the entity up on the tenant yourself: it is not there until deploy.
+Leaving the keys out instead makes the node tenant-scoped, and the run fails with `Entity <Name> does not exist`, naming an entity that does exist; `flow validate` reports such a node as `INLINE_ENTITY_UNBOUND`.
+Its message suggests `uip maestro flow node configure`, which edits the compiled `.flow`; in a builder-SDK project fix the `.flow.ts` instead, or the next `compile` reverts it.
+Creating and modelling the entity belongs to [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
 
-```bash
-uip df entities get <Name> --local --output json           # FolderId → folderKey (always 99999999-9999-9999-9999-999999999999)
-uip solution resources list --kind Entity --output json    # the Source: Local row whose Name is <Name>: its Key → resourceKey
-```
-
-Pick the row by `Name`: every resource the solution files declare is listed as
-`Source: Local`, including entities the solution only references
-(`uip solution resources add --source remote`), so the first `Local` row may be
-a different entity.
-
-```ts
-.step('read', dataFabricRead({ entity: 'Product', resultMode: 'multiple',
-  folderKey: '99999999-9999-9999-9999-999999999999',
-  resourceKey: '<Key of the Source: Local row named Product>' }))
-```
-
-The `99999999-…` folder is a placeholder the platform replaces: `flow debug`
-provisions the entity into a `Debug_<project>` folder, and `solution deploy` into
-the deployment's own folder, and binds the node there. Use the entity's own
-casing for `entity`. Creating and modelling the entity belongs to
-[/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
-
-`flow validate`, `flow pack` and `uip solution pack` refuse a node that names a
-local entity without these keys (`INLINE_ENTITY_UNBOUND`). The message suggests
-`uip maestro flow node configure`, which edits the compiled `.flow`; in a
-builder-SDK project fix the `.flow.ts` instead, or the next `compile` reverts it.
+A decompiled flow names a folder-scoped entity with `folderKey` and `resourceKey`.
+That form compiles as it is; leave it unless the entity itself changes.
 
 **Debugging:** `uip maestro flow debug` works the first time for a solution with
 a local entity and fails from the second run on — each later run overwrites the

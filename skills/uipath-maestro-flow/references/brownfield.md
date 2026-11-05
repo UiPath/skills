@@ -479,6 +479,8 @@ function script_normalize($vars: FlowVars) {
 ```
 
 Edit the script in the function's body; the text between its braces is exactly the node's script, so an untouched script compiles back byte for byte.
+A script that reads `$metadata` gets a second parameter, `$metadata: FlowMetadata`; when it reads a key the engine does not set (one a case sets), the type is `FlowMetadata & Record<string, any>`, so the module still type-checks.
+An SDK older than 6.72.0 (its `dist/api-index.md` does not list `FlowMetadata`) has no metadata parameter, and keeps such a script as `script({ code: "…" })`, with the warning below naming `$metadata`.
 The rules in [script.md](script.md#writing-the-script-as-a-function) apply to the edit: the function may read only what the script runtime has.
 
 A script that cannot be printed as a function stays `script({ code: "…" })`, and decompile warns once for each: `flow-decompile: warning: step "<id>": script kept as a string: <why>`.
@@ -488,6 +490,13 @@ Edit such a script as a string, as before.
 To print every script that way, pass `--scripts string`: `uip maestro flow decompile <file> -o <file>.flow.ts --scripts string`. With an SDK older than 6.57.0, `uip` refuses the option and names the version to install.
 
 Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lists `ScriptValue`); an older SDK's decompile prints every script as `script({ code })`.
+
+## A Case-only variable type
+
+A `.flow` written by Studio Web or an older SDK can carry a global typed `date`, `datetime`, `float`, `double` or `jsonSchema`. `decompile` warns once for each.
+
+- **`date` / `datetime`: nothing to do.** Decompile prints `types.string` and warns `... The source declares it types.string, so a recompile writes "type":"string" in its place`. Merge goes through. Without `--baseline-from` the merged `.flow` says `"type":"string"`; with it, an untouched variable keeps its own type. Neither changes the run: `flow pack` already writes a date as a plain string.
+- **`float` / `double` / `jsonSchema`: retype it in the same round.** Decompile keeps `types.float`, and `compile`/`merge` stop with `DECLARATION_TYPE_NOT_FLOW` even if your edit is elsewhere. Change that one declaration to the type the warning names (`types.number`; for `jsonSchema`, `types.object` or `types.array` with `{ schema }`), then compile and merge as usual. The merged `.flow` carries the new type.
 
 ## The file's schema version comes back out
 

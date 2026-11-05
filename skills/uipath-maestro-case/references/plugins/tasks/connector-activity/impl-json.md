@@ -47,7 +47,7 @@ Synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-requ
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
-**Solution-resource pickers** (such as a Data Fabric entity). Pass the resource **name** as a plain string, like any value. `case spec` resolves it into the solution and returns what to bind (Step 2). If the name exists in more than one folder, the command lists the candidates: add `"<picker>_folderKey": "<folder key>"` and rerun. A scope selector gating the picker (for example `entityScope`) is a reference field: write its lookup `value` (`folder`), not its `displayName` (`Folder`).
+**Solution-resource pickers** (such as a Data Fabric entity). Pass the resource **name** as a plain string, like any value. `case spec` resolves it into the solution and returns what to bind (Step 2). If the name exists in more than one folder, the command lists the candidates: add `"<picker>_folderKey": "<folder key>"` and rerun. Put the companion under the `inputs.*` list where `case spec` shows it, which can differ from the picker's: Orchestrator **Get Asset** takes `id` under `pathParameters` and `id_folderKey` under `queryParameters`. A companion in the wrong list is refused, and the error names the right one. When the spec doesn't list the companion, put it next to the picker. A scope selector gating the picker (for example `entityScope`) is a reference field: write its lookup `value` (`folder`), not its `displayName` (`Folder`).
 
 #### Step 1.a — Rewrite references to canonical sink form
 

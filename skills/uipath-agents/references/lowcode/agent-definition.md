@@ -135,6 +135,38 @@ Primary configuration file for conversational agent. Edit directly.
 
 > **`guardrails`** — array of guardrail objects that inspect agent inputs/outputs for policy violations. See [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) for the full schema, validator reference, and examples.
 
+#### Appearance (conversational only)
+
+Optional root `appearance` object: chat appearance settings for a **conversational** agent. Each chat surface reads them to decide how to render the chat experience. `uip agent init` scaffolds have none; conversational agents created in Studio Web already have it with defaults (`""`, `""`, `[]`, `"InputsAndOutputs"`). If present, edit it in place and keep every existing field. If absent, add it only when the user asks for a welcome title, welcome description, or starting prompts. Never add it to autonomous agents.
+
+```json
+"appearance": {
+  "welcomeTitle": "<WELCOME_TITLE>",
+  "welcomeDescription": "<WELCOME_DESCRIPTION>",
+  "startingPrompts": [
+    {
+      "id": "<NEW_UUID>",
+      "displayPrompt": "<SHORT_LABEL_SHOWN_ON_THE_BUTTON>",
+      "actualPrompt": "<FULL_MESSAGE_SENT_WHEN_CLICKED>"
+    }
+  ],
+  "displayMode": "InputsAndOutputs"
+}
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `welcomeTitle` | Yes | Heading on the chat welcome screen. String; `""` when the user gives none |
+| `welcomeDescription` | Yes | Text under the welcome heading. String; `""` when the user gives none |
+| `startingPrompts` | Yes | Clickable suggestions on the welcome screen. Array of **objects**, never plain strings; `[]` for none |
+| `startingPrompts[].id` | Yes | Prompt identifier. New UUID, unique within the array |
+| `startingPrompts[].displayPrompt` | Yes | Label on the starting-prompt button. Non-empty; the runtime drops prompts with an empty label |
+| `startingPrompts[].actualPrompt` | Yes | Message sent when the button is clicked. Non-empty; same as `displayPrompt` if no difference |
+| `displayMode` | No | How much of each tool call the chat shows. `"ToolNameOnly"` \| `"InputsAndOutputs"` \| `"FullTrace"`; use `"InputsAndOutputs"` unless the user specifies otherwise |
+| `personalWorkspaceConnectionsOnly` | No | Limits the agent's connection settings menu to personal workspace connections. Boolean; keep the initialized value (omit if none) unless the user specifies |
+
+No other keys. Never plain-string prompts: [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 6. `uip agent validate` reports shape errors as `agent.json → appearance.startingPrompts[<N>]: <MESSAGE>`.
+
 ### Settings
 
 | Field | Description |
