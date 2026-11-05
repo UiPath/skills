@@ -41,8 +41,7 @@ These activities **must** be placed inside a specific parent scope:
 
 `Use Excel File` (`ExcelApplicationCard`) with no `ExcelProcessScopeX` or `SequenceX` around it raises `UiPath recommends using “Use Excel File” inside an “Excel Process Scope"`. It is a validation warning of the activity, reported by `validate` and not by `build`, and not a numbered analyzer rule; an enclosing scope clears it whatever its `ProcessMode`. The scope's properties and modes: [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
 
-- Put the Use Excel File activities of one step inside one scope: one Excel process serves them. At its end the scope quits that process if it started it and no workbook is left open; an Excel it reused keeps running.
-- Leave a workflow unscoped when it hands an open workbook to later workflows, such as a library that keeps workbook handles between calls. The warning stays; it is expected there.
+Put the Use Excel File activities of one step inside one scope: one Excel process serves them. At its end the scope quits that process if it started it and no workbook is left open; an Excel it reused keeps running.
 
 ## Conflicting Property Pairs
 
@@ -858,5 +857,5 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 When reading Excel data with `ReadRangeX`, column types in the resulting `DataTable` may be `String` even when the Excel cells contain numbers. This causes `DataTable.Select("[Amount] > 1000")` to perform string comparison instead of numeric comparison (e.g., `"4200" < "800"` alphabetically), silently dropping rows.
 
 **Workarounds:**
-- Use LINQ with explicit conversion: `dtData.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
+- Use LINQ with explicit conversion: `dt_Data.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
 - Convert the column type after reading: loop through rows and convert values, or clone the DataTable with the correct column types
