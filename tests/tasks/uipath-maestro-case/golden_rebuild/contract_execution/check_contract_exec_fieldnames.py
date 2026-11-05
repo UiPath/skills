@@ -23,9 +23,11 @@ own ``fixtures/sdd.md``:
   - no dotted access off a ``vars.`` reference is unguarded
   - every extract output's ``=<root>.<field>`` source path uses an SDD field
     name, with the SDD's exact casing
-  - the webhook response output's JSON-schema property keys are exactly the
-    SDD's declared event output fields (this is where a PascalCasing
-    ``--output json`` serializer leaks its key casing into the artifact)
+  - the webhook response output's JSON-schema property keys include every
+    SDD-declared event output field with its exact casing, and no key is a
+    re-cased SDD field (this is where a PascalCasing ``--output json``
+    serializer leaks its key casing into the artifact); extra keys the live
+    connector adds are allowed
   - every SDD-declared dotted access is actually present, so the checker
     cannot pass by the build simply dropping the expressions
 """
@@ -255,13 +257,21 @@ def _check_event_schema(plan: dict, fixture: dict):
     if not isinstance(properties, dict) or not properties:
         _fail("the webhook event output schema declares no properties")
     actual = set(properties)
-    if actual != fixture["event_fields"]:
+    declared = fixture["event_fields"]
+    # The live connector may add fields the SDD never declared; only a missing
+    # declared field or a re-cased copy of one is a defect.
+    missing = declared - actual
+    recased = {
+        key for key in actual - declared if any(_norm(key) == _norm(name) for name in declared)
+    }
+    if missing or recased:
         _fail(
             "webhook event output schema property keys differ from the SDD's declared "
             "event output fields - a PascalCasing `--output json` serializer leaks its "
             "own key casing here\n"
-            f"  actual={sorted(actual)}\n"
-            f"  expected={sorted(fixture['event_fields'])}"
+            f"  missing={sorted(missing)}\n"
+            f"  recased={sorted(recased)}\n"
+            f"  actual={sorted(actual)}"
         )
 
 
@@ -275,7 +285,7 @@ def main():
         "OK: every task-output dereference is null-guarded and uses the SDD's exact "
         f"property casing ({sorted(fixture['dotted'])}), every extract source path "
         f"matches the SDD ({sorted(fixture['extract_paths'])}), and the webhook event "
-        f"schema keys are {sorted(fixture['event_fields'])}"
+        f"schema keys include {sorted(fixture['event_fields'])}"
     )
 
 
