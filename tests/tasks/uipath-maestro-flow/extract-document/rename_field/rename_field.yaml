@@ -35,7 +35,17 @@ success_criteria:
     description: "The renamed field \"Total Amount\" kept the id Total had"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
-      '[{"name": "^Total Amount$", "id": "059158da-1564-4680-a208-ce02de660518"}]'
+      '[{"name": "Total Amount", "id": "059158da-1564-4680-a208-ce02de660518"}]'
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Apart from the rename, the taxonomy equals the seeded one: prompt, config, group, every field's type, instructions and id, $defs"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader unchanged
+      $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader/InvoiceReader.flow
+      'Total=Total Amount'
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -44,9 +54,9 @@ success_criteria:
     description: "The other three fields kept their names and ids"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
-      '[{"name": "^Invoice Number$", "id": "9fbb50a5-5b7a-442b-bc48-4d528c82e200"},
-      {"name": "^Invoice Date$", "id": "9ad17b9e-17ce-4410-a4d8-2d19bec3f25d"},
-      {"name": "^Vendor Name$", "id": "d246a961-e9bc-452a-9ff5-f86178bb535c"}]'
+      '[{"name": "Invoice Number", "id": "9fbb50a5-5b7a-442b-bc48-4d528c82e200"},
+      {"name": "Invoice Date", "id": "9ad17b9e-17ce-4410-a4d8-2d19bec3f25d"},
+      {"name": "Vendor Name", "id": "d246a961-e9bc-452a-9ff5-f86178bb535c"}]'
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -55,14 +65,14 @@ success_criteria:
     description: "No field was added or dropped, and none is still named Total"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields --only
-      '[{"name": "^Total Amount$"}, {"name": "^Invoice Number$"}, {"name": "^Invoice Date$"}, {"name": "^Vendor Name$"}]'
+      '[{"name": "Total Amount"}, {"name": "Invoice Number"}, {"name": "Invoice Date"}, {"name": "Vendor Name"}]'
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "The overall prompt and every group's and field's instructions survived the write"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader described
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader has-instructions
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
