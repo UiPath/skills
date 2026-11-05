@@ -32,10 +32,11 @@ success_criteria:
   tool_name: Bash
   command_pattern: 'uip\s+agenthub\s+mcp\s+create\s+(uipath|coded|command|remote|platform)\b(?![^\n]*--(dry-run|help|print-schema))'
   weight: 3.0
-- type: command_not_executed
+- type: command_executed
   description: Agent did NOT keep retrying the swagger create (at most two real attempts)
   tool_name: Bash
   command_pattern: 'uip\s+agenthub\s+mcp\s+create\s+swagger\b(?![^\n]*--(dry-run|help|print-schema))'
+  min_count: 0
   max_count: 2
   weight: 1.5
 - type: command_not_executed
