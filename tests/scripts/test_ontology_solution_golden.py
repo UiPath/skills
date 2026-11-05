@@ -290,11 +290,8 @@ class OntologySolutionGoldenTest(unittest.TestCase):
             self.skipTest(f"every local stage passed and the solution packed; the ontology service did not "
                           f"validate: {service_unavailable}")
 
-    @unittest.expectedFailure
     def test_ontology_class_maps_a_federated_entity(self):
-        # The skill maps a class over a federated entity by name (`table: <Entity>`). The CLI build under test
-        # reads only Entity projects as the ontology's local entities, so a federated table fails XF-012. This
-        # passes (and the expected failure turns red) once the CLI counts federated entities.
+        # A class maps over a local federated entity by name (`table: <Entity>`), like a native one.
         solution, _, _ = self.build_solution(federated_class=True)
         _, entries, detail = self.validate(solution)
         self.assertEqual(errors(key(entries[0], "violations")), [], detail)
