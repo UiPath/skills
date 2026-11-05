@@ -5,3 +5,7 @@
 <!--skill-flavor:script-function-sdk-version:start-->
 The function form needs `@uipath/maestro-builder-sdk` 6.57.0 or later. Check that `dist/api-index.md` of the SDK that Studio Web ships lists `ScriptValue`. If not, write `script({ code })`. An older SDK fails on a function with `compile: Cannot read properties of undefined (reading 'matchAll')`.
 <!--skill-flavor:script-function-sdk-version:end-->
+
+<!--skill-flavor:script-function-metadata-sdk-version:start-->
+The metadata parameter needs `@uipath/maestro-builder-sdk` 6.72.0 or later. Check that `dist/api-index.md` of the SDK that Studio Web ships lists `FlowMetadata`. If it does not list it, read `$metadata` from `script({ code })`: an older SDK refuses a function with two parameters, and a function that reads `$metadata` at all.
+<!--skill-flavor:script-function-metadata-sdk-version:end-->

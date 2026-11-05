@@ -22,7 +22,7 @@ Boundaries:
 | Need | Go to |
 |------|-------|
 | Start new projects from a standard baseline | Project templates — [environment-setup.md § Template Selection](environment-setup.md) |
-| Share UI selectors across projects | UI Libraries — [uia-starter-guide.md § Object Repository as a Published UI Library](uia-starter-guide.md) |
+| Share UI selectors across projects | UI Libraries — [uia-policies-catalog.md § Object Repository as a Published UI Library](uia-policies-catalog.md) |
 | Reuse logic inside one project | Separate workflow file — [environment-setup.md § Designing for Reuse](environment-setup.md#designing-for-reuse) |
 
 ## Creating and Structuring
@@ -132,7 +132,7 @@ Rules:
 Each public workflow is an API surface. Apply every rule:
 
 1. **Name workflows verb-noun PascalCase, no spaces** — `SendNotificationEmail.xaml`, `DownloadInvoices.xaml`. The file name becomes the activity name in the consumer's panel.
-2. **Public arguments: PascalCase, NO `in_`/`out_`/`io_` prefixes** — `InvoiceId`, `RecipientEmail`, `NotificationResult`. Argument names become activity property names; prefixes become noise on the property grid. This inverts the process-workflow convention: workflows invoked via Invoke Workflow File keep directional prefixes ([environment-setup.md § Designing for Reuse](environment-setup.md#designing-for-reuse)); library public workflows drop them.
+2. **Public arguments: PascalCase, NO `in_`/`out_`/`io_` prefixes** — `InvoiceId`, `RecipientEmail`, `NotificationResult`. Argument names become activity property names; prefixes become noise on the property grid. Private workflows follow SKILL.md Common Rule 4c.
 3. **Describe every public argument** via its `sap2010:Annotation.AnnotationText` — descriptions ship as property tooltips. For display names, placeholders, widgets, and grouping, add the layout sidecar ([§ Activity Layout](#activity-layout--the-sidecar-file)).
 4. **Expect — and keep — the analyzer naming warnings.** `build`/`pack` emit `Argument <Name> does not respect the set pattern ^in_...` for prefix-free library arguments. The warning is non-blocking. Do NOT rename arguments to silence it.
 5. **Return application handles.** A workflow that opens or attaches to an app outputs the window/browser object; downstream public workflows accept it as an input argument instead of reopening.

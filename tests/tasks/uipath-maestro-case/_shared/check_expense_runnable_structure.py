@@ -103,13 +103,19 @@ def _incoming_from(plan: dict, target_id: str, sources: set[str]) -> bool:
 
 
 def _assert_bindings_v2_metadata(bindings: dict) -> None:
-    """Reject metadata that the eval CLI's resource refresh cannot consume."""
+    """Reject process metadata that the eval CLI's resource refresh cannot consume.
+
+    Only `process` entries are checked: `bindings sync` also emits `Role` entries
+    (from case personas) whose metadata refresh accepts as-is.
+    """
     resources = bindings.get("resources")
     if not isinstance(resources, list):
         _fail("bindings_v2.json must contain a resources array")
     for index, resource in enumerate(resources):
         if not isinstance(resource, dict):
             _fail(f"bindings_v2.json resources[{index}] must be an object")
+        if resource.get("resource") != "process":
+            continue
         metadata = resource.get("metadata") or {}
         if not isinstance(metadata, dict):
             _fail(f"bindings_v2.json resource {resource.get('key', index)!r} metadata must be an object")

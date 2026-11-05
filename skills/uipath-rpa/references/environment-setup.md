@@ -317,7 +317,7 @@ UI workflows interact with applications and contain no business rules; business 
 
 #### Composition and argument naming
 
-Compose with `Invoke Workflow File` (coded: `workflows.StepName()`). Use directional process argument prefixes `in_InvoiceId`, `out_Result`, and `io_Browser`; library public workflows omit prefixes ([library-authoring-guide.md § The Public-Workflow Contract](library-authoring-guide.md)).
+Compose with `Invoke Workflow File` (coded: `workflows.StepName()`). Argument names follow SKILL.md Common Rule 4c.
 
 #### Layout and scale-out
 
@@ -325,7 +325,7 @@ Choose Sequence, Flowchart, or State Machine per [xaml/xaml-basics-and-rules.md 
 
 #### Promotion ladder
 
-Promote only as reuse appears: inline → separate workflow file → shared library ([library-authoring-guide.md](library-authoring-guide.md)) → UI Library for shared selectors ([uia-starter-guide.md § Object Repository as a Published UI Library](uia-starter-guide.md#object-repository-as-a-published-ui-library)).
+Promote only as reuse appears: inline → separate workflow file → shared library ([library-authoring-guide.md](library-authoring-guide.md)) → UI Library for shared selectors ([uia-policies-catalog.md § Object Repository as a Published UI Library](uia-policies-catalog.md#object-repository-as-a-published-ui-library)).
 
 ### Example — Invoice Processing Project (XAML)
 

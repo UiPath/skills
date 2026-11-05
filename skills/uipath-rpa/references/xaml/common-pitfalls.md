@@ -45,7 +45,6 @@ Setting both properties in these pairs causes a **validation error**:
 |-----------|-----------|----------|
 | `Password` | `SecurePassword` | ExcelApplicationScope, PDF, Mail activities |
 | `EditPassword` | `SecureEditPassword` | ExcelApplicationScope |
-| `SimulateClick` | `SendWindowMessages` | Click, ExtractData (UIAutomation) |
 
 Only set one from each pair, never both.
 
@@ -106,11 +105,8 @@ Some properties are only required when another property has a specific value:
 
 ## Input Method Constraints (UIAutomation)
 
-- `SimulateClick` cannot be used with `ClickType=Double` or `MouseButton=Right/Middle` — validation error
-- `TypeInto` with `SimulateType=True` **cannot use special keys** (Ctrl, Alt, Shift, etc.) — validation error via `SpecialKeyHelper.IsSpecialKeyUsed()`
-- `SimulateClick=True` AND `SendWindowMessages=True` is always invalid — pick one or neither
-- Input method resolution: `SendWindowMessages` → WINDOW_MESSAGES; else `SimulateClick` → API; else → HARDWARE_EVENTS (physical)
-- These are validated both at design-time (CacheMetadata) and runtime
+- Type Into's `Text` can hold special-key codes (`[k(enter)]` presses Enter; `[d(ctrl)]a[u(ctrl)]` is Ctrl+A). They cannot be typed with `InteractionMode` `Simulate`, set on the activity or inherited from its card: validation fails, and codes that reach `Text` from a variable fail the run. Use `HardwareEvents`, or `DebuggerApi` in Chrome and Edge.
+- Choosing a method per application: the Input Methods task guide, routed from `ui-automation-guide.md` § Documentation.
 
 ## NKeyboardShortcuts: `Shortcuts` vs `ShortcutsArgument`
 
@@ -253,8 +249,8 @@ The path is relative to the project root directory. Use backslashes for subfolde
 <ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
     DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)" UnSafe="False">
   <ui:InvokeWorkflowFile.Arguments>
-    <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
-    <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument1">someValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument2">anotherValue</InArgument>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
 ```
@@ -504,8 +500,8 @@ Skipping both produces `Cannot create unknown type` at `build`.
 | ExcelApplicationScope | `CreateNewFile` | `True` | Creates file if it doesn't exist |
 | Click | `ClickType` | `Single` | Single click (not double) |
 | Click | `MouseButton` | `Left` | Left mouse button |
-| Click | `AlterIfDisabled` | `True` | Alters element even if disabled (legacy compat) |
-| UI Automation activities | `Timeout` | `30` seconds, a double (Check App State: `5`) | How long to wait for the target before failing |
+| Click | `AlterIfDisabled` | `False` | When selected, the activity executes the action even if the target element is disabled. Does not apply if the input mode is Hardware Events |
+| UI Automation activities | `Timeout` | `30` seconds, a double | The amount of time (in seconds) to wait for the operation to be performed before generating an error. Default and meaning vary by activity: check the activity's doc, `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/<Activity>.md` |
 | UI Automation activities | `DelayBefore` | `0.2` seconds | Delay before action |
 | UI Automation activities | `DelayAfter` | `0.3` seconds | Delay after action; classic activities' millisecond values: [legacy/selector-guide.md](../legacy/selector-guide.md) |
 | ExtractData | `DelayBetweenPagesMS` | `300`ms | Between pagination clicks |

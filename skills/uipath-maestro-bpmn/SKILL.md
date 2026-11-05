@@ -68,6 +68,61 @@ because the new-node authoring contract differs. Migration requires explicit
 confirmation — see
 [references/structural-bpmn.md](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
 
+#### Keep the user's diagram
+
+A `.bpmn` that already had a `bpmndi:BPMNDiagram` when this task started
+carries the user's layout: pools, lanes, colors, box sizes, placement and arrow
+routing. `uip maestro bpmn format` may redraw that diagram and drop all of it,
+while `validate` still passes. On such a file:
+
+<!--skill-flavor:diagram-snapshot:start-->
+1. Before the first write, copy the file outside the project folder and print
+   the copy's path:
+   `SNAP="$(mktemp -d)/before.bpmn" && cp "<FILE>" "$SNAP" && echo "$SNAP"`.
+   Record the printed path as `<SNAPSHOT_PATH>`; shell variables do not carry
+   between tool calls.
+<!--skill-flavor:diagram-snapshot:end-->
+2. Do NOT run `uip maestro bpmn format` on it. Exception: the user explicitly
+   asks to re-layout or tidy the diagram. Then run
+   `uip maestro bpmn format <file.bpmn> --relayout` if
+   `uip maestro bpmn format --help` lists `--relayout`; otherwise tell the user
+   that `format` would drop the pools, lanes and colors, and run it only after
+   they confirm.
+3. Leave every existing `BPMNShape`, `BPMNEdge` and `BPMNLabel` exactly as it
+   is — bounds, waypoints, colors, `isHorizontal` — and never change the
+   plane's `bpmnElement`.
+4. For each node you add, add one `BPMNShape` sized like the existing nodes of
+   the same kind. Put the node in the lane of the node it follows (add its
+   `bpmn:flowNodeRef` to that lane) and draw it inside that lane's bounds, in
+   free space that overlaps no other shape. If there is no room, shift every
+   shape, label and waypoint right of the insertion point by one common
+   distance and widen the pool, its lanes and any expanded subprocess around
+   the insertion point by that distance; never move shapes one by one.
+5. For each flow you add or re-target, write only that flow's `BPMNEdge`, with
+   orthogonal waypoints from the source's edge to the target's edge.
+6. For each node or flow you delete, delete its shape or edge, and remove the
+   node's `bpmn:flowNodeRef` from its lane.
+<!--skill-flavor:diagram-preserved-check:start-->
+7. After the last write, and before `validate`, run
+   [scripts/check-diagram-preserved.py](scripts/check-diagram-preserved.py)
+   from this skill's folder (`<SKILL_DIR>`, the directory holding this
+   SKILL.md):
+   `python3 "<SKILL_DIR>/scripts/check-diagram-preserved.py" "<SNAPSHOT_PATH>" <file.bpmn> --removed <REMOVED_IDS>`,
+   where `<REMOVED_IDS>` is a comma-separated list of the ids you deleted (omit
+   `--removed` when you deleted nothing). Use `python` or `py -3` when
+   `python3` is missing; with no Python at all, compare the two files by hand
+   against the list the script's docstring gives. For each reported loss:
+   - the user asked for that diagram change (a color, a move, a re-layout):
+     keep it and name it in the summary;
+   - otherwise restore the lost entry from the snapshot.
+
+   Re-run the check after restoring, at most twice. If losses remain, list
+   them in the summary instead of finishing silently.
+<!--skill-flavor:diagram-preserved-check:end-->
+
+A file this task created — an `init` scaffold or a greenfield draft — has no
+user layout yet; run `format` as rule 5 says.
+
 For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 `uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
 `uipath-maestro-case`.
@@ -99,7 +154,9 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
    the last write to the `.bpmn` and before `validate` or `refresh`, both of
-   which error on a node with no shape.
+   which error on a node with no shape. Exception: a file that already had a
+   diagram when the task started: follow
+   [Keep the user's diagram](#keep-the-users-diagram) instead.
 6. **Declare the node type as a `<uipath:type>` child.** Every
    `uipath:activity` / `uipath:event` / `uipath:mapping` sits inside
    `<bpmn:extensionElements>` and carries
@@ -216,6 +273,10 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    template's remaining fields and make that swap only after a live run
    faults with `key:FolderKey`; without a run, report the node unverified. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
+19. **Fill every placeholder (`{name}`, `<name>`) in an HTTP request's `url` before `registry
+   get`, with a discovered or given value or a `=js:` expression; never invent
+   one.** To change the url, run `registry get` again, never edit it in the
+   element ([how](references/v2-connector-nodes.md#http-requests)).
 
 ## The model
 
@@ -351,6 +412,13 @@ Say which mode was taken in the final report.
 
 In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
 gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
+
+Outside plan mode, draft mode **writes the skeleton**. A request to see the
+process first asks to approve a real, validated skeleton `.bpmn`, not a sketch in
+chat: run phase 2 (2a–2f, with the guide's skips for a trigger start and a
+forbidden upload), then the 3c gate. A text-only outline with no file is not a skeleton, and reporting
+one as "outline ready" misreports it. Plan mode is the host's state: never
+enter it yourself to satisfy "show me first".
 
 **Only *Build it* at 3c authorizes phase 4.** When the user keeps the
 outline, or has not answered, report the skeleton as an outline, not as a
@@ -674,7 +742,10 @@ Draft mode only.
 
    It overwrites the file's `bpmndi:BPMNDiagram` in place, so the canvas
    renders the process arranged instead of stacked at the origin. Every
-   deliverable gets this, source-only drafts included. It is also a hard
+   deliverable this task created gets this, source-only drafts included. A
+   brownfield file that already had a diagram does NOT: follow
+   [Keep the user's diagram](#keep-the-users-diagram) and run its check
+   instead. It is also a hard
    precondition for the next two steps, not a cosmetic pass: a node with no
    `BPMNShape` or a flow with no `BPMNEdge` fails `validate` with
    `MISSING_DI_SHAPE` / `MISSING_DI_EDGE`, no diagram at all fails it with
@@ -714,8 +785,10 @@ Draft mode only.
    placeholder, a source-only draft (Rule 16), or a boundary handoff, or 4a found no `Enabled`
    candidate, no invented identifier can clear
    `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
-   expected result. Report the pair once and continue; `refresh` (4f)
-   succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
+   expected result. Report the pair once and continue. A connection binding
+   whose `default` is a placeholder fails `refresh` (4f) with "default must be
+   a GUID", so that draft skips 4f; refresh needs a real connection id from
+   `uip is connections list`. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
    it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on
    the node reading a start-event-scoped caller input is expected; see
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
@@ -748,8 +821,13 @@ Draft mode only.
    JSON by hand. Refresh after binding a connection (4a) and for a
    package-ready, upload, debug, publish, or deploy deliverable; a source-only
    draft needs it only for 4c's start-event edits, and a trigger-start
-   draft (4c) skips it. For the full contract (scope, idempotency,
-   binding rules) see
+   draft (4c) or a draft with a placeholder connection binding skips it; a
+   placeholder-binding draft keeps the initializer's `Event_start` id and its
+   `uipath:entryPointId`, because a renamed start event leaves
+   `entry-points.json` stale and 4e fails. Such a draft is never a
+   package-ready, upload, debug, publish, or deploy deliverable: stop and ask
+   for a real connection, or report it blocked; never skip `refresh` and ship.
+   For the full contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 - **4g Show the finished process.** When the request allows an upload and the
