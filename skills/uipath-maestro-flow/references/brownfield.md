@@ -203,12 +203,19 @@ flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derive
 
 <!--skill-flavor:draft-nodes:start-->
 A canvas-saved flow often holds **draft** nodes: a connector with no connection
-yet, a required input left empty, or a generic operation with no object picked
-(connector action steps only; a draft trigger, `waitForEvent` or connector tool
-still refuses and must be finished first). Decompile carries the definition
-of each draft the canvas saved, so `compile` writes it with a warning
-(`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on this
-page get past it. Three cases still stop `compile`, and with it the pipeline
+yet, a required input left empty, a generic operation with no object picked, a
+`waitForEvent` with no connection, a Transform with no collection, or a
+decision with no condition (a draft trigger or connector tool still refuses and
+must be finished first). Decompile carries the definition of each draft the
+canvas saved and marks its step `{ draft: true }`, so `compile` writes it with a
+warning (`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on
+this page get past it. For instance a decision saved with no condition
+decompiles as `.branch("decision1", undefined, (t) => ..., (e) => ..., { draft: true })`
+and a Transform with no collection as `transform({ operations: [] })` with
+`{ draft: true }`: leave those as written unless the user asked you to finish
+the node. The `waitForEvent`, Transform and decision drafts need an SDK with
+UiPath/builder-sdk#1783, #1784 and #1785; an older one refuses them (`BINDING_MISSING`,
+`TRANSFORM_COLLECTION_LITERAL`, `EXPR_SYNTAX`). Three cases still stop `compile`, and with it the pipeline
 and the by-hand loop below: a generic operation with no object
 (`CONNECTOR_OBJECT_REQUIRED`), a draft you wrote yourself (no carried
 definition), and an untouched node the SDK cannot compile (`check --baseline`
