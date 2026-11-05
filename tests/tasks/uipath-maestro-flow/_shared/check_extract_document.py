@@ -11,15 +11,15 @@ Usage (from a task's run_command, cwd = sandbox root):
 
 Checks:
     fields JSON          each entry of the JSON array fits a field:
-                         '[{"name": "date", "type": "ft-date"}, {"says": "prefix"}]'
-                         "name" is searched in the field name and "says" in
-                         its instructions (case-insensitive regex, so a plain
-                         word means "contains"). "type" must equal the field
-                         type and "id" its x-uipath-field-id. An entry may
+                         '[{"name_contains": "date", "type": "ft-date"}, {"name": "Total"}]'
+                         "name", "type" and "id" must equal the field's name,
+                         type and x-uipath-field-id. "name_contains" and
+                         "says_contains" are case-insensitive regexes searched
+                         in the field's name and instructions. An entry may
                          give any of these keys. With --only, every field
                          fits an entry.
-    described            the overall prompt, every group and every field have
-                         a description
+    has-instructions     the overall prompt, every group and every field have
+                         instructions (a non-empty prompt or description)
     defs                 the six built-in field types are still in $defs; with
                          --only, $defs holds nothing else
     unchanged ORIGINAL [OLD=NEW ...]
@@ -60,8 +60,9 @@ BUILT_IN_TYPES = (
     "ft-monetary-quantity",
     "ft-boolean",
 )
-FIELD_KEYS = {"name", "type", "says", "id"}
-PATTERN_KEYS = ("name", "says")
+EXACT_KEYS = ("name", "type", "id")
+PATTERN_KEYS = ("name_contains", "says_contains")
+FIELD_KEYS = {*EXACT_KEYS, *PATTERN_KEYS}
 MAX_DIFFERENCES = 10
 ONLY_CHECKS = ("fields", "defs")
 
@@ -97,12 +98,11 @@ def _get_field_type(field: dict) -> str:
 
 
 def _fits(want: dict, name: str, field: dict) -> bool:
-    text = {"name": name, "says": field.get("description") or ""}
-    if any(k in want and not re.search(want[k], text[k], re.IGNORECASE) for k in PATTERN_KEYS):
+    exact = {"name": name, "type": _get_field_type(field), "id": field.get("x-uipath-field-id")}
+    searched = {"name_contains": name, "says_contains": field.get("description") or ""}
+    if any(k in want and want[k] != exact[k] for k in EXACT_KEYS):
         return False
-    if "type" in want and want["type"] != _get_field_type(field):
-        return False
-    return "id" not in want or want["id"] == field.get("x-uipath-field-id")
+    return not any(k in want and not re.search(want[k], searched[k], re.IGNORECASE) for k in PATTERN_KEYS)
 
 
 def _describe(group: str, name: str, field: dict) -> str:
@@ -127,7 +127,9 @@ def parse_fields(values: list[str]) -> list[dict]:
             or set(want) - FIELD_KEYS
             or not all(isinstance(v, str) for v in want.values())
         ):
-            raise ValueError(f"each entry has string name, type, says or id keys, not {json.dumps(want)}")
+            raise ValueError(
+                f"each entry has string {', '.join(sorted(FIELD_KEYS))} keys, not {json.dumps(want)}"
+            )
         for key in PATTERN_KEYS:
             if key in want:
                 try:
@@ -156,7 +158,7 @@ def check_fields(_: dict, node: dict, args: argparse.Namespace) -> str | None:
     return "; ".join(problems) + f" (the taxonomy has: {found or 'no fields'})"
 
 
-def check_described(_: dict, node: dict, __: argparse.Namespace) -> str | None:
+def check_has_instructions(_: dict, node: dict, __: argparse.Namespace) -> str | None:
     problems = []
     if not _read_schema_document(node).get("prompt"):
         problems.append("the overall prompt is empty")
@@ -276,7 +278,7 @@ def check_no_other_ixp(flow: dict, node: dict, _: argparse.Namespace) -> str | N
 
 CHECKS = {
     "fields": check_fields,
-    "described": check_described,
+    "has-instructions": check_has_instructions,
     "defs": check_defs,
     "unchanged": check_unchanged,
     "file-ref": check_file_ref,

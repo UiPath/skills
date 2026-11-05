@@ -152,16 +152,18 @@ STRAY_DATE = {"G": {"description": "d", "properties": {
 def test_fields_pass_when_every_entry_fits_a_field(write, capsys):
     write(_flow())
     assert _fields(
-        {"name": "vendor"},
-        {"name": "number", "type": "ft-exact-text", "says": "prefix"},
-        {"name": "invoice date", "type": "ft-date"},
-        {"name": "total", "type": "ft-monetary-quantity", "says": "page"},
-        {"name": "QUANT|qty", "type": "ft-number"},
+        {"name_contains": "vendor"},
+        {"name_contains": "number", "type": "ft-exact-text", "says_contains": "prefix"},
+        {"name_contains": "invoice date", "type": "ft-date"},
+        {"name": "Total", "type": "ft-monetary-quantity", "says_contains": "page"},
+        {"name_contains": "QUANT|qty", "type": "ft-number"},
     ) == 0
     assert "OK: fields" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("entry", [{"type": "ft-boolean"}, {"says": "IBAN"}, {"name": "iban"}])
+@pytest.mark.parametrize("entry", [
+    {"type": "ft-boolean"}, {"says_contains": "IBAN"}, {"name_contains": "iban"}, {"name": "Vendor"}, {"id": "x"},
+])
 def test_any_single_key_is_checked(write, entry):
     write(_flow())
     assert _fields(entry) == 1
@@ -170,20 +172,28 @@ def test_any_single_key_is_checked(write, entry):
 def test_type_and_instructions_are_checked_on_the_named_field(write, capsys):
     write(_flow(schema=_schema(STRAY_DATE)))
     assert _fields({"type": "ft-date"}) == 0
-    assert _fields({"says": "prefix"}) == 0
-    assert _fields({"name": "number", "says": "prefix"}) == 1
-    assert _fields({"name": "invoice date", "type": "ft-date"}) == 1
+    assert _fields({"says_contains": "prefix"}) == 0
+    assert _fields({"name_contains": "number", "says_contains": "prefix"}) == 1
+    assert _fields({"name_contains": "invoice date", "type": "ft-date"}) == 1
     err = capsys.readouterr().err
-    assert 'no field fits {"name": "invoice date", "type": "ft-date"}' in err
+    assert 'no field fits {"name_contains": "invoice date", "type": "ft-date"}' in err
     assert "'G > Invoice Date' ft-inferred-text" in err
 
 
 def test_every_missing_entry_is_reported(write, capsys):
     write(_flow())
-    assert _fields({"name": "vendor"}, {"name": "iban"}, {"type": "ft-boolean"}) == 1
+    assert _fields({"name_contains": "vendor"}, {"name_contains": "iban"}, {"type": "ft-boolean"}) == 1
     err = capsys.readouterr().err
-    assert '"iban"' in err and '"ft-boolean"' in err and 'fits {"name": "vendor"}' not in err
+    assert '"iban"' in err and '"ft-boolean"' in err and 'fits {"name_contains": "vendor"}' not in err
     assert "Line Items > Quantity" in err
+
+
+def test_name_is_an_exact_match(write):
+    write(_flow())
+    assert _fields({"name": "Total"}) == 0
+    assert _fields({"name": "total"}) == 1
+    assert _fields({"name": "Tot"}) == 1
+    assert _fields({"name_contains": "tot"}) == 0
 
 
 def test_id_is_checked_on_the_named_field(write, capsys):
@@ -191,22 +201,22 @@ def test_id_is_checked_on_the_named_field(write, capsys):
         "Total Amount": {**_field("ft-monetary-quantity"), "x-uipath-field-id": "id-total"},
         "Vendor Name": {**_field("ft-inferred-text"), "x-uipath-field-id": "id-vendor"},
     }}})))
-    assert _fields({"name": "^Total Amount$", "id": "id-total"}) == 0
-    assert _fields({"name": "^Total Amount$", "id": "id-vendor"}) == 1
+    assert _fields({"name": "Total Amount", "id": "id-total"}) == 0
+    assert _fields({"name": "Total Amount", "id": "id-vendor"}) == 1
     assert "'Invoice > Total Amount' ft-monetary-quantity id id-total" in capsys.readouterr().err
 
 
 def test_only_fails_on_a_field_no_entry_asks_for(write, capsys):
     write(_flow())
-    every = [{"name": n} for n in ("vendor", "number", "date", "total", "quantity")]
+    every = [{"name_contains": n} for n in ("vendor", "number", "date", "total", "quantity")]
     assert _fields(*every, only=True) == 0
     assert _fields(*every[:4], only=True) == 1
     assert "'Line Items > Quantity' is a field no entry asks for" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("value", [
-    "vendor", "[]", "{}", "[{}]", '[{"label": "x"}]', '[{"name": 1}]', '[{"name": "("}]',
-    '[{"id": true}]', '[{"says": "["}]', '[{"group": "Invoice"}]',
+    "vendor", "[]", "{}", "[{}]", '[{"label": "x"}]', '[{"name": 1}]', '[{"name_contains": "("}]',
+    '[{"id": true}]', '[{"says_contains": "["}]', '[{"says": "prefix"}]', '[{"group": "Invoice"}]',
 ])
 def test_malformed_fields_value_is_a_usage_error(write, value):
     write(_flow())
@@ -218,18 +228,18 @@ def test_fields_takes_one_value(write):
     assert _run("fields", '[{"name": "a"}]', '[{"name": "b"}]') == 2
 
 
-def test_described_names_each_gap(write, capsys):
+def test_has_instructions_names_each_gap(write, capsys):
     write(_flow(schema=_schema({"G": {"properties": {"Total": {"$ref": "#/$defs/ft-number"}}}}, prompt="")))
-    assert _run("described") == 1
+    assert _run("has-instructions") == 1
     err = capsys.readouterr().err
     assert "overall prompt is empty" in err
     assert "group 'G' has no description" in err
     assert "field 'G > Total' has no description" in err
 
 
-def test_described_passes_a_fully_described_taxonomy(write):
+def test_has_instructions_passes_a_fully_instructed_taxonomy(write):
     write(_flow())
-    assert _run("described") == 0
+    assert _run("has-instructions") == 0
 
 
 def test_defs(write, capsys):
@@ -249,12 +259,12 @@ def test_defs_only_refuses_any_other_type(write, capsys):
 
 def test_only_applies_to_fields_and_defs(write):
     write(_flow())
-    assert _run("described", "--only") == 2
+    assert _run("has-instructions", "--only") == 2
 
 
 def test_checks_without_values_refuse_them(write):
     write(_flow())
-    assert _run("described", "extra") == 2
+    assert _run("has-instructions", "extra") == 2
 
 
 def _seeded_schema():
