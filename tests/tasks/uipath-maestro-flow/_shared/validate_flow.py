@@ -119,7 +119,7 @@ def _attempt_cap(remaining: float, attempts_left: int) -> float:
     return max(_MIN_ATTEMPT_SECONDS, remaining / attempts_left)
 
 
-def _read_warnings(stdout: str) -> str:
+def _warnings(stdout: str) -> str:
     """``Data.Warnings`` of a ``flow validate --output json`` envelope, or ``""``.
 
     Output that is not a JSON envelope is reported as a warning, since a clean
@@ -182,7 +182,7 @@ def _validate(flow: str, deadline: float, budget: int, no_warnings: bool = False
         sys.stdout.write(result.stdout)
         sys.stderr.write(result.stderr)
         if result.returncode == 0 and no_warnings:
-            warnings = _read_warnings(result.stdout)
+            warnings = _warnings(result.stdout)
             if warnings:
                 print(f"FAIL: {flow} validated with warnings: {warnings}", file=sys.stderr)
                 return 1
