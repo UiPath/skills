@@ -32,6 +32,7 @@ When the user expresses a governance rule without naming a product, your job is 
 | User says... | Likely Product | Signal keywords to grep |
 |---|---|---|
 | "block Gemini / Claude / ChatGPT", "restrict which LLMs agents can use", "disable external AI models" | `AITrustLayer` | model names, "provider", "feedback", "region" |
+| "make the PII guardrail scan files tenant-wide", "centralized guardrails should check attachments / only text", "guardrail detection scope" | `AITrustLayer` | "Detection scope", "Text only", "Files only", "Text and files", "guardrail" — see [aops-governance-recipes-guide.md](./aops-governance-recipes-guide.md) T1 |
 | "lock down Studio", "disable Studio feedback / telemetry", "restrict Studio packages / activities" | `Development` (Studio) | "feedback", "package", "activity", "publish" |
 | "control StudioX citizen-dev features", "restrict business-user automations" | `Business` (StudioX) | "StudioX", "citizen", "template" |
 | "govern what Robot can run", "restrict attended / unattended runtime" | Robot product (check bootstrap) | "runtime", "process", "attended" |
