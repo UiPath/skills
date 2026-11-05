@@ -4,6 +4,7 @@
 
 An inline agent's capabilities are ARTIFACT nodes hanging off its own handles — tools on `tool`, a context index on `context`, an escalation on `escalation` — not steps in the control flow.
 Each is authored as an entry on `inlineAgent`, and the compiler emits the node and the edge.
+`voiceAgent` and `conversationalAgent` take the same `tools`, `context` and `escalation` options, with the same rules ([voice.md](voice.md), [conversational.md](conversational.md)); `memory` is the inline agent's alone.
 Context index: [inline-agent.md](inline-agent.md#context-grounding).
 
 ```ts

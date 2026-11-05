@@ -114,6 +114,23 @@ rather than leaving them out. The agent's reply is
 `out('<step>', 'uipath__agent_response_messages')`, and compile writes a stable
 `<source>/agent.json` sidecar beside the `.flow` as it does for `inlineAgent`.
 
+## Tools, context and escalations
+
+`conversationalAgent` takes the same `tools`, `context` and `escalation` options
+as `inlineAgent` ([agent-resources.md](agent-resources.md)). For instance a tool
+the chat client runs:
+
+```ts
+conversationalAgent({
+  model: 'gpt-5.4', systemPrompt: 'Help the customer.',
+  settings: { context: out('wait', 'conversationContext') },
+  tools: [{ kind: 'clientside', name: 'showOrder', inputs: { orderId: 'string' } }],
+})
+```
+
+`check` uses the inline agent's rules and codes for them; there is no `memory`.
+A connector tool does not decompile yet: decompile writes a `TODO` for its edge.
+
 ## Evidence boundary
 
 The whole family is `AvailableOnTenant: false` today — the definitions are

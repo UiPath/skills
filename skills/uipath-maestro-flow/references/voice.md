@@ -79,6 +79,27 @@ emits the runtime bindings and matching sidecar schema. There are no declared
 voice-dialect `<source>/agent.json` sidecar (`settings.mode: 'voice'`) beside
 the `.flow`.
 
+## Tools, context and escalations
+
+`voiceAgent` takes the same `tools`, `context` and `escalation` options as
+`inlineAgent`, written the same way ([agent-resources.md](agent-resources.md)).
+Each one becomes a resource node on the agent's `tool`, `context` or
+`escalation` handle:
+
+```ts
+.step('serviceAgent', voiceAgent({
+  systemPrompt: 'Look the caller up before you answer.',
+  callContext: out('start', 'callContext'),
+  tools: [{ kind: 'api', key: '<guid>', name: 'LookupCustomer', folderPath: 'Shared/ContactCenter' }],
+}))
+```
+
+`check` uses the inline agent's rules and codes for them (`INLINE_AGENT_TOOL_*`,
+`INLINE_AGENT_ESCALATION_*`, `AGENT_CONTEXT_*`). There is no `memory`. A
+decompiled canvas flow carries its tools in these options. A connector tool
+does not decompile yet: decompile writes a `TODO` for its edge, so keep that
+tool's node by editing the `.flow` directly.
+
 ## Evidence boundary
 
 `uipath.agent.voice` is served on this tenant; the trigger and the two call
