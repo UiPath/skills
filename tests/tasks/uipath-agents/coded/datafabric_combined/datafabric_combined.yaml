@@ -32,8 +32,8 @@ pre_run:
 
 initial_prompt: |
   Build me a coded agent called `order-manager` that works with our
-  order data in Data Fabric — the entity is named exactly `Order`;
-  find it by listing what's available. It needs to handle two things:
+  order data. The data lives in Data Fabric — find the right entity
+  by listing what's available. It needs to handle two things:
   1. Users asking freeform questions about orders — anything from
      totals to customer lookups. I can't predict these ahead of time.
   2. Marking a specific order as delivered by setting its Status to
