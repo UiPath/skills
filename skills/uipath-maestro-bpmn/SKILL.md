@@ -130,6 +130,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 10. **Confirm before any cloud change.** Publish, deploy, run, pause, resume,
    cancel, retry, and migrate require explicit user consent; validate locally
    first.
+<!--skill-flavor:rule-10-upload:start-->
    `solution upload` is the exception: unless the request forbids it, a
    request to build the process authorizes the upload that shows it, so upload
    without asking. Confirm only when the project was not created in this run —
@@ -137,6 +138,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    the cloud solution matching the local `.uipx` SolutionId. Confirm it where
    that solution is chosen (2a); when 2a did not run, confirm before the 4g
    upload.
+<!--skill-flavor:rule-10-upload:end-->
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See
@@ -338,7 +340,9 @@ never changes what a step does.
 | Phase | Steps | What happens | Reference |
 | --- | --- | --- | --- |
 | **0 — Surface** | — | Nothing to do yet; surface detection is future work. | Below |
+<!--skill-flavor:phase-table-preflight:start-->
 | **1 — Preflight** | 1a–1c | Check login, scan for an existing solution and project, start from its cloud copy. Changes nothing in the project, so it runs in every mode. | Below |
+<!--skill-flavor:phase-table-preflight:end-->
 | **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no new registry calls** (`list` ran in 1a). Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
 | **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, name each box's resource, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
 | **4 — Wire it up** | 4a–4g | Discover, fetch templates, paste real payloads into the existing boxes, lay out, validate, refresh, show. | Below |
@@ -373,9 +377,11 @@ gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
 **Only *Build it* at 3c authorizes phase 4.** When the user keeps the
 outline, or has not answered, report the skeleton as an outline, not as a
 finished process.
+<!--skill-flavor:draft-shape-display:start-->
 Draft mode shows the
 shape by upload when the request allows one (2f); when it forbids upload,
 show the laid-out local `.bpmn` path and a short text outline instead.
+<!--skill-flavor:draft-shape-display:end-->
 
 Author early: do not pre-read every reference before writing. Read a reference
 only when you reach the structure it covers, and read only the section covering
@@ -389,6 +395,7 @@ Nothing to do yet. Surface detection is future work.
 
 ### Phase 1 — Preflight
 
+<!--skill-flavor:login-status-check:start-->
 - **1a Check login.** `uip login status --output json`, chained in the same Bash
   call as 1b's scan — not a turn of its own. Without login,
   `registry pull` returns only the built-in (OOTB) extension types, so
@@ -396,6 +403,7 @@ Nothing to do yet. Surface detection is future work.
   user rather than discovering against a half-registry. Local authoring and
   `validate` still work offline — see
   [references/cli-conventions.md](references/cli-conventions.md#login-boundary).
+<!--skill-flavor:login-status-check:end-->
   In the same call, read the element kinds Studio Web's toolbox shows; phase
   2 labels boxes with them. It reads the CLI's built-in list, so it needs no
   login and no `registry pull`:
@@ -420,6 +428,7 @@ Nothing to do yet. Surface detection is future work.
 
   The result decides whether 2a creates or adopts. Record it; do not scan again
   in phase 2.
+<!--skill-flavor:cloud-copy-download:start-->
 - **1c Start from the cloud copy.** When 1b found a solution (skip this for
   discovery-only), download it by the `SolutionId` in its `.uipx` into a
   separate directory:
@@ -438,6 +447,7 @@ Nothing to do yet. Surface detection is future work.
   they match, carry on. If they differ, ask the user which copy to keep before
   authoring, because a later `upload` replaces the cloud copy with the local
   one and would erase edits made in Studio Web.
+<!--skill-flavor:cloud-copy-download:end-->
 
 ### Phase 2 — Skeleton
 
@@ -459,12 +469,14 @@ below, because it is the one step that depends on phase 1's scan.
   Either way, author only into the `.bpmn` at the returned `Data.Path`;
   never write a second `.bpmn` elsewhere.
 
+<!--skill-flavor:adopt-solution-question:start-->
   If one is found, stop and ask the user which to use, as a pick list if the
   host has one: one option per solution found, plus "Create a new solution".
   Never silently
   adopt, initialize, or repair an existing solution. Say in that question that
   adopting one means a later `upload` overwrites its cloud copy, because this is
   the only point where that is still the user's choice to make.
+<!--skill-flavor:adopt-solution-question:end-->
   If it found
   nothing, run `init` now, by the rules in **Assemble** (4c); 2b (draft) or 4c
   (auto) authors into the `.bpmn` it generates.
@@ -738,6 +750,7 @@ template shows it (see its 3c section).
    upgrading is unavailable, hand-author the fallback DI structure in
    [references/structural-bpmn.md](references/structural-bpmn.md).
 - **4e Validate.**
+<!--skill-flavor:wellformed-check:start-->
    Check well-formedness first. `validate` tokenizes with a
    tolerant parser and reports `Valid` on XML with an unbound namespace
    prefix, so a `ParseError` here is a source defect to fix before anything
@@ -750,6 +763,7 @@ template shows it (see its 3c section).
      ! grep -nE '</?bpmn:[A-Z]' <file.bpmn> &&
      uip maestro bpmn validate <file.bpmn> --output json
    ```
+<!--skill-flavor:wellformed-check:end-->
 
    `validate` ignores tag case; a line the `grep` prints is a tag to lowercase
    (4b).
@@ -807,17 +821,23 @@ template shows it (see its 3c section).
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 - **4g Show the finished process.**
+<!--skill-flavor:final-upload:start-->
   When the request allows an upload and the
   project has a solution (`.uipx`), `uip solution upload <SolutionDir> --output json`
   returns the `Data.DesignerUrl`. When the project was not created in
   this run (brownfield, or adopted at 2a without a confirmation), confirm before
   uploading (Rule 10). When the request forbids upload, or there is no
   solution, skip it.
+<!--skill-flavor:final-upload:end-->
   Then reply in this shape, dropping lines that do not apply:
 
   ```text
+<!--skill-flavor:final-first-line:start-->
   <Name>: built, validated<, uploaded><, run> (<draft|auto> mode). <One sentence if you kept the user's online changes.>
+<!--skill-flavor:final-first-line:end-->
+<!--skill-flavor:final-path-line:start-->
   <DesignerUrl as a link on its own line, or the local .bpmn path>
+<!--skill-flavor:final-path-line:end-->
 
   - <what changed, one line each, at most 5 lines in all>
 

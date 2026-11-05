@@ -145,6 +145,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   trigger-start skeleton (timer or message start): `refresh` fails with no
   manual start, as in 4c.
 - **2f Make the shape visible.**
+<!--skill-flavor:make-shape-visible:start-->
   When the request allows an upload, run
   `uip solution upload <SolutionDir> --output json`; 3c shows the returned
   `Data.DesignerUrl`. Do not ask first: a request to build the
@@ -153,6 +154,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   is adopting a solution the agent did not create, because `upload` overwrites
   the cloud solution matching the local `.uipx` SolutionId. Confirm that at
   2a, not here. When the request forbids upload, skip it.
+<!--skill-flavor:make-shape-visible:end-->
 
 ## Iterating
 
@@ -161,12 +163,14 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   the local one, the user edited it online: edit the downloaded `.bpmn` (3c
   says so).
 - **3b Show the change** the same way as 2f.
+<!--skill-flavor:show-change:start-->
   Each upload after the first
   reports `Data.Action: "Overwritten"` and reuses the same `SolutionId` and
   `DesignerUrl`, because `upload` writes the cloud solution id back into the
   local `.uipx`. `"Imported"` on a later upload means that id was lost and a
   second cloud solution was just created — stop and fix that before
   continuing.
+<!--skill-flavor:show-change:end-->
   Repeat 3a–3b.
 - **3c Ask before building.** Find each box's resource, then reply.
 
@@ -271,12 +275,18 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   its three options are fixed:
 
   ```text
+<!--skill-flavor:gate-first-line:start-->
   <Name>: outline ready<, uploaded> (draft mode). <One sentence if a lookup failed or you kept the user's online changes.>
+<!--skill-flavor:gate-first-line:end-->
+<!--skill-flavor:gate-path-line:start-->
   <DesignerUrl as a link on its own line, or the local .bpmn path>
+<!--skill-flavor:gate-path-line:end-->
 
   - <each box, in order>: <resource and folder | which of two | none yet, create it or name one | not checked | no resource needed>
 
+<!--skill-flavor:gate-question:start-->
   Is this the process you want?
+<!--skill-flavor:gate-question:end-->
   1. **Build it**: make every step work.
   2. **Change it**: tell me what to add, remove, or move.
   3. **Keep it**: stop here with this outline.
