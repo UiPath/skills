@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects, including a BPMN process the user wants to see or sketch before it is built. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -16,6 +16,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 - **Don't repeat work.** Do not rerun a command when its inputs and relevant state are unchanged, and do not reread an unchanged file, script, or SKILL.md already in context. After a tool or command may modify a file, reread the affected content before relying on it.
 - **Write code once and reuse.** If a step needs code, write it once as a small script (paths/params as CLI args) and call it; don't paste near-duplicate inline python across turns. Keep it terse — no comment banners or narration in inline scripts.
 - **Keep outputs small.** Don't put large tool results and outputs into the context, instead write them into a file and use tools to inspect them. If there is no tool available, you should write your own scripts to inspect the file. To decide whether a row exists, filter CLI JSON by field (`jq select`), never truncate it (`head`, `sed -n`).
+- **Talk to the user in plain words.** Every line the user sees, including the short progress note you write while working, is one plain sentence about what is happening for them ("Sketching your process", "Checking what your tenant already has"). Never put an element, gateway, variable, validator, or file term in it, and never name a phase or step ("2f", "1a", "phase 4"): those labels are this skill's, not the user's.
 - **Don't do anything unnecessary.** Don't call tools, read files, or put results into context unless they're immediately needed.
 
 # UiPath Maestro BPMN
@@ -141,7 +142,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.
-4. **One clarifying round, then author.** Ask (AskUserQuestion) only for a
+4. **One clarifying round, then author.** Ask (AskUserQuestion, except at the 3c gate, which is a plain message) only for a
    choice that the request and the CLI evidence leave undecidable and whose
    wrong answer is unrecoverable or forces an invented identifier; batch those
    into one round before authoring and never open a second. Decide everything
@@ -149,7 +150,8 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    the request says not to pause for approval or confirmation, ask nothing.
    When the source is an image, confirm the full inventory, not a summary —
    see [Authoring from an image](#authoring-from-an-image). In draft mode,
-   structure questions wait for the 3c gate.
+   structure and resource questions wait for the 3c gate, and phase 4 asks
+   nothing further about them. Rule 10 consent still applies.
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
@@ -184,13 +186,16 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    or fixtures added to this skills repository, stay sanitized.
 10. **Confirm before any cloud change.** Publish, deploy, run, pause, resume,
    cancel, retry, and migrate require explicit user consent; validate locally
-   first. `solution upload` is the exception: unless the request forbids it, a
+   first.
+<!--skill-flavor:rule-10-upload:start-->
+   `solution upload` is the exception: unless the request forbids it, a
    request to build the process authorizes the upload that shows it, so upload
    without asking. Confirm only when the project was not created in this run —
    adopted at 2a, or edited in place (brownfield) — because upload overwrites
    the cloud solution matching the local `.uipx` SolutionId. Confirm it where
    that solution is chosen (2a); when 2a did not run, confirm before the 4g
    upload.
+<!--skill-flavor:rule-10-upload:end-->
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See
@@ -277,6 +282,13 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    get`, with a discovered or given value or a `=js:` expression; never invent
    one.** To change the url, run `registry get` again, never edit it in the
    element ([how](references/v2-connector-nodes.md#http-requests)).
+20. **Write no extra files.** Write no notes, memory, summary, or
+   validation-log file, and no scratch copy of the project, inside it or
+   outside it. Report findings in the reply. The files a step or the user asks
+   for are not extra: the project's own files (the `.bpmn` and what `init` and
+   `refresh` generate), the 1c download directory, Discovery-only evidence
+   (`registry-evidence/`, `cli-error.txt`), Rule 16 notes, Rule 17 resource
+   projects, the image inventory, and helper scripts.
 
 ## The model
 
@@ -385,9 +397,11 @@ never changes what a step does.
 | Phase | Steps | What happens | Reference |
 | --- | --- | --- | --- |
 | **0 — Surface** | — | Nothing to do yet; surface detection is future work. | Below |
+<!--skill-flavor:phase-table-preflight:start-->
 | **1 — Preflight** | 1a–1c | Check login, scan for an existing solution and project, start from its cloud copy. Changes nothing in the project, so it runs in every mode. | Below |
-| **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
-| **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
+<!--skill-flavor:phase-table-preflight:end-->
+| **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no new registry calls** (`list` ran in 1a). Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
+| **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, name each box's resource, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
 | **4 — Wire it up** | 4a–4g | Discover, fetch templates, paste real payloads into the existing boxes, lay out, validate, refresh, show. | Below |
 
 The skeleton (2b–2f) and iteration (phase 3) exist to show the user a shape
@@ -408,7 +422,11 @@ choice.
 | **Draft** | The session is in plan mode, or the user wants to see or approve the shape before it is built: *draft it first*, *plan it*, *sketch*, *design*, *what would it look like*, *show me first*. Judge the intent, not the word: a "draft project" or "draft handoff" asking for a source-only deliverable (Rule 16) is auto mode. | 0–3, stop at the gate |
 | **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
 
-Say which mode was taken in the final report.
+Say which mode was taken in the final report: in 4g's first line, or in the
+3c reply when the run stops at the gate. 4g's first line carries the mode
+as literal text, in place of `<draft|auto>` in the 4g template: write `(draft mode)` for any run that stopped at the 3c
+gate, including after *Build it*, and write `(auto mode)` only in a run that
+never stopped at a gate. Never write `(auto mode)` after a draft gate.
 
 In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
 gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
@@ -422,9 +440,12 @@ enter it yourself to satisfy "show me first".
 
 **Only *Build it* at 3c authorizes phase 4.** When the user keeps the
 outline, or has not answered, report the skeleton as an outline, not as a
-finished process. Draft mode shows the
+finished process.
+<!--skill-flavor:draft-shape-display:start-->
+Draft mode shows the
 shape by upload when the request allows one (2f); when it forbids upload,
 show the laid-out local `.bpmn` path and a short text outline instead.
+<!--skill-flavor:draft-shape-display:end-->
 
 Author early: do not pre-read every reference before writing. Read a reference
 only when you reach the structure it covers, and read only the section covering
@@ -438,6 +459,7 @@ Nothing to do yet. Surface detection is future work.
 
 ### Phase 1 — Preflight
 
+<!--skill-flavor:login-status-check:start-->
 - **1a Check login.** `uip login status --output json`, chained in the same Bash
   call as 1b's scan — not a turn of its own. Without login,
   `registry pull` returns only the built-in (OOTB) extension types, so
@@ -445,6 +467,21 @@ Nothing to do yet. Surface detection is future work.
   user rather than discovering against a half-registry. Local authoring and
   `validate` still work offline — see
   [references/cli-conventions.md](references/cli-conventions.md#login-boundary).
+<!--skill-flavor:login-status-check:end-->
+  In the same call, read the element kinds Studio Web's toolbox shows; phase
+  2 labels boxes with them. It reads the CLI's built-in list, so it needs no
+  login and no `registry pull`:
+
+  ```bash
+  uip maestro bpmn registry list --limit -1 --output json --output-filter "ExtensionTypes[?!starts_with(ExtensionType,'Maestro.Case') && !contains(['Maestro.UpdateCaseState','Maestro.RetrieveCaseState','Maestro.NotificationService','Maestro.AcquireLock','Maestro.ReleaseLock','BPMN.Variables','uipath:Activity','A2A.AgentExecution','Intsvc.HttpExecution','Intsvc.SyncAgentExecution','Intsvc.AsyncAgentExecution','Intsvc.SyncWorkflowExecution'],ExtensionType) && (ends_with(BpmnElement,'Task') || BpmnElement=='bpmn:CallActivity')].[ExtensionType,Label]"
+  ```
+
+  The filter keeps the task types Studio Web's toolbox offers for new boxes
+  (`BpmnElement` ending in `Task`, or `CallActivity`). It drops events, case
+  management, A2A, the legacy HTTP request, the older external agent
+  variants, and the sync external workflow variant (`Intsvc.AsyncAgentExecution`
+  is dropped, `Intsvc.AsyncExecution` and `Intsvc.AsyncWorkflowExecution` stay).
+
 - **1b Scan for a solution and project.** Look for any `*.uipx` file up to two
   levels below the working directory, with whatever file search the host
   provides — for example:
@@ -455,6 +492,7 @@ Nothing to do yet. Surface detection is future work.
 
   The result decides whether 2a creates or adopts. Record it; do not scan again
   in phase 2.
+<!--skill-flavor:cloud-copy-download:start-->
 - **1c Start from the cloud copy.** When 1b found a solution (skip this for
   discovery-only), download it by the `SolutionId` in its `.uipx` into a
   separate directory:
@@ -473,6 +511,7 @@ Nothing to do yet. Surface detection is future work.
   they match, carry on. If they differ, ask the user which copy to keep before
   authoring, because a later `upload` replaces the cloud copy with the local
   one and would erase edits made in Studio Web.
+<!--skill-flavor:cloud-copy-download:end-->
 
 ### Phase 2 — Skeleton
 
@@ -494,12 +533,15 @@ below, because it is the one step that depends on phase 1's scan.
   Either way, author only into the `.bpmn` at the returned `Data.Path`;
   never write a second `.bpmn` elsewhere.
 
+<!--skill-flavor:adopt-solution-question:start-->
   If one is found, stop and ask the user which to use, as a pick list if the
   host has one: one option per solution found, plus "Create a new solution".
   Never silently
   adopt, initialize, or repair an existing solution. Say in that question that
   adopting one means a later `upload` overwrites its cloud copy, because this is
-  the only point where that is still the user's choice to make. If it found
+  the only point where that is still the user's choice to make.
+<!--skill-flavor:adopt-solution-question:end-->
+  If it found
   nothing, run `init` now, by the rules in **Assemble** (4c); 2b (draft) or 4c
   (auto) authors into the `.bpmn` it generates.
 
@@ -508,7 +550,8 @@ below, because it is the one step that depends on phase 1's scan.
 Adjust the shape, re-`format`, show the change, and hold the approval gate
 until the user agrees it: see
 [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating).
-Draft mode only.
+Draft mode only. End the turn with the 3c reply exactly as that guide's
+template shows it (see its 3c section).
 
 ### Phase 4 — Wire it up
 
@@ -516,7 +559,12 @@ Draft mode only.
    session — do not re-pull), then `list` / `search` to map intent to extension
    types; `uip is connections list --all-folders` for live connections (always
    `--all-folders` — a folder-scoped list silently misses connections). Never
-   fabricate an identifier; ask only under Rule 4, otherwise decide. Bind each
+   fabricate an identifier; ask only under Rule 4, otherwise decide. Bind a box
+   only to a resource that fits its step (kind and purpose, not a similar
+   name); when unsure, report it as none yet. In draft
+   mode, bind each box to the resource the 3c gate named; when a connection it
+   named does not ping `Enabled`, fall to the next candidate below and name
+   the swap under `Assumed` in 4g. Bind each
    connector node to an `Enabled` connection for its connector: the one in the
    folder the task names, else `IsDefault` `Yes`, else the first. Confirm it
    with `uip is connections ping <id> --output json` (`Data.Status` must be
@@ -525,13 +573,21 @@ Draft mode only.
    connection's Name, Owner, and Folder (never its Id) as a Rule 4 assumption.
    Use placeholders only when the user asked for a source-only draft (Rule 16), a handoff, or
    placeholder, synthetic, public-safe, or sanitized values, or when no
-   candidate pings `Enabled`.
+   candidate pings `Enabled`, or when the 3c gate reported the box's resource
+   as *none yet*.
    See [references/registry-workflow.md](references/registry-workflow.md).
 - **4b Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen registry-owned node only. Fetch every chosen template in **one**
    Bash call, not one command per turn — each shell round-trip is a model turn
    and dozens of them exhaust the run's time budget before authoring finishes:
-   `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json; done`.
+   `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json --output-filter "ExtensionType.XmlTemplate"; done`.
+   That filter returns only the template, as `Data.Value`; do not retry
+   `registry get` with other filters or flags to find it. Use it for non-connector
+   types only. Drop the filter when you need the full spec (`ContextFields`,
+   bindings) of a type. Never put the filter on an `Intsvc.*` connector node: it
+   projects away `Data.V2` and `Data.ISEnrichment`, which a connector node needs.
+   Fetch each connector node without a filter, outside that loop:
+   `uip maestro bpmn registry get <type> --connection-id <CONNECTION_ID> --object-name <OBJECT> --input-details '<JSON>' --output json`.
    Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`; take
    `--object-name` from the table in
    [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-the-table-first-then-the-parameters)
@@ -552,10 +608,14 @@ Draft mode only.
 - **4c Assemble.** If this run uploaded the shape, download it first (as in
    1c); when its `.bpmn` differs from the local one, build on the downloaded
    one (4g says so). For
-   greenfield, edit the `.bpmn` that 2a's `init`
-   generated in place; never replace the whole file.
-   Editing in place preserves the four generated JSON files, the initializer's
-   `Event_start` id, and its `uipath:entryPointId`. Author from the complete minimal file in
+   greenfield, write the `.bpmn` that 2a's `init` generated in this run (`<Name>.bpmn`
+   at `Data.Path`; `init` never names it `Process.bpmn`) whole, in one Write,
+   instead of patching it with a series of edits. That whole-file write is only for
+   a file this run alone has touched. A downloaded copy or any brownfield `.bpmn`
+   is edited in place, per Editing an existing `.bpmn`; never rewrite it from the
+   minimal file. Never write a second `.bpmn`.
+   Keep the initializer's `Event_start` id and its `uipath:entryPointId` in
+   what you write, and never touch the four generated JSON files. Author from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
    a stable manual entry point, one structural task, and complete DI. **Do not
@@ -693,9 +753,10 @@ Draft mode only.
    before it writes, so a node you just added fails it with `MISSING_DI_SHAPE`. `operate.json` and `entry-points.json` are generated once and
    do not follow source edits, so 4e's validator fails on the mismatch:
    `entry-points.json references start event "Event_start" via filePath, but no
-   <bpmn:startEvent id="Event_start"> exists`. Writing a full-file replacement from
-   the minimal file above renames the initializer's `Event_start`, so a
-   source-only draft needs this too; editing in place avoids it. Keep the output as written — that shape is the contract `pack` consumes.
+   <bpmn:startEvent id="Event_start"> exists`. A whole-file write that keeps the
+   initializer's `Event_start` and `uipath:entryPointId` (4c) needs no
+   refresh; one that renames or drops them does, so a source-only draft that
+   changed them needs this too. Keep the output as written — that shape is the contract `pack` consumes.
    `refresh` requires an init-generated project: with no
    `project.uiproj` it fails `Required file is missing` / `RetryWillNotFix`.
    For a bare `.bpmn` (the shape of this repo's edit fixtures), write the
@@ -755,7 +816,9 @@ Draft mode only.
    CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if
    upgrading is unavailable, hand-author the fallback DI structure in
    [references/structural-bpmn.md](references/structural-bpmn.md).
-- **4e Validate.** Check well-formedness first. `validate` tokenizes with a
+- **4e Validate.**
+<!--skill-flavor:wellformed-check:start-->
+   Check well-formedness first. `validate` tokenizes with a
    tolerant parser and reports `Valid` on XML with an unbound namespace
    prefix, so a `ParseError` here is a source defect to fix before anything
    else. Then run the CLI validator, which runs the full PO.Frontend canvas
@@ -767,6 +830,7 @@ Draft mode only.
      ! grep -nE '</?bpmn:[A-Z]' <file.bpmn> &&
      uip maestro bpmn validate <file.bpmn> --output json
    ```
+<!--skill-flavor:wellformed-check:end-->
 
    `validate` ignores tag case; a line the `grep` prints is a tag to lowercase
    (4b).
@@ -783,7 +847,7 @@ Draft mode only.
    about one unresolved node, and the binding half is a live tenant lookup.
    Bind the node to a deployed resource. When the user asked for a
    placeholder, a source-only draft (Rule 16), or a boundary handoff, or 4a found no `Enabled`
-   candidate, no invented identifier can clear
+   candidate, or the 3c gate reported *none yet*, no invented identifier can clear
    `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
    expected result. Report the pair once and continue. A connection binding
    whose `default` is a placeholder fails `refresh` (4f) with "default must be
@@ -830,21 +894,51 @@ Draft mode only.
    For the full contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
-- **4g Show the finished process.** When the request allows an upload and the
+- **4g Show the finished process.**
+<!--skill-flavor:final-upload:start-->
+  When the request allows an upload and the
   project has a solution (`.uipx`), `uip solution upload <SolutionDir> --output json`
   returns the `Data.DesignerUrl`. When the project was not created in
   this run (brownfield, or adopted at 2a without a confirmation), confirm before
   uploading (Rule 10). When the request forbids upload, or there is no
-  solution, skip it. Then reply in this shape, dropping lines that do not apply:
+  solution, skip it.
+<!--skill-flavor:final-upload:end-->
+  Then reply in this shape, dropping lines that do not apply:
 
   ```text
-  <Name>: built, validated<, uploaded><, run>. <One sentence if you kept the user's online changes.>
+<!--skill-flavor:final-first-line:start-->
+  <Name>: built, validated<, uploaded><, run> (<draft|auto> mode). <One sentence if you kept the user's online changes.>
+<!--skill-flavor:final-first-line:end-->
+<!--skill-flavor:final-path-line:start-->
   <DesignerUrl as a link on its own line, or the local .bpmn path>
+<!--skill-flavor:final-path-line:end-->
 
-  - <what changed, one line each, up to 5>
+  - <what changed, one line each, at most 5 lines in all>
 
+  Needs: <...>
   Assumed: <...>  Unverified: <...>
   ```
+
+  When validation fails only because tenant resources are missing (no
+  connection, agent, process, or queue to bind), the first line reads
+  `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names
+  each missing resource in the user's words, such as `a Slack connection`
+  or `the ticket triage agent`. Drop `Needs:` when nothing is missing.
+
+  Write every line in the user's words: say what each step now does. No
+  element type ids (`Orchestrator.StartAgentJob`), connector keys, object
+  or operation names, payload, binding, or placeholder terms, and no file
+  names other than the path line.
+
+  This reply is your whole final message, and its first characters are the
+  process name: write no status sentence or introduction before the
+  `<Name>:` line. Send nothing beyond these lines: no extra sections,
+  headings, tables, numbered lists, questions, or suggested next steps.
+  **Write at most five change lines. A sixth line is a defect, not a
+  judgment call.** Count the `-` change lines before you send:
+  when there are more than five, merge related steps into one line each, and
+  fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
+  Before sending, check the message against the template line by line and delete every line the template does not have.
 
 ## Operate and diagnose
 
@@ -895,7 +989,7 @@ and honestly surfaced to the user as gaps when asked.
 
 | Topic | Read |
 | --- | --- |
-| Phase 2 skeleton — blank boxes, real control flow, no registry calls | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
+| Phase 2 skeleton — blank boxes, real control flow, no new registry calls | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Worked-out topology for a recurring process shape, and how shapes compose | Patterns table above → `references/patterns/*-guide.md` |

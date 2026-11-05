@@ -381,10 +381,12 @@ The registry never emits `<bpmn:sequenceFlow>`, conditions, or the gateway
   for exactly these).
 - Conditional flow body: `<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_X == "approved"</bpmn:conditionExpression>`.
   The canvas normalizes the body to start with `=` — always lead with `=`.
+<!--skill-flavor:xsi-unbound-prefix:start-->
 - `xsi:type` needs `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` on
   `bpmn:definitions`. The `init` scaffold does not declare it, and `validate`,
   `format` and `refresh` accept the unbound prefix, so only a real XML parser
   catches it: run the `ET.parse` check in [Validation](#validation).
+<!--skill-flavor:xsi-unbound-prefix:end-->
 - Gateway default flow: set `default="Flow_else"` on the gateway element, and
   give that flow no condition.
 
@@ -759,12 +761,14 @@ string), on failure in `Instructions` with the errors.
 If `validate` is unknown or runs only deploy-readiness checks, update
 the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
+<!--skill-flavor:wellformed-parse:start-->
 Run the well-formed-XML parse before `validate` every time; the validator's
 tokenizer does not report an unbound namespace prefix:
 
 ```bash
 python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])" <file.bpmn>
 ```
+<!--skill-flavor:wellformed-parse:end-->
 
 If the CLI is unavailable, also walk the structural checklist below; it mirrors
 the same blocking rules:
