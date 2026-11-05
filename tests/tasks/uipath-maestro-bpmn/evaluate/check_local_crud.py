@@ -35,12 +35,21 @@ def _load_jsons(root: Path) -> list[tuple[Path, dict]]:
     return out
 
 
+def _evaluator_name(doc: dict) -> str | None:
+    # Evaluator files key identity off top-level ``id`` and carry the display
+    # name under ``evaluatorConfig.name`` — there is no top-level ``name``.
+    config = doc.get("evaluatorConfig")
+    if isinstance(config, dict) and config.get("name"):
+        return config["name"]
+    return doc.get("name") or doc.get("id")
+
+
 def _find_evaluator(docs: list[tuple[Path, dict]]) -> tuple[Path, dict]:
     match = next(
         (
             (path, doc)
             for path, doc in docs
-            if doc.get("name") == "greeting-match"
+            if _evaluator_name(doc) == "greeting-match"
             and doc.get("evaluatorTypeId") == "uipath-exact-match"
         ),
         None,

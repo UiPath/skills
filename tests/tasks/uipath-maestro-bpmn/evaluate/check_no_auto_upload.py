@@ -38,6 +38,15 @@ def _load_jsons() -> list[tuple[Path, dict]]:
     return docs
 
 
+def _evaluator_name(doc: dict) -> str | None:
+    # Evaluator files key identity off top-level ``id`` and carry the display
+    # name under ``evaluatorConfig.name`` — there is no top-level ``name``.
+    config = doc.get("evaluatorConfig")
+    if isinstance(config, dict) and config.get("name"):
+        return config["name"]
+    return doc.get("name") or doc.get("id")
+
+
 def _find_eval_set(docs: list[tuple[Path, dict]]) -> tuple[Path, dict]:
     match = next(
         (
@@ -59,7 +68,7 @@ def _check_artifact(check: str) -> None:
             (
                 path
                 for path, doc in docs
-                if doc.get("name") == "greeting-match"
+                if _evaluator_name(doc) == "greeting-match"
                 and (
                     doc.get("evaluatorTypeId") == "uipath-exact-match"
                     or (doc.get("category"), doc.get("type")) == (0, 1)

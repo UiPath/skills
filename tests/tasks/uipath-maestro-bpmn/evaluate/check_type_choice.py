@@ -47,13 +47,23 @@ def _load_jsons() -> list[tuple[Path, dict]]:
     return docs
 
 
+def _evaluator_name(doc: dict) -> str | None:
+    # The persisted evaluator schema keys identity off top-level ``id`` and
+    # carries the display name under ``evaluatorConfig.name`` — there is no
+    # top-level ``name`` (unlike eval-set files).
+    config = doc.get("evaluatorConfig")
+    if isinstance(config, dict) and config.get("name"):
+        return config["name"]
+    return doc.get("name") or doc.get("id")
+
+
 def _check_artifact(goal: str) -> None:
     name, type_id = ARTIFACT_EXPECTED[goal]
     match = next(
         (
             path
             for path, doc in _load_jsons()
-            if doc.get("name") == name and doc.get("evaluatorTypeId") == type_id
+            if _evaluator_name(doc) == name and doc.get("evaluatorTypeId") == type_id
         ),
         None,
     )

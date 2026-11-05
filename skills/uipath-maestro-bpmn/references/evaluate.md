@@ -102,6 +102,11 @@ is scoped to one **data point inside one set**, so all three commands require
 `--set` and `--data-point`. `add` also requires `--strategy` and
 `--component-type` (`connector`, `agent`, `subprocess`).
 
+Always use the BPMN simulation commands shown below — **never the `maestro flow
+eval` verb** on a BPMN project. The flow verb skips the `--output-schema`
+requirement described below, so a flow-verb `Llm` simulation silently bypasses
+the one behavior that makes BPMN simulations correct.
+
 ```bash
 # Static — returns --mock-value verbatim
 uip maestro bpmn eval simulation add <component-id> \
