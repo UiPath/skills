@@ -185,10 +185,11 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     the box's kind on `Type`: RPA workflow `process`, API workflow `api`,
     Agent `agent`, Maestro BPMN `processOrchestration`, Maestro Case
     `CaseManagement`, Maestro Flow `Flow`, Function `function`.
-  - **Connections:** run this once, whatever the number of connector boxes,
-    and including when the user named no provider. No connector key is needed,
-    and the command has no `--limit`, so the `--output-filter` row filter keeps
-    the output to the boxes' connectors:
+  - **Connections:** run this once when any box is a connector box or a Data
+    Fabric entity box, including when the user named no provider. Skip it
+    when no box is either, since the filter has no service to test. No
+    connector key is needed, and the command has no `--limit`, so the
+    `--output-filter` row filter keeps the output to the boxes' connectors:
 
     ```bash
     uip is connections list --all-folders --output-filter "[?contains(ConnectorName,'<WORD>')].{Connector:ConnectorName,Connection:Name,State:State,IsDefault:IsDefault,Folder:Folder}" --output json
