@@ -37,8 +37,12 @@ def _listed(conn_id: str, resource: str) -> list[dict]:
     A record's own nested objects (a type's `scope.project`) are not records, so they are not
     returned. A bare object answer is one record.
     """
-    env = _run("is", "resources", "run", "list", CONNECTOR, resource, "--connection-id", conn_id)
-    if env.get("Result") != "Success" or "Data" not in env:
+    # One re-run: a list is read-only, and one 5xx should not fail the whole task.
+    for _ in range(2):
+        env = _run("is", "resources", "run", "list", CONNECTOR, resource, "--connection-id", conn_id)
+        if env.get("Result") == "Success" and "Data" in env:
+            break
+    else:
         raise RuntimeError(f"uip is resources run list {resource} failed: {env.get('Message') or env.get('Result')}")
     data = env["Data"]
     if isinstance(data, list):
@@ -106,10 +110,14 @@ def create_issue(conn_id: str, summary: str) -> str:
 def get_issue(conn_id: str, key: str) -> dict | None:
     """Return the issue's `fields` dict (includes `summary`, `status`, and
     `comment`), or None if it doesn't exist (404)."""
+    try:
+        type_id = issuetype_id(conn_id)
+    except RuntimeError:
+        return None  # the site has no such project or type, so no such issue can be read
     env = _run(
         "is", "resources", "run", "get", CONNECTOR, "curated_get_issue",
         "--connection-id", conn_id,
-        "--query", f"project={PROJECT_KEY}&issuetype={issuetype_id(conn_id)}&issueId={key}",
+        "--query", f"project={PROJECT_KEY}&issuetype={type_id}&issueId={key}",
     )
     if env.get("Result") == "Failure":
         return None

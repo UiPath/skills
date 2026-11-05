@@ -292,3 +292,75 @@ def test_the_sandbox_copy_of_the_manifest_is_removed_once_read(module, sandbox, 
     assert not staged.exists()
     assert (CASE_ROOT / "_setup" / "tenant_ids.json").is_file()
 
+
+
+OUTLOOK_SPEC = {"connector": "uipath-microsoft-outlook365", "folder": "uipath-maestro-flow"}
+
+
+def _outside_folder(*records):
+    return {"uipath-microsoft-outlook365": [{"Folder": "Shared", "State": "Enabled", **r} for r in records]}
+
+
+def test_with_no_connection_in_its_folder_the_default_one_wins(module, monkeypatch):
+    _stub_uip(module, monkeypatch, _outside_folder(
+        {"Id": LIVE_HELPDESK, "Name": "a"}, {"Id": LIVE_OUTLOOK, "Name": "z", "IsDefault": True},
+    ))
+    assert module._resolve_connection(OUTLOOK, OUTLOOK_SPEC, set()) == LIVE_OUTLOOK
+
+
+def test_with_no_default_the_first_name_wins(module, monkeypatch):
+    _stub_uip(module, monkeypatch, _outside_folder({"Id": LIVE_HELPDESK, "Name": "z"}, {"Id": LIVE_OUTLOOK, "Name": "a"}))
+    assert module._resolve_connection(OUTLOOK, OUTLOOK_SPEC, set()) == LIVE_OUTLOOK
+
+
+def test_a_disabled_or_taken_connection_is_no_match(module, monkeypatch):
+    _stub_uip(module, monkeypatch, _outside_folder(
+        {"Id": LIVE_HELPDESK, "State": "Disabled"}, {"Id": LIVE_OUTLOOK, "Name": "a"},
+    ))
+    assert module._resolve_connection(OUTLOOK, OUTLOOK_SPEC, {LIVE_OUTLOOK}) is None
+
+
+def test_a_failed_connection_list_is_read_once_and_leaves_the_ids_as_authored(module, sandbox, monkeypatch, capsys):
+    first, second = "6a817d24-cbbd-4389-b10d-4329214ffb8d", "bad8a81c-410f-4ee6-a642-c5679acf0c98"
+    (sandbox / "sdd.md").write_text(f"{first}\n{second}\n")
+    calls = []
+
+    def fake(args, timeout):
+        calls.append(args)
+        raise RuntimeError("`uip is connections list` failed: 503")
+
+    monkeypatch.setattr(module, "_uip", fake)
+
+    assert module.main() == 0
+
+    assert len(calls) == 1
+    assert (sandbox / "sdd.md").read_text() == f"{first}\n{second}\n"
+    assert capsys.readouterr().err.count("listing uipath-http-webhook connections failed") == 2
+
+
+def test_no_call_starts_once_the_pre_run_budget_is_spent(module, monkeypatch):
+    def run(*args, **kwargs):
+        raise AssertionError("uip ran after the budget was spent")
+
+    monkeypatch.setattr(module.subprocess, "run", run)
+    monkeypatch.setattr(module, "_deadline", module.time.monotonic() - 1)
+    with pytest.raises(RuntimeError, match="budget is spent"):
+        module._uip(["maestro", "case", "registry", "pull"], module.REGISTRY_PULL_TIMEOUT)
+
+
+@pytest.mark.parametrize("checker", [
+    "_shared/check_cm_golden_bindings.py",
+    "golden_rebuild/contract_execution/check_contract_exec_bindings.py",
+])
+def test_a_bindings_checker_expects_the_ids_the_localizer_wrote(checker, tmp_path, monkeypatch):
+    spec = importlib.util.spec_from_file_location(Path(checker).stem, CASE_ROOT / checker)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.chdir(tmp_path)
+    cloud = sorted(mod.parse_fixture()["connection_ids"])[0]
+    (tmp_path / "_setup").mkdir()
+    (tmp_path / "_setup" / ".tenant-ids.map.json").write_text(json.dumps({cloud: LIVE_OUTLOOK}))
+
+    connections = mod.parse_fixture()["connection_ids"]
+
+    assert LIVE_OUTLOOK in connections and cloud not in connections

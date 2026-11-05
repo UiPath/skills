@@ -27,6 +27,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 SETUP_DIR = Path(__file__).resolve().parent
@@ -47,9 +48,19 @@ APP_NAME_FIELDS = ("name", "deploymentTitle", "title", "displayName")
 SKIP_DIRS = {".git", "node_modules", ".venv", "__pycache__"}
 KIND_LABELS = {"connections": "connection", "processes": "process", "apps": "app"}
 MAX_FILE_BYTES = 5 * 1024 * 1024
+REGISTRY_PULL_TIMEOUT = 150
+CONNECTION_LIST_TIMEOUT = 60
+# The task schema caps pre_run at 300 s; the rest is for the file rewrite.
+BUDGET_SECONDS = 270
+_deadline: float | None = None
 
 
-def _uip(args: list[str], timeout: int) -> dict:
+def _uip(args: list[str], timeout: float) -> dict:
+    if _deadline is not None:
+        remaining = _deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError(f"`uip {' '.join(args)}` not run: the pre_run time budget is spent")
+        timeout = min(timeout, remaining)
     proc = subprocess.run(
         ["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=timeout, check=False
     )
@@ -88,13 +99,21 @@ def _write_text(path: Path, text: str) -> None:
         fh.write(text)
 
 
-_CONNECTIONS: dict[str, list[dict]] = {}
+# A failure is cached too, so a slow connector costs its timeout once, not once per pin.
+_CONNECTIONS: dict[str, list[dict] | str] = {}
 
 
 def _connections(connector: str) -> list[dict]:
     if connector not in _CONNECTIONS:
-        _CONNECTIONS[connector] = _uip(["is", "connections", "list", connector, "--all-folders"], 90).get("Data") or []
-    return _CONNECTIONS[connector]
+        try:
+            listed = _uip(["is", "connections", "list", connector, "--all-folders"], CONNECTION_LIST_TIMEOUT)
+            _CONNECTIONS[connector] = listed.get("Data") or []
+        except (RuntimeError, subprocess.TimeoutExpired) as exc:
+            _CONNECTIONS[connector] = f"listing {connector} connections failed: {exc}"
+    cached = _CONNECTIONS[connector]
+    if isinstance(cached, str):
+        raise RuntimeError(cached)
+    return cached
 
 
 def _exists(cloud_id: str, connections: list[dict]) -> bool:
@@ -179,7 +198,7 @@ def _load_registry() -> tuple[list[dict], list[dict], str | None]:
     try:
         # A failed resource type is reported in Data.Errors and leaves the others usable,
         # so a partial pull is enough.
-        _uip(["maestro", "case", "registry", "pull", "--force"], 240)
+        _uip(["maestro", "case", "registry", "pull", "--force"], REGISTRY_PULL_TIMEOUT)
         processes = [entry for name in PROCESS_INDEXES for entry in _load_index(name)]
         return processes, _load_index("action-apps"), None
     except (RuntimeError, subprocess.TimeoutExpired, json.JSONDecodeError) as exc:
@@ -203,6 +222,8 @@ def _hide_manifest() -> None:
 
 
 def main() -> int:
+    global _deadline
+    _deadline = time.monotonic() + BUDGET_SECONDS
     # The corpus is matched lowercased, so a key added in capitals must still match.
     manifest = {
         kind: {cloud_id.lower(): spec for cloud_id, spec in entries.items()}

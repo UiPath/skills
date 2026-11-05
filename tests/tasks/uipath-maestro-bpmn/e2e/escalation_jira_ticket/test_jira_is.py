@@ -126,6 +126,36 @@ def test_a_site_without_the_project_or_the_type_fails_loudly(monkeypatch: pytest
         jira_is.issuetype_id("conn-1")
 
 
+def test_a_failed_list_is_read_once_more(monkeypatch: pytest.MonkeyPatch) -> None:
+    jira_is = _load_module()
+    answers = [{"Result": "Failure", "ErrorCode": "server_error"}, PROJECTS]
+    seen: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append(list(cmd))
+        return Result(answers.pop(0))
+
+    monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
+    assert [p["key"] for p in jira_is._listed("conn-1", "project")] == ["CE", "OPS"]
+    assert len(seen) == 2
+
+
+def test_a_list_that_fails_twice_fails_loudly(monkeypatch: pytest.MonkeyPatch) -> None:
+    jira_is = _load_module()
+    seen = _stub(monkeypatch, jira_is, {"Result": "Failure", "Message": "boom"})
+    with pytest.raises(RuntimeError, match="run list project failed: boom"):
+        jira_is._listed("conn-1", "project")
+    assert len(seen) == 2
+
+
+def test_an_unresolvable_issue_type_reads_as_no_issue_not_as_proof_of_deletion(monkeypatch: pytest.MonkeyPatch) -> None:
+    """get_issue reports None and issue_absent reports False, so a grader never crashes or passes a delete."""
+    jira_is = _load_module()
+    _stub_lists(monkeypatch, jira_is, _types({"id": "10007", "name": "Epic"}))
+    assert jira_is.get_issue("conn-1", "CE-1") is None
+    assert jira_is.issue_absent("conn-1", "CE-1") is False
+
+
 def test_every_jira_helper_copy_resolves_the_issue_type_the_same_way() -> None:
     """The helpers are per-task copies by design; the resolver must not drift between them."""
     tasks = HERE.parents[2]

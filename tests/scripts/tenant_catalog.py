@@ -10,7 +10,8 @@ The catalog is derived from ``tests/tasks/`` on every run, never hand-maintained
   pinned connection ids, solution resources (SDD task details, caseplan bindings,
   registry ledgers), Data Fabric entities and tenant-calling setup helpers — is
   recorded with the tasks that reference it;
-* each dependency gets a disposition from ``RULES`` below: ``creatable``,
+* each dependency gets a disposition from the rule tables below (``RESOURCE_RULES``,
+  ``SERVICE_RULES`` and the connector sets): ``creatable``,
   ``substitutable`` or ``unavailable``, with its reason and the tenant services it
   needs. A dependency no rule covers is ``unclassified``; ``--strict`` fails on a
   tenant task's unclassified dependency, so one added to a task later cannot go
@@ -48,8 +49,9 @@ PLACEHOLDER_RE = re.compile(r"^(?:—|-|–|n/a|none|tbd|\(none\)|<.*>)$", re.IG
 
 # --- Tenant-calling CLI verbs ------------------------------------------------------
 
+# No `)` after `uip`: `shutil.which('uip') or 'uip'` is a lookup, not an `uip or ...` command.
 UIP_CALL_RE = re.compile(
-    r"""\buip\b(?:["'\s,\]\)\[]+(?:--[\w-]+\s+)?)((?:[a-z][a-z-]*["'\s,]+){1,3})""",
+    r"""\buip\b(?:["'\s,\]\[]+(?:--[\w-]+\s+)?)((?:[a-z][a-z-]*["'\s,]+){1,3})""",
 )
 
 # Verbs that run without a tenant, per skills/uipath-maestro-case/references/case-commands.md
@@ -80,6 +82,11 @@ OFFLINE_VERBS = (
     "solution init",
     "solution pack",
     "solution project",
+    # The canonical local `solution projects` verbs; `publish` and `resync` act on the cloud.
+    "solution projects add",
+    "solution projects import",
+    "solution projects remove",
+    "solution projects list",
     "solution resources remove",
     "solution resources edit",
     "solution resources list",
@@ -585,7 +592,7 @@ class TaskContext:
             roots.append(self.task_dir)
         for sources in self.mounts.values():
             roots.extend(s for s in sources if s.resolve() not in shared)
-        for source in self.data.get("sandbox", {}).get("template_sources", []) or []:
+        for source in (self.data.get("sandbox") or {}).get("template_sources", []) or []:
             if isinstance(source, dict) and source.get("type") == "template_file" and source.get("path"):
                 candidate = (self.task_dir / source["path"]).resolve()
                 if candidate.is_file():
@@ -772,7 +779,8 @@ def extract_entities(command: str, context: TaskContext) -> list[str]:
                 path = context.resolve_script(token)
                 if path:
                     try:
-                        name = json.loads(read_text(path)).get("name")
+                        definition = json.loads(read_text(path))
+                        name = definition.get("displayName") or definition.get("name")
                     except (json.JSONDecodeError, AttributeError):
                         name = None
                     if isinstance(name, str):

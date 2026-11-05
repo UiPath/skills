@@ -96,6 +96,32 @@ def test_a_builder_sdk_check_is_offline(tasks_root: Path) -> None:
     assert task(report(tasks_root), "demo-sdk")["tier"] == "local"
 
 
+def test_a_uip_lookup_in_python_is_not_a_command() -> None:
+    assert tc.verbs_in("UIP = shutil.which('uip') or 'uip'") == set()
+
+
+def test_an_entity_definition_is_named_by_its_display_name(tasks_root: Path) -> None:
+    write(tasks_root / "demo" / "entity" / "_setup" / "Thing.entity.json", '{"displayName": "ThingEntity", "fields": []}')
+    write(
+        tasks_root / "demo" / "entity" / "entity.yaml",
+        task_yaml(
+            "demo-entity",
+            """
+            sandbox:
+              template_sources:
+                - type: template_dir
+                  path: _setup
+                  mount_point: _setup
+            pre_run:
+              - command: 'python3 "_setup/ensure_folder_entity.py" _setup/Thing.entity.json'
+            """,
+        ),
+    )
+    write(tasks_root / "demo" / "entity" / "_setup" / "ensure_folder_entity.py", 'import subprocess\nsubprocess.run(["uip", "df", "entities", "create"])\n')
+    entry = task(report(tasks_root), "demo-entity")
+    assert "entity:::ThingEntity" in entry["dependencies"]
+
+
 def test_offline_grader_keeps_the_task_local(tasks_root: Path) -> None:
     write(
         tasks_root / "demo" / "offline" / "offline.yaml",
