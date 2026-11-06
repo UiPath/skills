@@ -20,7 +20,8 @@ Write the shared step once, by one of three forms, in this order of preference:
 3. **A loop back to a gateway.** `.goto(id)` to an earlier gateway is itself a join, since a gateway may take several incoming flows: the reminder arm of `.race('wait', …)` ends in `.goto('wait')`.
 
 Never `.goto()` an activity from two places.
-That is a fake join: `check` warns `FAKE_JOIN`, `validate` says nothing, and the canvas contract forbids it on an activity.
+That is a fake join: `check` warns `FAKE_JOIN` and `validate` says nothing, because the platform accepts an activity with several incoming flows and runs it.
+It is still the wrong shape for a pattern: the merge has no node of its own, so the graph no longer shows one shared step behind one join, and a reader or grader looking for the join finds none.
 A `.goto()` back to a human task to redo it (`examples/InvoiceEscalation.bpmn.ts`) draws the same warning; it is accepted there, never as a pattern's merge.
 
 Read `uip maestro bpmn check <Name>.bpmn.ts --graph` after writing a pattern: the step that should be shared must appear once, with more than one incoming flow or behind a `_join`.

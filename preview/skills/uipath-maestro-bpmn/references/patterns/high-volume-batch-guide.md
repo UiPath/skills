@@ -67,6 +67,7 @@ export default bpmn('invoice-batch')
 
 `loop: { collection, itemVar }` on the sub-process's options is the multi-instance marker; `sequential: true` runs one at a time, which is what lets every iteration append to the same list (see [Getting results to `aggregate`](#getting-results-to-aggregate)).
 Inside a looped sub-process the current item is `iterator[0].item` with `itemVar: 'item'` (`iterator[1].item` one nesting level deeper), and the 0-based index is `iterator[0].loopCounter`.
+The index counts enclosing loops outermost-first, so nest this pattern inside another loop and `iterator[0]` becomes the outer item: change the body's reads, including both record steps, to `iterator[1]`.
 An expression (`set`, a condition, an `outputs` value) reads `iterator` directly, as `recordResult` does.
 A script does not: its scope holds only the `args` envelope, which the builder writes as `vars` and `metadata`, and the engine builds a script's `iterator` only from `iterator[N]` keys in that envelope.
 To read the item in a script, pass it in with `inputs: { 'iterator[0]': '=iterator[0]' }`, which is what the designer writes; `validate` still warns that `iterator` is undefined, and that warning is a false positive once the key is there.
