@@ -184,6 +184,9 @@
   "references/plugins/tasks/rpa/planning.md": {
     "Resolution audit": 1
   },
+  "references/plugins/tasks/script/planning.md": {
+    "Cross-task references": 1
+  },
   "references/plugins/triggers/event/impl-json.md": {
     "Artifact I/O": 1,
     "Build gate": 1,
