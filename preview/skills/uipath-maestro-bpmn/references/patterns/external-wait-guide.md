@@ -100,7 +100,7 @@ Only the reply arm falls through, so no join is emitted and validation follows t
 A reply a reviewer sends back (`Request Resend`) also returns to `wait`, and the deadline still holds, because it is the same instant.
 
 The reply arm is `.receiveMessage()`, not `.intermediateCatchEvent({ message })`.
-The typed node carries the correlation `reference` and lands the reply in `outputVar`; the plain form has no correlation option in the builder, and the engine treats a bare `messageRef` catch in a race as a no-op.
+The typed node carries the correlation `reference` and lands the reply in `outputVar`; the plain form has no correlation option in the builder, so a reply could not be matched to this instance.
 `.receiveMessage()` waits for a Maestro message: whatever receives the vendor's reply (an intake process on the mailbox or portal) sends `VendorDocumentReply` with the same reference, as a `Maestro.SendMessageEvent` activity whose `Reference` input is the key.
 The local engine passes a receive straight through, so only a live run shows a reply being matched.
 

@@ -166,11 +166,6 @@ export default bpmn('approval')
 
 ## Patterns
 
-Seven recurring process shapes, for building a new process and for extending one that already runs.
-Each guide gives a known-good topology written with the builder (a sketch that compiles and validates), the variables, the variants, and the reasoning behind it.
-Many topologies pass validation for the same request; these are known-good shapes, not specifications.
-Adapt them: add steps, drop branches, change counts.
-Each guide's "Why it works" names the parts that carry the shape; change those and you are building something else, so say so.
 Read the guide for each pattern the process actually uses, and none for a pattern you are not building.
 
 Every guide's node table marks each node **Entry** (omit when inserting into a process that already runs), **Mechanism** (changing it changes the pattern), or **Placeholder** (bind it, or skip it if the process already does this).

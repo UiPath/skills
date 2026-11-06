@@ -108,7 +108,7 @@ Where two composed patterns each hold their own value of the same kind, rename o
 Rename it everywhere that pattern reads it, including its gate conditions.
 Keep a shared name only where the patterns mean the same value, as when a nested review gates on the score its parent computed.
 
-Parallel iterations of a looped sub-process all write the same ids, so one variable cannot collect results across them; see [high-volume-batch-guide.md](high-volume-batch-guide.md#getting-results-to-aggregate).
+Iterations of a looped sub-process all write the same ids; on the local engine parallel iterations overwrite each other's writes, so one variable collects results only from a sequential loop; see [high-volume-batch-guide.md](high-volume-batch-guide.md#getting-results-to-aggregate).
 
 ## Worked combinations
 
@@ -121,6 +121,7 @@ Parallel iterations of a looped sub-process all write the same ids, so one varia
 | Any production process | whichever owns the trigger | `failure-escalation` placed at process level |
 
 The first row, written out: the review is the body of the looped sub-process, and its net sits directly inside that body, so one failed claim ends only its own iteration.
+Each of the body's three exits (settled, rejected, escalated) appends to `claimResults`, and the loop is sequential so `aggregate` sees every claim, as in [high-volume-batch-guide.md](high-volume-batch-guide.md#getting-results-to-aggregate).
 
 ```ts
 import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
@@ -131,6 +132,7 @@ export default bpmn('claims-nightly')
   .var('claims', 'jsonSchema')
   .var('aiConfidenceLevel', 'number', { default: 0 })
   .var('reviewOutcome', 'string')
+  .var('claimResults', 'array', { default: [] })
   .startEvent('start', { name: 'Nightly', timer: { cycle: 'R/P1D' } })
   .scriptTask('fetchClaims', { name: 'Fetch claims', script: 'return { items: [] };', outputs: { claims: '=result.response.items' } })
   .subProcess(
@@ -149,18 +151,28 @@ export default bpmn('claims-nightly')
               b.humanTask('assessorReview', { name: 'Assessor review', form: { fields: [], outcomes: ['Approve', 'Reject'] }, outputs: { reviewOutcome: '=Action' } })
                 .choose('assessorVerdict', [
                   { when: '=vars.reviewOutcome == "Approve"', label: 'Approved', body: (a) => a },
-                  { otherwise: true, label: 'Rejected', body: (a) => a.endEvent('claimRejected', { name: 'Claim rejected' }) },
+                  {
+                    otherwise: true,
+                    label: 'Rejected',
+                    body: (a) =>
+                      a.task('recordRejected', { name: 'Record rejection', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator[0].item, outcome: "rejected" }])' } })
+                        .endEvent('claimRejected', { name: 'Claim rejected' }),
+                  },
                 ]),
           },
         ])
         .scriptTask('settle', { name: 'Settle claim', script: 'return { settled: true };' })
+        .task('recordSettled', { name: 'Record settlement', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator[0].item, outcome: "settled" }])' } })
         .endEvent('claimSettled', { name: 'Claim settled' })
         // Directly inside the iteration: a failure ends this claim, not the night.
         .eventSubProcess('claimFailures', { error: true, name: 'Claim failure' }, (h) =>
-          h.scriptTask('escalateClaim', { name: 'Escalate claim', script: 'return { ok: true };' }).endEvent('claimEscalated', { name: 'Claim escalated' })),
-    { name: 'Handle each claim', loop: { collection: '=vars.claims', itemVar: 'item' } },
+          h.scriptTask('escalateClaim', { name: 'Escalate claim', script: 'return { ok: true };' })
+            .task('recordEscalated', { name: 'Record escalation', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator[0].item, outcome: "escalated" }])' } })
+            .endEvent('claimEscalated', { name: 'Claim escalated' })),
+    { name: 'Handle each claim', loop: { collection: '=vars.claims', itemVar: 'item', sequential: true } },
   )
-  .scriptTask('aggregate', { name: 'Total the results', script: 'return { ok: true };' })
+  // Every exit of the body appended to claimResults; sequential, so none was lost.
+  .scriptTask('aggregate', { name: 'Total the results', script: 'return vars.claimResults.length;' })
   .plainTask('sendSummary', { name: 'Send summary to finance', element: 'bpmn:sendTask' })
   .endEvent('done', { name: 'Night complete' })
   .build();

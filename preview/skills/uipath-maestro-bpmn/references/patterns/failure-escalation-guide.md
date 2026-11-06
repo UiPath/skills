@@ -23,13 +23,20 @@ The process around it is only there to show where the net sits.
 ```ts
 import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 
+// Retry only what is transient. Without `allErrors`, a retry policy retries just the
+// codes `errorMapping` marks retryable, so bad data goes straight to the net.
+const transient = {
+  retry: { maxRetries: 3, backoff: 'PT1M' },
+  errorMapping: [{ code: '429', retryable: true }, { code: '503', retryable: true }],
+};
+
 export default bpmn('payroll-run')
   .name('PayrollRun')
   .flowMode('sequence')
   .startEvent('start', { name: 'Payroll due' })
-  .scriptTask('fetchTimesheets', { name: 'Fetch timesheets', script: 'return { ok: true };', retry: { maxRetries: 3, backoff: 'PT1M', allErrors: true } })
-  .scriptTask('calculatePay', { name: 'Calculate pay', script: 'return { ok: true };', retry: { maxRetries: 3, backoff: 'PT1M', allErrors: true } })
-  .scriptTask('postPay', { name: 'Post to finance', script: 'return { ok: true };', retry: { maxRetries: 3, backoff: 'PT1M', allErrors: true } })
+  .scriptTask('fetchTimesheets', { name: 'Fetch timesheets', script: 'return { ok: true };', ...transient })
+  .scriptTask('calculatePay', { name: 'Calculate pay', script: 'return { ok: true };', ...transient })
+  .scriptTask('postPay', { name: 'Post to finance', script: 'return { ok: true };', ...transient })
   .endEvent('done', { name: 'Payroll posted' })
   // Placed, not wired: no flow enters or leaves the net. Sitting at process level,
   // it catches what any step above raises and nothing closer caught.
@@ -92,8 +99,11 @@ It is the smaller net, and it sits beside a catch-all in the same container.
   Who works a business error: an operations queue, the process owner.
 - **`recordFailure`**: where a system failure is durably recorded for someone to work later: an exception queue (`.queueItem()`), a task.
 - **`alertOncall`**: the notification channel, usually a `.connector()` call.
-- **Transient failures**: `retry: { maxRetries, backoff, allErrors }` on the step itself, as in the example.
-  They should never reach the net.
+- **Transient failures**: `retry: { maxRetries, backoff }` on the step itself, plus an `errorMapping` row with `retryable: true` for each transient code, as in the example.
+  A policy without `allErrors` retries only the mapped codes, and with no mapping it retries nothing.
+  `allErrors: true` retries every failure, business errors included, so bad data would be retried before it reaches the net; use it only on a step whose every failure is transient.
+  The codes (`429`, `503`) are illustrative: map the ones the bound service actually raises.
+  Transient failures should never reach the net.
 
 ## Adapting it
 
