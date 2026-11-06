@@ -4,6 +4,8 @@ The manual trigger is the default start node. It represents an on-demand call
 from a person, test, API, or parent automation; there is no factory call.
 
 Signature: omit `.trigger(...)` and declare caller values with `.input(...)`.
+Pass `.trigger(manual(), { updates })` only when the default root needs its own
+variable rows ([below](#other-variable-updates-on-a-trigger)).
 
 ```ts
 export default flow('lookup').input({ id: types.string }).output({ value: types.string })
@@ -50,7 +52,7 @@ Choose it when a caller, test, or another process should start each run.
 ## Multiple entry points
 
 A flow may have more than one root. `.trigger()` / `.input()` stay the DEFAULT
-root; `.entryPoint(id, trigger, { inputs?, version? }, prefixFn?)` adds another
+root; `.entryPoint(id, trigger, { inputs?, version?, updates? }, prefixFn?)` adds another
 — its own trigger node, its own scoped inputs (read them with
 `entryInput('<id>', '<name>')`, i.e. `$vars.<id>.output.<name>`), and an
 optional prefix that runs before the root joins the first shared step. A prefix
@@ -87,7 +89,7 @@ export default flow('refund-intake')
 ```
 
 `manual()` is the factory `.entryPoint` takes for an on-demand root; the
-default root still omits `.trigger(...)`.
+default root still omits `.trigger(...)` unless it needs its own `{ updates }`.
 
 - **The SDK declares the variable** once, unless a `.var('refundAmount', …)` or
   `.output({ refundAmount })` already exists. Declare the `.var()` yourself to give
@@ -100,8 +102,9 @@ default root still omits `.trigger(...)`.
 - **The copy runs before that root's prefix**, so a prefix can read
   `$vars.refundAmount` too.
 - **Read it as a var:** `v('refundAmount')` in an Expr slot, `$vars.refundAmount`
-  in script code. Do not write a copy step or a `.var()` + `entryInput(...)`
-  `{ updates }` by hand; the default root has no prefix to hold one.
+  in script code. For a plain copy use `shared`, not a copy step or a
+  hand-written trigger `{ updates }` row: decompile gives back only the copy
+  shape as `{ shared }`.
 - **A root that feeds nothing** leaves the variable at its default, or null.
 
 `check` codes (`compile` throws on the errors even when its `check` pass is skipped):
@@ -119,6 +122,15 @@ Decompile turns a trigger-level copy of exactly this shape back into
 own `{ updates }` (below).
 
 ### Other variable updates on a trigger
+
+Needs `@uipath/maestro-builder-sdk` newer than 6.85.2: check that
+`entryPoint(` in `dist/flow-sdk.d.ts` of the SDK copy in use takes
+`'version' | 'label' | 'updates'`. An older SDK refuses `.trigger(spec, { updates })`
+(`UPDATES_NOT_SUPPORTED`) and, worse, compiles `.entryPoint(id, spec, { updates })`
+with no row at all. Upgrade the copy in use: `npm install
+@uipath/maestro-builder-sdk@latest` in a workspace that has its own
+`node_modules` copy (it is used before the global one), else `npm install -g
+@uipath/maestro-builder-sdk@latest`.
 
 `.trigger(spec, { updates })` and `.entryPoint(id, spec, { updates })` write any
 other row on that root's trigger node. The rows run when the root fires, after
