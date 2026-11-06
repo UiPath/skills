@@ -14,21 +14,27 @@ entry shape by hand from the pulled index files: `stage`, `task`, `taskType`,
 
 ### Index files by task type
 
-| Task type | Index file | Identity field |
-|---|---|---|
-| `agent` | `agents-index.json` | `deploymentTitle` |
-| `api-workflow` | `api-workflows-index.json` | `deploymentTitle` |
-| `process`, `rpa` | `processes-index.json` | `deploymentTitle` |
-| `action` | `action-apps-index.json` | `deploymentTitle` |
-| `case-management` | `cases-index.json` | `deploymentTitle` |
+| Task type | Index file | Identity field | Creatable |
+|---|---|---|---|
+| `agent` | `agent-index.json` | `entityKey` | yes |
+| `api-workflow` | `api-index.json` | `entityKey` | yes |
+| `business-rule` | `businessRule-index.json` | `entityKey` | yes |
+| `process` | `processOrchestration-index.json` | `entityKey` | no |
+| `rpa` | `process-index.json` | `entityKey` | no |
+| `action` | `action-apps-index.json` | `id` | no |
+| `case-management` | `caseManagement-index.json` | `entityKey` | no |
+| `function` | `function-index.json` | `entityKey` | no |
+| `flow-process` | `flow-index.json` | `entityKey` | no |
+| `wait-for-connector` | `typecache-triggers-index.json` | `uiPathActivityTypeId` | no |
+| `execute-connector-activity` | `typecache-activities-index.json` | `uiPathActivityTypeId` | no |
+| `wait-for-timer` | *(no index — built-in)* | — | — |
 
 All indexes live under `~/.uip/case-resources/`. Read with the Read tool,
 never `node -e ... fs.*`.
 
-Action-type tasks (`action`) are **non-creatable**: when the index has no
-match, the only option is `Use a placeholder`. Do not offer `Create missing
-resources inline` for action tasks. The same applies to `case-management`
-and `process`/`rpa`.
+Non-creatable types never get `Create missing resources inline` in the
+empty-lookup gate. Only `agent`, `api-workflow`, and `business-rule` may
+offer that option.
 
 ## Steps
 
