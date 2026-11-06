@@ -18,7 +18,7 @@ The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.Absol
 
 **Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.bpmn.ts`, the undo copy `original/<Name>.bpmn` and the `registry prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`.
 
-**Never delete or rename a file under `/solution`.** The project file system refuses both. Overwrite the file instead.
+**Never delete or rename a file under `/solution`.** The project file system refuses both. Overwrite the file instead. `ls -l` shows every file there as 0 bytes: use `wc -c` for a size.
 
 **A read-only page refuses every write.** When the page shows "Locked by you" and an Edit button, a write fails, sometimes as `[object Object]`. Tell the user to click Edit, then try again.
 
@@ -44,6 +44,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip maestro bpmn debug-instance variables`, `variables-all`, `incidents` | Work, with the `Trace ID` that `debug` prints. |
 | `uip maestro bpmn pack`, `uip solution pack`, `upload` | Not available. Studio Web owns the solution. |
 | `uip login` | Not available. You are already signed in to the tenant of the user. |
+| `node -e` | Works for a small script with `fs`. It has no `crypto` and no `uuidgen`. |
 | `npm`, `npx`, the `flow-sdk` bin, `python3` | Not available. |
 
 When a reference tells you to run a command that is not available, use the Studio Web route that this guide gives. If there is no route, tell the user.
@@ -63,6 +64,7 @@ When a reference tells you to run a command that is not available, use the Studi
 4. Seed the source every turn by decompiling the target —
    `uip maestro bpmn decompile <Name>.bpmn -o .flow-sdk/<Name>.bpmn.ts --style nested` — rather than
    hand-writing the skeleton. A new project's `.bpmn` is the template Studio Web or `init` wrote: decompile it too.
+   Its source has `.metadata({ entryPointId: false })`: delete that key, or `refresh` fails. The SDK then derives the id.
 <!--skill-flavor:workflow-seed:end-->
 
 <!--skill-flavor:workflow-compile:start-->
