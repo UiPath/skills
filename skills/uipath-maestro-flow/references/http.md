@@ -106,26 +106,18 @@ proxied request reuses that connector's authentication:
 
 ## Failure fields
 
-On failure `$vars.<step>.output` is `{ code, message, detail, category, status }`
-(`code` a string, `status` a number) and `.error` is `true`. Read it with
-`err(step, 'status')` or `'detail'`, never `.error.<field>`. The server's body
-and headers are not parsed on failure; they appear only as text inside `detail`.
-With no `.onError()`, a non-2xx faults the run (incident `102001`, observed for
-404).
+The envelope shape and how to read it: [error-handling.md](error-handling.md#reading-the-failure).
+On managed HTTP `code` is a string and `status` a number. The server's body and
+headers are not parsed; they appear only as text inside `detail`. An unhandled
+non-2xx raises incident `102001` (observed for 404).
 
 ## Response branches
 
-`branches: [{ name, condition }]` declares extra exits evaluated against the
-response — each becomes a `branch-<name>` source port routed with
-`.stepToList('branch-<name>', …)`, while the main path continues from the
-default port. Conditions are expressions (e.g.
-``js`$vars.fetch.output.body.limit > 100` ``), typically reading the step's
-own declared `returns`. A non-2xx never reaches a branch; handle it with
-`.onError()`. Managed `branches` fire only with an SDK that includes the
-managed-HTTP branch fix; before it, no condition fired in a debug run, not even
-on a 200. Route with `.onError()` and `err(step, 'status')` unless a live debug
-run shows the branch firing. Names must be unique and constant conditions are
-rejected by `check`.
+`branches: [{ name, condition }]` declares extra `branch-<name>` exits routed
+with `.stepToList('branch-<name>', …)`. Don't author managed `branches`; route
+with `.onError()` + `err(step, 'status')`. A non-2xx never reaches a branch, and
+in a debug run no condition fired, not even on a 200. Names must be unique and
+constant conditions are rejected by `check`.
 
 ## Evidence
 
