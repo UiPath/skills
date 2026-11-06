@@ -97,6 +97,7 @@ resources exist and what they return is platform evidence.
 ([conversational.md](conversational.md)) take `tools`, `context` and
 `escalation` exactly as `inlineAgent` does. There is no `memory` option.
 
+<!--skill-flavor:voice-conversational-resources-sdk-version:start-->
 **Needs `@uipath/maestro-builder-sdk` newer than 6.85.2:** check that
 `dist/flow-sdk.d.ts` of the SDK copy in use declares `AgentResources`. An older
 SDK accepts these options with no finding and compiles the agent with no tool,
@@ -104,6 +105,7 @@ context or escalation nodes. Upgrade the copy in use: `npm install
 @uipath/maestro-builder-sdk@latest` in a workspace that has its own
 `node_modules` copy (it is used before the global one), else `npm install -g
 @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:voice-conversational-resources-sdk-version:end-->
 
 - **`check` codes.** The inline agent's rules, under codes all three agents
   share: `FLOW_AGENT_TOOL_*`, `FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_RESOURCE_*`,
