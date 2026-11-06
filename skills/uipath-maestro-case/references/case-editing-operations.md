@@ -28,7 +28,7 @@ Before every write:
 5. **Edges are not authored (Rule 21).** `schema.edges` stays `[]` — do not construct edge handles or append edge objects. Stage transitions derive from entry/exit conditions.
 6. **Edge type inference (RETIRED).** No edges are written (Rule 21), so there is no edge type to infer.
 7. Every regular Stage needs an entry condition: first uses `case-entered`; later uses `selected-stage-completed` or `selected-stage-exited` naming a reachable predecessor. Plan it when adding the Stage.
-8. Preserve task order/structure. `laneIndex` is structural: strict chains use `[[A], [B], [C]]`; explicitly parallel siblings may use `[[A, B], [C]]` or `[[A], [B, C], [D]]`. Sequencing comes from conditions and order, not lane sharing.
+8. Preserve task order/structure. `laneIndex` is structural: strict chains use `[[A], [B], [C]]`; siblings after an immediate predecessor share a set (`[[A], [B, C], [D]]`, `runs-sequentially` on each); stage-start siblings each get their own set (`[[A], [B]]`, `current-stage-entered` on each). Sequencing comes from conditions and order, not lane sharing.
 9. Set every task's `elementId = ${stageId}-${taskId}`.
 10. Task `entryConditions[]` come only from the task-entry-conditions plugin (Step 10) and SDD-authored rows, including a connector's explicit `current-stage-entered` row. Never inject by task type; connector and non-connector tasks are identical here, and duplication corrupts 1-based `displayName` indexing.
 11. Before a `var bind`, verify source stage and task IDs exist.
