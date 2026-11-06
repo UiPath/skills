@@ -148,7 +148,9 @@ uip maestro case pack <project-path> <output-path> --output json
 | `--author <author>` | Package author (default: `UiPath`) |
 | `--description <text>` | Package description (default: `Created by UiPath`) |
 
+<!--skill-flavor:case-pack-required:start-->
 > **Required before every `uip solution pack`.** Run it on every Phase 7 pass, including runs that skipped Phase 5 / Phase 6, and including runs where a `.bpmn` already exists (it may be stale). See [phased-execution.md § Why `case pack` is mandatory](phased-execution.md#why-case-pack-is-mandatory).
+<!--skill-flavor:case-pack-required:end-->
 
 > **Requires `package-descriptor.json`** in the project directory (written at scaffold). Without it: `Missing package-descriptor.json in: <project-path>`. Restore the file — never skip the step.
 

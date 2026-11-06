@@ -7,7 +7,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const CHECKER = fileURLToPath(new URL("../../scripts/check-skill-links.mjs", import.meta.url));
-const ENFORCED = "skills/uipath-maestro-bpmn";
+const SKILL = "skills/uipath-maestro-bpmn";
 
 /** A repo root holding the given `relative path -> text` files. */
 function tree(files) {
@@ -26,28 +26,39 @@ function run(files) {
   return { status: result.status, out: result.stdout + result.stderr };
 }
 
-/** A link from the enforced skill to `#<fragment>` under `heading`. */
+/** A link from a skill to `#<fragment>` under `heading`. */
 function linkTo(heading, fragment) {
   return {
-    [`${ENFORCED}/SKILL.md`]: `# Skill\n\n[go](references/r.md#${fragment})\n`,
-    [`${ENFORCED}/references/r.md`]: `${heading}\n\nbody\n`,
+    [`${SKILL}/SKILL.md`]: `# Skill\n\n[go](references/r.md#${fragment})\n`,
+    [`${SKILL}/references/r.md`]: `${heading}\n\nbody\n`,
   };
 }
 
-test("a dead anchor in an enforced tree fails the run", () => {
+test("a dead anchor fails the run", () => {
   const { status, out } = run(linkTo("## Variables", "variables-gone"));
   assert.equal(status, 1);
   assert.match(out, /1 dead anchor\(s\)/);
   assert.match(out, /SKILL\.md:3 -> references\/r\.md#variables-gone/);
 });
 
-test("a dead anchor outside an enforced tree is reported, not failed", () => {
-  const { status, out } = run({
-    "skills/uipath-platform/SKILL.md": "# Skill\n\n[go](references/r.md#gone)\n",
-    "skills/uipath-platform/references/r.md": "## Here\n",
-  });
-  assert.equal(status, 0);
-  assert.match(out, /1 dead anchor\(s\) outside skills\/uipath-maestro-bpmn, not enforced/);
+test("a dead anchor fails the run in every skill, classic tree and flavor", () => {
+  for (const files of [
+    {
+      "skills/uipath-platform/SKILL.md": "# Skill\n\n[go](references/r.md#gone)\n",
+      "skills/uipath-platform/references/r.md": "## Here\n",
+    },
+    {
+      "skill-flavors/sw/uipath-flow/.canonical": "classic\n",
+      "skills/uipath-flow/SKILL.md": "# Flow\n",
+      "classic/skills/uipath-flow/SKILL.md": "# Flow v1\n\n[go](references/r.md#gone)\n",
+      "classic/skills/uipath-flow/references/r.md": "## Here\n",
+    },
+  ]) {
+    const { status, out } = run(files);
+    assert.equal(status, 1, out);
+    assert.match(out, /1 dead anchor\(s\):/);
+    assert.doesNotMatch(out, /not enforced/);
+  }
 });
 
 test("slugs follow GitHub's rules", () => {
@@ -73,7 +84,7 @@ test("a repeated heading takes the -1 suffix", () => {
 test("headings and links inside fences and inline code are ignored", () => {
   assert.equal(run(linkTo("```\n## Fenced\n```", "fenced")).status, 1);
   const { status } = run({
-    [`${ENFORCED}/SKILL.md`]: "# Skill\n\nFormat `[Red](#,##0)` applies.\n",
+    [`${SKILL}/SKILL.md`]: "# Skill\n\nFormat `[Red](#,##0)` applies.\n",
   });
   assert.equal(status, 0);
 });
@@ -84,7 +95,7 @@ test("an `<a name>` target counts as an anchor", () => {
 
 test("a fragment on a missing file reports the file, not the anchor", () => {
   const { status, out } = run({
-    [`${ENFORCED}/SKILL.md`]: "# Skill\n\n[go](references/absent.md#any)\n",
+    [`${SKILL}/SKILL.md`]: "# Skill\n\n[go](references/absent.md#any)\n",
   });
   assert.equal(status, 1);
   assert.match(out, /1 broken link\(s\)/);
@@ -94,8 +105,8 @@ test("a fragment on a missing file reports the file, not the anchor", () => {
 test("a malformed % escape is reported as a broken link", () => {
   for (const link of ["references/r%zz.md", "references/r.md#bad%zz"]) {
     const { status, out } = run({
-      [`${ENFORCED}/SKILL.md`]: `# Skill\n\n[go](${link})\n`,
-      [`${ENFORCED}/references/r.md`]: "## Here\n",
+      [`${SKILL}/SKILL.md`]: `# Skill\n\n[go](${link})\n`,
+      [`${SKILL}/references/r.md`]: "## Here\n",
     });
     assert.equal(status, 1, out);
     assert.match(out, /1 broken link\(s\)/);
@@ -140,7 +151,7 @@ test("an anchor into a pinned skill must land in both generations", () => {
     "classic/skills/uipath-flow/references/shared.md": "# S\n",
     "skills/uipath-other/SKILL.md": "# Other\n\n[x](../uipath-flow/references/shared.md#step-6a)\n",
   });
-  assert.equal(status, 1, "a cross-generation dead anchor fails even outside an enforced tree");
+  assert.equal(status, 1, "a cross-generation dead anchor fails");
   assert.match(out, /shared\.md#step-6a \(in the classic tree the sw flavor\(s\) compose\)/);
 });
 
