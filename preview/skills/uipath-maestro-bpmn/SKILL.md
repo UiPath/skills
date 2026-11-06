@@ -102,6 +102,7 @@ Match one name — do not read either end to end — then read the span it gives
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 | Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
 | A run failed or is stuck | `uip maestro bpmn job status` / `instance incidents` / `instance variables` / `instance asset` | [Diagnose](references/diagnose.md) | — |
+| A recurring process shape: review gate, approval chain, triage, external wait, batch, failure net, queue | `choose`, `race`, `subProcess` with `loop`, `eventSubProcess` | [Patterns](#patterns) | — |
 
 ## Minimal shape
 
@@ -160,8 +161,34 @@ export default bpmn('approval')
 - `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
 - `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.
   An element that already has an explicit outgoing flow is not also wired to the next one, a bare gateway is wired into but implies no outgoing flows, and an element nothing leads into or a path that does not end is refused at build.
+- A step that two routes share is written ONCE, after the `.choose()`, with each arm that reaches it left to fall through; never repeat the step, or a downstream gate, inside each arm.
+  The repeated form passes `check`, `compile` and `validate`, and it is the most common way a pattern comes out wrong.
+  When fall-through cannot reach it, name the join: `.exclusiveGateway(id)`, `.goto(id)` from each route, `.sequenceFlow(id, next)`.
+  See [Shared joins](references/patterns/composing-guide.md#shared-joins-the-mechanism-nesting-hides).
 - `uip maestro bpmn check <Name>.bpmn.ts --graph` prints the wiring that resulted, `~>` for an implied edge and `->` for an explicit one, with `[NO INCOMING]` / `[NO OUTGOING]` where they apply.
   Read it after a structural edit in a sequence scope, because inserting a line there rewires the graph.
+
+## Patterns
+
+Read the guide for each pattern the process actually uses, and none for a pattern you are not building.
+
+Every guide's node table marks each node **Entry** (omit when inserting into a process that already runs), **Mechanism** (changing it changes the pattern), or **Placeholder** (bind it, or skip it if the process already does this).
+
+| Pattern | Reach for it when | Guide |
+| --- | --- | --- |
+| `ai-decision-review` | AI makes one call; act on it, or a human reviews it | [ai-decision-review-guide.md](references/patterns/ai-decision-review-guide.md) |
+| `approval-chain` | A request needs sign-off from several people | [approval-chain-guide.md](references/patterns/approval-chain-guide.md) |
+| `smart-triage` | Inbound work sorted into categories, each handled elsewhere | [smart-triage-guide.md](references/patterns/smart-triage-guide.md) |
+| `external-wait` | The process waits on an outside party under an SLA | [external-wait-guide.md](references/patterns/external-wait-guide.md) |
+| `high-volume-batch` | Many independent items processed in one run | [high-volume-batch-guide.md](references/patterns/high-volume-batch-guide.md) |
+| `failure-escalation` | Unhandled failures must never disappear silently | [failure-escalation-guide.md](references/patterns/failure-escalation-guide.md) |
+| `queue-distribution` | An Orchestrator queue hands work across runtimes | [queue-distribution-guide.md](references/patterns/queue-distribution-guide.md) |
+
+**Do not reach for a pattern** when the ask is a short linear process, a single node, or a change that does not introduce one of these shapes.
+A pattern is never a wrapper to retrofit onto work that does not need one.
+
+Using more than one pattern in one process?
+Read [references/patterns/composing-guide.md](references/patterns/composing-guide.md) first: which pattern keeps its start event, the four ways the rest join it, how variables cross a nesting boundary, and the two placements the engine constrains.
 
 ## Validation loop
 
