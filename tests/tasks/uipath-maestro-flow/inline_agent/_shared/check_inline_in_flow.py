@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Inline-agent flow-wiring check.
 
-Reads GreetingSol/GreetingFlow/GreetingFlow.flow (existence asserted
-by a file_exists criterion in the task YAML) and verifies the
+Reads the GreetingFlow project's flow (`GreetingFlow.flow` or Studio Web's
+`new.flow`; existence asserted by a flow_contains criterion in the task YAML) and verifies the
 inline-in-flow structural pattern, plus that the inline agent's
 `agent.json` is a usable definition (not the prompt's wording or the
 input/output schema):
@@ -29,15 +29,16 @@ input/output schema):
 import json
 import os
 import sys
-from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.inline_wiring import assert_inline_agent_definition  # noqa: E402
+from _shared.inline_wiring import (  # noqa: E402
+    assert_inline_agent_definition,
+    find_named_flow,
+)
 
 INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"
 INLINE_AGENT_SERVICE_TYPE = "Orchestrator.StartInlineAgentJob"
-FLOW_PROJECT = Path(os.getcwd()) / "GreetingSol" / "GreetingFlow"
-FLOW_PATH = FLOW_PROJECT / "GreetingFlow.flow"
+FLOW_PATH = find_named_flow("GreetingFlow")
 
 
 def main() -> None:

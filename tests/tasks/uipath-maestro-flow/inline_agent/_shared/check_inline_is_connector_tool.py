@@ -43,6 +43,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_inline_agent_definition,
     find_inline_resource,
+    find_named_flow,
     is_real_uuid,
 )
 
@@ -52,9 +53,9 @@ INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"
 # so match on the prefix. Trailing "." disambiguates from any future bare type.
 CONNECTOR_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.connector."
 
-SOLUTION = Path(os.getcwd()) / "ResearchFlowSol"
-FLOW_PROJECT = SOLUTION / "ResearchFlow"
-FLOW_PATH = FLOW_PROJECT / "ResearchFlow.flow"
+FLOW_PATH = find_named_flow("ResearchFlow")
+FLOW_PROJECT = FLOW_PATH.parent
+SOLUTION = FLOW_PROJECT.parent
 
 
 def load(path: Path) -> dict:

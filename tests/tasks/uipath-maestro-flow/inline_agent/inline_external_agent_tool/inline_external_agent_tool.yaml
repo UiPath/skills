@@ -78,16 +78,18 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Flow file was created"
-    path: "OutreachFlowSol/OutreachFlow/OutreachFlow.flow"
+  - type: run_command
+    description: "Flow file was created in a supported authoring layout"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name OutreachFlow --in-project"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   # Outcome gate: the authored flow validates, whichever route wrote it.
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py OutreachFlowSol/OutreachFlow/OutreachFlow.flow"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py --in-project"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

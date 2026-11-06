@@ -57,6 +57,11 @@ def write_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data))
 
 
+def write_flow(project: Path, name: str, flow: dict, flow_file: str | None = None) -> None:
+    write_json(project / "project.uiproj", {"Name": name, "ProjectType": "Flow"})
+    write_json(project / (flow_file or f"{name}.flow"), flow)
+
+
 def folder_binding(folder: str) -> dict:
     return {
         "id": "bFibonacciRPAFolderPath",
@@ -75,6 +80,7 @@ def build_rpa_solution(
     folder_path: str,
     bindings: list | None = None,
     agent_json: dict | None = None,
+    flow_file: str | None = None,
 ) -> Path:
     project = root / "FibonacciFlowSol" / "FibonacciFlow"
     flow = {
@@ -91,7 +97,7 @@ def build_rpa_solution(
         ],
         "bindings": [folder_binding(RPA_FOLDER)] if bindings is None else bindings,
     }
-    write_json(project / "FibonacciFlow.flow", flow)
+    write_flow(project, "FibonacciFlow", flow, flow_file)
     write_json(project / AGENT_ID / "agent.json", agent_json or AGENT_JSON)
     write_json(
         project / AGENT_ID / "resources" / TOOL_ID / "resource.json",
@@ -115,6 +121,27 @@ def test_external_tool_witnessed_shapes_pass(tmp_path, location, folder_path):
     build_rpa_solution(tmp_path, location=location, folder_path=folder_path)
     result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "flow_file", [None, "new.flow"], ids=["node-cli-layout", "studio-web-layout"]
+)
+def test_flow_found_in_either_layout(tmp_path, flow_file):
+    build_rpa_solution(tmp_path, location="solution", folder_path="", flow_file=flow_file)
+    result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_flow_in_other_project_is_not_found(tmp_path):
+    build_rpa_solution(tmp_path, location="solution", folder_path="")
+    project = tmp_path / "FibonacciFlowSol" / "FibonacciFlow"
+    project.rename(tmp_path / "FibonacciFlowSol" / "Other")
+    (tmp_path / "FibonacciFlowSol" / "Other" / "FibonacciFlow.flow").rename(
+        tmp_path / "FibonacciFlowSol" / "Other" / "new.flow"
+    )
+    result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
+    assert result.returncode != 0
+    assert "is named FibonacciFlow.flow" in result.stderr
 
 
 @pytest.mark.parametrize(
@@ -203,7 +230,7 @@ def build_is_solution(
             {"sourceNodeId": "agent1", "sourcePort": "tool", "targetNodeId": "tool1", "targetPort": "input"}
         ],
     }
-    write_json(project / "ResearchFlow.flow", flow)
+    write_flow(project, "ResearchFlow", flow)
     write_json(project / AGENT_ID / "agent.json", AGENT_JSON)
     write_json(
         project / AGENT_ID / "resources" / TOOL_ID / "resource.json",
@@ -253,3 +280,14 @@ def test_is_connector_missing_binding_fails(tmp_path):
     build_is_solution(tmp_path, CONNECTION_ID, with_binding=False)
     result = run_checker("check_inline_is_connector_tool.py", tmp_path)
     assert result.returncode != 0
+
+
+def test_top_level_flow_outside_a_project_is_not_the_flow(tmp_path):
+    build_rpa_solution(tmp_path, location="solution", folder_path="")
+    project = tmp_path / "FibonacciFlowSol" / "FibonacciFlow"
+    write_json(project / "FibonacciFlow.flow", {"nodes": [{"id": "t", "type": "core.trigger.manual"}]})
+    root_flow = {"nodes": [{"id": f"n{i}", "type": "core.action.script"} for i in range(6)]}
+    write_json(tmp_path / "FibonacciFlow.flow", root_flow)
+    result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
+    assert result.returncode != 0
+    assert "is named FibonacciFlow.flow" in result.stderr

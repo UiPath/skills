@@ -35,13 +35,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
+    find_named_flow,
     find_inline_resource,
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "ReviewFlowSol" / "ReviewFlow" / "ReviewFlow.flow"
+FLOW_PATH = find_named_flow("ReviewFlow")
 ESCALATION_NODE_TYPE_PREFIX = "uipath.agent.resource.escalation."
 
 

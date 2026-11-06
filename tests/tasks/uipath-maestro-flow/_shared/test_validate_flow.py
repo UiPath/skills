@@ -310,3 +310,24 @@ def test_harness_budget_reaches_the_attempt_caps(monkeypatch):
     monkeypatch.setenv(validate_flow._BUDGET_ENV, str(_BUDGET))
     validate_flow.main()
     assert calls["overruns"] == []
+
+
+def test_in_project_rejects_a_stray_root_level_flow(monkeypatch, tmp_path, capsys):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "Demo.flow").write_text("{}")
+    calls = _stub(monkeypatch, [_cp(0, '{"Data":{"Status":"Valid"}}')], flows=("Demo.flow",))
+
+    assert validate_flow.main(["--in-project"]) == 1
+    assert "no .flow file sits in a Flow project" in capsys.readouterr().err
+    assert calls["n"] == 0
+
+
+def test_in_project_validates_a_project_flow(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    proj = tmp_path / "Sol" / "Demo"
+    proj.mkdir(parents=True)
+    (proj / "project.uiproj").write_text('{"ProjectType": "Flow"}')
+    (proj / "new.flow").write_text("{}")
+    _stub(monkeypatch, [_cp(0, '{"Data":{"Status":"Valid"}}')], flows=(str(proj / "new.flow"),))
+
+    assert validate_flow.main(["--in-project"]) == 0

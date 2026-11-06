@@ -1881,6 +1881,11 @@ def flow_file_is_named(path: str, name: str) -> bool:
     )
 
 
+def flow_file_in_project(path: str) -> bool:
+    """Whether ``path`` sits directly in a Flow project (a sibling ``project.uiproj``)."""
+    return _is_flow_project(os.path.join(os.path.dirname(path), "project.uiproj"))
+
+
 def find_flow_files(
     project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
 ) -> list[str]:

@@ -35,6 +35,7 @@ from _shared.inline_wiring import (  # noqa: E402
     assert_external_tool_shape,
     assert_tool_folder_binding,
     find_autonomous_agent_node,
+    find_named_flow,
     find_inline_resource,
     find_resource_node,
     load_json,
@@ -42,7 +43,7 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_resource_source,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "OutreachFlowSol" / "OutreachFlow" / "OutreachFlow.flow"
+FLOW_PATH = find_named_flow("OutreachFlow")
 AGENT_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.agent."
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
