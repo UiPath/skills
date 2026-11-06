@@ -111,6 +111,16 @@ host cannot run yet, so no set of sparse overrides can make it correct there.
 - A link from another skill into a pinned skill must resolve in both trees; `npm run skills:check-links` checks the file and its anchor in each. When the two generations cover the topic in different files, wrap the pointer in a flavor block: the canonical text links the current generation's file, and the pinning flavor's override links the classic file. The checker then asks each tree only for the link it composes.
 - Name the skill (`/uipath:<skill>`) instead of a file only when both generations hold the content the sentence promises. When the current generation has no equivalent, state the rule inline or drop the pointer. A skill name with nothing behind it is a pointer no check can catch.
 
+## Prepare a Preview Skill's Flavor Before Promotion
+
+Use this when a skill in `preview/skills/` will replace a canonical skill and a host must run it on the day it moves.
+
+- Put the markers in the preview files. The marker rules are the same as for canonical files.
+- Put the overrides in `preview/skill-flavors/<flavor>/<skill>/`, with paths that mirror `preview/skills/<skill>/`. The flavor must also exist in `skill-flavors/`. A preview flavor cannot hold a `.canonical` pin.
+- `npm run skills:validate` checks each preview flavor against `preview/skills/`. `npm run skills:build` writes it to `build/preview/<flavor>/`. `npm run skills:pack` never ships it.
+- The preview plugin ships `preview/skills/` as it is, so its users see the marker comments. Keep the blocks few.
+- At promotion, move the skill and its overrides in one change: `preview/skills/<skill>` to `skills/<skill>`, and `preview/skill-flavors/<flavor>/<skill>` to `skill-flavors/<flavor>/<skill>` in place of the old overrides. A promoted skill can stay in `preview/skills/` as a link to `skills/<skill>`. The composer skips that link.
+
 ## Preserve Generic Discovery and Package Naming
 
 Every direct lowercase kebab-case directory under `skill-flavors/` is a flavor. Never hardcode `studioweb` in the composer, npm build scripts, generic validation loop, or reusable flavor publisher. Publication is intentionally different: each released flavor must opt in through an explicit reviewed caller so its registry policy cannot expand implicitly.
