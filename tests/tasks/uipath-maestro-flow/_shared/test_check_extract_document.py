@@ -519,6 +519,15 @@ def test_node_id_naming_no_extract_document_node_fails(write, capsys):
     assert "no Extract document node start" in capsys.readouterr().err
 
 
+def test_node_id_selects_the_same_node_in_the_original(write, tmp_path):
+    flow = _two_node_flow(_schema(groups={}, prompt="Extract the credit note."))
+    path = tmp_path / "two_node_original.flow"
+    path.write_text(json.dumps(flow))
+    write(flow)
+    assert _run_on_target("unchanged", str(path)) == 0
+    assert _run_on_target("extends", str(path)) == 0
+
+
 def test_copies_passes_a_copy_with_other_ids_and_config(write, original):
     write(_two_node_flow(_copy(_seeded_schema())))
     assert _run_on_target("copies", original, NODE_ID) == 0

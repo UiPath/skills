@@ -9,7 +9,7 @@ Usage (from a task's run_command, cwd = sandbox root):
 ``uipath.ixp.extract-document-builder`` node ``--node-id`` names, or the first
 one in the flow. Its taxonomy is its ``inputs.schemaDocument``, the document
 ``nodes schema get`` prints. ``unchanged`` and ``extends`` compare it with the
-first Extract document node in the ORIGINAL.
+same node in the ORIGINAL.
 
 Checks:
     fields JSON          each entry of the JSON array claims a field it fits:
@@ -277,7 +277,7 @@ def _read_extract_node(path: str, node_id: str | None = None) -> dict:
 
 def check_unchanged(_: dict, node: dict, args: argparse.Namespace) -> str | None:
     original, *renames = args.values
-    expected = _read_extract_node(original)
+    expected = _read_extract_node(original, args.node_id)
     for rename in renames:
         old, new = rename.split("=", 1)
         if not _rename_field(expected, old, new):
@@ -286,7 +286,7 @@ def check_unchanged(_: dict, node: dict, args: argparse.Namespace) -> str | None
 
 
 def check_extends(_: dict, node: dict, args: argparse.Namespace) -> str | None:
-    expected = _read_schema_document(_read_extract_node(args.values[0]))
+    expected = _read_schema_document(_read_extract_node(args.values[0], args.node_id))
     got = _read_schema_document(node)
     return _report_differences(_find_differences(
         {k: v for k, v in expected.items() if k != "prompt"},

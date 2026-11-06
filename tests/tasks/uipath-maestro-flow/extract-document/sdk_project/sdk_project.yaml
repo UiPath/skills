@@ -38,13 +38,13 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
-    description: "A Flow project other than PermitDesk, with no .flow-sdk/, holds an Extract document node"
+    description: "A Flow project other than PermitDesk, with no .flow-sdk/, holds an Extract document node and validates"
     command: >-
       find . -name '*.flow' -not -path '*/node_modules/*' -not -path './PermitDesk/PermitDesk/*'
       -exec grep -lE '"type": *"uipath[.]ixp[.]extract-document-builder"' {} + |
       while IFS= read -r f; do d=$(dirname "$f"); [ -f "$d/project.uiproj" ] && [ ! -d "$d/.flow-sdk" ] && echo "$f"; done |
-      grep -q .
-    timeout: 30
+      head -n 1 | { read -r f && python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings "$f"; }
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

@@ -75,7 +75,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Extract Credit Note took no processorKey from Extract Invoice: it names the source's processor"
+    description: "Extract Credit Note has no processorKey: a copied key would name Extract Invoice's processor"
     path: "BillingDocs/BillingDocs/BillingDocs.flow"
     assertions:
       - expression: "length(nodes[?id=='extractCreditNote1' && inputs.processorKey])"
