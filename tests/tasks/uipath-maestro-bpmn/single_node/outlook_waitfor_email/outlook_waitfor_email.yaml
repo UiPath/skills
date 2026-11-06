@@ -10,7 +10,8 @@ description: >
   registry template, NOT replacing the manual start; bound to the Outlook
   connection) AND the runtime filter (a `contains(subject, 'TestWaitFor')`
   clause in the `target="body"` input's `filters.expression`, scoped to the
-  Inbox via `queryParams.parentFolderId` and its equality clause). No
+  Inbox via `queryParams.parentFolderId`; a V1 template body also carries the
+  equality clause). No
   execution -- `bpmn debug` is intentionally omitted; the task only requires
   the process to build and validate. Distinct from a connector-trigger START
   event, which would use the same event to start the process; this one uses
