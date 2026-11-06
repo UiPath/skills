@@ -43,7 +43,7 @@ Signatures: `.trigger(conversationTrigger({ welcomeTitle?, welcomeDescription?, 
 ## The chat's appearance
 
 What the chat shows before the user types is set on the trigger.
-Every field is optional; `conversationTrigger()` with no argument is a chat with none of them.
+Every field is optional; `conversationTrigger()` with no argument is a chat with no welcome text or prompts, and the switch below is still on.
 
 ```ts
 .trigger(conversationTrigger({
@@ -57,13 +57,14 @@ Every field is optional; `conversationTrigger()` with no argument is a chat with
 ```
 
 A starting prompt is a chip: the user sees `displayPrompt`, and the agent receives `actualPrompt`.
-A string is a prompt whose two are the same.
+A string sets both `displayPrompt` and `actualPrompt`.
 Leave `id` out; compile mints a stable one, and decompile prints it back so a recompile keeps it.
 `check` refuses a prompt with no display prompt (`CONVERSATION_TRIGGER_DISPLAY_PROMPT_REQUIRED`), because the chat drops it.
-`personalWorkspaceConnectionsOnly` limits the chat's connection settings menu to personal workspace connections, and is on unless you set it to `false`, as on a trigger made in the designer.
+`personalWorkspaceConnectionsOnly` limits the chat's connection settings menu to personal workspace connections.
+It defaults to `true`, as the designer sets on a new trigger; set `false` to show every connection.
 
 The appearance is the trigger's 1.3 definition, which `conversationTrigger()` writes by default.
-Decompiled source of an older flow pins `{ version: '1.0' }`, which has no appearance, and compile refuses one there (`CONVERSATION_TRIGGER_APPEARANCE_VERSION`); drop the pin to add one.
+Decompiled source of an older flow pins `{ version: '1.0' }`, which has no appearance, and compile refuses one there (`CONVERSATION_TRIGGER_APPEARANCE_VERSION`); drop the pin to add one, and set `personalWorkspaceConnectionsOnly: false` to keep the chat's full connection menu as it was.
 
 ## Conversations, exchanges, and messages
 
