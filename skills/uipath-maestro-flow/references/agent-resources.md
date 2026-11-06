@@ -95,8 +95,9 @@ resources exist and what they return is platform evidence.
 
 <!--skill-flavor:voice-conversational-resources-sdk-version:start-->
 **Needs the `@uipath/maestro-builder-sdk` release that ships UiPath/builder-sdk#1716:**
-check that `grep -rlw AgentResources <sdk>/dist`, run on the SDK copy in use,
-finds a file. An SDK where it finds no file accepts these options with no finding and compiles the agent with no tool,
+check that `grep -rlw AgentResources <sdk>/dist` finds a file. `<sdk>` is the SDK
+copy in use: `node_modules/@uipath/maestro-builder-sdk` in the workspace if present,
+else `$(npm root -g)/@uipath/maestro-builder-sdk`. The other pages use the same `<sdk>`. An SDK where it finds no file accepts these options with no finding and compiles the agent with no tool,
 context or escalation nodes. Upgrade the copy in use: `npm install
 @uipath/maestro-builder-sdk@latest` in a workspace that has its own
 `node_modules` copy (it is used before the global one), else `npm install -g
