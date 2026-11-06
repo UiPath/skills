@@ -92,15 +92,20 @@ Omit it for the empty default. A designer-made node keeps its classes through
 }))
 ```
 
-Classification lands at `out('classify', 'result.output')`: classify emits the
-same processed-document envelope (`version`, `type`, `result`, `taxonomy`,
-`metadata`), so read its answer under `result.output`. What Extract v2 emits at run time
-is a processed document, with the extracted values at `result.output`, one
-property per taxonomy field, and their page provenance under
-`result.attribution` ([Reading what it extracts](extract-document-node.md#reading-what-it-extracts)).
-The two routes embed different typings for it, though: `nodes create` embeds
-that current shape, while the SDK factory still embeds the older
-`ExtractionResult` shape — so on a factory-built flow, a read of
+Classify and Extract v2 both emit the processed-document envelope (`version`,
+`type`, `result`, `taxonomy`, `metadata`). The answer is at `result.output`:
+
+- **Classify:** `result.output.document_type` is the one class of the file.
+  With `splitPages: true` it is `result.output.segments`, one entry per
+  document, each with a type and a page span. These are the keys flow-core's
+  classify evaluation target names (`document_type`, `segments`).
+- **Extract v2:** `result.output` has one property per taxonomy field, with
+  page provenance under `result.attribution`
+  ([Reading what it extracts](extract-document-node.md#reading-what-it-extracts)).
+
+The two extract routes embed different typings for extract's output:
+`nodes create` embeds the envelope, while the SDK factory still embeds the
+older `ExtractionResult` shape. So on a factory-built flow, a read of extract's
 `result.output` validates with an `EXPRESSION_DIAGNOSTIC` warning until the SDK
 catches up. `ExtractionResult` as a runtime shape belongs to the
 published-model node ([ixp.md](ixp.md)), not this one.
