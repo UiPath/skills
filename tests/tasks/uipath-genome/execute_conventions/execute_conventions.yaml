@@ -71,7 +71,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The archive folder the genome leaves empty stays empty, as the source runs it"
+    description: "The Configuration answers record the archive folder the genome leaves empty as empty"
     command: >-
       python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
       os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'answers',

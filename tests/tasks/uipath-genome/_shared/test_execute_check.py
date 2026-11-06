@@ -187,9 +187,9 @@ def test_answers_text_outside_the_section_does_not_count(project):
 
 def test_answers_first_folder_is_the_answer(project):
     handoff_folder(project.parent, ANSWERS.replace(r"`C:\Reports` (default)",
-                                                   r"`C:\Reports` (default). The convention says `\finance-fs\reports`; not applied"))
+                                                   r"`C:\Reports` (default). The convention says `\\finance-fs\reports`; not applied"))
     assert answers("summary", first_folder=r"C:\Reports") == 0
-    assert answers("summary", first_folder=r"\finance-fs\reports") == 1
+    assert answers("summary", first_folder=r"\\finance-fs\reports") == 1
     assert answers("drive root", first_folder="C:\\") == 1
 
 
