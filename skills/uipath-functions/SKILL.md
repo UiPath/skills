@@ -89,7 +89,9 @@ uip function run <ENTRYPOINT> '{"document_id": "42"}'
 uip function pack && uip function publish
 ```
 
+<!--skill-flavor:python-scaffold-location:start-->
 From a solution root (directory holding a `.uipx`), `new` creates `<NAME>/` — `cd <NAME>` before `init`. Elsewhere it scaffolds into the current directory. `init`, `run` and `pack` run through the Python environment `uip function setup` bound: that environment needs `uipath` installed; re-run `uip function setup --force` after switching venv.
+<!--skill-flavor:python-scaffold-location:end-->
 
 Full workflow (schema, template, `uipath.json` registration, `pyproject.toml`, SDK capabilities, attachments, packOptions): [references/python/workflow-guide.md](references/python/workflow-guide.md).
 
