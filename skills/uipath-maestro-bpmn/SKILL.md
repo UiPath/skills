@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects, including a BPMN process the user wants to see or sketch before it is built. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, diagnose, and evaluate .bpmn projects, including a BPMN process the user wants to see or sketch before it is built. Evaluate: eval sets, evaluators, simulations, eval runs. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -941,14 +941,20 @@ full, then end the turn with the reply exactly as it shows.
   fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
   Before sending, check the message against the template line by line and delete every line the template does not have.
 
-## Operate and diagnose
+## Operate, evaluate, and diagnose
 
-Beyond authoring, this skill packages, ships, runs, and diagnoses Maestro
-projects through the UiPath CLI.
+Beyond authoring, this skill packages, ships, runs, evaluates, and diagnoses
+Maestro projects through the UiPath CLI.
 
 - **Package and operate** (package a project, upload to Studio Web, publish or
   deploy, run or debug instances, and manage jobs, instances, incidents, and
   lifecycle actions): see [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
+- **Evaluate** (design evaluators and eval sets, add data points and
+  simulations, and start/monitor/compare Studio Web evaluation runs for a BPMN
+  project): see [references/evaluate.md](references/evaluate.md).
+  `eval run start` deploys and overwrites the matching Studio Web solution
+  (never auto-run a separate `uip solution upload`); read evaluate.md before
+  running it.
 - **Diagnose** (fetch incidents, variables, and element executions, and trace a
   failed run back to its BPMN element): see [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
   Runtime evidence — incidents, variables, element executions, cursors, the
@@ -999,5 +1005,6 @@ and honestly surfaced to the user as gaps when asked.
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
 | Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |
 | Package, upload, publish, run, or manage instances | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
+| Design and run BPMN evaluations (evaluators, eval sets, data points, simulations, runs) | [references/evaluate.md](references/evaluate.md) |
 | Diagnose a failed or misbehaving run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
 | Project layout and generated package files | [references/shared/project-layout.md](references/shared/project-layout.md) |
