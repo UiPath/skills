@@ -419,7 +419,9 @@ The `connectors-local/` overlay is authoring input; emitted Flow is self-contain
 Prefer curated operations for their stable contract. Use the connector's raw
 `*-http-request` operation only for raw/generic needs the curated surface lacks.
 
-File uploads are multipart Flow inputs. If the static catalog omits an upload
+### File uploads are multipart Flow inputs
+
+If the static catalog omits an upload
 field, prepare the operation against its connection, then pass the upstream file
 like any other connector input:
 

@@ -119,14 +119,11 @@ const isExternal = (t) => !addressesTree(t) || t.startsWith("#");
  * character but letters, digits, `_` and `-` dropped, spaces to `-`, and a
  * repeated slug suffixed `-1`, `-2`.
  *
- * Only the trees listed here fail the run. Elsewhere a dead anchor is
- * reported and tolerated, because the ones that predate this check would
- * block every PR. Add a tree here once its anchors are clean.
+ * A dead anchor fails the run in every tree, like a missing file does.
  *
  * `skill-flavors/` is excluded outright. A flavor file is a sparse set of
  * replacement blocks, so its headings exist only after composition.
  */
-const FRAGMENT_ENFORCED = ["skills/uipath-maestro-bpmn"];
 const HEADING_RE = /^#{1,6}\s+(.*?)(?:\s+#+)?\s*$/;
 
 function slugify(heading) {
@@ -399,15 +396,6 @@ for (const root of ROOTS) {
         const text = await readFile(file, "utf8");
         const baseDir = resolveBaseDir(file);
         const rel = path.relative(REPO_ROOT, file);
-        // A classic or flavor file is held to the enforcement of the skill it
-        // composes into, so a retained tree cannot hide dead anchors.
-        const skill = composedSkill(file);
-        const logicalRel = skill
-            ? path.join("skills", skill, ...rel.split(path.sep).slice(root === "skills" ? 2 : 3))
-            : rel;
-        const enforced = FRAGMENT_ENFORCED.some(
-            (p) => logicalRel === p || logicalRel.startsWith(p + path.sep),
-        );
         const blocks = root === FLAVORS_DIRNAME ? new Map() : blockLines(file, text);
         for (const [lineNo, line] of proseLines(text)) {
             const block = blocks.get(lineNo) ?? null;
@@ -492,9 +480,6 @@ for (const root of ROOTS) {
                         file: rel,
                         line: lineNo,
                         target: label ? `${raw} (in the ${label})` : raw,
-                        // A cross-generation anchor is new, so it starts clean:
-                        // always enforced, whatever the source tree's status.
-                        enforced: enforced || labels.get(physical) != null,
                     });
                 }
             }
@@ -502,23 +487,11 @@ for (const root of ROOTS) {
     }
 }
 
-const enforcedDead = deadAnchors.filter((d) => d.enforced);
-const toleratedDead = deadAnchors.filter((d) => !d.enforced);
-
 console.log(`Checked ${checked} relative Markdown links across ${ROOTS.join(", ")}.`);
 console.log(`Checked ${fragmentsChecked} link fragments across ${ROOTS.join(", ")}.`);
 
-if (toleratedDead.length > 0) {
-    console.warn(
-        `\n${toleratedDead.length} dead anchor(s) outside ${FRAGMENT_ENFORCED.join(", ")}, not enforced:\n`,
-    );
-    for (const d of toleratedDead) {
-        console.warn(`  ${d.file}:${d.line} -> ${d.target}`);
-    }
-}
-
-if (broken.length === 0 && enforcedDead.length === 0) {
-    console.log("All links resolve and every enforced anchor lands.");
+if (broken.length === 0 && deadAnchors.length === 0) {
+    console.log("All links resolve and every anchor lands.");
     process.exit(0);
 }
 if (broken.length > 0) {
@@ -527,9 +500,9 @@ if (broken.length > 0) {
         console.error(`  ${b.file}:${b.line} -> ${b.target}  (${b.why})`);
     }
 }
-if (enforcedDead.length > 0) {
-    console.error(`\n${enforcedDead.length} dead anchor(s):\n`);
-    for (const d of enforcedDead) {
+if (deadAnchors.length > 0) {
+    console.error(`\n${deadAnchors.length} dead anchor(s):\n`);
+    for (const d of deadAnchors) {
         console.error(`  ${d.file}:${d.line} -> ${d.target}  (no such heading)`);
     }
 }
