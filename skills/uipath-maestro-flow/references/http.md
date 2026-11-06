@@ -23,8 +23,9 @@ Signature:
 ## At a glance
 
 Managed HTTP routes non-2xx responses through its error port and exposes a JSON
-response body as a parsed value. A status check is an `.onError()` handler reading
-`err(step, 'status')`, not a `branches` condition on `statusCode`.
+response body as a parsed value. Its success `output` is `{ code, headers, body }`
+with `code` a number; there is no `statusCode`. A status check is an `.onError()`
+handler reading `err(step, 'status')`, not a `branches` condition on `statusCode`.
 
 Signature: `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
 
@@ -113,6 +114,15 @@ proxied request reuses that connector's authentication:
 
 `targetConnector` requires both bindings.
 
+## Failure fields
+
+On failure `$vars.<step>.output` is `{ code, message, detail, category, status }`
+(`code` a string, `status` a number) and `.error` is `true`. Read it with
+`err(step, 'status')` or `'detail'`, never `.error.<field>`. The server's body
+and headers are not parsed on failure; they appear only as text inside `detail`.
+With no `.onError()`, a non-2xx faults the run (incident `102001`, observed for
+404).
+
 ## Response branches
 
 `branches: [{ name, condition }]` declares extra exits evaluated against the
@@ -121,7 +131,10 @@ response — each becomes a `branch-<name>` source port routed with
 default port. Conditions are expressions (e.g.
 ``js`$vars.fetch.output.body.limit > 100` ``), typically reading the step's
 own declared `returns`. A non-2xx never reaches a branch; handle it with
-`.onError()`. Names must be unique and constant conditions are
+`.onError()`. Managed `branches` fire only with an SDK that includes the
+managed-HTTP branch fix; before it, no condition fired in a debug run, not even
+on a 200. Route with `.onError()` and `err(step, 'status')` unless a live debug
+run shows the branch firing. Names must be unique and constant conditions are
 rejected by `check`.
 
 ## Evidence
