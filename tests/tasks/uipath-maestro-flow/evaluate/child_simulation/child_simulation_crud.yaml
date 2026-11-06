@@ -41,9 +41,10 @@ initial_prompt: |
 
   5. Put the simulation targets in the flow: an autonomous inline agent node
      with id `agent_1`, with two tools named `Web_Search` and `Send_Email`.
-     Both are real tools that write a resource file with an output schema
-     (not a mock, not client-side), because the `Llm` child simulation reads
-     it from the compiled agent. The
+     Both are `process` tools (any well-formed uuid as `key`, `folderPath`
+     `solution_folder`) with `returns` fields, because the `Llm` child
+     simulation reads a non-empty output schema from the compiled agent; a
+     mock, `httpRequest` or client-side tool has none. The
      flow does not have to pass `uip maestro flow validate`.
 
   6. Add a `Static` child simulation on the `search-test` data point targeting

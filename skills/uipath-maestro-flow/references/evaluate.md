@@ -117,9 +117,10 @@ unsimulated connector step really sends — once per eval, every run.
 child tool's declared output schema, read from the compiled agent.** Declare the
 agent and its tools on `inlineAgent({ tools })` and compile; pass the compiled
 node id as `--parent` (the step id with `-` turned into `_`: `agent-1` compiles
-to `agent_1`) and the tool's `name` as the component id. Use a tool kind that
-writes a `resources/<id>/resource.json` carrying an `outputSchema` (`httpRequest`,
-`builtin`, `connector`); a `clientside` tool writes none. `Parent agent "<id>"
+to `agent_1`) and the tool's `name` as the component id. Give each tool a
+non-empty output schema: a `process`, `agent`, `api`, `flow` or `maestro` tool
+with `returns`, or a connector tool. `httpRequest`, `clientside` and most
+`builtin` tools carry none. `Parent agent "<id>"
 not found in the flow.` means the id is wrong or the agent is not authored yet.
 `The tool has no declared outputs` means the tool has no output schema (a
 `mock()` never has one): change the tool and recompile. Never invent an
