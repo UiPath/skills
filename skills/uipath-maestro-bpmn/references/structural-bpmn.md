@@ -564,8 +564,11 @@ it resumes the main path rather than ending that item. See
   (`Orchestrator.StartAgenticProcess[Async]`, `…CaseMgmtProcess[Async]`). A
   plain BPMN `calledElement` round-trips but is not specially authored by the
   canvas layer.
-- Each scope (process or sub-process) may have at most one blank (untyped) start
-  event (`MULTIPLE_BLANK_START_EVENTS`).
+- A sub-process may have at most one blank (untyped) start event
+  (`MULTIPLE_BLANK_START_EVENTS`). The process itself may have several: each
+  blank start with its own `uipath:entryPointId` is a separate entry point (for
+  example "start" and "restart after approval"), and `uip maestro bpmn validate`
+  accepts that shape.
 
 > SubProcess scopes operations *within the same instance*; CallActivity invokes
 > a *separate* Maestro instance. Do not conflate them.
