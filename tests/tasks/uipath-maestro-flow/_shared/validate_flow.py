@@ -119,11 +119,17 @@ def _attempt_cap(remaining: float, attempts_left: int) -> float:
     return max(_MIN_ATTEMPT_SECONDS, remaining / attempts_left)
 
 
-def _warnings(stdout: str) -> str:
+_CANONICAL_LAYOUT_WARNING = "does not match canonical layout"
+"""The warning `flow validate` gives a ``.flow`` not named after its project directory."""
+
+
+def _warnings(stdout: str, flow: str) -> str:
     """``Data.Warnings`` of a ``flow validate --output json`` envelope, or ``""``.
 
     Output that is not a JSON envelope is reported as a warning, since a clean
-    result cannot be read from it.
+    result cannot be read from it. For Studio Web's ``new.flow`` the
+    canonical-layout warning is dropped: Studio Web always names the main file
+    that, so the warning only says which host made the project.
     """
     try:
         envelope = json.loads(stdout)
@@ -131,6 +137,10 @@ def _warnings(stdout: str) -> str:
         return f"no JSON envelope in stdout: {stdout.strip()[:500]!r}"
     data = envelope.get("Data") if isinstance(envelope, dict) else None
     warnings = data.get("Warnings") if isinstance(data, dict) else None
+    if isinstance(warnings, str) and Path(flow).name == STUDIO_WEB_FLOW_FILE:
+        items = [line for line in warnings.splitlines() if line.lstrip().startswith("- ")]
+        if items and all(_CANONICAL_LAYOUT_WARNING in line for line in items):
+            return ""
     return json.dumps(warnings) if warnings else ""
 
 
@@ -182,7 +192,7 @@ def _validate(flow: str, deadline: float, budget: int, no_warnings: bool = False
         sys.stdout.write(result.stdout)
         sys.stderr.write(result.stderr)
         if result.returncode == 0 and no_warnings:
-            warnings = _warnings(result.stdout)
+            warnings = _warnings(result.stdout, flow)
             if warnings:
                 print(f"FAIL: {flow} validated with warnings: {warnings}", file=sys.stderr)
                 return 1
