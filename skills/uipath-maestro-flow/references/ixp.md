@@ -97,8 +97,8 @@ results are under `ExtractionResult.ResultsDocument.Tables[]`. In both arrays,
 <!--skill-flavor:ixp-no-model:start-->
 If the registry has no suitable published extractor, add no Extract document node unless the user named it.
 
-- **Documents to train on:** invoke `uipath-ixp` with the documents, the extraction goal and the target Orchestrator folder (the user's, else ask). Do not run `uip ixp` project or deployment commands from here. Once it reports a deployment, `registry pull --force` and search again.
-- **No documents:** report the missing model and stop. Only when the user asked for a placeholder or a validate-only topology, put `mock()` in the extraction position, complete and validate the surrounding flow, and report the placeholder as the capability gap.
+- **Documents to train on and a runtime need:** invoke `uipath-ixp` with the documents, the extraction goal and the target Orchestrator folder (the user's, else ask). Do not run `uip ixp` project or deployment commands from here. Once it reports a deployment, `registry pull --force` and search again. If `uipath-ixp` is unavailable, take the placeholder branch and add an Open Questions entry.
+- **Otherwise:** a validate-only request never hands off, with documents or without: the handoff creates an IXP project and a deployment that cannot be deleted. Only when the user asked for a placeholder or a validate-only topology, put `mock()` in the extraction position, complete and validate the surrounding flow, and report the placeholder as the capability gap. Else report the missing model and stop.
 <!--skill-flavor:ixp-no-model:end-->
 
 `pageRange` is a product string; examples such as `1-5` are illustrative because
