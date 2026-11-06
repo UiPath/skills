@@ -57,3 +57,23 @@ Studio Web runs the post-rename CLI — use the commands and flags as documented
 
 <!--skill-flavor:existing-solution:start-->
 <!--skill-flavor:existing-solution:end-->
+
+<!--skill-flavor:debug-solution:start-->
+## Debug a Solution
+
+"Debug the solution", "run the solution", and "test the solution" mean: run the lead project of the open solution in the personal workspace. The Debug button in Studio Web does the same. A debug does not publish a package, create a deployment, or create an Orchestrator folder.
+
+1. Find the lead project. It is the project that the user names, or the project that starts the process and calls the other projects. If more than one project can be the lead, ask the user.
+2. Run `uip solution resources refresh --solution-folder <SOLUTION_DIR> --output json`.
+3. Run the host-served command for the type of the lead project:
+
+| Lead project type | Command |
+|---|---|
+| Flow | `uip flow debug "<PROJECT_NAME>" --output json`. Use this two-token form. The host does not serve `uip maestro flow debug`. |
+| RPA | `uip rpa run`. `uip rpa debug start` is not available in Studio Web. |
+| Other types | The debug command that the skill of the project type documents for Studio Web. |
+
+The host runs the saved projects of the open solution. There is no pack or upload step.
+
+Use `uip solution publish` and `uip solution deploy run` only when the user asks to publish or to deploy the solution.
+<!--skill-flavor:debug-solution:end-->
