@@ -90,7 +90,7 @@ success_criteria:
   # Outcome gate: the authored flow validates, whichever route wrote it.
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py ProcurementFlowSol/ProcurementFlow/ProcurementFlow.flow"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
