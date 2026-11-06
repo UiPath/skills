@@ -178,11 +178,12 @@ uip is triggers describe <connector> <EVENT> <object> --connection-id <id> --out
 A source-only draft (offline, no connection on the tenant, or a task that forbids real ids) is missing the connection, and sometimes the operation.
 Write the step so that `check` passes and the CLI, not prose, says what is missing:
 
-- **The operation is in the library** (§1 finds it; the library is a local cache, so this works offline): write the `.connector()` call of §2 with symbolic `connection` and `folder` names and no `bindings.json`.
+- **The operation's metadata is local**: §1 finds it in the library (a local cache, so this works offline), and `check` names no `uip maestro registry prepare` for it (`OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, or a `CONNECTOR_INPUT` for a field only the connection discovers), since only a live `prepare` clears those.
+  Write the `.connector()` call of §2 with symbolic `connection` and `folder` names and no `bindings.json`.
   Leave no `lookup()` in it, because `compile` refuses one until `prepare` records it (`LOOKUP_UNRESOLVED`); a lookup field takes a runtime `=vars.<id>` or a fixed-vocabulary literal (`send_as: 'bot'`), which `check` only warns about (`LOOKUP_RUNTIME_VALUE`, `LOOKUP_LITERAL_ID`).
   `check`, `compile` and `format` pass and emit a real `Intsvc.ActivityExecution` task reading `=bindings.<name>`.
   `refresh` then refuses (`Connection binding "<name>" default must be a GUID.`) and `validate` reports `MISSING_BINDING`: that is the draft's blocker, so stop there, and do not edit a binding or a package file to get past it.
-- **The operation is not in the library, and `prepare` cannot reach the tenant**: write the step as a bare `.task(id, { name })` whose name carries the connector key and the operation, such as `'Send Slack digest (uipath-salesforce-slack / send-message-to-channel, unresolved)'`.
+- **Otherwise, with no tenant for `prepare` to reach** (the operation is not in the library, or `check` asks for a `prepare`): write the step as a bare `.task(id, { name })` whose name says what it does and carries the connector key and the operation, such as `'Send Slack digest (uipath-salesforce-slack / send-message-to-channel, unresolved)'`.
   The whole loop passes; the node is a placeholder, and the notes say so.
 - **Never a placeholder `.activity(id, 'Intsvc.ActivityExecution', …)`.**
   `check` refuses empty context (`EMPTY_REQUIRED_FIELD`) and sentinel values (`INTSVC_METHOD_UNKNOWN`, `INTSVC_OPERATION_NOT_IDENTIFIER`), and a file compiled past it is one `validate` rejects.
@@ -196,7 +197,7 @@ Then leave a notes file (`README.md` beside the source) that names each CLI-owne
 | dynamic schemas | the connection-specific input and output schemas, custom fields, objects and lookup ids | the same `prepare`, with `--resolve` / `--object`, which writes `./connectors-local/` |
 | connector operation metadata (bare `.task()` only) | `objectName`, `method`, path and the generated outputs (`<id>_response`, `<id>_Error`) | `prepare`, then replace the `.task()` with the `.connector()` call it prints |
 | `bindings_v2.json` | the packaged binding resources | `uip maestro bpmn refresh <project>` after `compile`, once the connection binding resolves |
-| package metadata | `entry-points.json`, `operate.json`, `package-descriptor.json` | the same `refresh`; `uip solution resources refresh --solution-folder <SolutionDir>` for the solution |
+| package metadata | `entry-points.json`, `operate.json`, `package-descriptor.json` | the same `refresh`; `uip solution resources refresh --solution-folder <solution-dir>` for the solution |
 
 Name them as written, not paraphrased ("the connection", "the schema"), because the user acts on the artifact each one names.
 Name no private value: no connection id, folder key, tenant URL, resource key or schema copied from a tenant.

@@ -9,9 +9,11 @@ nothing private was invented to make it look resolved:
   ``.connector()``) whose connection reads a declared binding left unresolved, OR a
   bare ``bpmn:task`` named for the Slack send (the v2 skill's form for an operation
   the connector library does not carry);
-- a notes file exists, in any wording: the prompt asks for one, and which words it
-  uses is the agent's call (UiPath/builder-sdk#1808 — the grader used to grep four
-  v1 phrases, and a correct v2 README failed on vocabulary alone);
+- a notes file the agent wrote exists, in any wording: the prompt asks for one, and
+  which words it uses does not gate the boundary (UiPath/builder-sdk#1808 — the
+  grader used to grep four v1 phrases, and a correct v2 README failed on vocabulary
+  alone). ``--notes-vocabulary`` runs that phrase check on its own, for the task's
+  advisory criterion;
 - no tenant host, no hand-written package file, no resolved connection id, and a
   wired, laid-out sequence.
 """
@@ -38,10 +40,20 @@ from _shared.bpmn_check import (  # noqa: E402
     root_bindings,
 )
 
-# The connector the task prompt names. A bare-task draft must name it, and name a
-# send, so "Prepare Slack digest" does not stand in for the missing send step.
+# The connector the task prompt names. A bare-task draft must name it, and a sending
+# verb, so "Prepare Slack digest" or "Prepare Slack message" does not stand in for
+# the missing send step. Nouns ("message") do not count.
 CONNECTOR_NAME = "slack"
-SEND_WORD = re.compile(r"\b(send|post|message|notify|deliver|digest\s+to)\b", re.IGNORECASE)
+SEND_WORD = re.compile(r"\b(send|sends|sending|post|posts|posting|notify|deliver|publish|dispatch)\b", re.IGNORECASE)
+# Files an agent did not write: agent instructions an image or harness may stage.
+NOT_NOTES = {"CLAUDE.md", "AGENTS.md"}
+# The four CLI-owned blockers, as the old grader matched them: any phrasing of each.
+BLOCKERS = {
+    "connection binding": re.compile(r"connection\s+binding", re.IGNORECASE),
+    "dynamic schema(s)": re.compile(r"dynamic\s+(\w+\s+){0,4}schema", re.IGNORECASE),
+    "bindings_v2.json": re.compile(r"bindings_v2\.json", re.IGNORECASE),
+    "package metadata": re.compile(r"package\s+metadata", re.IGNORECASE),
+}
 GUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
 BINDING_READ = re.compile(r"^=bindings\.([\w.-]+)$")
 
@@ -54,6 +66,10 @@ def intsvc_nodes(root: ET.Element) -> list[ET.Element]:
 def bare_connector_tasks(root: ET.Element) -> list[ET.Element]:
     found = []
     for task in elements(root, "task"):
+        # A bpmn:task carrying an Intsvc payload is not a bare placeholder: it is a
+        # connector node on the wrong wrapper, and it would dodge the binding check.
+        if has_uipath_extension(task, "Intsvc."):
+            continue
         name = attr(task, "name")
         if CONNECTOR_NAME in name.lower() and SEND_WORD.search(name):
             found.append(task)
@@ -81,10 +97,13 @@ def require_connection_unresolved(root: ET.Element, node: ET.Element) -> None:
     if binding_id not in bindings:
         fail(f"{node_id}: connection reads `=bindings.{binding_id}`, but the process declares no such binding (declared: {sorted(bindings)})")
     reads = {binding_id: "connection"}
-    folder = BINDING_READ.match(context_value(node, "folderKey"))
-    if folder and folder.group(1) in bindings:
+    folder_value = context_value(node, "folderKey")
+    folder = BINDING_READ.match(folder_value)
+    if folder:
+        if folder.group(1) not in bindings:
+            fail(f"{node_id}: folderKey reads `=bindings.{folder.group(1)}`, but the process declares no such binding (declared: {sorted(bindings)})")
         reads[folder.group(1)] = "folderKey"
-    elif GUID.match(context_value(node, "folderKey")):
+    elif GUID.match(folder_value):
         fail(f"{node_id}: folderKey is a literal folder key; leave it to a binding the CLI resolves")
     for bid, role in reads.items():
         b = bindings[bid]
@@ -94,16 +113,39 @@ def require_connection_unresolved(root: ET.Element, node: ET.Element) -> None:
                 fail(f"{node_id}: {role} binding `{bid}` has a resolved id in {key} ({value}); a draft leaves the connection binding unresolved")
 
 
+def notes_text() -> str:
+    """Every non-empty notes file the agent left, wherever it put it.
+
+    The prompt names no location: v1 writes it beside the .bpmn, the builder-SDK arm
+    at the workspace root. Neither `uip maestro bpmn init` nor the SDK writes a .md,
+    so what remains after skipping installed packages, dot-directories, skill copies
+    and agent-instruction files is the agent's own.
+    """
+    texts = []
+    for p in sorted(glob.glob("**/*.md", recursive=True)):
+        path = Path(p)
+        if "node_modules" in path.parts or any(part.startswith(".") for part in path.parts[:-1]):
+            continue
+        if path.name.startswith("SKILL") or path.name in NOT_NOTES:
+            continue
+        text = path.read_text(encoding="utf-8").strip()
+        if text:
+            texts.append(text)
+    return "\n".join(texts)
+
+
 def require_notes() -> None:
-    notes = [
-        p
-        for p in sorted(glob.glob("**/*.md", recursive=True))
-        if "node_modules" not in Path(p).parts
-        and not Path(p).name.startswith("SKILL")
-        and Path(p).read_text(encoding="utf-8").strip()
-    ]
-    if not notes:
+    if not notes_text():
         fail("no README or notes .md file: the task asks for one stating the CLI-owned blockers")
+
+
+def notes_vocabulary() -> None:
+    """Advisory: do the notes name the four CLI-owned blockers, in any phrasing?"""
+    text = notes_text()
+    missing = [name for name, pattern in BLOCKERS.items() if not pattern.search(text)]
+    if missing:
+        fail(f"notes do not name CLI-owned blockers: {missing}")
+    print("OK: notes name connection binding, dynamic schemas, bindings_v2.json and package metadata")
 
 
 def main() -> None:
@@ -111,6 +153,8 @@ def main() -> None:
     nodes = intsvc_nodes(root)
     bare = bare_connector_tasks(root)
     if not nodes and not bare:
+        if any(has_uipath_extension(task, "Intsvc.") for task in elements(root, "task")):
+            fail("the Intsvc.* activity sits on a bare bpmn:task; a connector node is a sendTask or serviceTask")
         fail(
             "missing the draft Slack step: expected an Intsvc.* uipath:activity on a "
             "sendTask/serviceTask, or a bare bpmn:task named for the Slack send"
@@ -130,4 +174,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["--notes-vocabulary"]:
+        notes_vocabulary()
+    else:
+        main()

@@ -86,9 +86,82 @@ def test_literal_connection_id_fails() -> None:
         ("Send Slack digest (uipath-salesforce-slack / send-message-to-channel, unresolved)", True),
         ("Post digest to SLACK", True),
         ("Prepare Slack digest", False),
+        ("Prepare Slack message", False),
+        ("Slack message", False),
         ("Send digest", False),
     ],
 )
 def test_bare_task_must_name_the_slack_send(name: str, accepted: bool) -> None:
     root = _bpmn("", task=f'<bpmn:task id="bare" name="{name}"/>')
     assert bool(checker.bare_connector_tasks(root)) is accepted
+
+
+def test_undeclared_folder_binding_fails() -> None:
+    root = _bpmn(_binding("slack", "slack"))
+    with pytest.raises(SystemExit, match="folderKey reads `=bindings.slackFolder`"):
+        checker.require_connection_unresolved(root, _send(root))
+
+
+def test_intsvc_payload_on_bare_task_is_not_a_placeholder() -> None:
+    """A named bpmn:task carrying Intsvc would otherwise skip the binding check."""
+    intsvc = (
+        '<bpmn:task id="bare" name="Send Slack digest"><bpmn:extensionElements>'
+        '<uipath:activity version="v1"><uipath:type value="Intsvc.ActivityExecution" version="v1"/>'
+        f'<uipath:context><uipath:input name="connection" type="string" value="{GUID}"/></uipath:context>'
+        "</uipath:activity></bpmn:extensionElements></bpmn:task>"
+    )
+    root = ET.fromstring(
+        '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" '
+        f'xmlns:uipath="http://uipath.org/schema/bpmn"><bpmn:process id="Process_1">{intsvc}</bpmn:process></bpmn:definitions>'
+    )
+    assert checker.bare_connector_tasks(root) == []
+    assert checker.intsvc_nodes(root) == []
+
+
+def _write(tmp_path: Path, files: dict[str, str]) -> None:
+    for name, text in files.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+
+NOTES = "Blockers: connection binding, dynamic input schemas, bindings_v2.json, package metadata."
+
+
+@pytest.mark.parametrize(
+    ("files", "ok"),
+    [
+        ({"README.md": "Draft notes."}, True),
+        ({"Proj/NOTES.md": NOTES}, True),
+        ({"README.md": "   "}, False),
+        ({"CLAUDE.md": NOTES, "AGENTS.md": NOTES, "SKILL.md": NOTES}, False),
+        ({"node_modules/pkg/README.md": NOTES, ".claude/skills/x/guide.md": NOTES}, False),
+    ],
+    ids=["any-wording", "beside-the-bpmn", "blank", "instruction-files", "installed-or-hidden"],
+)
+def test_require_notes_reads_only_the_agents_notes(tmp_path, monkeypatch, files, ok) -> None:
+    _write(tmp_path, files)
+    monkeypatch.chdir(tmp_path)
+    if ok:
+        checker.require_notes()
+    else:
+        with pytest.raises(SystemExit, match="no README or notes"):
+            checker.require_notes()
+
+
+@pytest.mark.parametrize(
+    ("text", "missing"),
+    [
+        (NOTES, None),
+        ("Needs the connection and its schema, then refresh.", "connection binding"),
+        ("connection binding, dynamic schemas, bindings_v2.json", "package metadata"),
+    ],
+)
+def test_notes_vocabulary_is_loose_but_named(tmp_path, monkeypatch, text, missing) -> None:
+    _write(tmp_path, {"README.md": text})
+    monkeypatch.chdir(tmp_path)
+    if missing is None:
+        checker.notes_vocabulary()
+    else:
+        with pytest.raises(SystemExit, match=missing):
+            checker.notes_vocabulary()
