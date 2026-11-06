@@ -47,7 +47,7 @@ A skeleton is not a working process and must never be reported as one.
 
 ### Box kinds
 
-The short names Studio Web's BPMN toolbox shows.
+The short names Studio Web's BPMN toolbox shows; write each exactly as it appears here.
 A connector box names its app as the user names it (`Slack`, `Outlook`, `Jira`), not `Connector`; write `Connector` only when the request names no app.
 
 | Step | Kind |
@@ -60,8 +60,8 @@ A connector box names its app as the user names it (`Slack`, `Outlook`, `Jira`),
 | A deployed business rule | Business rule |
 | A call to an outside app | `<App>` |
 | Another Maestro BPMN process, case, or flow | Maestro BPMN, Maestro Case, Maestro Flow |
-| An inline calculation | Script |
-| An HTTP call with no connector | HTTP request |
+| An inline calculation | Execute script |
+| An HTTP call with no connector | Execute HTTP request |
 
 ## A worked skeleton
 
@@ -79,7 +79,7 @@ export default bpmn('Process_1')
   .task('countStock', { name: 'Count warehouse stock [RPA workflow] → itemsBelowReorder' })
   .choose('needsReorder', [
     { when: '=vars.itemsBelowReorder > 0', label: 'Below reorder point', body: (b) => b.task('raiseOrders', { name: 'Raise purchase orders [API workflow]' }) },
-    { otherwise: true, label: 'Stock is fine', body: (b) => b.task('logCount', { name: 'Log the stock count [Script]' }) },
+    { otherwise: true, label: 'Stock is fine', body: (b) => b.task('logCount', { name: 'Log the stock count [Execute script]' }) },
   ])
   .endEvent('done', { name: 'Stock checked' })
   .build();
