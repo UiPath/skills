@@ -12,10 +12,8 @@ all but the reads need `uip login`.
 > is not consent to run. A debug run is a REAL run: it calls connectors, starts
 > child processes, creates Action Center work, mutates queues and sends messages.
 >
-> **Where you came from.** The project is authored in `<Name>.bpmn.ts`, compiled
-> into `<Name>/<Name>.bpmn`, formatted and validated (SKILL.md). A failed or
-> stuck run is investigated in [diagnose.md](diagnose.md), and the fix goes back
-> into the `.bpmn.ts`.
+> **Where you came from.** The project is authored in `<Name>.bpmn.ts`, compiled into `<Project>/<Name>.bpmn`, formatted and validated (SKILL.md).
+> A failed or stuck run is investigated in [diagnose.md](diagnose.md), and the fix goes back into the `.bpmn.ts`.
 
 ## Pre-flight, before any cloud action
 
@@ -77,8 +75,8 @@ uip solution upload <SolutionDir> --output json
 
 The project's solution directory is what `bpmn init` scaffolded around it
 (`<Name>Solution/`), or the solution it was initialized inside.
-A project initialized with `--skip-solution-registration` has no solution, and upload and deploy both work on one.
-Create one beside it with `uip solution init <SolutionName> --output json`, then copy the project in from inside that folder with `uip solution projects import <project-path> --output json`, and upload the solution.
+A project initialized with `--skip-solution-registration` has no solution, and upload and deploy both require one.
+Create one beside it with `uip solution init <SolutionName> --output json`, `cd <SolutionName>`, run `uip solution projects import <project-path> --output json` with `<project-path>` relative to that folder (for example `../A/B`), and upload the solution.
 Ask before doing this when the user named the project's path, because the uploaded copy lives in the new solution folder, not at that path.
 When the solution declares resource dependencies, refresh
 them with the solution tooling the installed CLI offers (check `uip solution
@@ -88,8 +86,9 @@ write `Studio Web URL: <not returned by CLI>` rather than omitting it.
 
 ## Orchestrator deployment
 
-Only when the user explicitly asks for a deployed process. Confirm the package
-identity, the target folder and the feed first.
+Only when the user explicitly asks for a deployed process.
+Confirm the package identity, the target folder and the feed first.
+A project with no solution needs one first; see [Studio Web upload](#studio-web-upload).
 
 ```bash
 uip maestro bpmn pack <project-path> <OutputDir> --output json
