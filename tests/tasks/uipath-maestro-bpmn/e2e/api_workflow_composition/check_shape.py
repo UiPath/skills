@@ -11,9 +11,14 @@ Per row in composition.RESOURCES:
      just because the BPMN wiring around it happens to be correct.
   1. The resource's project is present inside the submitted solution AND
      registered in its `.uipx`.
-  2. The wrapper serviceTask carries the row's required context
-     fields, correctly shaped -- for the API-workflow row (SKILL.md rule 18 /
-     references/registry-workflow.md): `releaseKey` bound via
+  2. The wrapper serviceTask carries the required context fields of the
+     form its `uipath:type version` selects (composition.RESOURCES
+     `context_forms`; both forms verified live, UiPath/builder-sdk#1807).
+     v2 -- what the BPMN builder SDK emits: a `name` naming a process
+     actually deployed in the seeded folder, and a `folderPath` equal to the
+     seeded folder's path (each a literal, or a declared =bindings.<id>
+     whose default is that value). v1 -- the registry template's version
+     (SKILL.md rule 18 / references/registry-workflow.md): `releaseKey` bound via
      `=bindings.<id>` to a `resource="process" propertyAttribute="Key"`
      binding whose `default` matches the resource's REAL process Key
      (cross-tenant match: fails CLOSED -- a resolver that cannot reach the
@@ -141,6 +146,20 @@ def check_api_workflow_authored(
     return problems
 
 
+def literal_or_binding_default(value: str, bindings: dict[str, dict[str, str]]) -> Optional[str]:
+    """A context value as the runtime will see it: the literal itself, or
+    the `default` of the declared binding a `=bindings.<id>` names. None for
+    any other expression, or a binding that is undeclared or has no default."""
+
+    match = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", value)
+    if match:
+        binding = bindings.get(match.group(1))
+        return None if binding is None else binding.get("default")
+    if value.startswith("="):
+        return None
+    return value
+
+
 def check_resource_row(
     *,
     root: Path,
@@ -149,6 +168,8 @@ def check_resource_row(
     row: dict[str, Any],
     resolve_release_key: composition.ReleaseKeyResolver = composition.never_resolves,
     resolve_folder_key: composition.FolderKeyResolver = composition.never_resolves,
+    resolve_process_names: composition.ProcessNameResolver = composition.never_resolves,
+    resolve_folder_path: composition.FolderPathResolver = composition.never_resolves,
 ) -> list[str]:
     problems: list[str] = []
 
@@ -184,10 +205,22 @@ def check_resource_row(
     bindings = composition.bindings_index(process)
     context = composition.context_fields_of(task)
 
-    for field_name, spec in row["context_fields"].items():
+    version = composition.wrapper_type_version(task)
+    forms = row["context_forms"]
+    if version not in forms:
+        problems.append(
+            f"{row['kind']}: {node_id!r} has uipath:type version={version!r}; "
+            f"expected one of {sorted(forms)}"
+        )
+        forms_fields: dict[str, Any] = {}
+    else:
+        forms_fields = forms[version]
+
+    for field_name, spec in forms_fields.items():
         if field_name not in context:
             problems.append(
-                f"{row['kind']}: context field {field_name!r} missing on {node_id!r}"
+                f"{row['kind']}: context field {field_name!r} missing on {node_id!r} "
+                f"(required by the uipath:type version={version!r} form)"
             )
             continue
         value = context[field_name].get("value", "") or ""
@@ -261,6 +294,52 @@ def check_resource_row(
                         problems.append(
                             f"{row['kind']}: {field_name} {value!r} does not match "
                             f"the seeded folder's real FolderKey {resolved!r}"
+                        )
+        elif spec["mode"] in ("process_name", "folder_path"):
+            literal = literal_or_binding_default(value, bindings)
+            if literal is None:
+                problems.append(
+                    f"{row['kind']}: {field_name} must be a literal or a declared "
+                    f"=bindings.<id> with a default, got {value!r}"
+                )
+                continue
+            if not literal.strip():
+                problems.append(f"{row['kind']}: {field_name} on {node_id!r} is empty")
+                continue
+            if spec["mode"] == "process_name":
+                try:
+                    names = resolve_process_names()
+                except composition.CompositionError as error:
+                    problems.append(
+                        f"{row['kind']}: could not resolve the processes deployed "
+                        f"in the seeded folder: {error}"
+                    )
+                else:
+                    if names is None:
+                        pass  # abstained -- structural-only mode
+                    elif not names:
+                        problems.append(
+                            f"{row['kind']}: no deployed process found in the "
+                            f"seeded folder for {field_name} {literal!r}"
+                        )
+                    elif literal.casefold() not in {n.casefold() for n in names}:
+                        problems.append(
+                            f"{row['kind']}: {field_name} {literal!r} does not name a "
+                            f"process deployed in the seeded folder {sorted(names)!r}"
+                        )
+            else:
+                try:
+                    seeded = resolve_folder_path()
+                except composition.CompositionError as error:
+                    problems.append(
+                        f"{row['kind']}: could not resolve the seeded folder's "
+                        f"path: {error}"
+                    )
+                else:
+                    if seeded is not None and literal.strip("/").casefold() != seeded.strip("/").casefold():
+                        problems.append(
+                            f"{row['kind']}: {field_name} {literal!r} does not match "
+                            f"the seeded folder {seeded!r}"
                         )
         else:  # pragma: no cover - table author error, not a submission defect
             raise composition.CompositionError(f"unknown context-field mode {spec['mode']!r}")
@@ -433,6 +512,8 @@ def collect_shape_problems(
     *,
     resolve_release_key_for_row=lambda row, project_dir: composition.never_resolves,
     resolve_folder_key: composition.FolderKeyResolver = composition.never_resolves,
+    resolve_process_names: composition.ProcessNameResolver = composition.never_resolves,
+    resolve_folder_path: composition.FolderPathResolver = composition.never_resolves,
     resources: list[dict[str, Any]] = composition.RESOURCES,
 ) -> list[str]:
     """Every structural + cross-tenant shape rule except the live `validate`
@@ -465,6 +546,8 @@ def collect_shape_problems(
             row=row,
             resolve_release_key=resolve_release_key_for_row(row, project_dir),
             resolve_folder_key=resolve_folder_key,
+            resolve_process_names=resolve_process_names,
+            resolve_folder_path=resolve_folder_path,
         )
     problems += check_no_undeclared_var_reads(process)
     problems += check_published_contract(process, entry_points, resources)
@@ -566,6 +649,28 @@ def live_release_key_resolver(folder_path: str, project_name_hint: str) -> compo
     return resolve
 
 
+def live_process_names_resolver(folder_path: str) -> composition.ProcessNameResolver:
+    """The Name of every process deployed in the seeded folder, for the v2
+    form's `name`. Fails CLOSED like the other live resolvers: a failed
+    `processes list` raises, and an empty folder returns an empty set."""
+
+    def resolve() -> set[str]:
+        completed = run_cli(
+            ["uip", "or", "processes", "list", "--folder-path", folder_path, "--limit", "200"],
+            timeout=PROCESSES_LIST_TIMEOUT,
+        )
+        try:
+            _payload, data = payload_data(completed, "processes list", require_success=True)
+        except CheckFailure as error:
+            raise composition.CompositionError(
+                f"could not list the seeded folder's processes: {error}"
+            ) from error
+        rows = data if isinstance(data, list) else []
+        return {name for row in rows if isinstance((name := get_ci(row, "Name")), str)}
+
+    return resolve
+
+
 def main() -> None:
     seed_path = Path("seed.json")
     if not seed_path.is_file():
@@ -583,6 +688,8 @@ def main() -> None:
             folder_path, project.name if project is not None else row["kind"]
         ),
         resolve_folder_key=live_folder_key_resolver(folder_path),
+        resolve_process_names=live_process_names_resolver(folder_path),
+        resolve_folder_path=lambda: folder_path,
     )
 
     validate = run_cli(["uip", "maestro", "bpmn", "validate", str(bpmn_path)], timeout=VALIDATE_TIMEOUT)

@@ -43,10 +43,16 @@ RELEASE_KEY_GOOD = "11111111-1111-4111-8111-111111111111"
 FOLDER_KEY_GOOD = "22222222-2222-4222-8222-222222222222"
 
 
+FOLDER_PATH_GOOD = "Shared/uipath-maestro-bpmn-e2e/api-workflow-composition-abc123"
+PROCESS_NAME_GOOD = "GreetingApi"
+
+
 def matching_resolvers():
     return dict(
         resolve_release_key_for_row=lambda row, project_dir: (lambda binding: {RELEASE_KEY_GOOD}),
         resolve_folder_key=lambda: FOLDER_KEY_GOOD,
+        resolve_process_names=lambda: {PROCESS_NAME_GOOD},
+        resolve_folder_path=lambda: FOLDER_PATH_GOOD,
     )
 
 
@@ -254,6 +260,149 @@ class ShapeCheckAcceptsUnlikeGoldTests(unittest.TestCase):
         # and a leftover `folderPath` context field.
         problems = shape_problems(MUTATIONS / "valid_js_end_mapping")
         self.assertEqual(problems, [], problems)
+
+
+# ---------------------------------------------------------------------------
+# The two addressing forms (UiPath/builder-sdk#1807): the `uipath:type
+# version` selects which context fields the runtime reads. Both were run live
+# with `uip maestro bpmn debug` against a deployed API workflow -- v2 by
+# name + folderPath completed, v1 by releaseKey + folderKey completed, and a
+# v1 node carrying only name + folderPath faulted with `170009 Could not get
+# value for key:ReleaseKey from context in input`. Each case below derives
+# from gold by rewriting only the invoking node's type version and context.
+# ---------------------------------------------------------------------------
+
+GOLD_TYPE_AND_CONTEXT = """<uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" type="string" value="=bindings.Binding_GreetingApiRelease" />
+            <uipath:input name="folderKey" type="string" value="22222222-2222-4222-8222-222222222222" />
+          </uipath:context>"""
+
+
+def node_context(version: str, *fields: tuple[str, str]) -> str:
+    rows = "".join(
+        f'\n            <uipath:input name="{name}" type="string" value="{value}" />'
+        for name, value in fields
+    )
+    return (
+        f'<uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="{version}" />'
+        f"\n          <uipath:context>{rows}\n          </uipath:context>"
+    )
+
+
+# What `.executeApiWorkflow({ process, folder })` in the BPMN builder SDK emits.
+SDK_V2_CONTEXT = node_context(
+    "v2", ("folderPath", FOLDER_PATH_GOOD), ("name", PROCESS_NAME_GOOD)
+)
+
+
+class AddressingFormTests(unittest.TestCase):
+    def problems_for(self, type_and_context: str, extra_bindings: str = "", **resolvers):
+        import shutil
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / GOLD.name
+            shutil.copytree(GOLD, root)
+            bpmn_path = composition.find_bpmn(root)
+            text = bpmn_path.read_text(encoding="utf-8")
+            self.assertIn(GOLD_TYPE_AND_CONTEXT, text)
+            text = text.replace(GOLD_TYPE_AND_CONTEXT, type_and_context)
+            if extra_bindings:
+                text = text.replace("</uipath:bindings>", extra_bindings + "</uipath:bindings>")
+            bpmn_path.write_text(text, encoding="utf-8")
+            merged = {**matching_resolvers(), **resolvers}
+            return check_shape.collect_shape_problems(root, **merged)
+
+    def assert_rejected(self, problems, pattern):
+        self.assertTrue(problems, "expected a rejection, got none")
+        self.assertRegex(" | ".join(problems), pattern, problems)
+
+    def test_v2_by_name_and_folder_path_is_accepted(self):
+        self.assertEqual(self.problems_for(SDK_V2_CONTEXT), [])
+
+    def test_v2_structural_only_abstains(self):
+        problems = self.problems_for(
+            SDK_V2_CONTEXT,
+            resolve_process_names=composition.never_resolves,
+            resolve_folder_path=composition.never_resolves,
+        )
+        self.assertEqual(problems, [], problems)
+
+    def test_v2_name_is_case_insensitive(self):
+        context = node_context("v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "greetingapi"))
+        self.assertEqual(self.problems_for(context), [])
+
+    def test_v2_name_through_a_binding_default_is_accepted(self):
+        context = node_context(
+            "v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "=bindings.Binding_ApiName")
+        )
+        binding = (
+            '<uipath:binding id="Binding_ApiName" name="GreetingApi" type="string" '
+            f'default="{PROCESS_NAME_GOOD}" resource="process" propertyAttribute="name" />'
+        )
+        self.assertEqual(self.problems_for(context, extra_bindings=binding), [])
+
+    def test_v2_undeclared_binding_is_rejected(self):
+        context = node_context(
+            "v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "=bindings.Nope")
+        )
+        self.assert_rejected(self.problems_for(context), "name must be a literal or a declared")
+
+    def test_v2_wrong_folder_path_is_rejected(self):
+        context = node_context("v2", ("folderPath", "Shared/elsewhere"), ("name", PROCESS_NAME_GOOD))
+        self.assert_rejected(self.problems_for(context), "does not match the seeded folder")
+
+    def test_v2_unknown_process_name_is_rejected(self):
+        context = node_context("v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "SomethingElse"))
+        self.assert_rejected(self.problems_for(context), "does not name a process deployed")
+
+    def test_v2_empty_folder_is_rejected(self):
+        self.assert_rejected(
+            self.problems_for(SDK_V2_CONTEXT, resolve_process_names=lambda: set()),
+            "no deployed process found",
+        )
+
+    def test_v2_process_resolver_raising_is_a_problem(self):
+        def boom():
+            raise composition.CompositionError("processes list: tenant timeout")
+
+        self.assert_rejected(
+            self.problems_for(SDK_V2_CONTEXT, resolve_process_names=boom),
+            "could not resolve the processes deployed",
+        )
+
+    def test_v2_missing_name_is_rejected(self):
+        context = node_context("v2", ("folderPath", FOLDER_PATH_GOOD))
+        self.assert_rejected(self.problems_for(context), r"context field 'name' missing")
+
+    def test_v2_with_only_keys_is_rejected(self):
+        # The v2 branch reads name/folderPath; a key pair does not satisfy it.
+        context = node_context(
+            "v2",
+            ("releaseKey", "=bindings.Binding_GreetingApiRelease"),
+            ("folderKey", FOLDER_KEY_GOOD),
+        )
+        self.assert_rejected(self.problems_for(context), r"context field 'name' missing")
+
+    def test_v1_by_name_only_is_rejected(self):
+        # The run-12 P0-3 shape, reproduced live: 170009 key:ReleaseKey.
+        context = node_context("v1", ("folderPath", FOLDER_PATH_GOOD), ("name", PROCESS_NAME_GOOD))
+        self.assert_rejected(self.problems_for(context), r"context field 'releaseKey' missing")
+
+    def test_v1_with_keys_and_leftover_name_is_accepted(self):
+        context = node_context(
+            "v1",
+            ("releaseKey", "=bindings.Binding_GreetingApiRelease"),
+            ("folderPath", FOLDER_PATH_GOOD),
+            ("name", PROCESS_NAME_GOOD),
+            ("folderKey", FOLDER_KEY_GOOD),
+        )
+        self.assertEqual(self.problems_for(context), [])
+
+    def test_unknown_version_is_rejected(self):
+        context = node_context("v3", ("folderPath", FOLDER_PATH_GOOD), ("name", PROCESS_NAME_GOOD))
+        self.assert_rejected(self.problems_for(context), "version='v3'")
 
 
 # ---------------------------------------------------------------------------
