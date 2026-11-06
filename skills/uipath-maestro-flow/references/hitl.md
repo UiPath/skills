@@ -133,8 +133,8 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   keeps all of these, and you can edit the node like any other. `check`
   reports a value the platform refuses as `HITL_FIELD_SETTING_INVALID`
   (`FLOW_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent's quick-form
-  escalation; `INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an SDK whose
-  `dist/flow-sdk.d.ts` has no `AgentResources`).
+  escalation; `INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an SDK where
+  `grep -rlw AgentResources <sdk>/dist` finds no file).
   These keys need `@uipath/maestro-builder-sdk` 6.35.0 or later;
   an older SDK drops them on decompile and does not write them on compile,
 <!--skill-flavor:field-settings-sdk-upgrade:start-->
