@@ -27,6 +27,8 @@ entry shape by hand from the pulled index files: `stage`, `task`, `taskType`,
 | `flow-process` | `flow-index.json` | `entityKey` | no |
 | `wait-for-connector` | `typecache-triggers-index.json` | `uiPathActivityTypeId` | no |
 | `execute-connector-activity` | `typecache-activities-index.json` | `uiPathActivityTypeId` | no |
+| `external-agent` | `typecache-external-agent-activities-index.json` | `uiPathActivityTypeId` | no |
+| `external-workflow` | `typecache-external-automation-activities-index.json` | `uiPathActivityTypeId` | no |
 | `wait-for-timer` | *(no index — built-in)* | — | — |
 
 All indexes live under `~/.uip/case-resources/`. Read with the Read tool,
