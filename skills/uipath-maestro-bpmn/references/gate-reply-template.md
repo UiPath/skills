@@ -12,7 +12,7 @@ its three options are fixed:
 <Name>: outline ready<, uploaded> (draft mode). <One sentence if a lookup failed or you kept the user's online changes.>
 <!--skill-flavor:gate-first-line:end-->
 <!--skill-flavor:gate-path-line:start-->
-<DesignerUrl as a link on its own line, or the local .bpmn path>
+<DesignerUrl as a link on its own line, or the local .bpmn path as plain text, never a link>
 <!--skill-flavor:gate-path-line:end-->
 
 - <each box, in order>: <resource and folder | which of two | none yet, create it or name one | not checked | no resource needed>

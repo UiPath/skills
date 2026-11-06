@@ -93,7 +93,10 @@ success_criteria:
       3. Next come the box lines, each starting with `- `. The attached
          `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
          box has exactly one line, and every line names one task box (its
-         action words, with or without the bracketed kind). There is no line
+         action words, with or without the bracketed kind), optionally
+         followed by `: ` and the box's resource status (a resource name, a
+         which-of-two question, `none yet, create it or name one`, `not
+         checked`, or `no resource needed`). There is no line
          for a start event, timer, gateway, branch, or end event. Each line is
          one short clause, under about 200 characters.
       4. Next is exactly the line `Is this the process you want?`.
