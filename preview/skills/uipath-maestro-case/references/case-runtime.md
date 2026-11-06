@@ -55,13 +55,17 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Resource refresh is additive. After removing or repointing a resource-bound
   task, prune orphans before refreshing:
 
-  1. `uip solution resources list --solution-folder {solution} --output json`
-  2. Match each listed resource key against tasks still in the plan.
-  3. For each key with no remaining consumer:
+  1. Recompile so `bindings_v2.json` reflects the current plan.
+  2. `uip solution resources list --solution-folder {solution} --output json`
+  3. Match each listed resource key against `bindings_v2.json` entries.
+     A key with no remaining entry is orphaned — tasks, stage/case rules
+     (`wait-for-connector` entries), and trigger connections all bind through
+     this file.
+  4. For each orphaned key:
      `uip solution resources remove {key} --solution-folder {solution} --output json`
-  4. Never remove the Case project's own process/package pair, and never
+  5. Never remove the Case project's own process/package pair, and never
      target package entries directly.
-  5. `uip solution resources refresh --solution-folder {solution} --output json`
+  6. `uip solution resources refresh --solution-folder {solution} --output json`
 
 ## SLA and runtime semantics
 
@@ -147,17 +151,24 @@ make from syntax alone. Exact signatures remain in the generated API.
      that reserves the variable. A missing `.output()` compiles but the
      variable never appears in `variables.outputs[]`, so downstream
      consumers and the case summary cannot read it.
-  2. **Production.** At least one task must carry `.outputs({ name: <expr> })`
-     that writes the variable. A missing `.outputs()` on the producing task
-     leaves the variable `null` at runtime.
-  3. **Casing and paths.** `.outputs()` keys must match the SDD's field names
-     character-for-character, including casing — the compiler treats
-     `unusualClauses` and `UnusualClauses` as distinct slots. When the SDD
-     declares a sub-property dereference (e.g. `response.unusualClauses`),
-     the producing task must extract it explicitly:
-     `{ unusualClauses: '=response.unusualClauses' }`. Omitting the
-     extraction leaves the nested field buried inside a parent object that
-     downstream routing cannot address.
+  2. **Production.** At least one task must write the variable. For a
+     non-action task, use `.outputs({ name: <source> })`. For an action
+     task, map a form field to the case variable through the field's
+     `value` in `.action({ outputs: [{ name, value }] })` — do not add a
+     custom `.outputs()` entry, which creates a duplicate row that
+     `validate --sdd` reports. A missing production leaves the variable
+     `null` at runtime.
+  3. **Casing and paths.** Output keys and extract paths must match the
+     SDD's field names character-for-character, including casing — the
+     compiler treats `unusualClauses` and `UnusualClauses` as distinct
+     slots. When the SDD declares a sub-property dereference, extract it
+     from the producing task's own output root: `=response.<field>` on a
+     connector or wait-for-connector task, `=<OutputName>.<field>` on
+     other types. When the SDD dereferences in place (e.g. inside a
+     `$xref` expression), keep the SDD's casing and null-guard it:
+     `vars.analysisResult?.unusualClauses`. Omitting the extraction leaves
+     the nested field buried inside a parent object that downstream
+     routing cannot address.
 
 ## Brownfield editing
 
