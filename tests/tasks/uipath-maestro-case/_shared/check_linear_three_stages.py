@@ -73,29 +73,25 @@ def main():
             f"FAIL: Review should have ≥2 parallel wait-for-timer tasks "
             f"('Hold For 1 Hour' + 'Notify Reviewer'); got {len(review_timers)} ({labels})"
         )
-    # Parallelism is graded on the entry rules, NOT on data.tasks set membership.
-    # The product case->BPMN converter (@uipath/case-schema) reads a task's set
-    # position only for `runs-sequentially` rules; a `current-stage-entered` task
-    # activates on its own rule whatever set it sits in. [[A, B]] and [[A], [B]]
-    # therefore serialize to byte-identical rulesJson. Case schema V31+ also reads
-    # a shared set as a sequential group (its V30->V31 migration rewrites the entry
-    # rules of non-sequential tasks that share a set), so one-task-per-set is the
-    # canonical parallel shape, and the builder SDK emits it. What WOULD serialize
-    # the two timers is a `runs-sequentially` rule, so that is what is rejected.
+    # [[A, B]] and [[A], [B]] serialize to identical rulesJson; only the entry
+    # rules decide whether the timers run in parallel, so grade the rules, not
+    # set placement. Every rule in every group must be current-stage-entered: a
+    # runs-sequentially rule, or an AND with selected-tasks-completed on the
+    # sibling, would make one timer wait for the other.
     for t in review_timers:
-        seq = [
-            r.get("rule")
+        other = [
+            (r or {}).get("rule")
             for cond in (t.get("entryConditions") or [])
             for group in (cond.get("rules") or [])
             for r in (group or [])
-            if (r or {}).get("rule") == "runs-sequentially"
+            if (r or {}).get("rule") != "current-stage-entered"
         ]
-        if seq:
+        if other:
             label = t.get("displayName") or t.get("label")
             sys.exit(
-                f"FAIL: Review timer {label!r} carries a runs-sequentially entry rule; "
-                f"the two Review timers must both activate on current-stage-entered "
-                f"(parallel), not wait for the previous task set"
+                f"FAIL: Review timer {label!r} has entry rule(s) {other} besides "
+                f"current-stage-entered; both Review timers must activate on "
+                f"current-stage-entered alone (parallel)"
             )
 
     def _by_label(label: str) -> dict | None:
@@ -278,7 +274,7 @@ def main():
         "OK: 3 stages (Intake → Review → Decision) chained via condition-driven "
         "transitions (Review←Intake, Decision←Review via selected-stage-completed); "
         "case-entered on Intake; "
-        "TWO parallel wait-for-timer tasks on Review (no runs-sequentially) — "
+        "TWO parallel wait-for-timer tasks on Review (current-stage-entered only) — "
         "'Hold For 1 Hour' (shouldRunOnlyOnce + skipCondition =vars.skipReview) "
         "and 'Notify Reviewer' (isRequired=false) — both carrying "
         "current-stage-entered task-entry; root has all 7 variables "
