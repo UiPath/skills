@@ -8,8 +8,12 @@ A request to build the process outright skips the draft and authors real nodes d
 A brownfield edit (the shape already exists) and a discovery-only question (nothing is authored) skip it too.
 
 **The deliverable is a file.**
-A mermaid or ASCII diagram in chat is not a draft, and neither is a prose outline: the draft is the compiled, formatted, validated `<Name>/<Name>.bpmn`, which opens on the canvas.
+A mermaid or ASCII diagram in chat is not a draft, and neither is a prose outline: the draft is the compiled, formatted, validated `<Project>/<Name>.bpmn`, which opens on the canvas.
 Write the `.bpmn.ts`, run the loop below, and only then reply.
+
+**In plan mode, writes wait for plan approval.**
+Put the skeleton outline in the plan instead — each box's label in order, the decisions with their conditions, the start event — and build the file with the steps below once the plan is approved.
+The gate below then comes after the file validates, as it does outside plan mode.
 
 ## What a skeleton is
 
@@ -25,7 +29,7 @@ It is not a working process and must never be reported as one.
 3. **Make no registry calls.** No `uip maestro bpmn registry pull`, `search` or `get`, and no connection or resource lookup.
    Types and resources are chosen after the shape is approved.
 4. **Control flow is real.**
-   - The start event is the one the process actually has: plain when something calls it, `{ timer }` when it runs on a schedule (`{ timer: { cycle: 'R/2026-01-01T06:00:00Z/P1D' } }` for every day at 6:00, a duration string for a one-off delay), `{ message: '<name>' }` when a message starts it.
+   - The start event is the one the process actually has: plain when something calls it, `{ timer }` when it runs on a schedule (`{ timer: { cycle: 'R/2026-01-01T06:00:00Z/P1D' } }` for every day at 6:00 UTC; use the user's UTC offset in place of `Z` when they give a local time, and `Z` when they state none; a duration string for a one-off delay), `{ message: '<name>' }` when a message starts it.
      Do not set `trigger: true`: it adds the platform trigger's `uipath:activity` payload, which is a build-time decision.
    - Keep the start event's id `Event_start`, the id the `init` stub carries and `entry-points.json` names, and keep the seeded `.metadata({ entryPointId })`.
      Change the start event's `name` and definition, never its id.
@@ -87,16 +91,18 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 
 ## Steps
 
-1. `uip maestro bpmn init <Name>`, then seed `<Name>.bpmn.ts` from the stub with `uip maestro bpmn decompile <Name>/<Name>.bpmn -o <Name>.bpmn.ts --style nested`, as in [SKILL.md](../SKILL.md#workflow).
+1. Run `uip maestro bpmn init <Name> --output json` and take the project directory from its `Data.Path`; the commands below write it as `<Project>`.
+   It is not always `<Name>/`: outside a solution, `init` scaffolds one and the project lands at `<Name>Solution/<Name>/`.
+   Then seed `<Name>.bpmn.ts` from the stub with `uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested`, as in [SKILL.md](../SKILL.md#workflow).
 2. Rewrite the chain as the skeleton, in one write, keeping the seeded process id, `entryPointId` and start event id.
 3. Run the loop:
 
    ```bash
    uip maestro bpmn check <Name>.bpmn.ts --source
    uip maestro bpmn check <Name>.bpmn.ts --graph
-   uip maestro bpmn compile <Name>.bpmn.ts -o <Name>/<Name>.bpmn
-   uip maestro bpmn format <Name>/<Name>.bpmn
-   uip maestro bpmn validate <Name>/<Name>.bpmn --output json
+   uip maestro bpmn compile <Name>.bpmn.ts -o <Project>/<Name>.bpmn
+   uip maestro bpmn format <Project>/<Name>.bpmn
+   uip maestro bpmn validate <Project>/<Name>.bpmn --output json
    ```
 
    `validate` must report `Status: Valid`.
@@ -117,7 +123,7 @@ Reply in this shape, and end the turn:
 
 ```text
 <Name>: outline ready (draft mode).
-<the local <Name>/<Name>.bpmn path>
+<the local <Project>/<Name>.bpmn path>
 
 - <each box's label, in order>
 

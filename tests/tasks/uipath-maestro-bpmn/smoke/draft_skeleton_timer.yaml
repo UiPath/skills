@@ -3,8 +3,7 @@ description: >
   Draft-mode smoke eval for a trigger-start shape: the user asks to see the
   shape first, so the agent builds a phase 2 skeleton whose start event is a
   real timer start, with bare bpmn:task boxes and generated DI, makes no
-  registry call, and stops
-  at the approval gate instead of wiring real nodes.
+  registry call, and stops at the approval gate instead of wiring real nodes.
 tags: [uipath-maestro-bpmn, smoke, "mode:build"]
 
 run_limits:

@@ -64,15 +64,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 
 ## Draft first
 
-When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton and stop at an approval gate.
-Read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
-
-- `init` and seed as above, then write every activity as a bare `.task(id, { name })` with an action-first label (`Manager review [Action app]`), never a typed method.
-- Control flow is real: decisions through `.choose()` with real conditions on declared variables, and a real timer or message start when the process starts that way, on the stub's `Event_start` id.
-- Make no `registry` calls.
-- Run `check`, `compile`, `format`, `validate`, show the shape, then stop and ask before building.
-
-A mermaid diagram or outline in chat is not the deliverable; the validated `<Name>/<Name>.bpmn` is.
+When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
+A mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
+The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
 
 ## API index
 
