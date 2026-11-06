@@ -43,6 +43,7 @@ After the sibling is built, registered, and verified (orchestration §), bind th
 | agent | `process` | `Agent` |
 | api-workflow | `process` | `Api` |
 | business-rule | `BusinessRule` | *(omit)* |
+| action (Coded Action App) | `app` | *(omit)* |
 | *(future: rpa, agentic process — added with their legs)* | | |
 
 > **`folderPath` is `""`, NOT the `solution_folder` sentinel — this is load-bearing.** The runtime `data.folderPath` (which resolves to this binding's `default`) is the folder the case engine starts the sibling job in. An empty string means **"the case's own (co-located) folder"** — and since the sibling co-deploys into that same folder, the resource resolves. The `solution_folder` string is a **resource-identity sentinel** that belongs ONLY on the identity side: the `resourceKey` (`solution_folder.<Name>`), the `resources/solution_folder/…` declaration path, and `bindings_v2.json` — BOTH its `key` AND its `value.folderPath.defaultValue` (the bindings_v2 identity folderPath is `"solution_folder"`, deliberately NOT a mirror of the caseplan runtime `""` — do not generate it from the caseplan default; see [bindings-v2-sync.md](../../bindings-v2-sync.md)) — NEVER as the caseplan runtime `folderPath` binding default. Authoring `folderPath: "solution_folder"` passes `validate` but fails at **invocation** with `folder not exist` (no Orchestrator folder is literally named `solution_folder`). So `folderPath` (`""`) and `resourceKey` (`solution_folder.<Name>`) are deliberately **decoupled** — do not derive one from the other for an inline sibling.

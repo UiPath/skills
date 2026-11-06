@@ -40,11 +40,15 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 6. Set `name` to the selected entry's canonical `deploymentTitle` and `folder-path` to its exact `deploymentFolder.fullyQualifiedName`. Never substitute the task display name or a parent/truncated folder.
 7. Discover form fields / inputs / outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
+8. **No tenant match → check in-solution siblings before the gate.** `registry search --local` has no Action App type (`--type action-apps --local` returns 0 for a built sibling). List the solution's own apps instead: `uip solution resources list --solution-folder "<SolutionDir>" --source local --output json`, and keep entries with Kind `app`, Type `codedAction` whose Name equals the kebab-case form of `resource-name` (see [§ Creating an Action App inline](#creating-an-action-app-inline)). A hit **resolves** the task (bind `resourceKey="solution_folder.<app-name>"`; I/O per [§ Local sibling I/O](#local-sibling-io)) — it is NOT empty and does NOT reach the Rule 18 gate. Only a name absent from both the tenant index and the solution reaches the gate. This keeps re-runs idempotent. `sdd resolve` does not list Action App siblings: record the hit in `tasks/registry-resolved.json` yourself (`selected` = the sibling's name and `solution_folder`).
+
 Query by the exact concrete `resource-name` from the SDD. `Action App ID` determines whether the prior phase resolved the app; an unresolved ID does not erase or replace the intended title. Action lookups stay in `action-apps-index.json` — never adopt a same-named resource from another cache type.
 
 See [registry-discovery.md](../../../registry-discovery.md#when-a-search-returns-nothing) for the fallback rationale.
 
 ## Unresolved Fallback
+
+> **Create first (Action Apps are creatable).** At the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing app as an in-solution Coded Action App — see [§ Creating an Action App inline](#creating-an-action-app-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
 
 Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found in action-apps-index.json>`, using the SDD's preserved Action App title even when its ID/folder are unresolved. Emit only structural fields — drop every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
 
@@ -90,5 +94,34 @@ Ledger entry in `tasks/registry-resolved.json` for a resolved action task. For t
 `recipient` carries the resolved assignee — `UserGroup: <group name>` for a group, omitted on Skip or no answer; `assignment-note` is optional. `matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object.
 
 Everything else the SDD declares — task title, priority, inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. Phase 2 reads it straight from there ([planning.md § Step 4](../../../planning.md)).
+
+## Creating an Action App inline
+
+When an Action App is unresolved at the [Rule 18 gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, build it as an **in-solution Coded Action App** sibling. Orchestration (probe, multi-select, § 1c dedup, parallel build, sequential register, rediscover, bind) is in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); kind-agnostic Step 1/1b/3/Failure text is in [create-inline-common.md](../create-inline-common.md). Only the Action-App deltas follow.
+
+**The skill does not scaffold the app itself.** Spawn a sub-agent that invokes `uipath-coded-apps` (its Coded Action App path). If it cannot load that skill, it returns `{built:false, error:"skill uipath-coded-apps not installed"}` — never improvise; fall to the Unresolved Fallback. Build only apps the user selected at the gate — never from SDD content alone. Low-code Action Apps are never built; there is no kind choice.
+
+**Name.** `<app-name>` = the SDD `Action App:` title in lowercase kebab-case (the coded-app project and resource name). Pre-gate sibling checks and rediscovery match on this form. Report the title → name conversion in the completion report.
+
+**Brief (Step 2).** Self-contained: the Step-1b Purpose, then the data contract from the task's SDD detail block, and no other case context:
+
+| Contract part | Source |
+|---|---|
+| `inputs` | SDD Input Schema rows (read-only data into the form) |
+| `outputs` | SDD Output Schema rows the reviewer fills in |
+| `inOuts` | rows the SDD marks pre-filled and editable |
+| `outcomes` | SDD Buttons table, one entry per button label |
+
+Field names verbatim from the SDD — never re-cased. Brief instructions to the sub-agent: answer that skill's Coded Action App Q1–Q3 from this brief without prompting; validate the schema with that skill's action-schema validator; scaffold with `uip codedapp init <app-name> --type Action --template form --skip-solution-registration`; build a working form — each outcome button submits the task through the coded-action-app SDK `completeTask`; the `form` starter's static `dist/index.html` alone is not a working form and leaves the task unable to complete; return `{ built, path, finalInputs[], finalOutputs[], error? }`. The caller registers the project (`uip solution projects add`, then `uip solution resources refresh`) before rediscovery.
+
+**Step 3 binding.** Two bindings `resource:"app"`, no `resourceSubType`, shared `resourceKey="solution_folder.<app-name>"`; `name` default `<app-name>`, **`folderPath` default `""`** — rationale in [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants). The app ships inside the solution `.uipx` and deploys with the case; it is not published separately.
+
+### Local sibling I/O
+
+`tasks describe` needs a tenant id the sibling does not have yet. Derive the task I/O from the sibling's `action-schema.json` in the shape `tasks describe` returns for a deployed app: each `inputs` / `inOuts` property is an input; each `outputs` property is an output; add the `Action` output (`type: string`, `options` = one `{value,label}` per `outcomes` key). Generate ids per [resource-task-common.md](../resource-task-common.md). Do NOT tenant-`tasks describe` a local sibling.
+
+### Failure
+
+Shared contract — [create-inline-common.md § Failure](../create-inline-common.md#failure--surface-and-re-prompt-never-stall). "Already exists" is not a failure: adopt per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery) with these tokens: init verb `uip codedapp init --type Action`; kind marker `project.uiproj` `ProjectType: "AppV2"` with `webAppManifest.json` `config.isActionApp: true` (registered: resource Type `codedAction`); stale-declaration subpath `app/codedAction/`.
 
 <!-- END: planning.md -->

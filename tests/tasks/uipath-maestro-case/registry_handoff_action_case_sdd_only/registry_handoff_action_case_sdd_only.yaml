@@ -13,7 +13,7 @@ description: >
   task-associated entries from the authoritative SDD. A resolved Action App
   retains its runtime name/folder bindings, while missing action and
   case-management tasks record the exact type-specific cache match set and
-  become placeholders without entering inline creation.
+  become placeholders when the user declines inline creation.
 tags:
   - uipath-maestro-case
   - integration
@@ -86,9 +86,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Non-creatable Action App and child-case misses did not invoke an inline builder"
+    description: "Declined Action App creation and the child-case miss did not invoke an inline builder"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(?:agent|codedagent|api-workflow)\s+(?:init|new)\b'
+    command_pattern: 'uip\s+(?:agent|codedagent|codedapp|api-workflow)\s+(?:init|new)\b'
     weight: 2.0
     pass_threshold: 1.0
 

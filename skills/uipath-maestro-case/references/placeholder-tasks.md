@@ -132,7 +132,7 @@ Warnings are **expected** and do not block the build. Other errors appear when c
 
 ## Upgrade Procedure — Placeholder → Full Task
 
-> **Built-inline agents / API workflows / business rules are not placeholders.** An `agent`, `api-workflow`, or `business-rule` the user chose to **Create** at the Rule 18 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
+> **Built-inline agents / API workflows / business rules / Action Apps are not placeholders.** An `agent`, `api-workflow`, `business-rule`, or `action` the user chose to **Create** at the Rule 18 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
 
 When the user has registered the real resource:
 
@@ -239,6 +239,6 @@ The user uses the placeholder/external lists to drive external resource creation
 - **Do NOT create placeholders for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.
 - **Do NOT create a placeholder for an agent, API workflow, or business rule the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
 - **Do NOT build an agent, API workflow, or business rule from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 18 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
-- **Invoking `uipath-agents` / `uipath-api-workflow` / `uipath-rules` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, function, case-management, connectors, agentic process) and to `uipath-planner`.
+- **Invoking `uipath-agents` / `uipath-api-workflow` / `uipath-rules` / `uipath-coded-apps` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, function, case-management, connectors, agentic process) and to `uipath-planner`.
 
 <!-- END: placeholder-tasks.md -->
