@@ -50,7 +50,10 @@ export default bpmn('ContractRegistry')
     record: { contractTitle: '=vars.contractTitle', status: 'Open', priority: 2, dueDate: '2026-08-01', value: 12500.5, isUrgent: true },
   })
   // The filter is a query parameter; `start`/`limit` default to 0/100.
-  .dataService('queryDue', { ...df, op: 'query', where: "dueDate < '2026-08-04'", limit: 100 })
+  // `sortBy` becomes the body's `_sortFieldName` (the connector's own RequestField) and
+  // `ascending` the `isAscending` query parameter — set both, or the records come back in
+  // default order.
+  .dataService('queryDue', { ...df, op: 'query', where: "dueDate < '2026-08-04'", limit: 100, sortBy: 'dueDate', ascending: true })
   .dataService('queryUntitled', { ...df, op: 'query', where: 'contractTitle IS NULL', limit: 100 })
   .dataService('update', {
     ...df,
