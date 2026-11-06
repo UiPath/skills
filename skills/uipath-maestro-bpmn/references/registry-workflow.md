@@ -472,11 +472,15 @@ discovery or the user.
 
 Declare all bindings in a single process-level `<uipath:bindings version="v1">`
 block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, and a
-`default` value (the resolved key or id). On a **connection** binding
-`resourceKey` is required too — omitting it fails `validate` with
-`Integration Service activity connection binding "<id>" is missing
-resourceKey`. `process` and `queue` bindings carry `resourceKey` from
-`bindingInfo.resourceKeyPattern`. Both `BusinessRule` bindings carry the same
+`default` value (the resolved key or id), plus a `resourceKey`: Studio Web
+files each binding in `bindings_v2.json` under it, so keyless bindings of one
+type merge into one entry and the others are lost. Omitting it fails
+`validate`, `refresh` and `pack` — on a connection binding with `Integration
+Service activity connection binding "<id>" is missing resourceKey`, on any
+other with `Binding "<id>" (resource=…, propertyAttribute=…) is missing
+resourceKey`. `process` and `queue`
+bindings carry `resourceKey` from `bindingInfo.resourceKeyPattern`, which
+`registry get <type>` shows. Both `BusinessRule` bindings carry the same
 `resourceKey`, `<folderPath>.<name>` (`<name>` alone when the folder path is empty):
 
 ```xml

@@ -233,8 +233,6 @@ Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publ
 | `external-workflow` | [connector-activity § External agents and automations](references/plugins/tasks/connector-activity/planning.md#external-agents-and-automations) | `external-workflow` |
 | `wait-for-timer` | [wait-for-timer](references/plugins/tasks/wait-for-timer/planning.md) | `wait-for-timer` |
 
-Schema-kebab is the only JSON value; plugin and CLI names are not interchangeable. Unsupported types include `wait-for-event`.
-
 **Triggers:** [manual](references/plugins/triggers/manual/planning.md), [timer](references/plugins/triggers/timer/planning.md), and [event](references/plugins/triggers/event/planning.md).
 
 **Conditions:** [stage-entry-conditions](references/plugins/conditions/stage-entry-conditions/planning.md), [stage-exit-conditions](references/plugins/conditions/stage-exit-conditions/planning.md), [task-entry-conditions](references/plugins/conditions/task-entry-conditions/planning.md), and [case-exit-conditions](references/plugins/conditions/case-exit-conditions/planning.md).
