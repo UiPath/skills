@@ -437,8 +437,8 @@ ReleaseKeyResolver = Callable[[dict[str, str]], Optional[set[str]]]
 # CompositionError on failure rather than returning None.
 FolderKeyResolver = Callable[[], Optional[str]]
 # resolve_process_names() -> set[str] | None
-# The Name of every process deployed in the seeded folder (the v2 form's
-# `name` must be one of them). Same abstention contract as above: None only
+# The Name of the resource project's own deployment(s) in the seeded folder
+# (the v2 form's `name` must be one of them). Same abstention contract as above: None only
 # to abstain, an EMPTY set when the folder has no deployed process.
 ProcessNameResolver = Callable[[], Optional[set[str]]]
 # resolve_folder_path() -> str | None

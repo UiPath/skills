@@ -14,8 +14,9 @@ Per row in composition.RESOURCES:
   2. The wrapper serviceTask carries the required context fields of the
      form its `uipath:type version` selects (composition.RESOURCES
      `context_forms`; both forms verified live, UiPath/builder-sdk#1807).
-     v2 -- what the BPMN builder SDK emits: a `name` naming a process
-     actually deployed in the seeded folder, and a `folderPath` equal to the
+     v2 -- what the BPMN builder SDK emits: a `name` naming the resource
+     project's own deployed process in the seeded folder (the same exact-then-
+     substring match v1's releaseKey gets), and a `folderPath` equal to the
      seeded folder's path (each a literal, or a declared =bindings.<id>
      whose default is that value). v1 -- the registry template's version
      (SKILL.md rule 18 / references/registry-workflow.md): `releaseKey` bound via
@@ -320,12 +321,12 @@ def check_resource_row(
                     elif not names:
                         problems.append(
                             f"{row['kind']}: no deployed process found in the "
-                            f"seeded folder for {field_name} {literal!r}"
+                            f"seeded folder for the resource project ({field_name} {literal!r})"
                         )
                     elif literal.casefold() not in {n.casefold() for n in names}:
                         problems.append(
-                            f"{row['kind']}: {field_name} {literal!r} does not name a "
-                            f"process deployed in the seeded folder {sorted(names)!r}"
+                            f"{row['kind']}: {field_name} {literal!r} does not name the "
+                            f"resource project's deployed process {sorted(names)!r}"
                         )
             else:
                 try:
@@ -512,7 +513,7 @@ def collect_shape_problems(
     *,
     resolve_release_key_for_row=lambda row, project_dir: composition.never_resolves,
     resolve_folder_key: composition.FolderKeyResolver = composition.never_resolves,
-    resolve_process_names: composition.ProcessNameResolver = composition.never_resolves,
+    resolve_process_names_for_row=lambda row, project_dir: composition.never_resolves,
     resolve_folder_path: composition.FolderPathResolver = composition.never_resolves,
     resources: list[dict[str, Any]] = composition.RESOURCES,
 ) -> list[str]:
@@ -524,7 +525,8 @@ def collect_shape_problems(
 
     `resolve_release_key_for_row(row, project_dir)` lets each row build its
     own resolver from its own discovered project (v1 has one row; Phase 5's
-    second row needs its own project hint too).
+    second row needs its own project hint too); `resolve_process_names_for_row`
+    does the same for the v2 form's `name`.
     """
 
     uipx_path = composition.find_uipx(root)
@@ -546,7 +548,7 @@ def collect_shape_problems(
             row=row,
             resolve_release_key=resolve_release_key_for_row(row, project_dir),
             resolve_folder_key=resolve_folder_key,
-            resolve_process_names=resolve_process_names,
+            resolve_process_names=resolve_process_names_for_row(row, project_dir),
             resolve_folder_path=resolve_folder_path,
         )
     problems += check_no_undeclared_var_reads(process)
@@ -600,6 +602,28 @@ def live_folder_key_resolver(folder_path: str) -> composition.FolderKeyResolver:
     return resolve
 
 
+def processes_for_project(rows: list[Any], project_name_hint: str) -> list[Any]:
+    """The `processes list` rows that are the submitted resource project's own
+    deployment: the exact project Name (casefold) first, and only when none
+    matches, a substring of Name or ProcessKey. Shared by both addressing
+    forms' live resolvers, so v2's `name` is held to the same process v1's
+    `releaseKey` must point at -- never the BPMN orchestrator deployed beside
+    it, or any other process in the folder."""
+
+    needle = project_name_hint.casefold()
+
+    def name_of(row: Any) -> str:
+        return str(get_ci(row, "Name", "") or "").casefold()
+
+    exact = [row for row in rows if name_of(row) == needle]
+    return exact or [
+        row
+        for row in rows
+        if needle in name_of(row)
+        or needle in str(get_ci(row, "ProcessKey", "") or get_ci(row, "ProcessName", "") or "").casefold()
+    ]
+
+
 def live_release_key_resolver(folder_path: str, project_name_hint: str) -> composition.ReleaseKeyResolver:
     """Never abstains on a live-tenant hiccup (raises CompositionError
     instead), and never silently skips the comparison merely because more
@@ -628,35 +652,29 @@ def live_release_key_resolver(folder_path: str, project_name_hint: str) -> compo
                 f"could not resolve the resource's real process Key: {error}"
             ) from error
         rows = data if isinstance(data, list) else []
-        needle = project_name_hint.casefold()
-
-        def name_of(row: Any) -> str:
-            return str(get_ci(row, "Name", "") or "").casefold()
-
-        exact = [row for row in rows if name_of(row) == needle]
-        matches = exact or [
-            row
-            for row in rows
-            if needle in name_of(row)
-            or needle in str(get_ci(row, "ProcessKey", "") or get_ci(row, "ProcessName", "") or "").casefold()
-        ]
         return {
             key
-            for row in matches
+            for row in processes_for_project(rows, project_name_hint)
             if isinstance((key := get_ci(row, "Key")), str)
         }
 
     return resolve
 
 
-def live_process_names_resolver(folder_path: str) -> composition.ProcessNameResolver:
-    """The Name of every process deployed in the seeded folder, for the v2
-    form's `name`. Fails CLOSED like the other live resolvers: a failed
-    `processes list` raises, and an empty folder returns an empty set."""
+def live_process_names_resolver(folder_path: str, project_name_hint: str) -> composition.ProcessNameResolver:
+    """The Name of the resource project's own deployment(s) in the seeded
+    folder (processes_for_project), for the v2 form's `name`. Fails CLOSED
+    like the other live resolvers: a failed `processes list` raises, and a
+    folder with no matching deployment returns an empty set."""
 
     def resolve() -> set[str]:
         completed = run_cli(
-            ["uip", "or", "processes", "list", "--folder-path", folder_path, "--limit", "200"],
+            [
+                "uip", "or", "processes", "list",
+                "--folder-path", folder_path,
+                "--all-fields",
+                "--limit", "200",
+            ],
             timeout=PROCESSES_LIST_TIMEOUT,
         )
         try:
@@ -666,7 +684,11 @@ def live_process_names_resolver(folder_path: str) -> composition.ProcessNameReso
                 f"could not list the seeded folder's processes: {error}"
             ) from error
         rows = data if isinstance(data, list) else []
-        return {name for row in rows if isinstance((name := get_ci(row, "Name")), str)}
+        return {
+            name
+            for row in processes_for_project(rows, project_name_hint)
+            if isinstance((name := get_ci(row, "Name")), str)
+        }
 
     return resolve
 
@@ -688,7 +710,9 @@ def main() -> None:
             folder_path, project.name if project is not None else row["kind"]
         ),
         resolve_folder_key=live_folder_key_resolver(folder_path),
-        resolve_process_names=live_process_names_resolver(folder_path),
+        resolve_process_names_for_row=lambda row, project: live_process_names_resolver(
+            folder_path, project.name if project is not None else row["kind"]
+        ),
         resolve_folder_path=lambda: folder_path,
     )
 

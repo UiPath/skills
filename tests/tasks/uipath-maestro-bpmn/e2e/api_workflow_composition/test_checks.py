@@ -51,7 +51,7 @@ def matching_resolvers():
     return dict(
         resolve_release_key_for_row=lambda row, project_dir: (lambda binding: {RELEASE_KEY_GOOD}),
         resolve_folder_key=lambda: FOLDER_KEY_GOOD,
-        resolve_process_names=lambda: {PROCESS_NAME_GOOD},
+        resolve_process_names_for_row=lambda row, project_dir: (lambda: {PROCESS_NAME_GOOD}),
         resolve_folder_path=lambda: FOLDER_PATH_GOOD,
     )
 
@@ -290,6 +290,32 @@ def node_context(version: str, *fields: tuple[str, str]) -> str:
     )
 
 
+GOLD_KEY_BINDING = (
+    '<uipath:binding id="Binding_GreetingApiRelease" resource="process" '
+    'propertyAttribute="Key" default="11111111-1111-4111-8111-111111111111" />'
+)
+
+# What a real `uip or processes list --all-fields` returns for the seeded
+# folder after the solution deploys: the API workflow AND the BPMN
+# orchestrator beside it.
+FOLDER_ROWS = [
+    {"Key": RELEASE_KEY_GOOD, "Name": PROCESS_NAME_GOOD, "ProcessKey": "GreetingPipelineabc123.api.GreetingApi"},
+    {"Key": "33333333-3333-4333-8333-333333333333", "Name": "GreetingProcess",
+     "ProcessKey": "GreetingPipelineabc123.Agentic.GreetingProcess"},
+]
+
+
+def names_from_rows(rows):
+    """A resolve_process_names_for_row that runs the live resolver's own
+    project matching over canned `processes list` rows."""
+
+    def for_row(row, project_dir):
+        hint = project_dir.name if project_dir is not None else row["kind"]
+        return lambda: {r["Name"] for r in check_shape.processes_for_project(rows, hint)}
+
+    return for_row
+
+
 # What `.executeApiWorkflow({ process, folder })` in the BPMN builder SDK emits.
 SDK_V2_CONTEXT = node_context(
     "v2", ("folderPath", FOLDER_PATH_GOOD), ("name", PROCESS_NAME_GOOD)
@@ -297,7 +323,13 @@ SDK_V2_CONTEXT = node_context(
 
 
 class AddressingFormTests(unittest.TestCase):
-    def problems_for(self, type_and_context: str, extra_bindings: str = "", **resolvers):
+    def problems_for(
+        self,
+        type_and_context: str,
+        extra_bindings: str = "",
+        strip_key_binding: bool = False,
+        **resolvers,
+    ):
         import shutil
         import tempfile
 
@@ -308,6 +340,9 @@ class AddressingFormTests(unittest.TestCase):
             text = bpmn_path.read_text(encoding="utf-8")
             self.assertIn(GOLD_TYPE_AND_CONTEXT, text)
             text = text.replace(GOLD_TYPE_AND_CONTEXT, type_and_context)
+            if strip_key_binding:
+                self.assertIn(GOLD_KEY_BINDING, text)
+                text = text.replace(GOLD_KEY_BINDING, "")
             if extra_bindings:
                 text = text.replace("</uipath:bindings>", extra_bindings + "</uipath:bindings>")
             bpmn_path.write_text(text, encoding="utf-8")
@@ -321,10 +356,53 @@ class AddressingFormTests(unittest.TestCase):
     def test_v2_by_name_and_folder_path_is_accepted(self):
         self.assertEqual(self.problems_for(SDK_V2_CONTEXT), [])
 
+    def test_sdk_v2_emission_without_key_binding_is_accepted(self):
+        # The SDK's v2 node declares no process Key binding at all.
+        self.assertEqual(self.problems_for(SDK_V2_CONTEXT, strip_key_binding=True), [])
+
+    def test_v2_against_real_folder_rows_is_accepted(self):
+        problems = self.problems_for(
+            SDK_V2_CONTEXT, resolve_process_names_for_row=names_from_rows(FOLDER_ROWS)
+        )
+        self.assertEqual(problems, [], problems)
+
+    def test_v2_naming_the_orchestrator_itself_is_rejected(self):
+        context = node_context("v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "GreetingProcess"))
+        self.assert_rejected(
+            self.problems_for(context, resolve_process_names_for_row=names_from_rows(FOLDER_ROWS)),
+            "does not name the resource project's deployed process",
+        )
+
+    def test_v2_with_only_an_unrelated_deployment_is_rejected(self):
+        # The authored API workflow was never deployed; the node points at
+        # some other process that is.
+        rows = [
+            {"Key": "44444444-4444-4444-8444-444444444444", "Name": "OtherApi",
+             "ProcessKey": "Elsewhere.api.OtherApi"},
+            FOLDER_ROWS[1],
+        ]
+        context = node_context("v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "OtherApi"))
+        self.assert_rejected(
+            self.problems_for(context, resolve_process_names_for_row=names_from_rows(rows)),
+            "no deployed process found",
+        )
+
+    def test_processes_for_project_prefers_exact_then_substring(self):
+        rows = FOLDER_ROWS + [{"Key": "k", "Name": "GreetingApiV2", "ProcessKey": "x.api.GreetingApiV2"}]
+        self.assertEqual(
+            [r["Name"] for r in check_shape.processes_for_project(rows, "greetingapi")],
+            [PROCESS_NAME_GOOD],
+        )
+        self.assertEqual(
+            [r["Name"] for r in check_shape.processes_for_project(FOLDER_ROWS[1:], "Greeting")],
+            ["GreetingProcess"],
+        )
+        self.assertEqual(check_shape.processes_for_project(FOLDER_ROWS[1:], "GreetingApi"), [])
+
     def test_v2_structural_only_abstains(self):
         problems = self.problems_for(
             SDK_V2_CONTEXT,
-            resolve_process_names=composition.never_resolves,
+            resolve_process_names_for_row=lambda row, project_dir: composition.never_resolves,
             resolve_folder_path=composition.never_resolves,
         )
         self.assertEqual(problems, [], problems)
@@ -355,11 +433,13 @@ class AddressingFormTests(unittest.TestCase):
 
     def test_v2_unknown_process_name_is_rejected(self):
         context = node_context("v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "SomethingElse"))
-        self.assert_rejected(self.problems_for(context), "does not name a process deployed")
+        self.assert_rejected(self.problems_for(context), "does not name the resource project's deployed process")
 
     def test_v2_empty_folder_is_rejected(self):
         self.assert_rejected(
-            self.problems_for(SDK_V2_CONTEXT, resolve_process_names=lambda: set()),
+            self.problems_for(
+                SDK_V2_CONTEXT, resolve_process_names_for_row=lambda row, project_dir: (lambda: set())
+            ),
             "no deployed process found",
         )
 
@@ -368,7 +448,9 @@ class AddressingFormTests(unittest.TestCase):
             raise composition.CompositionError("processes list: tenant timeout")
 
         self.assert_rejected(
-            self.problems_for(SDK_V2_CONTEXT, resolve_process_names=boom),
+            self.problems_for(
+                SDK_V2_CONTEXT, resolve_process_names_for_row=lambda row, project_dir: boom
+            ),
             "could not resolve the processes deployed",
         )
 
