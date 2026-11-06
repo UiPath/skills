@@ -84,7 +84,10 @@ def test_literal_connection_id_fails() -> None:
     ("name", "accepted"),
     [
         ("Send Slack digest (uipath-salesforce-slack / send-message-to-channel, unresolved)", True),
-        ("Post digest to SLACK", True),
+        ("Post digest via UIPATH-SALESFORCE-SLACK", True),
+        ("Post digest to SLACK", False),
+        ("Send Slack digest", False),
+        ("Prepare digest (uipath-salesforce-slack)", False),
         ("Prepare Slack digest", False),
         ("Prepare Slack message", False),
         ("Slack message", False),
@@ -165,3 +168,9 @@ def test_notes_vocabulary_is_loose_but_named(tmp_path, monkeypatch, text, missin
     else:
         with pytest.raises(SystemExit, match=missing):
             checker.notes_vocabulary()
+
+
+def test_non_utf8_notes_do_not_crash(tmp_path, monkeypatch) -> None:
+    (tmp_path / "README.md").write_bytes(b"\xff\xfe draft notes in latin-1: caf\xe9")
+    monkeypatch.chdir(tmp_path)
+    checker.require_notes()

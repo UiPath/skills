@@ -7,13 +7,11 @@ nothing private was invented to make it look resolved:
 - the step is EITHER an ``Intsvc.*`` ``uipath:activity`` on a ``sendTask`` /
   ``serviceTask`` (the v1 XML arm writes this, and so does the v2 SDK arm's
   ``.connector()``) whose connection reads a declared binding left unresolved, OR a
-  bare ``bpmn:task`` named for the Slack send (the v2 skill's form for an operation
-  the connector library does not carry);
-- a notes file the agent wrote exists, in any wording: the prompt asks for one, and
-  which words it uses does not gate the boundary (UiPath/builder-sdk#1808 — the
-  grader used to grep four v1 phrases, and a correct v2 README failed on vocabulary
-  alone). ``--notes-vocabulary`` runs that phrase check on its own, for the task's
-  advisory criterion;
+  bare ``bpmn:task`` (no Intsvc payload) whose name carries the connector key and a
+  sending verb, the v2 skill's placeholder for an operation it cannot resolve;
+- a notes file the agent wrote exists, in any wording;
+  ``--notes-vocabulary`` checks, on its own, that the notes name the four CLI-owned
+  blockers;
 - no tenant host, no hand-written package file, no resolved connection id, and a
   wired, laid-out sequence.
 """
@@ -40,14 +38,15 @@ from _shared.bpmn_check import (  # noqa: E402
     root_bindings,
 )
 
-# The connector the task prompt names. A bare-task draft must name it, and a sending
-# verb, so "Prepare Slack digest" or "Prepare Slack message" does not stand in for
-# the missing send step. Nouns ("message") do not count.
-CONNECTOR_NAME = "slack"
+# A bare-task draft names the connector by its key, so the placeholder records which
+# Integration Service connector it stands for ("Send Slack digest" alone carries no
+# connector intent), plus a sending verb, so a preparation step does not stand in for
+# the send. Nouns ("message") are not verbs.
+CONNECTOR_KEY = "uipath-salesforce-slack"
 SEND_WORD = re.compile(r"\b(send|sends|sending|post|posts|posting|notify|deliver|publish|dispatch)\b", re.IGNORECASE)
 # Files an agent did not write: agent instructions an image or harness may stage.
 NOT_NOTES = {"CLAUDE.md", "AGENTS.md"}
-# The four CLI-owned blockers, as the old grader matched them: any phrasing of each.
+# The four CLI-owned blockers, each in any reasonable phrasing.
 BLOCKERS = {
     "connection binding": re.compile(r"connection\s+binding", re.IGNORECASE),
     "dynamic schema(s)": re.compile(r"dynamic\s+(\w+\s+){0,4}schema", re.IGNORECASE),
@@ -71,7 +70,7 @@ def bare_connector_tasks(root: ET.Element) -> list[ET.Element]:
         if has_uipath_extension(task, "Intsvc."):
             continue
         name = attr(task, "name")
-        if CONNECTOR_NAME in name.lower() and SEND_WORD.search(name):
+        if CONNECTOR_KEY in name.lower() and SEND_WORD.search(name):
             found.append(task)
     return found
 
@@ -128,7 +127,7 @@ def notes_text() -> str:
             continue
         if path.name.startswith("SKILL") or path.name in NOT_NOTES:
             continue
-        text = path.read_text(encoding="utf-8").strip()
+        text = path.read_text(encoding="utf-8", errors="replace").strip()
         if text:
             texts.append(text)
     return "\n".join(texts)
@@ -157,7 +156,7 @@ def main() -> None:
             fail("the Intsvc.* activity sits on a bare bpmn:task; a connector node is a sendTask or serviceTask")
         fail(
             "missing the draft Slack step: expected an Intsvc.* uipath:activity on a "
-            "sendTask/serviceTask, or a bare bpmn:task named for the Slack send"
+            f"sendTask/serviceTask, or a bare bpmn:task whose name carries {CONNECTOR_KEY} and a sending verb"
         )
     for node in nodes:
         require_connection_unresolved(root, node)

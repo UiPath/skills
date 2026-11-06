@@ -53,10 +53,8 @@ success_criteria:
     pass_threshold: 1.0
 
   # Advisory (pass_threshold 0): the notes name the four CLI-owned blockers, in any
-  # phrasing. It never flips the task: the boundary above grades the artifact, and a
-  # correct draft must not fail on vocabulary (UiPath/builder-sdk#1808). Weight 1.0
-  # still moves the weighted score (7.0 total, so 1.00 -> 0.86) when the notes are
-  # empty or vague, which keeps the prompt's README requirement visible.
+  # phrasing. It counts toward the weighted score but never fails the task; the
+  # boundary criterion above grades the artifact.
   - type: run_command
     description: "Notes name the CLI-owned blockers (advisory)"
     command: "python3 $REFERENCE_DIR/_shared/check_integration_service_boundary.py --notes-vocabulary"
