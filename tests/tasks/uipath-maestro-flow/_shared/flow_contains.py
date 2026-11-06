@@ -103,11 +103,14 @@ def main(argv: list[str]) -> int:
     absent_only = bool(absent) and not substrings and not regexes
     try:
         flows = find_all_flow_files() if absent_only else find_flow_files()
-        if absent_only and not flows:
-            raise SystemExit("FAIL: no .flow file found anywhere")
     except SystemExit as exc:
         print(str(exc), file=sys.stderr)
         return exc.code if isinstance(exc.code, int) else 1
+
+    if absent_only and not flows:
+        print("FAIL: no .flow file found anywhere", file=sys.stderr)
+        return 1
+
     print(f"Found {len(flows)} .flow file(s): {', '.join(flows)}")
 
     if flow_name is not None:
