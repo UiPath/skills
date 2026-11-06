@@ -308,18 +308,19 @@ binding half, which is the same for every connector-backed node.
 - How `bpmn decompile` writes the palette elements that carry no `uipath:*` payload:
   - a complex gateway becomes `.complexGateway(id, { name, default })`;
   - a bare call activity becomes `.plainTask(id, { element: 'bpmn:callActivity' })`.
-    That form exists only for the round trip. A call activity with no payload invokes
-    nothing, so `validate` rejects it and `check` reports `CALL_ACTIVITY_NO_PAYLOAD`. To
-    call a process, use an `Orchestrator.Start*Process` type through `.activity()`, with
+    Do not author it: `validate` rejects it and `check` reports `CALL_ACTIVITY_NO_PAYLOAD`.
+    To call a process, use an `Orchestrator.Start*Process` type through `.activity()`, with
     a process binding;
   - data objects, data object references and data store references are left out of the
     source. A header comment that starts `// DATA ELEMENTS LEFT TO THE ORIGINAL` lists
     each one; keep it. Merging with `--baseline` (`bpmn.brownfield.merge`) keeps them from
     the original, with their data associations and shapes. A bare `compile` drops them.
 
-  Needs `@uipath/maestro-builder-sdk` <first release with UiPath/builder-sdk#1705> or later.
-  An older SDK refuses all four elements with "has no builder equivalent", so upgrade
-  with `npm install -g @uipath/maestro-builder-sdk@latest`.
+  These forms come with the SDK release that ships UiPath/builder-sdk#1705. An SDK
+  without it refuses every element above with "has no builder equivalent". On that
+  refusal, upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and decompile
+  again. If the latest SDK still refuses, tell the user these elements cannot be edited
+  through the builder yet; do not strip them or hand-edit the `.bpmn`.
 
   Decompile still refuses a complex gateway with an `activationCondition` and a bare call
   activity with a `calledElement`, and names the attribute. Tell the user that this element
