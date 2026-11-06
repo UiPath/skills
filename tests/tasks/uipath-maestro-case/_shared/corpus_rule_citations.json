@@ -62,6 +62,10 @@
   "safety_guard/artifact_safety_guard.yaml": {
     "Artifact I/O": 4
   },
+  "supplier_onboarding/supplier_onboarding.yaml": {
+    "Artifact I/O": 1,
+    "The build is lossless against the SDD": 1
+  },
   "triggers/event_placeholder/event_placeholder.yaml": {
     "Unresolved resources": 1
   }
