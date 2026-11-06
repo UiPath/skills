@@ -43,7 +43,7 @@
 | `name` | Required — and the resource folder MUST be named exactly this (`resources[0].name: missing name` if absent; `folder must be named after the resource name` if the folder differs) |
 | `description` | Free text |
 | `type` | `"internal"` (built-in tools) |
-| `inputSchema` / `outputSchema` | Empty object schema `{ "type": "object", "properties": {} }` — the tool declares no I/O schema; columns flow through `properties.settings`, the CSV through the agent's input (see [Attachment Ingress](#attachment-ingress)) |
+| `inputSchema` / `outputSchema` | Empty object schema `{ "type": "object", "properties": {} }` — batch-transform declares no I/O schema; the CSV and columns flow through `properties.settings` |
 | `settings`, `argumentProperties` | `{}` (backward-compat scaffolding) |
 | `guardrail.policies` | `[]` |
 | `referenceKey` | `null` (non-null identifies an external tool) |
@@ -100,12 +100,7 @@ Each `description` is the per-column LLM instruction — prompt-fragment, not la
 
 ## Attachment Ingress
 
-batch-transform's own empty schemas never declare where the CSV comes from — the agent's `inputSchema` does. Without an ingress path the tool runs against an empty input set.
-
-| Agent variant | Ingress |
-|---|---|
-| Autonomous (`isConversational: false`) | Required: declare one `inputSchema` field holding the CSV — `{ "$ref": "#/definitions/job-attachment" }` — plus the canonical `job-attachment` block in `inputSchema.definitions` — see [../../../agent-definition.md](../../../agent-definition.md) § File Attachments. Template the field into the user message (`{{input.<FILE_FIELD>}}`; renders metadata only). Caller binds the file at run time (`uip agent debug --attachment <FIELD>=<FILE_PATH>`, flow input, job input). |
-| Conversational, Studio Web chat | Chat-uploaded files reach the tool without schema wiring. |
+Studio Web forwards the user's CSV upload to the tool — no schema wiring. Other channels (flow input, Action Center task): confirm the runtime forwards the file or the tool runs against an empty input set.
 
 ## Validation
 
