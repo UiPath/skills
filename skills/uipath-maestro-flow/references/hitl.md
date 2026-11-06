@@ -29,6 +29,9 @@ the next step instead, each on its own edge.
 
 `.stepSwitch` is how you route them: one arm per outcome, none of them the tacit
 next step. It works on the default node, on quick-form and on a pinned task.
+Never combine it with `outcomePorts: false` (STEP_SWITCH_NO_EXITS: no ports to
+route). Drop the flag. Falling back to `.step` + `.branch` on `out()` leaves one
+edge from the task, so the outcomes are not routed per port.
 Arms behave like `.switch()`'s — one that ends in `.return()` is terminal, and one
 that does not CONVERGES, so the step after the `.stepSwitch` fans in from every
 arm that reaches it.
@@ -189,7 +192,8 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   Do not route the FIRST outcome with `.stepToList`: its port is already taken by
   the main path (flow-builder-sdk#741). After a task that does not route per
   outcome EVERY outcome port is taken, so `.stepToList('outcome-…')` there is
-  refused (HITL_OUTCOME_PORTS_OFF) — use `.stepSwitch`, or `outcomePorts: true`.
+  refused (HITL_OUTCOME_PORTS_OFF) — use `outcomePorts: true`, or `.stepSwitch` on quick-form or a pin (never
+  with `outcomePorts: false`).
 
   **So `.step()` means one of two things.** After a task that routes per outcome,
   the FIRST outcome continues and the others need routes. After any other task,
