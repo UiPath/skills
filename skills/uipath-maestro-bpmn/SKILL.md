@@ -550,8 +550,9 @@ below, because it is the one step that depends on phase 1's scan.
 Adjust the shape, re-`format`, show the change, and hold the approval gate
 until the user agrees it: see
 [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating).
-Draft mode only. End the turn with the 3c reply exactly as that guide's
-template shows it (see its 3c section).
+Draft mode only. Before you write the 3c reply, read
+[references/gate-reply-template.md](references/gate-reply-template.md) in
+full, then end the turn with the reply exactly as it shows.
 
 ### Phase 4 — Wire it up
 
@@ -990,6 +991,7 @@ and honestly surfaced to the user as gaps when asked.
 | Topic | Read |
 | --- | --- |
 | Phase 2 skeleton — blank boxes, real control flow, no new registry calls | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
+| 3c gate reply — the fixed message that ends a draft-mode run | [references/gate-reply-template.md](references/gate-reply-template.md) |
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Worked-out topology for a recurring process shape, and how shapes compose | Patterns table above → `references/patterns/*-guide.md` |
