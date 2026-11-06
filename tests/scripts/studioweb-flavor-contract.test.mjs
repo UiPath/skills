@@ -408,3 +408,60 @@ function siblingLinesNaming(root) {
 test("the studioweb Flow siblings name no classic Flow instruction", (t) => {
   assert.deepEqual(siblingLinesNaming(buildStudioweb(t)), []);
 });
+
+// The preview Case skill authors with the builder SDK on a desktop terminal.
+// Its studioweb flavor (preview/skill-flavors/) runs the same SDK inside the
+// page, on the open solution's plan, with no solution to create, no npm, no
+// login step, no local `.uipx` to refresh or prune and no SDK to upgrade. It
+// must name none of those, so it is ready on the day the preview skill moves
+// into skills/.
+const PREVIEW_STUDIOWEB_ROOT = join(REPO_ROOT, "preview", "skill-flavors", "studioweb");
+const CASE_TERMINAL_ONLY = [
+  "uip solution init",
+  "--solution-folder",
+  "uip login status --output",
+  "beside this `SKILL.md`",
+  "so upgrade first",
+  "run `uip maestro registry pull`",
+];
+
+function caseLinesNaming(skillRoot) {
+  return markdownFiles(skillRoot).flatMap((file) =>
+    readFileSync(file, "utf8")
+      .split("\n")
+      .flatMap((line, index) =>
+        CASE_TERMINAL_ONLY.filter((needle) => line.includes(needle)).map(
+          (needle) => `${relative(skillRoot, file)}:${index + 1}: ${needle}`,
+        ),
+      ),
+  );
+}
+
+function buildPreviewStudioweb(t) {
+  const output = mkdtempSync(join(tmpdir(), "preview-studioweb-contract-"));
+  t.after(() => rmSync(output, { recursive: true, force: true }));
+  materializeComposition(createCompositionPlan(REPO_ROOT, PREVIEW_STUDIOWEB_ROOT), output);
+  return output;
+}
+
+test("the preview studioweb Case skill names no terminal-only command", (t) => {
+  const skillRoot = join(buildPreviewStudioweb(t), "uipath-maestro-case");
+  const debugHits = markdownFiles(skillRoot).flatMap((file) =>
+    readFileSync(file, "utf8")
+      .split("\n")
+      .flatMap((line, index) =>
+        [TWO_TOKEN_VERB, JSON_DEBUG, PATH_DEBUG].some((pattern) => pattern.test(line))
+          ? [`${relative(skillRoot, file)}:${index + 1}`]
+          : [],
+      ),
+  );
+
+  assert.deepEqual(caseLinesNaming(skillRoot), []);
+  assert.deepEqual(debugHits, []);
+  assert.match(readFileSync(join(skillRoot, "SKILL.md"), "utf8"), /uip maestro case debug "<Project>"/);
+});
+
+test("the preview Case skill keeps its terminal commands (the guard is not vacuous)", () => {
+  const hits = caseLinesNaming(join(REPO_ROOT, "preview", "skills", "uipath-maestro-case"));
+  assert.deepEqual([...new Set(hits.map((hit) => hit.split(": ").pop()))].sort(), [...CASE_TERMINAL_ONLY].sort());
+});
