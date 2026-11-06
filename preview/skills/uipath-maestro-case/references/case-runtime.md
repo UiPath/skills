@@ -48,15 +48,27 @@ make from syntax alone. Exact signatures remain in the generated API.
   bind it with the `registry prepare` command the warning prints before a live
   run.
 
+<!-- RULE:case.bindings-v2.metadata -->
+- Each `bindings_v2.json` resource entry's `metadata` object accepts only
+  `subType` (and the envelope's own `BindingsVersion`). Keys like
+  `ActivityName` or `DisplayLabel` cause `uip solution resources refresh` to
+  fail with an unsupported-metadata error. When hand-writing or editing
+  `bindings_v2.json`, copy only `subType` from the registry cache entry.
+
 <!-- RULE:case.resources.live -->
 - Published process, agent, RPA, API workflow, sub-case, connector, and folder
   references are tenant facts. Static validation cannot prove they exist.
 
 - Resource refresh is additive. After removing or repointing a resource-bound
-  task, list local solution resources and remove each orphaned process or app by
-  its listed key with `uip solution resources remove {key} --solution-folder
-  {solution} --output json`, then refresh again. Never remove the Case project's
-  own process/package pair, and never target package entries directly.
+  task, prune orphans before refreshing:
+
+  1. `uip solution resources list --solution-folder {solution} --output json`
+  2. Match each listed `process` key against tasks still in the plan.
+  3. For each key with no remaining consumer:
+     `uip solution resources remove {key} --solution-folder {solution} --output json`
+  4. Never remove the Case project's own process/package pair, and never
+     target package entries directly.
+  5. `uip solution resources refresh --solution-folder {solution} --output json`
 
 ## SLA and runtime semantics
 
@@ -103,6 +115,14 @@ make from syntax alone. Exact signatures remain in the generated API.
   rule with `marksCaseComplete: false`. It is added ALONGSIDE the positive rule
   and never replaces it: folding both readings into one `true` rule ("Case
   resolved or escalated") loses the distinction the plan was asked to make.
+
+  Three-exit pattern (completing + rejected + withdrawn):
+
+  ```ts
+  .completeWhen(rule('required-stages-completed'), { marksCaseComplete: true })
+  .completeWhen(rule('selected-stage-completed', { stage: 'Rejection' }), { marksCaseComplete: false })
+  .completeWhen(rule('selected-stage-completed', { stage: 'Withdrawal' }), { marksCaseComplete: false })
+  ```
 
 <!-- RULE:case.optionality.explicit -->
 - Declare optionality when something consumes it. `.required(false)` and
