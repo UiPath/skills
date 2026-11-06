@@ -71,13 +71,15 @@ jobs:
             echo "Skill flavor is not a real directory: $FLAVOR" >&2
             exit 1
           fi
-          BASE=$(node -p "require('./package.json').version")
+          # Nothing from the checkout is read before the stable arm has proven
+          # its commit is on main: the tree could be any sha GitHub can fetch.
           case "$CHANNEL" in
             dev|preview)
               if [ -n "$COMMIT$STABLE_VERSION" ]; then
                 echo "commit and version are accepted only for the stable channel" >&2
                 exit 1
               fi
+              BASE=$(node -p "require('./package.json').version")
               VERSION="${BASE}-${CHANNEL}.${RUN_NUMBER}"
               ;;
             stable)
@@ -89,6 +91,7 @@ jobs:
                 echo "stable commit is not on main: $COMMIT" >&2
                 exit 1
               fi
+              BASE=$(node -p "require('./package.json').version")
               # An optional trailing counter names a re-cut in the same sprint
               # (-stable.206.1 sorts above -stable.206); npm versions are immutable.
               if [[ ! "$STABLE_VERSION" =~ ^${BASE//./\\.}-stable\.[0-9]+(\.[0-9]+)?$ ]]; then
