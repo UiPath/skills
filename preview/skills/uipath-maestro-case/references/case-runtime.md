@@ -59,9 +59,10 @@ make from syntax alone. Exact signatures remain in the generated API.
      process or app declaration no binding still references.
   2. For each reported orphan:
      `uip solution resources remove {key} --solution-folder {solution} --output json`
-  3. Connection declarations are not covered by the warning. After
-     removing the last connector task that used a connection, remove
-     its declaration manually with the same `resources remove` command.
+  3. Connection declarations are not covered by the warning. Remove one
+     only when no project in the solution still binds it:
+     `grep -rl '<connection-key>' {solution}/*/bindings_v2.json`
+     No match means safe to remove with `resources remove`.
   4. Never remove the Case project's own process/package pair, and never
      target package entries directly.
   5. `uip solution resources refresh --solution-folder {solution} --output json`
