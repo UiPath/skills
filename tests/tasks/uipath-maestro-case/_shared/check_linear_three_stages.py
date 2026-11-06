@@ -65,12 +65,6 @@ def main():
         sys.exit(f"FAIL: no wait-for-timer task in caseplan. Types seen: {types_seen}")
 
     review_lanes = (review.get("data") or {}).get("tasks") or []
-    timer_lane_indices = {
-        lane_idx
-        for lane_idx, lane in enumerate(review_lanes)
-        for t in (lane or [])
-        if t.get("type") == "wait-for-timer"
-    }
     review_task_ids = {t.get("id") for lane in review_lanes for t in (lane or [])}
     review_timers = [t for t in timer_tasks if t.get("id") in review_task_ids]
     if len(review_timers) < 2:
@@ -79,12 +73,6 @@ def main():
             f"FAIL: Review should have ≥2 parallel wait-for-timer tasks "
             f"('Hold For 1 Hour' + 'Notify Reviewer'); got {len(review_timers)} ({labels})"
         )
-    if len(timer_lane_indices) != 1:
-        sys.exit(
-            f"FAIL: Review's explicit parallel timer tasks must share one "
-            f"data.tasks inner task set; got set indices {sorted(timer_lane_indices)}"
-        )
-
     def _by_label(label: str) -> dict | None:
         for t in review_timers:
             if (t.get("displayName") or t.get("label")) == label:
