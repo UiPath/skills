@@ -1,0 +1,94 @@
+{
+  "version": 2,
+  "_doc": "Responses for the InvoiceSolution fixture.",
+  "rules": [
+    {
+      "match": "solution upload",
+      "file": "solution-upload.json",
+      "exit_code": 0
+    },
+    {
+      "match": "solution publish",
+      "file": "solution-publish.json",
+      "exit_code": 0
+    },
+    {
+      "match": "solution deploy run",
+      "file": "solution-deploy-run.json",
+      "exit_code": 0
+    },
+    {
+      "match": "solution deploy activate",
+      "file": "solution-deploy-run.json",
+      "exit_code": 0
+    },
+    {
+      "match": "solution deploy upgrade",
+      "file": "solution-deploy-run.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn debug",
+      "file": "bpmn-debug.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn process run",
+      "file": "bpmn-process-mutation.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn process publish",
+      "file": "bpmn-process-mutation.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro",
+      "passthrough": true
+    },
+    {
+      "match": "solution",
+      "passthrough": true
+    },
+    {
+      "match": "api-workflow",
+      "passthrough": true
+    },
+    {
+      "match": "or",
+      "passthrough": true
+    },
+    {
+      "match": "is",
+      "passthrough": true
+    },
+    {
+      "match": "login",
+      "passthrough": true
+    },
+    {
+      "match": "user",
+      "passthrough": true
+    },
+    {
+      "match": "skills",
+      "passthrough": true
+    },
+    {
+      "match": "tools",
+      "passthrough": true
+    },
+    {
+      "match": "traces",
+      "passthrough": true
+    },
+    {
+      "match": "df",
+      "passthrough": true
+    },
+    {
+      "match": "agent",
+      "passthrough": true
+    }
+  ]
+}

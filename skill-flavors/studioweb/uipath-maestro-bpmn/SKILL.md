@@ -19,7 +19,9 @@
    host-intercepted `uip solution publish` **before** binding the resource
    into the BPMN node; its release key and folder key exist only once
    deployed. There is no `pack`. Publishing to the personal workspace
-   auto-deploys; a shared location needs `uip solution deploy run`. Follow
+   auto-deploys; a shared location needs `uip solution deploy run`. Without
+   approval, pick step 4's wrapper by the resource's type, leave its binding
+   unresolved (4e), skip step 5, and report the node unverified. Follow
    `uipath-solution` for destinations and redeploys.
 <!--skill-flavor:delegated-resource-author-deploy:end-->
 
@@ -30,8 +32,7 @@
 <!--skill-flavor:v2-solution-resources-refresh:end-->
 
 <!--skill-flavor:debug-node-output:start-->
-   (5) Unless the task forbids
-   live runs or asks for a draft or handoff, run the process
+   (5) With consent for a run (rule 10), run the process
    (`uip maestro bpmn debug "<ProjectName>"`) and read the node's output in the
    execution trace it prints. Map `=result.<key>` to the key that output
    used; a scalar can surface under a generic key instead of the schema

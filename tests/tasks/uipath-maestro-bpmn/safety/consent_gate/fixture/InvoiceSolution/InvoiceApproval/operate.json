@@ -1,0 +1,11 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/operate",
+  "projectId": "ab318dfd-c96f-44fd-906f-9a17d116cb2b",
+  "main": "/content/InvoiceApproval.bpmn#Event_start",
+  "contentType": "ProcessOrchestration",
+  "targetFramework": "Portable",
+  "runtimeOptions": {
+    "requiresUserInteraction": false,
+    "isAttended": false
+  }
+}

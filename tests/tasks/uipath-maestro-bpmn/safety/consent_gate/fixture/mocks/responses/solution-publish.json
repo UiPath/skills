@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "SolutionPublish",
+  "Data": {
+    "PackageName": "InvoiceSolution",
+    "PackageVersion": "1.0.0"
+  }
+}
