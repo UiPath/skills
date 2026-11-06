@@ -64,12 +64,6 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available and authenticated in the environment.
-  - For each `process` resource, `bindings_v2.json` metadata must not contain
-    `BindingsVersion` or `SolutionsSupport` (any casing): those fields make
-    `uip solution resources refresh` fail with "Node already added to the
-    graph" in this eval environment. Keep the other metadata keys
-    (`subType`, `ActivityName`, `DisplayLabel`) as written. Leave
-    `Role` entries as `uip maestro case bindings sync` writes them.
   - The SDD resource labels are aliases for deployed resource NAMES. Map alias →
     deployed name exactly: `WeatherAPI` → `WeatherAPI`, `CountLetters` →
     `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `HelpDeskLookup`
