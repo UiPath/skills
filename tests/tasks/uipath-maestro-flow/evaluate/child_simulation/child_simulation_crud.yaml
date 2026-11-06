@@ -166,3 +166,11 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Compiled flow has agent_1 with tools carrying a non-empty outputSchema, and the Llm add and remove of Send_Email exit 0"
+    command: "python3 $REFERENCE_DIR/check_llm_child_simulation.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
