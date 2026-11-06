@@ -34,9 +34,15 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    references (`--keep-unused-bindings` keeps them) and it writes `.preserve({ … })` for
    state the document carried that nothing derives. Leave the `.preserve` call alone; see
    [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract).
-5. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile. `compile`
-   writes what the source says; `check` is what reports a probable mistake, such as a
-   `vars.<id>` read of a variable nothing declares (`EXPR_UNDECLARED_REF`).
+5. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix
+   every error it prints (it exits non-zero) before you compile. `compile` writes what
+   the source says; `check` is what reports a probable mistake, such as a `vars.<id>`
+   read of a variable nothing declares (`EXPR_UNDECLARED_REF`) or a declared variable
+   read without `vars.` (`EXPR_BARE_VAR_REF`). For two of these, a read in an
+   `errorMapping` condition and a bare `=amount`, `check` is the only offline gate:
+   `bpmn validate` accepts both.
+   Needs `@uipath/maestro-builder-sdk` with UiPath/builder-sdk#1712 (the first release
+   after 6.85.2) or later; an older `compile` refuses the read itself.
 6. Compile **into the scaffolded project**, then `format` it, then `refresh` it, then
    run product validation — in that order, every time. `validate` refuses a file with
    no diagram (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none;
