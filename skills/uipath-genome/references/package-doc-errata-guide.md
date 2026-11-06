@@ -46,11 +46,10 @@ The owning skill's contract reads the installed package's per-activity doc for e
 
 ## Tools — defects seen in builds, until fixed
 
-Each row was met in a build that validated and packed, or in a live search against the application; the third column is what that build did instead. Versions: Flow builder SDK `@uipath/maestro-builder-sdk` 6.46.0, `uip` 1.204; the Flow runtime rows were last seen with SDK 6.15.3.
+Each row was met in a build that validated and packed, or in a live search against the application; the third column is what that build did instead. Versions: `uip` 1.204; the Flow runtime rows were last seen with Flow builder SDK `@uipath/maestro-builder-sdk` 6.15.3.
 
 | Tool | Defect | What the build does |
 |---|---|---|
-| `uip maestro flow validate` | Type-checks scripts against a JavaScript library without `String.prototype.replaceAll`: a call on a value it types as text warns `EXPRESSION_DIAGNOSTIC … Property 'replaceAll' does not exist on type 'string'` | Removes the characters with `split(…).join('')`, which gives the same text |
 | Flow runtime | A flow or child-flow input named `source` arrives empty, with no diagnostic | Names the input otherwise (`sourceName`) |
 | Flow runtime, Data Fabric read | An `in` filter with a list value fails (`valueList[0] … System.String`) | Reads without that filter and narrows the rows in a script step |
 | `uip api-workflow run` | Prints `fast-json-patch MODULE_NOT_FOUND` stack traces when the working directory has no `node_modules`; the result is correct | Judges the run by its envelope |
