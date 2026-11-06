@@ -128,10 +128,6 @@ def issuetype_id(conn_id: str) -> str:
     return _ISSUETYPE_IDS[conn_id]
 
 
-class MissingConnection(RuntimeError):
-    pass
-
-
 def connection_id() -> str:
     folder = _required_data("or", "folders", "get", FOLDER_PATH, retry_transient=True)
     folder_key = folder["Key"]
@@ -145,6 +141,10 @@ def connection_id() -> str:
             f"no {CONNECTOR} connection named {CONNECTION_NAME!r} in folder {FOLDER_PATH!r}"
         )
     return match
+
+
+class MissingConnection(RuntimeError):
+    pass
 
 
 def require_connection() -> str:

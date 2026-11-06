@@ -10,7 +10,15 @@ from types import ModuleType
 import pytest
 
 HERE = Path(__file__).parent
-TASKS = ("jira_create_issue", "jira_get_issue", "jira_lifecycle", "jira_search_triage")
+TASKS_DIR = HERE.parents[1]
+TASKS = tuple(
+    TASKS_DIR / skill / "e2e" / task
+    for skill, names in (
+        ("uipath-maestro-flow", ("jira_create_issue", "jira_get_issue", "jira_lifecycle", "jira_search_triage")),
+        ("uipath-maestro-bpmn", ("jira_create_issue", "jira_get_issue")),
+    )
+    for task in names
+)
 
 
 class Result:
@@ -20,8 +28,8 @@ class Result:
         self.returncode = 0
 
 
-def _load(task: str) -> ModuleType:
-    spec = importlib.util.spec_from_file_location(f"{task}_jira_is", HERE / task / "_setup" / "jira_is.py")
+def _load(task: Path) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(f"{task.parent.parent.name}_{task.name}_jira_is", task / "_setup" / "jira_is.py")
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -37,8 +45,8 @@ def _stub(monkeypatch: pytest.MonkeyPatch, jira_is: ModuleType, connections: lis
     monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
 
 
-@pytest.mark.parametrize("task", TASKS)
-def test_missing_connection_is_an_infrastructure_failure(task: str, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("task", TASKS, ids=lambda t: f"{t.parent.parent.name}/{t.name}")
+def test_missing_connection_is_an_infrastructure_failure(task: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     jira_is = _load(task)
     _stub(monkeypatch, jira_is, [{"Id": "other", "Name": "someone-else"}])
 
@@ -51,8 +59,8 @@ def test_missing_connection_is_an_infrastructure_failure(task: str, monkeypatch:
     assert jira_is.FOLDER_PATH in message
 
 
-@pytest.mark.parametrize("task", TASKS)
-def test_connection_id_raises_for_teardown_to_swallow(task: str, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("task", TASKS, ids=lambda t: f"{t.parent.parent.name}/{t.name}")
+def test_connection_id_raises_for_teardown_to_swallow(task: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     jira_is = _load(task)
     _stub(monkeypatch, jira_is, [])
 
@@ -62,8 +70,8 @@ def test_connection_id_raises_for_teardown_to_swallow(task: str, monkeypatch: py
     assert not isinstance(exc.value, StopIteration)
 
 
-@pytest.mark.parametrize("task", TASKS)
-def test_present_connection_is_returned(task: str, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("task", TASKS, ids=lambda t: f"{t.parent.parent.name}/{t.name}")
+def test_present_connection_is_returned(task: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     jira_is = _load(task)
     _stub(monkeypatch, jira_is, [{"Id": "abc", "Name": jira_is.CONNECTION_NAME}])
 
