@@ -42,6 +42,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
+    find_named_flow,
     find_inline_resource,
     find_resource_node,
     load_json,
@@ -49,7 +50,7 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_resource_source,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "ExpenseFlowSol" / "ExpenseFlow" / "ExpenseFlow.flow"
+FLOW_PATH = find_named_flow("ExpenseFlow")
 # Escalation nodes are registered as concrete variants (e.g.
 # `uipath.agent.resource.escalation.coded-action-app`,
 # `...escalation.quick-form`); there is no bare `...escalation` node. Match by

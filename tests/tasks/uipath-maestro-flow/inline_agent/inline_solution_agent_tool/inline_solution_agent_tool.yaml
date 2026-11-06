@@ -108,9 +108,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Flow file was created"
-    path: "OrchestratorFlowSol/OrchestratorFlow/OrchestratorFlow.flow"
+  - type: run_command
+    description: "Flow file was created in a supported authoring layout"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name OrchestratorFlow"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

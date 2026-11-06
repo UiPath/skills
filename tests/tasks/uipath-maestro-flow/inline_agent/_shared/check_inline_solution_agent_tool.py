@@ -26,13 +26,14 @@ from _shared.inline_wiring import (  # noqa: E402
     INLINE_SOLUTION_FOLDER_PATHS,
     assert_edge,
     find_autonomous_agent_node,
+    find_named_flow,
     find_inline_resource,
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "OrchestratorFlowSol" / "OrchestratorFlow" / "OrchestratorFlow.flow"
+FLOW_PATH = find_named_flow("OrchestratorFlow")
 AGENT_TOOL_NODE_PREFIX = "uipath.agent.resource.tool.agent."
 
 

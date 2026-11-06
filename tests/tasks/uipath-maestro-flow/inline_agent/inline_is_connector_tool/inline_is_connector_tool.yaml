@@ -78,9 +78,11 @@ success_criteria:
     weight: 2.0
     pass_threshold: 0.0  # advisory: the SDK route may sync solution resources differently; the contract checker grades the outcome
 
-  - type: file_exists
-    description: "Flow file was created"
-    path: "ResearchFlowSol/ResearchFlow/ResearchFlow.flow"
+  - type: run_command
+    description: "Flow file was created in a supported authoring layout"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ResearchFlow"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

@@ -21,12 +21,13 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     find_autonomous_agent_node,
+    find_named_flow,
     load_json,
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "MemoryFlowSol" / "MemoryFlow" / "MemoryFlow.flow"
-FLOW_BINDINGS = Path(os.getcwd()) / "MemoryFlowSol" / "MemoryFlow" / "bindings_v2.json"
+FLOW_PATH = find_named_flow("MemoryFlow")
+FLOW_BINDINGS = FLOW_PATH.parent / "bindings_v2.json"
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 EXPECTED_FEATURE_NAME = "SupportRecall"

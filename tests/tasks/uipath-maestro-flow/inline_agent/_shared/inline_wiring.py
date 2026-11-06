@@ -22,6 +22,7 @@ Import pattern in a check script:
     from _shared.inline_wiring import (  # noqa: E402
         load_json,
         find_autonomous_agent_node,
+        find_named_flow,
         find_resource_node,
         resolve_inline_agent_dir,
         resolve_resource_source,
@@ -32,10 +33,19 @@ Import pattern in a check script:
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import sys
 from pathlib import Path
+
+FLOW_CHECK_PATH = Path(__file__).resolve().parents[2] / "_shared" / "flow_check.py"
+_spec = importlib.util.spec_from_file_location("flow_check", FLOW_CHECK_PATH)
+_flow_check = importlib.util.module_from_spec(_spec)
+sys.modules[_spec.name] = _flow_check
+_spec.loader.exec_module(_flow_check)
+find_flow_files = _flow_check.find_flow_files
+flow_file_is_named = _flow_check.flow_file_is_named
 
 AUTONOMOUS_NODE_TYPE = "uipath.agent.autonomous"
 
@@ -64,6 +74,20 @@ def load_json(path: Path) -> dict:
         return json.loads(path.read_text())
     except json.JSONDecodeError as e:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
+
+
+def find_named_flow(name: str) -> Path:
+    """Return the main file of the Flow called `name`, in any supported layout.
+
+    `<Sol>/<name>/<name>.flow` (Node CLI) or `<Sol>/<name>/new.flow` (Studio Web).
+    Exit with FAIL when none or several match.
+    """
+    matches = [p for p in find_flow_files() if flow_file_is_named(p, name)]
+    if not matches:
+        sys.exit(f"FAIL: no discovered .flow file is named {name}.flow")
+    if len(matches) > 1:
+        sys.exit(f"FAIL: several .flow files are named {name}.flow: {matches}")
+    return Path(matches[0]).resolve()
 
 
 def find_autonomous_agent_node(flow: dict) -> dict:
