@@ -62,6 +62,18 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    init-generated project — with no `project.uiproj` it has nothing to regenerate.
 8. Use the merge pipeline for targeted edits to an existing process.
 
+## Draft first
+
+When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton and stop at an approval gate.
+Read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
+
+- `init` and seed as above, then write every activity as a bare `.task(id, { name })` with an action-first label (`Manager review [Action app]`), never a typed method.
+- Control flow is real: decisions through `.choose()` with real conditions on declared variables, and a real timer or message start when the process starts that way, on the stub's `Event_start` id.
+- Make no `registry` calls.
+- Run `check`, `compile`, `format`, `validate`, show the shape, then stop and ask before building.
+
+A mermaid diagram or outline in chat is not the deliverable; the validated `<Name>/<Name>.bpmn` is.
+
 ## API index
 
 Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only
@@ -76,6 +88,7 @@ spells the paths its rows are relative to.
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
+| Show the shape before building it (sketch, draft, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
 | A node's own output | the node's `outputRows` — **not** a `.var()` beside it | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
