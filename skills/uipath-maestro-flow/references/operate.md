@@ -322,7 +322,7 @@ uip maestro flow instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro flow instance retry  <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
-`-f` does not filter `instance list` yet: do not assume every listed instance is
+`-f` does not filter `instance list`: do not assume every listed instance is
 in that folder.
 
 Never `retry` a faulted instance before reading why it faulted — the fault cause
