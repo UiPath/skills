@@ -42,6 +42,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    `errorMapping` condition and a bare `=amount`, `check` is the only offline gate:
    `bpmn validate` accepts both.
    Needs `@uipath/maestro-builder-sdk` 6.86.0 or later; an older `compile` refuses the read itself.
+   `check` also type-checks the source: a `TS<code>` error at `file:line:col` is a wrong option name or value type, so fix it like any other `check` error.
+   Node's runtime globals, top-level `await` and ES2024 APIs are accepted; `--no-types` skips the type pass.
 6. Compile **into the scaffolded project**, then `format` it, then `refresh` it, then
    run product validation — in that order, every time. `validate` refuses a file with
    no diagram (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none;
@@ -64,13 +66,12 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 
 ## API index
 
-Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only
-true of the build that emitted it. The `@uipath/maestro-builder-sdk` package
-ships `dist/api-members.md`, keyed by field or method name (`gateway`), and
-`dist/api-index.md`, keyed by exported symbol (`BpmnBuilder`). Match one name — do not
-read either end to end — then read the span it gives you: the whole declaration,
-doc comment included. Both cover all three entry points; each file's own header
-spells the paths its rows are relative to.
+Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only true of the build that emitted it.
+Every BPMN builder method and option field, with its type and a one-line doc, is in `node_modules/@uipath/maestro-builder-sdk/dist/bpmn-api.md`.
+Search it for the name you have — a field (`outputVar`), a method (`humanTask`) or a shape (`HttpOpts`) — and read only the line it lands on: the row is the answer.
+Do not read `dist/**/*.d.ts`; `check --source` reports a wrong option name or value type with its line (step 5).
+`dist/api-index.md` (by exported symbol, `BpmnBuilder`) gives a declaration's line span only when you need its long-form `@remarks` or `@example`.
+A package older than `bpmn-api.md` has only `dist/api-members.md` (by field or method name) and `dist/api-index.md`: match one name, then read the span it gives.
 
 ## Capability router
 
