@@ -29,7 +29,7 @@ export default flow('support-chat')
 Work a live CHAT: wait for the person's message, answer it, post a reply. Every
 step is keyed by a `conversationId` — the conversation trigger publishes it.
 
-Signatures: `.trigger(conversationTrigger())`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
+Signatures: `.trigger(conversationTrigger({ welcomeTitle?, welcomeDescription?, startingPrompts?, personalWorkspaceConnectionsOnly? }))`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
 
 ```ts
 .trigger(conversationTrigger())
@@ -39,6 +39,31 @@ Signatures: `.trigger(conversationTrigger())`; `waitForMessage({ conversationId,
 ```
 
 `waitForMessage` SUSPENDS the flow (a catch event), it does not poll. Use `sendMessage` when the flow decides what to say, an agent when the model does.
+
+## The chat's appearance
+
+What the chat shows before the user types is set on the trigger.
+Every field is optional; `conversationTrigger()` with no argument is a chat with none of them.
+
+```ts
+.trigger(conversationTrigger({
+  welcomeTitle: 'Library desk',
+  welcomeDescription: 'Ask about loans, renewals and holds.',
+  startingPrompts: [
+    'Renew my loans',
+    { displayPrompt: 'Place a hold', actualPrompt: 'I want to place a hold on a book.' },
+  ],
+}))
+```
+
+A starting prompt is a chip: the user sees `displayPrompt`, and the agent receives `actualPrompt`.
+A string is a prompt whose two are the same.
+Leave `id` out; compile mints a stable one, and decompile prints it back so a recompile keeps it.
+`check` refuses a prompt with no display prompt (`CONVERSATION_TRIGGER_DISPLAY_PROMPT_REQUIRED`), because the chat drops it.
+`personalWorkspaceConnectionsOnly` limits the chat's connection settings menu to personal workspace connections, and is on unless you set it to `false`, as on a trigger made in the designer.
+
+The appearance is the trigger's 1.3 definition, which `conversationTrigger()` writes by default.
+Decompiled source of an older flow pins `{ version: '1.0' }`, which has no appearance, and compile refuses one there (`CONVERSATION_TRIGGER_APPEARANCE_VERSION`); drop the pin to add one.
 
 ## Conversations, exchanges, and messages
 
