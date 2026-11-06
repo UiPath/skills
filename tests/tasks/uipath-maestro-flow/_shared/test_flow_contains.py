@@ -190,7 +190,8 @@ def test_absent_regex_fails_on_a_hit_in_any_project(tmp_path, monkeypatch, capsy
     assert "Sol2/Second/new.flow" in capsys.readouterr().err
 
 
-def test_absent_regex_alone_fails_when_no_flow_exists(tmp_path, monkeypatch):
+def test_absent_regex_alone_fails_when_no_flow_exists(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
 
-    assert main(["--absent-regex", IXP_ABSENT]) != 0
+    assert main(["--absent-regex", IXP_ABSENT]) == 1
+    assert "no .flow file found anywhere" in capsys.readouterr().err

@@ -65,3 +65,19 @@ def test_new_flow_in_another_project_is_not_a_match(tmp_path, monkeypatch, capsy
 
     assert _run(monkeypatch, tmp_path, "--flow-name", "Demo", "--expect-no-sentinel") == 1
     assert "no Demo.flow" in capsys.readouterr().err
+
+
+def _substantive(proj, flow_file):
+    nodes = [{"id": f"n{i}"} for i in range(6)]
+    (proj / flow_file).write_text(json.dumps({"nodes": nodes}))
+
+
+@pytest.mark.parametrize("other_file", ["Other.flow", "new.flow"])
+def test_flow_name_selects_one_of_several_projects(tmp_path, monkeypatch, other_file):
+    demo = _project(tmp_path, flow_file="new.flow", sentinel=True)
+    other = _project(tmp_path, project="Other", flow_file=other_file)
+    _substantive(demo, "new.flow")
+    _substantive(other, other_file)
+
+    assert _run(monkeypatch, tmp_path, "--flow-name", "Demo", "--expect-sentinel") == 0
+    assert _run(monkeypatch, tmp_path, "--flow-name", "Other", "--expect-no-sentinel") == 0
