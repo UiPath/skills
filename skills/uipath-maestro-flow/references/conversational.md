@@ -29,7 +29,7 @@ export default flow('support-chat')
 Work a live CHAT: wait for the person's message, answer it, post a reply. Every
 step is keyed by a `conversationId` — the conversation trigger publishes it.
 
-Signatures: `.trigger(conversationTrigger({ welcomeTitle?, welcomeDescription?, startingPrompts?, personalWorkspaceConnectionsOnly? }))`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
+Signatures: `.trigger(conversationTrigger({ welcomeTitle?, welcomeDescription?, startingPrompts?, personalWorkspaceConnectionsOnly? }))`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings, tools?, context?, escalation? })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
 
 ```ts
 .trigger(conversationTrigger())
@@ -128,9 +128,9 @@ conversationalAgent({
 })
 ```
 
-`check` uses the inline agent's rules for them, under the shared `FLOW_AGENT_*`
-codes, and each message names the conversational agent; there is no `memory`.
-A connector tool does not decompile yet: decompile writes a `TODO` for its edge.
+The SDK version these options need, their `check` codes, and what decompile
+does not carry back yet:
+[agent-resources.md](agent-resources.md#voice-and-conversational-agents).
 
 ## Evidence boundary
 

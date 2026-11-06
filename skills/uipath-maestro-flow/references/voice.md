@@ -33,7 +33,7 @@ export default flow('support-line')
 Talk to someone on a phone call. The call is identified by a `callContext`
 OBJECT — pass the whole thing, never a field inside it.
 
-Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations? })`.
+Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations?, tools?, context?, escalation? })`.
 
 ```ts
 .step('dial', createOutgoingCall({ from: input('callerNumber'), to: input('phone') }))
@@ -94,11 +94,9 @@ Each one becomes a resource node on the agent's `tool`, `context` or
 }))
 ```
 
-`check` uses the inline agent's rules for them, under the shared codes (`FLOW_AGENT_TOOL_*`,
-`FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_CONTEXT_*`). There is no `memory`. A
-decompiled canvas flow carries its tools in these options. A connector tool
-does not decompile yet: decompile writes a `TODO` for its edge, so keep that
-tool's node by editing the `.flow` directly.
+The SDK version these options need, their `check` codes, and what decompile
+does not carry back yet:
+[agent-resources.md](agent-resources.md#voice-and-conversational-agents).
 
 ## Evidence boundary
 
