@@ -76,7 +76,11 @@ uip solution upload <SolutionDir> --output json
 ```
 
 The project's solution directory is what `bpmn init` scaffolded around it
-(`<Name>Solution/`). When the solution declares resource dependencies, refresh
+(`<Name>Solution/`), or the solution it was initialized inside.
+A project initialized with `--skip-solution-registration` has no solution, and upload and deploy both work on one.
+Create one beside it with `uip solution init <SolutionName> --output json`, then copy the project in from inside that folder with `uip solution projects import <project-path> --output json`, and upload the solution.
+Ask before doing this when the user named the project's path, because the uploaded copy lives in the new solution folder, not at that path.
+When the solution declares resource dependencies, refresh
 them with the solution tooling the installed CLI offers (check `uip solution
 --help` rather than inventing a verb) and confirm the generated resource files
 match. Report the Studio Web URL or solution id; when the CLI returns none,

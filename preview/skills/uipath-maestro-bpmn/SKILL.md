@@ -16,15 +16,22 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 
 ## Workflow
 
-1. Scaffold the project first: `uip maestro bpmn init <Name>`. It writes
-   `<Name>/<Name>.bpmn` plus `project.uiproj`, `operate.json`, `entry-points.json`,
-   `bindings_v2.json`, and `package-descriptor.json` — the layout `bpmn pack` and
-   product tooling require. Run it inside a solution to join that solution; run it
-   outside one and a parent `<Name>Solution` is scaffolded around it.
+1. Scaffold the project first with `uip maestro bpmn init <Name> --output json`, and take the project directory from `Data.Path`.
+   This file writes that directory as `<Project>`.
+   It holds `<Name>.bpmn` plus `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, and `package-descriptor.json` — the layout `bpmn pack` and product tooling require.
+   `init` takes a name, not a path, and writes under the current directory:
+   - inside a solution (a `.uipx` here or in a parent): `./<Name>/`, registered in that solution;
+   - outside one: `./<Name>Solution/<Name>/`, inside a solution it scaffolds;
+   - with `--skip-solution-registration`: `./<Name>/`, with no solution.
+
+   **When the user names where the project or its `.bpmn` goes** (`A/B/B.bpmn` names project directory `A/B`), `mkdir -p A`, run `init B` from `A`, and pass `--skip-solution-registration` unless `A` is already a solution.
+   Without the flag, `init` inserts a `BSolution/` level the requested path does not have, and the file lands where nobody will look for it.
+   Check `Data.Path` against the requested path before writing anything, and compile to that path, not to a copy elsewhere.
+   A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Keep `<Name>.bpmn.ts` at the workspace root, beside `package.json`.
 3. Import from `@uipath/maestro-builder-sdk/bpmn` and default-export a chain ending in `.build()`.
 4. Seed the source by decompiling the stub `bpmn init` wrote —
-   `uip maestro bpmn decompile <Name>/<Name>.bpmn -o <Name>.bpmn.ts --style nested` — rather than
+   `uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested` — rather than
    hand-writing the skeleton.
    `--style nested` lifts an existing process's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in order (`flowMode('sequence')`), and leaves whatever it cannot prove flat with a printed reason; the compiled graph is verified identical before it is written. It KEEPS the flow ids the constructs now imply: an import's `edge_…` is pinned back onto the implied edge with a `.flowIds([…])` call at the top of the chain, so the recompile reproduces the ids the artifact arrived with. That matters for brownfield work — `bpmn merge` keys every element by id, flows included, so a renamed flow reads as a new one, the original is deleted with its diagram edge, and a gateway `default` left naming the old id produces a file `validate` rejects. `--keep-flow-ids` now only confines the lift to regions whose ids already match, for source with no pin table, at the cost of lifting far less. Without `--style nested` the whole process is written flat. It carries the process id and the `entryPointId` UUID the
    product assigned, which a hand-written chain cannot invent. An existing project needs
@@ -40,7 +47,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    no diagram (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none;
    `format` adds it.
    Exactly one emitted `<Name>.bpmn` may exist, at
-   `<Name>/<Name>.bpmn`; do not leave a second copy at the workspace root, and do not
+   `<Project>/<Name>.bpmn`; do not leave a second copy at the workspace root, and do not
    leave the template `init` wrote in place of your compiled output.
 7. **`refresh` is part of the loop, not part of packaging.** `init` generates
    `entry-points.json` and `operate.json` once, naming the start event of the template
@@ -155,13 +162,13 @@ export default bpmn('approval')
 ## Validation loop
 
 ```bash
-uip maestro bpmn init <Name>                  # once, before authoring
+uip maestro bpmn init <Name> --output json    # once; <Project> is Data.Path (see step 1)
 uip maestro bpmn check <Name>.bpmn.ts --source
 uip maestro bpmn check <Name>.bpmn.ts --graph   # the resolved wiring, implied edges marked ~>
-uip maestro bpmn compile <Name>.bpmn.ts -o <Name>/<Name>.bpmn
-uip maestro bpmn format <Name>/<Name>.bpmn
-uip maestro bpmn refresh <Name> --output json   # entry-points.json + operate.json, from the BPMN
-uip maestro bpmn validate <Name>/<Name>.bpmn --output json
+uip maestro bpmn compile <Name>.bpmn.ts -o <Project>/<Name>.bpmn
+uip maestro bpmn format <Project>/<Name>.bpmn
+uip maestro bpmn refresh <Project> --output json   # entry-points.json + operate.json, from the BPMN
+uip maestro bpmn validate <Project>/<Name>.bpmn --output json
 ```
 
 `check` owns source and graph invariants. Product validation owns the compiled
