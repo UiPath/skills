@@ -330,6 +330,17 @@ test("the studioweb Flow skill is the builder-SDK skill", (t) => {
   assert.ok(skill.includes("@uipath/maestro-builder-sdk"));
 });
 
+// UV-17734: the Studio Web override of the project-layout block dropped this,
+// so Autopilot scaffolded Maestro Automate requests as plain Flow projects.
+const AUTOMATE_INIT = /uip maestro flow init <\w+> --automate/;
+
+test("every Flow skill flavor scaffolds Maestro Automate with `--automate`", (t) => {
+  for (const root of [buildDefault(t), buildStudioweb(t)]) {
+    const skill = readFileSync(join(root, "uipath-maestro-flow", "SKILL.md"), "utf8");
+    assert.match(skill, AUTOMATE_INIT, root);
+  }
+});
+
 // Studio Web runs the Flow builder SDK inside the page: no npm, no Node, no
 // local connector-library cache, no pipeline helper, no `flow-sdk` bin, no
 // local `.uipx` to refresh, no project-path debug, no login step, and a

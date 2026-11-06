@@ -1,7 +1,7 @@
 <!--skill-flavor:sdk-project-layout:start-->
 **In Studio Web the builder SDK is built in.** `uip maestro flow check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm` and no Node process here. `examples/` contains authored examples, and `references/` contains the details routed from this guide.
 
-**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Each project is a folder `/solution/<Project>/`. Create a Flow project only when the user asks for a new project: `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `.flow`.
+**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Each project is a folder `/solution/<Project>/`. Create a Flow project only when the user asks for a new project, never because the request names the flow ("a Maestro Automate called CronCop"): `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `.flow`. Run `uip maestro flow init <Project> --automate` when the request names **Maestro Automate** as the product. A project you fill keeps its type: if the request names Maestro Automate and `/solution/<Project>/.maestro_automate` is missing, keep building and end by telling the user to switch Build as to Maestro Automate.
 
 **Edit the open flow.** The context of each turn gives these values:
 
