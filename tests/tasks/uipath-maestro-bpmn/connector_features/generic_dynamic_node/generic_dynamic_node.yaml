@@ -15,7 +15,11 @@ description: >
   `objectName: "acr_user"` and operation/method classifying it as List, the
   registry's only form for this activity — it has no curated alternative),
   `FinalStatus: "Completed"` with no incidents, and an array-typed output
-  (empty allowed) rather than requiring rows.
+  (empty allowed) rather than requiring rows. When `registry get` cannot
+  build that node (`Cannot identify the V2 element`), the skill's
+  connector-mode HTTP request through the same connection is also accepted:
+  a GET on a path ending in `/acr_user`, graded by the same live debug, with
+  the response body's `result` array as the output.
   Connection note: ServiceNow developer instances hibernate after inactivity.
   If a run fails with a connection error, log into the ServiceNow account to
   wake the instance, then re-run.

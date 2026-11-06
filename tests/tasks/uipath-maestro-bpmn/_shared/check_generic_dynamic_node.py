@@ -72,6 +72,17 @@ Assertion map (Flow → BPMN):
                     dynamically-resolved `objectName` context field (Flow's own preferred, slug-agnostic signal)
                     carries the whole check here.
 
+HTTP route: when `registry get --input-details` answers `Cannot identify the V2
+element` for this generic activity, the skill sends the agent to a
+connector-mode `Intsvc.UnifiedHttpRequest` through the same connection
+(v2-connector-nodes.md). That node is also accepted: a GET whose body has
+`authentication: "connector"`, `targetConnector` uipath-servicenow-servicenow,
+and a path ending in `/acr_user` (`bpmn_check.connector_requests`, the shape
+the other connector checkers accept). Whether that path is right under the
+connection's base URL is left to the live debug below: a request the vendor
+rejects faults the run. Its records are the `result` array of the response
+body, so a declared output holding that body counts as the array output.
+
 No tenant re-read beyond the process's own debug run is performed, matching Flow's own grader (a read-only
 list call has nothing else to verify against).
 """
@@ -80,6 +91,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -87,7 +99,13 @@ from pathlib import Path
 # …/uipath-maestro-bpmn (for _shared), same convention as _shared/check_jira_get_issue.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # noqa: E402
 
-from _shared.bpmn_check import fail, find_bpmn_file, resolve_project  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    RequestShape,
+    connector_requests,
+    fail,
+    find_bpmn_file,
+    resolve_project,
+)
 from _shared import bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
@@ -115,6 +133,10 @@ OBJECT_NAME = "acr_user"
 GENERIC_LIST_OPERATIONS = {"list"}
 GENERIC_LIST_METHODS = {"GET"}
 NAME_HINT = "AcrUserList"
+# Connector-mode HTTP list of the table: the request path's last segment is
+# the object (`/acr_user`, `/table/acr_user`), not a record under it.
+HTTP_LIST_PATH_RE = re.compile(rf"(?:^|/){OBJECT_NAME}/?$", re.IGNORECASE)
+RECORDS_KEY = "result"
 
 LIVE_RUN_DIR = Path("acr-user-list-live")
 
@@ -169,6 +191,29 @@ def find_generic_list_nodes(root: ET.Element) -> list[ET.Element]:
     return found
 
 
+def find_http_list_nodes(root: ET.Element) -> list[ET.Element]:
+    """Every connector-mode HTTP GET on the acr_user table through the
+    ServiceNow connection (see module docstring, "HTTP route")."""
+    return [
+        task
+        for task, method, path, shape in connector_requests(root, CONNECTOR_KEY)
+        if shape is RequestShape.HTTP
+        and method.strip().upper() in GENERIC_LIST_METHODS
+        and HTTP_LIST_PATH_RE.search(path.split("?", 1)[0])
+    ]
+
+
+def _result_arrays(value):
+    """Yield every list held under a ``result`` key (any case) in ``value``:
+    the records of a ServiceNow table response, not its header lists."""
+    if isinstance(value, dict):
+        for key, v in value.items():
+            if key.lower() == RECORDS_KEY and isinstance(v, list):
+                yield v
+            else:
+                yield from _result_arrays(v)
+
+
 def _array_leaves(value):
     """Yield every list found in ``value``, recursing through dict values."""
     if isinstance(value, list):
@@ -210,9 +255,11 @@ def collect_array_candidates(
     variables_data: object,
     outputs: list[tuple[str, ...]],
     list_node_ids: tuple[str, ...],
+    http_node_ids: tuple[str, ...] = (),
 ) -> list[tuple[str, list]]:
-    """Arrays held by declared output globals; the list nodes' Outputs only
-    when every declared output reads back null (LIVE-ADDENDUM)."""
+    """Arrays held by declared output globals (or the ``result`` array of a
+    response body held there); the list nodes' Outputs only when every
+    declared output reads back null (LIVE-ADDENDUM)."""
     globals_ = get_ci(root_scope(variables_data), "Globals", {}) or {}
     if not isinstance(globals_, dict):
         globals_ = {}
@@ -229,12 +276,18 @@ def collect_array_candidates(
         read_back = True
         if isinstance(value, list):
             candidates.append((f"output global {keys[0]!r}", value))
+        else:
+            for array in _result_arrays(value):
+                candidates.append((f"output global {keys[0]!r} result", array))
     if read_back:
         return candidates
 
     for outputs_record in element_output_records(variables_data, list_node_ids):
         for array in _array_leaves(outputs_record):
             candidates.append((f"list node Outputs {sorted(list_node_ids)}", array))
+    for outputs_record in element_output_records(variables_data, http_node_ids):
+        for array in _result_arrays(outputs_record):
+            candidates.append((f"HTTP list node Outputs {sorted(http_node_ids)}", array))
     return candidates
 
 
@@ -253,7 +306,8 @@ def main() -> None:
         fail(f"{bpmn_path} is not well-formed XML: {exc}")
 
     list_nodes = find_generic_list_nodes(root)
-    if not list_nodes:
+    http_nodes = [] if list_nodes else find_http_list_nodes(root)
+    if not list_nodes and not http_nodes:
         seen = sorted(
             {
                 json.dumps(connector_context(node), sort_keys=True)
@@ -264,9 +318,14 @@ def main() -> None:
         fail(
             f"No generic ServiceNow list activity found on the {CONNECTOR_KEY} "
             f"connector with objectName={OBJECT_NAME!r} (expected operation "
-            f"'list' or method 'GET'). Connector node contexts seen: {seen}"
+            f"'list' or method 'GET'), and no connector-mode HTTP GET on a path "
+            f"ending in /{OBJECT_NAME} through that connection. Connector node "
+            f"contexts seen: {seen}"
         )
-    print(f"OK: found {len(list_nodes)} generic list node(s) on objectName={OBJECT_NAME!r}")
+    if list_nodes:
+        print(f"OK: found {len(list_nodes)} generic list node(s) on objectName={OBJECT_NAME!r}")
+    else:
+        print(f"OK: found {len(http_nodes)} connector-mode HTTP GET node(s) on /{OBJECT_NAME}")
 
     process = root.find(q(BPMN_NS, "process"))
     if process is None:
@@ -275,6 +334,7 @@ def main() -> None:
     if not outputs:
         fail("process declares no uipath:output variable to surface the records")
     list_node_ids = tuple(node.attrib["id"] for node in list_nodes if node.attrib.get("id"))
+    http_node_ids = tuple(node.attrib["id"] for node in http_nodes if node.attrib.get("id"))
 
     project_dir = resolve_project(os.path.basename(bpmn_path))
     LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
@@ -289,13 +349,15 @@ def main() -> None:
     evidence = debug_evidence(instance_id)
     require_clean_run(debug_data, evidence)
 
-    candidates = collect_array_candidates(evidence.variables, outputs, list_node_ids)
+    candidates = collect_array_candidates(
+        evidence.variables, outputs, list_node_ids, http_node_ids
+    )
     if not candidates:
         fail(
             "No output variable holds an array — the connector result was not "
             "surfaced as a process output. Checked declared output globals "
             f"{outputs} and, on null readback, the list node Outputs "
-            f"{list(list_node_ids)}."
+            f"{list(list_node_ids + http_node_ids)}."
         )
     label, value = candidates[0]
     if value and all(isinstance(r, dict) for r in value) and any("sys_id" in r for r in value):

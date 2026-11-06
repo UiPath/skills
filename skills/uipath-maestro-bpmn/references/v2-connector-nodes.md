@@ -114,6 +114,7 @@ uip maestro bpmn registry get Intsvc.UnifiedHttpRequest \
     --output json
 
 # Through a connector's connection: --connection-id names it, the endpoint is relative
+# to `uip is connections base-url <connection-id>`
 uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --connection-id <connection-id> \
     --input-details '{"authentication":"connector","method":"GET","url":"/conversations.list","query":{"limit":"5"}}' \
     --output json
@@ -160,7 +161,13 @@ When `registry get` says an object has no activity in the catalog
 (`Cannot identify the V2 element`, e.g. Slack's `emoji_list_GET`), the
 endpoint is not a catalog activity: send it as a connector-mode HTTP request
 through the same connection. Never fall back to the V1 template for it; the
-V1 node neither opens nor packs the way Studio Web needs.
+V1 node neither opens nor packs the way Studio Web needs. Its `url` is the
+vendor's endpoint relative to `uip is connections base-url <connection-id>`,
+minus the path that base already ends with (base `…/api/v2`, endpoint
+`/api/v2/users` → `"/users"`). A catalog `Path` is the connector's route, not
+always the vendor's: if the debug faults with `[102021] Received failure from
+vendor system`, read the base URL and rebuild `url` from the vendor's API
+instead of sending the same path again.
 
 A service with no Integration Service connector of its own (Spotify, an
 internal API) goes through a connection of the generic HTTP connector,
