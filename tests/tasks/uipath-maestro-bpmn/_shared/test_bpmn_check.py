@@ -584,6 +584,13 @@ def test_resolve_project_takes_studio_webs_process_bpmn(tmp_path, monkeypatch) -
     assert bpmn_check.resolve_project("Proj.bpmn") == project
 
 
+def test_resolve_bpmn_file_returns_studio_webs_process_bpmn(tmp_path, monkeypatch) -> None:
+    project = _studio_web_project(tmp_path, "Sol", "Proj")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.resolve_bpmn_file("Proj.bpmn") == project / "Process.bpmn"
+
+
 @pytest.mark.parametrize(
     ("path", "named"),
     [

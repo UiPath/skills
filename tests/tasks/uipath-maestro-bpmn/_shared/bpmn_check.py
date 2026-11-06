@@ -117,7 +117,12 @@ def _sha256(path: str | Path) -> str:
 
 
 def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
-    """Locate the project directory containing ``bpmn_name``.
+    """Locate the project directory containing ``bpmn_name``; see :func:`resolve_bpmn_file`."""
+    return resolve_bpmn_file(bpmn_name, exclude_under).parent
+
+
+def resolve_bpmn_file(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
+    """Locate ``bpmn_name`` (or Studio Web's ``Process.bpmn`` for it) in its project.
 
     Grades the project wherever the agent placed it (top level or nested under
     a ``<Name>Solution/`` wrapper -- ``uip maestro bpmn init`` creates the
@@ -142,7 +147,7 @@ def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "
             f"found {[str(p) for p in candidates]}"
         )
-    return candidates[0].parent
+    return candidates[0]
 
 
 def parse_bpmn(name_hint: str | None = None) -> tuple[str, ET.Element]:
