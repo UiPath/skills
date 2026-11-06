@@ -6,8 +6,8 @@ description: >
   Interactive-mode variant of init-validate. The working directory already
   contains two existing solutions (SolarReports, TideTracker). When asked to
   create a new Flow project, the skill's greenfield rule
-  (`author/references/greenfield.md` — "Check for existing solutions with
-  `find . -maxdepth 2 -type f -name '*.uipx' -print`") requires the agent to
+  (SKILL.md, "Look for an existing solution before `uip solution init`":
+  `find . -maxdepth 2 -name '*.uipx'`) requires the agent to
   STOP and present a dropdown via
   the interaction mechanism available in its runtime (one option per
   discovered solution + "Create a new solution" + "Something else") instead of
