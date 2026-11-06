@@ -211,11 +211,15 @@ block directly.
 </uipath:variables>
 ```
 
-The migration marker is optional and `uip maestro bpmn init` omits it, so new
-source needs one only when asked for it. Where it appears, the attribute is
-`version`, not `value`, and its value is an **integer** migration number:
-`<uipath:migrationVersion version="20" />` — illustrative, not a number to
-keep current. Preserve an existing value byte-for-byte when editing rather than
+Every process carries a migration marker in its `extensionElements`:
+`<uipath:migrationVersion version="21" />`, the value `uip maestro bpmn init`
+writes. If a process has none, add that element. Without a marker of 4 or
+above, Studio Web sets `v3` script tasks to `v2` when it opens the file. The
+attribute is `version`, not `value`, and its value is an **integer** migration
+number. When `validate` warns that a script task "has no
+uipath:migrationVersion of 4 or above", set the process's marker to the element
+the warning's fix names, replacing an older one rather than adding a second.
+Otherwise preserve an existing value byte-for-byte when editing rather than
 normalising or bumping it.
 
 Give every root-level **manual** `bpmn:startEvent` exactly one stable GUID in
