@@ -1,0 +1,50 @@
+task_id: skill-bpmn-smoke-draft-skeleton-fork-exits
+description: >
+  Draft-mode smoke eval for error paths around a parallel fork: the user asks
+  to see the shape first, so the phase 2 skeleton routes the order, forks the
+  packing steps, and draws the error handling so no path out of the fork stops
+  at a plain end event while the join waits (it ends in terminate or rejoins).
+  No registry call; stops at the approval gate instead of wiring real nodes.
+tags: [uipath-maestro-bpmn, smoke, "mode:build"]
+
+run_limits:
+  expected_turns: 25
+  max_turns: 60
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  I need a BPMN process called "FulfilmentSketch" for order fulfilment.
+  Depending on the order we do picking, packing, or both. Packing has a few
+  steps that happen in parallel. If the warehouse system throws a 500, retry
+  through a fallback; any other error goes to a catch-all handler. If picking
+  takes longer than 10 minutes, escalate it.
+
+  Draft it first so I can see the shape. Don't upload or run anything yet.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent made no registry discovery before the shape was approved (the preflight kind list is allowed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|search|get)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Skeleton routes the order, forks the packing steps, ends every path out of the fork in terminate or the join, has full DI and project metadata, and validates with zero errors"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py FulfilmentSketch --fork-exits-safe"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -1,0 +1,48 @@
+task_id: skill-bpmn-smoke-draft-skeleton-multi-instance
+description: >
+  Draft-mode smoke eval for per-item steps: the user asks to see the shape
+  first, so the phase 2 skeleton marks one box sequential multi-instance with
+  a completionCondition (stop at the first out-of-stock item) and another
+  parallel multi-instance, instead of a hand-rolled loop or a label, makes no
+  registry call, and stops at the approval gate instead of wiring real nodes.
+tags: [uipath-maestro-bpmn, smoke, "mode:build"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  I want a BPMN process called "StockCheckSketch". For every line item on an
+  order, check stock one at a time and stop as soon as one is out of stock.
+  After that, notify each supplier, all at the same time.
+
+  Sketch it for me first. Don't upload or run anything yet.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent made no registry discovery before the shape was approved (the preflight kind list is allowed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|search|get)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Skeleton marks a sequential multi-instance box that stops early and a parallel one, with bare boxes, full DI, project metadata, and validates with zero errors"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py StockCheckSketch --multi-instance"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

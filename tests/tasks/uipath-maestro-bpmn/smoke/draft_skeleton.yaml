@@ -15,7 +15,7 @@ sandbox:
   python: {}
 
 reference:
-  directory: .
+  directory: ..
 
 initial_prompt: |
   I need a BPMN process called "InvoiceIntakeSketch" for incoming invoices.
@@ -42,7 +42,7 @@ success_criteria:
 
   - type: run_command
     description: "Skeleton has bare task boxes, a real conditioned gateway, full DI, project metadata, and validates with zero errors"
-    command: "python3 $REFERENCE_DIR/check_draft_skeleton.py InvoiceIntakeSketch"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py InvoiceIntakeSketch"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
