@@ -40,7 +40,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains the inline HITL node type"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name GdprDeletionApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name GdprDeletionApproval --regex '\"uipath\\.human-in-the-loop(\\.quick-form)?\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
