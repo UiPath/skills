@@ -5,10 +5,10 @@
  * One entity, five operations: create a record, query it two ways, replace it, read
  * it back by id, and map the results onto process outputs. Every node is an
  * Integration Service connector activity on `uipath-uipath-dataservice`, emitted as
- * the V2 node Studio Web's connector panel saves — the connector's `_V3` operation
- * (`CreateEntityRecord_V3`, …), the entity and the parameters in the one json
- * `queryParameters` row, the record in the `body` row — so it needs no connector
- * library to compile.
+ * the V2 node Studio Web's connector panel saves — the connector's curated operation
+ * (`CreateEntityRecordCurated`, …), the entity in the json `pathParameters` row, the
+ * parameters in the json `queryParameters` row, the record in the `body` row — so it
+ * needs no connector library to compile.
  *
  * The connection and its folder are two bindings the process declares once. The
  * folder binding is the connection's COMPANION: the serializer keys it by the
