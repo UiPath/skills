@@ -18,12 +18,12 @@ entry shape by hand from the pulled index files: `stage`, `task`, `taskType`,
 |---|---|---|---|
 | `agent` | `agent-index.json` | `entityKey` | yes |
 | `api-workflow` | `api-index.json` | `entityKey` | yes |
-| `business-rule` | `businessRule-index.json` | `entityKey` | yes |
+| `business-rule` | `businessRule-index.json` ¹ | `entityKey` | yes |
 | `process` | `processOrchestration-index.json` | `entityKey` | no |
 | `rpa` | `process-index.json` | `entityKey` | no |
 | `action` | `action-apps-index.json` | `id` | no |
 | `case-management` | `caseManagement-index.json` | `entityKey` | no |
-| `function` | `function-index.json` | `entityKey` | no |
+| `function` | `function-index.json` ¹ | `entityKey` | no |
 | `flow-process` | `flow-index.json` | `entityKey` | no |
 | `wait-for-connector` | `typecache-triggers-index.json` | `uiPathActivityTypeId` | no |
 | `execute-connector-activity` | `typecache-activities-index.json` | `uiPathActivityTypeId` | no |
@@ -33,6 +33,11 @@ entry shape by hand from the pulled index files: `stage`, `task`, `taskType`,
 
 All indexes live under `~/.uip/case-resources/`. Read with the Read tool,
 never `node -e ... fs.*`.
+
+¹ Not pulled before CLI 1.204.0. On the hand-written path (CLIs without
+`sdd resolve`), these indexes never exist after a pull, so a task of
+either type stays unresolved as a placeholder — never record it as
+`absent` and never offer to create it.
 
 Non-creatable types never get `Create missing resources inline` in the
 empty-lookup gate. Only `agent`, `api-workflow`, and `business-rule` may
