@@ -263,7 +263,7 @@ Hand-authored connector triggers remain **draft** until CLI supplies trigger pro
 
 ## Connectionless vs connector HTTP
 
-Connector-authenticated operations use `Intsvc.ActivityExecution`; keep them **draft** until enriched. Explicit blockers are **connection binding**, **dynamic schemas**, and generated package metadata (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`); do not hand-author these (§3).
+Use a connector activity (`Intsvc.ActivityExecution`) when the call goes through a tenant connection, a dynamic connector schema, or a connector object operation; keep it **draft** until enriched. Explicit blockers are **connection binding**, **dynamic schemas**, and generated package metadata (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`); do not hand-author these (§3).
 
 HTTP always uses `Intsvc.UnifiedHttpRequest`, whether `manual` or `connector`. Build it with `uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --input-details '<request>'` and add `--connection-id` for connector mode. A service with no connector of its own goes through a `uipath-uipath-http` connection in connector mode; never author legacy `Intsvc.HttpExecution` or a connector's `httpRequest` object for a new node. See [v2-connector-nodes.md](v2-connector-nodes.md#http-requests).
 
