@@ -166,6 +166,8 @@ Omitting `version` resolves the latest compatible version; choose the version wi
 
 Remove unused dependencies with `uip rpa cleanup "<PROJECT_DIR>" --skip-imports --output json`; use `--dry-run` first and inspect `Data.UnusedItems`. Without `--skip-imports`, cleanup also removes unused namespace imports and resaves every workflow. No verb removes one named dependency.
 
+`Data.UnusedItems` lists every library package — one with no activities — that no XAML uses, including one a coded workflow or Coded Source File calls: cleanup does not see C# use. Applying cleanup removes it, and unless another dependency brings the package in, the coded file that used it then fails per-file `validate` and `run` with `The type or namespace name '<NAMESPACE>' could not be found`, and `build` with `Could not load file or assembly '<ASSEMBLY>'` (§ What each phase covers). No option keeps one listed item. After a removal, run project-wide `validate`: per-file `validate` of a workflow that calls such a Coded Source File reports nothing.
+
 ## object-repository
 
 Both project-repository verbs are top-level and hyphenated, require an open project, and support standard `--project-dir`; there is no `uip rpa object-repository` group — it returns `Unknown command: object-repository`, Studio running or not. They differ from the UIA OR CLI, which writes entries and has no `get`.
