@@ -24,8 +24,23 @@ import sys
 import time
 from datetime import datetime, timezone
 
-OUTLOOK_CONN = "dd657127-91f5-4568-a3a3-c024bc03fb0f"
-JIRA_CONN = "f5273a4d-d492-4bcd-a106-5a20bf89a3ef"
+TENANT_ID_MAP = os.path.join("_setup", ".tenant-ids.map.json")
+
+
+def _live_id(cloud_id: str) -> str:
+    """The running tenant's ID for a pinned cloud ID.
+
+    `localize_tenant_ids.py` rewrites the sandbox copy of this file, but the graders import
+    the reference copy, so they read the map it wrote into the sandbox instead."""
+    try:
+        with open(TENANT_ID_MAP, encoding="utf-8") as fh:
+            return str(json.load(fh).get(cloud_id, cloud_id))
+    except (OSError, ValueError):
+        return cloud_id
+
+
+OUTLOOK_CONN = _live_id("dd657127-91f5-4568-a3a3-c024bc03fb0f")
+JIRA_CONN = _live_id("f5273a4d-d492-4bcd-a106-5a20bf89a3ef")
 JIRA_PROJECT = "SJP"
 MAILBOX_FOLDER = "Inbox"
 

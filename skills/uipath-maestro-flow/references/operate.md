@@ -270,10 +270,14 @@ UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flo
 ## Trigger a deployed process
 
 ```bash
-uip maestro flow process list --output json
+uip maestro flow process list --folder-key <folder-key> --output json
 uip maestro flow process run <process-key> <folder-key> --output json \
   --inputs '{"numberA": 5}' --attachment <inputName>=<localPath>
 ```
+
+`process list` also takes `--folder-path <path>` in place of `--folder-key`. For `process list`, take
+`<folder-key>` from the user or the `Key` of `uip or folders list --output json`. For `process run`, the
+list entry's `folderKey` also works.
 
 On `process run` only, `--attachment` overrides `--inputs` on a key collision,
 and `--validate` accepts pre-uploaded attachment references for file slots —

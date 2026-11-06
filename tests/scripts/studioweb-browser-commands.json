@@ -28,6 +28,11 @@
         "file": "references/lowcode/capabilities/integration-service/integration-service.md",
         "command": "is connections",
         "reason": "Placeholder text inside a JSON example (`<connection-id from uip is connections list>`), not an instruction."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "eval",
+        "reason": "Prose: `uip eval ... delete` is named as an example of a tenant delete that needs user confirmation, not an instruction to run it."
       }
     ],
     "ceiling": {
@@ -129,7 +134,7 @@
       "ah automations schema get": 3,
       "ah automations update": 2,
       "ah categories get": 3,
-      "ah comments": 3,
+      "ah comments": 7,
       "ah comments create": 3,
       "ah comments list": 3,
       "ah components list": 2,
@@ -584,7 +589,13 @@
     }
   },
   "uipath-solution": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/develop-solution.md",
+        "command": "login tenant set",
+        "reason": "Prose: explains that switching tenants does not change which Studio Web solution an upload overwrites, not an instruction to run it."
+      }
+    ],
     "ceiling": {
       "codedagent init": 1,
       "codedapp": 1,
@@ -632,7 +643,7 @@
       "login status": 9,
       "login tenant set": 2,
       "rpa build": 1,
-      "rpa pack": 3,
+      "rpa pack": 4,
       "tm customfield": 2,
       "tm defects": 1,
       "tm migration": 1,
@@ -694,7 +705,18 @@
     }
   },
   "uipath-vertical-solutions": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "vss deploy",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra, cli-ready) says `uip vss deploy` is not in this host and tells the agent to stop and send the user to a terminal, so these steps are never run here."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "login tenant set",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra, cli-ready) says `uip vss deploy` is not in this host and tells the agent to stop and send the user to a terminal, so these steps are never run here."
+      }
+    ],
     "ceiling": {
       "login": 9,
       "login status": 6,
