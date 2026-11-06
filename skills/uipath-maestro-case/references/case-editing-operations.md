@@ -525,6 +525,7 @@ Each operation's JSON shape lives in its plugin's `impl-json.md`. This file cove
 | Add a flow-process task | [tasks/flow-process](plugins/tasks/flow-process/impl-json.md) |
 | Add an http-request task | [tasks/http-request](plugins/tasks/http-request/impl-json.md) — convert writes it; a brownfield add is a placeholder |
 | Add a document-extraction task | [tasks/document-extraction](plugins/tasks/document-extraction/impl-json.md) — convert writes it; a brownfield add is a placeholder |
+| Add a script task | [tasks/script](plugins/tasks/script/impl-json.md) — convert writes it; a brownfield add is a placeholder |
 | Add a connector-activity task / connector trigger | [tasks/connector-activity](plugins/tasks/connector-activity/impl-json.md) · [tasks/connector-trigger](plugins/tasks/connector-trigger/impl-json.md) |
 | Write stage entry / exit conditions | [stage-entry-conditions](plugins/conditions/stage-entry-conditions/impl-json.md) · [stage-exit-conditions](plugins/conditions/stage-exit-conditions/impl-json.md) |
 | Write task entry / case exit conditions | [task-entry-conditions](plugins/conditions/task-entry-conditions/impl-json.md) · [case-exit-conditions](plugins/conditions/case-exit-conditions/impl-json.md) |

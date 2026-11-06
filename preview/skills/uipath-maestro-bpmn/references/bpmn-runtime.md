@@ -188,7 +188,9 @@ binding half, which is the same for every connector-backed node.
   With no `folder`, `prepare` searches every folder: it records a single match and names the folder to pin, and lists several without picking one.
 - `entity.folder` is the folder holding the ENTITY; the `folder` option stays the folder holding the CONNECTION.
   They are often the same folder and are still two options.
-- The record operations (`create`, `update`, `get`, `query`, `delete`) then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …) with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, plus the entity's two `Entity` bindings.
+- The record operations (`create`, `update`, `get`, `query`, `delete`) then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …) as a V1 task with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, plus the entity's two `Entity` bindings.
+  Only `_V3` takes a folder, and Studio Web's V2 catalog does not list it, so this task stays V1.
+  A tenant entity's record operations are V2 tasks on the curated operations (`CreateEntityRecordCurated`, `UpdateEntityRecordV2`, `GetEntityRecordByIdCurated`, `QueryEntityRecordsCurated`, `DeleteEntityRecordCurated`), with the entity in the `pathParameters` row.
   Run `uip maestro bpmn refresh <project>` after `compile`, then, when the project has a solution, `uip solution resources refresh --solution-folder <SolutionDir>` (the folder holding the `.uipx`, `<Name>Solution/` in the default scaffold): the first turns the two bindings into the entity's row in `bindings_v2.json`, and the second declares the entity in the solution.
   Do not hand-fill the task through `.activity()`, and do not pass a folder entity's name as a plain `entity` string: that writes the tenant-scope operation, which validates but does not address the folder entity.
 - `entity: { name, folderKey }` is for a folder key already in hand.
@@ -200,17 +202,18 @@ binding half, which is the same for every connector-backed node.
   Do not add bindings by hand or promise per-environment re-pointing; tell the user the entity is fixed at compile time.
 
 <!-- RULE:bpmn.connector.parameter-rows -->
-- A connector's path and query parameters are one `uipath:input` row each, under
-  the library's own parameter name and tagged `target="path"` / `target="query"`;
-  the request body is the one json `target="body"` row. `.connector()` and
-  `.dataService()` write that. Through `.activity()`, a request field goes in
-  `inputs: { field: value }` and is folded into the body row (`inputs: { script }`
-  on a JDBC query becomes `{"script": …}` in the body); a path or query parameter is
-  spelled out with `inputRows: [{ name, type, target, value }]`, **with its `target`**.
-  `inputRows`, when present, replaces `inputs`: spell the body row too,
-  `{ name: 'body', type: 'json', target: 'body', body: { script } }`, or the request
-  fields are silently dropped. A row without `target` is never sent; `check` refuses it
-  (`CONNECTOR_INPUT_ROW_NO_TARGET`).
+- `.connector()`, `.dataService()`, `.eventTrigger()` and `.waitForEvent()` write a V2 task (`activityConfigurationVersion: v2`), the shape Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds.
+  Needs `@uipath/maestro-builder-sdk` 6.84.0 or later; an older SDK writes a new `.connector()` task with one `target="path"` / `target="query"` row per parameter and an `operation` context row, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again; do not hand-convert its rows.
+  Its path parameters are one json row, `pathParameters` (`target="pathParameters"`), and its query parameters another, `queryParameters` (`target="queryParameters"`), each keyed by the library's own parameter names (`send_as`, not `sendAs`); the request body is the one json `target="body"` row, and a multipart file part is its own `target="file"` row.
+  `.dataService()` has two exceptions, which it still writes as V1 tasks: the file operations (`downloadFile`, `uploadFile`, `deleteFile`), whose `_V3` operations have no field-name parameter, and every record operation on a folder-scoped entity (see the folder-entity rule above).
+- An imported process can also carry V1 tasks, with one `target="path"` / `target="query"` row per parameter and an `operation` context row.
+  Leave them as they are: a task you add beside them is V2, and a file may mix the two.
+  Leave the process-level `uipath:intsvcActivityConfig` marker as you found it, as `registry get --input-details` instructs: a new workflow from `bpmn init` has it, and an existing workflow without it needs none.
+  Do not add it to an existing workflow: Studio Web would then read every unversioned V1 task in the file as V2.
+- Through `.activity()`, copy the `<uipath:context>` rows of the element `registry get --input-details` returns (`Data.V2.ElementXml`), `activityConfigurationVersion: 'v2'` included; see [§4 of the connectors reference](connectors.md#4-when-the-connector-is-not-in-the-library).
+  A request field goes in `inputs: { field: value }` and is folded into the body row (`inputs: { script }` on a JDBC query becomes `{"script": …}` in the body); path and query parameters go in `inputs: { pathParameters: { … }, queryParameters: { … } }`, which become the two json rows.
+  `inputRows`, when present, replaces `inputs`: spell every row, the body row included (`{ name: 'body', type: 'json', target: 'body', body: { script } }`), or the request fields are silently dropped.
+  Give each row its `target`: a row without one is never sent, and `check` refuses it (`CONNECTOR_INPUT_ROW_NO_TARGET`).
 
 ## Registry extension types
 
@@ -267,9 +270,11 @@ binding half, which is the same for every connector-backed node.
 
 <!-- RULE:bpmn.brownfield.connector-lift -->
 - Whenever a library opens (`--library <dir>`, else the `registry pull` cache, with `--connectors-local <dir>` as the prepared overlay on top), `bpmn decompile` LIFTS an `Intsvc.ActivityExecution` task the library can name into the `.connector(key, action, inputs, { connection, folder, outputVar, errorVar, outputs })` call an author writes, and keeps the rest as the verbatim `.activity()` with `contextVerbatim` and a `metadata` blob, printing the reason for each (`decompile: connectors — lifted 6 to .connector(); verbatim: Activity_mrv8tl (body field "Status" is not in the library …)`).
+  Only a V2 task (`activityConfigurationVersion: v2`) is lifted, because `.connector()` writes V2; a V1 task stays the verbatim `.activity()` (reason: `a V1 connector task, kept verbatim so it stays V1`), so a no-edit round trip does not convert it.
   A lift is written only after that one call has been compiled on its own and its task compared with the original, so a lift that lost an input or picked the wrong action is refused per element, not approximated.
   The lifted form is the one to copy when adding a connector task to an import. What stays verbatim: a body field the static library does not declare (a Data Fabric update's entity columns; `registry prepare` loads them), a `connection` that is not a `=bindings.<id>` reference, a designer row with an attribute no option spells. A lifted task's variables keep the file's own `jsonSchema` declaration as an explicit `.vars([…])` entry rather than a row the call no longer has.
   A lifted task's canvas metadata is regenerated on compile, so a no-edit decompile, compile and merge is not byte-identical for those tasks; `--connectors verbatim` keeps every task as written, for a byte-identical brownfield edit. `examples/InvoiceApproval.bpmn.ts` shows both forms side by side.
+  That file was decompiled before the lift became V2-only: its six `.connector()` calls came from V1 tasks and now compile to V2 tasks beside the six verbatim V1 ones, while a fresh decompile of the same export keeps all twelve verbatim.
 
 <!-- RULE:bpmn.brownfield.unused-bindings -->
 - `bpmn decompile` DROPS a binding nothing references, and names what it dropped. The

@@ -529,6 +529,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `flow-process` | `plugins/tasks/flow-process/` |
 | `http-request` | `plugins/tasks/http-request/` |
 | `document-extraction` | `plugins/tasks/document-extraction/` |
+| `script` | `plugins/tasks/script/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `external-agent` | `plugins/tasks/connector-activity/` (External agents and automations) |
 | `external-workflow` | `plugins/tasks/connector-activity/` (External agents and automations) |

@@ -48,6 +48,10 @@
  *     one query whose designer added an output row with an empty `target`, which no
  *     option spells. Those six are what an import looks like, and the other six are
  *     what an author would type.
+ *     The export's connector tasks are V1. This file was decompiled before the lift
+ *     became V2-only, so the six `.connector()` calls now compile to V2 tasks beside
+ *     the six verbatim V1 ones; a fresh decompile of the same export keeps all twelve
+ *     verbatim (`a V1 connector task, kept verbatim so it stays V1`).
  *   - `contextVerbatim: true` and `contextRows` — on the verbatim tasks and the two
  *     triggers, the context is reproduced exactly as the tenant wrote it, injecting none
  *     of the registry's defaults, so the round trip is faithful rather than merely

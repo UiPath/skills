@@ -47,7 +47,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent diagnosed the existing run instead of starting a fresh job"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+jobs\s+start'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+jobs\s+(re)?start'
     weight: 2.0
     pass_threshold: 1.0
 
@@ -59,12 +59,16 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Informational (weight 0): `uip traces spans get --job-key` resolves the trace
+  # from the job key on its own, so skipping `or jobs get/logs/history` is a valid
+  # route. Re-runs and wrong-job diagnoses are rejected by the no-start check above
+  # and by the JobKey check in check_traces_diagnose_e2e.py.
   - type: command_executed
     description: "Agent triaged the job itself before or alongside the trace surface"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+jobs\s+(get|logs|history|traces)\s'
     min_count: 1
-    weight: 1.5
+    weight: 0
     pass_threshold: 1.0
 
   - type: file_exists

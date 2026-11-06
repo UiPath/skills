@@ -211,11 +211,15 @@ block directly.
 </uipath:variables>
 ```
 
-The migration marker is optional and `uip maestro bpmn init` omits it, so new
-source needs one only when asked for it. Where it appears, the attribute is
-`version`, not `value`, and its value is an **integer** migration number:
-`<uipath:migrationVersion version="20" />` — illustrative, not a number to
-keep current. Preserve an existing value byte-for-byte when editing rather than
+Every process carries a migration marker in its `extensionElements`:
+`<uipath:migrationVersion version="21" />`, the value `uip maestro bpmn init`
+writes. If a process has none, add that element. Without a marker of 4 or
+above, Studio Web sets `v3` script tasks to `v2` when it opens the file. The
+attribute is `version`, not `value`, and its value is an **integer** migration
+number. When `validate` warns that a script task "has no
+uipath:migrationVersion of 4 or above", set the process's marker to the element
+the warning's fix names, replacing an older one rather than adding a second.
+Otherwise preserve an existing value byte-for-byte when editing rather than
 normalising or bumping it.
 
 Give every root-level **manual** `bpmn:startEvent` exactly one stable GUID in
@@ -246,7 +250,16 @@ Public entry-point variables have a two-layer runtime contract:
 - Declare each public `uipath:input` with `elementId` bound to its intended
   StartEvent and a mutable internal `uipath:inputOutput` scoped to the process
   (`elementId="<process id>"`) with the stable id used by process expressions.
-  Map `=vars.<public-input-id>` to the internal id on that StartEvent.
+  Map `=vars.<public-input-id>` to the internal id on that StartEvent. Nodes
+  read only the internal id. A `uipath:input` nothing maps is never a process
+  variable:
+
+  ```xml
+  <uipath:mapping version="v1">
+    <uipath:type value="BPMN.Variables" version="v1" />
+    <uipath:output name="Amount" type="double" var="Var_Amount" source="=vars.input_Var_Amount" />
+  </uipath:mapping>
+  ```
 - Declare a mutable internal `uipath:inputOutput` scoped to the process
   (`elementId="<process id>"`), plus a public
   `uipath:output` bound with `elementId` to the root EndEvent that returns it.
@@ -564,8 +577,11 @@ it resumes the main path rather than ending that item. See
   (`Orchestrator.StartAgenticProcess[Async]`, `…CaseMgmtProcess[Async]`). A
   plain BPMN `calledElement` round-trips but is not specially authored by the
   canvas layer.
-- Each scope (process or sub-process) may have at most one blank (untyped) start
-  event (`MULTIPLE_BLANK_START_EVENTS`).
+- A sub-process may have at most one blank (untyped) start event
+  (`MULTIPLE_BLANK_START_EVENTS`). The process itself may have several: each
+  blank start with its own `uipath:entryPointId` is a separate entry point (for
+  example "start" and "restart after approval"), and `uip maestro bpmn validate`
+  accepts that shape.
 
 > SubProcess scopes operations *within the same instance*; CallActivity invokes
 > a *separate* Maestro instance. Do not conflate them.
@@ -745,18 +761,15 @@ string), on failure in `Instructions` with the errors.
 
 - **`VARIABLE_DOES_NOT_EXIST`** — a reference with no matching declaration.
   Always a defect; fix it.
-- **`VARIABLE_NOT_SET`** on the node reading a caller-supplied input —
-  **expected by construction, not a defect**, whenever that input is correctly
-  scoped to the start event (see [Variables](#variables)). Canvas availability
-  recognizes only process-scoped variables and upstream nodes'
-  `uipath:output` mappings; a start-event input is neither, so any process
-  whose node consumes a caller value carries this warning. Scoping the input
-  to the process instead silences the warning by emptying the published input
-  contract (`entry-points.json`'s `input` becomes `[]`) — nothing can then
-  invoke the process with that value, and a `debug --inputs` run still
-  succeeds, which is exactly what hides the break. Judge correctness by the
-  published contract (`entry-points.json` declares the input and every
-  output), not by whether the warning is gone.
+- **`VARIABLE_NOT_SET`** and **`read but never assigned`** on a variable a node or
+  a flow condition reads — never expected; fix before finishing. The start event has no mapping
+  for that input ([Variables](#variables)), or nothing upstream writes the
+  variable. Do not scope the input to the process to silence it: that empties
+  the published input contract (`entry-points.json`'s `input` becomes `[]`)
+  and a `debug --inputs` run still succeeds, which hides the break. Judge
+  correctness by the published contract (`entry-points.json` declares the
+  input and every output) and no `VARIABLE_NOT_SET` or `read but never assigned`
+  left.
 
 If `validate` is unknown or runs only deploy-readiness checks, update
 the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).

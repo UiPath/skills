@@ -31,7 +31,7 @@ reference:
 
 pre_run:
   - command: "bash -c 'cd acme-echo && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
-    timeout: 120
+    timeout: 300
 
 initial_prompt: |
   I've updated my `acme-echo` agent and need to redeploy it to the
