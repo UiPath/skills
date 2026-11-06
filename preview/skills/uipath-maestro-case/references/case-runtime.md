@@ -83,14 +83,15 @@ make from syntax alone. Exact signatures remain in the generated API.
   task, prune orphans before refreshing:
 
   1. Recompile. `compile` emits `ORPHANED_SOLUTION_RESOURCE` for each
-     resource key no binding still references (it already skips non-bound
-     kinds, the project's own declarations, packages, other projects'
-     bindings, and action-app dependencies).
+     process or app declaration no binding still references.
   2. For each reported orphan:
      `uip solution resources remove {key} --solution-folder {solution} --output json`
-  3. Never remove the Case project's own process/package pair, and never
+  3. Connection declarations are not covered by the warning. After
+     removing the last connector task that used a connection, remove
+     its declaration manually with the same `resources remove` command.
+  4. Never remove the Case project's own process/package pair, and never
      target package entries directly.
-  4. `uip solution resources refresh --solution-folder {solution} --output json`
+  5. `uip solution resources refresh --solution-folder {solution} --output json`
 <!--skill-flavor:orphan-cleanup:end-->
 
 ## SLA and runtime semantics
