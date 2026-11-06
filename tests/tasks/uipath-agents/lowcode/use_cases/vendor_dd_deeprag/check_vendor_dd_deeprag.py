@@ -3,9 +3,11 @@
 
 Final-state only. Validates:
   1. Autonomous agent; schemas in sync with entry-points.json.
-  2. The evidence documents are a list of job-attachments and the questions
-     another input (names and the questions' type are the agent's choice); both are templated into the
-     messages.
+  2. Inputs, checked structurally (names are the agent's choice): exactly one
+     input is a list of job-attachments (the evidence documents) and at least
+     one other input of any type exists (the questions); every input is
+     templated into the messages. Which input holds the questions is left to
+     the LLM judge.
   3. The run's documents are grounded just-in-time: an enabled built-in
      `deep-rag` tool, or a context with contextType "attachments". A
      pre-built index context does not satisfy the prompt ("we don't keep
@@ -22,7 +24,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
     assert_existing_project,
-    require_input,
     assert_autonomous,
     assert_enum,
     assert_has_fields,
@@ -36,6 +37,11 @@ from _shared.use_case_assertions import (  # noqa: E402
     load,
     require_resource,
 )
+
+
+def _inputs(in_schema: dict) -> dict:
+    return {k: v for k, v in (in_schema.get("properties") or {}).items() if isinstance(v, dict)}
+
 
 AGENT_DIR = Path(os.getcwd()) / "VendorRiskSol" / "VendorDueDiligenceAgent"
 FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "VendorRiskSol" / "VendorDueDiligenceAgent"
@@ -52,9 +58,12 @@ def check_inputs(in_schema: dict) -> list[str]:
     docs = [f for f in attachment_fields(in_schema) if (props.get(f) or {}).get("type") == "array"]
     if len(docs) != 1:
         fail(f"expected one input holding a list of evidence files (array of job-attachments), found {docs}")
-    questions = require_input(in_schema, "questions", "questions", "formQuestions", "questionnaire", "questionnaireQuestions", "questionList")
-    print(f"OK: evidence files arrive as {docs[0]!r} (list of job-attachments)")
-    return [docs[0], questions]
+    ins = _inputs(in_schema)
+    others = [k for k in ins if k not in attachment_fields(in_schema)]
+    if not others:
+        fail(f"inputSchema needs a questions input besides the evidence files, found {sorted(ins)}")
+    print(f"OK: evidence files arrive as {docs[0]!r} (list of job-attachments); other inputs {others}")
+    return list(ins)
 
 
 def check_grounding() -> None:
