@@ -160,6 +160,37 @@ Packaging (one solution vs independent packages), entry points and triggers, tar
 ### Tags
 Comma-separated: business domain, target applications, platform features (document-understanding, queues, human-in-the-loop, …).
 
+### Data Model
+
+Present in every genome; the stub line when no ontology bundle was given. When one
+was, this section is the **summary and the contract**, never the schema: counts,
+components, the defaults applied, and what was deferred. The schema itself lives in
+`entities.json` and the solution resources, which are machine-checked — a field list
+copied here is a second contract that drifts ([data-model-guide.md](data-model-guide.md)).
+
+```markdown
+## Data Model
+
+Derived from `<bundle>` ({n} classes, {n} shapes, {n} triples maps) into {n} entities
+across {n} component(s), {n} choice set(s). Entity project `<NAME>`, scope {tenant|folder}.
+
+| | |
+|---|---|
+| Artifacts | `entities.json`, `target.r2rml` (identical to `source.r2rml` at this point) |
+| Defaults applied | D1 system of record: all but {…} · D2 scope · D3 displayField · D4 choice sets |
+| Deferred | {n} register rows: {n} awaiting a write site, {n} awaiting an access pattern |
+| Not covered | {n} ontology objects, listed in `entities.json` |
+```
+
+Each entity also gets a **Platform Dependencies** row, and each register row that is
+`locus: uipath, level: transition` by rule gets a **Business Rule** under the step
+that writes it plus one acceptance criterion
+([data-model-consumption-guide.md](data-model-consumption-guide.md)).
+
+A Workflow step that touches the model carries a `**Data:**` line declaring what it
+reads, writes and traverses — that declaration is how a later phase derives the
+access pattern without re-inferring it (same guide).
+
 ### Source Map (extraction only)
 Where every part of an extracted genome came from — its contract rows, the step table and, for a framework source, the migration contract: [extracted-genome-guide.md § Source Map](extracted-genome-guide.md). Authored genomes have no Source Map.
 
@@ -173,6 +204,7 @@ Where every part of an extracted genome came from — its contract rows, the ste
 | Business Rules | Stub allowed | Step-associated | Step-associated |
 | Error Handling | Stub allowed | Per step where applicable | Per step where applicable |
 | Transactional Shape | Full when a unit of work exists ([transactional-shape-guide.md](transactional-shape-guide.md) rule 1), else stub | Full when a unit of work exists, else stub | Full when a unit of work exists, else stub |
+| Data Model | Full when an ontology bundle was given, else stub | Full when a bundle was given, else stub | Full when a bundle was given, else stub |
 | Acceptance Criteria | 3-4 minimum | 5+ incl. data checks | 7+ incl. data checks |
 
 Minimums, not ceilings. Fifteen distinct steps in the source or description means fifteen steps in the genome. A test component's steps are its test cases and a library's its public workflows, so the Workflow minimums apply to neither: their depth is in the cases' checkpoints and the workflows' substeps.
@@ -187,6 +219,7 @@ Minimums, not ceilings. Fifteen distinct steps in the source or description mean
 | Business Rules | No business rules beyond the Workflow substeps. |
 | Error Handling | No error handling: a failure stops the run. |
 | Transactional Shape | Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's; a {Flow, API workflow, agent} that works its items itself}. |
+| Data Model | No ontology bundle: the automation's data lives in the systems named in Target Applications. |
 
 ## Ambiguity Marker
 
