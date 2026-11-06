@@ -123,6 +123,7 @@ own `{ updates }` (below).
 
 ### Other variable updates on a trigger
 
+<!--skill-flavor:trigger-updates-sdk-version:start-->
 Needs `@uipath/maestro-builder-sdk` newer than 6.85.2: check that
 `entryPoint(` in `dist/flow-sdk.d.ts` of the SDK copy in use takes
 `'version' | 'label' | 'updates'`. An older SDK refuses `.trigger(spec, { updates })`
@@ -131,6 +132,7 @@ with no row at all. Upgrade the copy in use: `npm install
 @uipath/maestro-builder-sdk@latest` in a workspace that has its own
 `node_modules` copy (it is used before the global one), else `npm install -g
 @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:trigger-updates-sdk-version:end-->
 
 `.trigger(spec, { updates })` and `.entryPoint(id, spec, { updates })` write any
 other row on that root's trigger node. The rows run when the root fires, after
