@@ -10,28 +10,37 @@ Author a Case plan as TypeScript and compile it to schema V30 into the project's
 
 Use this as a router: read only the capability reference you need, then let TypeScript and `case check` provide the detailed contract.
 
+<!--skill-flavor:host-setup:start-->
+
+<!--skill-flavor:host-setup:end-->
 ## Workflow
 
 **Stop rule, before any step:** when the request says design-only, Phase 1 only, review first, not to build, not to create the case plan, or to stop before tenant work, run no `solution init`, `case init`, `decompile` or `compile`. Write no `<Name>.case.ts`, `caseplan.case` or `caseplan.json`, and no `tasks/tasks.md` or other restatement of the SDD unless the request asks for one. When the request says Phase 1 only, review first, or not to build, or asks for registry or resource lookups, run step 0 for an approved `sdd.md` plus any lookup the request asks for, then stop. Otherwise (design-only, no case plan, stop before tenant work) run no registry or other tenant command. Report the deferred build work in the reply.
 
 0. When the input is an approved `sdd.md` that names published resources, resolve them first: `registry pull`, then `sdd resolve` into `tasks/registry-resolved.json`, then ask the user about what it leaves ([Registry resolution](references/registry-resolution.md)). Stop there when the request is Phase 1 only.
+<!--skill-flavor:workflow-scaffold:start-->
 1. Scaffold once, running `case init` **from inside the solution dir**: `uip solution init <SolutionName> && cd <SolutionName> && uip maestro case init <CaseName>`. It walks UP for the enclosing `.uipx`; run from anywhere else it finds none, silently creates a SECOND solution `<CaseName>Solution/`, registers the project there, and leaves the first empty with two `project.uiproj` on disk — so check the reply carries no `Data.AutoCreatedSolution`. Exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates; if a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
 2. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
+<!--skill-flavor:workflow-scaffold:end-->
 3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
 4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
+<!--skill-flavor:workflow-build:start-->
 5. Seed the source by decompiling the plan `case init` seeded (`caseplan.case`, or an older `caseplan.json`) instead of hand-writing the skeleton: `uip maestro case decompile <project>/<plan> -o <Name>.case.ts --no-pipeline`. It carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned; `entry-points.json` references that trigger id. Compile back into that same `<plan>`, never a second plan beside it: pack and debug read only one. Compile with plain `-o <project>/<plan>` and no `--bindings <plan>`; it needs `@uipath/maestro-builder-sdk` 6.50.1 or later to keep a Designer-saved plan's binding map ([Brownfield](references/case-runtime.md#brownfield-editing)). Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
 6. Run `uip maestro case check <Name>.case.ts --source` after each structural change.
 7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
 8. Run live debug only when requested and tenant resources are available.
+<!--skill-flavor:workflow-build:end-->
 
 ## API index
 
+<!--skill-flavor:api-index-location:start-->
 Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only
 true of the build that emitted it. `@uipath/maestro-builder-sdk` ships
 `dist/api-members.md` (keyed by field or method — `sla`) and `dist/api-index.md`
 (keyed by exported symbol — `CaseBuilder`). Match one name, not the whole file,
 then read the span: the whole declaration, doc comment included. Both cover all
 three entry points; each file's header spells the paths its rows resolve against.
+<!--skill-flavor:api-index-location:end-->
 
 ## Capability router
 
@@ -85,6 +94,7 @@ export default casePlan('loan-approval')
 
 ## Validation loop
 
+<!--skill-flavor:validation-loop:start-->
 ```bash
 uip maestro case check <Name>.case.ts --source
 uip maestro case compile <Name>.case.ts -o <project>/<plan>
@@ -93,6 +103,7 @@ uip maestro case validate <project>/<plan> --strict --output json               
 uip solution resources remove <orphan-key> --solution-folder <solution> --output json
 uip solution resources refresh --solution-folder <solution> --output json
 ```
+<!--skill-flavor:validation-loop:end-->
 
 `check` owns source-level invariants and emits teaching diagnostics. Product
 validation owns the compiled Case contract. Do not repair emitted JSON by hand;
@@ -112,11 +123,13 @@ snapshot, plus `.flow-sdk/connectors-local` when `registry prepare` wrote it.
 A connector task, external task, event trigger or wait-for-connector that
 `compile` cannot resolve fails `check` first, with compile's code and text.
 
+<!--skill-flavor:library-pull:start-->
 Before `check` on a Case with connector work, run `uip maestro registry pull`:
 with no library cached these rules stay silent, so a clean `check` proves
 nothing about the connector. To use another library, set
 `$FLOW_SDK_LIBRARY_JSON` for both `check` and `compile`, not `--library`, so
 both resolve against the same one.
+<!--skill-flavor:library-pull:end-->
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
 API workflow, Coded Function, or sub-case; never fabricate a name or folder. A destination's

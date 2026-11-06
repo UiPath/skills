@@ -23,6 +23,8 @@
 /skill-flavors/studioweb/uipath-maestro-case/ @astridstaicu @UiPath/maestro-cli-team
 /skill-flavors/studioweb/uipath-maestro-flow/ @astridstaicu @UiPath/maestro-cli-team
 /skill-flavors/studioweb/uipath-rules/ @astridstaicu @UiPath/maestro-cli-team
+/preview/skill-flavors/studioweb/ @astridstaicu
+/preview/skill-flavors/studioweb/uipath-maestro-case/ @astridstaicu @UiPath/maestro-cli-team
 
 # preview skills
 /preview/skills/uipath-maestro-case/ @dmetzgar @tmatup @UiPath/maestro-cli-team
