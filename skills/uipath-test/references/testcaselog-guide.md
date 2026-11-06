@@ -79,9 +79,13 @@ or `uip tm testsets run ... --execution-type manual`. A manual run already opens
 each case log, so `start` returns that same log, not a duplicate.
 
 `finish` requires **all three** of `--result`, `--has-error`, and
-`--executed-by`, and **`--executed-by` is an email** — not a user/IdP UUID
-(unlike `assign --assignee-id`). Wrong type is a `ValidationError`/exit 3, not a
-400. `finish` destroys any override on the log.
+`--executed-by` — omit any and it fails with a `ValidationError`/exit 3 and an
+**empty error message**, not a usage hint. **`--executed-by` is an email** — not a
+user/IdP UUID (unlike `assign --assignee-id`); wrong type is a `ValidationError`/exit
+3, not a 400. It is validated non-empty then discarded: the log records the
+authenticated caller regardless, so when no executor is named pass your own login
+email (`uip login status` → `Data.UserEmail`). `finish` destroys any override on the
+log.
 
 Reads need test-case-log read permission; override and assign need the matching
 write permissions (`uip tm project permissions get --project-key`).

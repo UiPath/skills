@@ -13,6 +13,7 @@ budget. Faked at ``subprocess.run`` like :mod:`test_flow_check`, so nothing here
 needs a tenant, a real ``uip``, or wall-clock sleeping.
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -132,6 +133,32 @@ def test_invalid_flow_fails_without_retry(monkeypatch, capsys):
     assert '"Failure"' in capsys.readouterr().out
 
 
+_WARNED = '{"Result":"Success","Data":{"Status":"Valid","Warnings":"[nodes[n1].inputs.fileRef] Property \'x\' does not exist"}}'
+
+
+def test_warnings_pass_without_the_flag(monkeypatch):
+    _stub(monkeypatch, [_cp(0, _WARNED)])
+    assert validate_flow.main() == 0
+
+
+def test_no_warnings_fails_a_flow_that_validates_with_warnings(monkeypatch, capsys):
+    calls = _stub(monkeypatch, [_cp(0, _WARNED)])
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert calls["n"] == 1
+    assert "a.flow validated with warnings" in capsys.readouterr().err
+
+
+def test_no_warnings_passes_a_clean_flow(monkeypatch):
+    _stub(monkeypatch, [_cp(0, '{"Result":"Success","Data":{"Status":"Valid"}}')])
+    assert validate_flow.main(["--no-warnings"]) == 0
+
+
+def test_no_warnings_fails_output_that_is_not_json(monkeypatch, capsys):
+    _stub(monkeypatch, [_cp(0, "Valid")])
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert "no JSON envelope" in capsys.readouterr().err
+
+
 def test_every_flow_file_is_validated(monkeypatch):
     calls = _stub(
         monkeypatch,
@@ -190,6 +217,33 @@ def test_explicit_paths_skip_discovery(monkeypatch, tmp_path):
     monkeypatch.setattr(validate_flow, "find_flow_files", no_discovery)
     assert validate_flow.main([str(flow)]) == 0
     assert calls["flows"] == [str(flow)]
+
+
+def _studio_web_project(root, name, *, project_type="Flow"):
+    proj = root / f"{name}Sol" / name
+    proj.mkdir(parents=True)
+    (proj / "project.uiproj").write_text(json.dumps({"ProjectType": project_type}))
+    (proj / "new.flow").write_text(json.dumps({"nodes": []}))
+    return proj
+
+
+def test_explicit_path_validates_studio_webs_main_file(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    _studio_web_project(tmp_path, "DocsFlow")
+    calls = _stub(monkeypatch, [_cp(0, "valid")])
+
+    assert validate_flow.main(["DocsFlowSol/DocsFlow/DocsFlow.flow"]) == 0
+    assert calls["flows"] == [os.path.join("DocsFlowSol", "DocsFlow", "new.flow")]
+
+
+def test_explicit_path_for_another_project_still_fails(monkeypatch, tmp_path, capsys):
+    monkeypatch.chdir(tmp_path)
+    _studio_web_project(tmp_path, "DocsFlow")
+    calls = _stub(monkeypatch, [])
+
+    assert validate_flow.main(["DocsFlowSol/DocsFlow/Other.flow"]) == 1
+    assert calls["n"] == 0
+    assert "flow file not found: DocsFlowSol/DocsFlow/Other.flow" in capsys.readouterr().err
 
 
 def test_explicit_missing_path_fails_without_running(monkeypatch, capsys):

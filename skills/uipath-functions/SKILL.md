@@ -48,6 +48,7 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 1. **No LLM calls inside a Coded Function.** LLM reasoning breaks the deterministic contract — that project is an agent → `uipath-agents`.
 2. **The `functions` map in `uipath.json` identifies the project as a Coded Function** — it is the marker every tool reads.
 3. **Cloud-backed work needs auth**: `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.
+4. **Reach third-party systems through an Integration Service connection, or build a connector with `uip is connectors builder`.** A direct call with a key from an Orchestrator asset is allowed (custom-auth API calls are in scope) but needs a stated reason: the asset keeps the secret safe, but the integration stays out of `uip is connections list` and cannot be re-pointed per environment.
 
 ### Python
 

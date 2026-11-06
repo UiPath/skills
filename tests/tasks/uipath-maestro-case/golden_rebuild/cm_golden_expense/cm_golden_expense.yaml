@@ -42,7 +42,15 @@ agent:
 sandbox:
   template_sources:
     - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+    - type: template_dir
       path: fixtures
+
+# Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs.
+pre_run:
+  - command: "python3 _setup/localize_tenant_ids.py"
+    timeout: 300
 
 reference:
   directory: ../..
@@ -72,7 +80,7 @@ initial_prompt: |
     (the case suspends on timers, HITL actions, and a webhook event).
   - Persist each connector's `case spec` response before writing it into
     the case plan - never reconstruct it from memory.
-  - Finish with `uip maestro case validate <case plan file in CMGoldenExpense/CMGoldenExpense/> --output json`
+  - Finish with `uip maestro case validate <case plan file in CMGoldenExpense/CMGoldenExpense/> --strict --sdd sdd.md --output json`
     passing on the resulting case plan.
 
 success_criteria:

@@ -1,6 +1,14 @@
 # True-brownfield decompile, edit, and merge
 
-Use this procedure when a task supplies a deployed `.flow` and no `.flow.ts`.
+Use this procedure to edit a `.flow` that already exists, unless the task
+supplied its `.flow.ts`. A `.flow.ts` an earlier turn left is not supplied: the
+canvas may have changed the `.flow` since.
+
+<!--skill-flavor:fresh-decompile-cleanup:start-->
+Decompile fresh, after removing an earlier turn's pipeline artifacts
+([The generated pipeline](#the-generated-pipeline)).
+
+<!--skill-flavor:fresh-decompile-cleanup:end-->
 Do not hand-transcribe the graph: decompile it to builder source, edit that
 source, and merge only the delta back into the original.
 
@@ -29,12 +37,16 @@ it recursively.
 PROJECT=Solution/Deployed
 CANONICAL="$PROJECT/Deployed.flow"
 WORK=.flow-work/Deployed
-mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
+rm -rf "${WORK:?}" && mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
-uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow" --no-check
+uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
+# If this compile stops, run the check below now, before any edit: it says
+# why (an SDK too old for this loop, or a probable SDK defect).
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
 # Leave added steps out of .layout(...): merge places them (builder-sdk#1320).
+# Check against the original until no (edited) error is left:
+uip maestro flow check "$PROJECT/Deployed.flow.ts" --source --baseline "$CANONICAL"
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
@@ -64,24 +76,68 @@ Compile the baseline before the edit, never after: merge diffs edited against
 it, so a baseline of the edited source drops your change.
 
 With an edited `.flow.ts` and `--baseline-from`, `merge` runs `check` on the edited source and refuses the write on an error in a node or subflow the edit changed (`N error(s) in nodes merge takes from the edited flow`), and on one it cannot place that the edit introduced.
-An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
+An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; an untouched node the SDK cannot compile at all is kept as saved too and prints as `LOWERING_NODE_KEPT` (a probable SDK defect: tell the user; 6.64.0 or later); a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
 Fix a finding when you edit its node.
 Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node,
 <!--skill-flavor:merge-check-sdk-upgrade:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:merge-check-sdk-upgrade:end-->
 
-If the edited compile fails `check` only with `HTTP_READ_WITHOUT_RETURNS`, the
-deployed HTTP node has no body schema
-([builder-sdk#1319](https://github.com/UiPath/builder-sdk/issues/1319)).
-Add `--no-check` to the edited compile and leave that node alone.
-`uip maestro flow check --source "$PROJECT/Deployed.flow.ts"` must report no
-other error code. Never use `--no-check` on the edited compile for any other
-error.
-
 Do not copy the `baseline/` or `edited/` directories into the project, and do
 not leave an earlier `*.merged.flow` there: the project validator treats every
 `.flow` below the project directory as a deliverable.
+
+### Check only what you changed: `check --baseline`
+
+`compile` does not run `check`: it writes any flow it can serialize. So run
+`check` after each edit, before the edited `compile`, and treat its errors as
+the gate (the baseline compile of the untouched decompile needs none). Pass
+the original `.flow` (not a compiled baseline) as `--baseline`, and each
+finding says whether your edit caused it. In emit-only mode `check` refuses:
+skip it there, `validate` is the gate.
+
+Needs `@uipath/maestro-builder-sdk` 6.64.0 or later (it compiles without
+linting and reads `--baseline`). An older SDK shows up in one of three ways:
+the baseline compile of the untouched decompile stops on a `check` code (an
+older `compile` still lints, so a pre-existing `HTTP_READ_WITHOUT_RETURNS`
+stops it); `uip` refuses it with `--baseline on flow check needs
+@uipath/maestro-builder-sdk >= 6.64.0; found <version>`; or, with an older
+`uip`, the SDK answers `error: unknown option '--baseline'`. Each
+means the SDK is too old,
+<!--skill-flavor:check-baseline-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:check-baseline-sdk-upgrade:end-->
+
+```
+$ uip maestro flow check <Name>.flow.ts --source --baseline <original>.flow
+✗ [UNKNOWN_REF] Reference to undeclared variable/step "lookup" in "report". (edited)
+⚠ [HTTP_READ_WITHOUT_RETURNS] ... (pre-existing, not counted)
+⚠ [CONNECTOR_INPUT] Connector step "notify": ... unknown input "designerOnly". ... (pre-existing)
+  This node is unchanged from the baseline, so this is probably an SDK defect: ...
+
+1 error(s) in edited nodes, 1 pre-existing SDK defect(s), 1 pre-existing warning(s)
+```
+
+- **`(edited)`** (JSON `origin: "edited"`): fix it. It includes a node you did
+  not touch that your edit broke, like `report` above, which reads the
+  `lookup` step the edit deleted. The exit code is 1 only while one is left.
+- **`(pre-existing, not counted)`**: the canvas already had it. Leave it unless
+  the user asked you to fix it. For example, a deployed HTTP node with no body
+  schema gives `HTTP_READ_WITHOUT_RETURNS`
+  ([builder-sdk#1319](https://github.com/UiPath/builder-sdk/issues/1319)).
+<!--skill-flavor:check-baseline-lowering:start-->
+- **`(pre-existing)` worded as a probable SDK defect** (JSON
+  `class: "lowering"`): `compile` refuses that node, so both compiles of the
+  loop above stop on it. When the baseline compile stops on a canvas node, run
+  this check before you edit to tell this case apart. Do not edit the node to
+  get around it. Write the edit back with [`merge --baseline-from`](#flows-with-draft-nodes-let-merge-compile),
+  which keeps the node as saved (`LOWERING_NODE_KEPT`), and tell the user it is
+  a probable SDK defect to report at
+  <https://github.com/UiPath/builder-sdk/issues>.
+<!--skill-flavor:check-baseline-lowering:end-->
+- **`CHECK_INCOMPLETE`**: check stopped at a refusal that covers the whole flow
+  (for instance two Ends whose names give one node id), so the rest was not
+  judged. Fix that refusal first, even if the canvas had it, then check again.
 
 ### Why three directories: inline agents
 
@@ -147,15 +203,27 @@ flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derive
 
 <!--skill-flavor:draft-nodes:start-->
 A canvas-saved flow often holds **draft** nodes: a connector with no connection
-yet, a required input left empty, or a generic operation with no object picked
-(connector action steps only; a draft trigger, `waitForEvent` or connector tool
-still refuses and must be finished first). `compile` refuses them even with
-`--no-check`, so the loop above stops at the first compile of the untouched
-source, and so do the pipeline and the by-hand loop below. Hand the edited
-**source** to `merge` instead, and let it build the baseline from the original
-itself:
+yet, a required input left empty, a generic operation with no object picked, a
+`waitForEvent` with no connection, a Transform with no collection, or a
+decision with no condition (a draft trigger or connector tool still refuses and
+must be finished first). Decompile carries the definition of each draft the
+canvas saved and marks its step `{ draft: true }`, so `compile` writes it with a
+warning (`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on
+this page get past it. For instance a decision saved with no condition
+decompiles as `.branch("decision1", undefined, (t) => ..., (e) => ..., { draft: true })`
+and a Transform with no collection as `transform({ operations: [] })` with
+`{ draft: true }`: leave those as written unless the user asked you to finish
+the node. The `waitForEvent`, Transform and decision drafts need `@uipath/maestro-builder-sdk`
+6.86.5 or later; an older one refuses them (`BINDING_MISSING`,
+`TRANSFORM_COLLECTION_LITERAL`, `EXPR_SYNTAX`). Three cases still stop `compile`, and with it the pipeline
+and the by-hand loop below: a generic operation with no object
+(`CONNECTOR_OBJECT_REQUIRED`), a draft you wrote yourself (no carried
+definition), and an untouched node the SDK cannot compile (`check --baseline`
+prints it as a probable SDK defect). For those, hand the edited **source** to
+`merge` instead, and let it build the baseline from the original itself:
 
 ```bash
+rm -rf "${WORK:?}" && mkdir -p "$WORK/candidate"
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
 flow-sdk flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL" \
@@ -178,6 +246,15 @@ loop above.
   (`[BINDING_MISSING]`, `[CONNECTOR_INPUT_MISSING]` or
   `[CONNECTOR_OBJECT_REQUIRED]`) and nothing is written. Finish that node or
   revert the edit.
+- An untouched node the SDK cannot compile is kept exactly as saved, with
+  `⚠ [LOWERING_NODE_KEPT] "<node>" is untouched, so the original node is kept
+  as is, but the SDK cannot compile it (<CODE>)` on stderr. Tell the user it is
+  a probable SDK defect and that it should be filed at
+  <https://github.com/UiPath/builder-sdk/issues>. The same refusal on a node the
+  edit changed is `✗ [<CODE>] "<node>" is changed or new` and nothing is
+  written: revert the edit to that node, or fix it. An untouched node that
+  fails only because of an edit elsewhere (it reads a step the edit deleted)
+  also stops the write. Needs `@uipath/maestro-builder-sdk` 6.64.0 or later.
 - Pass `--library` / `--bindings` as you would to `compile`; `--strict` works
   here too. Use the SDK's `flow-sdk` bin: `uip maestro flow merge` does not
   forward `--baseline-from` yet (UiPath/cli#5214).
@@ -195,9 +272,13 @@ ordering mistake that forces a rebuild.
 uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts
 node .flow-sdk/Deployed.pipeline.mjs    # compiles the pristine baseline; stops there
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
+uip maestro flow check .flow-sdk/Deployed.flow.ts --source --baseline Deployed.flow
 node .flow-sdk/Deployed.pipeline.mjs --strict   # compiles the edit, merges into .flow-sdk/Deployed.merged.flow
 ```
 
+The pipeline's compiles do not run `check`, so run
+[`check --baseline`](#check-only-what-you-changed-check---baseline) yourself
+before the second run, until no `(edited)` error is left.
 `--strict` goes to the merge step: merge refuses (exit 1, no file written)
 instead of warning when the no-edit round trip changed something you did not
 author (see [Merge warnings](#merge-warnings-what-the-round-trip-changed)).
@@ -208,7 +289,10 @@ silently: if `grep -q STRICT .flow-sdk/Deployed.pipeline.mjs` fails, use the
 hand loop below with `merge --strict`.
 
 Re-running it after further edits repeats only the compile and merge — the
-baseline is captured once and reused. Pass `--no-pipeline` to `decompile` when
+baseline is captured once and reused. A later turn is not a further edit: before
+its fresh decompile, remove the earlier turn's artifacts and agent sidecars:
+`[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name 'Deployed.baseline' -o -name 'Deployed.edited' -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +`.
+Pass `--no-pipeline` to `decompile` when
 you deliberately want the manual sequence instead. The pipeline writes its
 `.flow` artifacts into that `.flow-sdk/` directory (the baseline and the edited
 compile each in a directory of their own, for the agent reason above), and the
@@ -219,14 +303,36 @@ deliverable. When source must remain in the
 project for relative sidecars, use the safe project loop above.
 <!--skill-flavor:generated-pipeline:end-->
 
+## A supplied source
+
+<!--skill-flavor:supplied-source:start-->
+When the task supplied `.flow-sdk/Deployed.flow.ts`, do not decompile: it
+overwrites that source. Compile its baseline before the edit, then merge:
+
+```bash
+[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
+mkdir -p .flow-sdk/baseline .flow-sdk/edited
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow
+# Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
+uip maestro flow check .flow-sdk/Deployed.flow.ts --source --baseline Deployed.flow
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/edited/Deployed.flow
+uip maestro flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
+  -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow
+```
+
+Install `.flow-sdk/Deployed.merged.flow` as [the same loop by hand](#the-same-loop-by-hand) says.
+<!--skill-flavor:supplied-source:end-->
+
 ## The same loop by hand
 
 <!--skill-flavor:hand-loop:start-->
 ```bash
+[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
 uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts --no-pipeline
 mkdir -p .flow-sdk/baseline .flow-sdk/edited
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
+uip maestro flow check .flow-sdk/Deployed.flow.ts --source --baseline Deployed.flow
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/edited/Deployed.flow
 uip maestro flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
   -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow
@@ -283,7 +389,7 @@ so upgrade with
 A step's node id is its name with every character other than a letter, digit
 or `_` turned into `_` (`a b` gets id `a_b`), and compile never renames a step
 to make it unique. A new step whose name a step in the same flow already has
-is refused, even with `--no-check`: `DUP_STEP` for the same name,
+is refused by `check` and by `compile`: `DUP_STEP` for the same name,
 `STEP_ID_COLLISION` for a name that gives the same id (`a b` vs `a_b`) or that
 equals the trigger's id. Give the new step a name of its own. (A child flow's
 steps are not checked against the caller's: a copy whose ids are taken is
@@ -380,6 +486,8 @@ function script_normalize($vars: FlowVars) {
 ```
 
 Edit the script in the function's body; the text between its braces is exactly the node's script, so an untouched script compiles back byte for byte.
+A script that reads `$metadata` gets a second parameter, `$metadata: FlowMetadata`; when it reads a key the engine does not set (one a case sets), the type is `FlowMetadata & Record<string, any>`, so the module still type-checks.
+An SDK older than 6.72.0 (its `dist/api-index.md` does not list `FlowMetadata`) has no metadata parameter, and keeps such a script as `script({ code: "…" })`, with the warning below naming `$metadata`.
 The rules in [script.md](script.md#writing-the-script-as-a-function) apply to the edit: the function may read only what the script runtime has.
 
 A script that cannot be printed as a function stays `script({ code: "…" })`, and decompile warns once for each: `flow-decompile: warning: step "<id>": script kept as a string: <why>`.
@@ -389,6 +497,13 @@ Edit such a script as a string, as before.
 To print every script that way, pass `--scripts string`: `uip maestro flow decompile <file> -o <file>.flow.ts --scripts string`. With an SDK older than 6.57.0, `uip` refuses the option and names the version to install.
 
 Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lists `ScriptValue`); an older SDK's decompile prints every script as `script({ code })`.
+
+## A Case-only variable type
+
+A `.flow` written by Studio Web or an older SDK can carry a global typed `date`, `datetime`, `float`, `double` or `jsonSchema`. `decompile` warns once for each.
+
+- **`date` / `datetime`: nothing to do.** Decompile prints `types.string` and warns `... The source declares it types.string, so a recompile writes "type":"string" in its place`. Merge goes through. Without `--baseline-from` the merged `.flow` says `"type":"string"`; with it, an untouched variable keeps its own type. Neither changes the run: `flow pack` already writes a date as a plain string.
+- **`float` / `double` / `jsonSchema`: retype it in the same round.** Decompile keeps `types.float`, and `compile`/`merge` stop with `DECLARATION_TYPE_NOT_FLOW` even if your edit is elsewhere. Change that one declaration to the type the warning names (`types.number`; for `jsonSchema`, `types.object` or `types.array` with `{ schema }`), then compile and merge as usual. The merged `.flow` carries the new type.
 
 ## The file's schema version comes back out
 
@@ -525,8 +640,8 @@ Do not run `uip maestro flow format` on the merged file; it discards the author'
 
 Decompiled source carries that layout as a `.layout({ nodes })` block, one long-hand entry per node.
 Keep it.
-Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves.
-At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
+Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves; a container the edit grows can still push that spot aside, so keep where it lands.
+At the root, an existing node's position and size come from the original whatever the source says, except that `merge` shifts later nodes and grows a container to fit added steps; moving or resizing one in the source does nothing, so for any other change set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
 Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile,
 <!--skill-flavor:subflow-layout-sdk-upgrade:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).

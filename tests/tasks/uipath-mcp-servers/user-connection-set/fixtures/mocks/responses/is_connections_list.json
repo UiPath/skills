@@ -1,0 +1,51 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "7a1b2c3d-0000-4000-8000-000000000001",
+      "Name": "Vendor MCP (shared)",
+      "ConnectorKey": "uipath-uipath-mcp",
+      "ConnectorName": "UiPath MCP",
+      "State": "Enabled",
+      "Owner": "mock.user@example.com",
+      "IsDefault": "No",
+      "ByoaConnection": "No",
+      "ElementInstanceId": 200001,
+      "Folder": "Shared",
+      "FolderKey": "folder-mock-shared",
+      "Created": "2026-08-03T09:00:00.000Z",
+      "Updated": "2026-09-14T09:00:00.000Z"
+    },
+    {
+      "Id": "7a1b2c3d-0000-4000-8000-0000000000aa",
+      "Name": "Vendor MCP (Jane)",
+      "ConnectorKey": "uipath-uipath-mcp",
+      "ConnectorName": "UiPath MCP",
+      "State": "Enabled",
+      "Owner": "jane.doe@example.com",
+      "IsDefault": "No",
+      "ByoaConnection": "No",
+      "ElementInstanceId": 200002,
+      "Folder": "jane.doe@example.com's workspace",
+      "FolderKey": "folder-mock-jane-ws",
+      "Created": "2026-08-03T09:00:00.000Z",
+      "Updated": "2026-09-14T09:00:00.000Z"
+    },
+    {
+      "Id": "7a1b2c3d-0000-4000-8000-0000000000bb",
+      "Name": "Vendor MCP (Bob)",
+      "ConnectorKey": "uipath-uipath-mcp",
+      "ConnectorName": "UiPath MCP",
+      "State": "Enabled",
+      "Owner": "bob.smith@example.com",
+      "IsDefault": "No",
+      "ByoaConnection": "No",
+      "ElementInstanceId": 200003,
+      "Folder": "Shared",
+      "FolderKey": "folder-mock-shared",
+      "Created": "2026-08-03T09:00:00.000Z",
+      "Updated": "2026-09-14T09:00:00.000Z"
+    }
+  ]
+}

@@ -1654,6 +1654,20 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
 
   assert.doesNotMatch(defaultWorkflow, /publish-studioweb\.yml/);
 
+  // The stable flavor publish is its own dispatch-only caller of the same
+  // GitHub Packages-only publisher, so it can never reach npmjs.
+  const stableWorkflow = readFileSync(
+    join(REPO_ROOT, ".github", "workflows", "publish-studioweb-stable.yml"),
+    "utf8",
+  );
+  assert.match(stableWorkflow, /^\s*uses:\s*\.\/\.github\/workflows\/publish-skill-flavor\.yml\s*$/m);
+  assert.match(stableWorkflow, /^\s*flavor:\s*studioweb\s*$/m);
+  assert.match(stableWorkflow, /^\s*channel:\s*stable\s*$/m);
+  assert.doesNotMatch(stableWorkflow, /^\s*(push|schedule|release|pull_request):/m);
+  assert.match(stableWorkflow, /^\s*workflow_dispatch:\s*$/m);
+  assert.match(stableWorkflow, /github\.ref == 'refs\/heads\/main'/);
+  assert.doesNotMatch(stableWorkflow, /npm publish|id-token\s*:|--provenance/i);
+
   assert.match(flavorWorkflow, /^\s*workflow_call:\s*$/m);
   assert.match(
     flavorPublish,
@@ -1667,7 +1681,7 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
     [...workflowInputs.matchAll(/^ {6}([a-z][a-z0-9_-]*):\s*$/gm)].map(
       (match) => match[1],
     ),
-    ["flavor", "channel"],
+    ["flavor", "channel", "commit", "version"],
   );
   assert.match(flavorWorkflow, /FLAVOR:\s*\$\{\{ inputs\.flavor \}\}/);
   assert.match(flavorWorkflow, /https:\/\/npm\.pkg\.github\.com/);

@@ -7,12 +7,13 @@ description: >
   to build a process that uses every UiPath Test Manager connector node for
   the Requirement group — adding one connector node per operation. Drives
   connector discovery, authoring, and validation. Graded on the produced
-  .bpmn containing one Intsvc.ActivityExecution sendTask per Requirement
+  .bpmn containing one Test Manager connector sendTask per Requirement
   lifecycle operation and validating successfully; registry-refresh
   telemetry is advisory. Ported from Flow
   `connector_features/testmanager_requirement_lifecycle.yaml`; BPMN has no
   per-operation node type, so operations are distinguished by objectName +
-  method instead of node type.
+  method, or method + path for a connector-mode HTTP request through the
+  Test Manager connection, instead of node type.
 tags:
   - uipath-maestro-bpmn
   - e2e
@@ -94,7 +95,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Produced .bpmn references every Requirement connector node type (6 nodes)"
+    description: "Produced .bpmn has its own node per Requirement lifecycle operation (6 nodes: ActivityExecution or connector-mode HTTP)"
     command: "python3 $REFERENCE_DIR/_shared/check_testmanager_requirement_lifecycle.py --all-ops"
     timeout: 30
     expected_exit_code: 0

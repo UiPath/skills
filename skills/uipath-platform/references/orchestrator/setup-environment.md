@@ -76,7 +76,7 @@ uip or folders list --all --output json
 # Filter: only standard top-level folders
 uip or folders list --all --type standard --top-level --output json
 
-# Get details for a specific folder
+# Get details for a specific folder (a Personal Workspace too, by key or path)
 uip or folders get "Finance" --output json
 uip or folders get <folder-key-guid> --output json
 
@@ -99,6 +99,8 @@ The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top
 ### Step 3: Create Roles
 
 Roles group permissions and are scoped to either the tenant or a folder. Create the role first (it starts with zero permissions), then add permissions to it.
+
+> **Check the standard roles before creating one.** `Automation User`, `Automation Developer`, `Automation Publisher`, `Folder Administrator` and `Orchestrator Administrator` cover most needs and cannot be changed. Create a custom role only when none carries the permission needed — see [choose-roles.md](choose-roles.md).
 
 > **⚠️ `uip or roles` is the Orchestrator RBAC catalog — a different store from Identity/organization authorization roles (`uip admin authorization roles`, see [uipath-admin](/uipath:uipath-admin)). The two are disjoint: a role created with `admin authorization roles` does NOT appear in `uip or roles list`, and vice versa.** Both have Tenant-scoped roles, so "a tenant-level role" alone doesn't tell you which one. For any Orchestrator role/permission lifecycle — create, add/remove permissions, assign to users/folders — use `uip or roles`. Reach for `admin authorization roles` only for org-level Identity roles that span services.
 
@@ -256,8 +258,10 @@ Key details:
 Machines define execution hosts and their license slot allocations. They are tenant-scoped and must be assigned to folders separately.
 
 ```bash
-uip or machines create --name "finance-runner-01" --output json
+uip or machines create "finance-runner-01" --output json
 ```
+
+The machine name is the argument, as in `folders create` and `queues create`. `-n, --name` still works as a deprecated alias and prints a warning; giving the name both ways, or not at all, fails with `invalid_argument`.
 
 Key options:
 
@@ -280,6 +284,14 @@ uip or machines assign <key1> <key2> <key3> --folder-path "Finance" --output jso
 ```
 
 Verify: `uip or machines list --folder-path "Finance" --output json`.
+
+> **A folder takes only one serverless machine.** Assigning a second one fails. The error says the folder already has a serverless machine and a folder takes only one, lists the machine keys that were not assigned, and points to `machines list` and `machines unassign`. A CLI from before that message returns only the service's `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.` The CLI does not look up which machine is already in the folder. To see it and, if you want the new one instead, free the folder:
+>
+> ```bash
+> uip or machines list --folder-path "Finance" --output json
+> uip or machines unassign <machine-key-guid> --folder-path "Finance" --output json
+> uip or machines assign <new-machine-key-guid> --folder-path "Finance" --output json
+> ```
 
 ### Step 7b: Inspect / Edit / Unassign / Delete Machines
 
@@ -307,7 +319,6 @@ Notes:
 - `machines update` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed. `machines update` echoes the new name when you rename.
 - Slot flags (`--unattended-slots`, `--headless-slots`, `--non-production-slots`, `--testing-slots`) must be whole numbers `>= 0` (validated client-side; `0` is allowed).
 - `machines delete` removes the machine **and** any folder assignments it has (the assignments are re-creatable config, so there is no `--force` gate). It does not require unassigning first.
-- Each folder accepts **one** Cloud Robots / Serverless machine. Trying to assign a second serverless to the same folder returns `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.`
 - `machines list` defaults to all machines visible to the user. With `--folder-path`/`--folder-key` it returns only machines assigned to that folder, each with `IsAssignedToFolder`. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.) — note `--all-fields` emits the raw camelCase DTO.
 
 ### Step 8: Configure Licenses
@@ -362,7 +373,7 @@ uip or users assign \
   --output json
 
 # 6. Create a machine
-uip or machines create --name "finance-runner-01" \
+uip or machines create "finance-runner-01" \
   --unattended-slots 2 -d "Finance department runner" --output json
 # Response: { "Data": { "Key": "m1m2m3m4-..." } }
 

@@ -44,6 +44,8 @@ Use `Sequence` as the Rule 24 container in every body/branch slot of `If`, `Swit
 
 Wrap both slots in `Sequence`; omit unused `<If.Else>` and never emit an empty slot. For multiple `else if`, use `IfElseIfV2` (off this card; see `ElseIf.md`).
 
+**Hide Else:** XAML has no property for Else visibility; Studio derives it from `If.Else`. Omit `<If.Else>` and the If opens with Else hidden (the classic designer offers a **Show Else** link). An empty `Sequence` in `If.Else` still shows as an empty Else drop zone in the compact designer, so it does not hide Else. A non-empty Else always opens visible: the designer's **Show Else** / **Hide Else** toggle is not saved. To hide an unused Else, omit `<If.Else>`; never delete activities to hide the branch.
+
 **Long-form:** [`activity-docs/UiPath.System.Activities/26.4/activities/If.md`](activity-docs/UiPath.System.Activities/26.4/activities/If.md)
 
 ### Switch&lt;T&gt;
