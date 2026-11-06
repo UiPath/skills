@@ -15,8 +15,9 @@ A skeleton exists so the shape can be read end to end — so a user can say "yes
 that's it" or "drop that step", and so phase 4 has a validated structure to fill
 in. It is not a working process and must never be reported as one.
 
-1. **Every activity is a bare `<bpmn:task>`** carrying only an `id` and a
-   `name`. No `uipath:activity`, no `uipath:event`, no payloads, no resource
+1. **Every activity is a bare `<bpmn:task>`** carrying only an `id`, a
+   `name`, and, for a step that runs once per item, its multi-instance marker
+   (Rule 8). No `uipath:activity`, no `uipath:event`, no payloads, no resource
    identities, no connections.
 2. **Do not use `serviceTask` or `sendTask`.** Their icons (a gear, an
    envelope) make a box look like a decided product choice. Keep every box
@@ -27,7 +28,8 @@ in. It is not a working process and must never be reported as one.
 4. **Control flow is real.** Genuine `bpmn:startEvent` (see
    [Draw the trigger the user named](#draw-the-trigger-the-user-named)),
    `bpmn:exclusiveGateway` and `bpmn:parallelGateway`, `bpmn:sequenceFlow`s,
-   and end events: one that every branch converges on, unless the request
+   boundary events (`errorEventDefinition`, `timerEventDefinition`) when the
+   request names a failure or a deadline on a step, and end events: one that every branch converges on, unless the request
    names separate outcomes. Branches converge through a join gateway, never
    as two flows into the end event (`FAKE_JOIN`, see
    [structural-bpmn.md](structural-bpmn.md#gateways)). A skeleton returns no
@@ -91,7 +93,8 @@ wires the trigger.
 ### Multi-instance boxes
 
 Add `bpmn:multiInstanceLoopCharacteristics` to the bare `bpmn:task`, and
-declare the collection it iterates as a process variable (`type="array"`):
+declare the collection it iterates as a process variable:
+`<uipath:inputOutput id="LineItems" name="LineItems" type="array" elementId="Process_1" />`
 
 ```xml
 <bpmn:task id="Task_CheckStock" name="Check stock [RPA workflow]">
