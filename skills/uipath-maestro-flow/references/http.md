@@ -10,16 +10,6 @@ the same switch, and every read of its `statusCode` becomes an `.onError()`
 handler ([error-handling.md](error-handling.md)); leave an untouched one alone.
 An older SDK's `HTTP_V1_RETIRED` text saying to "keep managed: false" for a URL without a connection is outdated; still use `managed: true`.
 
-Signature:
-`http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
-
-```ts
-.step('policy', http({ method: 'GET', url: policyUrl,
-  managed: true, returns: { limit: 'number' } }))
-.step('read', script({
-  code: 'return $vars.policy.output.body.limit;' }))
-```
-
 ## At a glance
 
 Managed HTTP routes non-2xx responses through its error port and exposes a JSON
