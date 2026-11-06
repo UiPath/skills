@@ -143,10 +143,10 @@ Never add one. Make a Stage reachable with a `stage-entry-conditions` rule, not 
 ### Add a task to a stage
 
 1. Read and locate the stage.
-2. Ensure `data.tasks` exists. Activation mode controls placement: strict sequential/`runs-sequentially`, adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get single-task sets. Reuse a set only for explicitly planned `parallel` or `parallel-after-predecessor` siblings with same-lane rationale.
+2. Ensure `data.tasks` exists. Activation mode controls placement: strict sequential/`runs-sequentially`, adhoc, event-driven, fan-in, conditional-gate, standalone, and stage-start `parallel` (`current-stage-entered`) tasks get single-task sets. Reuse a set only for planned `parallel-after-predecessor` siblings (`runs-sequentially`).
 3. Generate task ID and set `elementId = ${stageId}-${taskId}`.
 4. Build the plugin recipe; do not add `entryConditions`.
-5. Push only explicit parallel siblings into `data.tasks[laneIndex]`; otherwise write `[task]` as a new inner set. Activation mode wins; report lane correction.
+5. Push into `data.tasks[laneIndex]` only for `parallel-after-predecessor` siblings; otherwise, including stage-start `parallel` tasks, write `[task]` as a new inner set. Activation mode wins; report lane correction.
 6. Edit the stage's narrow `data.tasks[laneIndex]` slice; never whole-file Write.
 
 ### Bind an input
@@ -247,7 +247,7 @@ Swap which process / agent / RPA / api-workflow / function / business-rule / cas
 
 1. Read and locate source `data.tasks[oldLane]`.
 2. Preserve task ID but recompute every stage-scoped ID: task `elementId = ${destStageId}-${taskId}`; each `wait-for-connector` task entry rule and each `uipath.outputs[]` entry becomes `elementId = ${destStageId}-${ruleId}`. Root companions remain `elementId: "root"`.
-3. Remove from source and insert into destination preserving task-set order; only explicit parallel/parallel-after-predecessor siblings share a set; strict/other modes use a single-task set.
+3. Remove from source and insert into destination preserving task-set order; only `parallel-after-predecessor` siblings (`runs-sequentially`) share a set; stage-start `parallel`, strict, and other modes use a single-task set.
 4. Retain `sourceTask` for consumers, change `sourceStage` to destination, and verify producer ordering.
 5. Recheck entry conditions: `current-stage-entered` unchanged; repoint/remove cross-stage `selected-tasks-completed`; strict `runs-sequentially` remains a single set unless explicit parallel-after-predecessor. Reverse-sweep source-stage tasks whose selected IDs name the moved task; repoint/remove them.
 6. Update sidecar `stageId` if present; Edit source/destination tasks, recomputed IDs, and consumers; validate.

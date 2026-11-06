@@ -69,7 +69,7 @@ For every task-entry-condition element, verify the task's `activation-mode` and 
 | activation-mode | Allowed rule-type |
 |---|---|
 | `sequential` | `runs-sequentially` |
-| `parallel` | `current-stage-entered` |
+| `parallel` | `current-stage-entered`, each task in its own single-task set |
 | `parallel-after-predecessor` | `runs-sequentially`, with the siblings sharing the next task set after one predecessor |
 | `event-triggered` | `wait-for-connector` or another explicitly authored event/condition rule |
 | `adhoc` | `adhoc` |
@@ -82,7 +82,7 @@ During design-lane authoring (`uipath-planner`), a plain immediate ordered run w
 
 Task entry conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve).
 
-For sequential tasks, preserve the frontend's ordered `data.tasks` structure, including any explicitly parallel sibling sets; do not flatten the stage into one global chain and do not group a strict chain into one inner array. Add one `runs-sequentially` entry condition to each sequential task. The first task uses the rule as its stage-entry trigger; later tasks use it as the upstream-task-set-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the sequential intent.
+For sequential tasks, preserve the frontend's ordered `data.tasks` structure, including any `parallel-after-predecessor` sibling sets; do not flatten the stage into one global chain and do not group a strict chain into one inner array. Add one `runs-sequentially` entry condition to each sequential task. The first task uses the rule as its stage-entry trigger; later tasks use it as the upstream-task-set-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the sequential intent.
 
 ## Fields to Resolve
 
