@@ -4,11 +4,11 @@
  *
  * One entity, five operations: create a record, query it two ways, replace it, read
  * it back by id, and map the results onto process outputs. Every node is an
- * Integration Service connector activity on `uipath-uipath-dataservice`, emitted in
- * the exact shape Studio Web and the Flow→BPMN converter write — create and update in
- * the ENTITY form (`POST /ContractRegistry`, `PUT /ContractRegistry/{id}`), query and
- * get in the CURATED form (`entityName` as a path parameter, a curated `objectName`) —
- * so it needs no connector library to compile.
+ * Integration Service connector activity on `uipath-uipath-dataservice`, emitted as
+ * the V2 node Studio Web's connector panel saves — the connector's curated operation
+ * (`CreateEntityRecordCurated`, …), the entity in the json `pathParameters` row, the
+ * parameters in the json `queryParameters` row, the record in the `body` row — so it
+ * needs no connector library to compile.
  *
  * The connection and its folder are two bindings the process declares once. The
  * folder binding is the connection's COMPANION: the serializer keys it by the
@@ -43,14 +43,17 @@ export default bpmn('ContractRegistry')
     script: 'return "Contract-" + Math.random().toString(36).slice(2, 10);',
     outputs: { contractTitle: '=result.response' },
   })
-  // ENTITY form: objectName is the entity, the record is the one json body row.
+  // The record is the one json body row.
   .dataService('create', {
     ...df,
     op: 'create',
     record: { contractTitle: '=vars.contractTitle', status: 'Open', priority: 2, dueDate: '2026-08-01', value: 12500.5, isUrgent: true },
   })
-  // CURATED form: the filter is a query parameter; `start`/`limit` default to 0/100.
-  .dataService('queryDue', { ...df, op: 'query', where: "dueDate < '2026-08-04'", limit: 100 })
+  // The filter is a query parameter; `start`/`limit` default to 0/100.
+  // `sortBy` becomes the body's `_sortFieldName` (the connector's own RequestField) and
+  // `ascending` the `isAscending` query parameter — set both, or the records come back in
+  // default order.
+  .dataService('queryDue', { ...df, op: 'query', where: "dueDate < '2026-08-04'", limit: 100, sortBy: 'dueDate', ascending: true })
   .dataService('queryUntitled', { ...df, op: 'query', where: 'contractTitle IS NULL', limit: 100 })
   .dataService('update', {
     ...df,

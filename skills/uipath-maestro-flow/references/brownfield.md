@@ -203,12 +203,19 @@ flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derive
 
 <!--skill-flavor:draft-nodes:start-->
 A canvas-saved flow often holds **draft** nodes: a connector with no connection
-yet, a required input left empty, or a generic operation with no object picked
-(connector action steps only; a draft trigger, `waitForEvent` or connector tool
-still refuses and must be finished first). Decompile carries the definition
-of each draft the canvas saved, so `compile` writes it with a warning
-(`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on this
-page get past it. Three cases still stop `compile`, and with it the pipeline
+yet, a required input left empty, a generic operation with no object picked, a
+`waitForEvent` with no connection, a Transform with no collection, or a
+decision with no condition (a draft trigger or connector tool still refuses and
+must be finished first). Decompile carries the definition of each draft the
+canvas saved and marks its step `{ draft: true }`, so `compile` writes it with a
+warning (`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on
+this page get past it. For instance a decision saved with no condition
+decompiles as `.branch("decision1", undefined, (t) => ..., (e) => ..., { draft: true })`
+and a Transform with no collection as `transform({ operations: [] })` with
+`{ draft: true }`: leave those as written unless the user asked you to finish
+the node. The `waitForEvent`, Transform and decision drafts need `@uipath/maestro-builder-sdk`
+6.86.5 or later; an older one refuses them (`BINDING_MISSING`,
+`TRANSFORM_COLLECTION_LITERAL`, `EXPR_SYNTAX`). Three cases still stop `compile`, and with it the pipeline
 and the by-hand loop below: a generic operation with no object
 (`CONNECTOR_OBJECT_REQUIRED`), a draft you wrote yourself (no carried
 definition), and an untouched node the SDK cannot compile (`check --baseline`
@@ -479,6 +486,8 @@ function script_normalize($vars: FlowVars) {
 ```
 
 Edit the script in the function's body; the text between its braces is exactly the node's script, so an untouched script compiles back byte for byte.
+A script that reads `$metadata` gets a second parameter, `$metadata: FlowMetadata`; when it reads a key the engine does not set (one a case sets), the type is `FlowMetadata & Record<string, any>`, so the module still type-checks.
+An SDK older than 6.72.0 (its `dist/api-index.md` does not list `FlowMetadata`) has no metadata parameter, and keeps such a script as `script({ code: "…" })`, with the warning below naming `$metadata`.
 The rules in [script.md](script.md#writing-the-script-as-a-function) apply to the edit: the function may read only what the script runtime has.
 
 A script that cannot be printed as a function stays `script({ code: "…" })`, and decompile warns once for each: `flow-decompile: warning: step "<id>": script kept as a string: <why>`.
@@ -488,6 +497,13 @@ Edit such a script as a string, as before.
 To print every script that way, pass `--scripts string`: `uip maestro flow decompile <file> -o <file>.flow.ts --scripts string`. With an SDK older than 6.57.0, `uip` refuses the option and names the version to install.
 
 Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lists `ScriptValue`); an older SDK's decompile prints every script as `script({ code })`.
+
+## A Case-only variable type
+
+A `.flow` written by Studio Web or an older SDK can carry a global typed `date`, `datetime`, `float`, `double` or `jsonSchema`. `decompile` warns once for each.
+
+- **`date` / `datetime`: nothing to do.** Decompile prints `types.string` and warns `... The source declares it types.string, so a recompile writes "type":"string" in its place`. Merge goes through. Without `--baseline-from` the merged `.flow` says `"type":"string"`; with it, an untouched variable keeps its own type. Neither changes the run: `flow pack` already writes a date as a plain string.
+- **`float` / `double` / `jsonSchema`: retype it in the same round.** Decompile keeps `types.float`, and `compile`/`merge` stop with `DECLARATION_TYPE_NOT_FLOW` even if your edit is elsewhere. Change that one declaration to the type the warning names (`types.number`; for `jsonSchema`, `types.object` or `types.array` with `{ schema }`), then compile and merge as usual. The merged `.flow` carries the new type.
 
 ## The file's schema version comes back out
 

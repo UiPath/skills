@@ -96,9 +96,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Built-in tool resource shape + job-attachment input wiring + canonical x-uipath-resource-kind + @{tools.<Name>} prompt reference with synced expression token"
+    description: "Built-in tool resource shape + job-attachment input wiring + canonical x-uipath-resource-kind"
     command: "python3 $REFERENCE_DIR/check_builtin_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 7.0
     pass_threshold: 1.0
+
+  # Advisory: the agent sees its available tools at runtime, so naming the
+  # tool in prose works as well as an @{tools.<Name>} reference.
+  - type: run_command
+    description: "Prompt references the tool as @{tools.<Name>} with a synced expression token (advisory)"
+    command: "python3 $REFERENCE_DIR/check_builtin_tool.py --tool-reference"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0

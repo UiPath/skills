@@ -86,8 +86,12 @@ uip maestro bpmn registry get Intsvc.EventTrigger \
   tenant, binds it into `--solution-folder`, and reads it through root
   bindings. When the name is in several folders the command fails
   `invalid_argument`, `A resource picker in --input-details did not resolve`,
-  and lists each folder key; add `"<field>_folderKey": "<FolderKey>"` next to
-  the name and run it again.
+  and lists each folder key; add `"<field>_folderKey": "<FolderKey>"` and run
+  it again. Put it under the list its `Type` in the describe output names
+  (`uip is resources describe` for activities, `uip is triggers describe` for
+  triggers and waits), which can differ from the name's (Orchestrator Get
+  Asset: `id` in `pathParameters`, `id_folderKey` in `queryParameters`); a
+  companion in the wrong list is refused. Not listed: put it next to the name.
 - A `*_V3` object's `RequestFields` (the folder entity's columns, for
   `bodyParameters`) are empty until `describe` gets the picker the same way:
   `uip is resources describe uipath-uipath-dataservice <Object>_V3
@@ -143,6 +147,15 @@ and `PATCH`). In connector mode the command takes the
 target connector and folder from the connection. The element binds Studio
 Web's implicit connection for a manual request and the target connection for a
 connector one. Its outputs are `code`, `headers` and `body`, plus `Error`.
+
+A request that must reach a connection's webhook takes the webhook URL, not
+`uip is connections base-url`. Read `ElementInstanceId` from
+`uip is connections list <connector-key> --connection-id <id> --output json`,
+then run `uip is webhooks config <connector-key> --connection-id <id>
+--element-instance-id <n> --output json` and write `Data.WebhookUrl` as a
+literal manual-mode `url`. An empty `ElementInstanceId` means the connection
+cannot receive webhooks: use the connector's webhook connection, never
+`base-url`.
 
 When `registry get` says an object has no activity in the catalog
 (`Cannot identify the V2 element`, e.g. Slack's `emoji_list_GET`), the
@@ -250,6 +263,9 @@ uip maestro bpmn format <file.bpmn>
 uip maestro bpmn refresh <project-path>
 uip maestro bpmn validate <file.bpmn>
 ```
+
+Skip `format` on a file that already had a diagram; see
+[Keep the user's diagram](../SKILL.md#keep-the-users-diagram).
 
 `refresh` writes what Studio Web writes on save: the Connection resource for
 every connector node, an `EventTrigger` resource and its `Property` resource

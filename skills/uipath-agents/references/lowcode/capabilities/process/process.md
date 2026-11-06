@@ -31,8 +31,10 @@ Two supported invocations — pick one based on where you're looking:
 **Local (in-solution):**
 
 ```bash
-uip solution resources list --source local --output json
+uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
 ```
+
+`<SOLUTION_DIR>` is the folder containing the `.uipx`. Empty `Data` for a process the user says is in the solution means the wrong folder — see [../../project-lifecycle.md § Resource Discovery](../../project-lifecycle.md#resource-discovery). Never fall back to `--source remote` for it.
 
 **Remote (Orchestrator / RCS):**
 
@@ -142,7 +144,11 @@ Wrapper changes to `Code: "ResourceConfigurations"` with `Data.resources[]` cont
 | `referenceKey` | lowercase `Key` GUID from `resource list` | yes |
 | `properties.folderPath` | literal `Folder` from `resource list` | yes |
 | `properties.exampleCalls` | required (can be `[]`) | yes |
-| `inputSchema` / `outputSchema` | parsed from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or .NET-mapped raw schemas for RPA) | yes |
+| `inputSchema` / `outputSchema` | parsed from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or .NET-mapped raw schemas for RPA). Local projects (`Source: "Local"`) return neither — parse the `Data.Spec.EntryPoints` JSON string and use the matching `entryPoints[].input` / `.output` (same content as the project's `entry-points.json`). See [Copy the process schema exactly](#copy-the-process-schema-exactly) | yes |
+
+### Copy the process schema exactly
+
+Copy the process's `input` / `output` schemas into the tool's `inputSchema` / `outputSchema` verbatim — same properties, types, `$ref`s, `definitions`, and `required` lists. Do not add, remove, or rename properties, and do not add or change `required` (an output schema with no `required` stays without one). Only `description` text may be added or edited. The template above shows a `required` list only as an example; take it from the process, not from the template.
 
 ## Solution-Level Files
 
@@ -177,7 +183,7 @@ For in-solution agents already registered with the parent solution — auto-regi
 # Remote: --kind / --search supported server-side.
 uip solution resources list --source remote --kind Process --search "<NAME>" --output json
 # Local: --kind and --search NOT supported — list, then filter .Data[] client-side.
-uip solution resources list --source local --output json
+uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
 # Parse .Data[]. Each entry: Source, Key, Name, Kind, Type (lowercase), Folder, FolderKey.
 # Source: "Local" → location: "solution". "Remote" → location: "external".
 # Use Key as referenceKey, Name as processName, Type for the agent-level type,
@@ -188,10 +194,11 @@ uip solution resources get <KEY> --output json
 # Parse .Data.spec for:
 #   inputArgumentsSchemaV2 / outputArgumentsSchemaV2  → JSON Schema strings (Agent / API / Agentic)
 #   inputArgumentsSchema   / outputArgumentsSchema    → raw .NET arrays (RPA)
+#   EntryPoints (Local projects)                      → JSON string; entryPoints[].input / .output
 #   package.name / package.key, entryPointUniqueId / entryPointName
 ```
 
-Then create the agent-level resource file at `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json` per § Tool resource.json Shape. Set `location` from the row's `Source`, `type` from `Type` (lowercase), `folderPath` from `Folder`, `referenceKey` from `Key`, schemas from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or raw .NET arrays for RPA).
+Then create the agent-level resource file at `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json` per § Tool resource.json Shape. Set `location` from the row's `Source`, `type` from `Type` (lowercase), `folderPath` from `Folder`, `referenceKey` from `Key`, schemas from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or raw .NET arrays for RPA, or `Data.Spec.EntryPoints` for Local projects), copied exactly per [Copy the process schema exactly](#copy-the-process-schema-exactly).
 
 ```bash
 # 4. Configure agent.json (system prompt, model, schemas)
@@ -231,7 +238,7 @@ uip agent init "ToolAgent" --output json
 
 # 3. From ParentAgent, add ToolAgent as a tool — discovery via the unified flow.
 # `--source local` accepts neither --kind nor --search; list then filter client-side.
-uip solution resources list --source local --output json
+uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
 # Pick the row with Kind="Process" and Name="ToolAgent", then:
 uip solution resources get <KEY> --output json
 # Then create ParentAgent/resources/ToolAgent/resource.json with location: "solution".

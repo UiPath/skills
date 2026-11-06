@@ -24,7 +24,7 @@ reference:
 
 pre_run:
   - command: "bash -c 'cd ticket-router && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
-    timeout: 180
+    timeout: 300
 
 initial_prompt: |
   I have a LangGraph coded agent project at `ticket-router/`. It

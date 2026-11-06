@@ -68,7 +68,9 @@ success_criteria:
   - type: run_command
     description: "OpenAI Agents project shape, factory pattern, handoff wiring"
     command: "python3 $REFERENCE_DIR/_shared/check_openai_agents_handoff.py"
-    timeout: 30
+    # The checker runs `uip codedagent run agent` with its own 180s limit; leave
+    # headroom for the static checks so that limit, not this one, fires first.
+    timeout: 240
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

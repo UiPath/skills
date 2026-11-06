@@ -65,6 +65,10 @@ cannot make: which node, which topology, what an output means, and what to ask.
    for invalid input", "handle timeouts"); an unhandled failure must fault the
    run. A handler either genuinely recovers or reaches a terminal the caller
    can tell apart from success — a distinct `.return`, or `.terminate`.
+   Likewise add a human task (`hitl`) only when the request has the run wait for
+   a person. A person who reviews the output afterward, such as a drafted reply,
+   is not one. This overrides `uipath-human-in-the-loop` Step 2b and its
+   pattern guide: a signal the request did not state goes under Open questions.
 8. **Never invent the business meaning of a named output or an uncovered
    input case — ask.** When a request names an output (`caseKey`, `severity`,
    `ticketId`) without saying how to derive it, whether it passes through or
@@ -181,6 +185,14 @@ nodes, not patterns.
    answer while authoring.
 4. A threshold the request leaves out is an open question (rule 8): ask, or
    headless, use the guide's value and list it as **[REQUIRED]**.
+
+## Variable types
+
+Inputs, outputs and vars take one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`.
+
+- `float`, `double`, `date`, `datetime` and `jsonSchema` are Case-only. The Flow builder refuses them: a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build. Write a date as `types.string`, a decimal as `types.number`, and a `jsonSchema` as `types.object` or `types.array` with its shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. A decompiled `.flow` that already carries one: [brownfield](brownfield.md#a-case-only-variable-type) (`date`/`datetime` come back as `types.string`; the others stop merge until you retype them).
+- `types.integer` builds and packs as an integer, but Workbench does not offer it, so prefer `types.number`.
+- `types.any` is the untyped declaration: use it only when a value really has no fixed type.
 
 ## Anti-patterns
 
