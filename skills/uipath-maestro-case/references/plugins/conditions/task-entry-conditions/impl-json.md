@@ -130,7 +130,7 @@ Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger -
 "rules": [[ { "id": "rxxxxxxxx", "rule": "runs-sequentially" } ]]
 ```
 
-**Frontend toggle semantics:** The sequential/ordered-task-set rule is the task's only entry condition for strict sequences and for parallel siblings that start after an immediate predecessor. Preserve the task's order in the stage's `data.tasks` structure. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); explicitly parallel siblings after the same predecessor share one later inner array (`[[A], [B, C], [D]]`) and each sibling carries `runs-sequentially`. On the first task set, `runs-sequentially` means the current stage was entered; on subsequent task sets, it means the preceding task set completed. Do not use `selected-tasks-completed` or an additional `current-stage-entered` rule to express immediate-predecessor sequencing.
+**Frontend toggle semantics:** The sequential/ordered-task-set rule is the task's only entry condition for strict sequences and for parallel siblings that start after an immediate predecessor. Preserve the task's order in the stage's `data.tasks` structure. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); `parallel-after-predecessor` siblings after the same predecessor share one later inner array (`[[A], [B, C], [D]]`) and each sibling carries `runs-sequentially`. On the first task set, `runs-sequentially` means the current stage was entered; on subsequent task sets, it means the preceding task set completed. Do not use `selected-tasks-completed` or an additional `current-stage-entered` rule to express immediate-predecessor sequencing.
 
 ### sla-status-change — the `start-task` SLA response
 

@@ -44,7 +44,7 @@ During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry w
 
 ## JSON Shape
 
-Placeholders occupy a position in `stageNode.data.tasks`, the same way full tasks do. Preserve their order and retain any `runs-sequentially` entry condition from the task plan. A strict sequential placeholder chain still uses consecutive single-task sets; same-set grouping is only for explicitly parallel placeholder siblings.
+Placeholders occupy a position in `stageNode.data.tasks`, the same way full tasks do. Preserve their order and retain any `runs-sequentially` entry condition from the task plan. A strict sequential placeholder chain still uses consecutive single-task sets; same-set grouping is only for `parallel-after-predecessor` placeholder siblings (`runs-sequentially`); stage-start `parallel` placeholders each get their own set.
 
 A placeholder task in `caseplan.case.nodes[<stage>].data.tasks[<lane>][]`:
 

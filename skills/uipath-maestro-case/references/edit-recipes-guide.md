@@ -21,7 +21,7 @@ Every recipe assumes [brownfield.md § Read this first](brownfield.md#read-this-
 ## R1 — Add a wait-for-timer task
 
 1. Locate the stage node by `id`; ensure `data.tasks` exists.
-2. Placement: a task gets its **own** inner array (`data.tasks.push([task])`). Share an existing inner array only when the request explicitly makes it a parallel sibling of the tasks already there. When in doubt, its own array.
+2. Placement: a task gets its **own** inner array (`data.tasks.push([task])`). Share an existing inner array only when the request makes it a `parallel-after-predecessor` sibling (`runs-sequentially`) of the tasks already there; a sibling that starts with the stage still gets its own array. When in doubt, its own array.
 3. Shape — `data` holds only `timerType` and the duration; every other field is a top-level sibling:
 
    ```json
