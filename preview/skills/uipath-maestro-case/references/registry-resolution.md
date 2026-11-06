@@ -40,7 +40,9 @@ either type stays unresolved as a placeholder — never record it as
 
 ## Steps
 
+<!--skill-flavor:registry-login:start-->
 1. `uip login status --output json`, then `uip maestro case registry pull --output json`.
+<!--skill-flavor:registry-login:end-->
    Always pull first. Before a pull, a missing `~/.uip/case-resources/<type>-index.json`
    means "not fetched yet", never "the tenant has none".
 2. `uip maestro case sdd resolve sdd.md --out tasks/registry-resolved.json --output json`.
