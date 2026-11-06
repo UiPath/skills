@@ -31,7 +31,10 @@ case-design-layers-guide.md's; the cells own the shape.)
      `## Case Trigger`, `## Stages`, `## Business Rules`, `## Task Plan`, `## Resource Resolution`,
      `## Acceptance Scenarios`.
   4. The Case Variables header is literally
-     `| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |`.
+     `| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |`, and that
+     table is the section's only table: every variable, task-output targets included, is a row of it —
+     no second table, no `####` sub-heading split, and no sibling `###` section (e.g.
+     `### Task-output variables`). Only the first table declares variables; later rows drop silently.
   5. Every `### Stage <N>:` / `### Secondary Stage:` block carries `**Type:** Stage`, `**Design Rationale:**`,
      `#### Stage Entry Conditions`, `#### Stage Exit Conditions`, `#### Tasks`; a secondary stage carries an
      explicit `**Interrupting:** Yes` or `No`, and `Yes` whenever one of its exit rows is `return-to-origin`.
@@ -41,12 +44,12 @@ case-design-layers-guide.md's; the cells own the shape.)
      and the detail block its type requires — action: `**HITL Implementation:**`; wait-for-connector:
      `**Connector:**` / `**Trigger / Event:**`; execute-connector-activity / external-agent / external-workflow:
      `**Connector:**` / `**Operation:**`; wait-for-timer: `**Timer:**` / `**Duration:**`; case-management:
-     `**Child Case:**`; http-request: `**Method:**` / `**URL:**`; document-extraction: `**IXP Deployment:**` / `**Model Name:**`; process / agent / rpa / api-workflow / function / business-rule / flow-process: `**Resolved Resource:**`.
+     `**Child Case:**`; http-request: `**Method:**` / `**URL:**`; script: a ```` ```js ```` fenced function body; document-extraction: `**IXP Deployment:**` / `**Model Name:**`; process / agent / rpa / api-workflow / function / business-rule / flow-process: `**Resolved Resource:**`.
   7. No literal `\n` escape inside block content; `<UNRESOLVED>` is never backtick-wrapped; none of the
      skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
      inputOutputs[]) appears anywhere in the body.
  Closed enums + gate-slot pairing
-  8. Every task `**Type:**` is one of the sixteen literals in case-design-layers-guide.md § Task types. If a `Type:` appears in that section's never-author block, fix it as the block directs for its group: write the plan type it gives, or leave the task to Studio Web.
+  8. Every task `**Type:**` is one of the seventeen literals in case-design-layers-guide.md § Task types. If a `Type:` appears in that section's never-author block, fix it as the block directs for its group: write the plan type it gives, or leave the task to Studio Web.
   9. In every table with a `Marks Stage Complete` / `Marks Case Complete` column, the WHEN rule is legal for
      that row's Yes/No per § Lifecycle gates; Stage Entry Conditions rows use only Stage-entry rules and task
      Entry Condition rows only Task-entry rules.

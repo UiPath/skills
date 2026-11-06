@@ -205,6 +205,7 @@ N 1-based per label kind — never invent a label otherwise. -->
 Only include In/Out arguments, trigger-payload Variables, and true case-level state read by conditions or reused by multiple consumers.
 Do not mint relay variables for one upstream task output consumed once downstream; bind those directly with `<- "Stage"."Task".out` or `vars.$xref('Stage','Task','out')`.
 Every row must have Category. Name camelCase, no role suffix.
+Every variable is a row of this ONE table — In/Out arguments, trigger-payload Variables and task-output targets alike. Never split it into a second table, under a `####` sub-heading (e.g. `#### Task-output variables`), or into a sibling `###` section (e.g. `### Task-output variables`): only the first table under `### Case Variables` declares variables, so every row of a later table is left undeclared — with no warning.
 sourceTriggers/sourceFields grammar — In: optional single T<N> (blank = primary trigger, never CSV), sourceFields always empty (an In-arg selects a trigger, extracts nothing). Variable: single T<N> or CSV; one trigger → bare payload path (`response.subject`); CSV → keyed `T<N>: <path>; T<M>: <path>`, one entry per listed T-number; dot-paths only, no array indexing. Out: both empty; every Out row needs a Default OR a producing task Outputs row.
 Config-as-In: runtime business rules (priority bands, thresholds, taxonomies) ride ONE In variable — string with a JSON Default for opaque rule-sets; jsonSchema + body when downstream picks sub-fields. `json` is not a Type. file = JobAttachment record; a file In-arg triggers the Caller-obligation block in the confirmation.
 -->
@@ -338,7 +339,7 @@ the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| flow-process \| document-extraction \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| script \| flow-process \| document-extraction \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -360,7 +361,7 @@ the exact stage display name — never the case name. -->
 | <Yes \| No> | <Yes \| No> | <=js: expression or —> |
 ###### Action Task Detail (type: `action`)
 
-**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. -->
+**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>> <!-- `Action App: <title>` is the ONLY form this cell takes — there is no JSON-schema, schema-only, or form-builder variant to choose between. The task's fields are the Input Schema table below, not a value of this cell. Every named app must exist in the tenant before publish: deployed already (ID + folder resolved), or recorded as `create during build` (ID + folder `<UNRESOLVED>` + a review item), which the build skill turns into a Coded Action App. Naming an app that is neither leaves the task a placeholder. -->
 **Action App ID:** <actionAppId or <UNRESOLVED>>
 **Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>
@@ -443,6 +444,19 @@ The task's own outputs are `response` and `Error`; a later task reads a field as
 **Connection ID:** <tenant connection id, or <UNRESOLVED>; only with Connector Key>
 
 Outputs are the response's `code`, `headers` and `body`, plus `Error`.
+
+###### Script Task Detail (type: `script`)
+
+<!-- One ```js fenced FUNCTION BODY (```javascript also reads): read case state through `vars.<name>`
+(and `metadata`), end in `return { … }`; a top-level `return` is legal. Only the first js fence in the
+block is read. No Inputs table: the task receives `vars`, the whole case state. Outputs are fixed:
+`scriptResponse` (what the body returns) and `Error`; bind the result with an arrow row,
+`| scriptResponse | object | -> <variable> |`. Never a credential or secret in the body: it ships in
+caseplan.case. -->
+
+```js
+<function body: reads vars.<name>, ends in return { … }>
+```
 
 ###### Document Extraction Task Detail (type: `document-extraction`)
 

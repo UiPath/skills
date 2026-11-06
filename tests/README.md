@@ -103,7 +103,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
 | **lifecycle** | `lifecycle:X`, required | Coding Agents Scorecard lifecycle phase | `discover` (read-only exploration: list/get/inspect existing state), `generate` (produce a new local artifact: pack, scaffold, render), `setup` (mutate tenant state: create/edit/delete resources, deploy, configure) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
-| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (omit `script`/`http` — ubiquitous) |
+| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (a published IXP model), `extract-document` (the Extract document node and its inline taxonomy) (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
@@ -356,6 +356,50 @@ Two traps:
   `checker_context.api_route.route: direct` goes through
   `_resolve_backend_route`, which *does* demand `ANTHROPIC_API_KEY`. Absent
   and inherited succeeds where explicit and identical fails.
+
+## Tenant dependency catalog
+
+`tests/scripts/tenant_catalog.py` lists the cloud-tenant resources the tasks
+depend on. It reads `tests/tasks/` on every run, so the list is never
+maintained by hand.
+
+```bash
+python3 tests/scripts/tenant_catalog.py --skill uipath-maestro-case --format md
+```
+
+The script puts each task in one of three tiers:
+
+| Tier | Meaning |
+|---|---|
+| `hard` | A `pre_run` command or a grader calls the tenant. |
+| `soft` | The grader is local, but the prompt or a `command_executed` criterion sends the agent to the tenant. |
+| `local` | Nothing reaches the tenant. |
+
+Each dependency gets one disposition, with its reason and the tenant services it needs:
+
+| Disposition | Meaning |
+|---|---|
+| `creatable` | Automation Suite can hold it, and a script can create it. |
+| `substitutable` | A third-party SaaS account reached through Integration Service. The eval needs a local stand-in. |
+| `unavailable` | No equivalent exists on Automation Suite. The tasks that depend on it cannot run there. |
+
+The dependency kinds are:
+- Integration Service connectors and their pinned connection ids
+- solution resources from SDD task details, caseplan bindings and registry ledgers
+- folders
+- Data Fabric entities
+- setup helpers that call the tenant
+
+A dependency that no rule covers is `unclassified`. `--strict` exits 1 on a tenant task's
+unclassified dependency, and
+`test_tenant_catalog.py` fails on it for the case suite. When you add a tenant
+dependency to a task, add its rule in the same change.
+
+Known limits:
+- A resource that is named only in prose, or only in a grader's literal
+  assertion, is not caught.
+- A runtime state that a task needs, such as a faulted instance, is not caught.
+- Resources that must *not* exist on the tenant are not caught.
 
 ## Lifecycle E2E tests (uipath-platform pattern)
 
