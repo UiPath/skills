@@ -12,6 +12,24 @@ entry shape by hand from the pulled index files: `stage`, `task`, `taskType`,
 `cacheFile`, `searchQuery`, `matches` (every exact-name entry), `selected`,
 `rationale`. Steps 4 to 6 apply unchanged.
 
+### Index files by task type
+
+| Task type | Index file | Identity field |
+|---|---|---|
+| `agent` | `agents-index.json` | `deploymentTitle` |
+| `api-workflow` | `api-workflows-index.json` | `deploymentTitle` |
+| `process`, `rpa` | `processes-index.json` | `deploymentTitle` |
+| `action` | `action-apps-index.json` | `deploymentTitle` |
+| `case-management` | `cases-index.json` | `deploymentTitle` |
+
+All indexes live under `~/.uip/case-resources/`. Read with the Read tool,
+never `node -e ... fs.*`.
+
+Action-type tasks (`action`) are **non-creatable**: when the index has no
+match, the only option is `Use a placeholder`. Do not offer `Create missing
+resources inline` for action tasks. The same applies to `case-management`
+and `process`/`rpa`.
+
 ## Steps
 
 1. `uip login status --output json`, then `uip maestro case registry pull --output json`.
