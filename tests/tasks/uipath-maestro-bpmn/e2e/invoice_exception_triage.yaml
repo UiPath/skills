@@ -42,7 +42,8 @@ success_criteria:
   # The prompt names only the project, not its directory layout. `uip maestro
   # bpmn init` nests the project under a `<Name>Solution/` wrapper unless the
   # agent passes --skip-solution-registration, so grade the project wherever
-  # the agent placed it (rglob), like the other BPMN e2e tasks.
+  # the agent placed it (resolve_bpmn_file, which also takes Studio Web's
+  # InvoiceExceptionTriage/Process.bpmn), like the other BPMN e2e tasks.
   - type: run_command
     description: "BPMN source file was created"
     command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py InvoiceExceptionTriage"
