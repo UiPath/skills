@@ -484,6 +484,7 @@ folders) persist on the tenant across runs.
 3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly, not to hand-hold it.
 4. Tag every task using the [Tag Taxonomy](#tag-taxonomy): required `skill` + `tier` + `mode:*`, plus optional `shape`, `node`, `resource`, `connector`, and `feature` where applicable.
 5. Stick to the closed-vocabulary values. Propose new tags in the PR — do not invent them inline.
+6. When a prompt or grader note cites a skill doc (`references/<file>.md`, or `skills/<other-skill>/references/<file>.md`), the file must exist in `skills/`, `preview/skills/` or `classic/skills/` for that skill. `python3 scripts/check-task-doc-citations.py` checks every task in CI. When a doc is renamed or retired, point the task at the doc that now states the rule, or name the rule instead of the file.
 
 ### Task ID Convention
 
