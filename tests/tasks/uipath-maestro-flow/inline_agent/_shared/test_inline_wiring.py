@@ -280,3 +280,14 @@ def test_is_connector_missing_binding_fails(tmp_path):
     build_is_solution(tmp_path, CONNECTION_ID, with_binding=False)
     result = run_checker("check_inline_is_connector_tool.py", tmp_path)
     assert result.returncode != 0
+
+
+def test_top_level_flow_outside_a_project_is_not_the_flow(tmp_path):
+    build_rpa_solution(tmp_path, location="solution", folder_path="")
+    project = tmp_path / "FibonacciFlowSol" / "FibonacciFlow"
+    write_json(project / "FibonacciFlow.flow", {"nodes": [{"id": "t", "type": "core.trigger.manual"}]})
+    root_flow = {"nodes": [{"id": f"n{i}", "type": "core.action.script"} for i in range(6)]}
+    write_json(tmp_path / "FibonacciFlow.flow", root_flow)
+    result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
+    assert result.returncode != 0
+    assert "is named FibonacciFlow.flow" in result.stderr

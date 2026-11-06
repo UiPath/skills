@@ -24,6 +24,9 @@ Arguments:
                          expected_exit_code: 0) instead of inverting a
                          positive check — a bare exit 1 cannot distinguish
                          "pattern absent" from "no flow found"
+    --in-project         ignore ``.flow`` files that do not sit in a Flow project
+                         (a sibling ``project.uiproj``), such as a stray file at
+                         the top of the sandbox
     --expect-none        require that no ``.flow`` file exists anywhere in the
                          sandbox (for read-only tasks)
 
@@ -51,6 +54,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flow_check import (  # noqa: E402
     assert_no_flow_files,
     find_flow_files,
+    flow_file_in_project,
     flow_file_is_named,
 )
 
@@ -61,6 +65,7 @@ def _parse(argv: list[str]):
     absent: list[str] = []
     flow_name: str | None = None
     expect_none = False
+    in_project = False
     it = iter(argv)
     for arg in it:
         try:
@@ -72,16 +77,18 @@ def _parse(argv: list[str]):
                 flow_name = next(it)
             elif arg == "--expect-none":
                 expect_none = True
+            elif arg == "--in-project":
+                in_project = True
             else:
                 substrings.append(arg)
         except StopIteration:
             print(f"FAIL: {arg} requires a value", file=sys.stderr)
             sys.exit(2)
-    return substrings, regexes, absent, flow_name, expect_none
+    return substrings, regexes, absent, flow_name, expect_none, in_project
 
 
 def main(argv: list[str]) -> int:
-    substrings, regexes, absent, flow_name, expect_none = _parse(argv)
+    substrings, regexes, absent, flow_name, expect_none, in_project = _parse(argv)
 
     if expect_none:
         if substrings or regexes or absent or flow_name is not None:
@@ -103,6 +110,11 @@ def main(argv: list[str]) -> int:
     except SystemExit as exc:
         print(str(exc), file=sys.stderr)
         return exc.code if isinstance(exc.code, int) else 1
+    if in_project:
+        flows = [p for p in flows if flow_file_in_project(p)]
+        if not flows:
+            print("FAIL: no .flow file sits in a Flow project", file=sys.stderr)
+            return 1
     print(f"Found {len(flows)} .flow file(s): {', '.join(flows)}")
 
     if flow_name is not None:

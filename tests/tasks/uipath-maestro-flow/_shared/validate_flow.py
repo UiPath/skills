@@ -5,6 +5,7 @@ Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/validate_flow.py
     python3 $REFERENCE_DIR/validate_flow.py <Sol>/<Project>/<Project>.flow [...]
     python3 $REFERENCE_DIR/validate_flow.py --no-warnings [<path> ...]
+    python3 $REFERENCE_DIR/validate_flow.py --in-project
 
 With no arguments the flows are discovered (below). Pass explicit paths when a
 brownfield fixture ships a second Flow project next to the one under test, which
@@ -44,7 +45,12 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from flow_check import STUDIO_WEB_FLOW_FILE, find_flow_files, flow_file_is_named  # noqa: E402
+from flow_check import (  # noqa: E402
+    STUDIO_WEB_FLOW_FILE,
+    find_flow_files,
+    flow_file_in_project,
+    flow_file_is_named,
+)
 
 # The criterion budget to self-terminate inside. coder_eval exports only
 # TASK_DIR to a criterion's command, not the criterion's own timeout, so there
@@ -208,7 +214,8 @@ def _studio_web_main_file(path: str) -> str:
 
 def main(paths: list[str] | None = None) -> int:
     no_warnings = "--no-warnings" in (paths or [])
-    paths = [p for p in paths or [] if p != "--no-warnings"]
+    in_project = "--in-project" in (paths or [])
+    paths = [p for p in paths or [] if p not in ("--no-warnings", "--in-project")]
     if paths:
         paths = [_studio_web_main_file(p) for p in paths]
         missing = [p for p in paths if not os.path.isfile(p)]
@@ -218,6 +225,11 @@ def main(paths: list[str] | None = None) -> int:
         flows = list(paths)
     else:
         flows = find_flow_files()  # exits with its own message when nothing is found
+        if in_project:
+            flows = [p for p in flows if flow_file_in_project(p)]
+            if not flows:
+                print("FAIL: no .flow file sits in a Flow project", file=sys.stderr)
+                return 1
 
     budget = _budget_seconds()
     deadline = time.monotonic() + max(

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Inline-agent flow-wiring check.
 
-Reads GreetingSol/GreetingFlow/GreetingFlow.flow (existence asserted
-by a file_exists criterion in the task YAML) and verifies the
+Reads the GreetingFlow project's flow (`GreetingFlow.flow` or Studio Web's
+`new.flow`; existence asserted by a flow_contains criterion in the task YAML) and verifies the
 inline-in-flow structural pattern, plus that the inline agent's
 `agent.json` is a usable definition (not the prompt's wording or the
 input/output schema):

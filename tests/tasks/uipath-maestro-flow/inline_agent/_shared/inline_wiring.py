@@ -46,6 +46,7 @@ sys.modules[_spec.name] = _flow_check
 _spec.loader.exec_module(_flow_check)
 find_flow_files = _flow_check.find_flow_files
 flow_file_is_named = _flow_check.flow_file_is_named
+flow_file_in_project = _flow_check.flow_file_in_project
 
 AUTONOMOUS_NODE_TYPE = "uipath.agent.autonomous"
 
@@ -79,10 +80,14 @@ def load_json(path: Path) -> dict:
 def find_named_flow(name: str) -> Path:
     """Return the main file of the Flow called `name`, in any supported layout.
 
-    `<Sol>/<name>/<name>.flow` (Node CLI) or `<Sol>/<name>/new.flow` (Studio Web).
+    `<Sol>/<name>/<name>.flow` (Node CLI) or `<Sol>/<name>/new.flow` (Studio Web),
+    inside a Flow project (a stray top-level `<name>.flow` does not count).
     Exit with FAIL when none or several match.
     """
-    matches = [p for p in find_flow_files() if flow_file_is_named(p, name)]
+    matches = [
+        p for p in find_flow_files()
+        if flow_file_is_named(p, name) and flow_file_in_project(p)
+    ]
     if not matches:
         sys.exit(f"FAIL: no discovered .flow file is named {name}.flow")
     if len(matches) > 1:

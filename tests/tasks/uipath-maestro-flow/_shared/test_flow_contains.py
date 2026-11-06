@@ -167,3 +167,20 @@ def test_flow_name_rejects_new_flow_in_another_project(tmp_path, monkeypatch, ca
 
     assert main(["--flow-name", "SimEval"]) == 1
     assert "no discovered .flow file is named SimEval.flow" in capsys.readouterr().err
+
+
+def test_in_project_ignores_a_stray_root_level_flow(tmp_path, monkeypatch):
+    trigger_only = json.dumps({"nodes": [{"id": "t", "type": "core.trigger.manual"}]})
+    root_body = json.dumps(
+        {"nodes": [{"id": f"n{i}", "type": "core.action.script"} for i in range(6)]}
+    )
+    _make_project(tmp_path, solution="DemoSol", flows={"Demo": trigger_only})
+    (tmp_path / "Demo.flow").write_text(root_body)
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["--flow-name", "Demo"]) == 0
+    assert main(["--flow-name", "Demo", "--in-project"]) == 1
+
+
+def test_in_project_keeps_a_project_flow(sandbox):
+    assert main(["--flow-name", "Demo", "--in-project"]) == 0
