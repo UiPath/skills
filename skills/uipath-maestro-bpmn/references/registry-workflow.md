@@ -91,6 +91,7 @@ Use this table, not inferred names; confirm with `uip is resources describe <con
 | `uipath-uipath-testmanager` | `GetTestStepLogs` | Get Test Step Logs | `List` |
 
 Operation names are connector names, not activity verbs: Get Entity Record is `List`; Delete and Query are `Create`; do not change them. `<EntityName>` is the `Custom: yes` tenant entity from `uip is resources list`; its `RequestFields` are columns. Do not use `CreateEntityRecordCurated` or `UpdateEntityRecordV2` (empty `RequestFields`). File rows require `fieldName`; do not use their `V2` counterparts.
+`QueryEntityRecordsCurated` reports an empty `RequestFields` until you pass the entity:
 
 For Query, run:
 
@@ -100,6 +101,7 @@ uip is resources describe <connectorKey> <object> --connection-id <id> \
 ```
 
 Put `_sortFieldName` only in the body and always set `isAscending`; omission sorts ascending regardless of `DefaultValue`.
+`RequestFields` then lists `_sortFieldName`. Send it only in the body; as a query parameter it is ignored.
 
 V2 `--input-details` accepts a FilterTree in `filter` and compiles it to `queryExpression` ([reference](v2-connector-nodes.md#--input-details-reference)). V1 requires CEQL in `queryExpression`, even for a requested FilterBuilder tree: operators are `=`, `!=`, `<`, `<=`, `>`, `>=`, `LIKE`, `NOT LIKE`, `IN`, `NOT IN`, `IS NULL`, `IS NOT NULL`, joined by `AND`/`OR`; contains is `LIKE '%<text>%'`. A tree fails with `400 Error parsing query`. Put a requested tree in context `metadata` at `activityPropertyConfiguration.configuration.essentialConfiguration.savedFilterTrees.queryExpression`; summarize that runtime uses CEQL.
 
@@ -111,6 +113,7 @@ V2 `--input-details` accepts a FilterTree in `filter` and compiles it to `queryE
 ```
 
 For unlisted Data Fabric operations, drop display names ending `(Preview)` or `(Deprecated)`, prefer paths beginning `/v2/`; folder entities are the exception: only `*_V3` objects qualify and must be V2 ([v2-connector-nodes.md](v2-connector-nodes.md#1-get-the-element)).
+A **folder** entity is the exception: only the `*_V3` objects pick one, so author those as V2 elements — see [v2-connector-nodes.md](v2-connector-nodes.md#1-get-the-element).
 
 `send-mail-v2` defaults `saveAsDraft=true`. For V2, pass `"queryParameters":{"saveAsDraft":false}` in `--input-details`; `registry get` writes multipart metadata. For V1, emit `saveAsDraft` as a `target="query"` input set false, keep the message in the single `target="body"` input (its `body` parameter is `multipart`), and set context `metadata` to `{"inputMetadata":{"type":"multipart","multipart":{"bodyFieldName":"body"}}}`; otherwise the body is JSON.
 
