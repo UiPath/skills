@@ -257,9 +257,7 @@ binding half, which is the same for every connector-backed node.
   new node of that type, write the full spec.
   Needs `@uipath/maestro-builder-sdk` 6.85.7 or later.
   An older SDK refuses the type at decompile with `BPMN_TYPE_UNKNOWN`, so upgrade
-  with `npm install -g @uipath/maestro-builder-sdk@latest`. If the decompiled
-  `.activity()` still has no `spec`, the SDK in use predates this; keep the spec in
-  the source by hand, as before.
+  with `npm install -g @uipath/maestro-builder-sdk@latest`.
 
 <!-- RULE:bpmn.activity.offsnapshot-resolve -->
 - You do not have to transcribe the shape by hand: a type outside the SDK's
