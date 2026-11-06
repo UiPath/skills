@@ -376,8 +376,9 @@ decompiled entry. `check` reports `FLOW_AGENT_RESOURCE_NODE_ID` for a blank
 `nodeId` or one another node has (or that compile derives for another
 resource), `FLOW_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
 uuid, and `FLOW_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
-with the same `source`: both would write one `resource.json`. (An SDK at
-6.85.2 or older spells these three `INLINE_AGENT_RESOURCE_*`.) Delete both
+with the same `source`: both would write one `resource.json`. (An SDK whose
+`dist/flow-sdk.d.ts` has no `AgentResources` spells these three
+`INLINE_AGENT_RESOURCE_*`.) Delete both
 `nodeId` and `source` from a copied entry.
 Needs `@uipath/maestro-builder-sdk`
 6.33.0 or later; an older SDK's decompile omits these fields and compile renames
