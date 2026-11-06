@@ -207,7 +207,9 @@ binding half, which is the same for every connector-backed node.
 
 <!-- RULE:bpmn.connector.parameter-rows -->
 - `.connector()`, `.dataService()`, `.eventTrigger()` and `.waitForEvent()` write a V2 task (`activityConfigurationVersion: v2`), the shape Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds.
+<!--skill-flavor:sdk-v2-connector:start-->
   Needs `@uipath/maestro-builder-sdk` 6.84.0 or later; an older SDK writes a new `.connector()` task with one `target="path"` / `target="query"` row per parameter and an `operation` context row, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again; do not hand-convert its rows.
+<!--skill-flavor:sdk-v2-connector:end-->
   Its path parameters are one json row, `pathParameters` (`target="pathParameters"`), and its query parameters another, `queryParameters` (`target="queryParameters"`), each keyed by the library's own parameter names (`send_as`, not `sendAs`); the request body is the one json `target="body"` row, and a multipart file part is its own `target="file"` row.
   `.dataService()` has two exceptions, which it still writes as V1 tasks: the file operations (`downloadFile`, `uploadFile`, `deleteFile`), whose `_V3` operations have no field-name parameter, and every record operation on a folder-scoped entity (see the folder-entity rule above).
 - An imported process can also carry V1 tasks, with one `target="path"` / `target="query"` row per parameter and an `operation` context row.
