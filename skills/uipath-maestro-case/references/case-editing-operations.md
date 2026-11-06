@@ -256,11 +256,11 @@ Not authored (Rule 21). To make a stage reachable, add a `stage-entry-conditions
 
 1. Read `caseplan.case`.
 2. Locate the stage node by ID.
-3. Ensure `stageNode.data.tasks` exists. Use the task's activation mode and entry rule before honoring lane placement: strict sequential / `runs-sequentially`, adhoc, event-driven, fan-in, conditional-gate, and standalone tasks append as new single-task inner arrays. Reuse an existing `stageNode.data.tasks[laneIndex]` only for tasks explicitly planned as `parallel` or `parallel-after-predecessor` siblings with same-lane intent and rationale.
+3. Ensure `stageNode.data.tasks` exists. Use the task's activation mode and entry rule before honoring lane placement: strict sequential / `runs-sequentially`, adhoc, event-driven, fan-in, conditional-gate, and standalone tasks append as new single-task inner arrays. `parallel` (`current-stage-entered`) tasks also get their own single-task inner array. Reuse an existing `stageNode.data.tasks[laneIndex]` only for tasks planned as `parallel-after-predecessor` siblings (`runs-sequentially`).
 4. Generate a task ID.
 5. Compute `elementId = ${stageId}-${taskId}`.
 6. Build the task object per the plugin's JSON Recipe. Do NOT add `entryConditions` here — the task-entry-conditions plugin (Step 10) writes them from the SDD's authored rows, for every task type alike.
-7. Push onto `stageNode.data.tasks[laneIndex]` only for explicitly parallel or parallel-after-predecessor siblings; otherwise write `[task]` as its own inner task set. If `laneIndex` conflicts with activation mode, activation mode wins and note the lane correction in the completion report.
+7. Push onto `stageNode.data.tasks[laneIndex]` only for `parallel-after-predecessor` siblings; otherwise, including stage-start `parallel` tasks, write `[task]` as its own inner task set. If `laneIndex` conflicts with activation mode, activation mode wins and note the lane correction in the completion report.
 8. Edit — narrow slice targeting that stage node's `data.tasks[laneIndex]`. Never whole-file Write.
 
 ### Bind an input
@@ -392,7 +392,7 @@ Relocate a task within the case. **Keep the task `id`** so conditions and cross-
    - the task itself: `elementId = ${destStageId}-${taskId}`
    - any `wait-for-connector` entry-condition rule on the task, and each entry in that rule's `uipath.outputs[]`: `elementId = ${destStageId}-${ruleId}`
    - (root `inputOutputs[]` companions are `elementId: "root"` — NOT stage-scoped, leave them.)
-3. Remove the task from the source `data.tasks[oldTaskSet]` and insert it into the destination task set in the preserved `data.tasks` order. Parallel task sets remain allowed, but shared destination task sets are valid only for explicitly parallel or parallel-after-predecessor siblings. For `runs-sequentially` strict-chain tasks or other non-parallel entry modes, insert the task as its own single-task set; lane/task-set placement is structural, while entry conditions carry sequencing.
+3. Remove the task from the source `data.tasks[oldTaskSet]` and insert it into the destination task set in the preserved `data.tasks` order. A shared destination task set is valid only for `parallel-after-predecessor` siblings (`runs-sequentially`); a stage-start `parallel` task goes in its own single-task set. For `runs-sequentially` strict-chain tasks or other non-parallel entry modes, insert the task as its own single-task set; lane/task-set placement is structural, while entry conditions carry sequencing.
 4. **Repoint cross-task bindings that consume this task's outputs.** Any other task input with `sourceTask == <taskId>` keeps `sourceTask`, but its `sourceStage` must change to `<destStageId>`. Confirm ordering still holds — a consumer can only read a task that runs before it; moving the task later in the flow can invalidate the binding.
 5. **Re-check the moved task's `entryConditions[]`:**
    - `current-stage-entered` — no change; it follows the task to the destination stage.
