@@ -8,9 +8,12 @@ Runs whether or not the task passed. Removes everything the run created:
      seeded marker (covers runs that died before writing result.json).
 
 Never fails the task: every step is best-effort and the script exits 0.
+Finishes inside the 300 s post_run cap: every call is bounded by a shared
+deadline, and steps still pending when it runs out are skipped.
 """
 import json
 import subprocess
+import time
 
 CONNECTOR = "uipath-uipath-testmanager"
 # Path-parameter casing differs per object in the connector's SR files.
@@ -24,6 +27,8 @@ PROJECT_PARAM = {
 # Children before parents: executions reference test sets, test sets reference test cases.
 DELETE_ORDER = ["TestExecution", "TestSet", "TestCase", "Requirement"]
 MARKER_SWEEP = ["TestSet", "TestCase", "Requirement"]
+# post_run timeout is 300 s (schema maximum); keep headroom for interpreter start-up.
+DEADLINE = time.monotonic() + 270
 
 
 def load(path):
@@ -34,7 +39,12 @@ def load(path):
         return {}
 
 
-def run_uip(*args, timeout=180):
+def run_uip(*args, timeout=45):
+    remaining = DEADLINE - time.monotonic()
+    if remaining < 5:
+        print(f"  skipped {' '.join(args[:4])}: cleanup time budget spent")
+        return None
+    timeout = min(timeout, remaining)
     cmd = ["uip", *args, "--output", "json"]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
@@ -109,7 +119,7 @@ def main():
     deployment = seed.get("deployment_name")
     if deployment:
         print(f"cleanup: uninstalling deployment {deployment}")
-        run_uip("solution", "deploy", "uninstall", deployment, "--yes", timeout=600)
+        run_uip("solution", "deploy", "uninstall", deployment, "--yes", timeout=150)
 
     connection_id = resolve_connection(result)
     if not connection_id:

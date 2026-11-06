@@ -43,7 +43,7 @@ pre_run:
 
 post_run:
   - command: "python3 _setup/cleanup.py"
-    timeout: 900
+    timeout: 300
 
 initial_prompt: |
   Read seed.json and use its values throughout.
