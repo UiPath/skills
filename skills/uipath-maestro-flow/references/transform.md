@@ -8,7 +8,7 @@ Signature:
 `transform({ collection, operations, variant?: 'filter' | 'map' | 'group-by' })`.
 Operations are the SDK's `filter`, `map`, and `groupBy` discriminated shapes.
 
-Author every transform with `transform({ variant })`. Never `rawNode()`: it skips the `collection` and `config.*` lowering.
+Author every transform with `transform()` (`variant` optional). Never `rawNode()`: it skips the `collection` and `config.*` lowering.
 
 ```ts
 .step('active', transform({ variant: 'filter', collection: input('rows'),
