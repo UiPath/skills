@@ -255,7 +255,7 @@ binding half, which is the same for every connector-backed node.
   `spec` as decompile wrote it. Editing a row's value is fine; the row is written
   exactly as it reads. The spec does not say which fields the type needs, so for a
   new node of that type, write the full spec.
-  Needs `@uipath/maestro-builder-sdk` <first release with UiPath/builder-sdk#1704> or later.
+  Needs `@uipath/maestro-builder-sdk` 6.85.7 or later.
   An older SDK refuses the type at decompile with `BPMN_TYPE_UNKNOWN`, so upgrade
   with `npm install -g @uipath/maestro-builder-sdk@latest`. If the decompiled
   `.activity()` still has no `spec`, the SDK in use predates this; keep the spec in
