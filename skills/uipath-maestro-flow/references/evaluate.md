@@ -114,13 +114,17 @@ Simulate every side-effecting component before running a set more than once. An
 unsimulated connector step really sends — once per eval, every run.
 
 **A child simulation (`--parent <agent-id>`) with `--strategy Llm` needs the
-child tool's declared output schema, read from the compiled `.flow`.** Declare
-the agent and its tools on `inlineAgent({ tools })`, giving each tool `returns`
-(a `clientside` tool needs no tenant), compile, then add. `Parent agent
-"<id>" not found in the flow.` means author the agent first. `The tool has no
-declared outputs` means the tool has no `returns` (a `mock()` never has one):
-add it and recompile. Never invent an `inputs.source` id or hand-write
-`agent.json`. `--strategy Static` needs no declared outputs.
+child tool's declared output schema, read from the compiled agent.** Declare the
+agent and its tools on `inlineAgent({ tools })` and compile; pass the compiled
+node id as `--parent` (the step id with `-` turned into `_`: `agent-1` compiles
+to `agent_1`) and the tool's `name` as the component id. Use a tool kind that
+writes a `resources/<id>/resource.json` carrying an `outputSchema` (`httpRequest`,
+`builtin`, `connector`); a `clientside` tool writes none. `Parent agent "<id>"
+not found in the flow.` means the id is wrong or the agent is not authored yet.
+`The tool has no declared outputs` means the tool has no output schema (a
+`mock()` never has one): change the tool and recompile. Never invent an
+`inputs.source` id or hand-write `agent.json`. `--strategy Static` needs no
+declared outputs.
 
 ## Running a set
 

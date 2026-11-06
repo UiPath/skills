@@ -40,32 +40,33 @@ initial_prompt: |
      `{"answer":"Sunny, 72°F in New York City."}`.
 
   5. Put the simulation targets in the flow: an autonomous inline agent node
-     with id `agent-1`, with two tools named `Web_Search` and `Send_Email`.
-     Both are real tools that declare an output schema, because the `Llm`
-     child simulation reads it from the flow. A mock node declares none. The
+     with id `agent_1`, with two tools named `Web_Search` and `Send_Email`.
+     Both are real tools that write a resource file with an output schema
+     (not a mock, not client-side), because the `Llm` child simulation reads
+     it from the compiled agent. The
      flow does not have to pass `uip maestro flow validate`.
 
   6. Add a `Static` child simulation on the `search-test` data point targeting
-     child tool `Web_Search` on parent agent node `agent-1`. Use
+     child tool `Web_Search` on parent agent node `agent_1`. Use
      `--mock-value '{"results":[{"title":"NYC Weather","snippet":"Sunny, 72°F"}]}'`.
      Do NOT add a separate parent simulation first.
 
   7. Add an `Llm` child simulation on the `search-test` data point targeting
-     child tool `Send_Email` on the same parent `agent-1`. Supply
+     child tool `Send_Email` on the same parent `agent_1`. Supply
      `--simulation-instructions "Return a success status with a message ID."`.
      The output schema is auto-resolved from the parent agent node — do not
      pass an output-schema flag.
 
-  8. List the child simulations on `agent-1` to confirm both are present.
+  8. List the child simulations on `agent_1` to confirm both are present.
 
-  9. Remove the `Send_Email` child simulation from `agent-1`.
+  9. Remove the `Send_Email` child simulation from `agent_1`.
 
   Important:
   - Use `--output json` on every `uip maestro flow eval ...` command.
-  - Use `--parent agent-1` on every child simulation command (add/list/remove).
+  - Use `--parent agent_1` on every child simulation command (add/list/remove).
   - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call
     `uip maestro flow eval run *` — this task tests local CRUD only.
-  - Do NOT add a separate parent simulation for `agent-1` before adding children —
+  - Do NOT add a separate parent simulation for `agent_1` before adding children —
     use the child simulation workflow from the skill.
 
   This run is headless. No user is present and nobody will answer a question or
@@ -153,7 +154,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did NOT add a parent simulation without --parent before adding children"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+agent-1\s+(?!.*--parent)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+agent_1\s+(?!.*--parent)'
     weight: 1.5
     pass_threshold: 1.0
 
