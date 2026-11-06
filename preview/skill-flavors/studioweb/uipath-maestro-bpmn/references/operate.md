@@ -44,11 +44,26 @@ shared-location publish does not: deploy it with `uip solution deploy run`
 <!--skill-flavor:ship:end-->
 
 <!--skill-flavor:debug-run:start-->
-```bash
-uip maestro bpmn debug "<Project>" --inputs '{}'
-uip maestro bpmn debug "<Project>" --inputs '{"orderId": "O-1"}'
-uip maestro bpmn debug "<Project>" --inputs '{}' --entry-point "<File>.bpmn#<StartEventId>"
-```
+A debug run is two steps: run it, then read its values.
+
+1. **Run it.**
+
+   ```bash
+   uip maestro bpmn debug "<Project>" --inputs '{}'
+   uip maestro bpmn debug "<Project>" --inputs '{"orderId": "O-1"}'
+   uip maestro bpmn debug "<Project>" --inputs '{}' --entry-point "<File>.bpmn#<StartEventId>"
+   ```
+
+2. **Read its values with the `Trace ID` it prints.** The `Trace ID` is the
+   debug instance id. The trace lists each element's **status**, never a
+   variable's **value**, so read the values right after the run. Report a value
+   from this read, never from the process logic.
+
+   ```bash
+   uip maestro bpmn debug-instance variables <TRACE_ID> --output json
+   uip maestro bpmn debug-instance variables-all <TRACE_ID> --output json
+   uip maestro bpmn debug-instance incidents <TRACE_ID> --output json
+   ```
 
 `<Project>` is a project name in the open solution, not a path; it defaults to
 the open project. Debug runs the saved copy of the process open in the
@@ -67,17 +82,6 @@ was found, the run logs and the execution trace. Exit 1 means `Faulted` or
 `Failed`. `TimedOut after <N>s` also exits 1, but the run is still going in
 Studio Web: do not troubleshoot it, and do not run it again. Tell the user to
 follow the run in Studio Web.
-
-The `Trace ID` is the debug instance id. The trace lists each element's
-**status**, never a variable's **value**: a `Completed` run proves the process
-ran, not that an output holds the expected value. Read the values right after
-the run:
-
-```bash
-uip maestro bpmn debug-instance variables <TRACE_ID> --output json
-uip maestro bpmn debug-instance variables-all <TRACE_ID> --output json
-uip maestro bpmn debug-instance incidents <TRACE_ID> --output json
-```
 <!--skill-flavor:debug-run:end-->
 
 <!--skill-flavor:publish-default:start-->

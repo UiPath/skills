@@ -151,6 +151,9 @@ instance's lifecycle. You are already signed in to the tenant of the user.
 Before every publish or debug, run `uip maestro bpmn refresh .` and make sure
 each connection is in the solution ([Validation loop](#validation-loop)).
 Run the process with `uip maestro bpmn debug "<Project>" --inputs '{}'`.
+Its `Trace ID` is the debug instance id: to report a value, read it with
+`uip maestro bpmn debug-instance variables <Trace ID> --output json`, never
+from the process logic.
 Publish the open solution with `uip solution publish` (the destination is the
 user's choice). `bpmn debug` is a REAL run, not a validation step. Every
 mutation needs the user's decision for that action. Read
