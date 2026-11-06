@@ -74,13 +74,6 @@ make from syntax alone. Exact signatures remain in the generated API.
   bind it with the `registry prepare` command the warning prints before a live
   run.
 
-<!-- RULE:case.bindings-v2.metadata -->
-- Each `bindings_v2.json` resource entry's `metadata` object accepts only
-  `subType` (and the envelope's own `BindingsVersion`). Keys like
-  `ActivityName` or `DisplayLabel` cause `uip solution resources refresh` to
-  fail with an unsupported-metadata error. When hand-writing or editing
-  `bindings_v2.json`, copy only `subType` from the registry cache entry.
-
 <!-- RULE:case.resources.live -->
 - Published process, agent, RPA, API workflow, sub-case, connector, and folder
   references are tenant facts. Static validation cannot prove they exist.
@@ -90,7 +83,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   task, prune orphans before refreshing:
 
   1. `uip solution resources list --solution-folder {solution} --output json`
-  2. Match each listed `process` key against tasks still in the plan.
+  2. Match each listed resource key against tasks still in the plan.
   3. For each key with no remaining consumer:
      `uip solution resources remove {key} --solution-folder {solution} --output json`
   4. Never remove the Case project's own process/package pair, and never
@@ -174,35 +167,25 @@ make from syntax alone. Exact signatures remain in the generated API.
   genuinely unresolvable, use `.unresolved('<kind>')` — which preserves the
   declared kind — rather than picking a different one.
 
-<!-- RULE:case.sdd.output-authoring -->
-- Every SDD Out-variable needs TWO declarations: a case-level `.output()`
-  that reserves the variable, and a `.outputs()` call on the task that
-  produces it. A missing `.output()` compiles but the variable never appears
-  in `variables.outputs[]`, so downstream consumers and the case summary
-  cannot read it. A missing `.outputs()` on the task means no task writes the
-  value, so the variable stays `null` at runtime. Both omissions validate
-  without error because an unused output is not a schema violation. Walk the
-  SDD's Out-variable table row by row: for each entry, confirm that
-  (a) `.output({ name: type })` exists on the case builder, and (b) at least
-  one task carries `.outputs({ name: <expression> })` that writes it.
+<!-- RULE:case.sdd.output-contract -->
+- The SDD's Out-variable table is a three-part contract. All three parts
+  validate without error when missing, so no static check catches a gap:
 
-<!-- RULE:case.sdd.field-path-casing -->
-- `.outputs()` keys must match the SDD's field names exactly, including
-  casing. The compiler treats `unusualClauses` and `UnusualClauses` as two
-  distinct output slots, and `case check` does not compare them against the
-  SDD. A casing mismatch silently creates an orphan slot while the intended
-  variable stays unwritten. Copy field names character-for-character from the
-  SDD's Out-variable or data-contract table.
-
-<!-- RULE:case.sdd.dereference-paths -->
-- When the SDD declares a sub-property dereference (for example
-  `response.unusualClauses`), the producing task must surface that path as a
-  named output. An `.outputs()` entry like
-  `{ unusualClauses: '=response.unusualClauses' }` extracts the nested value
-  into the case variable. Omitting the extraction leaves the nested field
-  buried inside a parent object that downstream routing and the case summary
-  cannot address. Every dereference path the SDD names must appear as a task
-  output key or as an explicit `=js:` extraction.
+  1. **Declaration.** Every SDD Out-variable needs a case-level `.output()`
+     that reserves the variable. A missing `.output()` compiles but the
+     variable never appears in `variables.outputs[]`, so downstream
+     consumers and the case summary cannot read it.
+  2. **Production.** At least one task must carry `.outputs({ name: <expr> })`
+     that writes the variable. A missing `.outputs()` on the producing task
+     leaves the variable `null` at runtime.
+  3. **Casing and paths.** `.outputs()` keys must match the SDD's field names
+     character-for-character, including casing — the compiler treats
+     `unusualClauses` and `UnusualClauses` as distinct slots. When the SDD
+     declares a sub-property dereference (e.g. `response.unusualClauses`),
+     the producing task must extract it explicitly:
+     `{ unusualClauses: '=response.unusualClauses' }`. Omitting the
+     extraction leaves the nested field buried inside a parent object that
+     downstream routing cannot address.
 
 ## Brownfield editing
 
