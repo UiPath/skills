@@ -166,12 +166,20 @@ def _has_positive_subject_clause(expression: str) -> bool:
     return False
 
 
-def _is_folder_scoped(body: dict, expression: str) -> bool:
+def _query_folder_id(body: dict) -> str | None:
+    """The stripped `queryParams.parentFolderId`, or None if missing or blank."""
     params = body.get("queryParams")
     folder_id = params.get("parentFolderId") if isinstance(params, dict) else None
     if not isinstance(folder_id, str) or not folder_id.strip():
+        return None
+    return folder_id.strip()
+
+
+def _is_folder_scoped(body: dict, expression: str) -> bool:
+    folder_id = _query_folder_id(body)
+    if folder_id is None:
         return False
-    clause = rf"parentFolderId\s*==\s*['\"]{re.escape(folder_id.strip())}['\"]"
+    clause = rf"parentFolderId\s*==\s*['\"]{re.escape(folder_id)}['\"]"
     return bool(re.search(clause, expression))
 
 
@@ -214,15 +222,14 @@ def _v2_conjuncts(expression: str) -> list[str] | None:
 
 def _is_v2_scoped_filter(body: dict, expression: str) -> bool:
     """A V2 element's filter: only the subject clause and matching folder clauses, AND-ed."""
-    params = body.get("queryParams")
-    folder_id = params.get("parentFolderId") if isinstance(params, dict) else None
-    if not isinstance(folder_id, str) or not folder_id.strip():
+    folder_id = _query_folder_id(body)
+    if folder_id is None:
         return False
     conjuncts = _v2_conjuncts(expression) or []
     for part in conjuncts:
         folder = _V2_FOLDER_RE.fullmatch(part)
         if not _V2_SUBJECT_RE.fullmatch(part) and not (
-            folder and folder.group(2) == folder_id.strip()
+            folder and folder.group(2) == folder_id
         ):
             return False
     return any(_V2_SUBJECT_RE.fullmatch(part) for part in conjuncts)

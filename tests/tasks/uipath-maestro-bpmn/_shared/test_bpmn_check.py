@@ -455,6 +455,19 @@ def test_waitfor_v2_element_scopes_by_query_params() -> None:
         assert not grader.has_subject_contains_filter(task(wrong)), wrong
 
 
+def test_waitfor_v2_accepts_parenthesised_subject_first() -> None:
+    grader = _load("check_outlook_waitfor_email")
+    expression = "(contains(subject,'TestWaitFor')) && (parentFolderId == 'X')"
+    assert grader.has_subject_contains_filter(
+        _outlook_receive_task(
+            '<uipath:input name="activityConfigurationVersion" type="string" value="v2" />'
+            '<uipath:input name="body" type="json" target="body"><![CDATA['
+            f'{{"filters":{{"expression":"{expression}"}},"queryParams":{{"parentFolderId":"X"}}}}'
+            "]]></uipath:input>"
+        )
+    )
+
+
 _WAIT_EVENT = (
     '<bpmn:extensionElements><uipath:event version="v1">'
     '<uipath:type value="Intsvc.WaitForEvent" version="v1" /><uipath:context>'
