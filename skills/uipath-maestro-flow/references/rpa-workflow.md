@@ -63,6 +63,48 @@ Inputs and returns are that process's own argument names and exact casing; the
 offline SDK cannot discover their truth. Inspect the registry/process listing
 and the deployed contract rather than copying values from a different folder.
 
+## Which entry point runs
+
+The step starts the process its `key` names. An Orchestrator process runs one
+entry point: the workflow set as main in Studio, unless another was picked for
+the process
+([Managing processes](https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/managing-processes)).
+No `rpaWorkflow()` field selects another. When the flow calls several entry
+points of one RPA project:
+
+1. **Published process:** create one Orchestrator process per entry point and
+   give each step the `Data.Key` of its own process. Take `<ENTRY_POINT_PATH>`
+   from the `Path` of each entry point the package lists:
+
+   ```bash
+   uip or packages entry-points "<PACKAGE_ID>:<VERSION>" --output json
+   uip or processes create --name "<PROCESS_NAME>" --package-key "<PACKAGE_ID>" \
+     --package-version "<VERSION>" --folder-path "<FOLDER_PATH>" \
+     --entry-point "<ENTRY_POINT_PATH>" --output json
+   ```
+
+2. **In-solution sibling:** the solution holds one process per project, and its
+   resource records no entry point; `uip solution resources edit` ignores an
+   entry-point field and still reports success. The deployed process runs the
+   project's main workflow. Make that workflow a dispatcher, or split the entry
+   points into one project each. The dispatcher's arguments are all `String`:
+   In `entryPoint` (the entry point's path, e.g. `Approve.xaml`), In
+   `argumentsJson` (its In and InOut arguments as one JSON object), Out
+   `resultJson` (its Out and InOut arguments as one JSON object). It runs that
+   entry point in the same job and fails on an unknown path. Each step that
+   calls it passes both inputs:
+
+   ```ts
+   .step('approve', rpaWorkflow({ key: localResourceKey, name: '<RpaProject>',
+     location: 'in-solution', projectId: localProjectKey,
+     inputs: { entryPoint: 'Approve.xaml',
+       argumentsJson: js`JSON.stringify({ invoiceId: ${input('invoiceId')} })` },
+     returns: { resultJson: 'string' } }))
+   ```
+
+   A later step reads a returned argument after parsing the text:
+   `JSON.parse($vars.approve.output.resultJson)` in a [script](script.md) step.
+
 ## Where the job runs
 
 The step starts an Orchestrator job on a robot of the process's folder, and the
