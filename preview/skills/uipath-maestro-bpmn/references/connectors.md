@@ -86,7 +86,8 @@ uip maestro bpmn check <Name>.bpmn.ts --source
 | `BINDING_UNDECLARED` | a label a populated `bindings.json` does not declare. |
 | `CONNECTION_BINDING_NOT_GUID` (warning) | a connection binding whose default is not a connection id. `check` and `compile` accept a symbolic label offline; `refresh` refuses it (`Connection binding "<id>" default must be a GUID.`). `prepare` writes the real id; never invent one. |
 
-Each of these is closed by one `uip maestro registry prepare`:
+When one of these comes from a missing schema, lookup value or binding, its message names the `uip maestro registry prepare` that closes it.
+An unknown key, a wrong value type (`CONNECTOR_INPUT`) or a runtime value in an id field (`LOOKUP_RUNTIME_VALUE`) is a mistake in your source: fix it there, since `prepare` doesn't touch the source.
 
 ```bash
 uip maestro registry prepare uipath-atlassian-jira --action create-issue \
@@ -111,7 +112,7 @@ These codes are mistakes in your own source, and `prepare` does not close them; 
 | `INTSVC_CONNECTION_MISSING` | an activity with no connection (error on a V1 activity, warning otherwise). | Give the node a `connection:`. |
 | `INTSVC_CONNECTION_FOLDER_MISMATCH` | an activity whose connection and folder bindings name different connection resources: `refresh` or `validate` refuses it. | Point the connection and folder at the same connection's bindings. |
 | `INTSVC_CONNECTION_RESOURCE_CONFLICT` | one connection resource used by nodes with different connectors or connections. | Give each connector or connection its own binding. |
-| `INTSVC_CONNECTOR_KEY_MISSING` | a node bound to a connection with no `connectorKey` (or an HTTP request with no `body.targetConnector`): `refresh` refuses it before it looks at the binding. | Set the node's `connectorKey`. |
+| `INTSVC_CONNECTOR_KEY_MISSING` | a node bound to a connection with no `connectorKey` (or an HTTP request with no `body.targetConnector`): `refresh` refuses it before it looks at the binding. | Set the node's `connectorKey`; on an HTTP request, set `body.targetConnector` to the connection's connector key. |
 
 ## 4. When the connector is not in the library
 
