@@ -60,7 +60,7 @@ Before every write to `caseplan.case`, confirm each item. These are the failure 
 
 7. **Every regular stage has at least one entry condition.** With edges retired, stage entry conditions are the sole reachability contract — orphan stages don't execute. The first stage carries `case-entered`; every other regular stage carries `selected-stage-completed` / `selected-stage-exited` naming a reachable predecessor. When adding a stage, also plan its entry condition (Step 10).
 
-8. **Preserve task structure and order.** Increment `laneIndex` per task only for the structural/layout array when needed. A strict sequential chain uses consecutive single-task sets (`[[A], [B], [C]]`); intentionally parallel siblings share a task set at stage start (`[[A, B], [C]]`) or after an immediate predecessor (`[[A], [B, C], [D]]`). Sequence behavior comes from each task's entry condition and its order in `stageNode.data.tasks`; lane-sharing alone does not express sequence.
+8. **Preserve task structure and order.** Increment `laneIndex` per task only for the structural/layout array when needed. A strict sequential chain uses consecutive single-task sets (`[[A], [B], [C]]`); siblings after an immediate predecessor share a task set (`[[A], [B, C], [D]]`, `runs-sequentially` on each), and stage-start siblings each get their own set (`[[A], [B]]`, `current-stage-entered` on each). Sequence behavior comes from each task's entry condition and its order in `stageNode.data.tasks`; lane-sharing alone does not express sequence.
 
 9. **Task `elementId` = `${stageId}-${taskId}`.** Compute and write this composite string on every new task.
 
