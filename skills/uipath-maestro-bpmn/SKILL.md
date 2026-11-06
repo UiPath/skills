@@ -550,8 +550,10 @@ below, because it is the one step that depends on phase 1's scan.
 Adjust the shape, re-`format`, show the change, and hold the approval gate
 until the user agrees it: see
 [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating).
-Draft mode only. End the turn with the 3c reply exactly as that guide's
-template shows it (see its 3c section).
+Draft mode only. Before you write the 3c reply, read that guide from
+`## Iterating` to the end of the file: the reply template sits near the end,
+so a read that stops partway misses it. End the turn with the 3c reply
+exactly as that template shows it.
 
 ### Phase 4 — Wire it up
 
