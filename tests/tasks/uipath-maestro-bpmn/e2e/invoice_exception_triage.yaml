@@ -45,7 +45,7 @@ success_criteria:
   # the agent placed it (rglob), like the other BPMN e2e tasks.
   - type: run_command
     description: "BPMN source file was created"
-    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('InvoiceExceptionTriage.bpmn')) else 'InvoiceExceptionTriage.bpmn missing')\""
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py InvoiceExceptionTriage"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -53,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "Project metadata file was created beside the BPMN source"
-    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('InvoiceExceptionTriage.bpmn'), None); sys.exit(0 if b and (b.parent / 'project.uiproj').is_file() else 'project.uiproj missing beside InvoiceExceptionTriage.bpmn')\""
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py InvoiceExceptionTriage --beside project.uiproj"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -61,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "Package operate metadata was created beside the BPMN source"
-    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('InvoiceExceptionTriage.bpmn'), None); sys.exit(0 if b and (b.parent / 'operate.json').is_file() else 'operate.json missing beside InvoiceExceptionTriage.bpmn')\""
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py InvoiceExceptionTriage --beside operate.json"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

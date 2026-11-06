@@ -66,12 +66,31 @@ def entry_point_files(project_dir: Path) -> list[Path] | None:
     return out
 
 
+STUDIO_WEB_MAIN_FILE = "Process.bpmn"
+"""The main file Studio Web gives every BPMN project; the Node CLI names it ``<Project>.bpmn``."""
+
+
+def bpmn_file_is_named(path: _PathLike, name: str) -> bool:
+    """True for ``<name>.bpmn``, or for Studio Web's ``Process.bpmn`` in a project directory named ``<name>``."""
+    file = Path(path)
+    stem = name.removesuffix(".bpmn")
+    return file.name == f"{stem}.bpmn" or (file.name == STUDIO_WEB_MAIN_FILE and file.parent.name == stem)
+
+
 def find_bpmn_file(name_hint: str | None = None) -> str:
     paths = sorted(glob.glob("**/*.bpmn", recursive=True))
     if not paths:
         fail("no BPMN file found")
     if name_hint:
         matches = [p for p in paths if name_hint.lower() in os.path.basename(p).lower()]
+        if not matches:
+            # Studio Web names the file Process.bpmn and the project after the task's name.
+            matches = [
+                p
+                for p in paths
+                if os.path.basename(p) == STUDIO_WEB_MAIN_FILE
+                and name_hint.lower() in os.path.basename(os.path.dirname(p)).lower()
+            ]
         if matches:
             # A hint narrows to a basename, not to a project: `Foo-old.bpmn`
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
@@ -114,11 +133,10 @@ def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
     billing_invoice_lookup ``bindings``).
     """
     excluded = [Path(d).resolve() for d in exclude_under]
-    candidates = [
-        p
-        for p in _project_files(Path.cwd().rglob(bpmn_name))
-        if not any(p.resolve().is_relative_to(d) for d in excluded)
+    named = list(Path.cwd().rglob(bpmn_name)) or [
+        p for p in Path.cwd().rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)
     ]
+    candidates = [p for p in _project_files(named) if not any(p.resolve().is_relative_to(d) for d in excluded)]
     if len(candidates) != 1:
         fail(
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "
