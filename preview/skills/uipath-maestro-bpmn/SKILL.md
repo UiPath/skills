@@ -110,6 +110,7 @@ Match one name — do not read either end to end — then read the span it gives
 | Human work — an inline form unless a deployed Action App is named | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/InvoiceEscalation.bpmn.ts` |
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connectors](references/connectors.md) | `examples/NotifyChannel.bpmn.ts` |
 | A connector EVENT, as a start or a mid-flow wait | `eventTrigger`, `waitForEvent` | [Connector events](references/connectors.md#6-connector-events) | — |
+| A connector step in a draft with no connection (offline, or no real ids allowed) | `connector` with symbolic bindings, or a bare `task` | [Unresolved connector draft](references/connectors.md#7-draft-with-an-unresolved-connector) | — |
 | Data Fabric records and file fields | `dataService` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/ContractRegistry.bpmn.ts` |
 | Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
