@@ -395,6 +395,7 @@ function collectCanonicalFiles(repoRoot, skills, findings, sourceRoots = new Map
         continue;
       }
       if (!entry.stats.isFile()) continue;
+      if (isWorkingDocument(path.basename(entry.path))) continue;
       const relative = `skills/${skill}/${posixRelative(skillRoot, entry.path)}`;
       canonicalFiles.set(relative, entry.path);
       if (path.extname(entry.path).toLowerCase() !== ".md") continue;
@@ -657,6 +658,39 @@ function copyFilePreservingTimes(source, destination) {
   utimesSync(destination, stats.atime, stats.mtime);
 }
 
+/**
+ * Working documents that live beside a skill but must never reach a consumer.
+ *
+ * `CASE-MEMO-MAP.md` maps library cases to the engagements they came from and
+ * names real accounts and ticket ids; it is kept out of git by a local exclude,
+ * which npm never reads, so without this it packs. `*-LOCATIONS.md` are
+ * reinstatement specs for withheld strategies — committed on purpose, but a
+ * consumer reading an installed skill must not find a strategy the release does
+ * not ship.
+ *
+ * Excluded at the canonical walk, which is the only entry point into a plan, so
+ * one predicate covers every built tree, staged package and tarball.
+ */
+export function isWorkingDocument(basename) {
+  return basename === "CASE-MEMO-MAP.md" || basename.endsWith("-LOCATIONS.md");
+}
+
+/**
+ * Private working material, identified by path rather than basename.
+ *
+ * Working documents live under `skills/` and are excluded at the canonical
+ * walk. Memo sources do not: they sit under `assets/`, which is a whole-root
+ * `files` entry copied wholesale, so nothing in the skill plan ever sees them.
+ * They are kept out of the repository entirely, and this predicate is the
+ * second line — a pack run on a machine that still has a copy fails instead of
+ * publishing it.
+ */
+export function isPrivateWorkingPath(relativePath) {
+  const parts = relativePath.split("/").filter((part) => part && part !== ".");
+  if (parts.includes("memos")) return true;
+  return isWorkingDocument(parts[parts.length - 1] ?? "");
+}
+
 export function materializeComposition(plan, outputDir) {
   outputDir = validateOutputDirectory(outputDir);
   for (const item of plan.files) {
@@ -837,6 +871,7 @@ function copyPayload(source, destination, label) {
   const stats = safeLstat(source);
   if (!stats) throw new Error(`${label} is neither a file nor directory: ${source}`);
   if (stats.isFile()) {
+    if (isPrivateWorkingPath(path.basename(source))) return;
     mkdirSync(path.dirname(destination), { recursive: true });
     copyFilePreservingTimes(source, destination);
     return;
@@ -846,6 +881,7 @@ function copyPayload(source, destination, label) {
   chmodSync(destination, stats.mode);
   for (const entry of walkTree(source)) {
     const relative = path.relative(source, entry.path);
+    if (isPrivateWorkingPath(posixRelative(source, entry.path))) continue;
     const target = path.join(destination, relative);
     if (entry.stats.isDirectory()) {
       mkdirSync(target, { recursive: true });
@@ -1395,7 +1431,8 @@ export function verifyTarball(tarball, packageDir, expectedName, expectedVersion
       name.startsWith("package/skill-flavors/") ||
       name.startsWith("package/tests/") ||
       (name.startsWith("package/scripts/") &&
-        name !== "package/scripts/npm-package-lifecycle.mjs"),
+        name !== "package/scripts/npm-package-lifecycle.mjs") ||
+      isPrivateWorkingPath(name.replace(/^package\//, "")),
   );
   if (forbidden.length) throw new Error(`npm tarball contains source-only paths: ${forbidden.slice(0, 5).join(", ")}`);
 }

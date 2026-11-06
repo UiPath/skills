@@ -1,0 +1,74 @@
+task_id: skill-doc-strategy-select-routing-smoke
+description: >
+  Smoke test: a reusable-corpus workload whose deliverable is an exhaustive list
+  must NOT be answered by retrieval. The skill has to recognise the enumerative
+  claim, route the written review to SU1, and say that completeness needs
+  deterministic enumeration rather than a bigger result limit. Verifies the skill
+  fires and that its routing contract — strategy, decisive signal, case ID,
+  boundary — is applied, rather than a bare strategy label.
+
+  This replaced an assertion on PA3. Agentic search is not shipped as a strategy
+  yet (see the skill's PA reinstatement notes); when it lands, the enumerative
+  half of this workload becomes its boundary case and this task should assert
+  both.
+tags: [uipath-doc-strategy-select, smoke, mode:build, lifecycle:discover]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  We keep several thousand controlled procedure documents in a knowledge index
+  that is reused across runs. A reviewer asks: "which of these documents still
+  reference the retired escalation terminology?" — the wording varies between
+  documents, so one lookup never finds them all, and the reviewer needs the
+  complete list.
+
+  Load the applicable UiPath skill and route this workload. Write your routing
+  decision to `route.txt` as a single line in the skill's reporting format,
+  followed by two or three lines explaining what is required before the list
+  can be called complete.
+
+  Do NOT create a project, a flow, or an agent. Write only `route.txt`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-doc-strategy-select skill"
+    expected_skill: "uipath-doc-strategy-select"
+    skill_name: "uipath-doc-strategy-select"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent produced route.txt"
+    path: "route.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # A matched SU case, not one specific id. The contract under test is that the
+  # agent reports `strategy | decisive signal | case ID | boundary` rather than a
+  # bare strategy label, so a bare "SU" must still fail. Which SU case fits is a
+  # judgement the agent is allowed to make: this workload is a complete-coverage
+  # list, which the Boundary Lookup routes to SU1, but SU2's cross-document
+  # assessment is defensible. Observed over four runs: SU1, SU2, SU1, bare SU —
+  # asserting SU1 alone made the task ~50% flaky on an answer that was correct.
+  - type: file_matches_regex
+    description: "Routed the review to a matched SU case, not a bare strategy label"
+    path: "route.txt"
+    pattern: '\bSU[123]\b'
+    must_match: true
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Behaviour, not vocabulary. The rule is Critical Rule 4 — retrieval never proves
+  # absence, so a completeness claim needs full-document processing or deterministic
+  # enumeration plus a coverage reconciliation. Agents state that correctly in several
+  # wordings ("enumerate every variant", "every document must be processed", "coverage
+  # reconciliation must confirm the count"), and an earlier `includes: ["enumerat"]`
+  # failed a correct answer that happened to paraphrase it.
+  - type: file_matches_regex
+    description: "Applied the completeness boundary rather than treating search as exhaustive"
+    path: "route.txt"
+    pattern: '(?is)(enumerat|coverage reconcil|reconcil\w*\b.{0,60}\bcount|every document\b.{0,80}\bprocess|full[-\s]document processing|processed\b.{0,40}\bcount\b.{0,30}match)'
+    must_match: true
+    weight: 3.0
+    pass_threshold: 1.0
