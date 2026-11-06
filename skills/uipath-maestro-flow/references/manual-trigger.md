@@ -127,11 +127,12 @@ own `{ updates }` (below).
 Needs `@uipath/maestro-builder-sdk` 6.85.7 or later: check that
 `entryPoint(` in `dist/flow-sdk.d.ts` of the SDK copy in use takes
 `'version' | 'label' | 'updates'`. An older SDK refuses `.trigger(spec, { updates })`
-(`UPDATES_NOT_SUPPORTED`) and, worse, compiles `.entryPoint(id, spec, { updates })`
+(`UPDATES_NOT_SUPPORTED`) and compiles `.entryPoint(id, spec, { updates })`
 with no row at all. Upgrade the copy in use: `npm install
 @uipath/maestro-builder-sdk@latest` in a workspace that has its own
 `node_modules` copy (it is used before the global one), else `npm install -g
-@uipath/maestro-builder-sdk@latest`.
+@uipath/maestro-builder-sdk@latest`. If you can't upgrade, set the variable in
+the first step's `{ updates }` instead.
 <!--skill-flavor:trigger-updates-sdk-version:end-->
 
 `.trigger(spec, { updates })` and `.entryPoint(id, spec, { updates })` write any
