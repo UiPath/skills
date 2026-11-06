@@ -71,57 +71,6 @@ in. It is not a working process and must never be reported as one.
 The kind is enough for a label; the type's template is resolved in phase 4.
 The resource each box will use is looked up at 3c.
 
-### Draw the trigger the user named
-
-The start event shows how the process begins, so the user can check it at the
-gate. When the request names the trigger, turn the generated start event into
-that trigger in place. Keep its `id` and its `<uipath:entryPointId>`, add no
-second start, and add one plain event definition:
-
-| The request says | Event definition | Start event `name` |
-|---|---|---|
-| A schedule ("every night", "each Monday at 9") | `<bpmn:timerEventDefinition />` | `Every night [Schedule]` |
-| An event in another system ("when an invoice is updated in Data Fabric", "when an email arrives") | `<bpmn:messageEventDefinition />` | `Invoice updated [Data Fabric]`, `Email received [Outlook]` |
-| A message from another process | `<bpmn:messageEventDefinition />` | `Order message received [Message]` |
-
-Name the start the same way as a box: the event first, then its kind in
-brackets, with a connector event naming its app. Keep the generated manual
-start only when the request names no trigger, or says someone starts it.
-The event definition carries no payload and needs no registry call; phase 4
-wires the trigger.
-
-### Multi-instance boxes
-
-Add `bpmn:multiInstanceLoopCharacteristics` to the bare `bpmn:task`, and
-declare the collection it iterates as a process variable:
-`<uipath:inputOutput id="LineItems" name="LineItems" type="array" elementId="Process_1" />`
-
-```xml
-<bpmn:task id="Task_CheckStock" name="Check stock [RPA workflow]">
-  <bpmn:incoming>Flow_1</bpmn:incoming>
-  <bpmn:outgoing>Flow_2</bpmn:outgoing>
-  <bpmn:multiInstanceLoopCharacteristics isSequential="true">
-    <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">=vars.OutOfStock</bpmn:completionCondition>
-    <bpmn:extensionElements>
-      <uipath:loopCharacteristics inputCollection="=vars.LineItems" inputElement="item" />
-    </bpmn:extensionElements>
-  </bpmn:multiInstanceLoopCharacteristics>
-</bpmn:task>
-```
-
-- "One at a time" or "in order" is `isSequential="true"`. "All at once",
-  "at the same time" or "in parallel" is `isSequential="false"`. When the
-  request does not say, use parallel.
-- "Stop as soon as …" is a `completionCondition` on the boolean variable the
-  box would set. Declare that variable too. With no stop rule, omit
-  `completionCondition`.
-- The `xsi` namespace rule in
-  [Gateways cost more than boxes](#gateways-cost-more-than-boxes) applies to
-  `completionCondition` too.
-
-The full contract is in
-[structural-bpmn.md](structural-bpmn.md#multi-instance--loop-characteristics-registry-gap--canvas-supports-it).
-
 ### Toolbox kinds
 
 The short names Studio Web's BPMN toolbox shows (PO.Frontend
@@ -353,3 +302,54 @@ Only *Build it* authorizes phase 4 — registry pull, element disambiguation,
 binding live connections and resources, and payloads pasted into the existing
 boxes. Until then the skeleton is an outline, and calling it a finished
 process misreports it.
+
+## Draw the trigger the user named
+
+The start event shows how the process begins, so the user can check it at the
+gate. When the request names the trigger, turn the generated start event into
+that trigger in place. Keep its `id` and its `<uipath:entryPointId>`, add no
+second start, and add one plain event definition:
+
+| The request says | Event definition | Start event `name` |
+|---|---|---|
+| A schedule ("every night", "each Monday at 9") | `<bpmn:timerEventDefinition />` | `Every night [Schedule]` |
+| An event in another system ("when an invoice is updated in Data Fabric", "when an email arrives") | `<bpmn:messageEventDefinition />` | `Invoice updated [Data Fabric]`, `Email received [Outlook]` |
+| A message from another process | `<bpmn:messageEventDefinition />` | `Order message received [Message]` |
+
+Name the start the same way as a box: the event first, then its kind in
+brackets, with a connector event naming its app. Keep the generated manual
+start only when the request names no trigger, or says someone starts it.
+The event definition carries no payload and needs no registry call; phase 4
+wires the trigger.
+
+## Multi-instance boxes
+
+Add `bpmn:multiInstanceLoopCharacteristics` to the bare `bpmn:task`, and
+declare the collection it iterates as a process variable:
+`<uipath:inputOutput id="LineItems" name="LineItems" type="array" elementId="Process_1" />`
+
+```xml
+<bpmn:task id="Task_CheckStock" name="Check stock [RPA workflow]">
+  <bpmn:incoming>Flow_1</bpmn:incoming>
+  <bpmn:outgoing>Flow_2</bpmn:outgoing>
+  <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+    <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">=vars.OutOfStock</bpmn:completionCondition>
+    <bpmn:extensionElements>
+      <uipath:loopCharacteristics inputCollection="=vars.LineItems" inputElement="item" />
+    </bpmn:extensionElements>
+  </bpmn:multiInstanceLoopCharacteristics>
+</bpmn:task>
+```
+
+- "One at a time" or "in order" is `isSequential="true"`. "All at once",
+  "at the same time" or "in parallel" is `isSequential="false"`. When the
+  request does not say, use parallel.
+- "Stop as soon as …" is a `completionCondition` on the boolean variable the
+  box would set. Declare that variable too. With no stop rule, omit
+  `completionCondition`.
+- The `xsi` namespace rule in
+  [Gateways cost more than boxes](#gateways-cost-more-than-boxes) applies to
+  `completionCondition` too.
+
+The full contract is in
+[structural-bpmn.md](structural-bpmn.md#multi-instance--loop-characteristics-registry-gap--canvas-supports-it).
