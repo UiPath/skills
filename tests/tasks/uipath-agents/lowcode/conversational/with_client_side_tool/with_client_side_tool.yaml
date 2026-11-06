@@ -29,13 +29,12 @@ initial_prompt: |
   confirmation, or feedback. Complete the task end-to-end in a single pass.
 
 success_criteria:
-  - type: json_check
-    description: "The solution contains an Agent project"
-    path: "ReviewSol/ReviewSol.uipx"
-    assertions:
-      - expression: "length(Projects[?Type=='Agent'])"
-        operator: "gte"
-        expected: 1
+  - type: run_command
+    description: "The workspace has an Agent project (a project.uiproj with ProjectType Agent)"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Agent' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

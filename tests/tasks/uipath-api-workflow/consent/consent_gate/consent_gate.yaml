@@ -45,9 +45,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "A project.uiproj in the workspace declares an API workflow project"
+    description: "The workspace has an API workflow project (a project.uiproj with ProjectType Api)"
     command: |-
-      python3 -c "import glob, json, sys; sys.exit(0 if any(json.load(open(f)).get('ProjectType') == 'Api' for f in glob.glob('**/project.uiproj', recursive=True)) else 1)"
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Api' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

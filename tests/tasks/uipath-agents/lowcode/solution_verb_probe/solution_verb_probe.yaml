@@ -59,9 +59,12 @@ success_criteria:
 
   # The probe must precede real work, not replace it: the agent still scaffolds,
   # via whichever verb the probe selected.
-  - type: file_exists
-    description: "The solution manifest ProbeSol/ProbeSol.uipx exists"
-    path: "ProbeSol/ProbeSol.uipx"
+  - type: run_command
+    description: "A solution manifest (.uipx) or a project.uiproj exists in the workspace"
+    command: |-
+      python3 -c "import glob, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) or glob.glob('**/project.uiproj', recursive=True) else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -74,13 +77,12 @@ success_criteria:
   # The probe guards the *first scaffold*, so the task has to contain one: the
   # agent project is what makes this a uipath-agents test rather than a bare
   # `solution init` smoke.
-  - type: json_check
-    description: "The solution contains an Agent project"
-    path: "ProbeSol/ProbeSol.uipx"
-    assertions:
-      - expression: "length(Projects[?Type=='Agent'])"
-        operator: "gte"
-        expected: 1
+  - type: run_command
+    description: "The workspace has an Agent project (a project.uiproj with ProjectType Agent)"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Agent' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

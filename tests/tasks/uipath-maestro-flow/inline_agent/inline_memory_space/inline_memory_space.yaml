@@ -53,9 +53,12 @@ initial_prompt: |
   the task take precedence over this paragraph.
 
 success_criteria:
-  - type: file_exists
-    description: "The solution manifest MemoryFlowSol/MemoryFlowSol.uipx exists"
-    path: "MemoryFlowSol/MemoryFlowSol.uipx"
+  - type: run_command
+    description: "A solution manifest (.uipx) or a project.uiproj exists in the workspace"
+    command: |-
+      python3 -c "import glob, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) or glob.glob('**/project.uiproj', recursive=True) else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 0.0
 

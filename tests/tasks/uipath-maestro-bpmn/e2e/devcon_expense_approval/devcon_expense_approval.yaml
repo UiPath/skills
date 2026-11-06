@@ -81,16 +81,16 @@ success_criteria:
   - type: run_command
     description: "A solution manifest (.uipx) or a BPMN process project.uiproj exists in the workspace"
     command: |-
-      python3 -c "import glob, json, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) or any(json.load(open(f)).get('ProjectType') == 'ProcessOrchestration' for f in glob.glob('**/project.uiproj', recursive=True)) else 1)"
+      python3 -c "import glob, json, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) or sum(json.load(open(f)).get('ProjectType') == 'ProcessOrchestration' for f in glob.glob('**/project.uiproj', recursive=True)) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0.0
 
   - type: run_command
-    description: "A project.uiproj in the workspace declares a BPMN process project"
+    description: "The workspace has a BPMN process project (a project.uiproj with ProjectType ProcessOrchestration)"
     command: |-
-      python3 -c "import glob, json, sys; sys.exit(0 if any(json.load(open(f)).get('ProjectType') == 'ProcessOrchestration' for f in glob.glob('**/project.uiproj', recursive=True)) else 1)"
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'ProcessOrchestration' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
