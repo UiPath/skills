@@ -31,7 +31,7 @@ A genome says what the automation does, not how the source did it. However close
 | A wait-and-check step after each action | Verification on the action itself; a separate check only where the outcome changes what happens next. A test's checkpoints stay assertions |
 | Passwords and hosts in files or code | One credential asset per account; per-environment values as settings |
 
-Kept as the source has it: every business rule, outcome and log line, the schedule and every output. What changes is listed with its reason: a source defect you ruled to fix, a refactor answer, or a platform limit. So the build is a rebuild, not a translation, yet easy to compare with the source: a [rebuild as it is](#rebuilding-an-existing-automation) also keeps the step names and the shape, and a correspondence table records every step renamed, merged, split or dropped.
+Kept as the source has it: every business rule, outcome and log line, the schedule and every output. What changes is listed with its reason: a source defect you ruled to fix, a refactor answer, or a platform limit. So the build is a rebuild, not a translation, yet easy to compare with the source: a [rebuild as it is](#rebuilding-an-existing-automation) also keeps the step names, and the shape wherever UiPath's way does not differ, and by default a correspondence table records every step renamed, merged, split or dropped.
 
 ## Why it holds up
 
