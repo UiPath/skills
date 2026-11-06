@@ -174,6 +174,36 @@ make from syntax alone. Exact signatures remain in the generated API.
   genuinely unresolvable, use `.unresolved('<kind>')` — which preserves the
   declared kind — rather than picking a different one.
 
+<!-- RULE:case.sdd.output-authoring -->
+- Every SDD Out-variable needs TWO declarations: a case-level `.output()`
+  that reserves the variable, and a `.outputs()` call on the task that
+  produces it. A missing `.output()` compiles but the variable never appears
+  in `variables.outputs[]`, so downstream consumers and the case summary
+  cannot read it. A missing `.outputs()` on the task means no task writes the
+  value, so the variable stays `null` at runtime. Both omissions validate
+  without error because an unused output is not a schema violation. Walk the
+  SDD's Out-variable table row by row: for each entry, confirm that
+  (a) `.output({ name: type })` exists on the case builder, and (b) at least
+  one task carries `.outputs({ name: <expression> })` that writes it.
+
+<!-- RULE:case.sdd.field-path-casing -->
+- `.outputs()` keys must match the SDD's field names exactly, including
+  casing. The compiler treats `unusualClauses` and `UnusualClauses` as two
+  distinct output slots, and `case check` does not compare them against the
+  SDD. A casing mismatch silently creates an orphan slot while the intended
+  variable stays unwritten. Copy field names character-for-character from the
+  SDD's Out-variable or data-contract table.
+
+<!-- RULE:case.sdd.dereference-paths -->
+- When the SDD declares a sub-property dereference (for example
+  `response.unusualClauses`), the producing task must surface that path as a
+  named output. An `.outputs()` entry like
+  `{ unusualClauses: '=response.unusualClauses' }` extracts the nested value
+  into the case variable. Omitting the extraction leaves the nested field
+  buried inside a parent object that downstream routing and the case summary
+  cannot address. Every dereference path the SDD names must appear as a task
+  output key or as an explicit `=js:` extraction.
+
 ## Brownfield editing
 
 <!-- RULE:case.brownfield.pipeline -->
