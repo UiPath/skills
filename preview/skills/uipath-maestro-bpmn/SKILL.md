@@ -42,8 +42,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    `errorMapping` condition and a bare `=amount`, `check` is the only offline gate:
    `bpmn validate` accepts both.
    Needs `@uipath/maestro-builder-sdk` 6.86.0 or later; an older `compile` refuses the read itself.
-   When `uip maestro bpmn check --help` lists `--no-types`, `check` also type-checks the source: a `TS<code>` error at `file:line:col` is a wrong option name or value type, so fix it like any other `check` error.
-   Node's runtime globals, top-level `await` and ES2024 APIs are accepted; `--no-types` skips the type pass.
+   When the installed package ships `dist/bpmn-api.md` (see [API index](#api-index)), `check` also type-checks the source: a `TS<code>` error at `file:line:col` is a wrong option name or value type, so fix it like any other `check` error.
+   Node's runtime globals, top-level `await` and ES2024 APIs are accepted.
 6. Compile **into the scaffolded project**, then `format` it, then `refresh` it, then
    run product validation — in that order, every time. `validate` refuses a file with
    no diagram (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none;
