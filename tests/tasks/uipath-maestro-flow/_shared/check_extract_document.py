@@ -11,13 +11,14 @@ Usage (from a task's run_command, cwd = sandbox root):
 
 Checks:
     fields JSON          each entry of the JSON array claims a field it fits:
-                         '[{"name_contains": "date", "type": "ft-date"}, {"name": "Total"}]'
-                         "name", "group", "type", "says" and "id" must equal
-                         the field's name, its group's key, its type, its
-                         instructions and its x-uipath-field-id.
-                         "name_contains", "group_contains" and "says_contains"
-                         are case-insensitive regexes searched in the same
-                         name, group key and instructions. "repeats" (true or
+                         '[{"name_matches": "date", "type": "ft-date"}, {"name": "Total"}]'
+                         "name", "group", "type", "instructions" and "id"
+                         must equal the field's name, its group's key, its
+                         type, its instructions and its x-uipath-field-id.
+                         "name_matches", "group_matches" and
+                         "instructions_matches" are case-insensitive regexes
+                         searched in the same name, group key and
+                         instructions. "repeats" (true or
                          false) says whether the group is a table ("type":
                          "array"). An entry may give any of these keys.
                          Entries claim in order, each
@@ -35,8 +36,9 @@ Checks:
     extends ORIGINAL     every group, field, id, instruction, config value
                          and $defs entry of the taxonomy in the ORIGINAL
                          .flow is still there, unchanged. New groups, new
-                         fields and their "required" entries may be added,
-                         and the overall prompt may change.
+                         fields, their "required" entries and new $defs
+                         entries (a Choice) may be added, and the overall
+                         prompt may change.
     file-ref             the node's inputs.fileRef reads a declared
                          ``direction: in``, ``type: file`` global
                          (``flow validate`` passes a fileRef to an input that
@@ -70,8 +72,8 @@ BUILT_IN_TYPES = (
     "ft-monetary-quantity",
     "ft-boolean",
 )
-EXACT_KEYS = ("name", "group", "type", "says", "id")
-PATTERN_KEYS = ("name_contains", "group_contains", "says_contains")
+EXACT_KEYS = ("name", "group", "type", "instructions", "id")
+PATTERN_KEYS = ("name_matches", "group_matches", "instructions_matches")
 FIELD_KEYS = {*EXACT_KEYS, *PATTERN_KEYS, "repeats"}
 MAX_DIFFERENCES = 10
 ONLY_CHECKS = ("fields", "defs")
@@ -113,15 +115,15 @@ def _is_repeating(group: dict) -> bool:
 
 
 def _fits(want: dict, group: str, name: str, field: dict, repeats: bool) -> bool:
-    says = field.get("description") or ""
+    instructions = field.get("description") or ""
     exact = {
         "name": name,
         "group": group,
         "type": _get_field_type(field),
-        "says": says,
+        "instructions": instructions,
         "id": field.get("x-uipath-field-id"),
     }
-    searched = {"name_contains": name, "group_contains": group, "says_contains": says}
+    searched = {"name_matches": name, "group_matches": group, "instructions_matches": instructions}
     if any(k in want and want[k] != exact[k] for k in EXACT_KEYS):
         return False
     if "repeats" in want and want["repeats"] != repeats:
@@ -217,7 +219,8 @@ def _find_differences(want: object, got: object, path: str = "", grow: bool = Fa
     """Each JSON path where ``got`` differs from ``want``; ``required`` lists compare as sets.
 
     With ``grow``, ``got`` may add keys to a ``properties`` map (new groups and
-    fields) and names to a ``required`` list, or a ``required`` list where there was none.
+    fields) or to ``$defs`` (a new Choice), names to a ``required`` list, or a
+    ``required`` list where there was none.
     """
     if isinstance(want, dict) and isinstance(got, dict):
         found = []
@@ -226,7 +229,7 @@ def _find_differences(want: object, got: object, path: str = "", grow: bool = Fa
             if key not in got:
                 found.append(f"{where} was dropped")
             elif key not in want:
-                if not (grow and (path.endswith("properties") or key == "required")):
+                if not (grow and (path.endswith(("properties", "$defs")) or key == "required")):
                     found.append(f"{where} was added: {json.dumps(got[key])[:80]}")
             else:
                 found += _find_differences(want[key], got[key], where, grow)

@@ -41,8 +41,8 @@ success_criteria:
     description: "A repeating (array) group holds the line-item quantity, amount and description"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
-      '[{"name_contains": "quant|qty|units", "repeats": true}, {"name_contains": "amount|total|price", "repeats": true},
-      {"name_contains": "desc|item|product", "repeats": true}]'
+      '[{"name_matches": "quant|qty|units", "repeats": true}, {"name_matches": "amount|total|price", "repeats": true},
+      {"name_matches": "desc|item|product", "repeats": true}]'
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -51,9 +51,9 @@ success_criteria:
     description: "The line items are nested under the Invoice group by name (\"Invoice > ...\")"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
-      '[{"name_contains": "quant|qty|units", "group_contains": "^Invoice > "},
-      {"name_contains": "amount|total|price", "group_contains": "^Invoice > "},
-      {"name_contains": "desc|item|product", "group_contains": "^Invoice > "}]'
+      '[{"name_matches": "quant|qty|units", "group_matches": "^Invoice > "},
+      {"name_matches": "amount|total|price", "group_matches": "^Invoice > "},
+      {"name_matches": "desc|item|product", "group_matches": "^Invoice > "}]'
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -62,7 +62,7 @@ success_criteria:
     description: "A PO number field was added to the Invoice group"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
-      '[{"name_contains": "(^|[^a-z])p[.]?o([^a-z]|$)|purchase order", "group": "Invoice"}]'
+      '[{"name_matches": "(^|[^a-z])p[.]?o([^a-z]|$)|purchase order", "group": "Invoice"}]'
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

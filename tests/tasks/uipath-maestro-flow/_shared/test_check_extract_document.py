@@ -152,17 +152,17 @@ STRAY_DATE = {"G": {"description": "d", "properties": {
 def test_fields_pass_when_every_entry_fits_a_field(write, capsys):
     write(_flow())
     assert _fields(
-        {"name_contains": "vendor"},
-        {"name_contains": "number", "type": "ft-exact-text", "says_contains": "prefix"},
-        {"name_contains": "invoice date", "type": "ft-date"},
-        {"name": "Total", "type": "ft-monetary-quantity", "says_contains": "page"},
-        {"name_contains": "QUANT|qty", "type": "ft-number"},
+        {"name_matches": "vendor"},
+        {"name_matches": "number", "type": "ft-exact-text", "instructions_matches": "prefix"},
+        {"name_matches": "invoice date", "type": "ft-date"},
+        {"name": "Total", "type": "ft-monetary-quantity", "instructions_matches": "page"},
+        {"name_matches": "QUANT|qty", "type": "ft-number"},
     ) == 0
     assert "OK: fields" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("entry", [
-    {"type": "ft-boolean"}, {"says_contains": "IBAN"}, {"name_contains": "iban"}, {"name": "Vendor"}, {"id": "x"},
+    {"type": "ft-boolean"}, {"instructions_matches": "IBAN"}, {"name_matches": "iban"}, {"name": "Vendor"}, {"id": "x"},
 ])
 def test_any_single_key_is_checked(write, entry):
     write(_flow())
@@ -172,11 +172,11 @@ def test_any_single_key_is_checked(write, entry):
 def test_type_and_instructions_are_checked_on_the_named_field(write, capsys):
     write(_flow(schema=_schema(STRAY_DATE)))
     assert _fields({"type": "ft-date"}) == 0
-    assert _fields({"says_contains": "prefix"}) == 0
-    assert _fields({"name_contains": "number", "says_contains": "prefix"}) == 1
-    assert _fields({"name_contains": "invoice date", "type": "ft-date"}) == 1
+    assert _fields({"instructions_matches": "prefix"}) == 0
+    assert _fields({"name_matches": "number", "instructions_matches": "prefix"}) == 1
+    assert _fields({"name_matches": "invoice date", "type": "ft-date"}) == 1
     err = capsys.readouterr().err
-    assert 'no field left fits {"name_contains": "invoice date", "type": "ft-date"}' in err
+    assert 'no field left fits {"name_matches": "invoice date", "type": "ft-date"}' in err
     assert "'G > Invoice Date' ft-inferred-text" in err
 
 
@@ -186,10 +186,10 @@ def test_one_field_cannot_answer_two_entries(write, capsys):
         "Invoice Date": _field("ft-date"),
         "Total": _field("ft-monetary-quantity"),
     }}})))
-    vendor, number = {"name_contains": "vendor|supplier|seller"}, {"name_contains": "number|(^|[^a-z])(no|id)([^a-z]|$)|#"}
+    vendor, number = {"name_matches": "vendor|supplier|seller"}, {"name_matches": "number|(^|[^a-z])(no|id)([^a-z]|$)|#"}
     assert _fields(vendor) == 0 and _fields(number) == 0
     assert _fields(vendor, number) == 1
-    assert 'no field left fits {"name_contains": "number|' in capsys.readouterr().err
+    assert 'no field left fits {"name_matches": "number|' in capsys.readouterr().err
 
 
 def test_only_counts_claimed_fields(write, capsys):
@@ -197,15 +197,15 @@ def test_only_counts_claimed_fields(write, capsys):
         "Vendor Name": _field("ft-inferred-text"),
         "Vendor ID": _field("ft-exact-text"),
     }}})))
-    assert _fields({"name_contains": "vendor"}, only=True) == 1
+    assert _fields({"name_matches": "vendor"}, only=True) == 1
     assert "'G > Vendor ID' is a field no entry asks for" in capsys.readouterr().err
 
 
 def test_every_missing_entry_is_reported(write, capsys):
     write(_flow())
-    assert _fields({"name_contains": "vendor"}, {"name_contains": "iban"}, {"type": "ft-boolean"}) == 1
+    assert _fields({"name_matches": "vendor"}, {"name_matches": "iban"}, {"type": "ft-boolean"}) == 1
     err = capsys.readouterr().err
-    assert '"iban"' in err and '"ft-boolean"' in err and 'fits {"name_contains": "vendor"}' not in err
+    assert '"iban"' in err and '"ft-boolean"' in err and 'fits {"name_matches": "vendor"}' not in err
     assert "Line Items > Quantity" in err
 
 
@@ -214,15 +214,15 @@ def test_name_is_an_exact_match(write):
     assert _fields({"name": "Total"}) == 0
     assert _fields({"name": "total"}) == 1
     assert _fields({"name": "Tot"}) == 1
-    assert _fields({"name_contains": "tot"}) == 0
+    assert _fields({"name_matches": "tot"}) == 0
 
 
-def test_group_is_an_exact_match_and_group_contains_a_pattern(write):
+def test_group_is_an_exact_match_and_group_matches_a_pattern(write):
     write(_flow())
     assert _fields({"name": "Total", "group": "Invoice"}) == 0
     assert _fields({"name": "Total", "group": "Line Items"}) == 1
-    assert _fields({"name": "Quantity", "group_contains": "^line"}) == 0
-    assert _fields({"name": "Quantity", "group_contains": "^Invoice > "}) == 1
+    assert _fields({"name": "Quantity", "group_matches": "^line"}) == 0
+    assert _fields({"name": "Quantity", "group_matches": "^Invoice > "}) == 1
 
 
 def test_repeats_says_whether_the_group_is_a_table(write):
@@ -233,11 +233,11 @@ def test_repeats_says_whether_the_group_is_a_table(write):
     assert _fields({"name": "Quantity", "repeats": False}) == 1
 
 
-def test_says_is_an_exact_match(write):
+def test_instructions_is_an_exact_match(write):
     write(_flow())
-    assert _fields({"name": "Invoice Number", "says": "Drop the No. prefix."}) == 0
-    assert _fields({"name": "Invoice Number", "says": "Drop the No. prefix"}) == 1
-    assert _fields({"name": "Invoice Number", "says": "drop the no. prefix."}) == 1
+    assert _fields({"name": "Invoice Number", "instructions": "Drop the No. prefix."}) == 0
+    assert _fields({"name": "Invoice Number", "instructions": "Drop the No. prefix"}) == 1
+    assert _fields({"name": "Invoice Number", "instructions": "drop the no. prefix."}) == 1
 
 
 def test_id_is_checked_on_the_named_field(write, capsys):
@@ -252,15 +252,15 @@ def test_id_is_checked_on_the_named_field(write, capsys):
 
 def test_only_fails_on_a_field_no_entry_asks_for(write, capsys):
     write(_flow())
-    every = [{"name_contains": n} for n in ("vendor", "number", "date", "total", "quantity")]
+    every = [{"name_matches": n} for n in ("vendor", "number", "date", "total", "quantity")]
     assert _fields(*every, only=True) == 0
     assert _fields(*every[:4], only=True) == 1
     assert "'Line Items > Quantity' is a field no entry asks for" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("value", [
-    "vendor", "[]", "{}", "[{}]", '[{"label": "x"}]', '[{"name": 1}]', '[{"name_contains": "("}]',
-    '[{"id": true}]', '[{"says_contains": "["}]', '[{"group_contains": "("}]', '[{"repeats": "yes"}]',
+    "vendor", "[]", "{}", "[{}]", '[{"label": "x"}]', '[{"name": 1}]', '[{"name_matches": "("}]',
+    '[{"id": true}]', '[{"instructions_matches": "["}]', '[{"group_matches": "("}]', '[{"repeats": "yes"}]',
     '[{"group": "Invoice", "table": true}]',
 ])
 def test_malformed_fields_value_is_a_usage_error(write, value):
@@ -417,7 +417,10 @@ def test_unchanged_with_bad_values_is_a_usage_error(write, values):
 
 
 def _grow(schema):
-    """What add_line_items asks for: a header field and a nested table, with a broader prompt."""
+    """What add_line_items asks for: a header field and a nested table, with a broader prompt.
+
+    The table's Unit column takes a Choice, the one field type the guide has the agent add.
+    """
     schema["prompt"] = "Extract the invoice header and every line item."
     groups = schema["outputSchema"]["properties"]
     groups["Invoice"]["properties"]["PO Number"] = _field("ft-exact-text")
@@ -425,9 +428,10 @@ def _grow(schema):
     groups["Invoice > Lines"] = {
         "type": "array",
         "description": "One entry per line.",
-        "items": {"properties": {"Amount": _field("ft-monetary-quantity")}},
+        "items": {"properties": {"Amount": _field("ft-monetary-quantity"), "Unit": _field("ft-unit")}},
     }
     schema["outputSchema"]["required"] = ["Invoice", "Invoice > Lines"]
+    schema["outputSchema"]["$defs"]["ft-unit"] = {"title": "Unit", "type": ["string", "null"], "enum": ["pcs", "kg"]}
     return schema
 
 
@@ -451,6 +455,10 @@ def _drop_def(schema):
     del schema["outputSchema"]["$defs"]["ft-boolean"]
 
 
+def _change_def(schema):
+    schema["outputSchema"]["$defs"]["ft-date"]["title"] = "Day"
+
+
 @pytest.mark.parametrize("change, named", [
     (lambda s: _change_type(_rename(s, "Total", "Total Amount")), "Invoice.properties.Total was dropped"),
     (lambda s: s["outputSchema"]["properties"]["Invoice"]["properties"]["Total"].update(description="x"),
@@ -461,7 +469,7 @@ def _drop_def(schema):
     (_drop_group, "outputSchema.properties.Line Items was dropped"),
     (_drop_required, 'Invoice.required lost ["Total"]'),
     (_change_config, "config.model.family was"),
-    (_add_def, "$defs.ft-text was added"),
+    (_change_def, "$defs.ft-date.title was"),
     (_drop_def, "$defs.ft-boolean was dropped"),
 ])
 def test_extends_names_each_change_to_what_was_there(write, original, capsys, change, named):
