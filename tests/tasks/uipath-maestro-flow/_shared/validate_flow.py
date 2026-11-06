@@ -44,7 +44,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from flow_check import find_flow_files  # noqa: E402
+from flow_check import STUDIO_WEB_FLOW_FILE, find_flow_files, flow_file_is_named  # noqa: E402
 
 # The criterion budget to self-terminate inside. coder_eval exports only
 # TASK_DIR to a criterion's command, not the criterion's own timeout, so there
@@ -191,10 +191,26 @@ def _validate(flow: str, deadline: float, budget: int, no_warnings: bool = False
     return 1  # unreachable; keeps the return type honest
 
 
+def _studio_web_main_file(path: str) -> str:
+    """``path``, or the ``new.flow`` beside it when ``path`` names a Flow project's main file.
+
+    A task names the file the Node CLI writes (``<Sol>/<Name>/<Name>.flow``); Studio Web writes
+    the same project's flow as ``<Sol>/<Name>/new.flow``.
+    """
+    if os.path.isfile(path) or not path.endswith(".flow"):
+        return path
+    project_dir, base = os.path.split(path)
+    candidate = os.path.join(project_dir, STUDIO_WEB_FLOW_FILE)
+    if os.path.isfile(candidate) and flow_file_is_named(candidate, base[: -len(".flow")]):
+        return candidate
+    return path
+
+
 def main(paths: list[str] | None = None) -> int:
     no_warnings = "--no-warnings" in (paths or [])
     paths = [p for p in paths or [] if p != "--no-warnings"]
     if paths:
+        paths = [_studio_web_main_file(p) for p in paths]
         missing = [p for p in paths if not os.path.isfile(p)]
         if missing:
             print(f"FAIL: flow file not found: {', '.join(missing)}", file=sys.stderr)
