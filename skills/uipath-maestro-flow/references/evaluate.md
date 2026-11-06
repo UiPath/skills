@@ -113,6 +113,15 @@ uip maestro flow eval simulation remove <component-id> \
 Simulate every side-effecting component before running a set more than once. An
 unsimulated connector step really sends — once per eval, every run.
 
+**A child simulation (`--parent <agent-id>`) with `--strategy Llm` needs the
+child tool's declared output schema, read from the compiled `.flow`.** Declare
+the agent and its tools on `inlineAgent({ tools })`, giving each tool `returns`
+(a `clientside` tool needs no tenant), compile, then add. `Parent agent
+"<id>" not found in the flow.` means author the agent first. `The tool has no
+declared outputs` means the tool has no `returns` (a `mock()` never has one):
+add it and recompile. Never invent an `inputs.source` id or hand-write
+`agent.json`. `--strategy Static` needs no declared outputs.
+
 ## Running a set
 
 ```bash

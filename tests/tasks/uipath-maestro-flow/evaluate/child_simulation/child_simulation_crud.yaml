@@ -39,11 +39,11 @@ initial_prompt: |
      `{"query":"weather in NYC"}` and expected
      `{"answer":"Sunny, 72°F in New York City."}`.
 
-  5. Put the simulation targets in the flow: an autonomous agent node with id
-     `agent-1`, plus two child tool nodes with ids `Web_Search` and
-     `Send_Email`, each wired to `agent-1` by an edge on its `tool` port.
-     Mock tool nodes are fine. The flow does not have to pass
-     `uip maestro flow validate`.
+  5. Put the simulation targets in the flow: an autonomous inline agent node
+     with id `agent-1`, with two tools named `Web_Search` and `Send_Email`.
+     Both are real tools that declare an output schema, because the `Llm`
+     child simulation reads it from the flow. A mock node declares none. The
+     flow does not have to pass `uip maestro flow validate`.
 
   6. Add a `Static` child simulation on the `search-test` data point targeting
      child tool `Web_Search` on parent agent node `agent-1`. Use
