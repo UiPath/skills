@@ -40,13 +40,11 @@ initial_prompt: |
   the task take precedence over this paragraph.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created the solution with uip solution init"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+init'
-    min_count: 1
+  - type: file_exists
+    description: "The solution manifest DevToolsFlowSol/DevToolsFlowSol.uipx exists"
+    path: "DevToolsFlowSol/DevToolsFlowSol.uipx"
     weight: 1.0
-    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+    pass_threshold: 0.0
 
   # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
   # `uip solution project add` both populate Projects[] in the .uipx).

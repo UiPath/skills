@@ -52,19 +52,21 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: command_executed
-    description: "Agent created a solution"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+solution\s+(new|init)'
-    min_count: 1
+  - type: run_command
+    description: "A solution manifest (.uipx) exists in the workspace"
+    command: |-
+      python3 -c "import glob, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
-    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+    pass_threshold: 0.0
 
-  - type: command_executed
-    description: "Flow-project initialization telemetry (report only; the artifact is graded below)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+init'
-    min_count: 1
+  - type: run_command
+    description: "A solution manifest (.uipx) in the workspace lists a Flow project"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if any(p.get('Type') == 'Flow' for f in glob.glob('**/*.uipx', recursive=True) for p in json.load(open(f)).get('Projects', [])) else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0.0
 

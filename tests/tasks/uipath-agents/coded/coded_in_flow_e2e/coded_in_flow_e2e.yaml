@@ -36,13 +36,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent created the solution with uip solution init"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+init'
-    min_count: 1
+  - type: file_exists
+    description: "The solution manifest GreeterSol/GreeterSol.uipx exists"
+    path: "GreeterSol/GreeterSol.uipx"
     weight: 1.0
-    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent scaffolded the coded agent project with uip codedagent new"

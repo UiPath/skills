@@ -45,11 +45,13 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent scaffolded the agent project"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init'
-    min_count: 1
+  - type: json_check
+    description: "The solution contains an Agent project"
+    path: "ValidationSol/ValidationSol.uipx"
+    assertions:
+      - expression: "length(Projects[?Type=='Agent'])"
+        operator: "gte"
+        expected: 1
     weight: 1.0
     pass_threshold: 1.0
 
