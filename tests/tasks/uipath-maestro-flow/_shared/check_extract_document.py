@@ -2,12 +2,14 @@
 """Grade how an Extract document node sits in its flow, from the ``.flow`` JSON.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name <NAME> <CHECK> [--only] [VALUE ...]
+    python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name <NAME> [--node-id ID] <CHECK> [--only] [VALUE ...]
 
 ``--flow-name NAME`` selects the discovered ``NAME.flow``, as in
-``flow_contains.py``. The node under test is the first
-``uipath.ixp.extract-document-builder`` node in it. Its taxonomy is its
-``inputs.schemaDocument``, the document ``nodes schema get`` prints.
+``flow_contains.py``. The node under test is the
+``uipath.ixp.extract-document-builder`` node ``--node-id`` names, or the first
+one in the flow. Its taxonomy is its ``inputs.schemaDocument``, the document
+``nodes schema get`` prints. ``unchanged`` and ``extends`` compare it with the
+first Extract document node in the ORIGINAL.
 
 Checks:
     fields JSON          each entry of the JSON array claims a field it fits:
@@ -39,6 +41,12 @@ Checks:
                          fields, their "required" entries and new $defs
                          entries (a Choice) may be added, and the overall
                          prompt may change.
+    copies ORIGINAL SOURCE_ID
+                         the taxonomy equals the one on node SOURCE_ID in the
+                         ORIGINAL .flow: prompt, groups, fields, types,
+                         instructions and $defs. Ids are not compared, and
+                         neither is config, the copy of the node's own model
+                         settings.
     file-ref             the node's inputs.fileRef reads a declared
                          ``direction: in``, ``type: file`` global
                          (``flow validate`` passes a fileRef to an input that
@@ -75,6 +83,7 @@ BUILT_IN_TYPES = (
 EXACT_KEYS = ("name", "group", "type", "instructions", "id")
 PATTERN_KEYS = ("name_matches", "group_matches", "instructions_matches")
 FIELD_KEYS = {*EXACT_KEYS, *PATTERN_KEYS, "repeats"}
+ID_KEYS = ("x-uipath-field-group-id", "x-uipath-field-id", "x-uipath-parent-field-group-id")
 MAX_DIFFERENCES = 10
 ONLY_CHECKS = ("fields", "defs")
 
@@ -244,12 +253,25 @@ def _find_differences(want: object, got: object, path: str = "", grow: bool = Fa
     return [f"{path} was {json.dumps(want)[:80]}, now {json.dumps(got)[:80]}"]
 
 
-def _read_extract_node(path: str) -> dict:
+def _find_extract_node(flow: dict, node_id: str | None = None) -> dict | None:
+    """The Extract document node ``node_id`` names, or the first one."""
+    return next(
+        (
+            n
+            for n in flow.get("nodes") or []
+            if n.get("type") == EXTRACT_NODE_TYPE and node_id in (None, n.get("id"))
+        ),
+        None,
+    )
+
+
+def _read_extract_node(path: str, node_id: str | None = None) -> dict:
     with open(path, encoding="utf-8") as fh:
         flow = json.load(fh)
-    node = next((n for n in flow.get("nodes") or [] if n.get("type") == EXTRACT_NODE_TYPE), None)
+    node = _find_extract_node(flow, node_id)
     if node is None:
-        raise SystemExit(f"FAIL: no Extract document node in the original {path}")
+        named = f" {node_id}" if node_id else ""
+        raise SystemExit(f"FAIL: no Extract document node{named} in the original {path}")
     return node
 
 
@@ -270,6 +292,24 @@ def check_extends(_: dict, node: dict, args: argparse.Namespace) -> str | None:
         {k: v for k, v in expected.items() if k != "prompt"},
         {k: v for k, v in got.items() if k != "prompt"},
         grow=True,
+    ))
+
+
+def _strip_ids(value: object) -> object:
+    if isinstance(value, dict):
+        return {k: _strip_ids(v) for k, v in value.items() if k not in ID_KEYS}
+    if isinstance(value, list):
+        return [_strip_ids(v) for v in value]
+    return value
+
+
+def check_copies(_: dict, node: dict, args: argparse.Namespace) -> str | None:
+    original, source_id = args.values
+    expected = _read_schema_document(_read_extract_node(original, source_id))
+    got = _read_schema_document(node)
+    return _report_differences(_find_differences(
+        _strip_ids({k: expected.get(k) for k in ("prompt", "outputSchema")}),
+        _strip_ids({k: got.get(k) for k in ("prompt", "outputSchema")}),
     ))
 
 
@@ -331,6 +371,7 @@ CHECKS = {
     "defs": check_defs,
     "unchanged": check_unchanged,
     "extends": check_extends,
+    "copies": check_copies,
     "file-ref": check_file_ref,
     "edge": check_edge,
     "no-other-ixp": check_no_other_ixp,
@@ -354,6 +395,9 @@ def _find_usage_error(args: argparse.Namespace) -> str | None:
     elif args.check == "extends":
         if len(args.values) != 1:
             return "extends takes: ORIGINAL"
+    elif args.check == "copies":
+        if len(args.values) != 2:
+            return "copies takes: ORIGINAL SOURCE_ID"
     elif args.values:
         return f"{args.check} takes no values"
     return None
@@ -362,6 +406,7 @@ def _find_usage_error(args: argparse.Namespace) -> str | None:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--flow-name", required=True, help="flow name, without .flow")
+    parser.add_argument("--node-id", help="the Extract document node under test; the first one when omitted")
     parser.add_argument("--only", action="store_true", help="fields, defs: and nothing else")
     parser.add_argument("check", choices=sorted(CHECKS))
     parser.add_argument("values", nargs="*")
@@ -377,11 +422,11 @@ def main(argv: list[str]) -> int:
             raise SystemExit(f"FAIL: no discovered .flow file is named {args.flow_name}.flow")
         with open(paths[0], encoding="utf-8") as fh:
             flow = json.load(fh)
-        nodes = flow.get("nodes") or []
-        node = next((n for n in nodes if n.get("type") == EXTRACT_NODE_TYPE), None)
+        node = _find_extract_node(flow, args.node_id)
         if node is None:
-            types = ", ".join(n.get("type", "?") for n in nodes) or "none"
-            raise SystemExit(f"FAIL: no Extract document node in {paths[0]} (node types: {types})")
+            found = ", ".join(f"{n.get('id')} ({n.get('type', '?')})" for n in flow.get("nodes") or []) or "none"
+            named = f" {args.node_id}" if args.node_id else ""
+            raise SystemExit(f"FAIL: no Extract document node{named} in {paths[0]} (nodes: {found})")
         problem = CHECKS[args.check](flow, node, args)
     except SystemExit as exc:
         print(str(exc), file=sys.stderr)
