@@ -37,7 +37,7 @@ success_criteria:
 
   - type: run_command
     description: "LLM as Judge middleware correctly added to graph.py"
-    command: "python3 $REFERENCE_DIR/_shared/check_llm_as_judge.py"
+    command: "python3 $REFERENCE_DIR/_shared/guardrails/check_llm_as_judge.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

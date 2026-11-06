@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(os.getcwd())
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.bindings_assertions import (  # noqa: E402
     assert_metadata_field,
     assert_value_field,

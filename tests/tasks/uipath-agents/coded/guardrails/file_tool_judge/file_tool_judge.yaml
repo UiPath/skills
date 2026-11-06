@@ -1,0 +1,65 @@
+task_id: skill-agent-guardrail-coded-file-tool-judge
+description: >
+  LLM-as-judge guardrail that inspects the file a tool receives, in a coded agent.
+  The sandbox is seeded with a LangGraph contract intake agent: its Input carries the
+  uploaded contract as an Attachment (already rendered into the user message) and its
+  review_contract tool takes that Attachment. No guardrails. The user asks for a judge
+  rule on the uploaded contract, evaluated before review_contract runs, that reads the
+  file contents rather than the tool's text arguments. Verifies the guardrail targets
+  the tool (a @guardrail on review_contract, or UiPathLLMAsJudgeMiddleware at Tool
+  scope with tools=[review_contract]), discovers a judge model via
+  `uip agent guardrails llm-as-judge-models`, blocks, runs at PRE, and sets
+  detection_scope to Files.
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  disallowed_tools: ["Task"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/ContractIntakeCodedAgent
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  I have a coded UiPath LangGraph agent in graph.py that reviews an uploaded contract
+  with its review_contract tool. Add an LLM-as-judge guardrail on review_contract that
+  blocks the run before the tool reads the contract when the uploaded contract contains
+  a non-compete clause longer than 12 months, with the message
+  "Non-compete exceeds 12 months." The judge must evaluate the contents of the file
+  itself, not the tool's text arguments.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Complete the entire task
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the LLM-as-judge models via the CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+llm-as-judge-models'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Judge guardrail on review_contract reads the file (Tool target, Files, PRE, block, rule and model)"
+    command: "python3 $REFERENCE_DIR/coded/guardrails/file_tool_judge/check_file_tool_judge.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 15
+  turn_timeout: 1200

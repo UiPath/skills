@@ -121,6 +121,7 @@ Use `Glob` / `Grep` to locate the entrypoint Python file. Look for `create_agent
 - **LLM factory** — is the LLM created inside a named function (e.g. `def create_llm(): return UiPathChat(...)`) or assigned directly at module level? Decorator-style LLM-scope guardrails require a factory.
 - **Agent factory** — is `create_agent(...)` wrapped in a named function? Decorator-style Agent-scope guardrails require a factory.
 - **Existing guardrails** — any `@guardrail(...)` decorators above functions, or `*UiPath…Middleware(...)` entries inside `middleware=[...]` in `create_agent(...)`. Note them to avoid duplicating.
+- **File surfaces** — `Attachment` fields on `Input` / `Output`, and tools that take or return an `Attachment` (or `{"ID", "FullName", "MimeType"}` objects). Record which are uploaded inputs and which are produced outputs — they drive the `detection_scope` decision in Step 7.
 
 ### Step 2 — Catalog-Driven Recommendation Analysis
 
@@ -187,6 +188,7 @@ When a validator supports **more than one scope** (e.g. `pii_detection` allows A
 | **Input protection** (block bad/sensitive input: PII, jailbreak, injection) | broadest **PRE** scope allowed → **Agent** > Llm > Tool | Agent · PRE fires once, before the agent reaches the LLM or any tool. Catching PII or an attack at Agent · PRE blocks the whole run immediately instead of after the model has already been called. |
 | **Output protection** (block bad output the caller sees: harmful content, IP) | **Agent · POST** when allowed | Agent · POST inspects the agent's final answer — the thing the user actually receives. |
 | **Tool I/O protection** (a specific tool's input/output) | **Tool** scope on that tool | Only narrow to Tool when the concern is genuinely that one tool, or the user scoped it there. |
+| **File protection** (contents of uploaded or produced files) | **Agent** scope with `detection_scope=DetectionScope.FILES` — PRE covers uploaded files, POST covers produced files | Agent · PRE sees every file the run holds before the model runs; Agent · POST sees the files the structured response names. Narrow to a tool only when the concern is the file that one tool receives. See [files-guide.md](files-guide.md). |
 
 Concretely: **PII detection meant to stop the agent handling personal data belongs at `GuardrailScope.AGENT` · PRE, not `GuardrailScope.LLM` · PRE** — both are allowed by the catalog, but Agent · PRE blocks the run earlier (before the LLM call) and covers the whole agent, not just one model invocation. Only drop to a narrower scope when the validator does not support the broader one (`prompt_injection` and `user_prompt_attacks` are Llm-only, so Llm · PRE is the earliest available for them) or when the user explicitly asks for a narrower scope.
 
@@ -215,6 +217,12 @@ For each recommended guardrail, the catalog entry's `examples[].config` gives th
 - **Decorator** — place `@guardrail(validator=..., action=..., stage=...)` above the target (`@tool` function for Tool scope, LLM factory for LLM scope, agent factory for Agent scope).
 
 Use the action chosen in Step 6.
+
+**`detection_scope` decision** (only when the matched list entry's `Parameters` contains `Id: "detectionScope"`; BYO entries never qualify):
+1. The agent has a file surface (Step 1) and the threat lives in file contents → pass `detection_scope=DetectionScope.FILES` on the `@guardrail(...)` or middleware call; use `BOTH` only when the text must stay covered by the same guardrail.
+2. No file surface → omit it (text only).
+3. The list entry lacks `detectionScope` → omit it and tell the user file inspection is not enabled for that validator on this tenant.
+4. An `Attachment` input that is not rendered into the user message → render it with `render_attachments_block` as part of the change; otherwise the guardrail sees no file.
 
 Map catalog parameter shapes to Python:
 
@@ -274,6 +282,7 @@ From the SDK docs and the catalog, look up the validator class referenced in the
 | Threshold values | Within the range and step the catalog parameter declares (e.g. harmful content severities must be `0`, `2`, `4`, or `6`) |
 | Action class | Action constructor (`BlockAction`, `LogAction`, ...) is one the SDK docs expose for this validator |
 | Required parameters | Any catalog parameter with `Required: true` is present in the constructor call |
+| `detection_scope` | Set only on `@guardrail(...)` or a middleware call (never a validator constructor, BYO, deterministic, or `CustomValidator`), only when the list entry offers `detectionScope`, and as `DetectionScope.*` or the exact `"Text"` / `"Files"` / `"Both"` |
 
 ### Actionability Check
 
@@ -281,7 +290,7 @@ From the SDK docs and the catalog, look up the validator class referenced in the
 2. Confirm the in-code scope is permitted:
    - Middleware — every `GuardrailScope` in the `scopes=[...]` argument is in `allowed_scopes`.
    - Decorator — the function the `@guardrail` decorates matches the implied scope: `@tool` for Tool scope, LLM factory for LLM scope, agent factory for Agent scope.
-3. Confirm the stage is permitted. **Middleware takes no `stage=` argument** — the validator fixes its stage (e.g. `intellectual_property` POST, `user_prompt_attacks` PRE), so do not flag a missing stage. The stage check applies only to the **decorator** `stage=`: `GuardrailExecutionStage.PRE` only where catalog allows pre-execution; `POST` only where catalog allows post-execution.
+3. Confirm the stage is permitted. The fixed-stage middleware (`UiPathUserPromptAttacksMiddleware` PRE; `UiPathIntellectualPropertyMiddleware` POST) take no `stage=`, so do not flag a missing stage there. PII, harmful content, LLM-as-judge, and BYO middleware and the **decorator** accept `stage=` (default `PRE_AND_POST`); deterministic middleware requires it. Use `GuardrailExecutionStage.PRE` only where the catalog allows pre-execution; `POST` only where it allows post-execution.
 4. For Tool-scoped middleware: `tools=[...]` must contain the actual `@tool` Python objects discovered in Step 1 — not strings, not undefined names.
 5. For decorator-style LLM/Agent scope: the decorated function must actually return a `UiPathChat(...)` / `create_agent(...)` — decorating an unrelated function silently no-ops.
 
@@ -290,6 +299,8 @@ From the SDK docs and the catalog, look up the validator class referenced in the
 1. Read the catalog entry's `when_not_to_use`.
 2. Compare against the agent's current context (system prompt, schemas, tool docstrings).
 3. If the agent matches a `when_not_to_use` condition, flag the guardrail as potentially misapplied and explain why.
+4. **File coverage gap** — the guardrail is meant to protect an `Attachment` input or output, the list entry offers `detectionScope`, and the code omits `detection_scope` or sets `TEXT` → the file contents are never inspected; fix with `DetectionScope.FILES` (or `BOTH`). Also flag an `Attachment` input that is never rendered into the user message.
+5. **Misapplied file scope** — `FILES` or `BOTH` where no file can reach the guardrail (an agent with no `Attachment` field and no tool that takes or returns a file, or a Tool-scope guardrail whose tools neither take nor return a file) → nothing to evaluate; remove the argument.
 
 ### Report and Fix
 
@@ -327,3 +338,4 @@ python3 -c "import ast; ast.parse(open('graph.py').read())"
 14. **Read [guardrails.md](guardrails.md) before writing any Python** — the middleware spread (`*`), decorator placement above `@tool` / factory, factory refactor, and import-source rules are specified there and cannot be safely inferred.
 15. **`EscalateAction` is the human-in-the-loop option only when the SDK docs expose it** — recommend it when the user wants a person to review/approve a flagged item rather than hard-block it. It requires a **deployed Action App** declared in `bindings.json` (`app_name` / `app_folder_path`) through the coded-agent bindings sync workflow; if the docs, app, or binding prerequisite is unavailable, fall back to Block/Log and say so — never silently drop the requested escalation. See Step 6 and [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop).
 16. **`Validator` is not unique — disambiguate built-in vs. BYO by `IsByo` before matching on name.** A tenant can have both a built-in and one or more BYOG entries sharing the same `Validator` name. Key any lookup on `(Validator, IsByo)`, and default recommendations/wiring to the built-in SDK validator/middleware unless the user names a BYO configuration or asks for BYO. Never fabricate the BYO validator construct from memory — see [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators).
+17. **`detection_scope` is list-driven and never on BYO.** Pass it only when the matched list entry's `Parameters` contains `Id: "detectionScope"`, only on `@guardrail(...)` / middleware calls, and never on BYO, deterministic, or `CustomValidator` guardrails. A guardrail meant to protect an `Attachment` without it is a coverage gap — report it. See [files-guide.md](files-guide.md).

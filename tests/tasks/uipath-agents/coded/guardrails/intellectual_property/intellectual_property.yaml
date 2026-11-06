@@ -46,7 +46,7 @@ success_criteria:
 
   - type: run_command
     description: "Intellectual property middleware guardrail correctly added to graph.py"
-    command: "python3 $REFERENCE_DIR/_shared/check_intellectual_property_coded.py"
+    command: "python3 $REFERENCE_DIR/_shared/guardrails/check_intellectual_property_coded.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
