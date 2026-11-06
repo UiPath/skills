@@ -9,7 +9,7 @@ author INLINE — though the `dynamicExtract()` factory still needs a published
 model's identity ([Two ways to author it](#two-ways-to-author-it)). For a
 published project's trained fields, use `ixpExtract` ([ixp.md](ixp.md)) instead.
 
-Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
+Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig?, classificationSchema? })`;
 `dynamicExtract({ fileRef, schema, model, pageRange?, modelConfig? })`.
 
 ```ts
@@ -29,7 +29,7 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
 Classify a document (`uipath.document.classify`), or extract fields against an
 INLINE taxonomy (`uipath.ixp.extract-document-builder`) instead of a published
 IxP project's trained fields.
-Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
+Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig?, classificationSchema? })`;
 `dynamicExtract({ fileRef, schema, model: { modelName, folderKey, ... }, pageRange? })`.
 
 ```ts
@@ -73,6 +73,24 @@ reference). It is emitted as the node's `schemaDocument`. `flow validate` only
 warns about any other shape, so it will not catch a bare JSON-Schema object
 with `properties` alone for you — the format, with a worked example, is in
 [extract-document-taxonomy.md](extract-document-taxonomy.md).
+
+`classificationSchema` is the classes the classifier chooses between, in the
+designer's shape: `{ generalInstructions?, classes: [{ id, name, instructions }] }`.
+Omit it for the empty default. A designer-made node keeps its classes through
+`flow decompile` and `flow compile`.
+
+```ts
+.step('classify', documentClassify({
+  fileRef: input('file'),
+  classificationSchema: {
+    generalInstructions: 'Classify supplier paperwork.',
+    classes: [
+      { id: 'c1', name: 'invoice', instructions: 'A bill asking for payment.' },
+      { id: 'c2', name: 'receipt', instructions: 'Proof that a payment was made.' },
+    ],
+  },
+}))
+```
 
 Classification lands at `out('classify', 'result.output')`: classify emits the
 same processed-document envelope (`version`, `type`, `result`, `taxonomy`,
