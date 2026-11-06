@@ -95,7 +95,7 @@ simulation is scoped to one **data point inside one set**, not to the project,
 so all three commands require `--set` and `--data-point`. `add` also requires
 `--strategy`: `Static` returns `--mock-value` verbatim, `Llm` generates a
 response from `--simulation-instructions`. And it requires `--component-type`
-naming what the component is — `connector`, `agent`, `subflow` — unless
+naming what the component is — `connector`, `agent`, `subflow`, `hitl` — unless
 `--parent <agent-id>` adds a child tool simulation, which defaults it to `Node`.
 
 ```bash
@@ -109,6 +109,9 @@ uip maestro flow eval simulation list \
 uip maestro flow eval simulation remove <component-id> \
   --set "Smoke Tests" --data-point <id> --path ./MySolution/MyFlow --output json
 ```
+
+A `hitl` component's `--mock-value` is `{"Action":"<outcome>", <fields>}`: `Action`
+names the outcome to take, and the other keys are the task's output fields.
 
 Simulate every side-effecting component before running a set more than once. An
 unsimulated connector step really sends — once per eval, every run.
@@ -137,7 +140,8 @@ have.
 
 `eval run start` needs the solution in Studio Web, and when it cannot resolve
 one it fails with `solution-id could not be resolved` or a variant. That error
-is not licence to upload.
+is not licence to upload. `eval run start` itself overwrites the matching Studio
+Web solution and rewrites the local `.uipx`, so ask before it too.
 
 `uip solution upload` writes to Studio Web: it creates, or **overwrites**, the
 solution matching the local `.uipx` `SolutionId`. No flag is needed and no

@@ -78,7 +78,11 @@ drop `version` (2.4).
   Concurrent iterations' `{ updates }` writes overwrite each other, so a `.var()`
   they all update keeps only some of the writes, in no fixed order. Read the
   results after the loop from `$vars.<loop>.output` instead: one entry per item,
-  in collection order, each `{ <bodyStep>: { output } }`.
+  in collection order, each `{ <bodyStep>: { output } }`. Do not use it when a
+  body step reads `currentItem`: iterations do not isolate it (30 items gave 26
+  distinct values, run `Completed`, no warning). Run such a loop sequentially.
+  Entries omit HTTP steps, and a step that did not run in a pass carries the
+  previous pass's value, so do not read either from `$vars.<loop>.output`.
 - `completionCondition` — an expression checked after each iteration; the loop
   stops early when it is true.
 - `body.break()` — exit the whole loop from inside an arm. Terminal on its

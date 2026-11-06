@@ -173,7 +173,8 @@ compile. Omit both options only when manual/implicit authentication is intended.
 <!--skill-flavor:debug-flags:start-->
 `flow debug` takes the project directory, not the `.flow` file, and resource
 refresh must run first. From the solution directory, `<Name>` names that project.
-A `500` at `prepare-custom-debug` is transient: retry once.
+A `500` at `prepare-custom-debug` is transient: retry once. A `403` or `404`
+there comes from a folder flag: drop it ([operate.md](operate.md#debug--a-real-end-to-end-run)).
 These are the common flags; use only the ones the behavior claim needs:
 
 | Need | Exact form |
