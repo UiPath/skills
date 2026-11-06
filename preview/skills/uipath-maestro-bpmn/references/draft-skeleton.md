@@ -17,19 +17,17 @@ The gate below then comes after the file validates, as it does outside plan mode
 
 ## What a skeleton is
 
-A skeleton exists so the shape can be read end to end — so the user can say "yes, that's it" or "drop that step", and so the build has a validated structure to fill in.
-It is not a working process and must never be reported as one.
+A skeleton is not a working process and must never be reported as one.
 
 1. **Every activity is a bare `.task(id, { name })`.**
    Pass `name` and nothing else: no `set`, no body callback.
    It compiles to a plain `<bpmn:task>` with no `uipath:activity` payload.
 2. **Use no typed activity method** — not `scriptTask`, `humanTask`, `http`, `connector`, `externalAgent`, `externalWorkflow`, `dataService`, `businessRule`, the Orchestrator start/execute/queue methods, or `activity`.
-   Each one decides the product choice the user has not approved yet, and its icon says so on the canvas.
-   The label carries the meaning a blank box cannot (rule 5).
+   The label carries the kind (rule 5).
 3. **Make no registry calls.** No `uip maestro bpmn registry pull`, `search` or `get`, and no connection or resource lookup.
    Types and resources are chosen after the shape is approved.
 4. **Control flow is real.**
-   - The start event is the one the process actually has: plain when something calls it, `{ timer }` when it runs on a schedule (`{ timer: { cycle: 'R/2026-01-01T06:00:00Z/P1D' } }` for every day at 6:00 UTC; use the user's UTC offset in place of `Z` when they give a local time, and `Z` when they state none; a duration string for a one-off delay), `{ message: '<name>' }` when a message starts it.
+   - The start event is the one the process actually has: plain when something calls it, `{ timer }` when it runs on a schedule (`{ timer: { cycle: 'R/2026-01-05T07:00:00Z/P7D' } }` for every Monday at 7:00 UTC; use the user's UTC offset in place of `Z` when they give a local time, and `Z` when they state none; a duration string for a one-off delay), `{ message: '<name>' }` when a message starts it.
      Do not set `trigger: true`: it adds the platform trigger's `uipath:activity` payload, which is a build-time decision.
    - Keep the start event's id `Event_start`, the id the `init` stub carries and `entry-points.json` names, and keep the seeded `.metadata({ entryPointId })`.
      Change the start event's `name` and definition, never its id.
@@ -67,23 +65,23 @@ A connector box names its app as the user names it (`Slack`, `Outlook`, `Jira`),
 
 ## A worked skeleton
 
-"Every morning at 6, look at yesterday's orders; on a busy day, more than 100 orders, the manager gets a full summary, otherwise a short one."
+"Every Monday at 7, count the warehouse stock; when any item is below its reorder point, raise purchase orders for them, otherwise just log the count."
 
 ```ts
 import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 
 export default bpmn('Process_1')
-  .name('NightlyReportSketch')
+  .name('WeeklyStockCheck')
   .metadata({ entryPointId: '<the UUID the decompiled stub carries>' })
   .flowMode('sequence')
-  .var('orderCount', 'number')
-  .startEvent('Event_start', { name: 'Every day at 6:00', timer: { cycle: 'R/2026-01-01T06:00:00Z/P1D' } })
-  .task('loadOrders', { name: "Load yesterday's orders [RPA workflow] → orderCount" })
-  .choose('busyDay', [
-    { when: '=vars.orderCount > 100', label: 'Busy day', body: (b) => b.task('fullSummary', { name: 'Send the manager a full summary [Outlook]' }) },
-    { otherwise: true, label: 'Normal day', body: (b) => b.task('shortSummary', { name: 'Send the manager a short summary [Outlook]' }) },
+  .var('itemsBelowReorder', 'number')
+  .startEvent('Event_start', { name: 'Every Monday at 7:00', timer: { cycle: 'R/2026-01-05T07:00:00Z/P7D' } })
+  .task('countStock', { name: 'Count warehouse stock [RPA workflow] → itemsBelowReorder' })
+  .choose('needsReorder', [
+    { when: '=vars.itemsBelowReorder > 0', label: 'Below reorder point', body: (b) => b.task('raiseOrders', { name: 'Raise purchase orders [API workflow]' }) },
+    { otherwise: true, label: 'Stock is fine', body: (b) => b.task('logCount', { name: 'Log the stock count [Script]' }) },
   ])
-  .endEvent('done', { name: 'Report sent' })
+  .endEvent('done', { name: 'Stock checked' })
   .build();
 ```
 
