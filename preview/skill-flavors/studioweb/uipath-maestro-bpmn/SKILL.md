@@ -41,9 +41,10 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip solution resources refresh` | Fails: no local `.uipx`. Add connections with `resources add` (the [Validation loop](#validation-loop)). |
 | `uip solution publish`, `uip solution deploy run` | Work. Studio Web packages and signs in for `publish`. |
 | `uip maestro bpmn debug "<Project>" --inputs '{}'` | Works: a real run of the process open in the designer ([`references/operate.md`](references/operate.md)). |
+| `uip maestro bpmn debug-instance variables`, `variables-all`, `incidents` | Work, with the `Trace ID` that `debug` prints. |
 | `uip maestro bpmn pack`, `uip solution pack`, `upload` | Not available. Studio Web owns the solution. |
 | `uip login` | Not available. You are already signed in to the tenant of the user. |
-| `npm`, `npx`, `node`, the `flow-sdk` bin, `python3` | Not available. |
+| `npm`, `npx`, the `flow-sdk` bin, `python3` | Not available. |
 
 When a reference tells you to run a command that is not available, use the Studio Web route that this guide gives. If there is no route, tell the user.
 
@@ -140,6 +141,8 @@ uip maestro bpmn validate <Name>.bpmn --output json
   `uip solution resources list --source local --output json` does not list,
   run `uip solution resources add --source remote --kind connection --cloud-key <ConnectionId>`.
   Never run `uip solution resources refresh`: it fails here.
+  `check` does not read `.flow-sdk/bindings.json`, so `compile` is the step
+  that reports a binding name the file does not declare.
 <!--skill-flavor:validation-loop:end-->
 
 <!--skill-flavor:operating:start-->

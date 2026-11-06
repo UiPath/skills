@@ -68,9 +68,16 @@ was found, the run logs and the execution trace. Exit 1 means `Faulted` or
 Studio Web: do not troubleshoot it, and do not run it again. Tell the user to
 follow the run in Studio Web.
 
-The reply has no instance id, so the `debug-instance` reads have nothing to
-target. Read element outcomes and output values from the execution trace that
-`debug` printed.
+The `Trace ID` is the debug instance id. The trace lists each element's
+**status**, never a variable's **value**: a `Completed` run proves the process
+ran, not that an output holds the expected value. Read the values right after
+the run:
+
+```bash
+uip maestro bpmn debug-instance variables <TRACE_ID> --output json
+uip maestro bpmn debug-instance variables-all <TRACE_ID> --output json
+uip maestro bpmn debug-instance incidents <TRACE_ID> --output json
+```
 <!--skill-flavor:debug-run:end-->
 
 <!--skill-flavor:publish-default:start-->

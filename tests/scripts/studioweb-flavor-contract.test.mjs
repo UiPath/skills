@@ -294,7 +294,7 @@ test("the default uipath-planner keeps its task tools (the guard is not vacuous)
 // the agent back to the drift these flavors had (skills#3008, #4100, #4209).
 const MAESTRO_SKILLS = ["uipath-maestro-flow", "uipath-maestro-case", "uipath-maestro-bpmn", "uipath-agents"];
 const TWO_TOKEN_VERB = /(^|[^a-z-])uip (flow|case|bpmn) (debug|pack)\b/;
-const JSON_DEBUG = /uip maestro (flow|case|bpmn) debug\b.*--output json/;
+const JSON_DEBUG = /uip maestro (flow|case|bpmn) debug(?![\w-]).*--output json/;
 const PATH_DEBUG = /uip maestro (flow|case|bpmn) debug +("?\.|"?\/|"?<[\w-]*(dir|path)>)/;
 
 function maestroLinesMatching(root, pattern) {

@@ -131,7 +131,6 @@ explain the failure. Traces are the whole timeline and rarely say more.
 
 ## Debug runs
 
-<!--skill-flavor:debug-runs:start-->
 A debug instance is ephemeral; read it in the same session, right after the run,
 with the debug-instance commands. The debug command's own output lists each
 element's status, never a variable's value.
@@ -141,7 +140,6 @@ uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
 ```
-<!--skill-flavor:debug-runs:end-->
 
 ## The diagnosis
 
@@ -243,11 +241,9 @@ uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn incident summary --output json
 uip maestro bpmn processes incidents <PROCESS_DEFINITION_KEY> --folder-key <FOLDER_KEY> --output json
-<!--skill-flavor:debug-instance-reference:start-->
 uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
-<!--skill-flavor:debug-instance-reference:end-->
 ```
 
 Lifecycle commands are deliberately absent from this list; they are in
