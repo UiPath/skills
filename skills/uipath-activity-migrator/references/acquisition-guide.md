@@ -1,6 +1,6 @@
 # Acquisition Guide
 
-How the skill obtains, caches, verifies, and updates `UiPath.Upgrade.exe`. The script `scripts/ensure-migrator.mjs` implements this, run with `node`; read here when it fails or the user asks where the tool lives.
+How the skill obtains, caches, verifies, and updates `UiPath.Upgrade.exe`. The script `scripts/ensure-migrator.mjs` implements this, run with `node`; read here when it fails or the user asks where the tool lives. Nothing is downloaded without the user's choice (SKILL.md Rule 15): a plain run only locates and verifies, `--install` downloads.
 
 ## What ships
 
@@ -11,7 +11,7 @@ How the skill obtains, caches, verifies, and updates `UiPath.Upgrade.exe`. The s
 | Archive | Zip with `UiPath.Upgrade.exe` at the archive root and extensions under `Extensions/<Name>/` |
 | Runtime | Windows, .NET 8: `Microsoft.NETCore.App 8.x` and `Microsoft.WindowsDesktop.App 8.x` (the .NET Desktop Runtime 8 installer provides both) |
 | Version | `UiPath.Upgrade.exe version` prints it (GA line `25.10.x`) |
-| Freshness signal | The URL is unversioned. The server's `Last-Modified` header is the only change signal; the script stores it and re-downloads when it changes |
+| Freshness signal | The URL is unversioned. The server's `Last-Modified` header is the only change signal; the script stores it, reports `update: true` when it changes, and re-downloads on an install run |
 
 Studio does not need to be installed. Opening the migrated project afterwards needs Studio 2024.10 or later.
 
@@ -28,9 +28,9 @@ ActivityMigrator/
 
 Resolution order used by the script:
 
-1. `UIPATH_ACTIVITY_MIGRATOR_DIR` when set: use `<dir>/UiPath.Upgrade.exe` if present, else `<dir>/current/UiPath.Upgrade.exe`. Nothing is downloaded into an override dir unless the exe is missing there.
+1. `UIPATH_ACTIVITY_MIGRATOR_DIR` when set: use `<dir>/UiPath.Upgrade.exe` if present, else `<dir>/current/UiPath.Upgrade.exe`. Nothing is downloaded into an override dir unless the exe is missing there and the run is an install run.
 2. Default root, `current/UiPath.Upgrade.exe`.
-3. Download and extract into the default root (or the override dir).
+3. Nothing found: a plain run reports `missing` with `dir` and `url`, and the skill asks the user. An install run (`--install` or `--force`) downloads and extracts into the default root (or the override dir).
 
 ## Environment variables and flags
 
@@ -38,13 +38,25 @@ Resolution order used by the script:
 |---|---|
 | `UIPATH_ACTIVITY_MIGRATOR_DIR` | Install or cache root. Use for shared tool drives or manual placement |
 | `UIPATH_ACTIVITY_MIGRATOR_URL` | Alternate archive URL, for internal mirrors |
-| `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | Never touch the network. A cached tool is used as is; a missing tool is an error |
-| `--check-only` | Report what is cached without downloading. Exit 3 with `status: missing` when nothing is cached |
-| `--force` | Re-download and re-extract even when cached |
+| `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | Never touch the network. A cached tool is used as is; a missing tool is an error. Wins over `--install` and `--force` |
+| `--install` | Download and extract when nothing is cached; replace the cache when the archive changed. The skill passes it only after the user chose the download |
+| `--force` | Re-download and re-extract even when cached. Implies `--install` |
 
 Download: the script tries `curl` first, which honors `HTTPS_PROXY` / `HTTP_PROXY`, then PowerShell's WebClient, which uses the system proxy and the signed-in user's credentials. Both run as commands, never as script files. The update check's `HEAD` request falls back the same way, so a machine that reaches the internet only through the system proxy still sees updates. A curl connection that stalls below 1 KB/s for a minute fails instead of hanging. Corporate TLS inspection that breaks both surfaces as `download-failed`, with each downloader's error in the message.
 
 Extraction: `Expand-Archive`, then Windows `tar.exe`, then `unzip`. An install root whose extracted paths would pass the 260-character Windows limit makes `Expand-Archive` fail; `tar.exe` still extracts it.
+
+## Managed environments
+
+The skill never downloads without the user's choice. These settings, set machine- or user-wide by an administrator, decide the outcome before the question would be asked, so it never appears.
+
+| Situation | Set | Effect |
+|---|---|---|
+| Binary distributed by desktop engineering or placed on a tool share | `UIPATH_ACTIVITY_MIGRATOR_DIR=<FOLDER>` and `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | The preinstalled tool is used (`source: env`) and the network is never touched. A missing tool is `offline-missing`: the skill gives the manual steps instead of offering a download |
+| Archive mirrored on an internal server | `UIPATH_ACTIVITY_MIGRATOR_URL=<MIRROR_URL>` | Download and update check go to the mirror. The user's choice is still required; the install question names the mirror |
+| No downloads, nothing preinstalled yet | `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | Every run is `offline-missing` until the tool is placed by hand |
+
+The tool is a zip: placing it needs no installer and no elevation. The `Extensions/` folder must stay next to the exe.
 
 ## Script output contract
 
@@ -56,13 +68,15 @@ The last stdout line is one JSON object.
 
 | Field | Values |
 |---|---|
-| `status` | `ok`, `missing` (check-only), `error` |
+| `status` | `ok`, `missing`, `error` |
+| `dir`, `url` (`missing` only) | The folder an install run would fill and the archive it would fetch: the facts the skill puts in its install question |
+| `update` (`ok` only) | `true` when the server's `Last-Modified` differs from the stamp on a plain run: a newer build exists and the cached tool was kept. Absent otherwise |
 | `source` | `env` (override dir), `cached`, `downloaded` (first install), `updated` (newer archive replaced the cache) |
 | `code` (errors) | `not-windows`, `runtime-missing`, `download-failed`, `extract-failed`, `verify-failed`, `offline-missing`, `telemetry-flag` |
 | `env` (`telemetry-flag` only) | The assignment the tool starts with, `UIPATH_TELEMETRY_DISABLED=true` or `=false` |
 | `message` | Human-readable detail, including the manual steps for the failing stage |
 
-Exit codes: `0` ok, `1` error, `3` missing (check-only).
+Exit codes: `0` ok, `1` error, `3` missing.
 
 ## Manual placement
 
@@ -77,7 +91,7 @@ For air-gapped machines or when both downloaders are blocked:
 Runtime missing: install the .NET Desktop Runtime 8 (x64) from `https://dotnet.microsoft.com/download/dotnet/8.0`, then rerun. The script checks the one place the migrator loads its runtime from: `DOTNET_ROOT_X64` or `DOTNET_ROOT` while one is set; otherwise the install location the .NET installer registers, else `%ProgramFiles%\dotnet`. It never uses the `dotnet` on `PATH`, which the migrator ignores. Verify by rerunning the script, which checks those same places:
 
 ```bash
-node "<SKILL_DIR>/scripts/ensure-migrator.mjs" --check-only
+node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
 ```
 
 ## Telemetry flag crash
@@ -93,7 +107,7 @@ Never unset the variable instead: that turns telemetry on for a user who disable
 
 ## Updating
 
-Rerun the script without flags. It sends a `HEAD` request, compares `Last-Modified` with `.last-modified`, and replaces `current/` only when the archive changed (`source: updated`). Force a refresh with `--force`. An override dir is never auto-updated unless its exe is missing.
+Every plain run sends a `HEAD` request and compares `Last-Modified` with `.last-modified`. When they differ it keeps the cached tool and reports `update: true`; nothing is replaced without an install run. To update, rerun with `--install`: `current/` is replaced only when the archive changed (`source: updated`). `--force` refreshes even an unchanged cache. An override dir is never updated unless its exe is missing; replace its contents by hand. Under `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` no `HEAD` is sent and no update is reported.
 
 ## Verifying an install by hand
 
