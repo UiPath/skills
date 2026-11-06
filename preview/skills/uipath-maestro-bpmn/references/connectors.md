@@ -84,8 +84,10 @@ uip maestro bpmn check <Name>.bpmn.ts --source
 | `CUSTOM_FIELDS_UNPREPARED` | an input outside the tenant-agnostic snapshot, on a connector that discovers fields per connection. |
 | `BINDING_SELF_NAME` | a binding whose value is its own name. That packs into `bindings_v2.json` as a stub where a connection id belongs, and the deploy is what notices. |
 | `BINDING_UNDECLARED` | a label a populated `bindings.json` does not declare. |
+| `CONNECTION_BINDING_NOT_GUID` (warning) | a connection binding whose default is not a connection id. `check` and `compile` accept a symbolic label offline; `refresh` refuses it (`Connection binding "<id>" default must be a GUID.`). `prepare` writes the real id; never invent one. |
 
-Each of these names one `uip maestro registry prepare`:
+When one of these comes from a missing schema, lookup value or binding, its message names the `uip maestro registry prepare` that closes it.
+An unknown key, a wrong value type (`CONNECTOR_INPUT`) or a runtime value in an id field (`LOOKUP_RUNTIME_VALUE`) is a mistake in your source: fix it there, since `prepare` doesn't touch the source.
 
 ```bash
 uip maestro registry prepare uipath-atlassian-jira --action create-issue \
@@ -99,6 +101,18 @@ Then re-run `check` and compile.
 `compile` and `check` both auto-detect `./connectors-local/`; `--connectors-local <dir>` names another one.
 
 **`prepare` is a live call.** It reads through a real connection, so it needs `uip login` and a connection on the tenant. Run it when `check` asks for it, not speculatively.
+
+These codes are mistakes in your own source, and `prepare` does not close them; fix the source and re-run `check`:
+
+| Code | What it means | Fix |
+| --- | --- | --- |
+| `INTSVC_CONNECTION_NOT_BINDING` | a connector node's connection that is not `=bindings.<id>`. | Write the value as `=bindings.<id>`; a hand-filled wait reads `connectionId: '=bindings.<id>'`. |
+| `INTSVC_CONNECTION_BINDING_MISSING` | a `=bindings.<id>` with no root binding of resource `Connection` and property `ConnectionId`, spelled exactly. | Declare that root binding. |
+| `INTSVC_EVENT_NO_CONNECTION` | a wait or trigger with no connection: the runtime faults on it. | Give the node a `connection:`. |
+| `INTSVC_CONNECTION_MISSING` | an activity with no connection (error on a V1 activity, warning otherwise). | Give the node a `connection:`. |
+| `INTSVC_CONNECTION_FOLDER_MISMATCH` | an activity whose connection and folder bindings name different connection resources: `refresh` or `validate` refuses it. | Point the connection and folder at the same connection's bindings. |
+| `INTSVC_CONNECTION_RESOURCE_CONFLICT` | one connection resource used by nodes with different connectors or connections. | Give each connector or connection its own binding. |
+| `INTSVC_CONNECTOR_KEY_MISSING` | a node bound to a connection with no `connectorKey` (or an HTTP request with no `body.targetConnector`): `refresh` refuses it before it looks at the binding. | Set the node's `connectorKey`; on an HTTP request, set `body.targetConnector` to the connection's connector key. |
 
 ## 4. When the connector is not in the library
 
