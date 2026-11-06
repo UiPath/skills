@@ -111,6 +111,7 @@ These codes are mistakes in your own source, and `prepare` does not close them; 
 | `INTSVC_CONNECTION_MISSING` | an activity with no connection (error on a V1 activity, warning otherwise). | Give the node a `connection:`. |
 | `INTSVC_CONNECTION_FOLDER_MISMATCH` | an activity whose connection and folder bindings name different connection resources: `refresh` or `validate` refuses it. | Point the connection and folder at the same connection's bindings. |
 | `INTSVC_CONNECTION_RESOURCE_CONFLICT` | one connection resource used by nodes with different connectors or connections. | Give each connector or connection its own binding. |
+| `INTSVC_CONNECTOR_KEY_MISSING` | a node bound to a connection with no `connectorKey` (or an HTTP request with no `body.targetConnector`): `refresh` refuses it before it looks at the binding. | Set the node's `connectorKey`. |
 
 ## 4. When the connector is not in the library
 
