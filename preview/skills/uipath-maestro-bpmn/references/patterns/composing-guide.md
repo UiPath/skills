@@ -59,7 +59,8 @@ Use it whenever the work belongs in this process and there is no reason to encap
 The pattern's start event becomes the sub-process's own start event, and the sub-process takes the flows in and out.
 Give the body its own `.flowMode('sequence')`.
 
-Prefer this over inserting when you need what a container gives you: its own variable scope, a `loop` over the whole pattern, its own `failure-escalation` net, or a collapsed box that keeps the parent readable.
+Prefer this over inserting when you need what a container gives you: a `loop` over the whole pattern, its own `failure-escalation` net, or a collapsed box that keeps the parent readable.
+A container does not give the pattern its own variables; see [Variables across a nesting boundary](#variables-across-a-nesting-boundary).
 
 Risk-tiered `approval-chain` already works this way internally: the standard and extended chains are sub-processes the risk gate chooses between.
 
@@ -88,6 +89,7 @@ Inserting a pattern is a surgical edit, not a regeneration.
 ## Scoping the failure net
 
 One net covers its whole container, including every sub-process nested under it, because unhandled failures propagate outward container by container.
+A net still catches only failures raised in the container it sits directly in ([Events](../bpmn-runtime.md#events-and-timers)); a nested sub-process's unhandled failure surfaces as that sub-process failing in its parent, which is how it reaches a net one level up.
 A single net at process level is the usual answer.
 
 Add a second net inside a looped sub-process or a queue performer only when per-item failures need per-item handling: when one bad item should be recorded and the batch should continue.
@@ -97,11 +99,16 @@ Choosing between a net, an `onError` handler in one activity's body, and `retry`
 
 ## Variables across a nesting boundary
 
-A nested pattern's variables are scoped to its sub-process.
-Anything the parent needs after the sub-process completes must be mapped out explicitly (the sub-process's `payload`), and anything the nested pattern reads from the parent must be mapped in.
-Two patterns that both declare a variable of the same name do not share it across that boundary.
+Nesting does not give a pattern its own variables.
+Variable ids are document-wide, and the runtime resolves `vars.<id>` in one flat namespace wherever the declaration sits ([Variables](../bpmn-runtime.md#variables-and-the-process-contract)).
+A nested pattern reads the parent's variables by id with no mapping in, and the parent reads what the nested pattern wrote by id with no mapping out.
 
-Where two patterns meet, keep each one's variable names rather than merging them into a shared name: the guides' conditions reference those names directly.
+So independent state needs unique ids.
+Where two composed patterns each hold their own value of the same kind, rename one: two reviews become `claimReviewOutcome` and `paymentReviewOutcome`, not two `reviewOutcome` declarations: a second declaration of an id is not a second variable, and `check` refuses it as `DUPLICATE_DOCUMENT_ID`.
+Rename it everywhere that pattern reads it, including its gate conditions.
+Keep a shared name only where the patterns mean the same value, as when a nested review gates on the score its parent computed.
+
+Parallel iterations of a looped sub-process all write the same ids, so one variable cannot collect results across them; see [high-volume-batch-guide.md](high-volume-batch-guide.md#getting-results-to-aggregate).
 
 ## Worked combinations
 
@@ -125,14 +132,14 @@ export default bpmn('claims-nightly')
   .var('aiConfidenceLevel', 'number', { default: 0 })
   .var('reviewOutcome', 'string')
   .startEvent('start', { name: 'Nightly', timer: { cycle: 'R/P1D' } })
-  .scriptTask('fetchClaims', { name: 'Fetch claims', script: 'return { items: [] };', outputs: { claims: '=result.items' } })
+  .scriptTask('fetchClaims', { name: 'Fetch claims', script: 'return { items: [] };', outputs: { claims: '=result.response.items' } })
   .subProcess(
     'eachClaim',
     (sp) =>
       sp
         .flowMode('sequence')
         .startEvent('claimStart')
-        .scriptTask('score', { name: 'Score claim', script: 'return { confidence: 0.9 };', outputs: { aiConfidenceLevel: '=result.confidence' } })
+        .scriptTask('score', { name: 'Score claim', script: 'return { confidence: 0.9 };', outputs: { aiConfidenceLevel: '=result.response.confidence' } })
         .choose('confidenceGate', [
           { when: '=vars.aiConfidenceLevel >= 0.85', label: 'Confident', body: (b) => b },
           {

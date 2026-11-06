@@ -46,7 +46,7 @@ export default bpmn('claim-worker')
   .var('failureReason', 'string')
   // The queue trigger is configured outside the BPMN; the start stays plain.
   .startEvent('start', { name: 'Queue item added' })
-  .scriptTask('perItemAction', { name: 'Handle claim', script: 'return { outcome: "success", reason: null };', outputs: { itemOutcome: '=result.outcome', failureReason: '=result.reason' } })
+  .scriptTask('perItemAction', { name: 'Handle claim', script: 'return { outcome: "success", reason: null };', outputs: { itemOutcome: '=result.response.outcome', failureReason: '=result.response.reason' } })
   // Every branch BEGINS with the activity that marks the transaction.
   .choose('outcomeGate', [
     { when: '=vars.itemOutcome == "failure"', label: 'Failure', body: (b) => b.activity('setFailed', 'Orchestrator.SetTransactionStatus', { name: 'Mark failed', inputs: { QueueItem: '=vars.queueItem', Status: 'Failed', Reason: '=vars.failureReason' } }).endEvent('endFailed', { name: 'Item failed' }) },

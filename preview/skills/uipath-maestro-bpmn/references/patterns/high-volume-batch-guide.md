@@ -9,7 +9,7 @@ These four carry the shape.
 Change one and you are building something else.
 
 - **Each item runs in its own sub-process instance.** A `loop` on a `.subProcess()`, not a loop drawn with `.goto()`.
-  The marker gives each item its own scope and lets them run concurrently; it does **not** by itself stop one item's failure ending the run.
+  The marker runs the body once per item, each with its own `iterator`, and lets them run concurrently; it does **not** by itself stop one item's failure ending the run.
   An unhandled failure propagates outward, so containing it needs a `failure-escalation` net placed inside the iteration.
   Isolation is the loop plus that net, never the loop alone.
 - **Aggregation happens once, after the block completes.** The multi-instance sub-process does not exit until every instance has, which is what makes a single aggregation step correct rather than a race.
@@ -28,9 +28,9 @@ export default bpmn('invoice-batch')
   .flowMode('sequence')
   .var('batchItems', 'jsonSchema')
   .var('batchSummary', 'jsonSchema')
-  .var('policySatisfied', 'boolean', { default: true })
+  .var('policySatisfied', 'boolean', { default: false })
   .startEvent('start', { name: 'Nightly', timer: { cycle: 'R/P1D' } })
-  .scriptTask('fetchBatch', { name: 'Fetch invoices', script: 'return { items: [] };', outputs: { batchItems: '=result.items' } })
+  .scriptTask('fetchBatch', { name: 'Fetch invoices', script: 'return { items: [] };', outputs: { batchItems: '=result.response.items' } })
   // One sub-process instance per item, several at a time. The net INSIDE it is what
   // keeps one bad item from ending the run: it ends only that iteration.
   .subProcess(
@@ -45,7 +45,7 @@ export default bpmn('invoice-batch')
           h.task('recordItemFailure', { name: 'Record failed invoice' }).endEvent('itemFailed', { name: 'Invoice failed' })),
     { name: 'Process each invoice', loop: { collection: '=vars.batchItems', itemVar: 'item' } },
   )
-  .scriptTask('aggregate', { name: 'Total the results', script: 'return { summary: {}, ok: true };', outputs: { batchSummary: '=result.summary', policySatisfied: '=result.ok' } })
+  .scriptTask('aggregate', { name: 'Total the results', script: 'return { summary: {}, ok: true };', outputs: { batchSummary: '=result.response.summary', policySatisfied: '=result.response.ok' } })
   // The report runs BEFORE the verdict, so finance gets it on both outcomes.
   .plainTask('sendReport', { name: 'Send summary to finance', element: 'bpmn:sendTask' })
   .choose('policyGate', [
@@ -76,7 +76,9 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | --- | --- | --- | --- |
 | `batchItems` | jsonSchema | | The fetched items; the loop's `collection` |
 | `batchSummary` | jsonSchema | | Totals, success count, failure breakdown |
-| `policySatisfied` | boolean | `true` | Did the run meet the configured policy |
+| `policySatisfied` | boolean | `false` | Did the run meet the configured policy |
+
+`policySatisfied` defaults to `false` so a run whose `aggregate` never wrote it ends as failed, not completed.
 
 ## Variants
 
@@ -103,7 +105,34 @@ That is the common case when this pattern is nested inside another.
 Drop `policyGate` and `endFailed` when every run succeeds by definition and only the counts matter.
 Keep `sendReport`.
 
-Set each item's exit status inside the body (success, failure, skipped), including in the net, or `aggregate` has nothing to count.
+Record each item's exit status inside the body (success, failure, skipped), including in the net, or `aggregate` has nothing to count.
+How the record reaches `aggregate` is the next section.
+
+## Getting results to `aggregate`
+
+The builder's `loop` has no output collection: `{ collection, itemVar, sequential, completion }` is all it takes, so nothing gathers the iterations' results for you.
+A variable the body writes is the same process variable in every iteration, and parallel iterations overwrite each other's writes to it.
+Measured on the local engine, three parallel iterations each appending to one list left one entry, the last to finish.
+
+Run the loop sequentially and append, and every iteration sees the list as the one before left it:
+
+```ts
+  .var('itemResults', 'array', { default: [] })
+  // inside the body, as its last step, and again in the net with ok: false:
+  .task('recordResult', {
+    name: 'Record result',
+    set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator[0].item, ok: true }])' },
+  })
+  // on the sub-process:
+  { name: 'Process each invoice', loop: { collection: '=vars.batchItems', itemVar: 'item', sequential: true } }
+```
+
+This collects every item on the local engine; `aggregate` then counts `vars.itemResults`.
+The append is a `set` expression, which reads `iterator` directly and validates clean; the same append in a script draws a `validate` warning that `iterator` is undefined at run time.
+Declare the list as `array`, whose default is written as JSON; a `jsonSchema` default of `[]` does not arrive as a list.
+
+When the items must run in parallel, write each item's outcome somewhere outside the process instead, such as a Data Fabric record per item keyed by a batch id (`.dataService()`), and have `aggregate` read the batch's records back.
+This form is not verified end to end.
 
 ## Composing
 

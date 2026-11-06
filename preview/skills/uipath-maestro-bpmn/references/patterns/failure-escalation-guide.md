@@ -56,7 +56,7 @@ export default bpmn('payroll-run')
 ```
 
 The net is written last, after the main path's end event, and nothing names it: where it sits is what it guards.
-At process level it guards every step above, and every sub-process nested under them.
+At process level it guards every step above, and every sub-process nested under them: a nested sub-process's unhandled failure surfaces as that sub-process failing in its parent, which is the container the net sits in.
 
 | Node | Builder | Role |
 | --- | --- | --- |
@@ -110,5 +110,5 @@ And transient failures should not arrive here at all: they are absorbed by `retr
 
 ## Composing
 
-Nested patterns are covered for free: one net catches failures in every sub-process beneath it.
+Nested patterns are covered for free: a failure no inner net handles surfaces as its sub-process failing, level by level, until it reaches the container this net sits in.
 For when a second net inside a batch iteration or a queue performer earns its place, see [composing-guide.md](composing-guide.md#scoping-the-failure-net).

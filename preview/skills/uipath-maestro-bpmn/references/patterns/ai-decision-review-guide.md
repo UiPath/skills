@@ -27,8 +27,8 @@ export default bpmn('claims-review')
   .name('ClaimsReview')
   .flowMode('sequence')
   .var('aiDecision', 'string')
-  .var('aiConfidenceLevel', 'number', { default: 0.95 })
-  .var('validationPassed', 'boolean', { default: true })
+  .var('aiConfidenceLevel', 'number', { default: 0 })
+  .var('validationPassed', 'boolean', { default: false })
   .var('reviewOutcome', 'string')
   .startEvent('start', { name: 'Claim received', message: 'ClaimReceived' })
   .startAgent('analyze', { name: 'Score claim', process: 'ClaimScorer', folder: 'Shared', outputs: { aiDecision: '=Decision', aiConfidenceLevel: '=Confidence' } })
@@ -77,12 +77,16 @@ Set it from the cost asymmetry between a wrong auto-action and a needless review
 | --- | --- | --- | --- |
 | `aiDecision` | string | | The categorical decision |
 | `aiRationale` | string | | Reasoning, where the analyzer produces it |
-| `aiConfidenceLevel` | number | `0.95` | Confidence, 0–1 |
-| `validationPassed` | boolean | `true` | Did the output pass validation |
+| `aiConfidenceLevel` | number | `0` | Confidence, 0–1 |
+| `validationPassed` | boolean | `false` | Did the output pass validation |
 | `validationFailures` | jsonSchema | | Why it did not |
 | `reviewOutcome` | string | | `Approve` or `Reject` |
 | `reviewerRationale` | string | | Reviewer's free-text reasoning |
 
+The gate's defaults fail closed: `0` and `false` send an item to review when the analyzer or the rule did not write the variable (a wrong output path, a skipped node).
+A default that passes the gate, such as `0.95` or `true`, auto-actions every item whose mapping missed, which is the one failure this pattern exists to catch.
+
+`aiRationale`, `validationFailures` and `reviewerRationale` are not in the sketch: map them from the analyzer, the rule and a form field when the reviewer or the audit needs them.
 Names are recommended, not required: they keep processes comparable.
 When inserting into a process that already holds one of these under another name, bind to the existing one.
 
@@ -128,7 +132,8 @@ Bind the verifier to a **different model** than the analyzer; the same model has
 - **`analyze`**: the node that produces the decision at runtime, a UiPath agent (`.startAgent()`), Document Understanding, or a chain of both.
   Place and bind the node.
   Never decide the categories or hardcode a result while authoring.
-  Its `outputs` keys are the agent's output arguments.
+  Its `outputs` keys are the process variables written (`aiDecision`, `aiConfidenceLevel`), and each value is an expression read against the agent's result (`'=Decision'`, `'=Confidence'`, the agent's output arguments).
+  The confidence gate reads those variables, so a key spelled as the agent's argument instead leaves them at their defaults.
 - **`performAction`**: the downstream target, an ERP, CRM, case system, or outbound message: `.connector()`, `.http()`, `.startProcess()`.
 - **`validate`**: `.businessRule()`, a deployed BusinessRules package addressed by name.
   A decision's column reads `=result.<Decision>.<column>` ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).

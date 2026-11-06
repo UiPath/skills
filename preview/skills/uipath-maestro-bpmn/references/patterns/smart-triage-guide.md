@@ -86,6 +86,9 @@ Set it from how costly a misroute is against how much manual triage you can abso
 | `ruleMatched` | boolean | Rule-based and hybrid only |
 | `triageNote` | string | The manual triager's note, if any |
 
+`itemData` and `triageNote` are not in the sketch.
+`itemData` is what the trigger delivers and `classify` reads as input; `triageNote` is a form field you add to `manualTriage` when triagers explain their choice.
+
 ## Variants
 
 | Variant | Question it answers | Delta |
@@ -104,7 +107,8 @@ Set it from how costly a misroute is against how much manual triage you can abso
 
 - **`classify`**: the node that classifies at runtime, typically `.startAgent()`.
   Place and bind it; never decide the categories or write classification logic while authoring.
-  Its `outputs` keys are the agent's output arguments.
+  Its `outputs` keys are the process variables written (`routeCategory`, `aiConfidence`), and each value is an expression read against the agent's result (`'=Category'`, `'=Confidence'`, the agent's output arguments).
+  `confGate` and `route` read those variables, so a key spelled as the agent's argument instead leaves them unset.
 - **`applyRules`**: `.businessRule()`, a deployed BusinessRules package addressed by name; there is no in-file rule authoring.
   A decision's column reads `=result.<Decision>.<column>` ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
 - **`extract`** (not drawn): Document Understanding, or any step that pulls the fields the classifier needs out of an unstructured source.
