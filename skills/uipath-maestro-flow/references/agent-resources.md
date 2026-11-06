@@ -115,8 +115,13 @@ and pass it in through `inputs`.
 - **Voice agent definitions.** Compile writes each resource's definition with
   the voice agent as an allowed source, as the designer does; the built-in
   tools and the app escalation go out at 1.2 for that reason.
-- **What decompile does not carry back yet.** A connector tool, and a built-in
-  tool at a version other than the one compile writes for that agent, get a
-  `TODO` for their edge. Recompiling that source drops the tool. Do not
-  recompile such a flow from its decompiled source; edit the `.flow` instead.
+- **What decompile does not carry back yet.** These get a `TODO` for their edge:
+  - a connector tool;
+  - a built-in tool at a version other than the one compile writes for that
+    agent, and an HTTP request tool at a version other than 1.0;
+  - an escalation at a version compile does not write: a quick-form other than
+    1.2, or an app escalation other than 1.1 (1.2 on a voice agent).
+
+  Recompiling that source drops the tool or escalation. Do not recompile such a
+  flow from its decompiled source; edit the `.flow` instead.
 
