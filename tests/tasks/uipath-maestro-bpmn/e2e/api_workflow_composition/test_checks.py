@@ -498,6 +498,12 @@ class AddressingFormTests(unittest.TestCase):
         context = node_context("v2", ("folderPath", "Shared/elsewhere"), ("name", PROCESS_NAME_GOOD))
         self.assert_rejected(self.problems_for(context), "does not match the seeded folder")
 
+    def test_v2_folder_path_in_another_spelling_is_rejected(self):
+        for spelling in ("/" + FOLDER_PATH_GOOD + "/", FOLDER_PATH_GOOD.upper(), FOLDER_PATH_GOOD + "/"):
+            with self.subTest(spelling=spelling):
+                context = node_context("v2", ("folderPath", spelling), ("name", PROCESS_NAME_GOOD))
+                self.assert_rejected(self.problems_for(context), "does not match the seeded folder")
+
     def test_v2_unknown_process_name_is_rejected(self):
         context = node_context("v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "SomethingElse"))
         self.assert_rejected(self.problems_for(context), "does not name the resource project's deployed process")

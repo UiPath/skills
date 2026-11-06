@@ -16,7 +16,7 @@ Per row in composition.RESOURCES:
      `context_forms`; both forms verified live, UiPath/builder-sdk#1807).
      v2 -- what the BPMN builder SDK emits: a `name` naming the resource
      project's own deployed process in the seeded folder (the same exact-then-
-     substring match v1's releaseKey gets), and a `folderPath` equal to the
+     substring match v1's releaseKey gets), and a `folderPath` exactly equal to the
      seeded folder's path (each a literal, or a declared =bindings.<id>
      whose default is that value). v1 -- the registry template's version
      (SKILL.md rule 18 / references/registry-workflow.md): `releaseKey` bound via
@@ -351,7 +351,10 @@ def check_resource_row(
                         f"path: {error}"
                     )
                 else:
-                    if seeded is not None and literal.strip("/").casefold() != seeded.strip("/").casefold():
+                    # Exact: the live runs (UiPath/builder-sdk#1807) only
+                    # proved the path as `uip or folders get` spells it; a
+                    # leading slash or a different case is unverified.
+                    if seeded is not None and literal != seeded:
                         problems.append(
                             f"{row['kind']}: {field_name} {literal!r} does not match "
                             f"the seeded folder {seeded!r}"
