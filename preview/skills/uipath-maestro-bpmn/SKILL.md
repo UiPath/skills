@@ -24,7 +24,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    - outside one: `./<Name>Solution/<Name>/`, inside a solution it scaffolds;
    - with `--skip-solution-registration`: `./<Name>/`, with no solution.
 
-   **When the user names where the project or its `.bpmn` goes** (`A/B/B.bpmn` names project directory `A/B`), `mkdir -p A`, run `init B` from `A`, and pass `--skip-solution-registration` unless `A` is already a solution.
+   **When the user names where the project or its `.bpmn` goes** (`A/B/B.bpmn` names project directory `A/B`), `mkdir -p A`, run `init B` from `A`, and pass `--skip-solution-registration` unless `A` or a parent already holds a `.uipx`.
    Without the flag, `init` inserts a `BSolution/` level the requested path does not have, and the file lands where nobody will look for it.
    Check `Data.Path` against the requested path before writing anything, and compile to that path, not to a copy elsewhere.
    A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
