@@ -167,3 +167,30 @@ def test_flow_name_rejects_new_flow_in_another_project(tmp_path, monkeypatch, ca
 
     assert main(["--flow-name", "SimEval"]) == 1
     assert "no discovered .flow file is named SimEval.flow" in capsys.readouterr().err
+
+
+IXP_BODY = json.dumps({"nodes": [{"id": "x1", "type": "uipath.ixp.extract"}]})
+IXP_ABSENT = r'"type"\s*:\s*"uipath\.ixp'
+
+
+def test_absent_regex_scans_every_project(tmp_path, monkeypatch):
+    _make_studio_web_project(tmp_path, solution="Sol", project="First")
+    _make_studio_web_project(tmp_path, solution="Sol2", project="Second")
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["--absent-regex", IXP_ABSENT]) == 0
+
+
+def test_absent_regex_fails_on_a_hit_in_any_project(tmp_path, monkeypatch, capsys):
+    _make_studio_web_project(tmp_path, solution="Sol", project="First")
+    _make_studio_web_project(tmp_path, solution="Sol2", project="Second", body=IXP_BODY)
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["--absent-regex", IXP_ABSENT]) == 1
+    assert "Sol2/Second/new.flow" in capsys.readouterr().err
+
+
+def test_absent_regex_alone_fails_when_no_flow_exists(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["--absent-regex", IXP_ABSENT]) != 0

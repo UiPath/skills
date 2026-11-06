@@ -20,7 +20,8 @@ Arguments:
                          while staying wrapper-agnostic
     --absent-regex PAT   negative assertion: exits 0 only when discovery
                          succeeded, every target file was read, and NO target
-                         file matches PAT (repeatable). Use this (with
+                         file matches PAT (repeatable). Alone, it scans every
+                         ``.flow`` in the sandbox, however many projects. Use this (with
                          expected_exit_code: 0) instead of inverting a
                          positive check — a bare exit 1 cannot distinguish
                          "pattern absent" from "no flow found"
@@ -50,6 +51,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flow_check import (  # noqa: E402
     assert_no_flow_files,
+    find_all_flow_files,
     find_flow_files,
     flow_file_is_named,
 )
@@ -98,8 +100,11 @@ def main(argv: list[str]) -> int:
         print("OK: no .flow files found")
         return 0
 
+    absent_only = bool(absent) and not substrings and not regexes
     try:
-        flows = find_flow_files()
+        flows = find_all_flow_files() if absent_only else find_flow_files()
+        if absent_only and not flows:
+            raise SystemExit("FAIL: no .flow file found anywhere")
     except SystemExit as exc:
         print(str(exc), file=sys.stderr)
         return exc.code if isinstance(exc.code, int) else 1
