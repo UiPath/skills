@@ -213,8 +213,8 @@ this page get past it. For instance a decision saved with no condition
 decompiles as `.branch("decision1", undefined, (t) => ..., (e) => ..., { draft: true })`
 and a Transform with no collection as `transform({ operations: [] })` with
 `{ draft: true }`: leave those as written unless the user asked you to finish
-the node. The `waitForEvent`, Transform and decision drafts need an SDK with
-UiPath/builder-sdk#1783, #1784 and #1785; an older one refuses them (`BINDING_MISSING`,
+the node. The `waitForEvent`, Transform and decision drafts need `@uipath/maestro-builder-sdk`
+6.86.5 or later; an older one refuses them (`BINDING_MISSING`,
 `TRANSFORM_COLLECTION_LITERAL`, `EXPR_SYNTAX`). Three cases still stop `compile`, and with it the pipeline
 and the by-hand loop below: a generic operation with no object
 (`CONNECTOR_OBJECT_REQUIRED`), a draft you wrote yourself (no carried
