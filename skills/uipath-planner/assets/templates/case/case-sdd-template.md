@@ -53,8 +53,8 @@ the cell is optional, note the provenance, and move on. -->
 
 1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables, Business Events
 2. [Stages & Tasks](#section-2-stages--tasks)
-   - [Stage <N>: <STAGE_NAME>](#stage-n-stage_name) — <N> tasks
-   - [Secondary Stage: <SECONDARY_STAGE_NAME>](#secondary-stage-secondary_stage_name) — <N> tasks
+   - [Stage <N>: <STAGE_NAME>](#stage-n-stage_name-stage_id) — <N> tasks
+   - [Secondary Stage: <SECONDARY_STAGE_NAME>](#secondary-stage-secondary_stage_name-stage_id) — <N> tasks
 3. [Personas & App Views](#section-3-personas--app-views) — <N> Personas, Process App Views
 4. [Integrations](#section-4-integrations) — IS Connectors, API Workflows, Agents, Processes & RPA, Child Cases, External Agents
 

@@ -119,7 +119,11 @@ Run offline on every Phase 7 pass immediately before `uip solution pack`, includ
 uip maestro case pack <project-path> <output-path> --output json
 ```
 
-`<project-path>` and `<output-path>` are required; use `<SolutionDir>/dist`, never inside the case project. It compiles `caseplan.case` to `caseplan.case.bpmn` and packs a `.nupkg`. `-n, --name <name>` defaults to the project folder; `-v, --version <version>` to `1.0.0`; `--author <author>` to `UiPath`; `--description <text>` to `Created by UiPath`. `package-descriptor.json` is required; on `Missing package-descriptor.json in: <project-path>`, restore it and never skip. This `.nupkg` is not the deploy artifact: `uip solution publish` accepts the solution `.zip`, while `uip solution pack` creates its own project `.nupkg`. See [phased-execution.md § Why `case pack` is mandatory](phased-execution.md#why-case-pack-is-mandatory).
+`<project-path>` and `<output-path>` are required; use `<SolutionDir>/dist`, never inside the case project. It compiles `caseplan.case` to `caseplan.case.bpmn` and packs a `.nupkg`. `-n, --name <name>` defaults to the project folder; `-v, --version <version>` to `1.0.0`; `--author <author>` to `UiPath`; `--description <text>` to `Created by UiPath`. `package-descriptor.json` is required; on `Missing package-descriptor.json in: <project-path>`, restore it and never skip. This `.nupkg` is not the deploy artifact: `uip solution publish` accepts the solution `.zip`, while `uip solution pack` creates its own project `.nupkg`.
+
+<!--skill-flavor:case-pack-required:start-->
+See [phased-execution.md § Why `case pack` is mandatory](phased-execution.md#why-case-pack-is-mandatory).
+<!--skill-flavor:case-pack-required:end-->
 
 ---
 
