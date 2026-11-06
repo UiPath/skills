@@ -41,8 +41,6 @@ initial_prompt: |
       templates. Use the exact condition name `greater_equal`.
     - Wire the node `outputs.output.source` to `=result.response` and
       `outputs.error.source` to `=Error`.
-    - Set `typeVersion` from the authoritative definition for
-      `core.action.transform.filter`.
 
   Validate the flow.
 
