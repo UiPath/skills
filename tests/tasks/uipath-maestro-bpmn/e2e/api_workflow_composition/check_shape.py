@@ -297,6 +297,20 @@ def check_resource_row(
                             f"the seeded folder's real FolderKey {resolved!r}"
                         )
         elif spec["mode"] in ("process_name", "folder_path"):
+            bound = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", value)
+            binding = bindings.get(bound.group(1)) if bound else None
+            if binding is not None and (
+                binding.get("resource") != spec["binding_resource"]
+                or binding.get("propertyAttribute") != spec["binding_attr"]
+            ):
+                problems.append(
+                    f"{row['kind']}: binding {bound.group(1)} for {field_name} must be "
+                    f"resource={spec['binding_resource']!r} "
+                    f"propertyAttribute={spec['binding_attr']!r}, got "
+                    f"resource={binding.get('resource')!r} "
+                    f"propertyAttribute={binding.get('propertyAttribute')!r}"
+                )
+                continue
             literal = literal_or_binding_default(value, bindings)
             if literal is None:
                 problems.append(
@@ -602,14 +616,24 @@ def live_folder_key_resolver(folder_path: str) -> composition.FolderKeyResolver:
     return resolve
 
 
-def processes_for_project(rows: list[Any], project_name_hint: str) -> list[Any]:
-    """The `processes list` rows that are the submitted resource project's own
-    deployment: the exact project Name (casefold) first, and only when none
-    matches, a substring of Name or ProcessKey. Shared by both addressing
-    forms' live resolvers, so v2's `name` is held to the same process v1's
-    `releaseKey` must point at -- never the BPMN orchestrator deployed beside
-    it, or any other process in the folder."""
+def processes_for_project(
+    rows: list[Any], project_name_hint: str, process_type: Optional[str] = None
+) -> list[Any]:
+    """The `processes list --all-fields` rows that are the submitted resource
+    project's own deployment. With `process_type` (the RESOURCES row's), only
+    rows of that `ProcessType` are considered at all; then the exact project
+    Name (casefold) wins, and only when none matches, a substring of Name or
+    ProcessKey. Shared by both addressing forms' live resolvers, so v2's
+    `name` is held to the same process v1's `releaseKey` must point at --
+    never the BPMN orchestrator deployed beside it (a different type, so not
+    even the substring fallback can reach it), or any other process."""
 
+    if process_type is not None:
+        wanted = process_type.casefold()
+        rows = [
+            row for row in rows
+            if str(get_ci(row, "ProcessType", "") or "").casefold() == wanted
+        ]
     needle = project_name_hint.casefold()
 
     def name_of(row: Any) -> str:
@@ -624,7 +648,9 @@ def processes_for_project(rows: list[Any], project_name_hint: str) -> list[Any]:
     ]
 
 
-def live_release_key_resolver(folder_path: str, project_name_hint: str) -> composition.ReleaseKeyResolver:
+def live_release_key_resolver(
+    folder_path: str, project_name_hint: str, process_type: Optional[str] = None
+) -> composition.ReleaseKeyResolver:
     """Never abstains on a live-tenant hiccup (raises CompositionError
     instead), and never silently skips the comparison merely because more
     than one process matches. Matches on the exact project name first
@@ -654,14 +680,16 @@ def live_release_key_resolver(folder_path: str, project_name_hint: str) -> compo
         rows = data if isinstance(data, list) else []
         return {
             key
-            for row in processes_for_project(rows, project_name_hint)
+            for row in processes_for_project(rows, project_name_hint, process_type)
             if isinstance((key := get_ci(row, "Key")), str)
         }
 
     return resolve
 
 
-def live_process_names_resolver(folder_path: str, project_name_hint: str) -> composition.ProcessNameResolver:
+def live_process_names_resolver(
+    folder_path: str, project_name_hint: str, process_type: Optional[str] = None
+) -> composition.ProcessNameResolver:
     """The Name of the resource project's own deployment(s) in the seeded
     folder (processes_for_project), for the v2 form's `name`. Fails CLOSED
     like the other live resolvers: a failed `processes list` raises, and a
@@ -686,7 +714,7 @@ def live_process_names_resolver(folder_path: str, project_name_hint: str) -> com
         rows = data if isinstance(data, list) else []
         return {
             name
-            for row in processes_for_project(rows, project_name_hint)
+            for row in processes_for_project(rows, project_name_hint, process_type)
             if isinstance((name := get_ci(row, "Name")), str)
         }
 
@@ -707,11 +735,15 @@ def main() -> None:
     problems: list[str] = collect_shape_problems(
         root,
         resolve_release_key_for_row=lambda row, project: live_release_key_resolver(
-            folder_path, project.name if project is not None else row["kind"]
+            folder_path,
+            project.name if project is not None else row["kind"],
+            row.get("process_type"),
         ),
         resolve_folder_key=live_folder_key_resolver(folder_path),
         resolve_process_names_for_row=lambda row, project: live_process_names_resolver(
-            folder_path, project.name if project is not None else row["kind"]
+            folder_path,
+            project.name if project is not None else row["kind"],
+            row.get("process_type"),
         ),
         resolve_folder_path=lambda: folder_path,
     )

@@ -60,6 +60,11 @@ RESOURCES: list[dict[str, Any]] = [
         "project_file": "project.uiproj",
         "wrapper": "Orchestrator.ExecuteApiWorkflowAsync",
         "output": "message",
+        # `ProcessType` of the resource's deployment in `uip or processes list
+        # --all-fields`. The live resolvers keep only rows of this type before
+        # matching the project name, so the BPMN orchestrator deployed beside
+        # the API workflow (`ProcessOrchestration`) can never stand in for it.
+        "process_type": "Api",
         # The runtime contract depends on the node's `uipath:type version`,
         # so the required context fields are keyed by it. Both forms were
         # verified end-to-end with `uip maestro bpmn debug` against a deployed
@@ -86,8 +91,19 @@ RESOURCES: list[dict[str, Any]] = [
                 "folderKey": {"mode": "literal_guid"},
             },
             "v2": {
-                "name": {"mode": "process_name"},
-                "folderPath": {"mode": "folder_path"},
+                # Either a literal, or =bindings.<id> to a binding of this
+                # resource/propertyAttribute (the solution's process binding
+                # for the field), whose default is the value.
+                "name": {
+                    "mode": "process_name",
+                    "binding_resource": "process",
+                    "binding_attr": "name",
+                },
+                "folderPath": {
+                    "mode": "folder_path",
+                    "binding_resource": "process",
+                    "binding_attr": "folderPath",
+                },
             },
         },
         # The broken registry template's misnamed field -- its presence

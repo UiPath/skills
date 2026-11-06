@@ -299,19 +299,25 @@ GOLD_KEY_BINDING = (
 # folder after the solution deploys: the API workflow AND the BPMN
 # orchestrator beside it.
 FOLDER_ROWS = [
-    {"Key": RELEASE_KEY_GOOD, "Name": PROCESS_NAME_GOOD, "ProcessKey": "GreetingPipelineabc123.api.GreetingApi"},
+    {"Key": RELEASE_KEY_GOOD, "Name": PROCESS_NAME_GOOD, "ProcessType": "Api",
+     "ProcessKey": "GreetingPipelineabc123.api.GreetingApi"},
     {"Key": "33333333-3333-4333-8333-333333333333", "Name": "GreetingProcess",
+     "ProcessType": "ProcessOrchestration",
      "ProcessKey": "GreetingPipelineabc123.Agentic.GreetingProcess"},
 ]
 
 
-def names_from_rows(rows):
+def names_from_rows(rows, hint=None):
     """A resolve_process_names_for_row that runs the live resolver's own
-    project matching over canned `processes list` rows."""
+    project matching over canned `processes list` rows. `hint` overrides the
+    discovered project directory name."""
 
     def for_row(row, project_dir):
-        hint = project_dir.name if project_dir is not None else row["kind"]
-        return lambda: {r["Name"] for r in check_shape.processes_for_project(rows, hint)}
+        name = hint or (project_dir.name if project_dir is not None else row["kind"])
+        return lambda: {
+            r["Name"]
+            for r in check_shape.processes_for_project(rows, name, row.get("process_type"))
+        }
 
     return for_row
 
@@ -378,7 +384,7 @@ class AddressingFormTests(unittest.TestCase):
         # some other process that is.
         rows = [
             {"Key": "44444444-4444-4444-8444-444444444444", "Name": "OtherApi",
-             "ProcessKey": "Elsewhere.api.OtherApi"},
+             "ProcessType": "Api", "ProcessKey": "Elsewhere.api.OtherApi"},
             FOLDER_ROWS[1],
         ]
         context = node_context("v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "OtherApi"))
@@ -388,16 +394,77 @@ class AddressingFormTests(unittest.TestCase):
         )
 
     def test_processes_for_project_prefers_exact_then_substring(self):
-        rows = FOLDER_ROWS + [{"Key": "k", "Name": "GreetingApiV2", "ProcessKey": "x.api.GreetingApiV2"}]
+        rows = FOLDER_ROWS + [
+            {"Key": "k", "Name": "GreetingApiV2", "ProcessType": "Api", "ProcessKey": "x.api.GreetingApiV2"}
+        ]
         self.assertEqual(
-            [r["Name"] for r in check_shape.processes_for_project(rows, "greetingapi")],
+            [r["Name"] for r in check_shape.processes_for_project(rows, "greetingapi", "Api")],
             [PROCESS_NAME_GOOD],
         )
         self.assertEqual(
-            [r["Name"] for r in check_shape.processes_for_project(FOLDER_ROWS[1:], "Greeting")],
-            ["GreetingProcess"],
+            [r["Name"] for r in check_shape.processes_for_project(rows, "Greeting", "Api")],
+            [PROCESS_NAME_GOOD, "GreetingApiV2"],
         )
-        self.assertEqual(check_shape.processes_for_project(FOLDER_ROWS[1:], "GreetingApi"), [])
+        self.assertEqual(check_shape.processes_for_project(FOLDER_ROWS[1:], "GreetingApi", "Api"), [])
+
+    def test_processes_for_project_never_reaches_another_process_type(self):
+        # Without the type filter the substring fallback would match the
+        # orchestrator for a project directory named `Greeting`.
+        self.assertEqual(
+            [r["Name"] for r in check_shape.processes_for_project(FOLDER_ROWS, "Greeting")],
+            [PROCESS_NAME_GOOD, "GreetingProcess"],
+        )
+        self.assertEqual(
+            [r["Name"] for r in check_shape.processes_for_project(FOLDER_ROWS, "Greeting", "Api")],
+            [PROCESS_NAME_GOOD],
+        )
+
+    def test_v2_naming_the_orchestrator_via_substring_fallback_is_rejected(self):
+        # Project directory `Greeting`: no exact Name match, so the substring
+        # fallback runs -- over Api-type rows only.
+        context = node_context("v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "GreetingProcess"))
+        self.assert_rejected(
+            self.problems_for(
+                context, resolve_process_names_for_row=names_from_rows(FOLDER_ROWS, hint="Greeting")
+            ),
+            "does not name the resource project's deployed process",
+        )
+
+    def test_v2_name_through_a_non_process_binding_is_rejected(self):
+        context = node_context(
+            "v2", ("folderPath", FOLDER_PATH_GOOD), ("name", "=bindings.Binding_Queue")
+        )
+        binding = (
+            '<uipath:binding id="Binding_Queue" name="GreetingApi" type="string" '
+            f'default="{PROCESS_NAME_GOOD}" resource="queue" propertyAttribute="name" />'
+        )
+        self.assert_rejected(
+            self.problems_for(context, extra_bindings=binding),
+            "binding Binding_Queue for name must be resource='process'",
+        )
+
+    def test_v2_folder_path_through_a_process_name_binding_is_rejected(self):
+        context = node_context(
+            "v2", ("folderPath", "=bindings.Binding_Folder"), ("name", PROCESS_NAME_GOOD)
+        )
+        binding = (
+            '<uipath:binding id="Binding_Folder" name="GreetingApi" type="string" '
+            f'default="{FOLDER_PATH_GOOD}" resource="process" propertyAttribute="name" />'
+        )
+        self.assert_rejected(
+            self.problems_for(context, extra_bindings=binding),
+            "propertyAttribute='folderPath'",
+        )
+
+    def test_v2_folder_path_through_a_folder_path_binding_is_accepted(self):
+        context = node_context(
+            "v2", ("folderPath", "=bindings.Binding_Folder"), ("name", PROCESS_NAME_GOOD)
+        )
+        binding = (
+            '<uipath:binding id="Binding_Folder" name="GreetingApi" type="string" '
+            f'default="{FOLDER_PATH_GOOD}" resource="process" propertyAttribute="folderPath" />'
+        )
+        self.assertEqual(self.problems_for(context, extra_bindings=binding), [])
 
     def test_v2_structural_only_abstains(self):
         problems = self.problems_for(
