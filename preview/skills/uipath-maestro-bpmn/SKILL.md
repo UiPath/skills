@@ -41,8 +41,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    read without `vars.` (`EXPR_BARE_VAR_REF`). For two of these, a read in an
    `errorMapping` condition and a bare `=amount`, `check` is the only offline gate:
    `bpmn validate` accepts both.
-   Needs `@uipath/maestro-builder-sdk` with UiPath/builder-sdk#1712 (the first release
-   after 6.85.2) or later; an older `compile` refuses the read itself.
+   Needs `@uipath/maestro-builder-sdk` 6.86.0 or later; an older `compile` refuses the read itself.
 6. Compile **into the scaffolded project**, then `format` it, then `refresh` it, then
    run product validation — in that order, every time. `validate` refuses a file with
    no diagram (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none;
