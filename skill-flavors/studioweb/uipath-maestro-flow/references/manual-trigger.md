@@ -8,7 +8,7 @@ gave `.entryPoint` (the default root's trigger is `start` unless the flow sets
 <!--skill-flavor:manual-trigger-entry-point:end-->
 
 <!--skill-flavor:trigger-updates-sdk-version:start-->
-Needs `@uipath/maestro-builder-sdk` newer than 6.85.2. Check that `entryPoint(` in
+Needs `@uipath/maestro-builder-sdk` 6.85.7 or later. Check that `entryPoint(` in
 `dist/flow-sdk.d.ts` of the SDK that Studio Web ships takes `'version' | 'label' | 'updates'`.
 If not, set the variable in the first step's `{ updates }` instead: an older SDK refuses
 `.trigger(spec, { updates })` (`UPDATES_NOT_SUPPORTED`) and compiles

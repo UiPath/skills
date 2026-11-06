@@ -124,7 +124,7 @@ own `{ updates }` (below).
 ### Other variable updates on a trigger
 
 <!--skill-flavor:trigger-updates-sdk-version:start-->
-Needs `@uipath/maestro-builder-sdk` newer than 6.85.2: check that
+Needs `@uipath/maestro-builder-sdk` 6.85.7 or later: check that
 `entryPoint(` in `dist/flow-sdk.d.ts` of the SDK copy in use takes
 `'version' | 'label' | 'updates'`. An older SDK refuses `.trigger(spec, { updates })`
 (`UPDATES_NOT_SUPPORTED`) and, worse, compiles `.entryPoint(id, spec, { updates })`
