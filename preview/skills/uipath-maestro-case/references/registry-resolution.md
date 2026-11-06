@@ -12,6 +12,36 @@ entry shape by hand from the pulled index files: `stage`, `task`, `taskType`,
 `cacheFile`, `searchQuery`, `matches` (every exact-name entry), `selected`,
 `rationale`. Steps 4 to 6 apply unchanged.
 
+### Index files by task type
+
+| Task type | Index file | Identity field | Creatable |
+|---|---|---|---|
+| `agent` | `agent-index.json` | `entityKey` | yes |
+| `api-workflow` | `api-index.json` | `entityKey` | yes |
+| `business-rule` | `businessRule-index.json` ¹ | `entityKey` | yes |
+| `process` | `processOrchestration-index.json` | `entityKey` | no |
+| `rpa` | `process-index.json` | `entityKey` | no |
+| `action` | `action-apps-index.json` | `id` | no |
+| `case-management` | `caseManagement-index.json` | `entityKey` | no |
+| `function` | `function-index.json` ¹ | `entityKey` | no |
+| `flow-process` | `flow-index.json` | `entityKey` | no |
+| `wait-for-connector` | `typecache-triggers-index.json` | `uiPathActivityTypeId` | no |
+| `execute-connector-activity` | `typecache-activities-index.json` | `uiPathActivityTypeId` | no |
+| `external-agent` | `typecache-external-agent-activities-index.json` | `uiPathActivityTypeId` | no |
+| `external-workflow` | `typecache-external-automation-activities-index.json` | `uiPathActivityTypeId` | no |
+| `wait-for-timer` | *(no index — built-in)* | — | — |
+
+All indexes live under `~/.uip/case-resources/`. Read with the Read tool,
+never `node -e ... fs.*`.
+
+¹ CLIs without `sdd resolve` never pull these indexes, so a task of
+either type stays unresolved as a placeholder — never record it as
+`absent` and never offer to create it.
+
+Non-creatable types never get `Create missing resources inline` in the
+empty-lookup gate. Only `agent`, `api-workflow`, and `business-rule` may
+offer that option.
+
 ## Steps
 
 1. `uip login status --output json`, then `uip maestro case registry pull --output json`.
