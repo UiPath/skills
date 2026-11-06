@@ -25,10 +25,17 @@ Not covered, because Test Manager never emits the event: TestCaseLog Created, De
 | File | Role |
 |---|---|
 | `_setup/seed.py` | `pre_run`. Writes `seed.json`: unique `marker`, `project_key`, trigger under test, unique `deployment_name` / `process_name`, `started_at`; `updated_description` for Updated tasks; `execution_test_set` for TestExecution / TestCaseLog tasks. |
-| `_setup/cleanup.py` | `post_run`, pass or fail. Uninstalls `deployment_name`, deletes every record in `result.json` `created`, then sweeps TestSet / TestCase / Requirement still named with the marker. Always exits 0. |
-| `check_trigger_run.py` | Grader, reached via `$REFERENCE_DIR`. `--artifact <surface>` checks the trigger is the workflow entry point; `--validate <surface>` runs the offline validator; `--live` finds a Successful Orchestrator job of `process_name` started after `started_at` and asserts its output payload. |
+| `_setup/cleanup.py` | `post_run`, pass or fail, within the 300 s hook cap. Uninstalls `deployment_name`, deletes every record in `result.json` `created`, then sweeps TestSet / TestCase / Requirement still named with the marker. Always exits 0. The marker sweep reads only the first page of each list, and TestExecutions are not swept by marker, so a run that crashed before writing `result.json` can leave executions behind. |
+| `check_trigger_run.py` | Grader, reached via `$REFERENCE_DIR`. `--artifact <surface>` checks the trigger is the workflow entry point; `--validate <surface>` runs the offline validator; `--live` polls up to 120 s for a Successful Orchestrator job of `process_name` started after `started_at` that the trigger started, and asserts its output payload. |
 
-`--live` does not trust the agent's report of the run. It confirms through the connector that `record_id` is this run's record, then locates the job itself and checks the payload's `objectType`, `id` (or `testExecutionId` for TestCaseLog), `projectId`, and key fields: `name` / `description` for named records, `testSetId` / terminal `status` / `executionFinished` for TestExecution, `result` for a finished TestCaseLog.
+`--live` does not trust the agent's report of the run:
+
+1. It confirms through the connector that the record is this run's: named records carry the seeded marker; a TestExecution (or a TestCaseLog's execution) ran `execution_test_set` and started after `started_at`. Deployed workflows see every execution in the project, so this stops a concurrent run's execution from counting.
+2. It locates the jobs itself and tries each one whose payload is about the record: `id` (plus `testExecutionId` for TestCaseLog). It passes on the first that holds, because Updated events fire several jobs per record.
+3. That job must be Successful and must not have a manual `Source` / `SourceType`. Each task also fails the agent for running `uip or jobs start|restart`.
+4. The payload must match `objectType`, `projectId` and the key fields: `name` / `description` for named records; `testSetId` for TestExecution, with `status` past its initial value for Updated and terminal `status` / `executionFinished` for Finished; `testCaseId` for TestCaseLog, with `result` for Finished.
+
+Object types and operations match as whole tokens, case-insensitively: `TestCase` does not match `TestCaseLog`, and `Updated` does not match `updatedAt`. The RPA check reads only the trigger activity's own attributes, not the output schema in its child elements.
 
 ## Tenant prerequisites
 
@@ -49,7 +56,7 @@ Until one of these lands, expect every task here to fail at trigger discovery:
 1. Connector: rename the `TestManagerEvents` operations to uppercase (e.g. `RECORD_CREATED`, `RECORD_UPDATED`, `RECORD_FINISHED`) in `TestManagerEvents.json` and the `webhook.json` adapter's `event.eventType` rewrite.
 2. CLI: stop uppercasing the operation in `is triggers` / `registry get`.
 
-The graders match the operation case-insensitively by containment (`Created` matches `RECORD_CREATED`), so the tasks need no edit after either fix.
+The graders match the operation as a whole token, case-insensitively (`Created` matches `RECORD_CREATED`), so the tasks need no edit after either fix.
 
 ## Enabling a task
 

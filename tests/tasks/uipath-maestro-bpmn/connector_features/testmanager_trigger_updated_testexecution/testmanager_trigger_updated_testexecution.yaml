@@ -129,3 +129,10 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did not start the workflow by hand; only the event trigger may start it"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+or\s+jobs\s+(start|restart)'
+    weight: 2.0
+    pass_threshold: 1.0
