@@ -8,7 +8,7 @@ None of it is yours to spell.
 
 | Command | What it answers |
 | --- | --- |
-| `uip maestro registry search` / `pull` / `prepare` | the **connector library** — Integration Service operations. Shared by flow, case and bpmn; there is no family word in the verb. |
+| `uip maestro registry search` / `describe` / `pull` / `prepare` | the **connector library** — Integration Service operations. Shared by flow, case and bpmn; there is no family word in the verb. |
 | `uip maestro bpmn registry search` / `get` / `list` | the **Maestro extension-type catalog** — the `uipath:*` node types (`Intsvc.ActivityExecution`, `Orchestrator.StartJob`, `Maestro.ReceiveMessageEvent`, …). |
 
 A connector key is not an extension type.
@@ -25,7 +25,7 @@ The two caches are separate and refreshing one does nothing to the other.
 ## 1. Find the operation
 
 ```bash
-uip maestro registry search 'jira create issue' --limit 5
+uip maestro registry search 'jira create issue' --limit 5 --output json
 ```
 
 Each hit carries what the call needs:
@@ -34,13 +34,18 @@ Each hit carries what the call needs:
 {
   "nodeType": "uipath.connector.uipath-atlassian-jira.create-issue",
   "connectorKey": "uipath-atlassian-jira",   // → key
-  "label": "Create Issue",
-  "markdownPath": "…/library-md/uipath-atlassian-jira/create-issue@1.0.0.md"
+  "label": "Create Issue"
 }
 ```
 
 The **action** is `nodeType`'s last segment — `create-issue` — not the label and not the REST path.
-`markdownPath` is that operation's field reference: read it rather than guessing input names.
+Read the operation's fields with `describe` rather than guessing input names; never open library files (a hit's `markdownPath`, `registry path`):
+
+```bash
+uip maestro registry describe uipath.connector.uipath-atlassian-jira.create-issue --output plain   # inputs, outputs, lookups, code
+```
+
+A generic operation takes `--object <name>`, as `search` names it.
 
 `"total": 0` is a real miss, and means either `http()` or a connector the library does not carry (see §4).
 A usage error saying no library is cached means `uip maestro registry pull` first.
