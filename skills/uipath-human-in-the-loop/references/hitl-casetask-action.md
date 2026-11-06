@@ -236,7 +236,9 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 
 ### Step 4 — Discover Upstream Variables
 
-Read available case variables from the top-level `variables` field in `caseplan.case` (current schema is flat — no `root` wrapper; see [case-schema.md](../../uipath-maestro-case/references/case-schema.md#top-level-shape) in the case skill):
+<!--skill-flavor:case-variables-pointer:start-->
+Read available case variables from the top-level `variables` field in `caseplan.case` (current schema is flat — no `root` wrapper). A builder-SDK Case declares them with `var` and `input` in `<Name>.case.ts`; see the [Case skill's capability router](../../uipath-maestro-case/SKILL.md#capability-router):
+<!--skill-flavor:case-variables-pointer:end-->
 
 ```json
 {
@@ -246,7 +248,9 @@ Read available case variables from the top-level `variables` field in `caseplan.
 }
 ```
 
-For cross-task references, source values come from upstream task `outputs[].var` — see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md) in the case skill for the full discovery procedure.
+<!--skill-flavor:case-xref-pointer:start-->
+For cross-task references, source values come from upstream task `outputs[].var`. A builder-SDK Case reads them with `taskOutput('<stage>', '<task>', '<output>')`; see the [Case skill's capability router](../../uipath-maestro-case/SKILL.md#capability-router).
+<!--skill-flavor:case-xref-pointer:end-->
 
 > **No root-level bindings needed for QuickForm.** Unlike App-based (Path 2), QuickForm does **not** add entries to the top-level `bindings[]` array.
 
@@ -272,7 +276,9 @@ Each field in `outputs[]` and `inOuts[]` exposes its value downstream via the fi
 
 Downstream task input value: `"=vars.decision"`. The selected outcome is available via the task's `Action` output (see Step 3).
 
-For the full cross-task wiring procedure, see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md).
+<!--skill-flavor:case-quickform-wiring-pointer:start-->
+A builder-SDK Case wires a task's outputs into later tasks with `taskOutput(...)`; see the [Case skill's capability router](../../uipath-maestro-case/SKILL.md#capability-router).
+<!--skill-flavor:case-quickform-wiring-pointer:end-->
 
 ---
 
@@ -330,7 +336,9 @@ Add 2 entries to the top-level `bindings[]` array — one for `name` and one for
 
 `resourceKey` = `<folderPath>.<deploymentTitle>`. Binding IDs: `b` + 8 chars.
 
-For the full binding procedure, see [bindings/impl-json.md](../../uipath-maestro-case/references/plugins/variables/bindings/impl-json.md) in the case skill.
+<!--skill-flavor:case-binding-pointer:start-->
+A builder-SDK Case names the app with `action({ app: { name, folder } })` in `<Name>.case.ts` and writes no root bindings by hand; see the [Case skill's capability router](../../uipath-maestro-case/SKILL.md#capability-router).
+<!--skill-flavor:case-binding-pointer:end-->
 
 ### Step 4 — Write the Task
 
@@ -369,7 +377,9 @@ For the full binding procedure, see [bindings/impl-json.md](../../uipath-maestro
 
 > **`hitlType` is `"custom"` for app-based tasks.** App-based tasks have no schema file at all — the form is defined by the deployed app itself, not by a schema document. **Never write `_schemaFileId` or `hitlSchemaId` for an app-based task** — those two context entries exist only on the QuickForm path (Path 1), where they identify the `.hitl.json` schema file. An app-based task is fully described by `data.name`/`data.folderPath` (the bindings to the deployed app) plus `data.inputs[]`/`data.outputs[]` (from `tasks describe`) — nothing else identifies its "schema."
 
-For the full `inputs[]`/`outputs[]` variable shapes, see [action/impl-json.md](../../uipath-maestro-case/references/plugins/tasks/action/impl-json.md).
+<!--skill-flavor:case-action-shape-pointer:start-->
+A builder-SDK Case authors this task with `action(...)` in `<Name>.case.ts`; see the [Case skill's capability router](../../uipath-maestro-case/SKILL.md#capability-router).
+<!--skill-flavor:case-action-shape-pointer:end-->
 
 ---
 
@@ -412,4 +422,6 @@ Downstream task input: `"value": "=vars.decision"`.
 
 Downstream task input: `"value": "=vars.decisionVar"`.
 
-For the full cross-task wiring procedure, see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md).
+<!--skill-flavor:case-downstream-wiring-pointer:start-->
+A builder-SDK Case wires a task's outputs into later tasks with `taskOutput(...)`; see the [Case skill's capability router](../../uipath-maestro-case/SKILL.md#capability-router).
+<!--skill-flavor:case-downstream-wiring-pointer:end-->
