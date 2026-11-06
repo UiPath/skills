@@ -34,8 +34,7 @@ entry shape by hand from the pulled index files: `stage`, `task`, `taskType`,
 All indexes live under `~/.uip/case-resources/`. Read with the Read tool,
 never `node -e ... fs.*`.
 
-¹ Not pulled before CLI 1.204.0. On the hand-written path (CLIs without
-`sdd resolve`), these indexes never exist after a pull, so a task of
+¹ CLIs without `sdd resolve` never pull these indexes, so a task of
 either type stays unresolved as a placeholder — never record it as
 `absent` and never offer to create it.
 
