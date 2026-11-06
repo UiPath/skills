@@ -49,7 +49,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "BPMN source file was created"
-    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('CustomerEscalation.bpmn')) else 'CustomerEscalation.bpmn missing')\""
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py CustomerEscalation"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -57,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "Project metadata file was created"
-    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('CustomerEscalation.bpmn'), None); sys.exit(0 if b and (b.parent / 'project.uiproj').is_file() else 'project.uiproj missing beside CustomerEscalation.bpmn')\""
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py CustomerEscalation --beside project.uiproj"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -65,7 +65,7 @@ success_criteria:
 
   - type: run_command
     description: "Package operate metadata was created"
-    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('CustomerEscalation.bpmn'), None); sys.exit(0 if b and (b.parent / 'operate.json').is_file() else 'operate.json missing beside CustomerEscalation.bpmn')\""
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py CustomerEscalation --beside operate.json"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
