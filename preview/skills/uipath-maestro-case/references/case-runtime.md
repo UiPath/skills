@@ -37,6 +37,24 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Connections and external work
 
+<!-- RULE:case.connector.discovery -->
+- Find a connector operation and its fields through the CLI, never by reading
+  library files (`$FLOW_SDK_LIBRARY_MD`, a hit's `markdownPath`, `registry path`):
+
+  ```bash
+  uip maestro registry search '<words>' --output json        # the operation and its node type
+  uip maestro registry describe <node-type> --output plain   # its inputs, outputs, lookups, code
+  ```
+
+  The `connector(key, action, …)` action is the node type's last segment, not the
+  label. Pass `--object <name>` to `describe` for a generic operation, as `search`
+  names it. Run `describe` from the project folder: it reads the `registry
+  prepare` overlay (`.flow-sdk/connectors-local`) first, so after a `prepare` it
+  shows the live schema; run elsewhere, it falls back to the static library
+  without saying so. A no-library error means `uip maestro
+  registry pull` first; `"total": 0` after a pull is a real miss: use
+  `.unresolved('connector')`.
+
 <!-- RULE:case.connector.bindings -->
 - Source connection and folder ids from `bindings.json`; TypeScript uses symbolic
   names. Compiling into a scaffolded project regenerates its existing
