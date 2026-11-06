@@ -24,29 +24,24 @@ LINEAR_FIXTURE = (
     CASE_ROOT / "edit" / "templates" / "LinearThreeStages" / "LinearThreeStages" / "caseplan.json"
 )
 
-def load_expressions(task_yaml: Path, *, advisory: bool = False) -> list[tuple[str, object]]:
-    """Assertions from the task's json_check criteria.
-
-    Gating criteria (pass_threshold > 0) and advisory ones (pass_threshold == 0) are
-    loaded separately — mixing them would let an advisory miss read as a gate failure.
-    """
+def json_checks(task_yaml: Path) -> list[dict]:
     import yaml  # noqa: PLC0415 — optional dependency, guarded by skipUnless
 
     spec = yaml.safe_load(task_yaml.read_text(encoding="utf-8"))
+    return [c for c in spec["success_criteria"] if c.get("type") == "json_check"]
+
+
+def load_expressions(task_yaml: Path) -> list[tuple[str, object]]:
+    """Assertions from the task's json_check criteria."""
     out: list[tuple[str, object]] = []
-    for criterion in spec["success_criteria"]:
-        if criterion.get("type") != "json_check":
-            continue
-        is_advisory = float(criterion.get("pass_threshold", 1.0)) == 0
-        if is_advisory != advisory:
-            continue
+    for criterion in json_checks(task_yaml):
         for assertion in criterion["assertions"]:
             out.append((assertion["expression"], assertion["expected"]))
     return out
 
 
 # `None` means the key is omitted entirely — what a run actually produced for the
-# unspecified SDD row, and the reason the gate gred on behavior rather than serialization.
+# unspecified SDD row, and the reason the gate grades on behavior rather than serialization.
 def timer_task(name: str, run_once: bool | None) -> dict:
     # Deterministic id — hash() is salted per process, so ids would differ every run.
     task = {
@@ -74,12 +69,12 @@ def _dependencies_present() -> bool:
 class TaskYamlAssertionTest(unittest.TestCase):
     """The two emit tasks grade with JMESPath only — a typo there grades nothing."""
 
-    def evaluate(self, task_yaml: Path, plan: dict, *, advisory: bool = False) -> list[bool]:
+    def evaluate(self, task_yaml: Path, plan: dict) -> list[bool]:
         import jmespath  # noqa: PLC0415
 
         return [
             jmespath.search(expression, plan) == expected
-            for expression, expected in load_expressions(task_yaml, advisory=advisory)
+            for expression, expected in load_expressions(task_yaml)
         ]
 
     # -- add_task_run_once_default -----------------------------------------
@@ -149,21 +144,19 @@ class TaskYamlAssertionTest(unittest.TestCase):
         plan = self.envelope_plan(freeze=True, reminder=True, escalation=True)
         self.assertFalse(all(self.evaluate(ENVELOPE_YAML, plan)))
 
-    # -- omitted key: behaviorally correct, serialization differs ---------------------------
-    # A real codex run emitted no `shouldRunOnlyOnce` for the unspecified SDD row. The task must
-    # pass (it is not run-once) while the advisory records the omission.
+    # -- omitted key: same task as an explicit false --------------------------------------
+    # A real codex run emitted no `shouldRunOnlyOnce` for the unspecified SDD row, and the
+    # builder SDK omits the key unless `.runOnce()` / `.runOnReEntry()` is called. The case
+    # converter maps an omitted key to `runOnlyOnce: false`, the same rules as an explicit
+    # `false`, so both shapes must score the same — no criterion may tell them apart.
 
     def test_envelope_gate_passes_when_the_falsy_key_is_omitted(self) -> None:
         plan = self.envelope_plan(freeze=True, reminder=False, escalation=None)
         self.assertTrue(all(self.evaluate(ENVELOPE_YAML, plan)))
 
-    def test_envelope_advisory_records_the_omitted_key(self) -> None:
-        plan = self.envelope_plan(freeze=True, reminder=False, escalation=None)
-        self.assertFalse(all(self.evaluate(ENVELOPE_YAML, plan, advisory=True)))
-
-    def test_envelope_advisory_passes_when_the_key_is_written(self) -> None:
-        plan = self.envelope_plan(freeze=True, reminder=False, escalation=False)
-        self.assertTrue(all(self.evaluate(ENVELOPE_YAML, plan, advisory=True)))
+    def test_envelope_gate_passes_when_every_falsy_key_is_omitted(self) -> None:
+        plan = self.envelope_plan(freeze=True, reminder=None, escalation=None)
+        self.assertTrue(all(self.evaluate(ENVELOPE_YAML, plan)))
 
     def test_envelope_gate_still_fails_when_the_stated_yes_row_is_omitted(self) -> None:
         # `Run Only Once: Yes` was explicit in the SDD — omitting it there is a behavior change.
@@ -173,10 +166,28 @@ class TaskYamlAssertionTest(unittest.TestCase):
     def test_add_task_gate_passes_when_the_falsy_key_is_omitted(self) -> None:
         self.assertTrue(all(self.evaluate(ADD_TASK_YAML, self.linear_plan(None, added=True))))
 
-    def test_add_task_advisory_records_the_omitted_key(self) -> None:
-        self.assertFalse(
-            all(self.evaluate(ADD_TASK_YAML, self.linear_plan(None, added=True), advisory=True))
-        )
+    def test_no_criterion_tells_an_omitted_key_from_an_explicit_false(self) -> None:
+        # Every json_check, gating or advisory, carries score weight, so it must give the same
+        # verdict on the two shapes.
+        import jmespath  # noqa: PLC0415
+
+        cases = [
+            (ADD_TASK_YAML, self.linear_plan(None), self.linear_plan(False)),
+            (
+                ENVELOPE_YAML,
+                self.envelope_plan(freeze=True, reminder=None, escalation=None),
+                self.envelope_plan(freeze=True, reminder=False, escalation=False),
+            ),
+        ]
+        for task_yaml, omitted, explicit in cases:
+            for criterion in json_checks(task_yaml):
+                for assertion in criterion["assertions"]:
+                    expression, expected = assertion["expression"], assertion["expected"]
+                    with self.subTest(task=task_yaml.name, expression=expression):
+                        self.assertEqual(
+                            jmespath.search(expression, omitted) == expected,
+                            jmespath.search(expression, explicit) == expected,
+                        )
 
 
 if __name__ == "__main__":

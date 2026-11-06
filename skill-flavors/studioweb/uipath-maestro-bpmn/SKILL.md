@@ -40,3 +40,86 @@
    as unverified. A business rule maps its whole result as one `output` from
    `=result`, never one output per decision or column.
 <!--skill-flavor:debug-node-output:end-->
+
+<!--skill-flavor:login-status-check:start-->
+- **1a Read the toolbox kinds.** The sandbox supplies login and denies
+  `uip login status`: never run it, and treat the session as logged in. 1a shares one Bash
+  call with 1b's scan, not a turn of its own.
+<!--skill-flavor:login-status-check:end-->
+
+<!--skill-flavor:wellformed-check:start-->
+   The sandbox has no `python3`, so `validate` is the parse check: an
+   `XML_NOT_WELL_FORMED` finding is a source defect to fix before anything
+   else. Run the CLI validator, which runs the full
+   PO.Frontend canvas rule set (structural rules plus variable, method-call,
+   input-type, and event-object checks) offline, plus deploy-readiness checks:
+
+   ```bash
+   ! grep -nE '</?bpmn:[A-Z]' <file.bpmn> &&
+     uip maestro bpmn validate <file.bpmn> --output json
+   ```
+<!--skill-flavor:wellformed-check:end-->
+
+<!--skill-flavor:final-path-line:start-->
+  The process is on the canvas
+<!--skill-flavor:final-path-line:end-->
+
+<!--skill-flavor:rule-10-upload:start-->
+   Inside Autopilot, never run `uip solution upload`. The open solution is
+   what the canvas renders, and it re-renders as you change its files, so
+   there is no upload to authorize and no upload question to ask.
+<!--skill-flavor:rule-10-upload:end-->
+
+<!--skill-flavor:adopt-solution-question:start-->
+  The open solution is the workspace root: use it without asking, and never
+  ask the user about uploading, replacing a cloud copy, or keeping a local
+  copy.
+<!--skill-flavor:adopt-solution-question:end-->
+
+<!--skill-flavor:draft-shape-display:start-->
+Draft mode shows the shape on the canvas: write the files in the open
+solution and never run `uip solution upload`.
+<!--skill-flavor:draft-shape-display:end-->
+
+<!--skill-flavor:final-upload:start-->
+  Never run `uip solution upload` or ask about one: the canvas already shows
+  the finished process from the open solution's files.
+<!--skill-flavor:final-upload:end-->
+
+<!--skill-flavor:final-first-line:start-->
+  <Name>: built, validated<, run> (<draft|auto> mode). <One sentence if you kept the user's online changes.>
+<!--skill-flavor:final-first-line:end-->
+
+<!--skill-flavor:cloud-copy-download:start-->
+- **1c Skip the cloud copy.** The open solution is already mounted as the
+  workspace root and is the only copy: never run `uip solution download` and
+  never ask the user which copy to keep.
+<!--skill-flavor:cloud-copy-download:end-->
+
+<!--skill-flavor:phase-table-preflight:start-->
+| **1 — Preflight** | 1a–1c | Read the toolbox kinds (login is supplied), scan the open solution and project. Changes nothing in the project, so it runs in every mode. | Below |
+<!--skill-flavor:phase-table-preflight:end-->
+
+<!--skill-flavor:diagram-snapshot:start-->
+1. Before the first write, copy the file to `/tmp`:
+   `cp "<FILE>" "/tmp/<FILE_NAME>.before.bpmn"`. Record that path as
+   `<SNAPSHOT_PATH>`.
+<!--skill-flavor:diagram-snapshot:end-->
+<!--skill-flavor:diagram-preserved-check:start-->
+7. After the last write, and before `validate`, compare `<SNAPSHOT_PATH>` with
+   the edited file. Studio Web has no Python, so check by hand that, apart
+   from the ids you deleted:
+   - the `BPMNPlane` still targets the same `bpmnElement`;
+   - every pool and lane still has its shape, and every lane keeps its
+     `bpmn:flowNodeRef`s;
+   - every annotation and group survives, with its shape;
+   - every surviving shape and edge keeps its color attributes;
+   - every surviving node shape keeps its size (only pools, lanes and
+     expanded subprocesses may grow);
+   - surviving node shapes either stay put or all move by one common offset;
+   - every surviving flow still has its `BPMNEdge`.
+
+   For each loss: if the user asked for that diagram change, keep it and name
+   it in the summary; otherwise restore the entry from the snapshot. Re-check
+   at most twice, then list any remaining losses in the summary.
+<!--skill-flavor:diagram-preserved-check:end-->

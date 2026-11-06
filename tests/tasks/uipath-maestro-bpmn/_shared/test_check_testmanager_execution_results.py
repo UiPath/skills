@@ -179,6 +179,7 @@ def test_http_not_through_test_manager_fails(tmp_path: Path, overrides: dict) ->
     result = _run(tmp_path, _http_nodes(**overrides))
     assert result.returncode != 0
     assert "no bpmn:sendTask calls the Test Manager connector" in result.stderr
+    assert "context connectorKey 'uipath-uipath-http'" in result.stderr
 
 
 @pytest.mark.parametrize("index", range(len(HTTP_OPERATIONS)))
@@ -259,3 +260,4 @@ def test_legacy_sdk_connector_http_fails(tmp_path: Path, args: tuple) -> None:
     result = _run(tmp_path, _http_nodes(LEGACY_SDK_HTTP_NODE), *args)
     assert result.returncode != 0
     assert "no bpmn:sendTask calls the Test Manager connector" in result.stderr
+    assert "objectName not 'http-request'" in result.stderr

@@ -166,9 +166,22 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | `uipath-human-in-the-loop` | HITL node authoring — approval gates, escalations, write-back validation inside **Flow** projects. Coded-agent HITL → `uipath-agents`; BPMN / Case / RPA own theirs inline (userTask / task type / Action Center) | No (authoring only) | **No** — ships inside the host project |
 | `uipath-platform` | Auth (`uip login`), Orchestrator (folders, processes, jobs, machines, users, roles), resources (assets, queues, storage buckets + bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), Data Fabric entities/records/files/choice-sets (`uip df`), traces, licensing | Yes (auth hub) | **Yes** — for non-solution single packages and Orchestrator-side post-deploy ops |
 | `uipath-ixp` | Document Understanding / IXP — extraction from semi-structured documents (invoices, forms): taxonomy, model, classify / extract / validate. Standalone project, or the extraction step a primary consumes | Yes (`uip login`) | **Partial** — model publish/tag via `uip ixp`; consumed by the host project |
-| `uipath-connector-builder` | Integration Service **custom connector** authoring (REST+JSON) on disk via `uip is connectors builder` — build a connector when the catalog has none for a required integration (needed by API Workflows / Maestro / Agents; RPA can call the API directly instead) | Yes (`uip login`) | **Yes** — import/publish is deployment (`uip is connectors`) |
+| `uipath-connector-builder` | Integration Service **custom connector** authoring (REST+JSON) on disk via `uip is connectors builder` — build a connector when the catalog has none for a required integration, for any project type, RPA included. See [Integration mechanism](#integration-mechanism--connection-before-raw-api-call) | Yes (`uip login`) | **Yes** — import/publish is deployment (`uip is connectors`) |
 | `uipath-mcp-servers` | UiPath AgentHub MCP server registration (6 types: `uipath`, `coded`, `command`, `remote`, `swagger`, `platform`) and resource-tool authoring on `uipath`-type servers (`automation`, `agent`, `agentic-process`, `api-workflow`). Wraps Orchestrator resources, external HTTP MCP endpoints, OpenAPI specs, published coded agents, local subprocess commands, or first-party UiPath services as MCP tools. NOT for FastMCP / Python `mcp` SDK work. | Yes (`uip login`) | **Yes** — registration is deployment (posts directly to AgentHub) |
 | `uipath-solution` | `uip solution` lifecycle (init, pack, publish, deploy, activate) for `.uipx` solutions. Runs as the final skill in PDD-driven flows (deploy of `.uipx` solutions). | Yes (`uip login`) | **Yes** — for multi-project Solution (`.uipx`) deploys |
+
+## Integration mechanism — connection before raw API call
+
+For each third-party system the design talks to, pick the highest tier that works and record it in the SDD:
+
+| Tier | Approach | Use when |
+|---|---|---|
+| 1 | IS **connector activity** | A catalog connector covers the operation |
+| 2 | HTTP request through that connector's **IS connection** | Connector exists, activity missing |
+| 3 | **Build a custom connector** (`uipath-connector-builder`) | No catalog connector; REST+JSON API |
+| 4 | Direct authenticated call, key in a `Credential` asset | Nothing above fits; justify it in the SDD |
+
+A `Credential` asset keeps the secret safe, not the integration managed: a tier-4 call is absent from `uip is connections list` and cannot be re-pointed per environment. A missing catalog connector argues for tier 3, not tier 4.
 
 ## Reference Navigation
 

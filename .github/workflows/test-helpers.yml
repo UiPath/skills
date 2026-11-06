@@ -86,8 +86,10 @@ jobs:
       - name: Install pytest
         run: pip install pytest pyyaml
 
+      # test_tenant_catalog.py fails when a case task gains a tenant dependency
+      # that no disposition rule in tests/scripts/tenant_catalog.py classifies.
       - name: Run pytest
-        run: pytest tests/tasks/uipath-maestro-case/ -v
+        run: pytest tests/tasks/uipath-maestro-case/ tests/scripts/test_tenant_catalog.py -v
 
   # Covers the Automation Hub publish graders and the `.uip-recorder` shim the
   # live tasks run behind, offline: a stub stands in for the real CLI, so these

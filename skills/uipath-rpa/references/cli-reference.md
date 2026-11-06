@@ -140,7 +140,7 @@ Rules: `count=42` sends string `"42"`; `count:=42` sends number `42`. `debug tes
 
 `uip rpa validate` returns diagnostics for a file or project and revalidates by default. `--skip-validation` reads possibly stale cached results; `--min-severity` filters. Confirm flags with `uip rpa validate --help`. `--file-path` accepts a project-relative or absolute path with forward, back, or mixed separators; prefer the shorter relative form.
 
-`Result: Success` and exit code 0 mean validate ran, with or without findings. The diagnostics are the text of `Data.message`: `No diagnostics found.`, or `Found N error(s)[, M warning(s)]:` followed by one `[error]` or `[warning]` line per finding (file, message, activity).
+`Result: Success` and exit code 0 mean validate found no errors; warnings may still be listed. At least one error gives `Result: Failure` and exit code 1 (`Code: ValidationErrorsFound`). In both cases the diagnostics are the text of `Data.message`: `No diagnostics found.`, or `Found N error(s)[, M warning(s)]:` followed by one `[error]` or `[warning]` line per finding (file, message, activity).
 
 An activity that can run without a target reports no unset target: Type Into and Keyboard Shortcuts act on the focused element by design, so validate's "Target or Input UI Element must be set" errors are not a count of a file's target slots.
 
@@ -315,7 +315,7 @@ Error-severity analyzer rules fail `analyze`, `build`, and `pack`; per-file `val
 
 ### Expected non-defect warnings
 
-`build` prints `[WARN]` lines for enabled analyzer rules. These are **not** build failures and do not gate delivery (§ Validation Iteration Loop, Rule 6). Recurring ones that are correct-by-design and must not be "fixed": `<activity> does not have the verification feature enabled` (no matching enabled rule; `VerifyOptions` is deliberately off by default; add only when requested, per the UIA package guide's § Execution Verification Policy); `Your organization requires your project to have an Automation Hub URL defined` (`ST-USG-034`, organization governance resolved by the project owner in Project Settings); `<name> display name is defined many times. Current allowed threshold is 1` (`ST-NMG-004`, cosmetic; fix while authoring, since repeated identical steps need distinct names — unless the names are dictated, the user's or a migrated source's kept by request, where it is expected); and `Potential infinite loop detected in Flowchart <name> starting with activity <node>` (`ST-REL-006`), which every Flowchart with a back link raises, a bounded retry included: check that each cycle has a counter or a state change that ends it, then leave it. For an unfamiliar warning rule ID, run `analyzer-rules list --scope <scope>` only when it blocks an acceptance criterion.
+`build` prints `[WARN]` lines for enabled analyzer rules. These are **not** build failures and do not gate delivery (§ Validation Iteration Loop, Rule 6). Recurring ones that are correct-by-design and must not be "fixed": `<activity> does not have the verification feature enabled` (no matching enabled rule; `VerifyOptions` is deliberately off by default; add only when requested, per the UIA package guide's § Execution Verification Policy); `Your organization requires your project to have an Automation Hub URL defined` (`ST-USG-034`, organization governance resolved by the project owner in Project Settings); display-name warnings (`ST-NMG-004`, `ST-MRD-002`) on names the user dictates ([xaml-basics-and-rules.md Rule 25a](xaml/xaml-basics-and-rules.md#critical-rules--xaml-rules-1621a-24-25-25a)); and `Potential infinite loop detected in Flowchart <name> starting with activity <node>` (`ST-REL-006`), which every Flowchart with a back link raises, a bounded retry included: check that each cycle has a counter or a state change that ends it, then leave it. For an unfamiliar warning rule ID, run `analyzer-rules list --scope <scope>` only when it blocks an acceptance criterion.
 
 ## Smoke Test
 
@@ -414,7 +414,7 @@ uip or folders list --output json
 uip or packages list --output json
 ```
 
-The folder `Key` is the UUID and `FullyQualifiedName` is the human path. Either is accepted by `--folder-path`/`--folder-key`; most other calls require the UUID. For Pack → Publish → Link → Execute to Test Manager, delegate to the `uipath-test` skill.
+The folder `Key` is the UUID and `Path` is the human path. Either is accepted by `--folder-path`/`--folder-key`; most other calls require the UUID. For Pack → Publish → Link → Execute to Test Manager, delegate to the `uipath-test` skill.
 
 ### Common pitfalls
 

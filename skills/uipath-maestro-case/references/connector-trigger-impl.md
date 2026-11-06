@@ -197,11 +197,11 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
 ### Caveats
 
 - **Not a case-start trigger.** A connector rule compiles to an in-flight wait (ReceiveTask / event subprocess), so it gets **no entry-points.json entry** and **no rule-specific registration key** — FE `PackagingUtil` trigger registration is gated on `Intsvc.EventTrigger` start events only, which a rule is not. If the `case spec` caseShape carries a `metadata.body.bindings[Property]` registration entry (event-parameter connectors), substitute it exactly as the task does (Step 3 / Step 4); there is nothing rule-specific.
-- **Full `validate` requires `rule.uipath` + `context`** — absent → `connector activity missing`. It does NOT check the `uipath` *internals* (a wrong `serviceType` passes), so a clean validate confirms the block is *present*, not that the connector *resolves* — confirm in Studio Web. `--skeleton-v2` checks rule presence when supported; the legacy Phase 2 fallback `--skeleton` skips condition rules.
+- **Full `validate` requires `rule.uipath` + `context`** — absent → `connector activity missing`. It reads only `connectorKey` and `operation` inside the block: either one empty or `"placeholder"` is also `connector activity missing`, which is how the stub below is reported ([§ What validate reports for a stub](#what-validate-reports-for-a-stub)). Nothing else inside is checked (a wrong `serviceType` passes), so a clean validate confirms the block is *present*, not that the connector *resolves* — confirm in Studio Web. `--skeleton-v2` checks rule presence when supported; the legacy Phase 2 fallback `--skeleton` skips condition rules.
 
 ### Placeholder fallback
 
-Phase 2 uses this exact shape for every connector-bound condition rule. Two paths make it permanent: **Scenario A** — connector not found in TypeCache ([planning § 1 No-match](connector-trigger-planning.md#1-find-the-trigger-in-typecache), after the Rule 18 gate); **Scenario B** — connector found but connection unresolved, only after the [planning § 2 create offer](connector-trigger-planning.md#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to a permanent placeholder.
+Phase 2 uses this exact shape for every connector-bound condition rule. Three paths make it permanent: **Scenario A** — connector not found in TypeCache ([planning § 1 No-match](connector-trigger-planning.md#1-find-the-trigger-in-typecache), after the Rule 18 gate); **Scenario B** — connector found but connection unresolved, only after the [planning § 2 create offer](connector-trigger-planning.md#2-resolve-the-connection) is **declined** or fails; **Scenario C** — `typecache-triggers` unavailable ([connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx)): no gate, reason `connector catalog unavailable (TypeCache <status>)`. When `Connections` is empty, offer to create one first — do not jump straight to a permanent placeholder.
 
 Emit a **stub `uipath`**, never a bare rule. The stub is the minimum shape accepted by validation: `serviceType` plus the two `context` entries named `connectorKey` and `operation`, each with literal value `"placeholder"`, and empty `inputs` / `outputs` / `bindings`. Do not pad it with resolved fields (`connection`, `objectName`, …); Phase 3 replaces the entire `uipath` block when resolution succeeds.
 
@@ -223,7 +223,27 @@ Emit a **stub `uipath`**, never a bare rule. The stub is the minimum shape accep
 }
 ```
 
-This stub is a **deliberate mock**. While temporary, it is simply Phase 2 build state. If it remains after Phase 3, Studio Web flags it and the rule **fails at debug/run**. A remaining stub has no real outputs, Connection/Folder bindings, IS-cache entry, or rule-specific `bindings_v2` resource. Stamp unresolved `registry-resolved.json` entries with Rule 9 markers, log them, and list them in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade later by re-running the [§ Procedure](#procedure-phase-3).
+This stub is a **deliberate mock**. While temporary, it is simply Phase 2 build state. If it remains after Phase 3, `validate` rejects it (next section), Studio Web flags it, and the rule **fails at debug/run**. A remaining stub has no real outputs, Connection/Folder bindings, IS-cache entry, or rule-specific `bindings_v2` resource. Stamp unresolved `registry-resolved.json` entries with Rule 9 markers, log them, and list them in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade later by re-running the [§ Procedure](#procedure-phase-3).
+
+#### What validate reports for a stub
+
+A stub never validates clean. Each stub rule earns exactly these errors, and no others:
+
+| Code | Profiles | Stub rules it covers | Where it points |
+|---|---|---|---|
+| `CONNECTOR_ACTIVITY_MISSING` | every profile except `--skeleton` | every stub, one error each (`--skeleton-v2` skips task entry conditions) | `nodes[<stageId>]` of the owning stage, or `nodes[root]` for a case exit rule in `metadata.caseExitRules`. The rule is named only by its condition's `displayName` in `Message`: `Case rule "<condition displayName>" connector activity missing` |
+| `STRICT_CONNECTOR_CONTEXT_INCOMPLETE` | `--strict`, `--sdd` | stage entry/exit and task entry stubs, one error each; case exit rules are not checked | the rule's own `...rules[<i>][<j>].uipath.context`, `Message` listing `connection, resourceKey, objectName, metadata` as missing |
+
+Under `--strict --sdd`, a stub on a stage or task condition therefore earns two errors and a stub on a case exit rule earns one. `CONNECTOR_ACTIVITY_MISSING` on a stub needs CLI 1.205.0 or later; older CLIs report only the strict code.
+
+These errors are the expected publish blocker for an unresolved connector, not build defects:
+
+1. Count them against the permanent stubs you logged. Every one must map to a stub, and every stub must have its pair.
+2. Do not Edit the stub to silence them. Padding the context with invented `connection` / `resourceKey` / `objectName` / `metadata` values, or replacing `"placeholder"`, turns a reported gap into a broken connector that validates.
+3. Report them once, as unresolved connectors, in the completion report entry above. Do not spend repair rounds on them.
+4. Any connector error that does not map to a logged stub is a real defect. Repair it normally.
+
+A stub still present on a connector that resolved in planning is not an expected error. Phase 3 Step 10.5 failed to upgrade it; re-run the [§ Procedure](#procedure-phase-3).
 
 ---
 

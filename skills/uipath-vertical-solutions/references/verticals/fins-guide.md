@@ -9,7 +9,7 @@ What a first deploy of a FINS package needs, the access a **user login** needs t
 | Lending QA/QC | `fins.qaqc-uipath` | PRE_VERIFY, SOLUTION, BUCKET_FILES, ASSETS, PROCESS_CONFIG, TRIGGERS |
 | Loan Setup | `fins.loan-setup` | PRE_VERIFY, SOLUTION, PROCESS_CONFIG, TRIGGERS |
 
-Package names are the ones the service lists for the `fins` vertical at the time of writing. The picker in `uip vss deploy` shows the current list.
+Package names are the ones the service listed for the `fins` vertical when this file was written. `uip vss deploy packages --vertical fins --no-interactive --output json` shows what the tenant offers now; that list wins over this table.
 
 Both packages install their Data Fabric entities inside the solution folder, so they are folder-level, not tenant-level.
 
@@ -63,8 +63,10 @@ Read first, then change. Show what is already there and what is missing, and ask
 **1. Find the deployment and its solution folder.**
 
 ```bash
-uip solution deploy list --output json --output-filter "[].{Name:Name,PackageName:PackageName,Version:PackageVersion,FolderPath:FolderPath,FolderKey:FolderKey,Operation:Operation,OperationStatus:OperationStatus}"
+uip solution deploy list --limit 100 --output json --output-filter "[].{Name:Name,PackageName:PackageName,Version:PackageVersion,FolderPath:FolderPath,FolderKey:FolderKey,Operation:Operation,OperationStatus:OperationStatus}"
 ```
+
+If `Pagination.HasMore` is true, continue with `--offset 100`, `--offset 200`, and so on to find all installed copies.
 
 Skip rows whose `Operation` is `Uninstall` or whose `OperationStatus` is `Failed`. `FolderKey` is the solution folder's key (`<SOLUTION_FOLDER_KEY>`). When several copies are installed, list them and ask which.
 

@@ -19,9 +19,9 @@ rejected, and the mocked harness answers them with an error too.
 > migrate and cursor movement are Operate actions ([operate.md](operate.md)) and
 > need the user's explicit decision after the root cause is known.
 >
-> **Folder context.** Every `uip maestro bpmn instance` subcommand and
-> `incident get` require `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`; without
-> it the command is rejected before it reaches the API.
+> **Folder context.** Every `uip maestro bpmn instance` subcommand,
+> and `incident get` require `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`. `processes incidents` takes
+> `--folder-key` only, with no `-f`. Without it the command is rejected before it reaches the API.
 >
 > **The CLI is the diagnostic interface.** Read with the `uip maestro bpmn` commands below, always with `--output json`.
 > In a test harness the `mocks/` and `fixtures/` directories are the CLI's backing
@@ -57,8 +57,10 @@ downstream cancellation noise.
 uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn incident summary --output json                      # across instances
-uip maestro bpmn processes incidents <PROCESS_KEY> --output json     # one process, all runs
+uip maestro bpmn processes incidents <PROCESS_DEFINITION_KEY> --folder-key <FOLDER_KEY> --output json  # one process, all runs
 ```
+
+`<PROCESS_DEFINITION_KEY>` is the bare process definition key, without the `:<processVersion>` suffix that `process run` takes.
 
 ## Step 3 — inspect runtime variables
 
@@ -156,10 +158,16 @@ Redact tenant, user, connection, folder, URL, payload and secret values.
 
 ## Failure modes that reach the runtime
 
-The builder removes a class of BPMN defects at compile time — unparsable XML, an
-element with no id, a flow to nowhere, a `vars.<id>` read of an undeclared
-variable, a gateway with every flow conditioned (`NO_DEFAULT_FLOW`) — so a
-compiled process does not carry them. These are the ones that survive:
+The builder catches a class of BPMN defects before the process runs. `compile`
+refuses unparsable XML, an element with no id and a flow to nowhere. `check`
+reports a `vars.<id>` read of an undeclared variable (`EXPR_UNDECLARED_REF`, an
+error), a declared variable read without `vars.` (`EXPR_BARE_VAR_REF`, an error)
+and a gateway with every flow conditioned (`NO_DEFAULT_FLOW`, a warning); `compile`
+writes those as authored, so a process compiled without a clean `check` can carry
+them. A run that reads an undefined `vars.<id>` means: re-run `bpmn check --source`
+on the authored source and fix what it reports. (From the SDK release with
+UiPath/builder-sdk#1712; an older `compile` refuses the undeclared read itself.)
+These are the ones that survive both:
 
 - **Binding resolution** — a node reads `=bindings.<id>` and the resource the
   binding names is not reachable from the folder the process ran in, or the
@@ -230,7 +238,7 @@ uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --out
 uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn incident summary --output json
-uip maestro bpmn processes incidents <PROCESS_KEY> --output json
+uip maestro bpmn processes incidents <PROCESS_DEFINITION_KEY> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json

@@ -38,7 +38,7 @@ Although most of the lifecycle and capabilities are shared between both autonomo
 
 ## Critical Rules
 
-[critical-rules/critical-rules.md](critical-rules/critical-rules.md) is the canonical source for low-code agent rules and anti-patterns. Read it every session. The rules below are the operational must-knows; the rest live in the canonical file.
+[critical-rules/critical-rules.md](critical-rules/critical-rules.md) is the canonical source for low-code agent rules and anti-patterns. Read it every session, plus the variant file for the agent type: [autonomous-critical-rules.md](critical-rules/autonomous-critical-rules.md) or [conversational-critical-rules.md](critical-rules/conversational-critical-rules.md). The rules below are the operational must-knows; the rest live in the canonical file.
 
 1. **Edit JSON files directly, except CLI-managed memory features.** The CLI provides `init` (scaffold), `refresh` (apply migrations + regenerate derived files), `validate` (strict read-only check), and `memory` (writes memory feature files). Resources live in `resources/{Name}/resource.json`; memory features live in `features/{Name}/feature.json`.
 2. **Use `--output json`** on every `uip` command.
@@ -53,7 +53,7 @@ Although most of the lifecycle and capabilities are shared between both autonomo
 Standard workflow for any low-code agent task:
 
 <!--skill-flavor:scaffold-step:start-->
-1. **Scaffold** — `uip solution init` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
+1. **Scaffold** — `uip solution init "<SOLUTION_NAME>" --output json` (if no solution exists), then `uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json` per agent. Bare `"<AGENT_NAME>"` outside a solution auto-creates a separate `<AGENT_NAME>Solution/` (response carries `Data.AutoCreatedSolution`). Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
 <!--skill-flavor:scaffold-step:end-->
 2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md). **Override the scaffold model** (`gpt-4o-2024-11-20`) per [model-selection-guide.md](model-selection-guide.md) and write robust prompts per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) — the scaffold ships a stale model and toy prompts.
 3. **Add capabilities** — pick from the Capability Registry below. Most add `resources/{Name}/resource.json`; memory uses `uip agent memory` and writes `features/{Name}/feature.json`.
@@ -76,7 +76,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Debugging / running a low-code agent end-to-end to test it | [debug.md](debug.md) |
 | Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
 | Choosing the LLM (`settings.model`) — discover tenant models, override the scaffold default | [model-selection-guide.md](model-selection-guide.md) |
-| Writing a robust system/user prompt — skeleton, tool-call criteria, output contract, production checklist | [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) |
+| Writing a robust system/user prompt — skeleton, tool-call criteria, output contract, production checklist | [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md); variant guides: [autonomous](prompting/autonomous-agent-prompting-guide.md), [conversational](prompting/conversational-agent-prompting-guide.md) |
 | External tools / IS tools / index contexts / memory spaces / escalations behave unexpectedly after `uip solution resources refresh` | [solution-resources.md](solution-resources.md) |
 | Running evaluations, adding test cases, managing evaluators | [evaluations/evaluate.md](evaluations/evaluate.md) |
 
@@ -85,7 +85,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | I need to... | Read first | Then |
 |--------------|------------|------|
 | Understand agent.json schema | [agent-definition.md](agent-definition.md) | |
-| Edit system prompt or user message | [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) (quality) | [agent-definition.md](agent-definition.md) § Messages, § contentTokens (mechanics) |
+| Edit system prompt or user message | [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) (quality; variant guides: [autonomous](prompting/autonomous-agent-prompting-guide.md), [conversational](prompting/conversational-agent-prompting-guide.md)) | [agent-definition.md](agent-definition.md) § Messages, § contentTokens (mechanics) |
 | Choose or change the model | [model-selection-guide.md](model-selection-guide.md) | [agent-definition.md](agent-definition.md) § Change Model Settings |
 | Add/remove input or output fields | [agent-definition.md](agent-definition.md) § entry-points.json | |
 | Scaffold a new agent project | [project-lifecycle.md](project-lifecycle.md) § End-to-End Example | [agent-definition.md](agent-definition.md) |
