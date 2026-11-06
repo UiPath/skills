@@ -102,11 +102,21 @@ def _incoming_from(plan: dict, target_id: str, sources: set[str]) -> bool:
     return any(tr.get("source") in sources for tr in find_transitions(plan, target=target_id))
 
 
+# The two process-metadata keys that made `uip solution resources refresh` fail
+# with "Node already added to the graph" in this eval environment (#2015).
+# Matched case-insensitively: `bindings sync` writes them PascalCase.
+REFRESH_BREAKING_METADATA_KEYS = {"bindingsversion", "solutionssupport"}
+
+
 def _assert_bindings_v2_metadata(bindings: dict) -> None:
     """Reject process metadata that the eval CLI's resource refresh cannot consume.
 
     Only `process` entries are checked: `bindings sync` also emits `Role` entries
-    (from case personas) whose metadata refresh accepts as-is.
+    (from case personas) whose metadata refresh accepts as-is. Within a process
+    entry only `BindingsVersion` / `SolutionsSupport` are rejected. The other
+    keys `bindings sync` and `maestro-builder-sdk` compile write in the Case
+    Designer shape (`ActivityName`, `DisplayLabel`, `subType`) are display or
+    typing labels that refresh and debug accept.
     """
     resources = bindings.get("resources")
     if not isinstance(resources, list):
@@ -119,12 +129,13 @@ def _assert_bindings_v2_metadata(bindings: dict) -> None:
         metadata = resource.get("metadata") or {}
         if not isinstance(metadata, dict):
             _fail(f"bindings_v2.json resource {resource.get('key', index)!r} metadata must be an object")
-        unsupported = sorted(set(metadata) - {"subType"})
+        unsupported = sorted(k for k in metadata if k.lower() in REFRESH_BREAKING_METADATA_KEYS)
         if unsupported:
             _fail(
                 "bindings_v2.json resource "
                 f"{resource.get('key', index)!r} has unsupported metadata key(s) "
-                f"{unsupported}; only subType is supported by uip solution resources refresh"
+                f"{unsupported}; bindingsVersion / solutionsSupport make "
+                "uip solution resources refresh fail in this eval environment"
             )
 
 

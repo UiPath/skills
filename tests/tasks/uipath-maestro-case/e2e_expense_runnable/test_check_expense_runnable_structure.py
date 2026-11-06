@@ -36,6 +36,46 @@ class BindingsV2MetadataTests(unittest.TestCase):
             }
         )
 
+    def test_accepts_designer_display_metadata(self) -> None:
+        # What `bindings sync` / SDK compile write, minus the two refresh-breaking keys.
+        _assert_bindings_v2_metadata(
+            {
+                "version": "2.0",
+                "resources": [
+                    {
+                        "resource": "process",
+                        "key": "Shared/uipath-agents/ProcurementProcess.ProcurementProcess",
+                        "metadata": {
+                            "ActivityName": "Budget & GL Reconciliation",
+                            "DisplayLabel": "name",
+                            "subType": "ProcessOrchestration",
+                        },
+                    }
+                ],
+            }
+        )
+
+    def test_rejects_pascal_case_designer_flags(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "BindingsVersion.*SolutionsSupport"):
+            _assert_bindings_v2_metadata(
+                {
+                    "version": "2.0",
+                    "resources": [
+                        {
+                            "resource": "process",
+                            "key": "Shared/Example/API Workflow",
+                            "metadata": {
+                                "ActivityName": "Validate",
+                                "BindingsVersion": "2.2",
+                                "DisplayLabel": "name",
+                                "SolutionsSupport": "true",
+                                "subType": "Api",
+                            },
+                        }
+                    ],
+                }
+            )
+
     def test_ignores_sync_emitted_role_metadata(self) -> None:
         _assert_bindings_v2_metadata(
             {
