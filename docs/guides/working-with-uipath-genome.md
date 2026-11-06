@@ -62,7 +62,7 @@ A genome extracted from an existing automation is rebuilt in one of two ways, bo
 
 **As it is.** The build keeps the source's step names, order and folders, so whoever knows the old automation can check the new one side by side. Every difference (a step renamed, merged, split, dropped or added) is a row of a correspondence table with its reason. The build asks how closely to follow:
 
-1. Names, and the shape wherever UiPath's way does not differ (recommended): a workflow or loop whose work one or a few UiPath activities do becomes those activities, each such change a row of the table.
+1. Names, and the shape wherever UiPath's way does not differ (recommended): a workflow or loop whose work one or a few UiPath activities do becomes those activities, and the libraries left merge by application, each such change a row of the table.
 2. Names and shape throughout.
 3. The build's own names and grouping, with no table.
 
