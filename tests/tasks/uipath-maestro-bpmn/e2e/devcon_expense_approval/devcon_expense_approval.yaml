@@ -79,18 +79,18 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
-    description: "A solution manifest (.uipx) exists in the workspace"
+    description: "A solution manifest (.uipx) or a BPMN process project.uiproj exists in the workspace"
     command: |-
-      python3 -c "import glob, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) else 1)"
+      python3 -c "import glob, json, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) or any(json.load(open(f)).get('ProjectType') == 'ProcessOrchestration' for f in glob.glob('**/project.uiproj', recursive=True)) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0.0
 
   - type: run_command
-    description: "A solution manifest (.uipx) in the workspace lists a BPMN process project"
+    description: "A project.uiproj in the workspace declares a BPMN process project"
     command: |-
-      python3 -c "import glob, json, sys; sys.exit(0 if any(p.get('Type') == 'ProcessOrchestration' for f in glob.glob('**/*.uipx', recursive=True) for p in json.load(open(f)).get('Projects', [])) else 1)"
+      python3 -c "import glob, json, sys; sys.exit(0 if any(json.load(open(f)).get('ProjectType') == 'ProcessOrchestration' for f in glob.glob('**/project.uiproj', recursive=True)) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

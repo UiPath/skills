@@ -62,9 +62,9 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "A solution manifest (.uipx) in the workspace lists a Flow project"
+    description: "A project.uiproj in the workspace declares a Flow project"
     command: |-
-      python3 -c "import glob, json, sys; sys.exit(0 if any(p.get('Type') == 'Flow' for f in glob.glob('**/*.uipx', recursive=True) for p in json.load(open(f)).get('Projects', [])) else 1)"
+      python3 -c "import glob, json, sys; sys.exit(0 if any(json.load(open(f)).get('ProjectType') == 'Flow' for f in glob.glob('**/project.uiproj', recursive=True)) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

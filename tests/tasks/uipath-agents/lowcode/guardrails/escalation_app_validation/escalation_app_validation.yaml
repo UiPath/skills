@@ -45,13 +45,12 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "The solution contains an Agent project"
-    path: "ValidationSol/ValidationSol.uipx"
-    assertions:
-      - expression: "length(Projects[?Type=='Agent'])"
-        operator: "gte"
-        expected: 1
+  - type: run_command
+    description: "A project.uiproj in the workspace declares an Agent project"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if any(json.load(open(f)).get('ProjectType') == 'Agent' for f in glob.glob('**/project.uiproj', recursive=True)) else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
