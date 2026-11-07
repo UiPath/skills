@@ -113,7 +113,27 @@ def issuetype_id(conn_id: str) -> str:
 def connection_id() -> str:
     folder_key = _run("or", "folders", "get", FOLDER_PATH)["Data"]["Key"]
     conns = _run("is", "connections", "list", CONNECTOR, "--folder-key", folder_key, "--refresh")["Data"]
-    return next(c["Id"] for c in conns if c["Name"] == CONNECTION_NAME)
+    match = next((c["Id"] for c in conns if c["Name"] == CONNECTION_NAME), None)
+    if match is None:
+        raise MissingConnection(
+            f"no {CONNECTOR} connection named {CONNECTION_NAME!r} in folder {FOLDER_PATH!r}"
+        )
+    return match
+
+
+class MissingConnection(RuntimeError):
+    pass
+
+
+def require_connection() -> str:
+    """connection_id() for pre_run: a missing connection is an ERROR, not a traceback."""
+    try:
+        return connection_id()
+    except MissingConnection as exc:
+        raise SystemExit(
+            "TENANT NOT READY — this is an infrastructure failure, not an agent failure.\n  "
+            f"{exc}\n\nReauthorize the connection or restore it in the named folder, then re-run."
+        ) from exc
 
 
 def create_issue(conn_id: str, summary: str) -> str:
