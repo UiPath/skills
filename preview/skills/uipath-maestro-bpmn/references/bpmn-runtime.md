@@ -71,7 +71,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 - A script task (`scriptVersion` v3, what `.scriptTask()` writes) returns its value and the runtime wraps it as `result.response`.
   Read it as `=result.response` for a scalar, or `=result.response.<field>` for one field of a returned object; never `=result.<field>`, which reads nothing.
   Write `return value;`, not `return { response: value };`, which double-wraps to `result.response.response`.
-  `check`, `compile` and `validate` all accept `=result.<field>`, and the run then completes with the output empty.
+  `check` reports `=result.<field>` on a v2-or-later script as `SCRIPT_RESULT_NOT_RESPONSE` and names the corrected expression; `compile` and `validate` accept it, and the run then completes with the output empty.
 
   ```ts
   .scriptTask('score', { script: 'return vars.amount * 0.01;', outputs: { riskScore: '=result.response' } })
@@ -83,6 +83,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Do not pass `type` to `.scriptTask()`.
   Its mapping type is always `BPMN.Variables`, the default; any other value replaces the script's extension type, so the script never runs and its outputs read back null.
   `registry get BPMN.ScriptTask` lists `BPMN.ScriptTask`, and that listing is not a value to pass.
+  The builder refuses any other value with `BPMN_SCRIPT_TASK_TYPE_INVALID`; drop `type`.
 
 <!-- RULE:bpmn.script.error-row -->
 - "Typed error handling" on a script task means the task-scoped `Error` output row: `source: '=Error'`, type `jsonSchema`, writing a variable whose schema is the platform error envelope.
