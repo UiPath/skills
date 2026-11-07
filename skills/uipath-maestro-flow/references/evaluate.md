@@ -140,8 +140,9 @@ have.
 
 `eval run start` needs the solution in Studio Web, and when it cannot resolve
 one it fails with `solution-id could not be resolved` or a variant. That error
-is not licence to upload. `eval run start` itself overwrites the matching Studio
-Web solution and rewrites the local `.uipx`, so ask before it too.
+is not licence to upload. `eval run start` itself re-uploads, overwriting the matching Studio
+Web solution and rewriting the local `.uipx`, unless `--solution-id` and
+`--project-id` are passed, so ask before it too.
 
 `uip solution upload` writes to Studio Web: it creates, or **overwrites**, the
 solution matching the local `.uipx` `SolutionId`. No flag is needed and no

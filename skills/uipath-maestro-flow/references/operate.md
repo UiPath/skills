@@ -182,6 +182,10 @@ Operational constraints, each of which has its own failure:
   Shared resources reach
   the run through `resources refresh`, not through the debug folder.
 <!--skill-flavor:debug-shared-resources:end-->
+  Exception: an account with no personal workspace (a service-principal or CI
+  token gets `403` at `get-personal-folder`) passes `--folder-id <number>`, which
+  skips that lookup. `prepare-custom-debug` for a non-personal folder may still
+  `403`; if it does, tell the user.
 
 Inputs, for a flow with `.input(...)` parameters:
 
