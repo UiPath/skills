@@ -49,6 +49,49 @@ the scenario pins and leave the rest.
 called and what it takes and returns; the calling application owns the
 implementation and dispatches on the name. Nothing local runs it.
 
+## The Batch Transform tool
+
+`{ kind: 'builtin', tool: 'batchtransform' }` lets the agent add columns to a
+CSV; the model passes the file as the tool's `attachment`. A step that always
+enriches one CSV is `batchTransform()` instead ([batch-transform.md](batch-transform.md)).
+
+```ts
+{
+  kind: 'builtin', tool: 'batchtransform',
+  query: { value: 'Classify each invoice line' },  // the task
+  outputColumns: [
+    { name: 'Category', description: 'One of: Utility, Software, Travel, Other' },
+  ],
+  webSearchGrounding: 'disabled',                  // default 'enabled'
+}
+```
+
+**`outputColumns` is required:** 1 to 10, each a name of 1 to 64 letters,
+digits, `_` or `-` (no spaces) and a description of what goes in the column.
+**Disable `webSearchGrounding` unless the scenario needs the web:** unlike the
+step's `enableWebSearchGrounding`, it defaults to on.
+
+**`query` takes the canvas's sources:** omitted (the model writes the task), a
+string or `{ prompt }` (the model writes it, guided), `{ value }` (pinned), or
+`{ variable }` (ONE flow reference, which becomes an agent input). A bare
+`query: input('task')` is pinned text, never evaluated. `summarize` takes the
+same forms; the other two settings are `batchtransform`'s only.
+
+`check` reports these as `INLINE_AGENT_BATCH_TRANSFORM_*` (`_NO_COLUMNS`,
+`_TOO_MANY_COLUMNS`, `_COLUMN_NAME`, `_COLUMN_DESCRIPTION`, `_GROUNDING`) and
+`INLINE_AGENT_BUILTIN_*` (`_QUERY_SOURCE`, `_COMPOSITE_REF`,
+`_SETTING_NOT_APPLICABLE`). Compile also refuses `_GROUNDING` and the three
+`BUILTIN` codes.
+
+**Brownfield.** Decompile reports lossy what it cannot read back: a setting
+with no SDK form (a file bound to a variable, a non-`csv` `fileExtension`), a
+tool node cut to `{ source }` whose `resource.json` it could not read, and any
+Summarize task but Empty. Edit
+those flows with `merge --baseline`
+([brownfield.md](brownfield.md#agent-resources-added-changed-removed)), which
+keeps the original `resource.json`. Adding or removing a column replaces the
+whole array.
+
 ## Escalation
 
 The default variant is app-backed: `app: { key, name, folderPath }` names a
