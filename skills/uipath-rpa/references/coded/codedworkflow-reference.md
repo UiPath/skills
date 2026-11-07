@@ -414,13 +414,15 @@ When a user needs functionality that **no UiPath built-in activity provides** (e
 - Third-party packages are used as **plain C# libraries** — instantiate classes, call methods directly
 - They do NOT get a service property on `CodedWorkflow`
 - Add them to `project.json` `dependencies` just like UiPath packages: `"PackageName": "[version]"`
+- **`Newtonsoft.Json` runs as the Robot's own build**, whatever newer build the project pins: every 13.x build shares assembly version 13.0.0.0, so the Robot keeps the one it ships. A member only the pinned build has passes validate, build and pack, then fails at run time with `MissingMethodException` (`JToken.ToString(Formatting)`, added in 13.0.4, is one). Call only members the Robot's build has (`JsonConvert.SerializeObject(<TOKEN>, <FORMATTING>)` in place of that overload), or pin `Newtonsoft.Json` to that build — the version the Robot's `UiPath.Executor.deps.json` lists — and prove the JSON code by running it.
 
-### Example — Using CsvHelper in a Coded Workflow
+### Example — Using CsvHelper 33 in a Coded Workflow
 
 ```csharp
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using CsvHelper;
 using UiPath.CodedWorkflows;
 
@@ -444,10 +446,12 @@ With `project.json` dependency:
 ```json
 {
   "dependencies": {
-    "CsvHelper": "[33.0.1]"
+    "CsvHelper": "[33.1.0]"
   }
 }
 ```
+
+The code is CsvHelper 33's API; a later major version changes it (34 drops this `CsvReader` constructor and the `CsvHelper.Configuration` namespace). Write against the installed version's API as the package inspection shows it (Decision Flow step 3), not against this example.
 
 ### How to Search for Packages
 
