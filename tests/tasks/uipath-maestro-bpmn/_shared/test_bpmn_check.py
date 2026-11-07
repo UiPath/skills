@@ -428,6 +428,46 @@ def test_waitfor_requires_inbox_scope() -> None:
     )
 
 
+def test_waitfor_v2_element_scopes_by_query_params() -> None:
+    grader = _load("check_outlook_waitfor_email")
+    v2 = '<uipath:input name="activityConfigurationVersion" type="string" value="v2" />'
+
+    def task(expression: str, query_params: str = '{"parentFolderId":"X"}', marker: str = v2):
+        return _outlook_receive_task(
+            marker + '<uipath:input name="body" type="json" target="body"><![CDATA['
+            f'{{"filters":{{"expression":"{expression}"}},"queryParams":{query_params}}}'
+            "]]></uipath:input>"
+        )
+
+    subject = "((contains(subject,'TestWaitFor')))"
+    assert grader.has_subject_contains_filter(task(subject))
+    assert grader.has_subject_contains_filter(task("(parentFolderId == 'X') && " + subject))
+    assert not grader.has_subject_contains_filter(task(subject, marker=""))
+    assert not grader.has_subject_contains_filter(task(subject, "{}"))
+    for wrong in (
+        "(parentFolderId == 'Y') && " + subject,
+        subject + " || (isRead == false)",
+        "!" + subject,
+        subject + " && (isRead == true)",
+        subject + " && !contains(subject,'TestWaitFor')",
+        "contains(subject,'TestWaitFor\")",
+    ):
+        assert not grader.has_subject_contains_filter(task(wrong)), wrong
+
+
+def test_waitfor_v2_accepts_parenthesised_subject_first() -> None:
+    grader = _load("check_outlook_waitfor_email")
+    expression = "(contains(subject,'TestWaitFor')) && (parentFolderId == 'X')"
+    assert grader.has_subject_contains_filter(
+        _outlook_receive_task(
+            '<uipath:input name="activityConfigurationVersion" type="string" value="v2" />'
+            '<uipath:input name="body" type="json" target="body"><![CDATA['
+            f'{{"filters":{{"expression":"{expression}"}},"queryParams":{{"parentFolderId":"X"}}}}'
+            "]]></uipath:input>"
+        )
+    )
+
+
 _WAIT_EVENT = (
     '<bpmn:extensionElements><uipath:event version="v1">'
     '<uipath:type value="Intsvc.WaitForEvent" version="v1" /><uipath:context>'

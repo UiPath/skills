@@ -35,6 +35,11 @@ Assertion map (Flow -> BPMN):
      `filters.expression`, the only filter the runtime reads (PO.BpmnEngine
      BpmnInputExtensions.GetEventFilters; Studio Web emits the same body). A filter tree or an
      untargeted `filter`/`filterExpression` input is dropped at runtime, so it does not count.
+  T  folder scope: `queryParams.parentFolderId` is required. A V1 template body also carries the
+     matching `parentFolderId == '<id>'` clause (registry-workflow.md). A V2 element
+     (`activityConfigurationVersion` v2, built by `registry get --input-details`) scopes by
+     `queryParams` alone; its expression is accepted without that clause only when it is an
+     `&&` chain of the subject clause and, optionally, the matching folder clause.
 """
 
 from __future__ import annotations
@@ -68,6 +73,10 @@ _SUBJECT_CONTAINS_RE = re.compile(
 )
 _NEGATED_PREFIX_RE = re.compile(r"(!|\bnot)[\s(]*$", re.IGNORECASE)
 _NEGATED_SUFFIX_RE = re.compile(r"^[\s)]*(==\s*false|!=\s*true)\b", re.IGNORECASE)
+_V2_SUBJECT_RE = re.compile(
+    rf"(?i:contains)\(\s*(?i:subject)\s*,\s*(['\"]){re.escape(FILTER_VALUE)}\1\s*\)"
+)
+_V2_FOLDER_RE = re.compile(r"parentFolderId\s*==\s*(['\"])([^'\"]*)\1")
 
 
 def _stem(text: str) -> str:
@@ -157,16 +166,77 @@ def _has_positive_subject_clause(expression: str) -> bool:
     return False
 
 
-def _is_folder_scoped(body: dict, expression: str) -> bool:
+def _query_folder_id(body: dict) -> str | None:
+    """The stripped `queryParams.parentFolderId`, or None if missing or blank."""
     params = body.get("queryParams")
     folder_id = params.get("parentFolderId") if isinstance(params, dict) else None
     if not isinstance(folder_id, str) or not folder_id.strip():
+        return None
+    return folder_id.strip()
+
+
+def _is_folder_scoped(body: dict, expression: str) -> bool:
+    folder_id = _query_folder_id(body)
+    if folder_id is None:
         return False
-    clause = rf"parentFolderId\s*==\s*['\"]{re.escape(folder_id.strip())}['\"]"
+    clause = rf"parentFolderId\s*==\s*['\"]{re.escape(folder_id)}['\"]"
     return bool(re.search(clause, expression))
 
 
+def _split_and(expression: str) -> list[str] | None:
+    """Split on `&&` outside quotes and parentheses; None if they are unbalanced."""
+    parts, depth, quote, start = [], 0, None, 0
+    for i, ch in enumerate(expression):
+        if quote:
+            quote = None if ch == quote else quote
+        elif ch in "'\"":
+            quote = ch
+        elif ch in "()":
+            depth += 1 if ch == "(" else -1
+            if depth < 0:
+                return None
+        elif depth == 0 and expression.startswith("&&", i):
+            parts.append(expression[start:i])
+            start = i + 2
+    return None if depth or quote else [*parts, expression[start:]]
+
+
+def _v2_conjuncts(expression: str) -> list[str] | None:
+    """The `&&` operands of `expression`, redundant parentheses stripped."""
+    parts = _split_and(expression)
+    if parts is None:
+        return None
+    if len(parts) == 1:
+        part = parts[0].strip()
+        if part.startswith("(") and part.endswith(")") and _split_and(part[1:-1]) is not None:
+            return _v2_conjuncts(part[1:-1])
+        return [part]
+    out: list[str] = []
+    for part in parts:
+        inner = _v2_conjuncts(part)
+        if inner is None:
+            return None
+        out.extend(inner)
+    return out
+
+
+def _is_v2_scoped_filter(body: dict, expression: str) -> bool:
+    """A V2 element's filter: only the subject clause and matching folder clauses, AND-ed."""
+    folder_id = _query_folder_id(body)
+    if folder_id is None:
+        return False
+    conjuncts = _v2_conjuncts(expression) or []
+    for part in conjuncts:
+        folder = _V2_FOLDER_RE.fullmatch(part)
+        if not _V2_SUBJECT_RE.fullmatch(part) and not (
+            folder and folder.group(2) == folder_id
+        ):
+            return False
+    return any(_V2_SUBJECT_RE.fullmatch(part) for part in conjuncts)
+
+
 def has_subject_contains_filter(task: ET.Element) -> bool:
+    v2 = context_value(task, "activityConfigurationVersion") == "v2"
     for inp in task.iter(f"{{{NS['uipath']}}}input"):
         if inp.attrib.get("target") != "body":
             continue
@@ -175,6 +245,8 @@ def has_subject_contains_filter(task: ET.Element) -> bool:
             continue
         expression = _filter_expression(body)
         if _has_positive_subject_clause(expression) and _is_folder_scoped(body, expression):
+            return True
+        if v2 and _is_v2_scoped_filter(body, expression):
             return True
     return False
 
@@ -201,7 +273,8 @@ def main() -> None:
         fail(
             "Outlook email-received wait found, but its target=\"body\" input "
             f"lacks a filters.expression clause contains(subject, {FILTER_VALUE!r}) "
-            "scoped by queryParams.parentFolderId and its parentFolderId == clause"
+            "scoped by queryParams.parentFolderId (and, in a V1 template body, its "
+            "parentFolderId == clause)"
         )
 
     print(
