@@ -33,6 +33,7 @@ Example:
 - `value` is a JSON **string** (`"18"`, `"true"`, ISO-8601 dates), except `null` for empty checks.
 - `in` / `not in` use `valueList`; everything else uses `value`.
 - `null` value = is-empty (`=`) / is-not-empty (`!=`).
+- On native entities, text comparisons ignore letter case, whatever the operator: `"wi"` and `"WI"` match the same records. A federated entity's data lives in its source, whose case rules may differ, so assume neither behaviour there. When case must matter, filter as usual, then compare case-sensitively client-side.
 - Response data: `Data: { Items, TotalCount, HasNextPage, NextCursor: { Value }, CurrentPage, TotalPages, SupportsPageJump }`. Records live in `Data.Items`. Page with `--limit` / `--cursor` flags (pass `NextCursor.Value`), never body keys.
 
 ## Operator support by field type
