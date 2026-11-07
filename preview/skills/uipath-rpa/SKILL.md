@@ -119,6 +119,7 @@ These pass `compile` and then go wrong when the workflow loads or runs; `check` 
 - **A variable named like a type** (`EXPR_NAME_CASE`): VB ignores case, so a variable or loop item named `file` hides the type `File` in every expression in its scope. Do not name a variable after a type you use.
 - **A DataRow item read as a type** (`EXPR_DATAROW_ITEM`): `row("Email")` is an `Object`, and VB's Option Strict refuses it as any other type. Read it with `row("Email").ToString()` or `CDec(row("Amount"))`, and write it with `Assign({ type: Object, to: vb('row("Email")'), value: … })`.
 - **`.Count(…)` on a collection with a `Count` property**: a `List`, a `Dictionary` or its `.Values`, a `DataRowCollection`. VB takes the property, so `results.Values.Count(Function(r) r.StartsWith("x"))` fails to compile and the workflow does not load. Write `results.Values.Where(Function(r) r.StartsWith("x")).Count()`; `check` does not catch this one.
+- **A name VB reserves** (`RESERVED_NAME`): a variable, argument or loop item named `stop`, `next`, `error` or any other VB keyword, in any case, cannot be read: `[stop]` fails to compile and the workflow does not load. Pick another name.
 - **A `ByRef` result** (`EXPR_BYREF_RESULT`): an expression cannot write to a variable through a `ByRef` argument, so `Decimal.TryParse(text, amount)` leaves `amount` unchanged and returns False, with no error. Test with `Decimal.TryParse(text, Nothing)` and assign `Decimal.Parse(text)` in its own step.
 
 ## Anti-patterns
