@@ -113,7 +113,6 @@ run_limits:
   turn_timeout: 1800
 
 sandbox:
-  driver: tempdir
   python: {{}}
   template_sources:
     - type: template_dir
@@ -151,6 +150,7 @@ success_criteria:
     include_reference: false
     files:
       - $REFERENCE_DIR/RESOLUTION.md
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
