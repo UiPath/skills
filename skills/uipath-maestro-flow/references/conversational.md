@@ -29,7 +29,7 @@ export default flow('support-chat')
 Work a live CHAT: wait for the person's message, answer it, post a reply. Every
 step is keyed by a `conversationId` — the conversation trigger publishes it.
 
-Signatures: `.trigger(conversationTrigger({ welcomeTitle?, welcomeDescription?, startingPrompts?, personalWorkspaceConnectionsOnly? }))`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
+Signatures: `.trigger(conversationTrigger({ welcomeTitle?, welcomeDescription?, startingPrompts?, personalWorkspaceConnectionsOnly? }))`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings, tools?, context?, escalation? })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
 
 ```ts
 .trigger(conversationTrigger())
@@ -113,6 +113,24 @@ without `conversationId`, so the SDK emits them from your `context` binding
 rather than leaving them out. The agent's reply is
 `out('<step>', 'uipath__agent_response_messages')`, and compile writes a stable
 `<source>/agent.json` sidecar beside the `.flow` as it does for `inlineAgent`.
+
+## Tools, context and escalations
+
+`conversationalAgent` takes the same `tools`, `context` and `escalation` options
+as `inlineAgent` ([agent-resources.md](agent-resources.md)). For instance a tool
+the chat client runs:
+
+```ts
+conversationalAgent({
+  model: 'gpt-5.4', systemPrompt: 'Help the customer.',
+  settings: { context: out('wait', 'conversationContext') },
+  tools: [{ kind: 'clientside', name: 'showOrder', inputs: { orderId: 'string' } }],
+})
+```
+
+The SDK version these options need, their `check` codes, and what decompile
+does not carry back yet:
+[agent-resources.md](agent-resources.md#voice-and-conversational-agents).
 
 ## Evidence boundary
 
