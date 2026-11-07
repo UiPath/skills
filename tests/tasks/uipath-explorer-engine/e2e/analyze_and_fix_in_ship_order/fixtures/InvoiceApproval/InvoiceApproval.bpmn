@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_InvoiceApproval" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="InvoiceApproval" name="Invoice Approval" isExecutable="true">
+    <bpmn:startEvent id="Start_InvoiceReceived" name="Invoice received">
+      <bpmn:outgoing>Flow_ToTriage</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_Triage" name="Triage invoice">
+      <bpmn:incoming>Flow_ToTriage</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToGateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Amount" name="Needs review?" default="Flow_Routine">
+      <bpmn:incoming>Flow_ToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_HighValue</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Routine</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_Review" name="Review invoice">
+      <bpmn:incoming>Flow_HighValue</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewDone</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Done" name="Done">
+      <bpmn:incoming>Flow_Routine</bpmn:incoming>
+      <bpmn:incoming>Flow_ReviewDone</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToTriage" sourceRef="Start_InvoiceReceived" targetRef="Task_Triage" />
+    <bpmn:sequenceFlow id="Flow_ToGateway" sourceRef="Task_Triage" targetRef="Gateway_Amount" />
+    <bpmn:sequenceFlow id="Flow_HighValue" name="Above threshold" sourceRef="Gateway_Amount" targetRef="Task_Review">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.amount &gt; 10000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Routine" sourceRef="Gateway_Amount" targetRef="End_Done" />
+    <bpmn:sequenceFlow id="Flow_ReviewDone" sourceRef="Task_Review" targetRef="End_Done" />
+  </bpmn:process>
+</bpmn:definitions>
