@@ -304,6 +304,33 @@ binding half, which is the same for every connector-backed node.
   extension block from the edited file. Pass `--keep-unused-bindings` when you need the
   decompiled source to match the original row for row instead.
 
+<!-- RULE:bpmn.brownfield.palette-elements -->
+- How `bpmn decompile` writes the palette elements that carry no `uipath:*` payload:
+  - a complex gateway becomes `.complexGateway(id, { name, default })`;
+  - a bare call activity becomes `.plainTask(id, { element: 'bpmn:callActivity' })`.
+    Do not author it: `validate` rejects it and `check` reports `CALL_ACTIVITY_NO_PAYLOAD`.
+    To call a process, use an `Orchestrator.Start*Process` type through `.activity()`, with
+    a process binding;
+  - data objects, data object references and data store references are left out of the
+    source. A header comment that starts `// DATA ELEMENTS LEFT TO THE ORIGINAL` lists
+    each one; keep it. Merging with `--baseline` (`bpmn.brownfield.merge`) keeps them from
+    the original, with their data associations and shapes. A bare `compile` drops them.
+
+<!--skill-flavor:sdk-palette-elements:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.88.1 or later; an older SDK refuses every
+  element above with "has no builder equivalent", so upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest` and decompile again.
+<!--skill-flavor:sdk-palette-elements:end-->
+
+  Decompile still refuses a complex gateway with an `activationCondition` and a bare call
+  activity with a `calledElement`. The refusal names the attribute and the next step: the
+  Maestro runtime does not read `activationCondition`, and the platform ignores
+  `calledElement`, so removing either one from the source `.bpmn` does not change what the
+  process does. Tell the user, remove the attribute, and decompile again. A bare call
+  activity then decompiles to the round-trip form above and still fails `validate` with
+  `CALL_ACTIVITY_NO_PAYLOAD`; to make it call a process, give it an
+  `Orchestrator.Start*Process` type with a process binding.
+
 <!-- RULE:bpmn.brownfield.format -->
 - Format after adding elements that need diagram shapes. Avoid formatting a
   metadata-only edit because it replaces preserved geometry.
