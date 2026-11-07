@@ -160,11 +160,10 @@ When a BYO LLM configuration is in place but agent / product calls are failing o
 4. **If the call is being rejected at the gateway with a policy-shaped error (vendor blocked, model not allowed), check tenant-wide AI Trust Layer policy.** BYO records what the customer asked for; AI Trust Layer governance can still override at runtime.
 
    ```bash
-   uip gov aops-policy deployed-policy resolve \
-     --product AITrustLayer --license-type <type> --tenant <name> --output json
+   uip gov aops-policy deployed-policy get <LICENSE_TYPE> AITrustLayer <TENANT_ID> --tenant-only --output json
    ```
 
-   See [uipath-governance](/uipath:uipath-governance) for full AOps policy diagnostics.
+   `--tenant-only` skips user and group overrides and needs a service-to-service token in `UIP_S2S_TOKEN`; `<TENANT_ID>` is the tenant GUID. Without that token, drop `--tenant-only`: the call then resolves the policy for the logged-in caller, including the caller's own user and group overrides, so it is not proof of what the failing identity gets. Say so in the diagnosis, or hand the check to [uipath-governance](/uipath:uipath-governance), which owns full AOps policy diagnostics.
 
 ### Tenant audit — "which BYO configs are pointing at dead connections?"
 
