@@ -49,6 +49,41 @@ the scenario pins and leave the rest.
 called and what it takes and returns; the calling application owns the
 implementation and dispatches on the name. Nothing local runs it.
 
+## Process tool arguments
+
+A `process` / `agent` / `api` / `flow` / `maestro` / `function` tool's `inputs`
+give each argument one of the canvas's sources:
+
+```ts
+inputs: {
+  title:      'string',                                      // the model fills it
+  notes:      { type: 'string', prompt: 'Any extra notes' }, // Prompt: the model fills it, reading this
+  maxResults: { type: 'integer', value: 10 },                // Fixed value: pinned
+  topic:      { type: 'string', variable: input('topic') },  // Variable: read from the flow
+}
+```
+
+**Pin what the scenario fixes; guide what the model chooses.** Use a `prompt`
+when the model needs a format or the allowed values, a `value` for a constant,
+and a `variable` for a flow value. Declare every argument the resource takes:
+a pinned one still stays in the tool's schema.
+
+**A `variable` is ONE reference** (`input()`, `out()`, `v()`): compute anything
+else in a `script()` step and bind its `out(...)`. **A `value` is plain JSON in
+its own type** (`10`, not `'10'`), never an expression. `clientside` tools take
+bare types only.
+
+`check` reports these as `INLINE_AGENT_TOOL_ARGUMENT_*`: `_SOURCE`,
+`_COMPOSITE` and `_EXPRESSION` refuse compile, `_EMPTY_PROMPT` and `_TYPE` are
+warnings. It reports one refusal per agent, so fix it and rerun.
+
+**Brownfield.** Decompile reads the sources back, including from a
+canvas-saved tool node. Leave arguments the request does not touch as
+decompiled, including the canvas's text values (`'42'`) and arguments reported
+lossy. On an embedded canvas-saved agent, merge withholds every edit to a
+process tool's `resource.json`: make that change on the canvas and report it
+([brownfield.md](brownfield.md#why-three-directories-inline-agents)).
+
 ## Escalation
 
 The default variant is app-backed: `app: { key, name, folderPath }` names a
