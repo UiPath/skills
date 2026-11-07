@@ -339,9 +339,22 @@ binding half, which is the same for every connector-backed node.
 ## Brownfield editing
 
 <!-- RULE:bpmn.brownfield.merge -->
-- For a targeted edit, decompile the original, compile a baseline before editing,
-  compile the edit, then merge with `--baseline`. A bare recompile rewrites
-  untouched elements and drops original layout.
+- For a targeted edit, decompile the original, compile a baseline before editing, compile the edit, then merge with `--baseline`.
+  A bare recompile rewrites untouched elements and drops original layout.
+  Run `mktemp -d` once and put every intermediate file in the directory it prints (`<Scratch>` below, the literal path, since a shell variable does not survive between commands):
+
+  ```bash
+  cp <Project>/<Name>.bpmn <Scratch>/original.bpmn
+  uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested
+  uip maestro bpmn compile <Name>.bpmn.ts -o <Scratch>/baseline.bpmn    # before any edit
+  # edit <Name>.bpmn.ts, then run check --source until it is clean
+  uip maestro bpmn compile <Name>.bpmn.ts -o <Scratch>/edited.bpmn
+  uip maestro bpmn merge <Scratch>/edited.bpmn --original <Scratch>/original.bpmn --baseline <Scratch>/baseline.bpmn -o <Project>/<Name>.bpmn
+  ```
+
+  Then `format` (only when the edit added elements; see `bpmn.brownfield.format`), `refresh` and `validate` the target as in the validation loop.
+  Never write a `.bpmn` other than the target inside the workspace: no `<Name>.baseline.bpmn`, `<Name>.edited.bpmn`, `<Name>.merged.bpmn`, probe or second scaffold beside it, because a reader looking for the process can open one of those instead.
+  The workspace ends holding only the target `.bpmn`, its project files and `<Name>.bpmn.ts`.
 
 <!-- RULE:bpmn.brownfield.nested-style -->
 - `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in `flowMode('sequence')`, and prints why each region it left flat stayed flat; the lifted source is written only after it has been compiled and its graph verified identical to the flat form's. The flow ids the constructs imply are KEPT: each is pinned back with `.flowIds([{ source, target, id }])`, emitted once at the top of the chain, so the recompiled artifact carries the ids it arrived with. This is what makes the lift safe for brownfield editing — `uip maestro bpmn merge` keys every process child by id with no filter for kind, so renaming a flow made the merge treat it as new, delete the original along with its `BPMNEdge`, and leave an untouched gateway's `default` naming an id that no longer exists (`MISSING_CONDITION_EXPRESSION` at validate). Measured on a three-flow fixture, a no-edit round trip now merges back byte-identical. `--keep-flow-ids` confines the lift to regions whose ids already match the derived form, for source with no pin table.

@@ -36,9 +36,21 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    - outside one: `./<Name>Solution/<Name>/`, inside a solution it scaffolds;
    - with `--skip-solution-registration`: `./<Name>/`, with no solution.
 
-   **When the user names where the project or its `.bpmn` goes** (`A/B/B.bpmn` names project directory `A/B`), `mkdir -p A`, run `init B` from `A`, and pass `--skip-solution-registration` unless `A` or a parent already holds a `.uipx`.
+   **When the user names where the `.bpmn` goes**, the directory holding it is the project directory.
+   Match the path to one row and run that row's command from the workspace root, with the user's names in place of `X`, `A` and `B`:
+
+   | Path named | Project directory | Command, from the workspace root |
+   |---|---|---|
+   | `X.bpmn` (workspace root) | `.` | `T=$(mktemp -d) && (cd "$T" && uip maestro bpmn init X --skip-solution-registration --output json) && cp -R "$T/X/." . && rm -rf "$T"` |
+   | `A/A.bpmn` | `A` | `uip maestro bpmn init A --skip-solution-registration --output json` |
+   | `A/B/B.bpmn` (also `A/A/A.bpmn`) | `A/B` | `mkdir -p A && (cd A && uip maestro bpmn init B --skip-solution-registration --output json)` |
+   | nothing named | `Data.Path` | `uip maestro bpmn init <Name> --output json`, as above |
+
+   `init` always creates a directory named after the project inside the directory it runs in, so never run `init X` in the directory that should hold `X.bpmn`: the first row scaffolds in a temporary directory and copies the files, dotfiles included, into the workspace root.
+   A deeper path works like the third row: `mkdir -p` the parent of the project directory and run `init` there.
+   Drop `--skip-solution-registration` only when the directory `init` runs in, or a parent, already holds a `.uipx` and the project belongs in that solution.
    When the file name differs from its directory (`A/B/C.bpmn`), `init B` writes `B.bpmn`, so ask the user which of the two to rename before choosing.
-   Check `Data.Path` against the requested path before writing anything, and compile to that path, not to a copy elsewhere.
+   Before writing anything, check that the requested path now exists (`ls A/B/B.bpmn`, or `ls X.bpmn project.uiproj` for the first row), and compile to that path, not to a copy elsewhere.
    A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.88.1 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version).
    Write `<Name>.bpmn.ts` in the workspace root (the directory you started in), not inside the solution or project folder, even when you ran `init` from the solution folder.
@@ -89,7 +101,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    the diagram out first (`format`) or it fails with `MISSING_DI_SHAPE`, and it needs an
    init-generated project — with no `project.uiproj` it has nothing to regenerate.
 <!--skill-flavor:workflow-merge:start-->
-8. Use the merge pipeline for targeted edits to an existing process.
+8. Use the merge pipeline for targeted edits to an existing process: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
+   Every scratch file (the baseline, the edited and merged `.bpmn`, a probe, a second scaffold) goes in a directory made by `mktemp -d`, never in the workspace.
+   The workspace ends holding only the target `.bpmn`, its project files and `<Name>.bpmn.ts`.
 <!--skill-flavor:workflow-merge:end-->
 
 ## Draft first
