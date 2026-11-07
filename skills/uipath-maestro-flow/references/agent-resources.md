@@ -94,22 +94,18 @@ resources exist and what they return is platform evidence.
 ## Voice and conversational agents
 
 <!--skill-flavor:voice-conversational-resources-sdk-version:start-->
-**Needs the `@uipath/maestro-builder-sdk` release that ships UiPath/builder-sdk#1716:**
-check that `grep -rlw AgentResources <sdk>/dist` finds a file. `<sdk>` is the SDK
-copy in use: `node_modules/@uipath/maestro-builder-sdk` in the workspace if present,
-else `$(npm root -g)/@uipath/maestro-builder-sdk`. The other pages use the same `<sdk>`. An SDK where it finds no file accepts these options with no finding and compiles the agent with no tool,
-context or escalation nodes. Upgrade the copy in use: `npm install
+**Needs `@uipath/maestro-builder-sdk` 6.88.2 or later.** An older SDK accepts
+these options with no finding and compiles the agent with no tool, context or
+escalation nodes. Upgrade the copy in use: `npm install
 @uipath/maestro-builder-sdk@latest` in a workspace that has its own
 `node_modules` copy (it is used before the global one), else `npm install -g
-@uipath/maestro-builder-sdk@latest`. If that grep still finds no file
-on the latest SDK, do not give these options; read the data before the agent
-and pass it in through `inputs`.
+@uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:voice-conversational-resources-sdk-version:end-->
 
 - **`check` codes.** The inline agent's rules, under codes all three agents
   share: `FLOW_AGENT_TOOL_*`, `FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_RESOURCE_*`,
   `FLOW_AGENT_CONTEXT_*`. Each message names the agent's kind (`Voice agent step
-  "a" …`). An SDK where `grep -rlw AgentResources <sdk>/dist` finds no file prints the same rules for an inline agent
+  "a" …`). An SDK older than 6.88.2 prints the same rules for an inline agent
   as `INLINE_AGENT_TOOL_*`, `INLINE_AGENT_ESCALATION_*`, `INLINE_AGENT_RESOURCE_*`
   and `AGENT_CONTEXT_*`.
 - **Voice agent definitions.** Compile writes each resource's definition with

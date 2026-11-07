@@ -59,7 +59,7 @@ uip solution resources list --kind Index --source remote --search "<index-name>"
 ```
 
 Maps onto the signature as `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, `FolderKey` → `folderKey`.
-`id` is the index's GUID (`Key`): it is the tail of the resource node's type. `check` reports `FLOW_AGENT_CONTEXT_NO_ID` for a blank or non-GUID `id`, and `compile` refuses it too (an SDK where `grep -rlw AgentResources <sdk>/dist` finds no file spells it `AGENT_CONTEXT_NO_ID`).
+`id` is the index's GUID (`Key`): it is the tail of the resource node's type. `check` reports `FLOW_AGENT_CONTEXT_NO_ID` for a blank or non-GUID `id`, and `compile` refuses it too (an SDK older than 6.88.2 spells it `AGENT_CONTEXT_NO_ID`).
 Give `folderPath`: the resource file carries no index id, so the type and the folder together locate the index.
 Resource entries may carry `nodeId` / `source` / `label` from decompile; see [brownfield.md](brownfield.md). Omit them in new flows.
 
@@ -109,7 +109,7 @@ with `uip maestro flow nodes create` gets none.
 A connector tool needs `connection` and `folder`, `bindings.json` labels
 resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either
 is `FLOW_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check`
-(`INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` on an SDK where `grep -rlw AgentResources <sdk>/dist` finds no file). `prepare` does not
+(`INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` on an SDK older than 6.88.2). `prepare` does not
 read a tool's labels from the source, so pass them:
 `uip maestro registry prepare <connector-key> --action <operation> --bind-connection <connection> --bind-folder <folder>`
 finds the connection and writes both entries under the tool's labels.
