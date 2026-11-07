@@ -87,7 +87,10 @@ SECTION_BUDGETS = {
 # with a pointer for a refused `--baseline` (Studio Web owns its SDK copy, so
 # the agent cannot upgrade its way out and would otherwise stop at step 2 on
 # every edit turn).
-STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_600, "Lifecycle": 3_700}
+# Project layout 9,600 -> 9,800 for the missing-IXP-model stop rule (9,763,
+# +193 bytes / ~75 tok): without it the agent adds an Extract document node
+# or hands off to uipath-ixp, which Studio Web does not offer.
+STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_800, "Lifecycle": 3_700}
 
 BYTES_PER_TOKEN = 2.56
 
