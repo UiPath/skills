@@ -1,7 +1,7 @@
 """The routing part of each builder-SDK Maestro SKILL.md must arrive in an agent's first read.
 
-Checked: the promoted `skills/uipath-maestro-flow` and every skill still under
-`preview/skills/` (Case, BPMN).
+Checked: the promoted `skills/uipath-maestro-flow` and `skills/uipath-maestro-case`,
+and every skill still under `preview/skills/` (BPMN).
 
 Agents open SKILL.md with a line window, not the whole file. In run
 adhoc-2026-09-23_16-15-07 (codex gpt-5.6-luna, v2 arm), 121 of the 122 tasks
@@ -54,8 +54,9 @@ from flavor_markers import shipped  # noqa: E402
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
 _PREVIEW_SKILLS = os.path.join(_REPO, "preview", "skills")
-# Promoted out of preview/ (the SDK Flow skill); still held to the same window.
-_PROMOTED_SKILLS = [os.path.join(_REPO, "skills", "uipath-maestro-flow", "SKILL.md")]
+# Promoted out of preview/ (the SDK Flow and Case skills); still held to the same window.
+_PROMOTED_SKILLS = [os.path.join(_REPO, "skills", s, "SKILL.md")
+                    for s in ("uipath-maestro-flow", "uipath-maestro-case")]
 
 ROUTER_WINDOW = 220
 POINTER_WINDOW = 240
@@ -228,7 +229,7 @@ def window_slack(text: str) -> dict[str, int]:
 
 
 def _preview_skills() -> list[str]:
-    # preview/skills/uipath-maestro-flow is a symlink to the promoted tree, so the
+    # preview/skills/uipath-maestro-{flow,case} are symlinks to the promoted trees, so the
     # glob and _PROMOTED_SKILLS name the same file; check each real file once.
     found = glob.glob(os.path.join(_PREVIEW_SKILLS, "*", "SKILL.md"))
     found += [p for p in _PROMOTED_SKILLS if os.path.isfile(p)]

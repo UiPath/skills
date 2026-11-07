@@ -1,259 +1,134 @@
 ---
 name: uipath-maestro-case
-description: "UiPath Maestro Case Management build work: always invoke for `caseplan.case` or `caseplan.json` (Studio Web also: `case.stage.json`, `default.stage.json`), `sdd.md`, or building/creating a case when no SDD exists yet (the case design is produced first, then confirmed in one review). Resolves tenant resources then authors or edits caseplan.case directly with Write/Edit. For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For standalone case SDD design, case `sdd.draft.md` finalization, PDD→SDD, or cross-product planning→uipath-planner."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite, Agent
+description: "UiPath Maestro Case Management (`<Name>.case.ts`, `caseplan.case`, `caseplan.json`): build, edit or fix a case plan. Always invoke for those files, for a case `sdd.md`, or to build or create a case. Authors `<Name>.case.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/case`), compiles it into the project's plan file, and runs the `uip maestro case` check/compile/validate loop. Covers stages, tasks, rules, triggers, SLAs, human action tasks, bindings, published-resource references (registry pull, sdd resolve), and brownfield decompile/edit/recompile. For .xaml→uipath-rpa, .flow/.flow.ts→uipath-maestro-flow, .bpmn/.bpmn.ts→uipath-maestro-bpmn. For standalone case SDD design, case `sdd.draft.md` finalization, PDD→SDD, or cross-product planning→uipath-planner."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
+<!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
+# UiPath Case Management — TypeScript Builder SDK
 
-# UiPath Case Management Authoring Assistant
+Author a Case plan as TypeScript and compile it to schema V30 into the project's plan file; a Case plan declares stages and conditions, not control-flow edges.
 
-Build UiPath Case Management definitions from `sdd.md`. Resolve tenant resources into `tasks/registry-resolved.json`, then emit `caseplan.case` with `uip maestro case sdd convert` and fill what the document cannot determine, using the applicable per-plugin JSON recipes. The SDD is the plan — there is no intermediate plan file, and the converted `caseplan.case` is not one: it is the artifact itself, derived rather than restated.
-
-> **Authoring invariant:** Never use mutating `uip maestro case` commands (`cases|stages|tasks|*-conditions ... add|update|remove`, including `tasks add-connector`) or explore them with `--help`. Use the CLI only for scaffolding, metadata reads, validation/debug, runtime operations, and solution sync/upload. Consult [case-commands.md](references/case-commands.md) only when exact syntax is needed. CLI availability or a final `validate` requirement never overrides this rule.
-
-When `sdd.md` is absent, case design belongs exclusively to **`uipath-planner`**, which runs its Case Design Lane in this conversation. This skill never designs independently. The lane uses best-assumption design, Listen → Sketch → full design-time tenant resolution, a mandatory other-path sweep, and one decision-first eight-section Case Review. Its Build answer is consent; it writes template-conformant `sdd.md`, then this skill continues immediately with
-<!--skill-flavor:design-handoff-next-step:start-->
-`uip solution init`, Phase 1,
-<!--skill-flavor:design-handoff-next-step:end-->
-and later phases. The same handoff applies to `sdd.draft.md` finalization. Never overwrite an existing `sdd.md`.
-
-**Scope:** greenfield builds from `sdd.md` and brownfield targeted edits to an existing `caseplan.case`; see [references/brownfield.md](references/brownfield.md). For Studio Web cases, pull current server state first with `uip solution download` or `solution projects resync` so publishing cannot clobber server changes.
-
-## When to Use This Skill
-
-Use for:
-
-- Building a Case Management project from `sdd.md`.
-- Creating a case when no SDD exists; hand design to `uipath-planner` in this conversation.
-- Generating implementation tasks from an SDD.
-- Editing an existing `caseplan.case` by targeted intent: stage/task changes, conditions, or triggers.
-- Questions about case JSON schema, nodes, transitions, tasks, rules, SLA, or runtime case instances.
-
-Do not use for `.xaml` → `uipath-rpa`, `.flow` → `uipath-maestro-flow`, or standalone agents/APIs/processes outside case context.
-
-## Critical Rules
-
-1. **Design handoff and SDD authority.** If `sdd.md` is absent, immediately invoke `uipath-planner`’s Case Design Lane in this conversation, before reading references or running tenant commands. Do not improvise interviews, design subagents, generic Build Plan approvals, or design-only behavior here. The lane’s single Case Review has exactly these sections: Case Snapshot; Primary Journey; Other Paths Considered; SLA and Escalations; Rules and Outcomes; Resources and Integrations with design-time resolutions; Decisions I Made; Review Flags. It names every stage/task, type, activation/grouping, required status, routing/outcome, and SLA context; `sdd.md` separately contains the complete data contract, variables, and task inputs/outputs. The Build options incorporate Rule 12, and the Build answer is the sole consent. Corrections re-show only changed review sections. Before approval, every `selected-tasks-completed` selector must resolve to a non-adhoc sibling in the same stage. The lane writes `sdd.md` early, then this skill runs
-<!--skill-flavor:design-handoff-rule-next-step:start-->
-`uip solution init <SolutionName>` and Phase 1
-<!--skill-flavor:design-handoff-rule-next-step:end-->
-without another prompt unless explicitly requested. A design-only request stops after `sdd.md` per Rule 3's design-only exception. If `sdd.draft.md` is to be finalized, use the lane fast path with target basename `sdd.md`. Never overwrite `sdd.md`.
-2. **SDD is the sole post-design input, across sessions.** Trust user-provided or previously written `sdd.md`; do not validate, gap-fill, or silently infer it. In the same conversation as design approval, use the in-memory model that wrote it rather than rereading mid-phase — except at Rule 8's Phase 2 and Phase 3 entry checkpoints, which always re-read because context may have compacted. Use AskUserQuestion for build-phase ambiguity. Before reading an SDD not watched being written, Read its first 40 lines as the receipt: the `<!-- planner-handoff:v1 -->` marker and a `Template validation` header value of `passed` must both be present. Anything else goes back through the planner's template conformance checklist.
-3. **Phase 1 registry gate.**
-<!--skill-flavor:registry-gate-login:start-->
-Run `uip login status --output json`, then
-<!--skill-flavor:registry-gate-login:end-->
-`uip maestro case registry pull`, before cache inspection, carryover, resolution, or Phase 1 writes. Pull at most once per session, unless the user selects `Force pull and re-resolve` at Rule 18's empty-lookup gate, or `sdd resolve` reports a stale cache (below). If the planner lane ran in this session, its pull succeeded, and it wrote the SDD, reuse the cache. With the lane’s in-context resolution outcomes, use verify-only planning: persist them verbatim to `tasks/registry-resolved.json`, spot-check cache entries, execute gate decisions, and re-resolve only stale/missing entries. Otherwise run the full gate. Login/pull failure stops Phase 1. A pull that exits 0 with `Data.Errors` is partial: a 5xx `typecache-*` row means that connector index is unavailable — never re-pull, placeholder what it serves (never the flat convert inputs), report an environment gap; [§ Catalog unavailable](references/connector-integration.md#catalog-unavailable-typecache-5xx). Outside that fast path, resolve with `uip maestro case sdd resolve "<SDD_PATH>" --out tasks/registry-resolved.json --output json`: it picks each task type's index, runs the exact-name search and the folder narrowing, and writes the Rule 10 ledger for every task in one call. **When its `Data.Warnings` reports a stale cache** (`Data.Scope.cache.stale: true`), run `uip maestro case registry pull --force --output json` once, without asking, then run `sdd resolve` again. A plain pull reuses any cache under 24 hours old, so only `--force` refreshes it, and the warning is the evidence of staleness the `--force` confirmation otherwise asks for. If it is still stale after the forced pull, report it and continue. Never hand-author that ledger — resolve writes it in well under a second, where hand-writing it has measured ~50 seconds and recorded `selected: null` for resources the same run then bound. Its `Data.Unresolved[]` is the only work left, and only that work is done by hand: an `absent` entry runs registry-discovery.md's cross-type fallback and in-solution sibling check before Rule 18's gate; an `ambiguous` entry — several exact-name matches the SDD's folder did not narrow — is never settled by picking one: it goes to Rule 18's gate like an `absent` one, and without an answer it stays `<UNRESOLVED>` and becomes a placeholder. `registry search` and the index file return the same records in different shapes ([§ Two shapes](references/registry-discovery.md#two-shapes-one-record)). If the CLI reports `sdd resolve` as an unknown command (`ErrorCode: "invalid_argument"`, exit 3), resolve every task by hand per registry-discovery.md and say so in one line. Before a successful pull, missing cache files are failed refresh preconditions, never zero matches; only after success may empty exact-name matches or absent indexes enter empty-lookup handling. Trust the SDD; the pull refreshes discovery only. The planner lane owns design-time resolution, lazily starting login/pull when tenant-bound work first appears, resolving identities with one batched Case Review gate, and recording SDD cells plus its resolution ledger. No schema discovery occurs there.
-
-   **Design-only exception:** when explicitly stopping at `sdd.md` or `sdd.draft.md` without `caseplan.case`, solution, or build, do not run tenant registry, connection, schema, or user-discovery commands. Preserve intended names, leave identities `<UNRESOLVED>`, and report deferred wiring in the reply — never in a substitute plan file. This exception does not apply when the user requests resource/identity resolution, registry refresh, stale-audit replacement, `tasks/registry-resolved.json`, or `tasks/recipients-resolved.json`; then run the normal gate, resolve identities, write the ledger, and stop before Phase 2.
-4. **Convert before authoring.** At the top of Phase 2, after the Rule 3 registry gate, emit the plan with `uip maestro case sdd convert "<SDD_PATH>" --resolved tasks/registry-resolved.json --out "<SolutionName>/<ProjectName>/<PLAN_FILE>" --output json`, where `<PLAN_FILE>` is the plan file `case init` seeded (Rule 14: `caseplan.case`, or `caseplan.json` from a CLI that predates the `.case` name). **The plan lives two levels down** — inside the project directory Rule 24 creates, never at the solution root and never beside `sdd.md`. Writing it shallow either leaves nothing where every grader, `validate`, `bindings sync` and `solution pack` look, or leaves two `caseplan.case` files and an ambiguous build. The SDD determines most of `caseplan.case`; deriving it once beats re-deriving it element by element, and hand-authoring what the parser already emits is the expensive path and the one that drifts from the document. Its `Data.Unresolved[]` is the work list — `resource-binding` closes at Phase 1 bindings, `output-type` at `uip maestro case splice --described` (Step 9.8), `connector-context` at Check 12 — and it is a floor, never a ceiling: it names what convert knew it skipped, never what it emitted wrongly. Known gap it does not name: every `jsonSchema` variable arrives with `body: null`; fill `body` and `_jsonSchema` from the SDD row per [`global-vars/impl-json.md` § jsonSchema type](references/plugins/variables/global-vars/impl-json.md#jsonschema-type). **`Data.Unresolved[]` is the complete list of what is left to do.** Read the emitted plan once, close those entries, and stop; do not re-derive, re-verify, or re-read references for anything convert already emitted. A shape that arrived in the converted plan is settled — reopening it costs more than the whole conversion saved. **Convert before you author any element.** Scaffold the project first per Rule 24 — `case init` refuses a non-empty directory, so converting first leaves the project with no `project.uiproj` and an unregistered manifest. Then run convert immediately; never hand-build stages, tasks, conditions, or variables first and convert second. Full procedure, including the mandatory task-entry-rule check that nothing upstream catches, in [references/phased-execution.md](references/phased-execution.md#convert-first--emit-from-the-document-before-authoring).
-
-   > **Version guard.** If the CLI reports `sdd` or `convert` as an unknown command (`ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand, say so in one line, and continue. Exit 3 without that message is a real failure, not a fallback. Never install, reinstall or change the CLI.
-5. **Parsed reads require `--output json`.**
-6. **Use plugin references for what you author, not for what convert emitted.** During planning, `cat` the matching plugin `planning.md`. During execution, `cat` a plugin's `impl-json.md` before authoring or repairing that plugin's shape **by hand** — the shapes `Data.Unresolved[]` names (Rule 4), anything Step 12 reports, and any plugin `sdd convert` does not cover. A shape that arrived in the converted plan needs no `impl-json.md` read: convert emitted it, Rule 4 settles it, and opening the recipe for it costs a whole-file read that changes nothing. Whatever you open, read the section you need per Rule 25; never guess JSON shapes.
-7. **The build is lossless against the SDD.** Never author an intermediate plan file: `sdd.md` is the plan, and restating it drifts from it. `caseplan.case` must end with one element for every SDD stage, task, trigger, condition, SLA rule, variable, and argument, including explicit defaults — most of them emitted by `sdd convert` (Rule 4) and the rest filled in after; this rule is about what the finished artifact contains, never about writing each element by hand. Preserve every valid explicit rule/selector exactly; reject and repair invalid `selected-tasks-completed` selectors. Copy a stage or task's `**Description:**` line into the element's `description`, word for word; use its `**Design Rationale:**` there only when the block writes no `**Description:**`. Rationales otherwise, the SLA rationale, and condition routing/activation rationales go into `build-issues.md`, which is also where a `**Description:**` goes when the element has no `description` slot. Preserve every Inputs row, binding mode, and value. Preserve JSON object literals exactly: native object or JSON-encoded string in `input.value`; add `=js:`/`=jsonString:` only when explicitly present in the SDD. Project Outputs through [`plugins/variables/io-binding/planning.md`](references/plugins/variables/io-binding/planning.md#sdd-outputs-table-to-caseplan-projection-mandatory), preserving operator and operands. SDD output rows require `->` or `=`; schema-discovered bare outputs are not authored SDD rows. Never simplify equal-name `->` rows; `greeting -> greeting` differs from schema-discovered bare `greeting`. `—` placeholders are not operands. AskUserQuestion for unrecognized or ambiguous rows; never omit silently. Regenerate greenfield builds from scratch; brownfield edits preserve IDs. Every task node carries its own `entryConditions` derived from its SDD **Entry Condition** table and **Activation Mode** — write it per task, never once for a group of similar tasks; `validate` only warns `Task has no entry rules`, while a miss hangs `case debug` indefinitely. See [references/implementation.md](references/implementation.md).
-
-   > **Completion is `--strict --sdd`, never a default-profile `Valid`.** At Step 12 run `uip maestro case validate <caseplan.case> --strict --sdd sdd.md` and close every `STRICT_SDD_*` finding and every `sdd convert` `Data.Unresolved[]` entry before reporting the build complete. Plain `validate` returns `Valid` on a plan missing stages, tasks, conditions, SLA rules and output types; never report that `Valid` as the build's result.
-8. **Build gate.** Phase 1 auto-proceeds to Phase 2. Stop after resolution only when the request explicitly says design-only, Phase 1 only, review first, or not to build. Re-read `sdd.md` and `tasks/registry-resolved.json` at Phase 2 and Phase 3 entry — context may have compacted.
-9. **Unresolved resources.** Never fabricate IDs. Keep `<UNRESOLVED: ...>` in `tasks/registry-resolved.json`. A placeholder task has `type`, `displayName`, structural fields, and `data: {}`; conditions still reference its TaskId. A placeholder event trigger keeps its render fields and `data.inputs` with only `serviceType`, `entryPointId`, and the `objectName` context entry (the SDD Source) that `sdd convert` emits; append its `entry-points.json` entry and create no trigger edge. See [references/placeholder-tasks.md](references/placeholder-tasks.md) and [impl-json.md § Placeholder fallback](references/plugins/triggers/event/impl-json.md#placeholder-fallback-unresolved-connector--connection).
-10. **Resolution audit.** `tasks/registry-resolved.json` holds one object per task with exact keys `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, and `rationale`, plus resolved I/O/review metadata. **`uip maestro case sdd resolve --out` writes it (Rule 3): an object whose `resolved` array holds those entries, beside `unresolved` and `scope`. Keep that shape — never re-wrap it, nest it deeper, or flatten it by hand.** Consumers search for the entries, but that search is depth-bounded: a ledger it cannot find is indistinguishable from no ledger, and a justified placeholder then fails validation instead of warning. Resolve records each resource normalized as `{name, identifierField, identifier, folder}`; read a task's identity from those fields and never re-copy the cache object into them. Everything else in the ledger is added with Edit to the entry it belongs to: `gateDecision`, the identity-slot marker below, `wiringNotes`, and one entry each for triggers and connector-bound conditions, which resolve does not cover. A same-session planner ledger is persisted verbatim instead (Rule 3), in whatever shape it arrived; consumers read both. Add `gateDecision` only when the user answered the design-time resource gate; default deferrals have none. `matches` is the complete exact-name set from the refreshed cache; `selected` is a match or `null` after a genuine empty lookup. A genuine miss — an entry resolve lists in `unresolved[]`, or one a manual lookup left empty — MUST also carry the identity slot for its task type — `taskTypeId` for non-connector tasks, `typeId` / `connectionId` for connector tasks and triggers — holding the `<UNRESOLVED: <reason>>` text Rule 9 requires. A `wait-for-timer` entry, which resolve records with `selected: null` because it runs no tenant resource, is never a miss and takes no marker. A connector entry is resolved by the connector pipeline ([connector-integration.md](references/connector-integration.md)), not by resolve, so its marker follows that pipeline's outcome — resolve's `selected: null` on it means only that resolve did not look. `selected: null` on its own does not record the miss: the marker is what Phase 2 reads to emit a placeholder instead of fetching a schema. Same-session planner ledgers are persisted verbatim, then verified/extended under Rule 3. The resolution ledger and `registry-resolved.json` are machine-only — never shown to the user, including in the Case Review.
-11. **Cross-task references.** Use `"Stage Name"."Task Name".output_name` and the common output-reference-ID algorithm in [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative). Use the source output’s `.id`; only a custom `=` output without `.id` uses its verified root companion’s `.id`. Never use a reassigned output’s `.var`. Discover names with `uip maestro case spec` for connector tasks or `uip maestro case tasks describe` for non-connectors. In larger `=js:` expressions use `vars.$xref('Stage','Task','output')`, resolved at Step 11.5. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md).
-12. **Build-review preference.** Capture once at journey start. Design handoff folds it into the Case Review Build options (`Build it — straight through` or `Build it — pause at the build preview`); provided SDD asks once after the roadmap. Non-interactive and resumed runs without a preference default to straight-through. At Phase 2→3, try `validate --skeleton-v2`; fall back once to legacy `--skeleton` only when the response explicitly says v2 is unknown/unsupported, typically invalid_argument/exit 3. Exit 3 alone is insufficient; real v2 failures are reported. Validation findings do not halt this advisory gate. Straight-through continues without prompting. Pause-at-preview follows [references/phased-execution.md](references/phased-execution.md): AskUserQuestion `Publish for review` / `Skip publish and continue` / `Abort`; on publish, refresh resources, upload with the required filter, print `DesignerUrl` before the follow-up, then ask `Continue to implementation` / `Abort`. Hard stops always remain at Phase 4 retry exhaustion, Phase 5, Phase 6, Phase 7, and any re-publish after a Phase 6 fix.
-13. **Never auto-debug or publish to Orchestrator.** `uip maestro case debug` executes real emails, messages, and API calls. Phase 7 (`case pack` → `solution pack` → `solution publish`) ships to the tenant. Each requires its own AskUserQuestion consent.
-14. **Artifact I/O.** **The plan file is `caseplan.case`.** Name a plan you create `caseplan.case`, with entry points naming `caseplan.case.bpmn` and the package descriptor naming both. If the project already holds a plan under another Studio Web name — `caseplan.json`, `case.stage.json`, `default.stage.json`, for example one an older `case init` seeded — that file is the plan: write and validate it, and never create a second plan file beside it, because the CLI and Studio Web read only the newest name present and `case pack` refuses an entry point naming another plan's sidecar. When `case init` is unavailable and the T01 direct-JSON scaffold creates the project (Rule 24), the CLI predates `.case` support, so name that plan `caseplan.json`. Every `caseplan.case` in this skill means that file. For `caseplan.case`, `sdd.md`, `sdd.draft.md`, `tasks/registry-resolved.json`, `tasks/trigger-spec-cache.json`, `tasks/spec-cache.<elementId>.json`, `id-map.json`, `entry-points.json`, and `build-issues.md`, use only your harness's file tools (`bindings_v2.json` is the exception: `uip maestro case bindings sync` generates it; never write it by hand. `caseplan.case` has one sanctioned generator too — `uip maestro case sdd convert --out` emits the initial plan from `sdd.md` at the top of Phase 2; every edit after that emission is Write/Edit like any other. `tasks/registry-resolved.json` has one as well — `uip maestro case sdd resolve --out` writes it in Phase 1 (Rule 3); every addition after that is Edit. `tasks/spec-cache.<elementId>.json` is the third exception: redirect `uip maestro case spec --output json` into it, because a hand-copy of the tens-of-KB response drops subtrees silently. That redirect is write-once and the only one this rule permits; never edit the file afterward or redirect into any other covered artifact. Each event trigger merges its T-number key into `tasks/trigger-spec-cache.json` with Write/Edit): mutate only with Write / Edit (or `apply_patch`). **The ban is on the write path only.** Never mutate one of these files by script: no `sed -i`, `perl -pi`, `awk`, `jq`, Python or Node rewrite, shell redirection, `tee`, `cp`, `mv`, `install`, `rsync`, or agent-authored script of any kind, including under `/tmp`. **Reading is unrestricted** — `cat`, `sed -n`, `head`, `rg`, `jq` projections, `python3 -c` reads are all allowed, on these artifacts and on `~/.uip/case-resources/`. This rule stops an artifact being AUTHORED or EDITED by script, never CHECKED; the caseplan's own check is `uip maestro case validate --strict --sdd` (Rule 7). If `caseplan.case` exceeds about 30KB, read it by the preview/detail cadence in [case-editing-operations.md](references/case-editing-operations.md) rather than whole. Bash is allowed for read-only inspection, UUID v4 generation without filesystem access, CLI metadata, validate, `format`, `bindings sync`, `splice`, `sdd parse`, `sdd resolve`, `sdd convert`, debug, and solution scaffold/upload. Prefixed IDs are chosen inline. **Write `caseplan.case` pretty-printed, and run `uip maestro case format "<caseplan.case path>" --output json` after every write** — the only sanctioned reformat. A compact plan cannot be patched by Edit/`apply_patch`, and every observed `perl -pi`/`sed -i` violation of this rule started from a compact file. Format's exact output and idempotency: [case-commands.md § uip maestro case format](references/case-commands.md#uip-maestro-case-format).
-15. **Runnable resources and sidecars.** Before Phase 4, run Step 12 Checks 7, 9, 11, and 12 even when publish, debug, or resource refresh is skipped. A non-null `selected` resource must not become a placeholder: retain `data.name` and `data.folderPath` with complete root bindings, regenerate the sidecar with `uip maestro case bindings sync`, and make its `resourceKey` self-consistent with its own defaults, never a copied tenant identity/UUID. Per-check scope and repairs are in [implementation.md § Step 12](references/implementation.md#step-12--end-of-phase-3-validator-pass). Every connector context's `connection` entry must resolve to a declared Connection root binding — connector tasks get it from `uip maestro case splice`, which writes the `=bindings.<id>` reference and both root bindings from the saved spec in one call; the event-trigger node and connector-bound rules take the spec's `=bindings.<id>` reference and the ConnectionId and FolderKey root bindings in the same edit; a `folderKey` holding the connection id, or a connector with no Connection binding in `bindings[]`, is a resource that will never resolve. Completion is `--strict --sdd` per Rule 7; which profile runs in which phase, the don't-chain rule and the CLI 1.202 version guard are in [case-commands.md § uip maestro case validate](references/case-commands.md#uip-maestro-case-validate). Repair and recheck mismatches; halt before Phase 4 if they remain. Repeat Check 7 before every `resources refresh`. **Run `uip solution resources refresh` whenever the plan binds a connector connection — not only before an upload or a debug**, and again before every upload or debug: it is what emits `resources/*/connection/*.json`, and without it a plan that validates clean packs a solution that cannot connect ([bindings-v2-sync.md](references/bindings-v2-sync.md)). Upload flags and the DesignerUrl report are in [phased-execution.md § Phase 5](references/phased-execution.md#phase-5--publish).
-16. **Handoff contract.** Invoke `uipath-planner`’s Case Design Lane in this conversation, never as a subagent. It owns design, resolution, review, and SDD writing; this skill resumes at solution initialization. User-facing language presents one continuous flow and never mentions the handoff. If unavailable, say so in one line, request `sdd.md` or an approved pasted design, and stop. Cross-product planning remains a plain-text suggestion to the planner. Apply the Rule 2 receipt spot-check before unobserved SDD reads.
-17. **Closed task types.** `caseplan.case` task `type` must be exactly one of: `process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `business-rule`, `case-management`, `execute-connector-activity`, `flow-process`, `http-request`, `document-extraction`, `script`, `wait-for-connector`, `external-agent`, `external-workflow`, `wait-for-timer`. Never use plugin folder or CLI names, `wait-for-event`, or other invented values. The unsupported types remain unsupported. See [references/case-schema.md](references/case-schema.md) and the Plugin Index.
-18. **Empty lookup gate.** If the same-session ledger has a user `gateDecision`, execute it without asking again: `resolve-at-build` → placeholder; `create-during-build` → inline create; `pick:<name>` → bind it. A missing decision is a default deferral, not consent; run the full gate. For zero matches, use one batched AskUserQuestion grouped by `(name,type)` with: `Force pull and re-resolve`; `Use placeholders for all`; and, only when creatable resources exist and `registry --local` is supported, `Create missing resources inline`. For several exact-name matches the SDD's folder did not narrow, never pick one by position: the cache lists resources in the order the tenant registered them, so the first is whichever was deployed earliest — often another team's fixture or a debug copy. Ask in the same batch which candidate is meant, one option per candidate named by its folder, plus `Use a placeholder`; unanswered or non-interactive, it stays `<UNRESOLVED>`. Create only selected `agent`, `api-workflow`, or `business-rule` resources, invoking `uipath-agents`, `uipath-api-workflow`, or `uipath-rules`; never infer Create from SDD content. Other empty types remain placeholder-only. Selected resources with identical I/O may share one build; differing I/O splits later with the anchor retaining the name, and SDD updates require permission. See [registry-discovery.md § 1c](references/registry-discovery.md#1c--dedup-the-selected-builds-one-resource-per-name-and-type), [Create-on-Missing](references/registry-discovery.md#create-on-missing-build-and-rediscovery), and [§ MUST Confirm](references/registry-discovery.md#must-confirm-before-placeholder-fallback).
-19. **Layout.** Emit top-level `layout: {}` only. Do not emit node `position`, `style`, `measured`, `width`, `height`, `zIndex`, or edge `data.waypoints`; do not compute positions.
-20. **Global output IDs.** Run Step 12 Check 8 once at Phase 3 exit. It is mandatory; do not enter Phase 4 until it passes and do not substitute CLI validate.
-21. **No authored edges.** Keep `schema.edges` as `[]`; never author TriggerEdge/Edge objects. Conditions provide stage flow; the first stage uses `case-entered`. Read-only edge shapes are documented in [case-schema.md Appendix](references/case-schema.md#appendix--edge-shapes-read-only--never-author).
-22. **Global events and SLA responses.** Model a global external event once as an interrupting secondary-stage `wait-for-connector` entry. Choose SLA response explicitly: `notify-only`, `start-task`, `enter-stage`, `exit-stage`, or `exit-case`. A `start-task` response belongs on the follow-up task’s own `sla-status-change` entry, not a stage entry. Interrupting depends on whether active work stops, pauses, or reroutes; parallel oversight uses `Interrupting: No` and remains secondary. `sla-status-change` names `slaId`; add `escalationId` only for at-risk responses. Without a stated response, at-risk and breach are notifications. Do not replicate rules across primary stages. See [references/sla-response-shapes.md](references/sla-response-shapes.md) and the SLA Response Map.
-23. **Formal argument IDs.** `variables.inputs[].id` and `variables.outputs[].id` must be synthetic `v` + 8 characters and distinct from `name`/`var`; never copy companion names. Run Step 12 Check 10 once at Phase 3 exit and non-interactively re-mint violations. CLI validate does not check this. See [global-vars/impl-json.md § Formal-arg slot ID format](references/plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format).
-<!--skill-flavor:project-scaffold-rule:start-->
-24. **Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory.** `cd <SolutionDir>` first; `&&`-chaining after `uip solution init` does not satisfy it and lands the project outside the solution, auto-scaffolding a second one. Confirm `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`. Use the T01 direct-JSON scaffold in [implementation.md § Step 6](references/implementation.md#step-6--create-the-case-project-structure) only when `case init` is unavailable. See [case-commands.md § case init](references/case-commands.md#uip-maestro-case-init).
-<!--skill-flavor:project-scaffold-rule:end-->
-25. **Read the passage a mutation uses before making it.** Before the first Write/Edit that uses a shape, procedure, constraint, or verification rule from a reference, read the section that states it, whole: find it by its heading (the reference's headings, or a search for the term), then read from that heading to the next heading of the same level. A whole-file read is not required, and the file's `<!-- END: <filename> -->` marker need not appear. **Exception — brownfield recipes:** an edit covered by a recipe in [edit-recipes-guide.md](references/edit-recipes-guide.md) needs only that recipe; read another reference only when the recipe names it. A search hit alone, memory, and a sibling reference do not satisfy this. When the section you read points to another section, read that one too. Reopen a section after compaction or when the prior read is unavailable.
-26. **Unique labels and task names.** Stage `data.label` values are unique case-wide; task `displayName` values are unique across all stages, exact and untrimmed, and contain no `:`. A missing display name binds to the resource name and participates in uniqueness. Condition `displayName` values are unique case-wide across all four condition scopes, **except the frontend's own default names** (`Entry rule <N>`, `Exit rule <N>`, `Completion rule <N>`, `Stage complete`, `Stage exit`, `Tasks completed rule`, `Previous task completed`), which repeat freely and are never renumbered. Number the names you author yourself with a case-wide counter per label kind, never a per-stage or per-task one ([case-schema.md § Condition name uniqueness](references/case-schema.md#condition-name-uniqueness)). Assign names in Phase 1; later renaming touches the SDD, plan, ID map, and name-keyed references.
-
-## Routing
-
-| Condition | Journey |
-|---|---|
-| New case, SDD provided, no caseplan, or rebuild from spec | **Greenfield:** handoff if needed, then Phases 1–7 |
-| Existing caseplan and targeted edit intent | **Brownfield:** skip handoff and Phases 1–7; use [brownfield.md](references/brownfield.md) |
-
-Brownfield still requires latest-state pull, debug consent, and Orchestrator-publish consent, and reuses Phase 5–7 contracts.
-
-## User-Facing Roadmap
-
-Print once, after routing and before detailed work, in five lines or fewer. Do not expose phases, modes, filenames, or implementation mechanics.
-
-- **New case without SDD:** `1. I read your request and make the design calls, checking your UiPath tenant along the way. 2. One review packet: case snapshot, primary journey, other paths, SLA responses, business rules, resources, and every decision I made — you confirm or correct. 3. Build and validate without interruptions; the full technical design doc is saved alongside for reference. 4. Pause for your call before any run or publish.`
-- **New case with SDD:** `1. Read the design and verify available UiPath resources. 2. One question: build straight through, or pause at a mid-build preview. 3. Plan, build, and validate without further interruptions. 4. Pause for your call before any run or publish.`
-- **Targeted edit:** `1. Pull the latest case. 2. Apply the requested change. 3. Validate the updated case. 4. Ask before running or publishing anything.`
+Use this as a router: read only the capability reference you need, then let TypeScript and `case check` provide the detailed contract.
 
 ## Workflow
 
-Front-load decisions, then run unattended to consent gates:
+**Stop rule, before any step:** when the request says design-only, Phase 1 only, review first, not to build, not to create the case plan, or to stop before tenant work, run no `solution init`, `case init`, `decompile` or `compile`. Write no `<Name>.case.ts`, `caseplan.case` or `caseplan.json`, and no `tasks/tasks.md` or other restatement of the SDD unless the request asks for one. When the request says Phase 1 only, review first, or not to build, or asks for registry or resource lookups, run step 0 for an approved `sdd.md` plus any lookup the request asks for, then stop. Otherwise (design-only, no case plan, stop before tenant work) run no registry or other tenant command. Report the deferred build work in the reply.
 
-**Design handoff when required → Phase 1 Planning → Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug → Phase 7 Publish to Orchestrator.**
+0. When the input is an approved `sdd.md` that names published resources, resolve them first: `registry pull`, then `sdd resolve` into `tasks/registry-resolved.json`, then ask the user about what it leaves ([Registry resolution](references/registry-resolution.md)). Stop there when the request is Phase 1 only.
+1. Scaffold once, running `case init` **from inside the solution dir**: `uip solution init <SolutionName> && cd <SolutionName> && uip maestro case init <CaseName>`. It walks UP for the enclosing `.uipx`; run from anywhere else it finds none, silently creates a SECOND solution `<CaseName>Solution/`, registers the project there, and leaves the first empty with two `project.uiproj` on disk — so check the reply carries no `Data.AutoCreatedSolution`. Exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates; if a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
+2. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
+3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
+4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
+5. Seed the source by decompiling the plan `case init` seeded (`caseplan.case`, or an older `caseplan.json`) instead of hand-writing the skeleton: `uip maestro case decompile <project>/<plan> -o <Name>.case.ts --no-pipeline`. It carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned; `entry-points.json` references that trigger id. Compile back into that same `<plan>`, never a second plan beside it: pack and debug read only one. Compile with plain `-o <project>/<plan>` and no `--bindings <plan>`; it needs `@uipath/maestro-builder-sdk` 6.50.1 or later to keep a Designer-saved plan's binding map ([Brownfield](references/case-runtime.md#brownfield-editing)). Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
+6. Run `uip maestro case check <Name>.case.ts --source` before every compile, gate edits included (`skipWhen`, a rule `expression`); fix every error (non-zero exit) first. For instance, `check` reports a `vars.<id>` read of an undeclared variable as `EXPR_UNDECLARED_REF`.
+7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
+8. Run live debug only when requested and tenant resources are available.
 
-At invocation start, present once the matching kickoff block below, at handoff start or Phase 1 start. Status text must follow the Anti-patterns limits.
+## API index
 
-**Greenfield kickoff:**
+Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only
+true of the build that emitted it. `@uipath/maestro-builder-sdk` ships
+`dist/api-members.md` (keyed by field or method — `sla`) and `dist/api-index.md`
+(keyed by exported symbol — `CaseBuilder`). Match one name, not the whole file,
+then read the span: the whole declaration, doc comment included. Both cover all
+three entry points; each file's header spells the paths its rows resolve against.
 
-> Here's how I'll build this case, and where I'll stop for your call:
-> - **Planning** — I draft a task plan from the spec and continue; ask up front if you want to review it first.
-> - **Prototyping** — I build the reviewable case flow (stages, tasks, triggers, rules, SLA/escalation; connector rules use stubs). Whether I pause here for a Studio Web preview is **your up-front call** — asked once at the start, never mid-build.
-> - **Implementation** — I wire task inputs/outputs, connector schemas, and resolved connector-rule details.
-> - **Validate** — I run validation and fix errors.
-> - **Publish** (optional) — **you choose** whether to upload to Studio Web.
-> - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
-> - **Publish to Orchestrator** (optional) — **you choose** whether to publish the case to Orchestrator.
+## Capability router
 
-For handoff, prefix: `First I'll design the case from what you've given me — checking your UiPath tenant along the way — and show one decision-first review packet with the case snapshot, primary journey, other paths, SLA responses, business rules, resources, and every decision made — one confirmation, then I build; the full technical design doc (sdd.md) is saved alongside for reference.`
+| Surface | Builder/API | Reference | Example |
+|---|---|---|---|
+| Case, stages, and completion | `casePlan`, `stage`, `completeWhen` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts` |
+| Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
+| A task's outputs, and reading them from a later task or gate (SDK 6.70.7+) | `outputs`: a key equal to the source's last segment (`app_id: '=response.app_id'`) keeps the output on the task, with no case variable, unless a `.var()` of that name exists or another task uses the same key (then both write one shared case variable; give the second task the suffixed key, `Result2: '=Result'`, to keep it on its task); `taskOutput('<stage>', '<task>', '<output>')`, or the SDD's `vars.$xref(...)` as written, reads it, where `<output>` is the result field it reads or its `outputs` key, and an unknown name is refused (`TASK_OUTPUT_REF_UNRESOLVED`) | [TaskBuilder, taskOutput](#api-index) | — |
+| Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Business events an outside system sends to a running case | `businessEvent`, `rule('api-event', { businessEvent })` (SDK 6.47.0+) | [CaseBuilder, Rules](#api-index) | — |
+| Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Business rules (decision tables) | `businessRule` (SDK 6.34.0+) | [TaskBuilder](#api-index) | `examples/CreditDecision.case.ts` |
+| Deployed Coded Functions | `function` (SDK 6.47.1+) | [TaskBuilder](#api-index) | — |
+| Resolving SDD resources against the tenant | `uip maestro case registry pull`, `uip maestro case sdd resolve` | [Registry resolution](references/registry-resolution.md) | — |
+| Human work and its Action App | `action`; `app: { name, folder }` (SDK 6.46.4+) names the app (`actionCatalogName` is a task catalog, not the app) | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
+| Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
+| External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
+| Timers | `waitForTimer` | [TimerSpecData](#api-index) | `examples/NightlyRollup.case.ts` |
+| Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
+| Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
 
-For brownfield, use the short entry flow in [references/brownfield.md](references/brownfield.md).
+## Minimal shape
 
-### Design handoff
+```ts
+import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 
-The trigger is binary: if no `.md` whose basename contains `sdd` exists at the resolved path, hand off. If the prompt names another SDD basename, copy it to `./sdd.md` using Read + Write; do not invoke the lane. If no `.md` is named, use `./sdd.md`. Do not read planning/plugin references or run tenant commands before the Case Review. For an explicit no-build design request, write `sdd.md` after approval, without plugin references, schema, registry, connection, or user discovery, then stop — do not author a plan file in place of the build. Planner-owned drafts and `sdd-viewer.html` stay with the planner. If unavailable, request an SDD and stop.
+export default casePlan('loan-approval')
+  .name('Loan Approval')
+  .identifier('LOAN')
+  .stage('Review', s => s
+    .required()
+    .entryWhen(rule('case-entered'), { displayName: 'Case entered' })
+    .exitWhen(rule('required-tasks-completed'), { displayName: 'All done', marksStageComplete: true })
+    .task('Check Policy', t => t
+      .process('check-policy', { folder: 'Shared' })
+      .required()
+      .entryWhen(rule('current-stage-entered')))
+    .task('Manager Approval', t => t
+      .action({ title: 'Approve loan', priority: 'High', recipient: 'manager@corp.com' })
+      .entryWhen(rule('selected-tasks-completed', { tasks: ['Check Policy'] }))))
+  .stage('Decision', s => s
+    .required()
+    .entryWhen(rule('selected-stage-completed', { stage: 'Review' }), { displayName: 'After review' })
+    .exitWhen(rule('required-tasks-completed'), { marksStageComplete: true })
+    .task('Notify', t => t.process('notify').required().entryWhen(rule('current-stage-entered'))))
+  .completeWhen(rule('required-stages-completed'), { displayName: 'Case resolved' })
+  .build();
+```
 
-### Phase 1 — Resolution
+## Validation loop
 
-Read [references/planning.md](references/planning.md) to produce:
+```bash
+uip maestro case check <Name>.case.ts --source
+uip maestro case compile <Name>.case.ts -o <project>/<plan>
+uip maestro case validate <project>/<plan> --strict --sdd <sdd.md> --output json  # SDD supplied
+uip maestro case validate <project>/<plan> --strict --output json                 # no SDD
+uip solution resources remove <orphan-key> --solution-folder <solution> --output json
+uip solution resources refresh --solution-folder <solution> --output json
+```
 
-- `tasks/registry-resolved.json`: complete resolution audit — tenant identities only, never a copy of the SDD's structure or contract.
-- If Create is selected at Rule 18: build selected agents/API workflows/business rules as in-solution siblings through the permitted sub-agent paths, ensure a solution exists, register them, refresh resources, rediscover, and bind them. See [registry-discovery.md § Create-on-Missing](references/registry-discovery.md#create-on-missing-build-and-rediscovery).
+`check` owns source-level invariants and emits teaching diagnostics. Product
+validation owns the compiled Case contract. Do not repair emitted JSON by hand;
+change the TypeScript source and rebuild.
 
-`tasks/` is adjacent to `sdd.md`, never inside the solution/project. Auto-proceed to Phase 2 unless the request explicitly asks to stop before the build. Re-read `sdd.md` and the ledger first.
+The build is complete only when `validate --strict` passes. When the request
+supplies an `sdd.md`, add `--sdd <path>`: it audits the plan against the SDD.
+Without an SDD, run `--strict` alone. A default-profile `Valid` whose
+`Data.Suppressed.Errors` is above 0 is not completion; run the command its
+`Instructions` names. Fix each finding in the TypeScript source and recompile.
+If a finding persists after a source fix and recompile, stop and report its
+code as unfinished; never patch emitted JSON.
 
-### Phase 2 — Prototyping
+`check` also reads the connector library, the same one `compile` resolves
+against: `$FLOW_SDK_LIBRARY_JSON`, else the `uip maestro registry pull`
+snapshot, plus `.flow-sdk/connectors-local` when `registry prepare` wrote it.
+A connector task, external task, event trigger or wait-for-connector that
+`compile` cannot resolve fails `check` first, with compile's code and text.
 
-Read [references/implementation.md](references/implementation.md) and [references/phased-execution.md](references/phased-execution.md). Follow Steps 6–11.9:
+Before `check` on a Case with connector work, run `uip maestro registry pull`:
+with no library cached these rules stay silent, so a clean `check` proves
+nothing about the connector. To use another library, set
+`$FLOW_SDK_LIBRARY_JSON` for both `check` and `compile`, not `--library`, so
+both resolve against the same one.
 
-<!--skill-flavor:phase-two-step-six:start-->
-1. Step 6: `uip solution init`, then `uip maestro case init` from inside the solution directory (Rule 24), then **`sdd convert --out` the caseplan into the plan file `case init` seeded** (Rule 4). The T01 direct-JSON recipe in [plugins/case/impl-json.md](references/plugins/case/impl-json.md) is the fallback when the installed CLI has no `case init` or no `sdd convert`, and the reference for the root shape either way.
-<!--skill-flavor:phase-two-step-six:end-->
-2. Step 6.1: manual, timer, and event triggers, including Rule 9 placeholders; capture trigger IDs.
-3. Step 6.2: global variables and arguments; In-argument `elementId` references the trigger named by `sourceTriggers`, or the primary trigger when blank.
-4. Step 6.3: synchronize `entry-points.json` from declared In/Out arguments per [entry-points-sync.md](references/entry-points-sync.md). Emit the `job-attachment` `definitions` block byte-for-byte from that reference — reproduce its `MimeType.description` inner quotes exactly (single-`\"` escaping); never re-escape (`\\"`) or rebalance them, or the JSON breaks.
-5. Step 7: stages.
-6. Step 9: task shapes; non-connectors get complete `data.inputs[]` with empty values, connectors only `typeId`/`connectionId`, unresolved resources use placeholders.
-7. Step 11: SLA/escalation objects with stable IDs.
-8. Step 10: all four condition scopes; connector waits use canonical stubs regardless of resolution.
-9. Step 11.9: informational skeleton validation with Rule 12 fallback behavior.
-10. Apply the Phase 2→3 preference. Preview branch uses resource refresh, filtered solution upload, printed DesignerUrl, and the prescribed continuation gate; Abort writes `build-issues.md` and exits.
+Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
+API workflow, Coded Function, or sub-case; never fabricate a name or folder. A destination's
+`selected-stage-completed` entry does not imply a source `exitToStage` hand-off.
+An unresolved connector is `.unresolved('connector')` or
+`.unresolved('wait-for-connector')`; never pick a real connector to stand in,
+and a placeholder takes no outputs.
 
-### Phase 3 — Implementation
+## Evidence boundary
 
-Re-read the SDD's task detail blocks, `tasks/registry-resolved.json`, and `caseplan.case` (Step 9.6), then follow Steps 9.7, 9.8, 10.5, and 11.5:
-
-1. Resolve connector schemas/defaults with `uip maestro case spec`.
-2. Bind I/O for all task classes using [io-binding/impl-json.md](references/plugins/variables/io-binding/impl-json.md).
-3. Upgrade resolved connector-bound condition stubs in place; unresolved connectors retain stubs and are reported.
-4. Resolve in-expression `vars.$xref` markers.
-5. Perform resolved-resource emission, preservation, resourceKey, and connector completeness checks.
-
-Proceed directly to Phase 4 after the Phase 3 checks pass.
-
-### Phase 4 — Validate
-
-Run Step 12 once at the Phase 3 boundary. It performs Checks 1–15, including Check 7 sidecar parity, Check 8 global output-ID uniqueness, Check 9 resource emission/preservation, Check 10 formal-arg IDs, Check 11 resourceKey consistency, Check 12 connector completeness, and Check 15 every task carrying a non-empty entry rule (`validate` only warns on a missing one). Then run full `uip maestro case validate`. Retry at most three times, with an edit before every retry; on the third failure, hard-stop with AskUserQuestion: `Retry with fix` / `Pause for manual edit` / `Abort`. Summarize `build-issues.md` using Step 12.1.
-
-### Phase 5 — Publish
-
-Provide the completion report, then hard-stop AskUserQuestion: `Publish to Studio Web` / `Skip to Debug` (Step 13). On publish, refresh resources and upload with the mandatory output filter, print DesignerUrl, and continue to Phase 6 either way.
-
-### Phase 6 — Debug
-
-<!--skill-flavor:phase-six-debug-gate:start-->
-Hard-stop AskUserQuestion (Step 15): `Run debug session` / `Continue to publish`. On Run, refresh resources, run `uip maestro case debug`, and loop after completion until `Continue to publish`. Never run debug automatically.
-<!--skill-flavor:phase-six-debug-gate:end-->
-
-### Phase 7 — Publish to Orchestrator
-
-<!--skill-flavor:phase-seven-publish:start-->
-Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publish, run in order:
-
-1. `uip solution resources refresh`
-2. `uip maestro case pack <SolutionDir>/<ProjectName> <SolutionDir>/dist --output json`
-3. `uip solution pack <SolutionDir> <SolutionDir>/dist --output json`
-4. `uip solution publish <packagePath> --wait --output json`
-
-`case pack` is mandatory because it creates `caseplan.case.bpmn`; `validate` does not. Publish the `solution pack` `.zip`, not the case `.nupkg`; read `<packagePath>` from `Data.Packages`, never guess. `Done` exits.
-<!--skill-flavor:phase-seven-publish:end-->
-
-## Reference Navigation
-
-| Need | Reference |
-|---|---|
-| Design without SDD | `uipath-planner` Case Design Lane; Rule 16 |
-| Resolve resources from SDD | [references/planning.md](references/planning.md) |
-| Build caseplan from SDD | [references/implementation.md](references/implementation.md) |
-| Brownfield edit | [references/brownfield.md](references/brownfield.md); common edits: [references/edit-recipes-guide.md](references/edit-recipes-guide.md) |
-| Phase contracts | [references/phased-execution.md](references/phased-execution.md) |
-| Edit mechanics | [references/case-editing-operations.md](references/case-editing-operations.md) |
-| Schema | [references/case-schema.md](references/case-schema.md) |
-| Allowed CLI | [references/case-commands.md](references/case-commands.md) |
-| Troubleshooting | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
-| Registry resolution | [references/registry-discovery.md](references/registry-discovery.md) |
-| Bindings/expressions | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
-| Connector integration | [references/connector-integration.md](references/connector-integration.md) |
-| Case spec input details | [references/case-spec-input-details.md](references/case-spec-input-details.md) |
-| Placeholders | [references/placeholder-tasks.md](references/placeholder-tasks.md) |
-| Bindings sidecar | [references/bindings-v2-sync.md](references/bindings-v2-sync.md) |
-| Prune orphaned solution resource | [bindings-v2-sync.md § Prune orphaned solution resources](references/bindings-v2-sync.md#prune-orphaned-solution-resources) |
-| Entry points | [references/entry-points-sync.md](references/entry-points-sync.md) |
-| SLA responses | [references/sla-response-shapes.md](references/sla-response-shapes.md) |
-
-### Plugin Index
-
-**Structural:** [case/planning.md](references/plugins/case/planning.md), [stages/planning.md](references/plugins/stages/planning.md), [sla/planning.md](references/plugins/sla/planning.md), [global-vars/planning.md](references/plugins/variables/global-vars/planning.md), [io-binding/planning.md](references/plugins/variables/io-binding/planning.md), and [logging/impl-json.md](references/plugins/logging/impl-json.md).
-
-**Tasks:**
-
-| Schema `type` / SDD value | Plugin planning reference | CLI describe type |
-|---|---|---|
-| `process` | [process](references/plugins/tasks/process/planning.md) | `process` |
-| `agent` | [agent](references/plugins/tasks/agent/planning.md) | `agent` |
-| `rpa` | [rpa](references/plugins/tasks/rpa/planning.md) | `rpa` |
-| `action` | [action](references/plugins/tasks/action/planning.md) | `action` |
-| `api-workflow` | [api-workflow](references/plugins/tasks/api-workflow/planning.md) | `api-workflow` |
-| `function` | [function](references/plugins/tasks/function/planning.md) | `function` |
-| `business-rule` | [business-rule](references/plugins/tasks/business-rule/planning.md) | `business-rule` |
-| `case-management` | [case-management](references/plugins/tasks/case-management/planning.md) | `case-management` |
-| `execute-connector-activity` | [connector-activity](references/plugins/tasks/connector-activity/planning.md) | `connector-activity` |
-| `flow-process` | [flow-process](references/plugins/tasks/flow-process/planning.md) | `flow-process` |
-| `http-request` | [http-request](references/plugins/tasks/http-request/planning.md) | — (`sdd convert` writes it) |
-| `document-extraction` | [document-extraction](references/plugins/tasks/document-extraction/planning.md) | — (`sdd convert` writes it) |
-| `script` | [script](references/plugins/tasks/script/planning.md) | — (`sdd convert` writes it) |
-| `wait-for-connector` | [connector-trigger](references/plugins/tasks/connector-trigger/planning.md) | `connector-trigger` |
-| `external-agent` | [connector-activity § External agents and automations](references/plugins/tasks/connector-activity/planning.md#external-agents-and-automations) | `external-agent` |
-| `external-workflow` | [connector-activity § External agents and automations](references/plugins/tasks/connector-activity/planning.md#external-agents-and-automations) | `external-workflow` |
-| `wait-for-timer` | [wait-for-timer](references/plugins/tasks/wait-for-timer/planning.md) | `wait-for-timer` |
-
-**Triggers:** [manual](references/plugins/triggers/manual/planning.md), [timer](references/plugins/triggers/timer/planning.md), and [event](references/plugins/triggers/event/planning.md).
-
-**Conditions:** [stage-entry-conditions](references/plugins/conditions/stage-entry-conditions/planning.md), [stage-exit-conditions](references/plugins/conditions/stage-exit-conditions/planning.md), [task-entry-conditions](references/plugins/conditions/task-entry-conditions/planning.md), and [case-exit-conditions](references/plugins/conditions/case-exit-conditions/planning.md).
-
-Connector-bound rules in any condition scope require `rule.uipath` built from `case spec --type trigger`; bare connector rules are invalid in Studio Web even when CLI validate passes. See [connector-trigger-impl.md](references/connector-trigger-impl.md).
-
-## Anti-patterns
-
-- Do not leave a regular stage without an entry condition. The first stage uses `case-entered`; every other regular stage needs a reachable predecessor. Edges are retired. `validate` errors on this (`CASE_MGMT_STAGE_ENTRY_CONDITION_MISSING`).
-- Do not design here, start Phase 1 before Case Review approval, or build from a summary SDD. The planner owns design, other-path analysis, and template conformance.
-- Do not validate after each element or validate twice without an intervening edit. Phase 2 validation is informational; Phase 4 validation is authoritative and runs `--strict` — do not finish on a default-profile `Valid`.
-- Do not author `tasks/tasks.md`, a T-numbered task list, or any other restatement of the SDD. The SDD is the plan; Phase 2 derives `caseplan.case` from it with `sdd convert` (Rule 4) and completes the remainder, and Step 12's `validate --strict --sdd sdd.md` audits the artifact against it. A generated `caseplan.case` is the artifact, not a restatement — this prohibition is about prose plans, never about the converter's output.
-- Never one Write for the whole `caseplan.case`: `sdd convert` emits it and every change after that is a targeted Edit preserving untouched siblings. Re-read the plan and `sdd.md` after an interruption. Write cadence for the cases that still need one — brownfield section rewrites, a `case init`-unavailable scaffold — is in [case-editing-operations.md § Per-section batch write contract](references/case-editing-operations.md#per-section-batch-write-contract--canonical).
-- Do not emit standalone narration between tool calls. Bundle status with the next tool call; keep ordinary text under 200 tokens and allow-listed kickoff, hard-stop preambles, completion reports, DesignerUrl prints, and validation summaries under 500. Do not announce imminent actions with verbs such as `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next`, `Approach`, `Strategy`, `Plan`, `Let me`, or equivalent.
-- Preserve ordered task semantics. Sequential mode uses ordered `data.tasks` sets and one `runs-sequentially` rule per task; do not add `current-stage-entered` alongside it. Use parallel `current-stage-entered` only for independent work and `selected-tasks-completed` only for required fan-in. Event-triggered tasks use event/condition rules; manually triggered/adhoc tasks use one `adhoc` rule, `isRequired: false`, and no additional entry event. `adhoc` is an activation mode, not a task type.
-- Model secondary stages as interrupting exception lanes: `case-management:Stage`, `data.stageType: "secondary"`, `isRequired: false`, and `Interrupting: Yes` on stage and entries. Use `Interrupting: No` only for parallel SLA oversight. Use `return-to-origin`; do not connect secondary stages as normal flow or count them in required completion.
-- Do not replicate global events or SLA rules across primary stages. Case completion requires a root `metadata.caseExitRules[]` rule with `marksCaseComplete: true`; stage completion alone is insufficient. Non-completing outcomes use `marksCaseComplete: false`.
-- Do not edit generated `caseplan.case.bpmn`; do not place `caseplan.case` under `content/`; do not fabricate conditional-SLA expression syntax — `validate --strict` errors on a namespace-less `=js:` identifier (`STRICT_JS_UNKNOWN_IDENTIFIER`); describe conditions naturally until execution resolves them.
-- Do not place `tasks/` in the solution/project; it stays beside `sdd.md`.
-- Do not invoke other skills automatically except Rule 16 design handoff and Rule 18’s gate-selected inline creation of agents/API workflows/business rules. Do not spawn subagents for design, draft finalization, or plan-only documents.
-- Do not read the installed CLI to interpret its own output. `validate` findings name the element path and the repair; the fix is in the caseplan or the reference that owns that shape, never in `node_modules/@uipath/**/dist`. Grepping a bundled chunk, or reimplementing a compare in `node -e` to predict it, spends the turn budget on the tool instead of the plan — one nightly task spent 56 of its 151 commands there and ran out of clock. If a finding is unclear after re-reading the named element and its reference, repair what the message names and move on; if it still fires, report it with `/uipath-feedback`.
-- Use `uipath-feedback` for trouble.
-
-> **Trouble?** Use `/uipath-feedback` to send a report.
+Static success proves the source and artifact contracts. It proves neither live
+behavior (resource resolution, human outcomes, timers, skipped-task completion,
+business calendars) nor the design decisions no schema checks: lane routing,
+non-completing exits, declared optionality, and SDD intent beyond what the
+`--sdd` audit compares. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.

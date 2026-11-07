@@ -92,7 +92,9 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 <!--skill-flavor:flow-sdk-surface-row:start-->
 | `.flow.ts` or `.flow` file | **Flow** | Author with `hitl(...)` in `<Name>.flow.ts` through the `uipath-maestro-flow` skill ([hitl.md](../uipath-maestro-flow/references/hitl.md)); never write node JSON into the compiled `.flow` — `compile` overwrites it |
 <!--skill-flavor:flow-sdk-surface-row:end-->
-| `caseplan.case` (any `*.json` or `*.case` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
+<!--skill-flavor:case-sdk-surface-row:start-->
+| `<Name>.case.ts`, or `caseplan.case` (any `*.json` or `*.case` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Author an `action(...)` task in `<Name>.case.ts` through the `uipath-maestro-case` skill ([capability router](../uipath-maestro-case/SKILL.md#capability-router)); never write task JSON into the compiled plan — `compile` overwrites it |
+<!--skill-flavor:case-sdk-surface-row:end-->
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Write the `UserTask` XML directly — see Step 5 Surface: Maestro |
 
@@ -100,6 +102,10 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 **Flow surface (a `.flow.ts`, a `.flow`, or a new flow) — the default: stop here.** Hand the HITL request to the `uipath-maestro-flow` skill: it authors `hitl(...)` in `<Name>.flow.ts` — decompiling an existing `.flow` first — and compiles ([hitl.md](../uipath-maestro-flow/references/hitl.md)). Never read or hand-edit the compiled `.flow`; the next `compile` overwrites it. Steps 2–6 below cover the Case, Low-Code Agent and Maestro surfaces.
 
 <!--skill-flavor:flow-sdk-hitl-stop:end-->
+<!--skill-flavor:case-sdk-hitl-stop:start-->
+**Case surface (a `<Name>.case.ts`, a `caseplan.case`, a `caseplan.json`, or a new case) — the default: stop here too.** Hand the HITL request to the `uipath-maestro-case` skill: it authors `action(...)` in `<Name>.case.ts` — decompiling an existing plan first — and compiles ([Case runtime decisions](../uipath-maestro-case/references/case-runtime.md#human-and-on-demand-work)). Never hand-edit the compiled plan; the next `compile` overwrites it. In this package, Steps 2–6 below cover only the Low-Code Agent and Maestro surfaces.
+
+<!--skill-flavor:case-sdk-hitl-stop:end-->
 **If the user mentioned a specific file path**, use that directly.
 
 <!--skill-flavor:flow-project-creation:start-->
