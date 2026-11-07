@@ -78,6 +78,21 @@ The last stdout line is one JSON object.
 
 Exit codes: `0` ok, `1` error, `3` missing.
 
+## Install question
+
+SKILL.md Step 0 sends the agent here when the script reports `missing`. `<URL>` and `<DIR>` are the `url` and `dir` values of that object. Use the host's structured question tool when it has one, otherwise ask in text. Offer exactly these two options, the first as the recommended one, and no other:
+
+> The Activity Migrator (`UiPath.Upgrade.exe`) is not installed. UiPath distributes it as a zip of a few hundred MB for Windows.
+>
+> 1. **Download it now** (recommended). I fetch `<URL>`, extract it into `<DIR>` and run the tool from there.
+> 2. **You provide it.** Download `UiPath.Upgrade.Cli.zip` yourself from `<URL>`, from Automation Cloud → Help → Resources → Downloads → Activity Migrator Tool, or from the Customer Portal. Extract it so `UiPath.Upgrade.exe` and the `Extensions/` folder sit directly in one folder, then tell me that folder or set `UIPATH_ACTIVITY_MIGRATOR_DIR` to it.
+>
+> On a machine an administrator manages, these settings can be preset so this question never comes up.
+
+Option 1: rerun the script with `--install`. The download is a few hundred MB: give the command at least 10 minutes, not the host's default timeout. Apply Step 0's table to its output.
+
+Option 2: wait for the user, then rerun the script without a flag, with the variable set to the folder they named in the syntax of the shell that runs it: bash `UIPATH_ACTIVITY_MIGRATOR_DIR="<FOLDER>" node ...`, PowerShell `$env:UIPATH_ACTIVITY_MIGRATOR_DIR = '<FOLDER>'; node ...`. Apply Step 0's table. `missing` again means the folder holds no `UiPath.Upgrade.exe`, neither at its root nor under `current/`: say so, name those two places, and wait for the user; do not download and do not ask the question a second time. A variable set in the command lasts for that command only: tell the user to set it in their user environment so later sessions find the tool; a folder placed at the default `%LOCALAPPDATA%\UiPath\ActivityMigrator\current` needs no variable. The preset settings for managed machines are in [Managed environments](#managed-environments); point an administrator there when asked.
+
 ## Manual placement
 
 For air-gapped machines or when both downloaders are blocked:
