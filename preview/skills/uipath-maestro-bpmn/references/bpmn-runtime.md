@@ -205,8 +205,9 @@ binding half, which is the same for every connector-backed node.
 <!-- RULE:bpmn.activity.async-no-output -->
 - A fire-and-forget start (`async: true` on `.startAgenticProcess()` or
   `.startCaseManagementProcess()`, `Orchestrator.StartFlowProcessAsync`) publishes
-  no output row, so `outputVar` on it is refused at build time. Use the waiting
-  form to read the response.
+  no output row, so `outputVar` on it is refused at build time
+  (`BPMN_OUTPUT_VAR_NO_OUTPUT_ROW`). Use the waiting form (`async: false`) to
+  read the response.
 
 <!-- RULE:bpmn.activity.two-registries -->
 - **This is not the connector library.** `uip maestro bpmn registry` serves the
