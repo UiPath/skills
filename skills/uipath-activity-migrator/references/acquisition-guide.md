@@ -24,6 +24,8 @@ ActivityMigrator/
   current/                 extracted tool; UiPath.Upgrade.exe lives here
   .last-modified           Last-Modified header of the archive that produced current/
   UiPath.Upgrade.Cli.download.zip   transient during download; removed on success, kept on an extraction failure so it can be extracted by hand
+  .chunks/                 transient during a download: the 16 MiB parts fetched so far and .etag naming the archive they belong to; kept across runs so a rerun resumes, removed on success or when the archive changed
+  .lock, .lock.pid         held as an exclusive file handle by the run that owns the download, the archive, the extraction folder and current/; the OS releases it when that run ends, however it ends. .lock.pid names the holder for the busy message
 ```
 
 Resolution order used by the script:
@@ -38,11 +40,18 @@ Resolution order used by the script:
 |---|---|
 | `UIPATH_ACTIVITY_MIGRATOR_DIR` | Install or cache root. Use for shared tool drives or manual placement |
 | `UIPATH_ACTIVITY_MIGRATOR_URL` | Alternate archive URL, for internal mirrors |
-| `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | Never touch the network. A cached tool is used as is; a missing tool is an error |
+| `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` | Never touch the network. A cached tool is used as is; a missing tool is an error, and `--force` is refused |
+| `UIPATH_ACTIVITY_MIGRATOR_WINDOW_SECONDS` | Download budget of one run (default `480`). When it runs out the script stops, reports the bytes kept, and a rerun resumes from them. Lower it on a host whose command budget is under 10 minutes |
 | `--check-only` | Report what is cached without downloading. Exit 3 with `status: missing` when nothing is cached |
 | `--force` | Re-download and re-extract even when cached |
 
-Download: the script tries `curl` first, which honors `HTTPS_PROXY` / `HTTP_PROXY`, then PowerShell's WebClient, which uses the system proxy and the signed-in user's credentials. Both run as commands, never as script files. The update check's `HEAD` request falls back the same way, so a machine that reaches the internet only through the system proxy still sees updates. A curl connection that stalls below 1 KB/s for a minute fails instead of hanging. Corporate TLS inspection that breaks both surfaces as `download-failed`, with each downloader's error in the message.
+Download, in order:
+
+1. One `HEAD` request, `curl` first, then PowerShell's `WebRequest` behind a system proxy. It doubles as the update check, so a machine that reaches the internet only through the system proxy still sees updates, and it reads `Content-Length`, `Accept-Ranges`, `ETag` and `Content-MD5` for step 2.
+2. When the server accepts byte ranges and `curl` reached it: `curl` fetches sequential 16 MiB ranges into `.chunks/`, each request capped at 30 s. The bytes a request delivered are kept and the next one continues from that offset, so nothing is fetched twice and a rerun resumes. Requests use the plain URL until one runs out of time before finishing its range; from then on, reruns of that download included, each request carries its own query string, which gets its own origin fetch from a CDN edge that serves every request for the plain URL at the pace of a stuck cache fill. A URL that already has a query string is never altered. A response from the wrong offset is discarded, a changed `ETag` discards the parts, and the assembled file must match `Content-Length` and `Content-MD5`.
+3. Otherwise, or when the server answers a range request with the whole archive: one `curl` stream, which honors `HTTPS_PROXY` / `HTTP_PROXY` and fails instead of hanging when it stalls below 1 KB/s for a minute, then PowerShell's WebClient, which uses the system proxy and the signed-in user's credentials. `curl` is skipped when its `HEAD` already failed where PowerShell's succeeded.
+
+Every downloader ends at the run's download budget (`UIPATH_ACTIVITY_MIGRATOR_WINDOW_SECONDS`, the wait for the lock included). A chunked download that stopped reports the bytes kept in `completedBytes`, unless the run moved too little to finish in a few more: then the message says so and gives the manual steps. One run at a time works on the install root: `.lock` is an exclusive file handle that the OS releases when its run ends, however it ends. A second run waits up to a minute for the holder and then uses what it installed (`source: cached`), and otherwise reports the holder's pid in `holder`. Everything runs as commands, never as script files. A leftover download file that a process from an earlier run still holds open, a downloader or extractor that outlived a killed run, surfaces as `download-failed` with `holder: true`, like a live run: it ends on its own. Corporate TLS inspection that breaks every downloader surfaces as `download-failed` with each downloader's error in the message.
 
 Extraction: `Expand-Archive`, then Windows `tar.exe`, then `unzip`. An install root whose extracted paths would pass the 260-character Windows limit makes `Expand-Archive` fail; `tar.exe` still extracts it.
 
@@ -60,7 +69,9 @@ The last stdout line is one JSON object.
 | `source` | `env` (override dir), `cached`, `downloaded` (first install), `updated` (newer archive replaced the cache) |
 | `code` (errors) | `not-windows`, `runtime-missing`, `download-failed`, `extract-failed`, `verify-failed`, `offline-missing`, `telemetry-flag` |
 | `env` (`telemetry-flag` only) | The assignment the tool starts with, `UIPATH_TELEMETRY_DISABLED=true` or `=false` |
-| `message` | Human-readable detail, including the manual steps for the failing stage |
+| `message` | Human-readable detail, including the manual steps for the failing stage or, when a rerun resumes a download, how much of it is kept |
+| `completedBytes`, `totalBytes` | On `download-failed` when a rerun is worth it: bytes already under `.chunks/` and the archive size. The rerun resumes from them |
+| `holder` | On `download-failed` when another run of the script owns the install root: its pid, or `true` before that run has written `.lock.pid` or when a process of an earlier run still holds the archive. It is working and ends on its own; rerun after a minute |
 
 Exit codes: `0` ok, `1` error, `3` missing (check-only).
 
@@ -93,7 +104,7 @@ Never unset the variable instead: that turns telemetry on for a user who disable
 
 ## Updating
 
-Rerun the script without flags. It sends a `HEAD` request, compares `Last-Modified` with `.last-modified`, and replaces `current/` only when the archive changed (`source: updated`). Force a refresh with `--force`. An override dir is never auto-updated unless its exe is missing.
+Rerun the script without flags. It sends a `HEAD` request, compares `Last-Modified` with `.last-modified`, and replaces `current/` only when the archive changed (`source: updated`). Force a refresh with `--force`. An override dir is never auto-updated unless its exe is missing. A download that stopped partway, an update included, resumes on the next run from the parts already under `.chunks/`.
 
 ## Verifying an install by hand
 
