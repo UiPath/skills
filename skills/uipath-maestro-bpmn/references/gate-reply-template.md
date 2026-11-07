@@ -42,7 +42,11 @@ lines are the outline, so a box left off is a step the user never sees.
 List task boxes only, never the start event, a timer, a gateway, or the
 end event. Copy each box's `name` from the `.bpmn` as written, including its
 `[kind]`: do not reword it or append the branch condition that leads to it.
-Give each box one short clause after the colon: no element type ids, no
+After the colon, write one of the template's statuses word for word: the
+resource and its folder, the two candidates to choose between, `none yet,
+create it or name one`, `not checked`, or `no resource needed`. Never reword
+a fixed status ("no matching app", "choose the orders system"), and add
+no element type ids, no
 phase-4 plans, no alternatives for the kind. When a lookup failed, say why
 once, in the one sentence the first line allows, not on the box lines.
 
