@@ -15,7 +15,7 @@ its three options are fixed:
 <DesignerUrl as a link on its own line, or the local .bpmn path as plain text, never a link>
 <!--skill-flavor:gate-path-line:end-->
 
-- <each box, in order>: <resource and folder | which of two | none yet, create it or name one | not checked | no resource needed>
+- <box label exactly as in the .bpmn, [kind] included>: <resource and folder | which of two | none yet, create it or name one | not checked | no resource needed>
 
 <!--skill-flavor:gate-question:start-->
 Is this the process you want?
@@ -26,7 +26,7 @@ Is this the process you want?
 ```
 
 This reply is your whole final message, and its first characters are the
-process name. When the lookup call returns, do not comment on its result:
+process name: no sentence about which skill you are using, no diagram. When the lookup call returns, do not comment on its result:
 your next words are the `<Name>:` line. Write nothing before that line:
 not a status sentence ("Valid, zero errors", "Lookups complete", "No
 matching processes found", "Presenting the gate"), not an introduction
@@ -40,7 +40,13 @@ Give every task box its own line, in order, including a script step that
 needs no resource (`no resource needed`): the box
 lines are the outline, so a box left off is a step the user never sees.
 List task boxes only, never the start event, a timer, a gateway, or the
-end event, and give each box one short clause: no element type ids, no
+end event. Copy each box's `name` from the `.bpmn` as written, including its
+`[kind]`: do not reword it or append the branch condition that leads to it.
+After the colon, write one of the template's statuses word for word: the
+resource and its folder, the two candidates to choose between, `none yet,
+create it or name one`, `not checked`, or `no resource needed`. Never reword
+a fixed status ("no matching app", "choose the orders system"), and add
+no element type ids, no
 phase-4 plans, no alternatives for the kind. When a lookup failed, say why
 once, in the one sentence the first line allows, not on the box lines.
 

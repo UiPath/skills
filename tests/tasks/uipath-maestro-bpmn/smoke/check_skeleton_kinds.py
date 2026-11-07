@@ -29,8 +29,7 @@ so the grade cannot drift from what the agent was shown when the CLI adds or
 renames a type. ``--registry-json`` grades against a saved list instead
 (fixtures).
 
-Standalone on purpose (stdlib only, no ``_shared`` import): the smoke tasks
-stage only this directory as ``$REFERENCE_DIR``.
+Stdlib only, with no ``_shared`` import, so it runs from any ``$REFERENCE_DIR``.
 """
 
 from __future__ import annotations
