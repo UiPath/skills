@@ -24,6 +24,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from flow_check import find_all_flow_files, flow_file_is_named  # noqa: E402
+
 SENTINEL = ".maestro_automate"
 PROJECT_FILE = "project.uiproj"
 MAX_CLIMB = 16
@@ -35,7 +38,7 @@ def fail(message: str) -> int:
 
 
 def find_flow(flow_name: str) -> list[Path]:
-    return sorted(Path(".").rglob(f"{flow_name}.flow"))
+    return [Path(p) for p in find_all_flow_files() if flow_file_is_named(p, flow_name)]
 
 
 def project_dir_for(flow_path: Path) -> Path:

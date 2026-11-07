@@ -1976,6 +1976,11 @@ def find_flow_file(
     return matches[0]
 
 
+def find_all_flow_files() -> list[str]:
+    """Every ``.flow`` file anywhere in the sandbox, with no project selection."""
+    return _rglob_pruned("**/*.flow")
+
+
 def assert_no_flow_files() -> None:
     """Require that the sandbox contains no ``.flow`` artifact anywhere.
 
@@ -1983,7 +1988,7 @@ def assert_no_flow_files() -> None:
     tasks. It deliberately scans every location because any emitted Flow is a
     failure; there is no preferred artifact to select in the absence case.
     """
-    matches = _rglob_pruned("**/*.flow")
+    matches = find_all_flow_files()
     if matches:
         joined = "\n  - ".join(matches)
         _fail(f"Unexpected .flow file(s) found:\n  - {joined}")
