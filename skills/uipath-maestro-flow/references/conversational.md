@@ -42,6 +42,8 @@ Signatures: `.trigger(conversationTrigger({ welcomeTitle?, welcomeDescription?, 
 
 ## The chat's appearance
 
+Needs `@uipath/maestro-builder-sdk` 6.88.0 or later; an older SDK's `conversationTrigger()` takes no argument and writes the 1.0 trigger, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+
 What the chat shows before the user types is set on the trigger.
 Every field is optional; `conversationTrigger()` with no argument is a chat with no welcome text or prompts, and the switch below is still on.
 
