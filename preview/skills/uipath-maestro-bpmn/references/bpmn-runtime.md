@@ -261,9 +261,11 @@ binding half, which is the same for every connector-backed node.
   `spec` as decompile wrote it. Editing a row's value is fine; the row is written
   exactly as it reads. The spec does not say which fields the type needs, so for a
   new node of that type, write the full spec.
+<!--skill-flavor:sdk-inline-spec:start-->
   Needs `@uipath/maestro-builder-sdk` 6.85.7 or later.
   An older SDK refuses the type at decompile with `BPMN_TYPE_UNKNOWN`, so upgrade
   with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:sdk-inline-spec:end-->
 
 <!-- RULE:bpmn.activity.offsnapshot-resolve -->
 - You do not have to transcribe the shape by hand: a type outside the SDK's

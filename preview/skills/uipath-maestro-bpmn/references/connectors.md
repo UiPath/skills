@@ -215,7 +215,9 @@ Then leave a notes file (`README.md` beside the source) that names each CLI-owne
 | dynamic schemas | the connection-specific input and output schemas, custom fields, objects and lookup ids | the same `prepare`, with `--resolve` / `--object`, which writes `./connectors-local/` |
 | connector operation metadata (bare `.task()` only) | `objectName`, `method`, path and the generated outputs (`<id>_response`, `<id>_Error`) | `prepare`, then replace the `.task()` with the `.connector()` call it prints |
 | `bindings_v2.json` | the packaged binding resources | `uip maestro bpmn refresh <project>` after `compile`, once the connection binding resolves |
+<!--skill-flavor:package-metadata-row:start-->
 | package metadata | `entry-points.json`, `operate.json`, `package-descriptor.json` | the same `refresh`; `uip solution resources refresh --solution-folder <solution-dir>` for the solution |
+<!--skill-flavor:package-metadata-row:end-->
 
 Name them as written, not paraphrased ("the connection", "the schema"), because the user acts on the artifact each one names.
 Name no private value: no connection id, folder key, tenant URL, resource key or schema copied from a tenant.

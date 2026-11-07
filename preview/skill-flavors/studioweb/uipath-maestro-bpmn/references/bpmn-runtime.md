@@ -9,3 +9,7 @@
 <!--skill-flavor:sdk-v2-connector:start-->
   Needs `@uipath/maestro-builder-sdk` 6.84.0 or later. Studio Web ships its own SDK: when it writes a new `.connector()` task with one `target="path"` / `target="query"` row per parameter and an `operation` context row, the task is V1 and still runs. Tell the user that this Studio Web build writes V1 connector tasks; do not hand-convert its rows.
 <!--skill-flavor:sdk-v2-connector:end-->
+
+<!--skill-flavor:sdk-inline-spec:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.85.7 or later. Studio Web ships its own SDK: when `decompile` refuses the type with `BPMN_TYPE_UNKNOWN`, tell the user that this Studio Web build cannot decompile that type yet.
+<!--skill-flavor:sdk-inline-spec:end-->
