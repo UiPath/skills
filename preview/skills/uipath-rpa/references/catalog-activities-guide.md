@@ -44,6 +44,9 @@ s.step('add', AddToCollection({ type: String, Collection: (v) => v.names, Item: 
 
 - `AddToCollection`, `RemoveFromCollection`, `ExistsInCollection` and `ClearCollection` take the item `type` and a `Collection` of it.
 - `InvokeMethod({ MethodName, TargetObject?, TargetType?, Parameters?, Result? })`: `arg(Type, value)` is an argument that names its type, `arg(Type, (v) => v.x, 'Out')` an Out one; `TargetType` a type, for a static method. `SystemType` above stands for `clrType({ name: 'System.Type', xmlns: 'clr-namespace:System;assembly=System.Private.CoreLib', local: 'Type', prefix: 's' })`.
+- CoreWF finds the method by the declared types, not by the values at run time: `TargetObject`'s type must declare the method, and each parameter's type must be the method's parameter type exactly.
+  `arg(Object, vb('results.Keys'))` has no `CopyTo` (`check` reports it as `INVOKE_METHOD_OBJECT_TARGET`), and `Array.Sort` has no overload taking `(Array, Object)`; a mismatch faults the whole workflow when it loads.
+  When a method's types are awkward to name, an `Assign` of a VB expression is simpler: `vb('results.Keys.Cast(Of String).OrderBy(Function(k) k, StringComparer.Ordinal).ToArray()')`.
 - `Switch({ type, Expression, Cases, Default? })`: each key of `Cases` is a case, as text.
 - Often an expression is shorter than an activity: `vb('out_Summary.Columns.Add("Region", GetType(String))')` cannot stand alone, but `Assign` takes `vb('dt.Compute("Sum(Amount)", "")')` and the like.
 

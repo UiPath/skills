@@ -110,6 +110,7 @@ An expression is an arrow over the scope, a raw VB string, or a literal.
 - An arrow `(v) => …` reads arguments and variables as `v.<name>` and is lowered to VB: `===` to `=`, `&&` to `AndAlso`, `!` to `Not`, `` `a ${x}` `` to `$"a {x}"`, string `+` to `&`, `? :` to `If(…, …, …)`.
   Member and method names pass through as written, so `v.name.Trim()` is `name.Trim()`; TypeScript types a `String` as `string`, which has no `Trim`, so write .NET calls with `vb()`.
 - `vb('…')` is VB as written, for anything the arrow subset does not cover: .NET calls, `CDec(…)`, `New ArgumentException("…")`, `row("Amount")`, LINQ.
+  Inside an arrow, `vb('…')` stands for a part of it: `(v) => v.i < vb('rows.Length')`.
 - A literal (`'Manager'`, `0`, `true`) is written as the property's text.
 - A new workflow imports what Studio's template does, so an expression can name `File` and `Path` (`System.IO`), `DataTable` (`System.Data`), `BusinessRuleException` (`UiPath.Core`) and the rest without qualifying them.
 
