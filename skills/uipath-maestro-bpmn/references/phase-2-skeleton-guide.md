@@ -169,6 +169,9 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   the cloud solution matching the local `.uipx` SolutionId. Confirm that at
   2a, not here. When the request forbids upload, skip it.
 <!--skill-flavor:make-shape-visible:end-->
+- **Then go straight to 3c.** 3a–3b run only after the user asks for a
+  change. A first pass ends with the 3c lookup and the 3c reply, never with a
+  description of the shape or a request to approve it in your own words.
 
 ## Iterating
 
