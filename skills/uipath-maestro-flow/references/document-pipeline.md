@@ -9,7 +9,7 @@ author INLINE — though the `dynamicExtract()` factory still needs a published
 model's identity ([Two ways to author it](#two-ways-to-author-it)). For a
 published project's trained fields, use `ixpExtract` ([ixp.md](ixp.md)) instead.
 
-Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
+Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig?, classificationSchema? })`;
 `dynamicExtract({ fileRef, schema, model, pageRange?, modelConfig? })`.
 
 ```ts
@@ -29,7 +29,7 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
 Classify a document (`uipath.document.classify`), or extract fields against an
 INLINE taxonomy (`uipath.ixp.extract-document-builder`) instead of a published
 IxP project's trained fields.
-Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
+Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig?, classificationSchema? })`;
 `dynamicExtract({ fileRef, schema, model: { modelName, folderKey, ... }, pageRange? })`.
 
 ```ts
@@ -74,13 +74,38 @@ warns about any other shape, so it will not catch a bare JSON-Schema object
 with `properties` alone for you — the format, with a worked example, is in
 [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
-Classification lands at `out('classify', ...)`. What the node emits at run time
-is a processed document, with the extracted values at `result.output`, one
-property per taxonomy field, and their page provenance under
-`result.attribution` ([Reading what it extracts](extract-document-node.md#reading-what-it-extracts)).
-The two routes embed different typings for it, though: `nodes create` embeds
-that current shape, while the SDK factory still embeds the older
-`ExtractionResult` shape — so on a factory-built flow, a read of
+`classificationSchema` is the classes the classifier chooses between, in the
+designer's shape: `{ generalInstructions?, classes: [{ id, name, instructions }] }`.
+Omit it for the empty default. A designer-made node keeps its classes through
+`flow decompile` and `flow compile`.
+
+```ts
+.step('classify', documentClassify({
+  fileRef: input('file'),
+  classificationSchema: {
+    generalInstructions: 'Classify supplier paperwork.',
+    classes: [
+      { id: 'c1', name: 'invoice', instructions: 'A bill asking for payment.' },
+      { id: 'c2', name: 'receipt', instructions: 'Proof that a payment was made.' },
+    ],
+  },
+}))
+```
+
+Classify and Extract v2 both emit the processed-document envelope (`version`,
+`type`, `result`, `taxonomy`, `metadata`). The answer is at `result.output`:
+
+- **Classify:** `result.output.document_type` is the one class of the file.
+  With `splitPages: true` it is `result.output.segments`, one entry per
+  document, each with a type and a page span. These are the keys flow-core's
+  classify evaluation target names (`document_type`, `segments`).
+- **Extract v2:** `result.output` has one property per taxonomy field, with
+  page provenance under `result.attribution`
+  ([Reading what it extracts](extract-document-node.md#reading-what-it-extracts)).
+
+The two extract routes embed different typings for extract's output:
+`nodes create` embeds the envelope, while the SDK factory still embeds the
+older `ExtractionResult` shape. So on a factory-built flow, a read of extract's
 `result.output` validates with an `EXPRESSION_DIAGNOSTIC` warning until the SDK
 catches up. `ExtractionResult` as a runtime shape belongs to the
 published-model node ([ixp.md](ixp.md)), not this one.
