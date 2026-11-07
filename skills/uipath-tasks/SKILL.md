@@ -124,7 +124,7 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 
 2. **Task IDs are numeric.** Unlike other UiPath services that use GUIDs, Action Center uses numeric task IDs. Use `tasks list` to discover task IDs.
 
-3. **Folder scope comes in three interchangeable forms.** Folder-scoped commands accept `--folder-id <numeric-id>`, `--folder-path <path>`, or `--folder-key <guid>` (mutually exclusive). Path and key are exactly what `uip or folders list` prints (it has no numeric ID column), so prefer them when the folder came from folder discovery; the numeric id still works when a task row gave you `folderId`.
+3. **Folder scope comes in three interchangeable forms.** Folder-scoped commands accept `--folder-id <numeric-id>`, `--folder-path <path>`, or `--folder-key <guid>` (mutually exclusive). Path and key are exactly what `uip or folders list` prints (its curated view has no numeric ID column; `--all-fields` adds `Id`), so prefer them when the folder came from folder discovery; the numeric id still works when a task row gave you `folderId`.
 
 4. **Complete requires `--type`.** The API routes to different endpoints per task type. Always include `--type` when completing a task. Use `tasks get` to check the task type first.
 
