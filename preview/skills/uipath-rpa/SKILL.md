@@ -114,10 +114,11 @@ An expression is an arrow over the scope, a raw VB string, or a literal.
 - A literal (`'Manager'`, `0`, `true`) is written as the property's text.
 - A new workflow imports what Studio's template does, so an expression can name `File` and `Path` (`System.IO`), `DataTable` (`System.Data`), `BusinessRuleException` (`UiPath.Core`) and the rest without qualifying them.
 
-These compile and then go wrong at run time; `check` reports each one by the code named.
+These pass `compile` and then go wrong when the workflow loads or runs; `check` reports each one by the code named, where there is one.
 
 - **A variable named like a type** (`EXPR_NAME_CASE`): VB ignores case, so a variable or loop item named `file` hides the type `File` in every expression in its scope. Do not name a variable after a type you use.
 - **A DataRow item read as a type** (`EXPR_DATAROW_ITEM`): `row("Email")` is an `Object`, and VB's Option Strict refuses it as any other type. Read it with `row("Email").ToString()` or `CDec(row("Amount"))`, and write it with `Assign({ type: Object, to: vb('row("Email")'), value: … })`.
+- **`.Count(…)` on a collection with a `Count` property**: a `List`, a `Dictionary` or its `.Values`, a `DataRowCollection`. VB takes the property, so `results.Values.Count(Function(r) r.StartsWith("x"))` fails to compile and the workflow does not load. Write `results.Values.Where(Function(r) r.StartsWith("x")).Count()`; `check` does not catch this one.
 - **A `ByRef` result** (`EXPR_BYREF_RESULT`): an expression cannot write to a variable through a `ByRef` argument, so `Decimal.TryParse(text, amount)` leaves `amount` unchanged and returns False, with no error. Test with `Decimal.TryParse(text, Nothing)` and assign `Decimal.Parse(text)` in its own step.
 
 ## Anti-patterns
