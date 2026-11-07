@@ -42,19 +42,24 @@ initial_prompt: |
   upload, publish, or deploy anything.
 
 success_criteria:
-  - type: command_executed
+  # Graded from the mock's own call log (mocks/.calls.jsonl), not the transcript:
+  # the dispatcher records each call after the shell expands it, so a read issued
+  # from a `for c in element-executions cursors; do uip ... $c ...` loop or through
+  # a variable counts like a literal one. A transcript regex failed exactly that
+  # (R14 v2, builder-sdk#1882). Only a call the manifest answered counts.
+  - type: run_command
     description: "Agent read element executions with folder context"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+element-executions\s+inst-triage-001\b.*folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance element-executions inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent read cursors with folder context"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+cursors\s+inst-triage-001\b.*folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance cursors inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

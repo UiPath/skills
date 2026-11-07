@@ -63,7 +63,13 @@ success_criteria:
   - type: command_executed
     description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
     tool_name: "Bash"
-    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*ScheduledReportBpmn\.bpmn'
+    # `ET.parse(` and the file name inside the same quoted `python3 -c` program, in
+    # either order: the prompt's own example names the file first (`rglob(...)`) and
+    # an agent that globbed into a variable wrote `fs=list(...rglob('ScheduledReportBpmn.bpmn'));
+    # ET.parse(fs[0])`, which the parse-then-name order missed (R14 v2, builder-sdk#1882).
+    # Bounding both to the quoted program keeps a later, unrelated `find` from supplying
+    # the name.
+    command_pattern: 'python3?\s+-c\s+(["''])(?=(?:(?!\1).)*ET\.parse\()(?=(?:(?!\1).)*ScheduledReportBpmn\.bpmn)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

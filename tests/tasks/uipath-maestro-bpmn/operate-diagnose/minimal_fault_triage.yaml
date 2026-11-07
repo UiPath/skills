@@ -44,35 +44,41 @@ initial_prompt: |
   your own file and reading it back is fine.
 
 success_criteria:
-  - type: command_executed
+  # The diagnostic reads are graded from the mock's own call log
+  # (mocks/.calls.jsonl), not the transcript: the dispatcher records each call
+  # after the shell expands it, so reads issued from a `for c in ...; do uip
+  # maestro bpmn $c ...` loop or through `F=folder-public; ... -f $F` count like
+  # literal ones. A transcript regex failed exactly that (R14 v2,
+  # builder-sdk#1882). Only a call the manifest answered counts.
+  - type: run_command
     description: "Advisory: agent checked the BPMN job status"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+job\s+status\s+["'']?job-triage-001'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn job status job-triage-001( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 0.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent read instance incidents with folder context"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+incidents\s+["'']?inst-triage-001["'']?\s+(-f|--folder-key)\s+["'']?folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance incidents inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent inspected runtime variables with folder context"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+variables\s+["'']?inst-triage-001["'']?\s+(-f|--folder-key)\s+["'']?folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance variables inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent fetched the deployed BPMN asset"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+asset\s+["'']?inst-triage-001["'']?\s+(-f|--folder-key)\s+["'']?folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance asset inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
