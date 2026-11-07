@@ -29,7 +29,7 @@ export default flow('support-chat')
 Work a live CHAT: wait for the person's message, answer it, post a reply. Every
 step is keyed by a `conversationId` — the conversation trigger publishes it.
 
-Signatures: `.trigger(conversationTrigger())`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
+Signatures: `.trigger(conversationTrigger({ welcomeTitle?, welcomeDescription?, startingPrompts?, personalWorkspaceConnectionsOnly? }))`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
 
 ```ts
 .trigger(conversationTrigger())
@@ -39,6 +39,37 @@ Signatures: `.trigger(conversationTrigger())`; `waitForMessage({ conversationId,
 ```
 
 `waitForMessage` SUSPENDS the flow (a catch event), it does not poll. Use `sendMessage` when the flow decides what to say, an agent when the model does.
+
+## The chat's appearance
+
+Needs `@uipath/maestro-builder-sdk` 6.88.0 or later; an older SDK's `conversationTrigger()` takes no argument and writes the 1.0 trigger,
+<!--skill-flavor:conversation-appearance-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:conversation-appearance-sdk-upgrade:end-->
+
+What the chat shows before the user types is set on the trigger.
+Every field is optional; `conversationTrigger()` with no argument is a chat with no welcome text or prompts, and the switch below is still on.
+
+```ts
+.trigger(conversationTrigger({
+  welcomeTitle: 'Library desk',
+  welcomeDescription: 'Ask about loans, renewals and holds.',
+  startingPrompts: [
+    'Renew my loans',
+    { displayPrompt: 'Place a hold', actualPrompt: 'I want to place a hold on a book.' },
+  ],
+}))
+```
+
+A starting prompt is a chip: the user sees `displayPrompt`, and the agent receives `actualPrompt`.
+A string sets both `displayPrompt` and `actualPrompt`.
+Leave `id` out; compile mints a stable one, and decompile prints it back so a recompile keeps it.
+`check` refuses a prompt with no display prompt (`CONVERSATION_TRIGGER_DISPLAY_PROMPT_REQUIRED`), because the chat drops it.
+`personalWorkspaceConnectionsOnly` limits the chat's connection settings menu to personal workspace connections.
+It defaults to `true`, as the designer sets on a new trigger; set `false` to show every connection.
+
+The appearance is the trigger's 1.3 definition, which `conversationTrigger()` writes by default.
+Decompiled source of an older flow pins `{ version: '1.0' }`, which has no appearance, and compile refuses one there (`CONVERSATION_TRIGGER_APPEARANCE_VERSION`); drop the pin to add one, and set `personalWorkspaceConnectionsOnly: false` to keep the chat's full connection menu as it was.
 
 ## Conversations, exchanges, and messages
 
