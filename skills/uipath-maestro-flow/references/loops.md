@@ -86,7 +86,15 @@ drop `version` (2.4).
   Entries omit HTTP steps, and a step that did not run in a pass carries the
   previous pass's value, so do not read either from `$vars.<loop>.output`.
 - `completionCondition` — an expression checked after each iteration; the loop
-  stops early when it is true.
+  stops early when it is true. Needs `@uipath/maestro-builder-sdk` 6.87.2 or
+  later; an older SDK compiles it, but the loop ignores it and runs every item,
+  `Completed`, no warning,
+<!--skill-flavor:completion-condition-sdk-upgrade:start-->
+  so upgrade the copy `uip` uses:
+  `npm install -g @uipath/maestro-builder-sdk@latest`, or
+  `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a
+  workspace copy.
+<!--skill-flavor:completion-condition-sdk-upgrade:end-->
 - `body.break()` — exit the whole loop from inside an arm. Terminal on its
   path, like `.terminate()` but scoped to the loop; using it shows the loop's
   break handle automatically (`breakEnabled`).

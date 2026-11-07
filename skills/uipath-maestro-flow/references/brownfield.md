@@ -97,21 +97,22 @@ finding says whether your edit caused it. In emit-only mode `check` refuses:
 skip it there, `validate` is the gate.
 
 Needs `@uipath/maestro-builder-sdk` 6.64.0 or later (it compiles without
-linting and reads `--baseline`). An older SDK shows up in one of two ways:
+linting and reads `--baseline`). An older SDK shows up in one of three ways:
 the baseline compile of the untouched decompile stops on a `check` code (an
 older `compile` still lints, so a pre-existing `HTTP_READ_WITHOUT_RETURNS`
-stops it); or `uip` refuses it with `--baseline on flow check needs
-@uipath/maestro-builder-sdk >= 6.64.0; found <version>`. Each
+stops it); `uip` refuses it with `--baseline on flow check needs
+@uipath/maestro-builder-sdk >= 6.64.0; found <version>`; or, with an older
+`uip`, the SDK answers `error: unknown option '--baseline'`. Each
 means the SDK is too old,
 <!--skill-flavor:check-baseline-sdk-upgrade:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
 <!--skill-flavor:check-baseline-uip-version:start-->
-`error: unknown option '--baseline'` is a `uip` that predates the flag, not an old
-SDK; uip 1.205.0 is one, and upgrading the SDK does not clear it. Confirm with
-`uip maestro flow check --help`: no `--baseline` listed. Until a newer `uip` is
-installed, run `check --source` without `--baseline` and fix only the errors on
-nodes you changed.
+For `unknown option '--baseline'`, check the SDK version first
+(`npm ls -g @uipath/maestro-builder-sdk`, or the project's `node_modules`). Below
+6.64.0, upgrade it. Only when it is 6.64.0 or later and the error persists is
+`uip` too old (1.205.0 is). Until a newer `uip` is installed, run `check --source`
+without `--baseline` and fix only the errors on nodes you changed.
 <!--skill-flavor:check-baseline-uip-version:end-->
 
 ```
