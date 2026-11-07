@@ -9,8 +9,10 @@
  * the connection/folder. The op's shape is resolved from the connector library at
  * compile ($FLOW_SDK_LIBRARY_JSON), the same data the Flow node and Case task use.
  *
- * `connection`/`folder` are symbolic binding names — the offline rungs compile them
- * as `=bindings.<name>`; real ids are only needed for a live run. Compile with
+ * `connection`/`folder` are symbolic binding names — `check` and `compile` accept them
+ * as `=bindings.<name>` (with a CONNECTION_BINDING_NOT_GUID warning), but `refresh`
+ * and a live run need the real connection id, which `uip maestro registry prepare`
+ * writes into bindings.json. Compile with
  * `uip maestro bpmn compile NotifyChannel.bpmn.ts -o NotifyChannel.bpmn
  * --library "$FLOW_SDK_LIBRARY_JSON"`, then `uip maestro bpmn validate`.
  */

@@ -191,7 +191,7 @@ binding half, which is the same for every connector-backed node.
 - The record operations (`create`, `update`, `get`, `query`, `delete`) then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …) as a V1 task with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, plus the entity's two `Entity` bindings.
   Only `_V3` takes a folder, and Studio Web's V2 catalog does not list it, so this task stays V1.
   A tenant entity's record operations are V2 tasks on the curated operations (`CreateEntityRecordCurated`, `UpdateEntityRecordV2`, `GetEntityRecordByIdCurated`, `QueryEntityRecordsCurated`, `DeleteEntityRecordCurated`), with the entity in the `pathParameters` row.
-  Run `uip maestro bpmn refresh <project>` after `compile`, then `uip solution resources refresh --solution-folder <SolutionDir>` (the folder holding the `.uipx`, `<Name>Solution/` in the default scaffold): the first turns the two bindings into the entity's row in `bindings_v2.json`, and the second declares the entity in the solution.
+  Run `uip maestro bpmn refresh <project>` after `compile`, then, when the project has a solution, `uip solution resources refresh --solution-folder <SolutionDir>` (the folder holding the `.uipx`, `<Name>Solution/` in the default scaffold): the first turns the two bindings into the entity's row in `bindings_v2.json`, and the second declares the entity in the solution.
   Do not hand-fill the task through `.activity()`, and do not pass a folder entity's name as a plain `entity` string: that writes the tenant-scope operation, which validates but does not address the folder entity.
 - `entity: { name, folderKey }` is for a folder key already in hand.
   It writes no `Entity` bindings, so `bpmn refresh` does not declare the entity in the solution; prefer `{ name, folder }` even with a key in hand.
@@ -247,8 +247,17 @@ binding half, which is the same for every connector-backed node.
   `.activity(id, 'Type.Name', { spec, context, inputs })`, where `spec` is a
   `RegistryTypeSpec` — the BPMN element and `uipath:*` tag, the context fields
   with their types and defaults, the payload `inputPattern`, and the output row.
-  The spec is used as is, in place of the snapshot and the tenant. `decompile`
-  cannot recover it, so keep it in the source.
+  The spec is used as is, in place of the snapshot and the tenant.
+  `decompile` writes one for an imported node whose type the registry does not
+  list. It reads it off the file: the element and the payload tag, with no
+  context fields, inputs or output for the builder to add, and every
+  `contextRows` / `inputRows` / `outputRows` row spelled out beside it. Leave the
+  `spec` as decompile wrote it. Editing a row's value is fine; the row is written
+  exactly as it reads. The spec does not say which fields the type needs, so for a
+  new node of that type, write the full spec.
+  Needs `@uipath/maestro-builder-sdk` 6.85.7 or later.
+  An older SDK refuses the type at decompile with `BPMN_TYPE_UNKNOWN`, so upgrade
+  with `npm install -g @uipath/maestro-builder-sdk@latest`.
 
 <!-- RULE:bpmn.activity.offsnapshot-resolve -->
 - You do not have to transcribe the shape by hand: a type outside the SDK's

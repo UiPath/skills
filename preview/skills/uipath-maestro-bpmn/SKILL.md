@@ -16,15 +16,22 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 
 ## Workflow
 
-1. Scaffold the project first: `uip maestro bpmn init <Name>`. It writes
-   `<Name>/<Name>.bpmn` plus `project.uiproj`, `operate.json`, `entry-points.json`,
-   `bindings_v2.json`, and `package-descriptor.json` — the layout `bpmn pack` and
-   product tooling require. Run it inside a solution to join that solution; run it
-   outside one and a parent `<Name>Solution` is scaffolded around it.
+1. Scaffold the project first with `uip maestro bpmn init <Name> --output json`, and take the project directory from `Data.Path`.
+   Below, `<Project>` means that directory.
+   It holds `<Name>.bpmn` plus `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, and `package-descriptor.json` — the layout `bpmn pack` and product tooling require.
+   `init` takes a name, not a path, and writes under the current directory:
+   - inside a solution (a `.uipx` here or in a parent): `./<Name>/`, registered in that solution;
+   - outside one: `./<Name>Solution/<Name>/`, inside a solution it scaffolds;
+   - with `--skip-solution-registration`: `./<Name>/`, with no solution.
+
+   **When the user names where the project or its `.bpmn` goes** (`A/B/B.bpmn` names project directory `A/B`), `mkdir -p A`, run `init B` from `A`, and pass `--skip-solution-registration` unless `A` or a parent already holds a `.uipx`.
+   When the file name differs from its directory (`A/B/C.bpmn`), `init B` writes `B.bpmn`, so ask the user which of the two to rename before choosing.
+   Check `Data.Path` against the requested path before writing anything, and compile to that path, not to a copy elsewhere.
+   A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Keep `<Name>.bpmn.ts` at the workspace root, beside `package.json`.
 3. Import from `@uipath/maestro-builder-sdk/bpmn` and default-export a chain ending in `.build()`.
 4. Seed the source by decompiling the stub `bpmn init` wrote —
-   `uip maestro bpmn decompile <Name>/<Name>.bpmn -o <Name>.bpmn.ts --style nested` — rather than
+   `uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested` — rather than
    hand-writing the skeleton.
    `--style nested` lifts an existing process's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in order (`flowMode('sequence')`), and leaves whatever it cannot prove flat with a printed reason; the compiled graph is verified identical before it is written. It KEEPS the flow ids the constructs now imply: an import's `edge_…` is pinned back onto the implied edge with a `.flowIds([…])` call at the top of the chain, so the recompile reproduces the ids the artifact arrived with. That matters for brownfield work — `bpmn merge` keys every element by id, flows included, so a renamed flow reads as a new one, the original is deleted with its diagram edge, and a gateway `default` left naming the old id produces a file `validate` rejects. `--keep-flow-ids` now only confines the lift to regions whose ids already match, for source with no pin table, at the cost of lifting far less. Without `--style nested` the whole process is written flat. It carries the process id and the `entryPointId` UUID the
    product assigned, which a hand-written chain cannot invent. An existing project needs
@@ -42,12 +49,14 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    `errorMapping` condition and a bare `=amount`, `check` is the only offline gate:
    `bpmn validate` accepts both.
    Needs `@uipath/maestro-builder-sdk` 6.86.0 or later; an older `compile` refuses the read itself.
+   When the installed package ships `dist/bpmn-api.md` (see [API index](#api-index)), `check` also type-checks the source: a `TS<code>` error at `file:line:col` is a wrong option name or value type, so fix it like any other `check` error.
+   Node's runtime globals, top-level `await` and ES2024 APIs are accepted.
 6. Compile **into the scaffolded project**, then `format` it, then `refresh` it, then
    run product validation — in that order, every time. `validate` refuses a file with
    no diagram (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none;
    `format` adds it.
    Exactly one emitted `<Name>.bpmn` may exist, at
-   `<Name>/<Name>.bpmn`; do not leave a second copy at the workspace root, and do not
+   `<Project>/<Name>.bpmn`; do not leave a second copy at the workspace root, and do not
    leave the template `init` wrote in place of your compiled output.
 7. **`refresh` is part of the loop, not part of packaging.** `init` generates
    `entry-points.json` and `operate.json` once, naming the start event of the template
@@ -62,20 +71,29 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    init-generated project — with no `project.uiproj` it has nothing to regenerate.
 8. Use the merge pipeline for targeted edits to an existing process.
 
+## Draft first
+
+When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
+Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
+The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
+
 ## API index
 
-Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only
-true of the build that emitted it. The `@uipath/maestro-builder-sdk` package
-ships `dist/api-members.md`, keyed by field or method name (`gateway`), and
-`dist/api-index.md`, keyed by exported symbol (`BpmnBuilder`). Match one name — do not
-read either end to end — then read the span it gives you: the whole declaration,
-doc comment included. Both cover all three entry points; each file's own header
-spells the paths its rows are relative to.
+Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only true of the build that emitted it.
+
+When the package ships `node_modules/@uipath/maestro-builder-sdk/dist/bpmn-api.md`, every BPMN builder method and option field is there, with its type and a one-line doc.
+Search it for the name you have — a field (`outputVar`), a method (`humanTask`) or a shape (`HttpOpts`) — and read only the line it lands on: the row is the answer.
+Do not read `dist/**/*.d.ts` with that package; `check --source` reports a wrong option name or value type with its line (step 5).
+`dist/api-index.md` (by exported symbol, `BpmnBuilder`) gives a declaration's line span only when you need its long-form `@remarks` or `@example`.
+
+A package without `bpmn-api.md` has `dist/api-members.md`, keyed by field or method name (`gateway`), and `dist/api-index.md`, keyed by exported symbol.
+Match one name — do not read either end to end — then read the span it gives you: the whole declaration, doc comment included.
 
 ## Capability router
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
+| Show the shape before building it (sketch, draft, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
 | A node's own output | the node's `outputRows` — **not** a `.var()` beside it | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
@@ -92,12 +110,14 @@ spells the paths its rows are relative to.
 | Human work — an inline form unless a deployed Action App is named | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/InvoiceEscalation.bpmn.ts` |
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connectors](references/connectors.md) | `examples/NotifyChannel.bpmn.ts` |
 | A connector EVENT, as a start or a mid-flow wait | `eventTrigger`, `waitForEvent` | [Connector events](references/connectors.md#6-connector-events) | — |
+| A connector step in a draft with no connection (offline, or no real ids allowed) | `connector` with symbolic bindings, or a bare `task` | [Unresolved connector draft](references/connectors.md#7-draft-with-an-unresolved-connector) | — |
 | Data Fabric records and file fields | `dataService` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/ContractRegistry.bpmn.ts` |
 | Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 | Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
 | A run failed or is stuck | `uip maestro bpmn job status` / `instance incidents` / `instance variables` / `instance asset` | [Diagnose](references/diagnose.md) | — |
+| A recurring process shape: review gate, approval chain, triage, external wait, batch, failure net, queue | `choose`, `race`, `subProcess` with `loop`, `eventSubProcess` | [Patterns](#patterns) | — |
 
 ## Minimal shape
 
@@ -156,19 +176,45 @@ export default bpmn('approval')
 - `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
 - `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.
   An element that already has an explicit outgoing flow is not also wired to the next one, a bare gateway is wired into but implies no outgoing flows, and an element nothing leads into or a path that does not end is refused at build.
+- A step that two routes share is written ONCE, after the `.choose()`, with each arm that reaches it left to fall through; never repeat the step, or a downstream gate, inside each arm.
+  The repeated form passes `check`, `compile` and `validate`, and it is the most common way a pattern comes out wrong.
+  When fall-through cannot reach it, name the join: `.exclusiveGateway(id)`, `.goto(id)` from each route, `.sequenceFlow(id, next)`.
+  See [Shared joins](references/patterns/composing-guide.md#shared-joins-the-mechanism-nesting-hides).
 - `uip maestro bpmn check <Name>.bpmn.ts --graph` prints the wiring that resulted, `~>` for an implied edge and `->` for an explicit one, with `[NO INCOMING]` / `[NO OUTGOING]` where they apply.
   Read it after a structural edit in a sequence scope, because inserting a line there rewires the graph.
+
+## Patterns
+
+Read the guide for each pattern the process actually uses, and none for a pattern you are not building.
+
+Every guide's node table marks each node **Entry** (omit when inserting into a process that already runs), **Mechanism** (changing it changes the pattern), or **Placeholder** (bind it, or skip it if the process already does this).
+
+| Pattern | Reach for it when | Guide |
+| --- | --- | --- |
+| `ai-decision-review` | AI makes one call; act on it, or a human reviews it | [ai-decision-review-guide.md](references/patterns/ai-decision-review-guide.md) |
+| `approval-chain` | A request needs sign-off from several people | [approval-chain-guide.md](references/patterns/approval-chain-guide.md) |
+| `smart-triage` | Inbound work sorted into categories, each handled elsewhere | [smart-triage-guide.md](references/patterns/smart-triage-guide.md) |
+| `external-wait` | The process waits on an outside party under an SLA | [external-wait-guide.md](references/patterns/external-wait-guide.md) |
+| `high-volume-batch` | Many independent items processed in one run | [high-volume-batch-guide.md](references/patterns/high-volume-batch-guide.md) |
+| `failure-escalation` | Unhandled failures must never disappear silently | [failure-escalation-guide.md](references/patterns/failure-escalation-guide.md) |
+| `queue-distribution` | An Orchestrator queue hands work across runtimes | [queue-distribution-guide.md](references/patterns/queue-distribution-guide.md) |
+
+**Do not reach for a pattern** when the ask is a short linear process, a single node, or a change that does not introduce one of these shapes.
+A pattern is never a wrapper to retrofit onto work that does not need one.
+
+Using more than one pattern in one process?
+Read [references/patterns/composing-guide.md](references/patterns/composing-guide.md) first: which pattern keeps its start event, the four ways the rest join it, how variables cross a nesting boundary, and the two placements the engine constrains.
 
 ## Validation loop
 
 ```bash
-uip maestro bpmn init <Name>                  # once, before authoring
+uip maestro bpmn init <Name> --output json    # once; <Project> is Data.Path (see step 1)
 uip maestro bpmn check <Name>.bpmn.ts --source
 uip maestro bpmn check <Name>.bpmn.ts --graph   # the resolved wiring, implied edges marked ~>
-uip maestro bpmn compile <Name>.bpmn.ts -o <Name>/<Name>.bpmn
-uip maestro bpmn format <Name>/<Name>.bpmn
-uip maestro bpmn refresh <Name> --output json   # entry-points.json + operate.json, from the BPMN
-uip maestro bpmn validate <Name>/<Name>.bpmn --output json
+uip maestro bpmn compile <Name>.bpmn.ts -o <Project>/<Name>.bpmn
+uip maestro bpmn format <Project>/<Name>.bpmn
+uip maestro bpmn refresh <Project> --output json   # entry-points.json + operate.json, from the BPMN
+uip maestro bpmn validate <Project>/<Name>.bpmn --output json
 ```
 
 `check` owns source and graph invariants. Product validation owns the compiled

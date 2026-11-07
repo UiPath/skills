@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects, including a BPMN process the user wants to see or sketch before it is built. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, diagnose, and evaluate .bpmn projects, including a BPMN process the user wants to see or sketch before it is built. Evaluate: eval sets, evaluators, simulations, eval runs. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -839,11 +839,12 @@ full, then end the turn with the reply exactly as it shows.
    Exit 0 = valid. Exit 1 = a parse error, a `grep` hit, or a `validate`
    failure. Read severity from each issue's `[error]`/`[warning]` tag, not
    from the `Found N error(s)` header, which counts errors while the list under
-   it prints warnings too. Fix only
-   error-severity findings, then re-run 4d and validate again; stop
-   re-validating once every remaining finding is a warning or the placeholder
-   pair below. `read but never assigned` is a defect no error covers: nothing
-   writes a value the process reads, so a step that should produce it does not.
+   it prints warnings too. Fix
+   error-severity findings and the warnings named below, then re-run 4d and
+   validate again; stop re-validating once every remaining finding is another
+   warning or the placeholder pair below. `read but never assigned` is a
+   defect no error covers: nothing writes a value the process reads, so a step
+   that should produce it does not.
    `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
    about one unresolved node, and the binding half is a live tenant lookup.
    Bind the node to a deployed resource. When the user asked for a
@@ -854,9 +855,11 @@ full, then end the turn with the reply exactly as it shows.
    whose `default` is a placeholder fails `refresh` (4f) with "default must be
    a GUID", so that draft skips 4f; refresh needs a real connection id from
    `uip is connections list`. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
-   it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on
-   the node reading a start-event-scoped caller input is expected; see
-   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+   it names a reference with no declaration. Fix every `VARIABLE_NOT_SET` and
+   `read but never assigned` on a variable a node or a flow condition reads; neither is expected.
+   A declared start-event input reaches a process variable only through the
+   start event's `BPMN.Variables` mapping, see
+   [references/structural-bpmn.md#variables](references/structural-bpmn.md#variables).
 
    `[warning] [(xml)] unknown attribute <type>` is expected noise from the
    script-task template's `<uipath:inputSchema type="jsonSchema">`. Leave it.
@@ -941,14 +944,20 @@ full, then end the turn with the reply exactly as it shows.
   fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
   Before sending, check the message against the template line by line and delete every line the template does not have.
 
-## Operate and diagnose
+## Operate, evaluate, and diagnose
 
-Beyond authoring, this skill packages, ships, runs, and diagnoses Maestro
-projects through the UiPath CLI.
+Beyond authoring, this skill packages, ships, runs, evaluates, and diagnoses
+Maestro projects through the UiPath CLI.
 
 - **Package and operate** (package a project, upload to Studio Web, publish or
   deploy, run or debug instances, and manage jobs, instances, incidents, and
   lifecycle actions): see [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
+- **Evaluate** (design evaluators and eval sets, add data points and
+  simulations, and start/monitor/compare Studio Web evaluation runs for a BPMN
+  project): see [references/evaluate.md](references/evaluate.md).
+  `eval run start` deploys and overwrites the matching Studio Web solution
+  (never auto-run a separate `uip solution upload`); read evaluate.md before
+  running it.
 - **Diagnose** (fetch incidents, variables, and element executions, and trace a
   failed run back to its BPMN element): see [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
   Runtime evidence — incidents, variables, element executions, cursors, the
@@ -999,5 +1008,6 @@ and honestly surfaced to the user as gaps when asked.
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
 | Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |
 | Package, upload, publish, run, or manage instances | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
+| Design and run BPMN evaluations (evaluators, eval sets, data points, simulations, runs) | [references/evaluate.md](references/evaluate.md) |
 | Diagnose a failed or misbehaving run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
 | Project layout and generated package files | [references/shared/project-layout.md](references/shared/project-layout.md) |
