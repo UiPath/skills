@@ -1,0 +1,41 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Catalog",
+    "kind": "schema",
+    "apiVersion": "dataservice.uipath.com/v2",
+    "isOverridable": false,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "Catalog",
+      "scope": "Folder",
+      "description": "Deployed to production with changeset 1.",
+      "changesets": [
+        {
+          "changeset": 1,
+          "changes": [
+            {
+              "createTable": {
+                "tableName": "Product",
+                "columns": [
+                  { "column": { "name": "Id", "type": "INT", "constraints": { "primaryKey": true } } },
+                  { "column": { "name": "Sku", "type": "NVARCHAR(50)", "constraints": { "nullable": false, "unique": true } } },
+                  { "column": { "name": "Name", "type": "NVARCHAR(200)", "constraints": { "nullable": false } } }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "locks": [],
+    "key": "9d3f6a5e-1b2c-4d7e-8f90-a1b2c3d4e5f6",
+    "files": []
+  }
+}

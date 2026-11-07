@@ -1,0 +1,195 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SalesSchema",
+    "kind": "schema",
+    "apiVersion": "dataservice.uipath.com/v2",
+    "isOverridable": false,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SalesSchema",
+      "scope": "Folder",
+      "description": "Every supported change, in an order that installs. Keep the changesets you need, renumbered from 1, before the first deploy.",
+      "changesets": [
+        {
+          "changeset": 1,
+          "changes": [
+            {
+              "createTable": {
+                "tableName": "Region",
+                "columns": [
+                  { "column": { "name": "Id", "type": "INT", "constraints": { "primaryKey": true } } },
+                  { "column": { "name": "Code", "type": "CHAR(2)", "constraints": { "nullable": false, "unique": true } } },
+                  { "column": { "name": "Name", "type": "NVARCHAR(100)", "constraints": { "nullable": false } } }
+                ]
+              }
+            },
+            {
+              "createTable": {
+                "tableName": "Customer",
+                "columns": [
+                  { "column": { "name": "Id", "type": "UNIQUEIDENTIFIER", "constraints": { "primaryKey": true } } },
+                  { "column": { "name": "Email", "type": "NVARCHAR(320)", "constraints": { "nullable": false, "unique": true } } },
+                  { "column": { "name": "IsActive", "type": "BOOLEAN", "defaultValueBoolean": true, "constraints": { "nullable": false } } },
+                  { "column": { "name": "CreatedAt", "type": "DATETIME2(3)", "defaultValueDate": "2026-01-01T00:00:00" } }
+                ]
+              }
+            },
+            {
+              "createTable": {
+                "tableName": "SalesOrder",
+                "columns": [
+                  { "column": { "name": "Id", "type": "BIGINT", "constraints": { "primaryKey": true } } },
+                  {
+                    "column": {
+                      "name": "CustomerId",
+                      "type": "UNIQUEIDENTIFIER",
+                      "constraints": {
+                        "nullable": false,
+                        "foreignKeyName": "SalesOrder_Customer",
+                        "referencedTableName": "Customer",
+                        "referencedColumnNames": "Id",
+                        "deleteCascade": true
+                      }
+                    }
+                  },
+                  { "column": { "name": "Amount", "type": "DECIMAL(18,2)", "defaultValueNumeric": "0", "constraints": { "nullable": false } } },
+                  { "column": { "name": "Status", "type": "NVARCHAR(20)", "defaultValue": "Open", "constraints": { "nullable": false } } }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "changeset": 2,
+          "changes": [
+            {
+              "addColumn": {
+                "tableName": "SalesOrder",
+                "columns": [
+                  { "column": { "name": "RegionId", "type": "INT" } },
+                  { "column": { "name": "Priority", "type": "INT", "defaultValueNumeric": 0, "constraints": { "nullable": false } } },
+                  { "column": { "name": "Notes", "type": "NVARCHAR(MAX)" } }
+                ]
+              }
+            },
+            {
+              "addForeignKeyConstraint": {
+                "baseTableName": "SalesOrder",
+                "baseColumnNames": "RegionId",
+                "constraintName": "SalesOrder_Region",
+                "referencedTableName": "Region",
+                "referencedColumnNames": "Id",
+                "onDelete": "SET NULL",
+                "onUpdate": "NO ACTION"
+              }
+            },
+            {
+              "createIndex": {
+                "tableName": "SalesOrder",
+                "indexName": "IX_SalesOrder_Status",
+                "columns": [ { "column": { "name": "Status" } }, { "column": { "name": "Priority" } } ]
+              }
+            },
+            {
+              "createIndex": {
+                "tableName": "Region",
+                "indexName": "UX_Region_Name",
+                "unique": true,
+                "columns": [ { "column": { "name": "Name" } } ]
+              }
+            }
+          ]
+        },
+        {
+          "changeset": 3,
+          "preConditions": [
+            { "onFail": "MARK_RAN" },
+            { "sqlCheck": { "expectedResult": "0", "sql": "SELECT COUNT(*) FROM Region" } }
+          ],
+          "changes": [
+            {
+              "insert": {
+                "tableName": "Region",
+                "columns": [
+                  { "column": { "name": "Id", "valueNumeric": 1 } },
+                  { "column": { "name": "Code", "value": "EU" } },
+                  { "column": { "name": "Name", "value": "Europe" } }
+                ]
+              }
+            },
+            {
+              "insert": {
+                "tableName": "Region",
+                "columns": [
+                  { "column": { "name": "Id", "valueNumeric": 2 } },
+                  { "column": { "name": "Code", "value": "NA" } },
+                  { "column": { "name": "Name", "value": "North America" } }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "changeset": 4,
+          "preConditions": [
+            { "onFail": "MARK_RAN" },
+            { "sqlCheck": { "expectedResult": "1", "sql": "SELECT COUNT(*) FROM Region WHERE Code = 'NA'" } }
+          ],
+          "changes": [
+            {
+              "update": {
+                "tableName": "Region",
+                "columns": [ { "column": { "name": "Name", "value": "North America (US, CA, MX)" } } ],
+                "where": "Code = 'NA'"
+              }
+            },
+            {
+              "update": {
+                "tableName": "SalesOrder",
+                "columns": [ { "column": { "name": "Priority", "valueNumeric": 1 } } ],
+                "where": "Status IN ('Open', 'New') AND Amount >= 1000.00"
+              }
+            },
+            {
+              "delete": {
+                "tableName": "Customer",
+                "where": "IsActive = 0 AND Email LIKE '%@example.com'"
+              }
+            }
+          ]
+        },
+        {
+          "changeset": 5,
+          "changes": [
+            { "dropIndex": { "tableName": "SalesOrder", "indexName": "IX_SalesOrder_Status" } },
+            { "modifyDataType": { "tableName": "SalesOrder", "columnName": "Status", "newDataType": "NVARCHAR(50)" } },
+            {
+              "createIndex": {
+                "tableName": "SalesOrder",
+                "indexName": "IX_SalesOrder_Status",
+                "columns": [ { "column": { "name": "Status" } }, { "column": { "name": "Priority" } } ]
+              }
+            }
+          ]
+        },
+        {
+          "changeset": 6,
+          "changes": [
+            { "dropForeignKeyConstraint": { "baseTableName": "SalesOrder", "constraintName": "SalesOrder_Region" } },
+            { "dropColumn": { "tableName": "SalesOrder", "columnName": "RegionId" } }
+          ]
+        }
+      ]
+    },
+    "locks": [],
+    "key": "<KEY FROM uip solution resources add, never invent one>",
+    "files": []
+  }
+}

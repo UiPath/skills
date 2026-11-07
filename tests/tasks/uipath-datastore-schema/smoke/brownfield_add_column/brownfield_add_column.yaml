@@ -1,0 +1,39 @@
+task_id: skill-datastore-schema-smoke-brownfield-add-column
+description: >
+  Agent extends a deployed Schema resource, offline: a nullable column and an
+  index. Grades that the installed changeset and the resource key are left
+  untouched and the change arrives as a new, higher-numbered changeset that
+  follows the grammar Data Service enforces at deploy.
+tags: [uipath-datastore-schema, smoke, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  `Inventory/` is a UiPath solution whose Catalog Schema resource is already
+  deployed to production. Add an optional Description of up to 1000
+  characters to the Product table, and an index on Product's Name.
+
+  Do not deploy anything. Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-datastore-schema skill"
+    skill_name: "uipath-datastore-schema"
+    expected_skill: "uipath-datastore-schema"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Changeset 1 and the key are unchanged, and a new changeset adds the column and the index"
+    command: "python3 $REFERENCE_DIR/smoke/brownfield_add_column/check_brownfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
