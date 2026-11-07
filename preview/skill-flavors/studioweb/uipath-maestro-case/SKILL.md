@@ -1,7 +1,7 @@
 <!--skill-flavor:host-setup:start-->
 ## Studio Web
 
-**The builder SDK is built in.** `uip maestro case check`, `compile` and `decompile` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm`, no Node process and no Python here.
+**The builder SDK is built in.** `uip maestro case check`, `compile` and `decompile` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm` and no Python here.
 
 **The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Each project is a folder `/solution/<Project>/` with its plan file, `project.uiproj` and package files. Create a Case project only when the user asks for a new project: run `uip maestro case init <Project>` from `/solution`. A `Data.AutoCreatedSolution` in the response means `init` ran outside the open solution: run it again from `/solution` and report the stray directory.
 
@@ -42,6 +42,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip maestro case debug "<Project>"` | Works: a real run of the case saved in the open solution (step 8 of the [Workflow](#workflow)). |
 | `uip maestro case pack`, `uip solution pack`, `upload`, creating a solution | Not available. Studio Web owns the solution. |
 | `uip login` | Not available. You are already signed in to the tenant of the user. |
+| `node -e` | Works for a small script with `fs`. It has no `crypto` and no `uuidgen`. |
 | `npm`, `npx`, the `flow-sdk` bin, `python3` | Not available. |
 
 When a reference tells you to run a command that is not available, use the Studio Web route that this guide gives. If there is no route, tell the user.
@@ -59,7 +60,7 @@ When a reference tells you to run a command that is not available, use the Studi
 
 <!--skill-flavor:workflow-build:start-->
 5. Seed the source every turn by decompiling the target instead of hand-writing the skeleton: `uip maestro case decompile <Plan> -o .flow-sdk/<Name>.case.ts --no-pipeline`. A new project's plan is the one Studio Web or `case init` seeded: decompile it too. It carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned; `entry-points.json` references that trigger id. Compile back into the target, never a second plan beside it: Studio Web reads only one. Compile with plain `-o <Plan>` and no `--bindings <Plan>` ([Brownfield](references/case-runtime.md#brownfield-editing)). Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
-6. Run `uip maestro case check .flow-sdk/<Name>.case.ts --source` after each structural change.
+6. Run `uip maestro case check .flow-sdk/<Name>.case.ts --source` before every compile, gate edits included (`skipWhen`, a rule `expression`); fix every error (non-zero exit) first. For instance, `check` reports a `vars.<id>` read of an undeclared variable as `EXPR_UNDECLARED_REF`.
 7. Compile into the target, then validate, then make sure each connection is in the solution — the [Validation loop](#validation-loop). Never run `uip solution resources refresh` or `remove`: both fail here.
 8. Run live debug only when the user asks for it and tenant resources are available. A debug run is a REAL run: it sends emails, posts messages and calls APIs.
 
@@ -98,6 +99,9 @@ uip maestro case validate <Plan> --strict --sdd <sdd.md> --output json  # SDD su
 uip maestro case validate <Plan> --strict --output json                 # no SDD
 ```
 
+- **Step 1 runs once per turn.** When a later step fails, fix the source and
+  start again at step 2. Step 1 again would copy the compiled plan over the
+  undo copy.
 - **The designer re-renders the open plan after each write.** Always finish
   with the compile into the target; never `uip solution upload`.
 - **To undo the compile**, copy `.flow-sdk/original/<Plan>` back over the
