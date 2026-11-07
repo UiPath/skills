@@ -139,6 +139,12 @@ make from syntax alone. Exact signatures remain in the generated API.
   `outputVar` (default `<id>_processResponse`) holds the job envelope, not the arguments; do not read an argument out of it with a `=js:` chain.
   The argument name is the workflow's own output argument, as the deployed process declares it; when no live run has shown it, say the mapping is unverified.
 
+<!-- RULE:bpmn.http.manual -->
+- A plain HTTP call with no connection is `.http(id, { url, method, parameters, headers, body })` with no `connection`.
+  It writes the request in manual mode with the `ImplicitConnection` binding Studio Web uses, so nothing on the tenant has to exist.
+  `outputVar` (default `<id>_response`) holds the response body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
+  `check` warns `HTTP_MANUAL_V1` on the old manual form (`mode="manual"` with the request as context rows), which the runtime faults with 102018 "Body cannot be null"; rewrite it as `.http()` and compile.
+
 <!-- RULE:bpmn.orchestrator.business-rule -->
 - A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.
   The builder writes the version, the `BusinessRule` bindings and the `output`/`Error` rows; do not add them. The result is keyed by decision name: a column reads `=result.<Decision>.<column>`, as in `outputs: { tier: '=result.Eligibility.tier' }` or `vars.<id>_businessRuleResponse.Eligibility.tier` downstream, never `=result.tier` or `=response.tier`. `uip rules describe <name> --folder-path <folder> --output json` lists the deployed rule's decisions and columns; only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
