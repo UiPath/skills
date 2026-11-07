@@ -23,6 +23,7 @@ s.activity('validate', catalogActivity('UiPath.Core.Activities.InvokeWorkflowFil
 ```
 
 Property names and kinds come from the catalog entry: `InArgument` takes an expression or literal, `OutArgument` a reference, `Literal` a plain value or enum member, `Activity` a slot (in the fourth argument, `{ Then: (t) => t… }`), `Object` an `objectValue({…})`, `Arguments` an `invokeArguments([…])`.
+`Condition` is an `Activity<T>`: an expression, or for a value an activity computes (UI Automation's `AnchorProvider`), that one activity, `activityValue((t) => t.step('find', …))`.
 `Unsupported` properties can only be `null`.
 
 - A catalog activity with a body (`TimeoutScope`, `RepeatNumberOfTimesX`) takes `body('item', Type, (t) => t…)`, or `body((t) => t…)` when it hands its body no item, in the fourth argument of `.activity`.
