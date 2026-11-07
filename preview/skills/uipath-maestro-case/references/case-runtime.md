@@ -35,6 +35,38 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+## Document extraction
+
+<!-- RULE:case.docextraction.discovery -->
+- Discovery: `uip ixp projects list --output json` first. Pass the project's
+  **`Name`** (not `Title`) to `uip ixp deployments list <Name> --output json`.
+  That listing gives model (`DeploymentName`), deployment (`DeploymentTitle`),
+  and `folderKey`. For `deploymentKey` and `folder`: run
+  `uip solution resources list --kind IxpDeployment --source remote
+  --output json` and take the row whose `Name` equals `DeploymentTitle` and
+  whose `FolderKey` matches — its `Key` is `deploymentKey`, its `Folder` is
+  `folder`. Ask the user if no match. `sdd resolve` does not resolve them.
+
+<!-- RULE:case.docextraction.folder -->
+- `folderKey` comes from the deployments listing; `folder` is the resources
+  row's `Folder`. `folder` is written as `folderName` in the compiled plan.
+
+<!-- RULE:case.docextraction.check -->
+- `check` reports a blank model (`DOCUMENT_EXTRACTION_NO_MODEL`), a blank
+  deployment (`DOCUMENT_EXTRACTION_NO_DEPLOYMENT`), a blank folder
+  (`DOCUMENT_EXTRACTION_NO_FOLDER`), a missing `folderKey`, and a missing
+  `file`. Compile refuses a missing `deploymentKey`.
+
+<!-- RULE:case.docextraction.legacy -->
+- The older flat document-extraction format is carried through: decompile
+  emits `.savedDocumentExtraction()`, compile writes it back byte for byte.
+  `check` warns `DOCUMENT_EXTRACTION_OLDER_SHAPE`, suggesting a Designer
+  re-save to the nested format.
+
+<!-- RULE:case.docextraction.floor -->
+- `uip maestro case validate` needs uip 1.206.0+ for document-extraction
+  tasks. Older versions reject with `CASE_MGMT_BINDING_PAIR_INCOMPLETE`.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
