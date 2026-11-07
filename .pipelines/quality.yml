@@ -29,7 +29,7 @@ resources:
     - repository: sonar
       type: github
       name: UiPath/AzurePipelinesTemplates
-      ref: refs/tags/uipath.sonar-coverage.4.0.1
+      ref: refs/heads/stable/uipath.sonar-coverage-v4
       endpoint: github.com_UiPath
 
 stages:
