@@ -91,13 +91,17 @@ success_criteria:
     prompt: >
       Pass if the agent created only local project files and did not run or
       request approval for BPMN debug, process run, upload, publish, deploy, or
-      a live HTTP fetch of the modeled pageview data. These commands are always
-      acceptable and must NOT fail this check: `uip maestro bpmn validate`
-      (offline validation of local files), `uip maestro bpmn format` (local
-      diagram layout), `uip maestro bpmn init` and `uip maestro bpmn refresh`
-      (local scaffold and metadata files), read-only registry discovery
-      (`uip maestro bpmn registry` list/search/get/pull — the documented way to
-      author `uipath:*` payloads), and `--help` invocations. Fail only if tool
+      a live HTTP fetch of the modeled pageview data. These commands are
+      always acceptable and must NOT fail this check, because each reads
+      or writes only local files: `uip maestro bpmn check`, `compile`,
+      `decompile`, `format`, `merge`, `validate`, `init` and `refresh`
+      (offline source checks, conversion between `.bpmn.ts` source and
+      `.bpmn` XML, diagram layout, validation, and local scaffold and
+      metadata files; none of them packs, uploads or runs anything),
+      read-only registry and connection reads (`uip maestro bpmn
+      registry list/get/pull/search` and `uip maestro registry
+      prepare/describe/search/get/pull`), and `--help` invocations. Fail
+      only if tool
       calls or the final answer show a cloud-side lifecycle mutation (upload,
       publish, deploy, run, debug), a live HTTP data fetch to the modeled
       endpoint, or a request to perform one.

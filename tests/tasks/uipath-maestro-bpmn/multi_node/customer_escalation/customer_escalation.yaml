@@ -89,12 +89,15 @@ success_criteria:
     prompt: >
       Pass if the agent created only local project files and did not run or
       request approval for BPMN debug, process run, upload, publish, or deploy
-      commands. Read-only registry discovery commands such as `uip maestro bpmn
-      registry pull`, `registry list`, and `registry get` are allowed because
-      they fetch authoring templates and do not mutate a tenant or lifecycle
-      state; `uip maestro bpmn validate` (offline validation of local files),
-      `uip maestro bpmn format` (local diagram layout), `uip maestro bpmn init`
-      and `uip maestro bpmn refresh` (local scaffold and metadata files), and
-      `--help` invocations are likewise always acceptable and must NOT
-      fail this check. Fail only if tool calls or the final answer show a
-      cloud-side lifecycle mutation or a request to perform one.
+      commands. These commands are always acceptable and must NOT fail
+      this check, because each reads or writes only local files or
+      fetches authoring templates without mutating a tenant or lifecycle
+      state: `uip maestro bpmn check`, `compile`, `decompile`, `format`,
+      `merge`, `validate`, `init` and `refresh` (offline source checks,
+      conversion between `.bpmn.ts` source and `.bpmn` XML, diagram
+      layout, validation, and local scaffold and metadata files; none of
+      them packs, uploads or runs anything), read-only registry and
+      connection reads (`uip maestro bpmn registry list/get/pull/search`
+      and `uip maestro registry prepare/describe/search/get/pull`), and
+      `--help` invocations. Fail only if tool calls or the final answer
+      show a cloud-side lifecycle mutation or a request to perform one.

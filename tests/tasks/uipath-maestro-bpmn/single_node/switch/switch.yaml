@@ -81,12 +81,16 @@ success_criteria:
     prompt: >
       Pass if the agent created only local files and did not run or request
       approval for BPMN debug, process run, upload, publish, pack, or deploy
-      commands. Exactly these commands are always acceptable and must NOT
-      fail this check: `uip maestro bpmn validate` (offline validation of
-      local files), `uip maestro bpmn format` (local diagram layout),
-      `uip maestro bpmn init` and `uip maestro bpmn refresh` (local scaffold
-      and metadata files), `uip maestro bpmn registry list/get/pull/search`
-      (read-only catalog fetches), and `--help` invocations. Every command
+      commands. Exactly these commands are always acceptable and must
+      NOT fail this check, because each reads or writes only local
+      files: `uip maestro bpmn check`, `compile`, `decompile`, `format`,
+      `merge`, `validate`, `init` and `refresh` (offline source checks,
+      conversion between `.bpmn.ts` source and `.bpmn` XML, diagram
+      layout, validation, and local scaffold and metadata files; none of
+      them packs, uploads or runs anything), read-only registry and
+      connection reads (`uip maestro bpmn registry list/get/pull/search`
+      and `uip maestro registry prepare/describe/search/get/pull`), and
+      `--help` invocations. Every command
       in the forbidden list above stays forbidden — including `pack`, even
       though it runs locally. Fail only if tool calls or the final answer
       show a forbidden lifecycle command or a request to perform one.
