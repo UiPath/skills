@@ -199,3 +199,146 @@ def test_missing_start_bridge_fails(tmp_path: Path) -> None:
     result = run_check(tmp_path, bpmn)
     assert result.returncode == 1
     assert "variable bridge" in result.stderr
+
+
+# The builder-SDK shape R14 v2 authored (builder-sdk#1884): no Error row on the task,
+# an error boundary on it routed to its own error end, and the `=result.response` row
+# landing in a `json` intermediate that the EndEvent bridges into riskScore through a
+# `number` row. Verbatim from the run's artifact.
+SDK_BOUNDARY_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <bpmn:error id="Error_1" name="RiskScoreCalculationFailed" errorCode="RISK_SCORE_CALCULATION_FAILED" />
+  <bpmn:process id="Process_1" name="RiskScoreScriptBpmn" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="amount" name="amount" type="number" elementId="start" />
+        <uipath:input id="daysOverdue" name="daysOverdue" type="integer" elementId="start" />
+        <uipath:inputOutput id="riskScoreError" name="Error" type="jsonSchema" elementId="calculateRiskScore_onError">{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"},"element":{"type":"string"}}}</uipath:inputOutput>
+        <uipath:inputOutput id="calculatedRiskScore" name="calculatedRiskScore" type="json" elementId="calculateRiskScore" />
+        <uipath:output id="riskScore" name="riskScore" type="number" elementId="done" />
+      </uipath:variables>
+      <uipath:migrationVersion version="21" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="start" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="692f19e7-2d06-431d-83c8-a9354d7bd034" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_start_calculateRiskScore</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="calculateRiskScore" name="Calculate risk score" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:context>
+            <uipath:inputSchema type="jsonSchema">{"type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}}}</uipath:inputSchema>
+          </uipath:context>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>
+          <uipath:output name="calculatedRiskScore" type="json" source="=result.response" var="calculatedRiskScore" />
+        </uipath:mapping>
+        <uipath:scriptVersion value="v3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_start_calculateRiskScore</bpmn:incoming>
+      <bpmn:outgoing>Flow_calculateRiskScore_done</bpmn:outgoing>
+      <bpmn:script>var amount = Number(vars.amount);
+var daysOverdue = Number(vars.daysOverdue);
+if (!isFinite(amount) || amount &lt; 0) {
+  throw new Error('amount must be a non-negative number');
+}
+if (!isFinite(daysOverdue) || daysOverdue &lt; 0 || Math.floor(daysOverdue) !== daysOverdue) {
+  throw new Error('daysOverdue must be a non-negative integer');
+}
+var amountComponent = Math.min(amount / 1000, 50);
+var overdueComponent = Math.min(daysOverdue * 0.5, 50);
+return Math.round((amountComponent + overdueComponent) * 100) / 100;</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:boundaryEvent cancelActivity="true" id="calculateRiskScore_onError" name="Risk score failed" attachedToRef="calculateRiskScore">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="uipath:Activity" version="v1" />
+          <uipath:output name="Error" type="jsonSchema" source="=Error" var="riskScoreError" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_calculateRiskScore_onError_riskScoreFailed</bpmn:outgoing>
+      <bpmn:errorEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="riskScoreFailed" name="Risk score failed">
+      <bpmn:incoming>Flow_calculateRiskScore_onError_riskScoreFailed</bpmn:incoming>
+      <bpmn:errorEventDefinition errorRef="Error_1" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="done" name="Risk score calculated">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="riskScore" type="number" source="=vars.calculatedRiskScore" var="riskScore" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_calculateRiskScore_done</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_start_calculateRiskScore" sourceRef="start" targetRef="calculateRiskScore" />
+    <bpmn:sequenceFlow id="Flow_calculateRiskScore_onError_riskScoreFailed" sourceRef="calculateRiskScore_onError" targetRef="riskScoreFailed" />
+    <bpmn:sequenceFlow id="Flow_calculateRiskScore_done" sourceRef="calculateRiskScore" targetRef="done" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_calculateRiskScore" bpmnElement="calculateRiskScore"><dc:Bounds x="338" y="256" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_calculateRiskScore_onError" bpmnElement="calculateRiskScore_onError"><dc:Bounds x="370" y="318" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_done" bpmnElement="done"><dc:Bounds x="488" y="278" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_riskScoreFailed" bpmnElement="riskScoreFailed"><dc:Bounds x="252" y="192" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_start" bpmnElement="start"><dc:Bounds x="252" y="278" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_calculateRiskScore_done" bpmnElement="Flow_calculateRiskScore_done"><di:waypoint x="438" y="296" /><di:waypoint x="488" y="296" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_calculateRiskScore_onError_riskScoreFailed" bpmnElement="Flow_calculateRiskScore_onError_riskScoreFailed"><di:waypoint x="370" y="336" /><di:waypoint x="329" y="336" /><di:waypoint x="329" y="210" /><di:waypoint x="288" y="210" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_start_calculateRiskScore" bpmnElement="Flow_start_calculateRiskScore"><di:waypoint x="288" y="296" /><di:waypoint x="338" y="296" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+"""
+
+
+def test_sdk_error_boundary_shape_passes(tmp_path: Path) -> None:
+    result = run_check(tmp_path, SDK_BOUNDARY_BPMN)
+    assert result.returncode == 0, result.stderr
+
+
+def test_a_field_of_the_response_passes(tmp_path: Path) -> None:
+    # R15 v2 returned `{ riskScore }` and read `=result.response.riskScore`.
+    bpmn = SDK_BOUNDARY_BPMN.replace(
+        'source="=result.response" var="calculatedRiskScore"',
+        'source="=result.response.riskScore" var="calculatedRiskScore"',
+    ).replace(
+        "return Math.round((amountComponent + overdueComponent) * 100) / 100;",
+        "return { riskScore: Math.round((amountComponent + overdueComponent) * 100) / 100 };",
+    )
+    assert bpmn != SDK_BOUNDARY_BPMN
+    result = run_check(tmp_path, bpmn)
+    assert result.returncode == 0, result.stderr
+
+
+def test_a_boundary_on_another_element_fails(tmp_path: Path) -> None:
+    bpmn = SDK_BOUNDARY_BPMN.replace('attachedToRef="calculateRiskScore"', 'attachedToRef="start"')
+    result = run_check(tmp_path, bpmn)
+    assert result.returncode == 1
+    assert "must be attached to the script task" in result.stderr
+
+
+def test_a_non_error_boundary_fails(tmp_path: Path) -> None:
+    bpmn = SDK_BOUNDARY_BPMN.replace(
+        "<bpmn:outgoing>Flow_calculateRiskScore_onError_riskScoreFailed</bpmn:outgoing>\n      <bpmn:errorEventDefinition />",
+        "<bpmn:outgoing>Flow_calculateRiskScore_onError_riskScoreFailed</bpmn:outgoing>\n      <bpmn:timerEventDefinition />",
+    )
+    assert bpmn != SDK_BOUNDARY_BPMN
+    result = run_check(tmp_path, bpmn)
+    assert result.returncode == 1
+    assert "must be an error boundary" in result.stderr
+
+
+def test_a_json_response_bridged_untyped_fails(tmp_path: Path) -> None:
+    # The `json` holder is accepted only when a numeric bridge row types the value.
+    bpmn = SDK_BOUNDARY_BPMN.replace(
+        '<uipath:output name="riskScore" type="number" source="=vars.calculatedRiskScore"',
+        '<uipath:output name="riskScore" type="json" source="=vars.calculatedRiskScore"',
+    )
+    assert bpmn != SDK_BOUNDARY_BPMN
+    result = run_check(tmp_path, bpmn)
+    assert result.returncode == 1
+    assert "script response variable must use type" in result.stderr

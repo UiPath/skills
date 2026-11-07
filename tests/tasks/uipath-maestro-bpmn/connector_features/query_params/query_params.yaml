@@ -73,10 +73,41 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # The tenant this suite runs on may hold no HTTP connection fit for a Google
+  # Tasks call (R14: the only enabled `uipath-uipath-http` connection was another
+  # user's "Spotify"). The v2 skill then leaves the connection binding as a
+  # placeholder rather than bind the wrong one, and `validate` reports
+  # MISSING_BINDING on that node (builder-sdk#1884). That refusal passes here only
+  # when it is the ONLY error, on a `uipath-uipath-http` node, with a placeholder
+  # (non-GUID) binding default — a fabricated connection id still fails — and the
+  # judge below separately requires the final answer to name the connection as the
+  # blocker. Any other failure still fails.
   - type: run_command
-    description: "The completed process validates"
-    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    description: "The completed process validates (an unbound HTTP connection placeholder is accepted as the documented refusal)"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py --accept-unbound-connection uipath-uipath-http"
     timeout: 180
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "A process left with an unbound connection says so and why"
+    include_reference: false
+    include_agent_output: true
+    include_tool_calls: true
+    weight: 1.0
+    pass_threshold: 0.7
+    prompt: >
+      Grade one thing: whether the final answer is honest about validation.
+      Pass if the agent's last `uip maestro bpmn validate` run on the final BPMN
+      reported it valid and the final answer does not claim otherwise.
+      Also pass if validation failed only because the HTTP step's connection is
+      not bound to a real connection (MISSING_BINDING), and the final answer
+      says validation fails for that reason, explains why no available
+      connection was bound (for example, the only enabled connection belongs to
+      an unrelated service or another user), and says what is needed to unblock
+      it.
+      Fail if validation failed and the final answer claims it passed, or does
+      not name the unbound connection as the blocker.
+      Nothing else is graded here: the connector choice, the query parameter and
+      the BPMN structure have their own criteria.

@@ -247,6 +247,40 @@ def strip_js_comments(script: str) -> str:
     return "".join(result)
 
 
+# The script's result: `=result.response`, or one field of it. A v2+ script task
+# returns `{ response: <value> }`, so both read what the script returned.
+RESPONSE_SOURCE = re.compile(r"=result\.response(?:\.[A-Za-z_$][\w$]*)*")
+
+
+def require_error_envelope(
+    variables: list[ET.Element], error_row: ET.Element, description: str
+) -> ET.Element:
+    """The variable an Error row writes, after checking it is the platform envelope."""
+    if not error_row.attrib.get("var"):
+        fail(f"the {description} row must name the variable it writes")
+    error = variable_by_id(variables, attr(error_row, "var"))
+    if error.attrib.get("type") != "jsonSchema" or error_row.attrib.get("type") != "jsonSchema":
+        fail(f"the {description} variable and row must use type='jsonSchema'")
+    # The envelope schema sits on the variable (the canvas template, the SDK's
+    # `varSchema`) or, when an author spelled it on the row, in the row's body
+    # (R15 v2). Either is the same declaration.
+    schema_text = text_content(error).strip() or text_content(error_row).strip()
+    try:
+        error_schema = json.loads(schema_text)
+    except json.JSONDecodeError as exc:
+        fail(f"{description} schema is not valid JSON: {exc}")
+    if not isinstance(error_schema, dict) or error_schema.get("type") != "object":
+        fail(f"{description} schema must describe an object")
+    error_properties = error_schema.get("properties")
+    if not isinstance(error_properties, dict):
+        fail(f"{description} schema must declare properties")
+    for property_name, property_type in ERROR_SCHEMA_PROPERTIES.items():
+        property_schema = error_properties.get(property_name)
+        if not isinstance(property_schema, dict) or property_schema.get("type") != property_type:
+            fail(f"{description} schema must declare {property_name!r} as {property_type!r}")
+    return error
+
+
 def main() -> None:
     path, root = parse_bpmn("RiskScoreScriptBpmn")
     bpmn_path = Path(path)
@@ -278,11 +312,37 @@ def main() -> None:
     # check_simple_approval_bpmn.py; see .claude/rules/test-writing.md).
 
     start = exactly_one(elements(root, "startEvent"), "root start event")
-    end = exactly_one(elements(root, "endEvent"), "root end event")
     task = exactly_one(elements(root, "scriptTask"), "script task")
+    task_id = attr(task, "id")
+    # "Typed error handling" has two platform spellings. The canvas template writes a
+    # task-scoped `Error` output row on the script task (graded below); the builder
+    # SDK reads a failure through an error boundary on the task, routed to its own end
+    # event (R14 v2, builder-sdk#1884). The second is accepted when it is exactly
+    # that: an error boundary attached to the script task whose single flow ends the
+    # error path. Each boundary's end is excluded from the main end.
+    boundaries = elements(root, "boundaryEvent")
+    all_flows = elements(root, "sequenceFlow")
+    error_end_ids: set[str] = set()
+    for boundary in boundaries:
+        boundary_id = attr(boundary, "id")
+        if attr(boundary, "attachedToRef") != task_id:
+            fail(f"boundary event {boundary_id!r} must be attached to the script task")
+        if boundary.find("bpmn:errorEventDefinition", NS) is None:
+            fail(f"boundary event {boundary_id!r} must be an error boundary")
+        out = exactly_one(
+            [flow for flow in all_flows if attr(flow, "sourceRef") == boundary_id],
+            f"sequence flow leaving error boundary {boundary_id!r}",
+        )
+        target_id = attr(out, "targetRef")
+        if not any(attr(e, "id") == target_id for e in elements(root, "endEvent")):
+            fail(f"error boundary {boundary_id!r} must lead straight to an end event")
+        error_end_ids.add(target_id)
+    end = exactly_one(
+        [e for e in elements(root, "endEvent") if attr(e, "id") not in error_end_ids],
+        "root end event",
+    )
     start_id = attr(start, "id")
     end_id = attr(end, "id")
-    task_id = attr(task, "id")
     for description, element_id in (
         ("StartEvent", start_id),
         ("ScriptTask", task_id),
@@ -306,16 +366,20 @@ def main() -> None:
         ("startEvent", start_id),
         ("scriptTask", task_id),
         ("endEvent", end_id),
+        *(("boundaryEvent", attr(b, "id")) for b in boundaries),
+        *(("endEvent", error_end) for error_end in error_end_ids),
     ]
     if sorted(actual_flow_nodes) != sorted(expected_flow_nodes):
         fail(
-            "process must contain exactly StartEvent -> ScriptTask -> EndEvent; "
+            "process must contain exactly StartEvent -> ScriptTask -> EndEvent "
+            "(plus, optionally, an error boundary on the task ending its own path); "
             f"found {actual_flow_nodes}"
         )
 
-    flows = elements(root, "sequenceFlow")
+    boundary_ids = {attr(b, "id") for b in boundaries}
+    flows = [flow for flow in all_flows if attr(flow, "sourceRef") not in boundary_ids]
     if len(flows) != 2:
-        fail(f"expected exactly two sequence flows, found {len(flows)}")
+        fail(f"expected exactly two main-path sequence flows, found {len(flows)}")
     start_flow = exactly_one(
         [
             flow
@@ -417,16 +481,36 @@ def main() -> None:
     # '=result.response' }` and lands it in the public output directly. Grading the
     # canvas spelling failed every SDK-authored process on a name (2026-09-25 run,
     # arm-neutrality invariant 4 in README.md), so the variable is found from the row.
+    #
+    # `=result.response.<field>` reads one field of the returned object and is the same
+    # contract (R15 v2 returned `{ riskScore }` and read `=result.response.riskScore`,
+    # builder-sdk#1884). When several rows read the result (the whole payload and a
+    # field of it), the graded one is the row whose variable reaches riskScore.
     task_outputs = mapping_outputs(task)
+    response_rows = [
+        output
+        for output in task_outputs
+        if RESPONSE_SOURCE.fullmatch(output.attrib.get("source", ""))
+        and output.attrib.get("var")
+    ]
+    if len(response_rows) > 1:
+        end_sources = {
+            output.attrib.get("source", "").removeprefix("=vars.")
+            for output in mapping_outputs(end)
+            if output.attrib.get("var") == attr(public_risk, "id")
+        }
+        reaching = end_sources or {attr(public_risk, "id")}
+        response_rows = [r for r in response_rows if r.attrib.get("var") in reaching]
     response_row = exactly_one(
-        [
-            output
-            for output in task_outputs
-            if output.attrib.get("source") == "=result.response"
-            and output.attrib.get("var")
-        ],
-        "ScriptTask output row reading =result.response",
+        response_rows,
+        "ScriptTask output row reading =result.response (or a field of it) that reaches riskScore",
     )
+    result_rows = [
+        output
+        for output in task_outputs
+        if RESPONSE_SOURCE.fullmatch(output.attrib.get("source", ""))
+        and output.attrib.get("var")
+    ]
     response = variable_by_id(variables, attr(response_row, "var"))
     if local_name(response) not in {"inputOutput", "output"}:
         fail("the =result.response row must land in a mutable (inputOutput) or output variable")
@@ -435,6 +519,23 @@ def main() -> None:
             "the =result.response variable must carry elementId of the script task, "
             "the process, or the end event (#3211)"
         )
+    # An untyped `json` holder is also accepted for the response when it is NOT the
+    # public output but an intermediate the EndEvent bridges into riskScore through a
+    # numeric row: the builder SDK declares `outputs: { x: '=result.response' }` as
+    # `json` because it cannot infer a script's return type, and the bridge row is
+    # what types the public value (R14 v2, builder-sdk#1884).
+    response_types = {"double", "number"}
+    if attr(response, "id") != attr(public_risk, "id"):
+        numeric_bridges = [
+            output
+            for output in mapping_outputs(end)
+            if output.attrib.get("var") == attr(public_risk, "id")
+            and output.attrib.get("source") == f"=vars.{attr(response, 'id')}"
+        ]
+        if numeric_bridges and all(
+            row.attrib.get("type") in {"double", "number"} for row in numeric_bridges
+        ):
+            response_types.add("json")
     for variable, expected_types, description in (
         # Public declarations reach entry-point schema derivation, so they use
         # the refresh vocabulary (number), not the canvas float type.
@@ -444,7 +545,7 @@ def main() -> None:
         # The canvas types the response from the script's inferred return
         # (ScriptTaskProperties.tsx:347) as `double`; the refresh vocabulary for the
         # same value is `number`. Both name a float, and this script returns one.
-        (response, {"double", "number"}, "script response"),
+        (response, response_types, "script response"),
     ):
         if variable.attrib.get("type") not in expected_types:
             fail(f"{description} variable must use type {sorted(expected_types)!r}")
@@ -458,33 +559,19 @@ def main() -> None:
         for output in task_outputs
         if output.attrib.get("source") in {"=Error", "=result.Error"}
     ]
+    # An error boundary may carry the same envelope on its own activity row.
+    boundary_error_rows = [
+        output
+        for boundary in boundaries
+        for output in boundary.findall("bpmn:extensionElements/uipath:activity/uipath:output", NS)
+        if output.attrib.get("source") in {"=Error", "=result.Error"}
+    ]
+    for error_row in boundary_error_rows:
+        require_error_envelope(variables, error_row, "error boundary Error")
     error = None
     if error_rows:
         error_row = exactly_one(error_rows, "ScriptTask Error output row")
-        if not error_row.attrib.get("var"):
-            fail("the ScriptTask Error row must name the variable it writes")
-        error = variable_by_id(variables, attr(error_row, "var"))
-        if error.attrib.get("type") != "jsonSchema" or error_row.attrib.get("type") != "jsonSchema":
-            fail("the ScriptTask Error variable and row must use type='jsonSchema'")
-        try:
-            error_schema = json.loads(text_content(error).strip())
-        except json.JSONDecodeError as exc:
-            fail(f"task-scoped Error schema is not valid JSON: {exc}")
-        if not isinstance(error_schema, dict) or error_schema.get("type") != "object":
-            fail("task-scoped Error schema must describe an object")
-        error_properties = error_schema.get("properties")
-        if not isinstance(error_properties, dict):
-            fail("task-scoped Error schema must declare properties")
-        for property_name, property_type in ERROR_SCHEMA_PROPERTIES.items():
-            property_schema = error_properties.get(property_name)
-            if (
-                not isinstance(property_schema, dict)
-                or property_schema.get("type") != property_type
-            ):
-                fail(
-                    "task-scoped Error schema must declare "
-                    f"{property_name!r} as {property_type!r}"
-                )
+        error = require_error_envelope(variables, error_row, "ScriptTask Error")
 
     # Public inputs reach the script one of two ways, and both are the platform's:
     # the canvas template BRIDGES each public input into a process-scoped internal
@@ -665,7 +752,7 @@ def main() -> None:
     var_type = response.attrib.get("type")
     if not (row_type == var_type or {row_type, var_type} <= {"double", "number"}):
         fail(f"the =result.response row is typed {row_type!r} but writes a {var_type!r} variable")
-    standard_rows = 1 + len(error_rows)
+    standard_rows = len(result_rows) + len(error_rows)
     if result_variable_id == response_id:
         if len(task_outputs) != standard_rows:
             fail(

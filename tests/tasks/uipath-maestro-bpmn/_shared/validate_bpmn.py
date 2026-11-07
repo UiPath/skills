@@ -51,6 +51,8 @@ nothing this process has not already written.
 from __future__ import annotations
 
 import argparse
+import json
+import re
 import subprocess
 import sys
 import time
@@ -58,7 +60,11 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from _shared.bpmn_check import is_scratch_bpmn  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    context_value,
+    is_scratch_bpmn,
+    root_bindings,
+)
 
 CRITERION_TIMEOUT_SECONDS = 180
 BUDGET_HEADROOM_SECONDS = 10
@@ -71,6 +77,59 @@ def _bpmn_files() -> list[Path]:
         p for p in root.rglob("*.bpmn") if not is_scratch_bpmn(p.relative_to(root))
     ]
     return sorted(candidates)
+
+
+_ERROR_LINE = re.compile(r"^\s*-\s*\[error\]\s*\[(?P<element>[^\]]+)\]\s*(?P<code>[A-Z_]+):(?P<message>.*)$")
+_ERROR_COUNT = re.compile(r"Found (\d+) error")
+_GUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+
+def unbound_connection_refusal(path: Path, stdout: str, connector_key: str) -> str | None:
+    """Why a failed validate is the documented unbound-connection refusal, or None.
+
+    Opt-in (``--accept-unbound-connection <connectorKey>``) for a task whose
+    tenant may hold no connection the agent can defensibly bind. The builder-SDK
+    skill leaves a connector's connection binding as a placeholder rather than
+    bind an unrelated one (R14 v2 query-params refused the tenant's only HTTP
+    connection, another user's "Spotify", for a Google Tasks call), and
+    ``validate`` then reports ``MISSING_BINDING`` (builder-sdk#1884).
+
+    Accepted only when EVERY error is ``MISSING_BINDING`` on a node whose
+    ``connectorKey`` is ``connector_key``, and each such node's connection reads
+    a binding whose default is a placeholder, not a GUID. A made-up connection
+    id is GUID-shaped and still fails, and so does any other error. Whether the
+    agent SAID why it left the binding open is the task's own judge criterion.
+    """
+    try:
+        payload = json.loads(stdout)
+    except ValueError:
+        return None
+    text = str(payload.get("Instructions", "")) if isinstance(payload, dict) else ""
+    errors = [m for m in map(_ERROR_LINE.match, text.splitlines()) if m]
+    count = _ERROR_COUNT.search(text)
+    if not errors or (count and int(count.group(1)) != len(errors)):
+        return None
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError:
+        return None
+    by_id = {el.attrib.get("id"): el for el in root.iter() if el.attrib.get("id")}
+    bindings = root_bindings(root)
+    placeholders = []
+    for error in errors:
+        if error["code"] != "MISSING_BINDING" or connector_key not in error["message"]:
+            return None
+        node = by_id.get(error["element"].strip())
+        if node is None or context_value(node, "connectorKey") != connector_key:
+            return None
+        connection = context_value(node, "connection")
+        if not connection.startswith("=bindings."):
+            return None
+        default = bindings.get(connection[len("=bindings."):], {}).get("default", "")
+        if not default or _GUID.match(default):
+            return None
+        placeholders.append(f"{error['element'].strip()} -> {default!r}")
+    return ", ".join(placeholders)
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -88,6 +147,15 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             f"{CRITERION_TIMEOUT_SECONDS}s criterion timeout)"
         ),
     )
+    parser.add_argument(
+        "--accept-unbound-connection",
+        metavar="CONNECTOR_KEY",
+        help=(
+            "accept a validate failure whose only errors are MISSING_BINDING on "
+            "CONNECTOR_KEY nodes whose connection binding is still a placeholder "
+            "(the documented refusal to bind an unrelated connection)"
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -101,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
         print("FAIL: no .bpmn file found under the sandbox", file=sys.stderr, flush=True)
         return 1
     rc = 0
+    accepted = 0
     for path in files:
         print(f"Validating {path}", flush=True)
         # `validate` tokenizes with a tolerant parser and reports Valid on XML
@@ -137,6 +206,18 @@ def main(argv: list[str] | None = None) -> int:
                 flush=True,
             )
             return 1
+        if proc.returncode != 0 and args.accept_unbound_connection:
+            refusal = unbound_connection_refusal(
+                path, proc.stdout or "", args.accept_unbound_connection
+            )
+            if refusal:
+                print(
+                    f"ACCEPTED: {path} fails validate only on unbound "
+                    f"{args.accept_unbound_connection} connection placeholder(s): {refusal}",
+                    flush=True,
+                )
+                accepted += 1
+                continue
         if proc.returncode != 0:
             tail = (proc.stdout or proc.stderr or "").strip()[-1500:]
             print(
@@ -146,7 +227,8 @@ def main(argv: list[str] | None = None) -> int:
             )
             rc = 1
     if rc == 0:
-        print(f"OK: {len(files)} .bpmn file(s) validate", flush=True)
+        note = f" ({accepted} only on an unbound connection placeholder)" if accepted else ""
+        print(f"OK: {len(files)} .bpmn file(s) validate{note}", flush=True)
     return rc
 
 
