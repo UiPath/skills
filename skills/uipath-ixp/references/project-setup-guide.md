@@ -1,56 +1,48 @@
 # Project Setup Guide
 
-Complete workflow for creating a **new** IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically. Deployment is a separate, optional final step — [Deployment Guide](deployment-guide.md).
+Create a **new** IXP project, label its documents, and obtain initial metrics end-to-end. Deployment is optional and separate — [Deployment Guide](deployment-guide.md).
 
-> **Wrong page if the project already exists.** Use `uip ixp documents upload <project-name> <file>` — see [CLI Reference § Uploading documents](cli-reference.md#uploading-documents-to-an-existing-project).
+> **Wrong page if the project already exists.** Run `uip ixp documents upload <project-name> <file>` — see [CLI Reference § Uploading documents](cli-reference.md#uploading-documents-to-an-existing-project).
 
 ## Step 1 — Create the Project
 
-If the user provides a name, use it. If not, generate a temporary name (e.g., `ixp_project_NNNN` with a random number) — the project will be renamed in Step 3 after the taxonomy reveals the document type.
+Use the user-provided name; otherwise generate a temporary name (for example, `ixp_project_NNNN` with a random number) and rename it in Step 3 after identifying the document type. `<folder-path>` is filtered to supported document files — see [CLI Reference § Supported document files](cli-reference.md#supported-document-files).
 
-`<folder-path>` is filtered to supported document files — see [CLI Reference § Supported document files](cli-reference.md#supported-document-files).
-
-**Option A — Auto-suggest taxonomy (default):**
+**Option A — Auto-suggest taxonomy (default):** run:
 
 ```bash
 uip ixp projects create "<name>" <folder-path> --output json
 ```
 
-If the user specified what to extract, add `-d` for a better taxonomy suggestion:
+If the user specifies what to extract, add `-d`:
 
 ```bash
 uip ixp projects create "<name>" <folder-path> -d "<what to extract>" --output json
 ```
 
-This uploads documents and auto-suggests a taxonomy based on the document content (and the description if provided).
+This uploads documents and suggests taxonomy from their content and optional description.
 
-**Option B — Blank project + import taxonomy from file:**
-
-Use this when the taxonomy comes from somewhere else — a file the user provides, or another project's taxonomy. Create the project blank, then import:
+**Option B — Blank project + import taxonomy from file:** Use this when the taxonomy comes from somewhere else — a file the user provides, or another project's taxonomy. Run:
 
 ```bash
 uip ixp projects create "<name>" <folder-path> --skip-taxonomy --output json
 uip ixp projects import-taxonomy <project-name> <taxonomy-file> --output json
 ```
 
-The taxonomy file can be in either format — the CLI auto-detects based on which keys are present:
+The CLI auto-detects either:
 
-- `{ "field_types": [...], "label_group": {...} }` — the suggestion format; no CLI command writes it to disk, so expect it only if the user hands you such a file
-- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or copying another project's taxonomy into this one. `projects get-taxonomy` returns these under a `dataset` wrapper (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` reads `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (e.g. `jq .Data.dataset`), not the whole response
+- `{ "field_types": [...], "label_group": {...} }` — suggestion format; no CLI command writes it to disk, so expect a user-supplied file.
+- `{ "entity_defs": [...], "label_groups": [...] }` — supplied or copied-project taxonomy. `projects get-taxonomy` returns these under `dataset` (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` requires `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (for example, `jq .Data.dataset`), not the whole response.
 
-**Option C — Empty project (no documents, no taxonomy):**
-
-Use this when the user asks for a blank or empty project and supplies no documents. Omit `<folder-path>`:
+**Option C — Empty project (no documents, no taxonomy):** Use this when the user asks for a blank or empty project and supplies no documents. Run:
 
 ```bash
 uip ixp projects create "<name>" --output json
 ```
 
-Stop after Step 1 — there are no documents to label.
+Stop after Step 1; there are no documents to label.
 
-Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
-
-Create the working directory using the returned `ProjectName`:
+For later commands, use `ProjectName` from create output: the lowercase slug with UUID and `-ixp` suffix (for example, `my_invoices-f1afa9ef-ixp`), not the Title. Run:
 
 ```bash
 mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,payloads}
@@ -58,23 +50,23 @@ mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,payloads}
 
 ## Step 2 — Configure the Model
 
-Before labelling, configure the extraction model based on what the documents look like. Download 2-3 sample document images and view them:
+Before labelling, inspect 2-3 sample document images. Run:
 
 ```bash
 uip ixp documents list <project-name> --output json
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id> --output json
 ```
 
-View with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively). Then decide:
+View each with the **Read tool**, using one full Read per document and **no `pages` parameter**; it returns text and image natively. Choose:
 
 | Document characteristics | Pre-processing | Model |
-|--------------------------|---------------|-------|
+|---|---|---|
 | Simple documents, no tables | `none` | `gemini_2_5_flash` |
-| Documents with simple tables or multiple tables | `table_mini` | `gemini_2_5_flash` |
-| Complex nested tables, merged cells, multi-page tables | `table` | `gemini_2_5_flash` |
+| Simple or multiple tables | `table_mini` | `gemini_2_5_flash` |
+| Complex nested tables, merged cells, or multi-page tables | `table` | `gemini_2_5_flash` |
 | Very long documents (100+ pages) | `none` or `table_mini` | `gemini_2_5_pro` |
 
-Apply the configuration:
+Apply the choice by running:
 
 ```bash
 uip ixp projects configure-model <project-name> \
@@ -83,25 +75,25 @@ uip ixp projects configure-model <project-name> \
   --output json
 ```
 
-**Default recommendation:** `--model gemini_2_5_flash --preprocessing table_mini` — works well for most invoice/document types.
+**Default recommendation:** `--model gemini_2_5_flash --preprocessing table_mini`.
 
 ## Step 3 — Name the Project
 
-Based on the taxonomy from Step 1 (e.g., if it has "Invoice Details", "Line Items", "Bill-To" → it's an invoices project), give the project a descriptive title:
+Use the Step 1 taxonomy to choose a descriptive title (for example, "Invoice Details", "Line Items", and "Bill-To" indicate an invoices project). Run:
 
 ```bash
 uip ixp projects update-title <project-name> "Vendor Invoices" --output json
 ```
 
-Skip this step if the user already provided a meaningful name in Step 1.
+Skip this step when the user provided a meaningful Step 1 name.
 
 ## Step 4 — Label All Documents
 
-**Default:** follow the [Label Documents Guide](label-documents-guide.md) to label every document in the project.
+**Default:** follow the [Label Documents Guide](label-documents-guide.md) and label every document.
 
-Labelling is optional — it produces the **project score** (`get-metrics` reports nothing until documents are confirmed) and is not required for a callable model (a trained version appears on its own within seconds of `projects create`). Skip it only when:
+Labelling is optional: it produces the **project score** (`get-metrics` reports nothing until documents are confirmed), but is not required for a callable model (a trained version appears on its own within seconds of `projects create`). Skip it only when:
 
-- **The model unblocks a larger build in this session** — the deliverable is something else (a flow, an automation) waiting on a callable model, and no score, metrics, or accuracy target was named. Deploy per the [Deployment Guide](deployment-guide.md) and resume the build. Canonical case: the inbound `uipath-maestro-flow` handoff (see *When NOT to Use This Skill* in [SKILL.md](../SKILL.md)).
-- **The user opts out** — says to skip labelling, or that somebody else will handle labelling. Stop after Step 3 and hand over the project name; labelling can happen later, in-product or via the [Label Documents Guide](label-documents-guide.md).
+- **The model unblocks a larger build in this session:** the deliverable is another flow or automation waiting on a callable model, and no score, metrics, or accuracy target was named. Deploy per the [Deployment Guide](deployment-guide.md) and resume the build. Canonical case: the inbound `uipath-maestro-flow` handoff (see *When NOT to Use This Skill* in [SKILL.md](../SKILL.md)).
+- **The user opts out:** they request skipping labelling or say someone else will handle it. Stop after Step 3 and hand over the project name; labelling can happen later in-product or via the [Label Documents Guide](label-documents-guide.md).
 
-Skipping is never silent: state that the model is unscored and that labelling is the fix if fields come back wrong.
+Never skip silently: state that the model is unscored and that labelling fixes incorrect fields.
