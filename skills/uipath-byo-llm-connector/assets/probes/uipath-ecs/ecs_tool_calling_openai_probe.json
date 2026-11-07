@@ -1,0 +1,95 @@
+{
+  "id": "ecs_tool_calling_openai_probe",
+  "description": "A forced call to TransformOutput on one row of data.",
+  "source": "ProductDefinedProbes/Payloads/ecs_tool_calling_openai_probe.json",
+  "apiFlavor": "OpenAiChatCompletions",
+  "match": [
+    {
+      "feature": "uipath-ecs-advanced-ingestion",
+      "replacing": "gemini-2.5-flash"
+    },
+    {
+      "feature": "uipath-ecs-batch-transform",
+      "replacing": "gemini-2.5-flash"
+    },
+    {
+      "feature": "uipath-ecs-batch-transform",
+      "replacing": "gemini-2.5-flash-lite"
+    },
+    {
+      "feature": "uipath-ecs-deeprag",
+      "replacing": "gemini-2.5-flash"
+    },
+    {
+      "feature": "uipath-ecs-deeprag",
+      "replacing": "gemini-2.5-flash-lite"
+    },
+    {
+      "feature": "uipath-ecs-deeprag",
+      "replacing": "gemini-3.5-flash-lite"
+    },
+    {
+      "feature": "uipath-ecs-search",
+      "replacing": "gemini-2.5-flash"
+    }
+  ],
+  "order": 10,
+  "path": "/v1/chat/completions",
+  "body": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a data transformation assistant."
+      },
+      {
+        "role": "user",
+        "content": "Transform the following row of data.\n\nRow: {\"name\": \"Alice\", \"age\": 30}"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "TransformOutput",
+          "description": "Structured output for the transformed row.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "type": "string",
+                "description": "A one-sentence summary of the row"
+              }
+            },
+            "required": [
+              "summary"
+            ]
+          }
+        }
+      }
+    ],
+    "tool_choice": "required",
+    "model": "{{model}}"
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "choices is an array; each message's content is a string and each tool call's arguments a string",
+      "jq": "(.choices | type) == \"array\" and all(.choices[]; ((.message.content // \"\") | type) == \"string\" and all((.message.tool_calls // [])[]; (.function.arguments | type) == \"string\"))"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "at least one choice",
+      "jq": "(.choices | length) > 0"
+    },
+    {
+      "reason": "MISSING_TOOL_CALL",
+      "says": "the first choice calls a tool",
+      "jq": "((.choices[0].message.tool_calls // []) | length) > 0"
+    },
+    {
+      "reason": "INCORRECT_TOOL_CALL",
+      "says": "one of the calls is TransformOutput",
+      "jq": "any(.choices[0].message.tool_calls[]; .function.name == \"TransformOutput\")"
+    }
+  ]
+}

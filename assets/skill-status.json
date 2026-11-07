@@ -65,6 +65,14 @@
       },
       "last_synced": null
     },
+    "uipath-byo-llm-connector": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-coded-apps": {
       "status": "stable",
       "confluence": {

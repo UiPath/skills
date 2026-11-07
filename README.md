@@ -54,6 +54,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-api-workflow** | API Workflow JSON DSL — author, run, package, publish; HTTP and Integration Service connector activities. |
 | **uipath-human-in-the-loop** | Human task authoring and operations — design approval gates, escalations, and validation forms in Flow, Maestro, or coded agents; list, assign, complete, and reassign the resulting Action Center tasks. |
 | **uipath-ixp** | Document Understanding (IXP) — project setup, labeling, prediction review, prompt improvement, model publishing. |
+| **uipath-byo-llm-connector** | BYO LLM custom connectors for the LLM Gateway — build an Integration Service connector that bridges a product's LLM API to a customer endpoint, publish it, create its connections, and pass the product's compatibility probes. |
 
 ### Solution & Planning
 
@@ -92,6 +93,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-aops` | Preview |
 | `uipath-api-workflow` | Stable |
 | `uipath-automationhub` | Stable |
+| `uipath-byo-llm-connector` | In-development |
 | `uipath-coded-apps` | Stable |
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |

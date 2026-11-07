@@ -1,0 +1,39 @@
+{
+  "id": "openai_chat_basic_probe",
+  "description": "One user message; the answer must hold exactly one choice with a message.",
+  "source": "ProductDefinedProbes/Payloads/openai_chat_basic_probe.json",
+  "apiFlavor": "OpenAiChatCompletions",
+  "match": [
+    {
+      "feature": "agents-design-eval-deploy"
+    }
+  ],
+  "order": 10,
+  "path": "/v1/chat/completions",
+  "body": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me the first capital letter of the english alphabet and this letter only"
+      }
+    ],
+    "model": "{{model}}"
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "choices is an array; each message's content is a string and each tool call's arguments a string",
+      "jq": "(.choices | type) == \"array\" and all(.choices[]; ((.message.content // \"\") | type) == \"string\" and all((.message.tool_calls // [])[]; (.function.arguments | type) == \"string\"))"
+    },
+    {
+      "reason": "MULTIPLE_RESPONSES",
+      "says": "exactly one choice, index 0",
+      "jq": "(.choices | length) == 1 and (.choices[0].index // 0) == 0"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "the choice has a message",
+      "jq": ".choices[0].message != null"
+    }
+  ]
+}

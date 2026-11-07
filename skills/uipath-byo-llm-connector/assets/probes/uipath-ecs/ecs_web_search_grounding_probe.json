@@ -1,0 +1,51 @@
+{
+  "id": "ecs_web_search_grounding_probe",
+  "description": "A question answered with the google_search tool; the answer must hold a candidate with parts.",
+  "source": "ProductDefinedProbes/Payloads/ecs_web_search_grounding_probe.json",
+  "apiFlavor": "GeminiGenerateContent",
+  "match": [
+    {
+      "feature": "uipath-ecs-batch-transform-web-search"
+    }
+  ],
+  "order": 10,
+  "path": "/models/{{model}}:generateContent",
+  "body": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "What is the exchange rate between USD and EUR"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "google_search": {
+          "exclude_domains": [
+            "wikipedia.com"
+          ]
+        }
+      }
+    ]
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "candidates is an array of objects whose content.parts is an array",
+      "jq": "((.candidates // []) | type) == \"array\" and all((.candidates // [])[]; (.content.parts // []) | type == \"array\")"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "at least one candidate",
+      "jq": "((.candidates // []) | length) > 0"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "the first candidate has parts",
+      "jq": "((.candidates[0].content.parts // []) | length) > 0"
+    }
+  ]
+}
