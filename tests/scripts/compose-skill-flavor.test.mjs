@@ -424,7 +424,7 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
   );
   assert.match(
     canonical,
-    /Run with `--no-auth --output json` after each addition\. Fix what breaks\. Repeat\./,
+    /Run `uip api-workflow validate` after each addition\. Fix what breaks\. Repeat\./,
   );
   const findings = [];
   const composed = stripMarkerBoundaries(
