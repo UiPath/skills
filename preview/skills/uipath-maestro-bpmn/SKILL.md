@@ -71,6 +71,12 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    init-generated project — with no `project.uiproj` it has nothing to regenerate.
 8. Use the merge pipeline for targeted edits to an existing process.
 
+## Draft first
+
+When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
+Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
+The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
+
 ## API index
 
 Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only true of the build that emitted it.
@@ -87,6 +93,7 @@ Match one name — do not read either end to end — then read the span it gives
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
+| Show the shape before building it (sketch, draft, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
 | A node's own output | the node's `outputRows` — **not** a `.var()` beside it | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
@@ -103,6 +110,7 @@ Match one name — do not read either end to end — then read the span it gives
 | Human work — an inline form unless a deployed Action App is named | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/InvoiceEscalation.bpmn.ts` |
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connectors](references/connectors.md) | `examples/NotifyChannel.bpmn.ts` |
 | A connector EVENT, as a start or a mid-flow wait | `eventTrigger`, `waitForEvent` | [Connector events](references/connectors.md#6-connector-events) | — |
+| A connector step in a draft with no connection (offline, or no real ids allowed) | `connector` with symbolic bindings, or a bare `task` | [Unresolved connector draft](references/connectors.md#7-draft-with-an-unresolved-connector) | — |
 | Data Fabric records and file fields | `dataService` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/ContractRegistry.bpmn.ts` |
 | Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
