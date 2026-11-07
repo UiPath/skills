@@ -54,6 +54,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-api-workflow** | API Workflow JSON DSL — author, run, package, publish; HTTP and Integration Service connector activities. |
 | **uipath-human-in-the-loop** | Human task authoring and operations — design approval gates, escalations, and validation forms in Flow, Maestro, or coded agents; list, assign, complete, and reassign the resulting Action Center tasks. |
 | **uipath-ixp** | Document Understanding (IXP) — project setup, labeling, prediction review, prompt improvement, model publishing. |
+| **uipath-idp** | IDP document primitives (`uip documents`) — upload once, then digitize, extract fields with confidence and page/box attribution, or classify and split packets with an existing model. |
 
 ### Solution & Planning
 
@@ -99,6 +100,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-genome` | Preview |
 | `uipath-governance` | Preview |
 | `uipath-human-in-the-loop` | Stable |
+| `uipath-idp` | Preview |
 | `uipath-insights` | Preview |
 | `uipath-ixp` | Stable |
 | `uipath-knowledge-bundles` | Preview |

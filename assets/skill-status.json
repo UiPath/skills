@@ -129,6 +129,14 @@
       },
       "last_synced": null
     },
+    "uipath-idp": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-ixp": {
       "status": "stable",
       "confluence": {
