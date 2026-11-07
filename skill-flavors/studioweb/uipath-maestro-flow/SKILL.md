@@ -14,7 +14,7 @@ Choose the target `.flow` in this order:
 
 1. The user names a file: edit that file.
 2. An edit: edit the `.flow` at `CurrentFile.AbsolutePath`.
-3. A new flow, and `IsCurrentFileEmpty` is `true`: fill the open `.flow`.
+3. A new flow, and `IsCurrentFileEmpty` is `true` or you just created the project: fill its `.flow`.
 4. A new flow otherwise: write a new `<Name>.flow` in the open project. At the end, tell the user to open `<Name>.flow` in the Explorer. A write refreshes the canvas only for the open file.
 
 Below, `<Project>` is the folder of the target and `<Name>` is the file name of the target without `.flow` (`new` for `new.flow`). `<Draft>` is `/tmp/flow-draft/<Project>/<Name>`.
