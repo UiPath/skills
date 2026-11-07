@@ -316,16 +316,18 @@ binding half, which is the same for every connector-backed node.
     each one; keep it. Merging with `--baseline` (`bpmn.brownfield.merge`) keeps them from
     the original, with their data associations and shapes. A bare `compile` drops them.
 
-  These forms come with the SDK release that ships UiPath/builder-sdk#1705. An SDK
-  without it refuses every element above with "has no builder equivalent". On that
-  refusal, upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and decompile
-  again. If the latest SDK still refuses, tell the user these elements cannot be edited
-  through the builder yet; do not strip them or hand-edit the `.bpmn`.
+  Needs `@uipath/maestro-builder-sdk` 6.88.1 or later; an older SDK refuses every
+  element above with "has no builder equivalent", so upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest` and decompile again.
 
   Decompile still refuses a complex gateway with an `activationCondition` and a bare call
-  activity with a `calledElement`, and names the attribute. Tell the user that this element
-  cannot be edited through the builder yet. Do not strip the attribute or hand-edit the
-  `.bpmn` to get past the refusal: that changes what the process does.
+  activity with a `calledElement`. The refusal names the attribute and the next step: the
+  Maestro runtime does not read `activationCondition`, and the platform ignores
+  `calledElement`, so removing either one from the source `.bpmn` does not change what the
+  process does. Tell the user, remove the attribute, and decompile again. A bare call
+  activity then decompiles to the round-trip form above and still fails `validate` with
+  `CALL_ACTIVITY_NO_PAYLOAD`; to make it call a process, give it an
+  `Orchestrator.Start*Process` type with a process binding.
 
 <!-- RULE:bpmn.brownfield.format -->
 - Format after adding elements that need diagram shapes. Avoid formatting a
