@@ -40,6 +40,7 @@ npx rpa-sdk merge Main.xaml Main.edited.xaml --in-place
   `ok` is false only for a refusal, which compile cannot write; `ok` with warnings is still not clean.
 - `compile` writes the XAML. A file in a subfolder compiles the same way: `npx rpa-sdk compile Workflows/ValidateInvoice.rpa.ts -o Workflows/ValidateInvoice.xaml`.
 - **Editing an existing workflow:** `decompile` it to a `.rpa.ts`, edit that, compile it to a new file, and `merge` the new file into the original, which keeps the original's layout and ids for everything you did not change.
+- **Running it:** where the host serves `uip rpa run` (Studio Web does), run the compiled workflow to test what it does: `uip rpa run --file-path Main.xaml --input-arguments name=value --output json` (`name:=<json>` for a typed value). It prints the workflow's log lines, then `{Result, Code, Data}`; `Data.output` holds the output arguments, and `Data.errorMessage` a fault.
 - Neither `check` nor `compile` compiles the VB expressions: an expression is checked for its surface only (names in scope, the language), not for types.
 
 ## Router
