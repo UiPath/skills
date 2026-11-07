@@ -74,7 +74,7 @@ Also read `workflow.variables.globals`. Each entry has an `id` that maps directl
 > **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) uses `vars.<name>` — the `vars.` prefix is required; it declares the global variable name.
 
 <!--skill-flavor:flow-sdk-vars:start-->
-For the full variable system in a builder-SDK project, see the expression table in [uipath-maestro-flow SKILL.md § Builder frame](../../uipath-maestro-flow/SKILL.md#builder-frame)
+For the full variable system in a builder-SDK project, see the expression table in the `uipath-maestro-flow` skill (§ Builder frame)
 <!--skill-flavor:flow-sdk-vars:end-->
 
 ---
