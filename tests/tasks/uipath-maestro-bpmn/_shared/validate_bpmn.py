@@ -22,8 +22,11 @@ namespace prefix, so the CLI alone cannot carry a well-formedness criterion.
 The skill states the same rule for its own readers (``SKILL.md`` step 4,
 ``references/structural-bpmn.md``).
 
-Discovery: EVERY ``.bpmn`` under the sandbox (excluding ``node_modules`` and
-tool caches). Not only project-registered files: on that same CI run the
+Discovery: EVERY ``.bpmn`` under the sandbox, except scratch files
+(``bpmn_check.is_scratch_bpmn``: tool caches, the brownfield pipeline's
+``*.baseline/.edited/.merged/.original.bpmn``, and temp or archive dirs).
+Validating those failed a correct edit on the UNEDITED ``X.baseline.bpmn`` that
+``compile -o`` leaves beside the target (builder-sdk#1871). Not only project-registered files: on that same CI run the
 agent's real process sat outside the initialised project while the valid
 scaffold sat inside it, so a project-scoped rule still read as a pass.
 ``validate`` is offline, so one attempt per file is enough.
@@ -54,16 +57,18 @@ import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from _shared.bpmn_check import is_scratch_bpmn  # noqa: E402
+
 CRITERION_TIMEOUT_SECONDS = 180
 BUDGET_HEADROOM_SECONDS = 10
 DEFAULT_BUDGET_SECONDS = CRITERION_TIMEOUT_SECONDS - BUDGET_HEADROOM_SECONDS
-SKIP_PARTS = {"node_modules", ".npm-prefix", ".venv"}
 
 
 def _bpmn_files() -> list[Path]:
     root = Path.cwd()
     candidates = [
-        p for p in root.rglob("*.bpmn") if not (SKIP_PARTS & set(p.parts))
+        p for p in root.rglob("*.bpmn") if not is_scratch_bpmn(p.relative_to(root))
     ]
     return sorted(candidates)
 

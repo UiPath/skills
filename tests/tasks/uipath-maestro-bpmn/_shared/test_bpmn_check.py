@@ -235,10 +235,67 @@ def test_find_bpmn_file_with_hint_prefers_the_project_file(tmp_path, monkeypatch
 
     assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Proj.bpmn")
 
-    # Two hint matches beside a project.uiproj: the rule cannot pick, so the
-    # pre-existing first-match behaviour stands rather than a spurious FAIL.
+    # Two files beside a project.uiproj: the file the task NAMED (`Proj.bpmn`)
+    # beats a substring match, wherever it sorts.
     (tmp_path / "project.uiproj").write_text("{}", encoding="utf-8")
-    assert bpmn_check.find_bpmn_file("Proj") == "Proj-old.bpmn"
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Proj.bpmn")
+
+    # Two exact matches beside a project.uiproj: the rule cannot pick, so the
+    # pre-existing first-match behaviour stands rather than a spurious FAIL.
+    (tmp_path / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+    assert bpmn_check.find_bpmn_file("Proj") == "Proj.bpmn"
+
+
+@pytest.mark.parametrize(
+    "leftover",
+    [
+        "ShipmentReview.baseline.bpmn",
+        "ShipmentReview.edited.bpmn",
+        "ShipmentReview.merged.bpmn",
+        "ShipmentReview.original.bpmn",
+        "_created-scaffolds/ShipmentReview.bpmn",
+        "tmp/ShipmentReview.bpmn",
+        "tmp.Xa81kQ/ShipmentReview.bpmn",
+    ],
+)
+def test_find_bpmn_file_skips_brownfield_scratch_files(tmp_path, monkeypatch, leftover) -> None:
+    """The brownfield pipeline's leftovers are never the graded file (builder-sdk#1871).
+
+    `compile -o X.baseline.bpmn` holds the UNEDITED process and sorts before
+    `X.bpmn`; seven correct v2 edits failed on it. No hint and a hint must both
+    reach the target, and the validate-every-file helper must skip the leftover.
+    """
+    (tmp_path / "ShipmentReview.bpmn").write_text("<edited/>", encoding="utf-8")
+    scratch = tmp_path / leftover
+    scratch.parent.mkdir(parents=True, exist_ok=True)
+    scratch.write_text("<unedited/>", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.is_scratch_bpmn(leftover)
+    assert bpmn_check.find_bpmn_file("ShipmentReview") == "ShipmentReview.bpmn"
+    assert bpmn_check.find_bpmn_file() == "ShipmentReview.bpmn"
+    validate_bpmn = _load("validate_bpmn")
+    assert validate_bpmn._bpmn_files() == [tmp_path / "ShipmentReview.bpmn"]
+
+
+def test_is_scratch_bpmn_tests_directories_not_the_file_name() -> None:
+    assert not bpmn_check.is_scratch_bpmn("tmp.bpmn")
+    assert not bpmn_check.is_scratch_bpmn("Temp/Proj/Proj.bpmn")
+    assert not bpmn_check.is_scratch_bpmn("ProjSolution/Proj/Proj.bpmn")
+    assert bpmn_check.is_scratch_bpmn("node_modules/pkg/x.bpmn")
+
+
+def test_resolve_project_skips_an_archived_scaffold(tmp_path, monkeypatch) -> None:
+    """An agent archived a superseded scaffold under `_created-scaffolds/`
+    (R15 generic-dynamic-node); the live project is the only candidate."""
+    for root in (tmp_path / "AcrUserList" / "AcrUserList",
+                 tmp_path / "_created-scaffolds" / "AcrUserListSolution" / "AcrUserList"):
+        root.mkdir(parents=True)
+        (root / "AcrUserList.bpmn").write_text("<x/>", encoding="utf-8")
+        (root / "project.uiproj").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.resolve_project("AcrUserList.bpmn") == Path.cwd() / "AcrUserList" / "AcrUserList"
 
 
 def test_context_value_strips_and_falls_back_to_element_text() -> None:
