@@ -19,6 +19,7 @@
 
 # Studio Web flavor overrides
 /skill-flavors/studioweb/ @astridstaicu
+/skill-flavors/studioweb/uipath-datastore-schema/ @astridstaicu @Kumarvarinder87
 /skill-flavors/studioweb/uipath-maestro-bpmn/ @astridstaicu @UiPath/maestro-cli-team
 /skill-flavors/studioweb/uipath-maestro-case/ @astridstaicu @UiPath/maestro-cli-team
 /skill-flavors/studioweb/uipath-maestro-flow/ @astridstaicu @UiPath/maestro-cli-team
@@ -121,6 +122,8 @@
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
+/skills/uipath-datastore-schema/ @Kumarvarinder87
+/tests/tasks/uipath-datastore-schema/ @Kumarvarinder87
 
 # Genome skill (extract / author / execute automation blueprints)
 /skills/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
