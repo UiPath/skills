@@ -245,7 +245,7 @@ uip api-workflow registry stub <activity-type-id> \
 | Argument / Flag | Required | Description |
 |--|--|--|
 | `<activity-type-id>` | yes | The `uiPathActivityTypeId` GUID from `resolve`. |
-| `--connection-id <uuid>` | IntSvc kind only | Pinged vendor connection UUID. IntSvc kind leaves `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` placeholders if omitted. Ignored for Http kind (HTTP). |
+| `--connection-id <uuid>` | IntSvc kind; optional | Pinged vendor connection UUID. The stub checks it (`Enabled`, the activity's connector) and reads the connector's settings (`metadata.configuration`, a trigger's `filterExpression`) through it. If omitted, IntSvc kind leaves `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` placeholders. For Http kind, optional: any connector's `Enabled` connection. |
 | `--object-name <name>` | Generic activities and GenericTrigger | Target connector object ("List Records" of *what*). Discover with `uip is resources list <connector-key> --connection-id <uuid>`, or `uip is triggers objects <connector-key> <EVENT>` for a GenericTrigger. Defaults to the object pinned in the definition; a `GenericTrigger` pins none. Ignored (with a warning) for Curated / CuratedTrigger. |
 | `--instance <n>` | no | Suffix for slot/export bucket key. Default `1`. `--instance 2` produces `<Name>_2` keys. |
 | `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. The export bucket key always derives from `objectName + "_<n>"` (both Curated and Generic) and is not affected by this flag. |
@@ -287,6 +287,9 @@ Failure modes:
 - `"Trigger '<name>' is a GenericTrigger and needs an object name"` — same for a GenericTrigger; discover with `uip is triggers objects <connector-key> <EVENT> --connection-id <uuid> --output json`.
 - `"Could not resolve operation '<op>' on object '<name>' …"` — the object doesn't exist or doesn't support this operation (Generic stubs hard-require IS metadata; there is no fallback path/verb). Check the object with `uip is resources describe <connector-key> <object-name> --connection-id <uuid>`.
 - `"Invalid --inputs JSON"` — `--inputs` must be a JSON object (`'{"key":"value"}'`).
+- `"Connection '<id>' was not found…"`, `"…belongs to connector …"`, `"…is <State>, not Enabled"` — pass a pinged `Enabled` connection of the activity's connector.
+- `"Could not read the connector's settings through connection '<id>': …"` — the cause follows the colon; check the connection with `uip is connections ping <id>`.
+- `"Could not read the metadata of trigger '<name>'…"` — check it with `uip is triggers describe <connector-key> <EVENT> <OBJECT> --connection-id <uuid>`.
 
 <!--skill-flavor:connector-typical-sequence:start-->
 ### Typical sequence
