@@ -316,9 +316,11 @@ binding half, which is the same for every connector-backed node.
     each one; keep it. Merging with `--baseline` (`bpmn.brownfield.merge`) keeps them from
     the original, with their data associations and shapes. A bare `compile` drops them.
 
+<!--skill-flavor:sdk-palette-elements:start-->
   Needs `@uipath/maestro-builder-sdk` 6.88.1 or later; an older SDK refuses every
   element above with "has no builder equivalent", so upgrade with
   `npm install -g @uipath/maestro-builder-sdk@latest` and decompile again.
+<!--skill-flavor:sdk-palette-elements:end-->
 
   Decompile still refuses a complex gateway with an `activationCondition` and a bare call
   activity with a `calledElement`. The refusal names the attribute and the next step: the
