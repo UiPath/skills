@@ -47,3 +47,4 @@
 {"id": "uipath-mcp-servers-054", "prompt": "Remove a user's per-user connection from an Agent Gateway MCP server", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-055", "prompt": "Register a swagger MCP server in Agent Gateway on our Automation Suite 26.10 tenant", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-056", "prompt": "uip agenthub mcp create swagger says the swagger MCP server type isn't supported on the connected environment, what does that mean?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-057", "prompt": "My colleague keeps her MCP connection in her personal workspace. Set it as her own connection on our remote Agent Gateway MCP server", "expected_skill": "uipath-mcp-servers"}
