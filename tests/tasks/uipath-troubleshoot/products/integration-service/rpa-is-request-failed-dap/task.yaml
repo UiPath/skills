@@ -38,6 +38,14 @@ initial_prompt: |
   I have deployed a new solution under this folder uipath-rpa-isActivities/RequestFailed_DAPRuntime and recently I run one job there but it failed, can you help me in troubleshooting the error i am getting there
 
 success_criteria:
+  - type: file_contains
+    description: "Investigation data is git-ignored (.local/.gitignore contains *)"
+    path: ".local/.gitignore"
+    includes:
+      - "*"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
     skill_name: "uipath-troubleshoot"
