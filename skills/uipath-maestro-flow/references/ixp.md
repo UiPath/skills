@@ -50,7 +50,7 @@ Rules for the listing path:
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
 <!--skill-flavor:ixp-no-login:end-->
 - **Do NOT search by `runtime`, `document extractor`, `extractor`, or `IXP` (uppercase).** These return empty results or agent-tool variants, not extraction nodes. Use `uipath.ixp` (lowercase) only.
-- **Do NOT switch to the `uipath-ixp` skill.** `uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro.
+- **Do NOT switch to the `uipath-ixp` skill to list.** `uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro.
 - **Do NOT use `uip maestro flow process list` or any Orchestrator folder iteration.** `flow process list` enumerates deployed flow process instances, not published models.
 - **Do NOT guess `uip maestro flow list-*` or `uip maestro ixp list-*` subcommands.** None exist; the CLI returns `unknown command` and there is no fallback path to pursue.
 
@@ -94,13 +94,13 @@ Scalar results are under `ExtractionResult.ResultsDocument.Fields[]`; table
 results are under `ExtractionResult.ResultsDocument.Tables[]`. In both arrays,
 `FieldName` identifies the model field and `Values` carries its extracted values.
 
-If the registry has no suitable published extractor, the requested acceptance
-bar determines the next step. For a runtime or published-model requirement,
-report the missing capability and stop. For a validate-only topology whose
-purpose is to show where extraction belongs, put `mock()` in the extraction
-position, complete and validate the surrounding flow, and report the placeholder
-as the capability gap. Do not block a validate-only topology on an unavailable
-extractor or downstream endpoint when placeholders preserve the requested graph.
+<!--skill-flavor:ixp-no-model:start-->
+If the registry has no suitable published extractor, add no Extract document node unless the user named it.
+
+- **Documents to train on and a runtime need:** invoke `uipath-ixp` with the documents, the extraction goal and the target Orchestrator folder (the user's, else ask). Do not run `uip ixp` project or deployment commands from here. Once it reports a deployment, `registry pull --force` and search again. If `uipath-ixp` is unavailable, take the placeholder branch and add an Open Questions entry.
+- **Otherwise:** a validate-only request never hands off, with documents or without: the handoff creates an IXP project and a deployment that cannot be deleted. Only when the user asked for a placeholder or a validate-only topology, put `mock()` in the extraction position, complete and validate the surrounding flow, and report the placeholder as the capability gap. Else report the missing model and stop.
+<!--skill-flavor:ixp-no-model:end-->
+
 `pageRange` is a product string; examples such as `1-5` are illustrative because
 no local grammar is published.
 
