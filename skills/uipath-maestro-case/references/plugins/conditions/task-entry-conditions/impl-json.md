@@ -140,7 +140,7 @@ Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger -
 
 The task fires when the referenced SLA changes status — the direct shape for a `start-task` response ([sla-response-shapes.md](../../../sla-response-shapes.md)): the follow-up task lives in the breached stage and activates on the SLA event itself, so no stage re-entry is involved and the stage's other tasks do not re-run. Resolve `slaId` (and an at-risk `escalationId`) against the objects already written in Phase 2 Step 11. Reference the stage's **own** SLA for a stage-scoped response, or `root`'s for a case-scoped one.
 
-`slaId` alone is a **breach** rule; add a concrete at-risk `escalationId` declared on that same SLA for an at-risk rule. Never the `"any"` sentinel. Verified valid on uip 1.198.0-preview.102 for both stage-owned and root SLAs.
+`slaId` alone is a **breach** rule; add a concrete at-risk `escalationId` declared on that same SLA for an at-risk rule. Not `"any"`: that is the Designer's at-risk wildcard (every at-risk escalation of the SLA), never a breach rule; name the escalation you mean. Verified valid on uip 1.198.0-preview.102 for both stage-owned and root SLAs.
 
 When a *stage* should take the case instead, the rule goes on the stage's `entryConditions` ([stage-entry-conditions/impl-json.md](../stage-entry-conditions/impl-json.md)) — that is `enter-stage`, not `start-task`.
 
