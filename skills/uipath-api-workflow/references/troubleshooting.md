@@ -610,6 +610,11 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - Ensure object literals have unique keys
 <!--skill-flavor:runtime-executor-failures:end-->
 
+### Retried activity ran only once (no `task_retried` events)
+
+- **Cause:** `catch.retry` missing from `catch` (placed on the activity instead), `when` rejected the error (`$<catch.as>.status` not in the list), or the executor predates task-level retry. A call inside a retrying `try` never falls back to `httpRetryConfig`.
+- **Fix:** Check the shape and status filter in [http-retry-config.md](http-retry-config.md#task-level-retry-catchretry); for an executor gap, report it rather than editing the policy.
+
 ### `"Script execution failed timed out"`
 
 <!--skill-flavor:script-budget-symptom:start-->
@@ -768,6 +773,12 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   So read the avalanche as "the schema cannot match this task", not "the task key is wrong". Diff the task against the shape in [task-types.md](task-types.md) field by field before concluding the type is unsupported.
 - **Logging:** use Log Message ([task-types.md](task-types.md#4-log-message-logmessage)), never `console.*` inside a JavaScript activity. Each call becomes a job log entry at its level; `run` prints it as `[Script <TaskName>]: ...`.
 - **Do not** mislabel `metadata.activityType` to slip a type past the check — the validator cross-checks the label against the task's own keys (`has activityType 'DoWhile' but must contain 'for' with 'doWhile'`).
+
+### `validate` rejects a retry `when` or an HTTP Request `<id>#Retry` wrapper
+
+- **Symptom:** At `…/catch/retry/when` or `…/catch/retry/exceptWhen`, `validate` reports three errors: `Expected type 'object' but got a different type`, `Expected type 'array' but got a different type`, and `Value must match exactly one of the allowed formats`. Or, at a `…#Retry` task path, a Connector task missing `call` / `metadata.configuration`.
+- **Cause:** Validator releases without the task-level retry fix type `retry.when` as an object and treat Studio Web's HTTP Request retry wrapper as a malformed Connector task. Both shapes are correct for the executor and the designer.
+- **Fix:** Follow [http-retry-config.md § Validation Gap](http-retry-config.md#validation-gap).
 
 ### Fixing in wrong order
 - **Symptom:** Fixing one error creates more errors; thrashing

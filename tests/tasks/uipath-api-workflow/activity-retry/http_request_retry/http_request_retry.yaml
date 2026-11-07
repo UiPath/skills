@@ -1,0 +1,81 @@
+task_id: skill-api-workflow-http-request-retry
+description: >
+  Build (brown-field): give one existing HTTP Request its own retry policy. The
+  seeded `OrderSync` project holds a registry-shaped `UiPath.Http` GET; the agent
+  must put the call inside a `try` whose `catch.retry` has 4 retries, 1500 ms,
+  exponential backoff and a `when` filter on exactly 429 and 503 read from
+  `$<catch.as>.status` (the real HTTP status), in the
+  `[...].includes($<as>.status)` form: the only filter form Studio Web
+  round-trips, so `===` / `||` chains are graded wrong. Only the HTTP Request's
+  own Retry shape passes: an `HttpRequest_1#Retry` wrapper without `catch.do`.
+  A Try/Catch fails, because Studio Web's Try/Catch has no status filter and
+  drops a hand-written `when` on its next save. With the wrapper unwrapped, the
+  workflow must equal the seed (call, Response, schemas), and no
+  workflow-level `httpRetryConfig` may be added (it would not be per-activity, and
+  a retrying `try` replaces it anyway).
+
+  The validate criterion requires Valid, so it passes only on a `uip` that
+  includes UiPath/cli#5785: earlier releases reject a string `retry.when`
+  and the #Retry wrapper. The skill tells agents to report that
+  validator gap rather than drop the filter.
+
+  Offline: the call is never sent and no registry lookup is needed.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, feature:http]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: ..
+
+pre_run:
+  - command: "python3 _setup/seed.py"
+    timeout: 60
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+initial_prompt: |
+  The HTTP Request in the `OrderSync` API workflow project fails now and then with
+  429 and 503. Give that one activity a retry policy: up to 4 retries on exactly
+  those two status codes, 1.5 seconds base delay, exponential backoff. Leave the
+  rest of the workflow as it is.
+
+  Validate. Do not run.
+
+success_criteria:
+  - type: run_command
+    description: "HttpRequest_1 is unchanged and sits in a try whose catch.retry is 4 / 1500 ms / exponential, filtered on 429 and 503; no httpRetryConfig"
+    command: "python3 $REFERENCE_DIR/check_activity_retry.py http"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip api-workflow validate returns Valid"
+    command: "python3 $REFERENCE_DIR/check_activity_retry.py validation"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the API Workflow static validator"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent respected the request not to execute the workflow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    weight: 1.0
+    pass_threshold: 1.0
