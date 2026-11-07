@@ -35,6 +35,35 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+## HTTP requests
+
+<!-- RULE:case.http.modes -->
+- `.httpRequest({ method, url, ... })` sends one HTTP call. Without `connector`
+  the request goes to `url` unauthenticated. With
+  `connector: { key, connection, folder }` it reuses that connection's auth and
+  `path` replaces `url`. Compile refuses `url` through a connector or `path`
+  without one.
+
+<!-- RULE:case.http.body -->
+- An `=` value inside an object body compiles to the code it reads:
+  `body: { id: '=vars.id' }` sends the variable's value, and so does a
+  `'=js:<expr>'` leaf. Each `=js:` value must be exactly one expression
+  (acorn-parsed); a statement or unparseable text is refused at compile
+  (`HTTP_REQUEST_BODY_EXPRESSION`). Both work nested and in arrays. Other
+  `=` forms (`=vars.a + 1`) are also refused with the same code; write as
+  `'=js:vars.a + 1'`. A string body must be JSON or an `=` expression;
+  other text is refused at compile (`HTTP_REQUEST_BODY_FORM`).
+
+<!-- RULE:case.http.credentials -->
+- `check` reports a literal credential header (`Authorization`, `Cookie`, API
+  keys) and a literal credential query parameter (`api_key`, `token`, `secret`,
+  `password`). An `=vars.` value is not reported. Compile writes both as
+  authored, so run `check` before `compile`.
+
+<!-- RULE:case.http.outputs -->
+- Outputs are the fixed four: `code`, `headers`, `body`, `Error`.
+  `.outputs({ v: '=response.body' })` maps one to a case variable.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
