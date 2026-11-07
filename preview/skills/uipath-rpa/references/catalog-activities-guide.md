@@ -23,6 +23,7 @@ s.activity('validate', catalogActivity('UiPath.Core.Activities.InvokeWorkflowFil
 ```
 
 Property names and kinds come from the catalog entry: `InArgument` takes an expression or literal, `OutArgument` a reference, `Literal` a plain value or enum member, `Activity` a slot (in the fourth argument, `{ Then: (t) => t… }`), `Object` an `objectValue({…})`, `Arguments` an `invokeArguments([…])`.
+Invoke Workflow File's `WorkflowFileName` is relative to the project root (the folder with `project.json`), wherever the invoking workflow is; `check` reports a file the project has in neither its `.xaml` nor its `.rpa.ts` form (`INVOKE_FILE_MISSING`).
 `Condition` is an `Activity<T>`: an expression, or for a value an activity computes (UI Automation's `AnchorProvider`), that one activity, `activityValue((t) => t.step('find', …))`.
 `Unsupported` properties can only be `null`.
 
