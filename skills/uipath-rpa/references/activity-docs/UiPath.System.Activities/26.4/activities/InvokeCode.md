@@ -41,9 +41,8 @@ _No dedicated output arguments. Return values are passed back through the `Argum
 ```xml
 <ui:InvokeCode Language="VBNet">
   <ui:InvokeCode.Code>
-    <x:String>
-      result = input * 2
-    </x:String>
+    <x:String xml:space="preserve">' Double the input
+result = input * 2</x:String>
   </ui:InvokeCode.Code>
   <ui:InvokeCode.Arguments>
     <x:Reference>invokeCodeArgs</x:Reference>
@@ -56,4 +55,5 @@ _No dedicated output arguments. Return values are passed back through the `Argum
 - Argument bindings in the `Arguments` dictionary use the variable name as the key; direction (`In`, `Out`, `InOut`) determines data flow.
 - The code snippet is compiled and executed at runtime in the same process as the robot; it has access to all .NET BCL types.
 - Use `InArgument` entries to pass data into the code and `OutArgument` entries to receive results back.
+- When `Code` spans several lines, keep its line breaks: put it in a child `<x:String xml:space="preserve">`, as in the example, or in the `Code` attribute with each line break written as `&#xA;`. Without `xml:space="preserve"`, XAML turns each line break into a space, so a `'` or `//` comment swallows all code after it. Do not put `xml:space` on `<ui:InvokeCode.Code>` itself: the workflow then fails to load. A single-line body needs neither.
 - Both `VBNet` and `CSharp` are supported; choose the language that matches your Studio project settings for consistency.
