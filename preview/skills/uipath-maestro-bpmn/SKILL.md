@@ -14,8 +14,12 @@ variables, bindings, and sequence flows.
 Use this file as a router. Read only the reference named by the capability you
 need, then let TypeScript and `bpmn check` provide the detailed contract.
 
+<!--skill-flavor:host-setup:start-->
+
+<!--skill-flavor:host-setup:end-->
 ## Workflow
 
+<!--skill-flavor:workflow-scaffold:start-->
 1. Scaffold the project first with `uip maestro bpmn init <Name> --output json`, and take the project directory from `Data.Path`.
    Below, `<Project>` means that directory.
    It holds `<Name>.bpmn` plus `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, and `package-descriptor.json` — the layout `bpmn pack` and product tooling require.
@@ -29,10 +33,13 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    Check `Data.Path` against the requested path before writing anything, and compile to that path, not to a copy elsewhere.
    A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Keep `<Name>.bpmn.ts` at the workspace root, beside `package.json`.
+<!--skill-flavor:workflow-scaffold:end-->
 3. Import from `@uipath/maestro-builder-sdk/bpmn` and default-export a chain ending in `.build()`.
+<!--skill-flavor:workflow-seed:start-->
 4. Seed the source by decompiling the stub `bpmn init` wrote —
    `uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested` — rather than
    hand-writing the skeleton.
+<!--skill-flavor:workflow-seed:end-->
    `--style nested` lifts an existing process's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in order (`flowMode('sequence')`), and leaves whatever it cannot prove flat with a printed reason; the compiled graph is verified identical before it is written. It KEEPS the flow ids the constructs now imply: an import's `edge_…` is pinned back onto the implied edge with a `.flowIds([…])` call at the top of the chain, so the recompile reproduces the ids the artifact arrived with. That matters for brownfield work — `bpmn merge` keys every element by id, flows included, so a renamed flow reads as a new one, the original is deleted with its diagram edge, and a gateway `default` left naming the old id produces a file `validate` rejects. `--keep-flow-ids` now only confines the lift to regions whose ids already match, for source with no pin table, at the cost of lifting far less. Without `--style nested` the whole process is written flat. It carries the process id and the `entryPointId` UUID the
    product assigned, which a hand-written chain cannot invent. An existing project needs
    no `init`: seed from the `.bpmn` already there. For shape, copy the closest staged
@@ -41,6 +48,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    references (`--keep-unused-bindings` keeps them) and it writes `.preserve({ … })` for
    state the document carried that nothing derives. Leave the `.preserve` call alone; see
    [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract).
+<!--skill-flavor:workflow-compile:start-->
 5. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix
    every error it prints (it exits non-zero) before you compile. `compile` writes what
    the source says; `check` is what reports a probable mistake, such as a `vars.<id>`
@@ -58,6 +66,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    Exactly one emitted `<Name>.bpmn` may exist, at
    `<Project>/<Name>.bpmn`; do not leave a second copy at the workspace root, and do not
    leave the template `init` wrote in place of your compiled output.
+<!--skill-flavor:workflow-compile:end-->
 7. **`refresh` is part of the loop, not part of packaging.** `init` generates
    `entry-points.json` and `operate.json` once, naming the start event of the template
    it wrote (`Event_start`); they do not follow source edits. Author a start event with
@@ -69,7 +78,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    event id or adds or removes an entry point. It validates before it writes, so lay
    the diagram out first (`format`) or it fails with `MISSING_DI_SHAPE`, and it needs an
    init-generated project — with no `project.uiproj` it has nothing to regenerate.
+<!--skill-flavor:workflow-merge:start-->
 8. Use the merge pipeline for targeted edits to an existing process.
+<!--skill-flavor:workflow-merge:end-->
 
 ## Draft first
 
@@ -79,6 +90,7 @@ The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (ste
 
 ## API index
 
+<!--skill-flavor:api-index-location:start-->
 Indexed in the INSTALLED PACKAGE, not here, because a `.d.ts` line span is only true of the build that emitted it.
 
 When the package ships `node_modules/@uipath/maestro-builder-sdk/dist/bpmn-api.md`, every BPMN builder method and option field is there, with its type and a one-line doc.
@@ -88,6 +100,7 @@ Do not read `dist/**/*.d.ts` with that package; `check --source` reports a wrong
 
 A package without `bpmn-api.md` has `dist/api-members.md`, keyed by field or method name (`gateway`), and `dist/api-index.md`, keyed by exported symbol.
 Match one name — do not read either end to end — then read the span it gives you: the whole declaration, doc comment included.
+<!--skill-flavor:api-index-location:end-->
 
 ## Capability router
 
@@ -207,6 +220,7 @@ Read [references/patterns/composing-guide.md](references/patterns/composing-guid
 
 ## Validation loop
 
+<!--skill-flavor:validation-loop:start-->
 ```bash
 uip maestro bpmn init <Name> --output json    # once; <Project> is Data.Path (see step 1)
 uip maestro bpmn check <Name>.bpmn.ts --source
@@ -216,6 +230,7 @@ uip maestro bpmn format <Project>/<Name>.bpmn
 uip maestro bpmn refresh <Project> --output json   # entry-points.json + operate.json, from the BPMN
 uip maestro bpmn validate <Project>/<Name>.bpmn --output json
 ```
+<!--skill-flavor:validation-loop:end-->
 
 `check` owns source and graph invariants. Product validation owns the compiled
 BPMN contract. Change the TypeScript source and rebuild; do not patch emitted XML.
@@ -231,6 +246,7 @@ required input, an unresolved `lookup()`, an unprepared object or a self-naming 
 
 ## Operating a process
 
+<!--skill-flavor:operating:start-->
 Refresh the package metadata, pack, upload to Studio Web (what "publish" means
 unless the user names Orchestrator), debug a real run, run a deployed process,
 inspect a job, and drive an instance's lifecycle. All of it needs `uip login`;
@@ -238,6 +254,7 @@ inspect a job, and drive an instance's lifecycle. All of it needs `uip login`;
 `bpmn debug` is a REAL run, not a validation step. Every mutation needs the
 user's decision for that action. Read
 **[`references/operate.md`](references/operate.md)**.
+<!--skill-flavor:operating:end-->
 
 ## Diagnosing a failed run
 

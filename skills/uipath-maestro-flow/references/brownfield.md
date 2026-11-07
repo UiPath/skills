@@ -379,11 +379,13 @@ Leave these as they are. Removing them makes compile name the node
 `<agent>Context` / `Tool` / `Escalation` (with `2`, `3`, ... for more than one)
 with a new directory, so merge drops the original node and adds a different
 one. Do not add them to a resource you create, including one copied from a
-decompiled entry. `check` reports `INLINE_AGENT_RESOURCE_NODE_ID` for a blank
+decompiled entry. `check` reports `FLOW_AGENT_RESOURCE_NODE_ID` for a blank
 `nodeId` or one another node has (or that compile derives for another
-resource), `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
-uuid, and `INLINE_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
-with the same `source`: both would write one `resource.json`. Delete both
+resource), `FLOW_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
+uuid, and `FLOW_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
+with the same `source`: both would write one `resource.json`. (An SDK older
+than 6.88.2 spells these three
+`INLINE_AGENT_RESOURCE_*`.) Delete both
 `nodeId` and `source` from a copied entry.
 Needs `@uipath/maestro-builder-sdk`
 6.33.0 or later; an older SDK's decompile omits these fields and compile renames

@@ -17,9 +17,11 @@ all but the reads need `uip login`.
 
 ## Pre-flight, before any cloud action
 
+<!--skill-flavor:preflight-target:start-->
 1. Confirm the target: package only, Studio Web upload, or Orchestrator
    deployment. **"Publish" means Studio Web upload** unless the user names
    Orchestrator.
+<!--skill-flavor:preflight-target:end-->
 2. Confirm the compiled `.bpmn` has been formatted and passes
    `uip maestro bpmn validate`, and that every connector node has been through the
    CLI's Integration Service enrichment — a draft with unresolved enrichment is
@@ -36,6 +38,7 @@ all but the reads need `uip login`.
    that were stale, which is the drift report. Never hand-edit those files and
    never use the deprecated `update-metadata`: it does not materialize `Intsvc.*`
    connection bindings, so a package it wrote validates and faults at run time.
+<!--skill-flavor:preflight-host:start-->
 4. Refresh the solution's declared resources when the project sits in the
    solution `bpmn init` scaffolded (it does unless `--skip-solution-registration`
    was passed), so generated resource files and debug metadata are current:
@@ -49,6 +52,7 @@ all but the reads need `uip login`.
    ```bash
    uip login status --output json
    ```
+<!--skill-flavor:preflight-host:end-->
 
 6. Check the generated files for public-safety before committing or sharing:
    no tenant URLs, folder keys, connection ids, user data, payloads or local paths.
@@ -57,6 +61,7 @@ all but the reads need `uip login`.
 `process list`, `get` and `run` require `--folder-key`, and every
 `instance` subcommand and `incident get` take `--folder-key` or `-f`.
 
+<!--skill-flavor:ship:start-->
 ## Package
 
 ```bash
@@ -98,9 +103,11 @@ uip solution publish <PackageZip> --output json
 
 Activation and the `uip solution deploy` steps that follow are the platform
 skill's; this skill stops at the BPMN project and package boundary.
+<!--skill-flavor:ship:end-->
 
 ## Debug — a controlled Studio Web run
 
+<!--skill-flavor:debug-run:start-->
 ```bash
 uip maestro bpmn debug <project-path> --output json
 uip maestro bpmn debug <project-path> --inputs @inputs.json --output json
@@ -122,10 +129,13 @@ uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 ```
+<!--skill-flavor:debug-run:end-->
 
+<!--skill-flavor:offline-checks:start-->
 Never use `debug` as validation. `check`, `validate` and the local engine
 (`flow-debug`, which runs the compiled `.bpmn` on this machine with every
 service mocked) are the offline checks; `debug` executes against real services.
+<!--skill-flavor:offline-checks:end-->
 
 ## Run a deployed process
 
@@ -187,13 +197,17 @@ uip maestro bpmn instance goto <INSTANCE_ID> '[{"sourceElementId":"A","targetEle
 | `goto` | the user names the source and target element ids to move the cursor between |
 
 After every lifecycle command, fetch the instance again and report its status.
+<!--skill-flavor:fix-and-ship:start-->
 When the action reveals a modeling or binding problem, the fix is in the
 `.bpmn.ts`: recompile, format, validate, `refresh`, and ship again.
+<!--skill-flavor:fix-and-ship:end-->
 
 ## Anti-patterns
 
 - **Never debug or run without the user's explicit consent for that run.**
+<!--skill-flavor:publish-default:start-->
 - **Never deploy to Orchestrator because the user said "publish".** Studio Web upload is the default.
+<!--skill-flavor:publish-default:end-->
 - **Never upload an executable process with unresolved Integration Service enrichment.**
 - **Never fix a packaging error by editing the generated JSON.** Fix the source, recompile, `refresh`.
 - **Never treat package generation as authoring** — the four files are derived from the compiled BPMN.
