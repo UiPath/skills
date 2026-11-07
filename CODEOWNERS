@@ -30,6 +30,7 @@
 /preview/skills/uipath-maestro-case/ @dmetzgar @tmatup @UiPath/maestro-cli-team
 /preview/skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
 /preview/skills/uipath-maestro-flow @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
+/preview/skills/uipath-rpa/ @dmetzgar
 
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
