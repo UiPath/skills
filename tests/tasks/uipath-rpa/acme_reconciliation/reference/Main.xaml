@@ -1,0 +1,295 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_DataFolder" Type="InArgument(x:String)" />
+    <x:Property Name="in_ConfigFile" Type="InArgument(x:String)" />
+    <x:Property Name="out_Completed" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_Rejected" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_Failed" Type="OutArgument(x:Int32)" />
+  </x:Members>
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="32">
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="32">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <StateMachine DisplayName="ACME Reconciliation" sap2010:WorkflowViewState.IdRef="machine" InitialState="{x:Reference init}">
+    <State x:Name="init" DisplayName="Initialization">
+      <State.Entry>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+          <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" sap2010:WorkflowViewState.IdRef="settings" WorkflowFileName="Framework\InitAllSettings.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_ConfigFile">[in_ConfigFile]</InArgument>
+              <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="out_Config">[Config]</OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" sap2010:WorkflowViewState.IdRef="items" WorkflowFileName="System1\System1_GetWorkItems.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_DataFolder">[in_DataFolder]</InArgument>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[Config]</InArgument>
+              <OutArgument x:TypeArguments="s:String[]" x:Key="out_WorkItemIds">[WorkItemIds]</OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </Sequence>
+      </State.Entry>
+      <State.Transitions>
+        <Transition DisplayName="Successful">
+          <Transition.To>
+            <State x:Name="get" DisplayName="Get Transaction Data">
+              <State.Entry>
+                <Assign sap2010:WorkflowViewState.IdRef="take">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[TransactionItem]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[If(TransactionNumber &lt; WorkItemIds.Length, WorkItemIds(TransactionNumber), Nothing)]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </State.Entry>
+              <State.Transitions>
+                <Transition DisplayName="New Transaction">
+                  <Transition.To>
+                    <State x:Name="process" DisplayName="Process Transaction">
+                      <State.Entry>
+                        <TryCatch sap2010:WorkflowViewState.IdRef="try">
+                          <TryCatch.Try>
+                            <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+                              <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" sap2010:WorkflowViewState.IdRef="process" WorkflowFileName="Process.xaml">
+                                <ui:InvokeWorkflowFile.Arguments>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_TransactionItem">[TransactionItem]</InArgument>
+                                  <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[Config]</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_DataFolder">[in_DataFolder]</InArgument>
+                                </ui:InvokeWorkflowFile.Arguments>
+                              </ui:InvokeWorkflowFile>
+                              <Assign sap2010:WorkflowViewState.IdRef="completed">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="x:Int32">[out_Completed]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="x:Int32">[out_Completed + 1]</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                              <Assign sap2010:WorkflowViewState.IdRef="next">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="x:Int32">[TransactionNumber]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="x:Int32">[TransactionNumber + 1]</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                              <Assign sap2010:WorkflowViewState.IdRef="reset">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="x:Int32">[ConsecutiveSystemExceptions]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="x:Int32">0</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                              <Assign sap2010:WorkflowViewState.IdRef="fresh">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="x:Int32">[RetryNumber]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="x:Int32">0</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                            </Sequence>
+                          </TryCatch.Try>
+                          <TryCatch.Catches>
+                            <Catch x:TypeArguments="ui:BusinessRuleException">
+                              <ActivityAction x:TypeArguments="ui:BusinessRuleException">
+                                <ActivityAction.Argument>
+                                  <DelegateInArgument x:TypeArguments="ui:BusinessRuleException" Name="rule" />
+                                </ActivityAction.Argument>
+                                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
+                                  <ui:LogMessage sap2010:WorkflowViewState.IdRef="warn" Level="Warn" Message="[&quot;Work item &quot; &amp; TransactionItem &amp; &quot; rejected: &quot; &amp; rule.Message]" />
+                                  <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" sap2010:WorkflowViewState.IdRef="record" WorkflowFileName="System1\System1_UpdateWorkItem.xaml">
+                                    <ui:InvokeWorkflowFile.Arguments>
+                                      <InArgument x:TypeArguments="x:String" x:Key="in_DataFolder">[in_DataFolder]</InArgument>
+                                      <InArgument x:TypeArguments="x:String" x:Key="in_WIID">[TransactionItem]</InArgument>
+                                      <InArgument x:TypeArguments="x:String" x:Key="in_Status">Rejected</InArgument>
+                                      <InArgument x:TypeArguments="x:String" x:Key="in_Comment">[rule.Message]</InArgument>
+                                    </ui:InvokeWorkflowFile.Arguments>
+                                  </ui:InvokeWorkflowFile>
+                                  <Assign sap2010:WorkflowViewState.IdRef="rejected">
+                                    <Assign.To>
+                                      <OutArgument x:TypeArguments="x:Int32">[out_Rejected]</OutArgument>
+                                    </Assign.To>
+                                    <Assign.Value>
+                                      <InArgument x:TypeArguments="x:Int32">[out_Rejected + 1]</InArgument>
+                                    </Assign.Value>
+                                  </Assign>
+                                  <Assign sap2010:WorkflowViewState.IdRef="next">
+                                    <Assign.To>
+                                      <OutArgument x:TypeArguments="x:Int32">[TransactionNumber]</OutArgument>
+                                    </Assign.To>
+                                    <Assign.Value>
+                                      <InArgument x:TypeArguments="x:Int32">[TransactionNumber + 1]</InArgument>
+                                    </Assign.Value>
+                                  </Assign>
+                                  <Assign sap2010:WorkflowViewState.IdRef="reset">
+                                    <Assign.To>
+                                      <OutArgument x:TypeArguments="x:Int32">[ConsecutiveSystemExceptions]</OutArgument>
+                                    </Assign.To>
+                                    <Assign.Value>
+                                      <InArgument x:TypeArguments="x:Int32">0</InArgument>
+                                    </Assign.Value>
+                                  </Assign>
+                                  <Assign sap2010:WorkflowViewState.IdRef="fresh">
+                                    <Assign.To>
+                                      <OutArgument x:TypeArguments="x:Int32">[RetryNumber]</OutArgument>
+                                    </Assign.To>
+                                    <Assign.Value>
+                                      <InArgument x:TypeArguments="x:Int32">0</InArgument>
+                                    </Assign.Value>
+                                  </Assign>
+                                </Sequence>
+                              </ActivityAction>
+                            </Catch>
+                            <Catch x:TypeArguments="s:Exception">
+                              <ActivityAction x:TypeArguments="s:Exception">
+                                <ActivityAction.Argument>
+                                  <DelegateInArgument x:TypeArguments="s:Exception" Name="fault" />
+                                </ActivityAction.Argument>
+                                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
+                                  <ui:LogMessage sap2010:WorkflowViewState.IdRef="error" Level="Error" Message="[&quot;Work item &quot; &amp; TransactionItem &amp; &quot; failed (try &quot; &amp; (RetryNumber + 1).ToString() &amp; &quot;): &quot; &amp; fault.Message]" />
+                                  <Assign sap2010:WorkflowViewState.IdRef="count">
+                                    <Assign.To>
+                                      <OutArgument x:TypeArguments="x:Int32">[ConsecutiveSystemExceptions]</OutArgument>
+                                    </Assign.To>
+                                    <Assign.Value>
+                                      <InArgument x:TypeArguments="x:Int32">[ConsecutiveSystemExceptions + 1]</InArgument>
+                                    </Assign.Value>
+                                  </Assign>
+                                  <If Condition="[ConsecutiveSystemExceptions &gt;= CInt(Config(&quot;MaxConsecutiveSystemExceptions&quot;))]" sap2010:WorkflowViewState.IdRef="stop">
+                                    <If.Then>
+                                      <Throw Exception="[New Exception(&quot;Stopped after &quot; &amp; ConsecutiveSystemExceptions.ToString() &amp; &quot; consecutive system exceptions&quot;)]" sap2010:WorkflowViewState.IdRef="halt" />
+                                    </If.Then>
+                                  </If>
+                                  <If Condition="[RetryNumber &lt; CInt(Config(&quot;MaxRetryNumber&quot;))]" sap2010:WorkflowViewState.IdRef="retry">
+                                    <If.Then>
+                                      <Assign sap2010:WorkflowViewState.IdRef="again">
+                                        <Assign.To>
+                                          <OutArgument x:TypeArguments="x:Int32">[RetryNumber]</OutArgument>
+                                        </Assign.To>
+                                        <Assign.Value>
+                                          <InArgument x:TypeArguments="x:Int32">[RetryNumber + 1]</InArgument>
+                                        </Assign.Value>
+                                      </Assign>
+                                    </If.Then>
+                                    <If.Else>
+                                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_4">
+                                        <Assign sap2010:WorkflowViewState.IdRef="failed">
+                                          <Assign.To>
+                                            <OutArgument x:TypeArguments="x:Int32">[out_Failed]</OutArgument>
+                                          </Assign.To>
+                                          <Assign.Value>
+                                            <InArgument x:TypeArguments="x:Int32">[out_Failed + 1]</InArgument>
+                                          </Assign.Value>
+                                        </Assign>
+                                        <Assign sap2010:WorkflowViewState.IdRef="next">
+                                          <Assign.To>
+                                            <OutArgument x:TypeArguments="x:Int32">[TransactionNumber]</OutArgument>
+                                          </Assign.To>
+                                          <Assign.Value>
+                                            <InArgument x:TypeArguments="x:Int32">[TransactionNumber + 1]</InArgument>
+                                          </Assign.Value>
+                                        </Assign>
+                                        <Assign sap2010:WorkflowViewState.IdRef="fresh">
+                                          <Assign.To>
+                                            <OutArgument x:TypeArguments="x:Int32">[RetryNumber]</OutArgument>
+                                          </Assign.To>
+                                          <Assign.Value>
+                                            <InArgument x:TypeArguments="x:Int32">0</InArgument>
+                                          </Assign.Value>
+                                        </Assign>
+                                      </Sequence>
+                                    </If.Else>
+                                  </If>
+                                </Sequence>
+                              </ActivityAction>
+                            </Catch>
+                          </TryCatch.Catches>
+                        </TryCatch>
+                      </State.Entry>
+                      <State.Transitions>
+                        <Transition DisplayName="Next">
+                          <Transition.To>
+                            <x:Reference>get</x:Reference>
+                          </Transition.To>
+                        </Transition>
+                      </State.Transitions>
+                    </State>
+                  </Transition.To>
+                  <Transition.Condition>[TransactionItem IsNot Nothing]</Transition.Condition>
+                </Transition>
+                <Transition DisplayName="No Data">
+                  <Transition.To>
+                    <State x:Name="end" DisplayName="End Process" IsFinal="True">
+                      <State.Entry>
+                        <ui:LogMessage sap2010:WorkflowViewState.IdRef="report" Level="Info" Message="[out_Completed.ToString() &amp; &quot; completed, &quot; &amp; out_Rejected.ToString() &amp; &quot; rejected, &quot; &amp; out_Failed.ToString() &amp; &quot; failed&quot;]" />
+                      </State.Entry>
+                    </State>
+                  </Transition.To>
+                  <Transition.Condition>[TransactionItem Is Nothing]</Transition.Condition>
+                </Transition>
+              </State.Transitions>
+            </State>
+          </Transition.To>
+        </Transition>
+      </State.Transitions>
+    </State>
+    <x:Reference>get</x:Reference>
+    <x:Reference>process</x:Reference>
+    <x:Reference>end</x:Reference>
+    <StateMachine.Variables>
+      <Variable x:TypeArguments="scg:Dictionary(x:String, x:Object)" Name="Config" />
+      <Variable x:TypeArguments="s:String[]" Name="WorkItemIds" />
+      <Variable x:TypeArguments="x:String" Name="TransactionItem" />
+      <Variable x:TypeArguments="x:Int32" Default="0" Name="TransactionNumber" />
+      <Variable x:TypeArguments="x:Int32" Default="0" Name="RetryNumber" />
+      <Variable x:TypeArguments="x:Int32" Default="0" Name="ConsecutiveSystemExceptions" />
+    </StateMachine.Variables>
+  </StateMachine>
+</Activity>

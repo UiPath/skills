@@ -1,0 +1,313 @@
+{
+ "task": "acme_reconciliation",
+ "band": "real-world",
+ "candidate": "Main.xaml",
+ "reference": "../reference/Main.xaml",
+ "contract": {
+  "arguments": [
+   {
+    "name": "in_DataFolder",
+    "direction": "In",
+    "type": "System.String"
+   },
+   {
+    "name": "in_ConfigFile",
+    "direction": "In",
+    "type": "System.String"
+   },
+   {
+    "name": "out_Completed",
+    "direction": "Out",
+    "type": "System.Int32"
+   },
+   {
+    "name": "out_Rejected",
+    "direction": "Out",
+    "type": "System.Int32"
+   },
+   {
+    "name": "out_Failed",
+    "direction": "Out",
+    "type": "System.Int32"
+   }
+  ],
+  "required_activity_types": [
+   "System.Activities.Statements.StateMachine",
+   "UiPath.Core.Activities.InvokeWorkflowFile"
+  ],
+  "forbidden_activity_types": [
+   "UiPath.Core.Activities.InvokeCode"
+  ]
+ },
+ "pass_threshold": 1.0,
+ "scenarios": [
+  {
+   "name": "pages-and-filters",
+   "files": {
+    "data/System1/WorkItems_1.csv": "WIID,Description,Type,Status,Date\n300101,Client reconciliation,WI1,Open,2026-03-02\n300102,Calculate client security hash,WI2,Open,2026-03-02\n300103,Client reconciliation,WI1,Completed,2026-03-03\n300104,Client reconciliation,WI1,Open,2026-03-03\n",
+    "data/System1/WorkItems_2.csv": "WIID,Description,Type,Status,Date\n300105,Client reconciliation,WI1,Open,2026-03-04\n300106,Client reconciliation,WI1,Pending,2026-03-05\n",
+    "data/System1/WorkItems_4.csv": "WIID,Description,Type,Status,Date\n300199,Client reconciliation,WI1,Open,2026-03-09\n",
+    "data/System1/WorkItem_300101.txt": "Work Item: 300101\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-71001\r\nAmount: $12,345\r\n",
+    "data/System3/AC-71001.txt": "ACME System 3 - Account AC-71001\nDate | Description | Amount\n\n2026-02-03 | Opening balance | 10,000\n2026-02-11 | Card payment | -1,250\n2026-02-20 | Transfer in | 3,100\n",
+    "data/System1/WorkItem_300104.txt": "Work Item: 300104\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-71004\r\nAmount: $980\r\n",
+    "data/System3/AC-71004.txt": "ACME System 3 - Account AC-71004\nDate | Description | Amount\n\n2026-02-01 | Opening balance | 1000\n2026-02-15 | Fee | -20\n",
+    "data/System1/WorkItem_300105.txt": "Work Item: 300105\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-71005\r\nAmount: $2,000,000\r\n",
+    "data/System3/AC-71005.txt": "ACME System 3 - Account AC-71005\nDate | Description | Amount\n\n2026-01-05 | Opening balance | 1,999,000\n2026-01-30 | Interest | 1,500\n",
+    "data/System1/WorkItem_300199.txt": "Work Item: 300199\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-71099\r\nAmount: $1\r\n",
+    "data/System3/AC-71099.txt": "ACME System 3 - Account AC-71099\nDate | Description | Amount\n\n2026-03-01 | Opening balance | 1\n",
+    "config/Config.csv": "Name,Value\nWorkItemType,WI1\nMaxRetryNumber,1\nMaxConsecutiveSystemExceptions,3\n"
+   },
+   "input": {
+    "in_DataFolder": "${WORKDIR}/data",
+    "in_ConfigFile": "${WORKDIR}/config/Config.csv"
+   },
+   "expect_files": {
+    "data/System1/Updates.csv": {
+     "lines": [
+      "WIID,Status,Comment",
+      "300101,Completed,Difference: 495",
+      "300104,Completed,Difference: 0",
+      "300105,Completed,Difference: 500"
+     ]
+    }
+   },
+   "note": "Only open WI1 items, in page order; the pages end where the numbering breaks.",
+   "expect_outputs": {
+    "out_Completed": 3,
+    "out_Rejected": 0,
+    "out_Failed": 0
+   },
+   "expect_log_counts": [],
+   "expect_not_logged": [
+    {
+     "level": "Error"
+    }
+   ]
+  },
+  {
+   "name": "configured-type-and-existing-updates",
+   "files": {
+    "data/System1/WorkItems_1.csv": "WIID,Description,Type,Status,Date\n400201,Calculate client security hash,WI2,Open,2026-04-01\n400202,Client reconciliation,WI1,Open,2026-04-01\n400203,Calculate client security hash,WI2,Open,2026-04-02\n",
+    "data/System1/WorkItem_400201.txt": "Work Item: 400201\r\nType: WI2\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-82001\r\nAmount: $5,500\r\n",
+    "data/System3/AC-82001.txt": "ACME System 3 - Account AC-82001\nDate | Description | Amount\n\n2026-03-01 | Opening balance | 6,000\n2026-03-09 | Withdrawal | -700\n",
+    "data/System1/WorkItem_400203.txt": "Work Item: 400203\r\nType: WI2\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-82003\r\nAmount: $0\r\n",
+    "data/System3/AC-82003.txt": "ACME System 3 - Account AC-82003\nDate | Description | Amount\n\n2026-03-01 | Opening balance | 0\n",
+    "config/Config.csv": "Name,Value\n\nWorkItemType,WI2\nMaxRetryNumber,1\n\nMaxConsecutiveSystemExceptions,3\n\n",
+    "data/System1/Updates.csv": "WIID,Status,Comment\n399999,Completed,Difference: 0\n"
+   },
+   "input": {
+    "in_DataFolder": "${WORKDIR}/data",
+    "in_ConfigFile": "${WORKDIR}/config/Config.csv"
+   },
+   "expect_files": {
+    "data/System1/Updates.csv": {
+     "lines": [
+      "WIID,Status,Comment",
+      "399999,Completed,Difference: 0",
+      "400201,Completed,Difference: 200",
+      "400203,Completed,Difference: 0"
+     ]
+    }
+   },
+   "note": "The type comes from the config, which has blank lines; an existing Updates.csv is added to.",
+   "expect_outputs": {
+    "out_Completed": 2,
+    "out_Rejected": 0,
+    "out_Failed": 0
+   },
+   "expect_log_counts": [],
+   "expect_not_logged": [
+    {
+     "level": "Error"
+    }
+   ]
+  },
+  {
+   "name": "business-exceptions-are-rejected",
+   "files": {
+    "data/System1/WorkItems_1.csv": "WIID,Description,Type,Status,Date\n500301,Client reconciliation,WI1,Open,2026-05-01\n500302,Client reconciliation,WI1,Open,2026-05-01\n500303,Client reconciliation,WI1,Open,2026-05-02\n",
+    "data/System1/WorkItem_500301.txt": "Work Item: 500301\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-93001\r\nAmount: n/a\r\n",
+    "data/System3/AC-93001.txt": "ACME System 3 - Account AC-93001\nDate | Description | Amount\n\n2026-04-01 | Opening balance | 100\n",
+    "data/System1/WorkItem_500302.txt": "Work Item: 500302\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-93002\r\nAmount: $250\r\n",
+    "data/System3/AC-93002.txt": "ACME System 3 - Account AC-93002\nDate | Description | Amount\n\n",
+    "data/System1/WorkItem_500303.txt": "Work Item: 500303\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-93003\r\nAmount: $4,321\r\n",
+    "data/System3/AC-93003.txt": "ACME System 3 - Account AC-93003\nDate | Description | Amount\n\n2026-04-01 | Opening balance | 4,000\n2026-04-17 | Deposit | 300\n",
+    "config/Config.csv": "Name,Value\nWorkItemType,WI1\nMaxRetryNumber,2\nMaxConsecutiveSystemExceptions,3\n"
+   },
+   "input": {
+    "in_DataFolder": "${WORKDIR}/data",
+    "in_ConfigFile": "${WORKDIR}/config/Config.csv"
+   },
+   "expect_files": {
+    "data/System1/Updates.csv": {
+     "lines": [
+      "WIID,Status,Comment",
+      "500301,Rejected,Invalid account amount",
+      "500302,Rejected,No transactions",
+      "500303,Completed,Difference: 21"
+     ]
+    }
+   },
+   "note": "An amount with no digits and a statement with no transactions are rejected, never retried.",
+   "expect_outputs": {
+    "out_Completed": 1,
+    "out_Rejected": 2,
+    "out_Failed": 0
+   },
+   "expect_log_counts": [
+    {
+     "level": "Warn",
+     "mentions": [
+      "500301"
+     ],
+     "count": 1
+    },
+    {
+     "level": "Warn",
+     "mentions": [
+      "500302"
+     ],
+     "count": 1
+    }
+   ],
+   "expect_not_logged": [
+    {
+     "level": "Error"
+    }
+   ]
+  },
+  {
+   "name": "system-exceptions-are-retried",
+   "files": {
+    "data/System1/WorkItems_1.csv": "WIID,Description,Type,Status,Date\n600401,Client reconciliation,WI1,Open,2026-06-01\n600402,Client reconciliation,WI1,Open,2026-06-01\n600403,Client reconciliation,WI1,Open,2026-06-02\n",
+    "data/System1/WorkItem_600401.txt": "Work Item: 600401\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-04001\r\nAmount: $700\r\n",
+    "data/System1/WorkItem_600403.txt": "Work Item: 600403\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-04003\r\nAmount: $1,000\r\n",
+    "data/System3/AC-04003.txt": "ACME System 3 - Account AC-04003\nDate | Description | Amount\n\n2026-05-01 | Opening balance | 1,200\n2026-05-02 | Payment | -150\n",
+    "config/Config.csv": "Name,Value\nWorkItemType,WI1\nMaxRetryNumber,2\nMaxConsecutiveSystemExceptions,10\n"
+   },
+   "input": {
+    "in_DataFolder": "${WORKDIR}/data",
+    "in_ConfigFile": "${WORKDIR}/config/Config.csv"
+   },
+   "expect_files": {
+    "data/System1/Updates.csv": {
+     "lines": [
+      "WIID,Status,Comment",
+      "600403,Completed,Difference: 50"
+     ]
+    }
+   },
+   "note": "A missing statement and a missing detail page are tried three times each, then the item has failed.",
+   "expect_outputs": {
+    "out_Completed": 1,
+    "out_Rejected": 0,
+    "out_Failed": 2
+   },
+   "expect_log_counts": [
+    {
+     "level": "Error",
+     "mentions": [
+      "600401"
+     ],
+     "count": 3
+    },
+    {
+     "level": "Error",
+     "mentions": [
+      "600402"
+     ],
+     "count": 3
+    }
+   ]
+  },
+  {
+   "name": "consecutive-system-exceptions-stop-the-run",
+   "files": {
+    "data/System1/WorkItems_1.csv": "WIID,Description,Type,Status,Date\n700501,Client reconciliation,WI1,Open,2026-07-01\n700502,Client reconciliation,WI1,Open,2026-07-01\n700503,Client reconciliation,WI1,Open,2026-07-02\n700504,Client reconciliation,WI1,Open,2026-07-02\n700505,Client reconciliation,WI1,Open,2026-07-03\n",
+    "data/System1/WorkItem_700502.txt": "Work Item: 700502\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-05002\r\nAmount: $10\r\n",
+    "data/System3/AC-05002.txt": "ACME System 3 - Account AC-05002\nDate | Description | Amount\n\n2026-06-01 | Opening balance | 15\n",
+    "data/System1/WorkItem_700505.txt": "Work Item: 700505\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-05005\r\nAmount: $10\r\n",
+    "data/System3/AC-05005.txt": "ACME System 3 - Account AC-05005\nDate | Description | Amount\n\n2026-06-01 | Opening balance | 10\n",
+    "config/Config.csv": "Name,Value\nWorkItemType,WI1\nMaxRetryNumber,1\nMaxConsecutiveSystemExceptions,3\n"
+   },
+   "input": {
+    "in_DataFolder": "${WORKDIR}/data",
+    "in_ConfigFile": "${WORKDIR}/config/Config.csv"
+   },
+   "expect_files": {
+    "data/System1/Updates.csv": {
+     "lines": [
+      "WIID,Status,Comment",
+      "700502,Completed,Difference: 5"
+     ]
+    }
+   },
+   "note": "700501 fails twice, 700502 resets the count, 700503 fails twice and 700504 once: the third in a row stops the run.",
+   "expect_state": "Faulted",
+   "expect_fault": {
+    "mentions": [
+     "3"
+    ]
+   },
+   "expect_log_counts": [
+    {
+     "level": "Error",
+     "mentions": [
+      "700501"
+     ],
+     "count": 2
+    },
+    {
+     "level": "Error",
+     "mentions": [
+      "700503"
+     ],
+     "count": 2
+    },
+    {
+     "level": "Error",
+     "mentions": [
+      "700504"
+     ],
+     "count": 1
+    }
+   ]
+  },
+  {
+   "name": "no-retries",
+   "files": {
+    "data/System1/WorkItems_1.csv": "WIID,Description,Type,Status,Date\n800601,Client reconciliation,WI1,Open,2026-08-01\n800602,Client reconciliation,WI1,Open,2026-08-01\n",
+    "data/System1/WorkItem_800602.txt": "Work Item: 800602\r\nType: WI1\r\n\r\nAccount Information\r\nClient Name: Ana Ionescu\r\nAccount Number: AC-06002\r\nAmount: $99\r\n",
+    "data/System3/AC-06002.txt": "ACME System 3 - Account AC-06002\nDate | Description | Amount\n\n2026-07-01 | Opening balance | 100\n",
+    "config/Config.csv": "Name,Value\nWorkItemType,WI1\nMaxRetryNumber,0\nMaxConsecutiveSystemExceptions,5\n"
+   },
+   "input": {
+    "in_DataFolder": "${WORKDIR}/data",
+    "in_ConfigFile": "${WORKDIR}/config/Config.csv"
+   },
+   "expect_files": {
+    "data/System1/Updates.csv": {
+     "lines": [
+      "WIID,Status,Comment",
+      "800602,Completed,Difference: 1"
+     ]
+    }
+   },
+   "note": "With MaxRetryNumber 0 a failing item is tried once.",
+   "expect_outputs": {
+    "out_Completed": 1,
+    "out_Rejected": 0,
+    "out_Failed": 1
+   },
+   "expect_log_counts": [
+    {
+     "level": "Error",
+     "mentions": [
+      "800601"
+     ],
+     "count": 1
+    }
+   ]
+  }
+ ]
+}

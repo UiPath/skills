@@ -1,0 +1,6 @@
+{
+  "Name": "OfflineAutomation",
+  "ProjectType": "Process",
+  "Description": "Offline authoring task",
+  "MainFile": "Main.xaml"
+}
