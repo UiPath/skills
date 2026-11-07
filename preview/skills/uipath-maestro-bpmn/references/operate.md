@@ -131,9 +131,11 @@ uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 ```
 <!--skill-flavor:debug-run:end-->
 
+<!--skill-flavor:offline-checks:start-->
 Never use `debug` as validation. `check`, `validate` and the local engine
 (`flow-debug`, which runs the compiled `.bpmn` on this machine with every
 service mocked) are the offline checks; `debug` executes against real services.
+<!--skill-flavor:offline-checks:end-->
 
 ## Run a deployed process
 
@@ -195,8 +197,10 @@ uip maestro bpmn instance goto <INSTANCE_ID> '[{"sourceElementId":"A","targetEle
 | `goto` | the user names the source and target element ids to move the cursor between |
 
 After every lifecycle command, fetch the instance again and report its status.
+<!--skill-flavor:fix-and-ship:start-->
 When the action reveals a modeling or binding problem, the fix is in the
 `.bpmn.ts`: recompile, format, validate, `refresh`, and ship again.
+<!--skill-flavor:fix-and-ship:end-->
 
 ## Anti-patterns
 

@@ -76,10 +76,11 @@ When a reference tells you to run a command that is not available, use the Studi
    `errorMapping` condition and a bare `=amount`, `check` is the only offline gate:
    `bpmn validate` accepts both. Studio Web ships its own SDK: an older one refuses the
    read in `compile` itself.
-6. Compile the edit into `<Draft>/edited/`, merge it into the target, lay out
-   new shapes, then `refresh` and `validate` — in that order, every time
-   ([Validation loop](#validation-loop)). `compile` writes no diagram, and
-   `merge` keeps the shapes the target already has. Exactly one `<Name>.bpmn`
+6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
+   `refresh` and `validate` — in that order, every time
+   ([Validation loop](#validation-loop)). Lay out the diagram only when they
+   report a missing shape. `compile` writes no diagram, and `merge` keeps the
+   shapes the target already has. Exactly one `<Name>.bpmn`
    exists in the project: the target. Compile straight over it only when it
    is empty.
 <!--skill-flavor:workflow-compile:end-->
@@ -116,30 +117,30 @@ uip maestro bpmn check .flow-sdk/<Name>.bpmn.ts --graph   # the resolved wiring,
 # 3. Compile the edit, then merge the delta into the target
 uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Draft>/edited/<Name>.bpmn
 uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --baseline <Draft>/baseline/<Name>.bpmn -o <Name>.bpmn
-# 4. Only when the edit added an element or a flow: lay out the diagram
-uip maestro bpmn format <Name>.bpmn
-# 5. The package files, then the product's own check on the file the canvas shows
+# 4. The package files, then the product's own check on the file the canvas shows
 uip maestro bpmn refresh . --output json
 uip maestro bpmn validate <Name>.bpmn --output json
+# 5. Only when step 4 reports MISSING_DI_SHAPE or MISSING_DI_EDGE: lay out the diagram, then run step 4 again
+uip maestro bpmn format <Name>.bpmn
 ```
 
-- **Step 4 lays out the whole canvas again.** `merge` keeps every shape of the
-  target, also where the user moved it, but it draws no shape for a new
-  element. `format` draws the new shapes and puts every other shape back in
-  the default layout. So run step 4 only when the edit added an element or a
-  flow, and then tell the user that the canvas layout was reset. An edit that
-  only changes values (a script, a condition, a mapping) skips step 4. When
-  `validate` reports `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, run step 4, then
-  step 5 again.
+- **Step 1 runs once per turn.** When a later step fails, fix the source and
+  start again at step 2. Step 1 again would copy the merged file over the undo
+  copy and the baseline.
+- **Step 5 lays out the whole canvas again.** `merge` keeps every shape of the
+  target, also where the user moved it. A newer SDK also draws the shapes of
+  new elements; an older one draws none, and step 4 then reports
+  `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`. Only then run step 5, run step 4
+  again, and tell the user that the canvas layout was reset.
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
-  compile it straight to `<Name>.bpmn`, then run steps 4 and 5.
+  compile it straight to `<Name>.bpmn`, then run step 5 and step 4.
 - **To undo the merge**, copy `.flow-sdk/original/<Name>.bpmn` back over the
-  target, then run step 5.
+  target, then run step 4.
 - **The canvas re-renders the open file after each write.** Always finish with
   the merge into the target; never `uip solution upload`.
 - **A process with connectors** needs each connection in the solution. After
-  step 5, read each `connection` row in `bindings_v2.json`. For each one that
+  step 4, read each `connection` row in `bindings_v2.json`. For each one that
   `uip solution resources list --source local --output json` does not list,
   run `uip solution resources add --source remote --kind connection --cloud-key <ConnectionId>`.
   Never run `uip solution resources refresh`: it fails here.

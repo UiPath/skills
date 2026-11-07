@@ -51,7 +51,7 @@ A debug run is two steps: run it, then read its values.
    ```bash
    uip maestro bpmn debug "<Project>" --inputs '{}'
    uip maestro bpmn debug "<Project>" --inputs '{"orderId": "O-1"}'
-   uip maestro bpmn debug "<Project>" --inputs '{}' --entry-point "<File>.bpmn#<StartEventId>"
+   uip maestro bpmn debug "<Project>" --inputs '{}' --entry-point "/content/<File>.bpmn#<StartEventId>"
    ```
 
 2. **Read its values with the `Trace ID` it prints.** The `Trace ID` is the
@@ -87,3 +87,14 @@ follow the run in Studio Web.
 <!--skill-flavor:publish-default:start-->
 - **Never deploy to Orchestrator because the user said "publish".** Publish the open solution with `uip solution publish`.
 <!--skill-flavor:publish-default:end-->
+
+<!--skill-flavor:offline-checks:start-->
+Never use `debug` as validation. `check` and `validate` are the offline checks;
+`debug` executes against real services.
+<!--skill-flavor:offline-checks:end-->
+
+<!--skill-flavor:fix-and-ship:start-->
+When the action reveals a modeling or binding problem, the fix is in the
+`.bpmn.ts`: run the [Validation loop](../SKILL.md#validation-loop) again, then
+debug or publish again.
+<!--skill-flavor:fix-and-ship:end-->
