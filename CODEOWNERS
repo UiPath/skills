@@ -153,6 +153,11 @@
 /tests/tasks/uipath-rules/ @UiPath/maestro-cli-team
 /tests/tasks/activation/uipath-rules.jsonl @UiPath/maestro-cli-team
 
+# Rules extraction skill
+/skills/uipath-rules-extraction/ @tejaduggaraju
+/tests/tasks/uipath-rules-extraction/ @tejaduggaraju
+/tests/tasks/activation/uipath-rules-extraction.jsonl @tejaduggaraju
+
 # API Workflow skill
 /skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
 /tests/tasks/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie

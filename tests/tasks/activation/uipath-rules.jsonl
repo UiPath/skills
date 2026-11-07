@@ -22,7 +22,7 @@
 {"id": "uipath-rules-022", "prompt": "Create a decision table for insurance premium tiers by age band and smoker status", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-023", "prompt": "Get the details of the PaymentTerms business rule in the Procurement folder", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-024", "prompt": "Fix the FEEL range syntax in my decision table, [100..500[ is not accepted", "expected_skill": "uipath-rules"}
-{"id": "uipath-rules-025", "prompt": "Make a UiPath Business Rules project from this eligibility policy document", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-025", "prompt": "Make a UiPath Business Rules project for this eligibility policy: applicants under 18 are declined, everyone else is approved", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-026", "prompt": "Add a string input region to my rule and route EU orders to the Dublin warehouse", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-027", "prompt": "My DMN output cell is empty and the debug result comes back null, help", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-028", "prompt": "Edit the thresholds in my fraud score decision table: high starts at 0.85 now", "expected_skill": "uipath-rules"}
