@@ -35,7 +35,7 @@ Interact with external services through UiPath Integration Service — discover 
 | Step 5: resolve references | [reference-resolution.md](reference-resolution.md) | Simple refs, dependency chains, inferring, required field validation |
 | Managed HTTP Request authoring | [http-request.md](http-request.md) | Concept, two modes (connector / manual), `http-request` CLI helper, worked example |
 | Connector exists, activity does not | [activity-generation.md](activity-generation.md) | Generate an activity from vendor docs — capability check, converge loop, min.json, metadata. Carries its own reference set under `activity-generation/` (runtime contract, vendor API, lookups, min-file schema, metadata contract, gotchas, worked connector) |
-| Trigger metadata | [triggers.md](triggers.md) | Trigger objects, trigger field metadata, trigger workflow |
+| Trigger metadata, trigger lifecycle | [triggers.md](triggers.md) | Trigger objects, trigger field metadata, trigger workflow; create / enable / fire / disable / delete an IS event trigger |
 
 ---
 
