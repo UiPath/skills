@@ -24,7 +24,7 @@ Each plugin's `planning.md` says how to read that element out of the SDD and wha
 
 ---
 
-> **Kickoff overview first (if not already shown).** When the design handoff did not run (user-provided `sdd.md`), this is the run's start — present the greenfield flow overview once before Step 0 so the dev knows the phases and the decision points. See [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first). If the delegation window already showed it, skip.
+> **Kickoff overview first (if not already shown).** When the design handoff did not run (user-provided `sdd.md`), this is the run's start — present the greenfield flow overview once before Step 0 so the dev knows the phases and the decision points. See [SKILL.md § Workflow — Greenfield kickoff](../SKILL.md#workflow). If the delegation window already showed it, skip.
 
 ## Step 0 — Resolve the `uip` binary
 
