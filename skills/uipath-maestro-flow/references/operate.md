@@ -292,6 +292,46 @@ a package built another way can differ. Pass `--entry-point` whenever the root
 matters. You do not need `--feed-id`; the CLI
 reads the feed from the release.
 
+### Start a Flow when a queue item arrives
+
+Check the registry first. On some tenants `registry search queue` lists
+`core.trigger.queue` (and the `core.action.queue.*` nodes) with
+`AvailableOnTenant: false`. `registry get core.trigger.queue` then answers
+"Node not found", and adding the node is refused with "Node type
+'core.trigger.queue' is not enabled for this tenant." Don't copy the node's
+definition from anywhere else. Tell the user, then use the fallback below.
+
+The fallback is an Orchestrator queue trigger on the deployed Flow process:
+
+```bash
+uip or triggers create --type queue --name "<TRIGGER_NAME>" \
+  --release-key <FLOW_PROCESS_KEY> --queue-key <QUEUE_KEY> \
+  --items-threshold 1 --items-per-job 1 --max-jobs 1 \
+  --runtime-type Serverless --folder-path "<FOLDER_PATH>" --output json
+```
+
+- **The job starts without the queue item.** Orchestrator starts a job per
+  item, but no job is tied to the item that started it. The Flow's trigger
+  output is `null`, so nothing reaches the Flow from `SpecificContent`. The
+  Flow, or a Coded Function it calls, must take the next item from the queue
+  itself (start a transaction on the queue), cope with getting no item, and
+  set the item's result when it is done. Guard every read of the trigger
+  output against `null`.
+- Keep `--items-threshold 1 --items-per-job 1`: Orchestrator fixes both to 1
+  for a Maestro process (one item, one instance) and refuses anything else
+  with HTTP 400 "The minimum number of items to trigger the first job must be
+  1 for this process type". `--max-jobs` is the one batch setting you choose;
+  it caps the instances running at once.
+- Don't count on the trigger for items that were already `New` when it was
+  created. Orchestrator evaluates it on creation and on each new item, and
+  re-checks unprocessed items only on a tenant schedule (every 30 minutes by
+  default). Create the trigger before you load the queue, or start one job by
+  hand for the backlog.
+- `uip or processes create --auto-create-triggers` creates only the connected
+  event triggers a package declares (Integration Service triggers). It never
+  creates a queue trigger, for any process type; create it with
+  `uip or triggers create`.
+
 ## Inspect a job
 
 ```bash
