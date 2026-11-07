@@ -40,10 +40,14 @@ Each hit carries what the call needs:
 ```
 
 The **action** is `nodeType`'s last segment — `create-issue` — not the label and not the REST path.
+<!--skill-flavor:field-reference:start-->
 `markdownPath` is that operation's field reference: read it rather than guessing input names.
+<!--skill-flavor:field-reference:end-->
 
 `"total": 0` is a real miss, and means either `http()` or a connector the library does not carry (see §4).
+<!--skill-flavor:library-pull:start-->
 A usage error saying no library is cached means `uip maestro registry pull` first.
+<!--skill-flavor:library-pull:end-->
 
 ## 2. Write the node
 
@@ -211,7 +215,9 @@ Then leave a notes file (`README.md` beside the source) that names each CLI-owne
 | dynamic schemas | the connection-specific input and output schemas, custom fields, objects and lookup ids | the same `prepare`, with `--resolve` / `--object`, which writes `./connectors-local/` |
 | connector operation metadata (bare `.task()` only) | `objectName`, `method`, path and the generated outputs (`<id>_response`, `<id>_Error`) | `prepare`, then replace the `.task()` with the `.connector()` call it prints |
 | `bindings_v2.json` | the packaged binding resources | `uip maestro bpmn refresh <project>` after `compile`, once the connection binding resolves |
+<!--skill-flavor:package-metadata-row:start-->
 | package metadata | `entry-points.json`, `operate.json`, `package-descriptor.json` | the same `refresh`; `uip solution resources refresh --solution-folder <solution-dir>` for the solution |
+<!--skill-flavor:package-metadata-row:end-->
 
 Name them as written, not paraphrased ("the connection", "the schema"), because the user acts on the artifact each one names.
 Name no private value: no connection id, folder key, tenant URL, resource key or schema copied from a tenant.

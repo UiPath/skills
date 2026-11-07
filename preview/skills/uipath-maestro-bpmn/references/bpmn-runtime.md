@@ -183,15 +183,19 @@ binding half, which is the same for every connector-backed node.
 - An entity that lives in an Orchestrator folder (the picker shows it under a folder; the request says "folder entity" or "entity scope: folder") is `entity: { name, folder: '<folder path>' }`, not a plain name and not hand-found keys.
   `bpmn check --source` reports it as `RESOURCE_UNRESOLVED` and prints the command that records its keys, `uip maestro registry prepare --entity <name> --folder-path <path>`; run it, then `check` again.
   Run it in the directory you run `bpmn check` and `compile` from: it records into `./.flow-sdk/resources.json` there, which is where they read it.
+<!--skill-flavor:sdk-upgrade:start-->
   Needs `@uipath/maestro-builder-sdk` 6.73.0 or later; an older SDK refuses `{ name, folder }` and has no key-less `prepare`, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
   If `uip maestro registry prepare --entity …` answers `missing required argument 'connector-key'`, the `uip` in use predates key-less `prepare`: run the same command as `npx flow-sdk registry prepare --entity …`.
+<!--skill-flavor:sdk-upgrade:end-->
   With no `folder`, `prepare` searches every folder: it records a single match and names the folder to pin, and lists several without picking one.
 - `entity.folder` is the folder holding the ENTITY; the `folder` option stays the folder holding the CONNECTION.
   They are often the same folder and are still two options.
 - The record operations (`create`, `update`, `get`, `query`, `delete`) then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …) as a V1 task with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, plus the entity's two `Entity` bindings.
   Only `_V3` takes a folder, and Studio Web's V2 catalog does not list it, so this task stays V1.
   A tenant entity's record operations are V2 tasks on the curated operations (`CreateEntityRecordCurated`, `UpdateEntityRecordV2`, `GetEntityRecordByIdCurated`, `QueryEntityRecordsCurated`, `DeleteEntityRecordCurated`), with the entity in the `pathParameters` row.
+<!--skill-flavor:folder-entity-resources:start-->
   Run `uip maestro bpmn refresh <project>` after `compile`, then, when the project has a solution, `uip solution resources refresh --solution-folder <SolutionDir>` (the folder holding the `.uipx`, `<Name>Solution/` in the default scaffold): the first turns the two bindings into the entity's row in `bindings_v2.json`, and the second declares the entity in the solution.
+<!--skill-flavor:folder-entity-resources:end-->
   Do not hand-fill the task through `.activity()`, and do not pass a folder entity's name as a plain `entity` string: that writes the tenant-scope operation, which validates but does not address the folder entity.
 - `entity: { name, folderKey }` is for a folder key already in hand.
   It writes no `Entity` bindings, so `bpmn refresh` does not declare the entity in the solution; prefer `{ name, folder }` even with a key in hand.
@@ -203,7 +207,9 @@ binding half, which is the same for every connector-backed node.
 
 <!-- RULE:bpmn.connector.parameter-rows -->
 - `.connector()`, `.dataService()`, `.eventTrigger()` and `.waitForEvent()` write a V2 task (`activityConfigurationVersion: v2`), the shape Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds.
+<!--skill-flavor:sdk-v2-connector:start-->
   Needs `@uipath/maestro-builder-sdk` 6.84.0 or later; an older SDK writes a new `.connector()` task with one `target="path"` / `target="query"` row per parameter and an `operation` context row, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again; do not hand-convert its rows.
+<!--skill-flavor:sdk-v2-connector:end-->
   Its path parameters are one json row, `pathParameters` (`target="pathParameters"`), and its query parameters another, `queryParameters` (`target="queryParameters"`), each keyed by the library's own parameter names (`send_as`, not `sendAs`); the request body is the one json `target="body"` row, and a multipart file part is its own `target="file"` row.
   `.dataService()` has two exceptions, which it still writes as V1 tasks: the file operations (`downloadFile`, `uploadFile`, `deleteFile`), whose `_V3` operations have no field-name parameter, and every record operation on a folder-scoped entity (see the folder-entity rule above).
 - An imported process can also carry V1 tasks, with one `target="path"` / `target="query"` row per parameter and an `operation` context row.
@@ -255,9 +261,11 @@ binding half, which is the same for every connector-backed node.
   `spec` as decompile wrote it. Editing a row's value is fine; the row is written
   exactly as it reads. The spec does not say which fields the type needs, so for a
   new node of that type, write the full spec.
+<!--skill-flavor:sdk-inline-spec:start-->
   Needs `@uipath/maestro-builder-sdk` 6.85.7 or later.
   An older SDK refuses the type at decompile with `BPMN_TYPE_UNKNOWN`, so upgrade
   with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:sdk-inline-spec:end-->
 
 <!-- RULE:bpmn.activity.offsnapshot-resolve -->
 - You do not have to transcribe the shape by hand: a type outside the SDK's
