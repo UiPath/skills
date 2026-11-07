@@ -217,6 +217,13 @@ Inputs, outputs and vars take one of the six types the Flow CLI and Workbench of
 - **Never use `console.log` in a script.** The script runtime has no
   `console`, and `check` does not flag it. Return the value to inspect:
   `return { debug: value }`.
+- **Never put every `$vars` reference of an expression inside double quotes.**
+  An End-node `=js:` expression like `'No results for "' + $vars.start.output.topic + '".'`
+  evaluates to null, with no warning. Keep at least one reference outside the
+  quotes.
+- **Never rely on a dotted JSON key surviving `$vars`.** Read through `$vars`,
+  `{"5.3.0":"x"}` becomes `{"5":{"3":{"0":"x"}}}`. Pass the JSON as a string and
+  `JSON.parse` it in a script.
 - **Never treat a green `validate` as proof of business correctness.** It
   checks structure. Named outputs, reference ids and connector field values
   are only proven by the evidence in [`CLI-LOOP.md`](CLI-LOOP.md#bounded-completion).
