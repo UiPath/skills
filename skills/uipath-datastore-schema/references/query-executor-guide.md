@@ -7,7 +7,7 @@ Requires the `solution-entity-sql` feature on the tenant; with it off, the endpo
 ## Request
 
 ```http
-POST https://<cloud-host>/<org>/<tenant>/dataservice_/api/v3/QueryExecutor
+POST https://<cloud-host>/<org>/<tenant>/datafabric_/api/v3/QueryExecutor
 Authorization: Bearer <token>
 Content-Type: application/json
 X-UiPath-FolderKey: <folder GUID>      # folder-scoped schema only; or X-UiPath-FolderPath: Finance/Invoices
@@ -18,6 +18,7 @@ X-UiPath-FolderKey: <folder GUID>      # folder-scoped schema only; or X-UiPath-
 }
 ```
 
+- **Service path:** always `datafabric_`. Coded apps call through the `api.uipath.com` gateway, which refuses `dataservice_` with 403 `This API endpoint is not authorized`. In the TypeScript SDK, `entities.executeSql(sql, { parameters, folderKey })` makes this call.
 - **Scope:** with a folder header the statement sees that folder's tables; without one, the tenant's tables. A folder header that does not resolve is a 400, never a fall-back to the tenant.
 - **Parameters:** every `@name` in the SQL needs a value, by name with or without `@`. Values are a string, number, boolean, or null; send dates as ISO strings. Strings bind as `nvarchar`.
 
