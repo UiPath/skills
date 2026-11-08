@@ -90,6 +90,21 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Advisory: did the agent look for a connection at all? An unbound placeholder
+  # passes the validate criterion above whether or not one existed, so this row
+  # shows in the report whether the agent searched first (the judge below
+  # requires it for the unbound case). The lookups both skills document: v1
+  # `uip is connections list --all-folders` (registry-workflow.md), v2
+  # `uip is connections list <key>` and `uip maestro registry prepare` /
+  # `describe` (connectors.md); `connections ping` checks a chosen one.
+  - type: command_executed
+    description: "Agent looked up connections before binding the HTTP step (report only)"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:is\s+connections\s+(?:list|ping)\b|maestro\s+(?:bpmn\s+)?registry\s+(?:prepare|describe)\b)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
   - type: llm_judge
     description: "A process left with an unbound connection says so and why"
     include_reference: false
@@ -102,12 +117,17 @@ success_criteria:
       Pass if the agent's last `uip maestro bpmn validate` run on the final BPMN
       reported it valid and the final answer does not claim otherwise.
       Also pass if validation failed only because the HTTP step's connection is
-      not bound to a real connection (MISSING_BINDING), and the final answer
-      says validation fails for that reason, explains why no available
-      connection was bound (for example, the only enabled connection belongs to
-      an unrelated service or another user), and says what is needed to unblock
+      not bound to a real connection (MISSING_BINDING), the tool calls show the
+      agent looked the connections up BEFORE leaving the binding unbound (a
+      connection lookup such as `uip is connections list`, `uip is connections
+      ping`, or `uip maestro registry prepare` / `describe` against the
+      connector, run before the final validate), and the final answer says
+      validation fails for that reason, explains why no available connection
+      was bound (for example, the only enabled connection belongs to an
+      unrelated service or another user), and says what is needed to unblock
       it.
       Fail if validation failed and the final answer claims it passed, or does
-      not name the unbound connection as the blocker.
+      not name the unbound connection as the blocker, or if the binding was
+      left unbound without any connection lookup in the tool calls.
       Nothing else is graded here: the connector choice, the query parameter and
       the BPMN structure have their own criteria.
