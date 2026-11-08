@@ -68,11 +68,31 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Diagnosis names the stuck gateway and the missing-default root cause"
     path: "diagnosis.md"
     includes:
       - "STUCK_ELEMENT: Gw_ApprovalRoute"
-      - "default"
+    patterns:
+      # The STUCK_REASON line itself must say both halves of the fixture's answer
+      # (cursors.json: "No outgoing sequence-flow condition evaluated true and no
+      # default flow is defined"): a condition that did not match or evaluate
+      # true, and a default flow that is missing. A bare "default" anywhere in
+      # the file matched almost any prose. Cases in
+      # _shared/test_grader_command_patterns.py.
+      - pattern: '(?i)STUCK_REASON:(?=[^\n]*\bconditions?\b)(?=[^\n]*(?:match|\btrue\b|\bfalse\b|satisf|\bpass))(?=[^\n]*\b(?:no|none|neither|nor|not|never|false)\b[^\n]*\bconditions?\b|[^\n]*\bconditions?\b[^\n]*\b(?:no|none|neither|nor|not|never|false)\b)(?=[^\n]*(?:\b(?:no|without|missing|lacks?|lacking|absent)\b[^\n]{0,24}\bdefault\b|\bdefault\b[^\n]{0,40}\b(?:missing|absent|undefined|not\s+(?:defined|set|configured|present)|none)\b))'
     weight: 3.0
+    pass_threshold: 1.0
+
+  # Ported from operate-diagnose/minimal_fault_triage.yaml (same mock template,
+  # same prompt rule): the prompt forbids reading `mocks/` or `fixtures/`
+  # directly, and the call-log checks above prove the CLI reads happened but not
+  # that diagnosis.md was not copied from the fixtures. Keep the two patterns
+  # identical; _shared/test_fault_triage_mock_read_pattern.py exercises it.
+  - type: command_executed
+    description: "Agent did not read the mocked inputs under mocks/ or fixtures/ directly"
+    command_pattern: '(?:(?:^|[\s;&|(`$"''])(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<![\w.=!-])(?<!exclude=")(?<!exclude='')(?<!exclude ")(?<!exclude '')(?<!exclude )(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/[\w.*?\[-])|(?:(?:^|[\s;&(`$"''])(?<!\|\s)(?<!\|)(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<=\s)(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/?(?=\s*(?:$|\||;|&|\n|\d*>|-|["'')])))|(?:"(?:file_path|path|file|filePath)":\s*"(?:[^"]*/)?(?:mocks|fixtures)(?:/|"))'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
     pass_threshold: 1.0
