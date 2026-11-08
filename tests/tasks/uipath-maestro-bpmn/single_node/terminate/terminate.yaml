@@ -49,12 +49,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  # Content by the same locator as the presence check above, not a root path:
+  # `file_contains` on `TerminateParallel.bpmn` failed the builder-SDK skill's
+  # `TerminateParallel/TerminateParallel.bpmn` on layout alone (R15 v2 terminate).
+  - type: run_command
     description: "BPMN file has a diagram and a terminate event definition"
-    path: "TerminateParallel.bpmn"
-    includes:
-      - "bpmndi:BPMNDiagram"
-      - "terminateEventDefinition"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py TerminateParallel --contains bpmndi:BPMNDiagram --contains terminateEventDefinition"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

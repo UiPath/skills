@@ -11,25 +11,43 @@ the criterion on layout alone (skill-bpmn-debug-not-validation, run 2026-09-25).
 this makes the presence check use the same rule, including its "never grade a stray
 draft copy" tie-break.
 
-Usage: check_bpmn_present.py <Name>   (basename without `.bpmn`)
+`--contains TEXT` (repeatable) also asserts each literal TEXT is in that file. It
+replaces `file_contains` criteria pinned to the root `<Name>.bpmn`, which fail the
+builder-SDK skill's `<Name>/<Name>.bpmn` on layout alone.
+
+Usage: check_bpmn_present.py <Name> [--contains TEXT ...]   (basename without `.bpmn`)
 """
 
 from __future__ import annotations
 
+import argparse
 import os
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.bpmn_check import find_bpmn_file  # noqa: E402
+from _shared.bpmn_check import fail, find_bpmn_file  # noqa: E402
 
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print("usage: check_bpmn_present.py <Name>", file=sys.stderr)
-        raise SystemExit(2)
-    name = sys.argv[1].removesuffix(".bpmn")
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Assert the graded BPMN file exists.")
+    parser.add_argument("name", help="basename without `.bpmn`")
+    parser.add_argument(
+        "--contains",
+        action="append",
+        default=[],
+        metavar="TEXT",
+        help="literal text the file must contain (repeatable)",
+    )
+    args = parser.parse_args(argv)
+    name = args.name.removesuffix(".bpmn")
     path = find_bpmn_file(name)
-    print(f"OK: {name}.bpmn present at {path}")
+    if args.contains:
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
+        missing = [needle for needle in args.contains if needle not in text]
+        if missing:
+            fail(f"{path} does not contain {missing}")
+    print(f"OK: {name}.bpmn present at {path}" + (f", contains {args.contains}" if args.contains else ""))
 
 
 if __name__ == "__main__":
