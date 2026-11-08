@@ -77,6 +77,10 @@ SCRATCH_SUFFIXES = (".baseline.bpmn", ".edited.bpmn", ".merged.bpmn", ".original
 # Directories that hold scratch copies rather than the artifact: tool caches, an
 # agent's archive of superseded scaffolds (`_created-scaffolds/`, the same run), and
 # temp dirs made inside the workspace (`tmp/`, `mktemp -d -p .` -> `tmp.XXXXXXXXXX`).
+# Trade-off: `tmp`/`temp`/`.tmp` also hide a REAL project that lives in a folder of
+# that name. No task names one today; a task that must ever do so needs these
+# names taken out (or the grader pointed at the path), or its artifact goes unseen
+# and reads as "no BPMN file found".
 SCRATCH_DIR_NAMES = frozenset(
     {"node_modules", ".npm-prefix", ".venv", "_created-scaffolds", "tmp", "temp", ".tmp"}
 )

@@ -115,7 +115,6 @@ success_criteria:
       read-only registry and connection reads (`uip maestro bpmn
       registry list/get/pull/search` and `uip maestro registry
       prepare/describe/search/get/pull`), and `--help` invocations. Fail
-      only if tool
-      calls or the final answer show a cloud-side lifecycle mutation (upload,
-      publish, deploy, run, debug), a live HTTP data fetch to the modeled
-      endpoint, or a request to perform one.
+      only if tool calls or the final answer show a cloud-side lifecycle
+      mutation (upload, publish, deploy, run, debug), a live HTTP data fetch
+      to the modeled endpoint, or a request to perform one.

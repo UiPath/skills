@@ -487,12 +487,15 @@ def main() -> None:
     # builder-sdk#1884). When several rows read the result (the whole payload and a
     # field of it), the graded one is the row whose variable reaches riskScore.
     task_outputs = mapping_outputs(task)
-    response_rows = [
+    # Every row reading the result, kept whole for the standard-row count below;
+    # `response_rows` is then narrowed to the one graded row.
+    result_rows = [
         output
         for output in task_outputs
         if RESPONSE_SOURCE.fullmatch(output.attrib.get("source", ""))
         and output.attrib.get("var")
     ]
+    response_rows = result_rows
     if len(response_rows) > 1:
         end_sources = {
             output.attrib.get("source", "").removeprefix("=vars.")
@@ -505,12 +508,6 @@ def main() -> None:
         response_rows,
         "ScriptTask output row reading =result.response (or a field of it) that reaches riskScore",
     )
-    result_rows = [
-        output
-        for output in task_outputs
-        if RESPONSE_SOURCE.fullmatch(output.attrib.get("source", ""))
-        and output.attrib.get("var")
-    ]
     response = variable_by_id(variables, attr(response_row, "var"))
     if local_name(response) not in {"inputOutput", "output"}:
         fail("the =result.response row must land in a mutable (inputOutput) or output variable")
