@@ -107,7 +107,10 @@ def unbound_connection_refusal(path: Path, stdout: str, connector_key: str) -> s
     text = str(payload.get("Instructions", "")) if isinstance(payload, dict) else ""
     errors = [m for m in map(_ERROR_LINE.match, text.splitlines()) if m]
     count = _ERROR_COUNT.search(text)
-    if not errors or (count and int(count.group(1)) != len(errors)):
+    # Fail closed without the `Found N error(s)` line: it is the only thing that
+    # exposes an error printed in a shape `_ERROR_LINE` does not match, so without
+    # it a mixed output whose only matching lines are MISSING_BINDING would pass.
+    if not errors or count is None or int(count.group(1)) != len(errors):
         return None
     try:
         root = ET.parse(path).getroot()

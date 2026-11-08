@@ -117,6 +117,18 @@ def test_anything_else_is_not_accepted(tmp_path, default, connector, lines, why)
     ), why
 
 
+def test_a_payload_without_the_error_count_is_not_accepted(tmp_path) -> None:
+    """Without `Found N error(s)` an unmatched error line would go unseen: fail closed."""
+    payload = json.dumps(
+        {
+            "Result": "Failure",
+            "ErrorCode": "invalid_argument",
+            "Instructions": MISSING_BINDING + "\nSomething else is wrong in a format we do not parse",
+        }
+    )
+    assert validate_bpmn.unbound_connection_refusal(_file(tmp_path), payload, "uipath-uipath-http") is None
+
+
 def test_an_unparseable_payload_is_not_accepted(tmp_path) -> None:
     assert validate_bpmn.unbound_connection_refusal(_file(tmp_path), "not json", "uipath-uipath-http") is None
 
