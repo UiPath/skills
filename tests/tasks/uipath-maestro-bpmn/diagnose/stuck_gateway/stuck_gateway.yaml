@@ -11,6 +11,11 @@ run_limits:
   expected_turns: 16
   max_turns: 40
 
+# The call-log graders run `$REFERENCE_DIR/_shared/check_mock_calls.py`, and
+# coder-eval skips a task whose criteria read $REFERENCE_DIR without this block.
+reference:
+  directory: ../..
+
 sandbox:
   template_sources:
     - type: template_dir
