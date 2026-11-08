@@ -176,7 +176,7 @@ SPEC = {
     "task": "invoice_intake",
     "band": "real-world",
     "candidate": "Main.xaml",
-    "reference": "../reference/Main.xaml",
+    "reference": "../../../../../fixtures/uipath-rpa-offline-solutions/invoice_intake/Main.xaml",
     "contract": {
         "arguments": [
             {"name": "in_MailFolder", "direction": "In", "type": "System.String"},

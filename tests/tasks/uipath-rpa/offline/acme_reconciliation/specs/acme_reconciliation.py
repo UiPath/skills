@@ -238,7 +238,7 @@ SPEC = {
     "task": "acme_reconciliation",
     "band": "real-world",
     "candidate": "Main.xaml",
-    "reference": "../reference/Main.xaml",
+    "reference": "../../../../../fixtures/uipath-rpa-offline-solutions/acme_reconciliation/Main.xaml",
     "contract": {
         "arguments": [
             {"name": "in_DataFolder", "direction": "In", "type": "System.String"},

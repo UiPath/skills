@@ -21,11 +21,15 @@ With the full `uip`, the skill's validate-and-build loop against a cold Studio H
 `_offline_xaml/grade.sh <task> static` loads and compiles every workflow and checks `Main.xaml`'s argument contract; `grade.sh <task> runtime` runs `Main.xaml` headlessly in each scenario of `<task>/specs/<task>.json` and checks its outputs, the files it writes, its logs and, where a scenario expects one, the fault.
 Each task's `specs/<task>.py` builds its scenarios and computes their answers from the prompt's rules; edit it and run it to rewrite the JSON.
 A spec grades only the logging its prompt asks for.
-`<task>/reference/` is a solution that scores 1.0, kept to prove the task can be passed and to check the grader after a change:
+Each task's solution, which scores 1.0, is in `tests/fixtures/uipath-rpa-offline-solutions/<task>/`, kept to prove the task can be passed and to check the grader after a change:
 
 ```bash
-cd tests/tasks/uipath-rpa/offline/invoice_intake/reference && bash ../../_offline_xaml/grade.sh invoice_intake static && bash ../../_offline_xaml/grade.sh invoice_intake runtime
+cd tests/fixtures/uipath-rpa-offline-solutions/invoice_intake && bash ../../../tasks/uipath-rpa/offline/_offline_xaml/grade.sh invoice_intake static && bash ../../../tasks/uipath-rpa/offline/_offline_xaml/grade.sh invoice_intake runtime
 ```
+
+The solutions are kept out of `offline/` on purpose.
+coder-eval copies the reference directory (`offline/`) and the task's folder into the sandbox and locks them for the agent's turn, but the agent runs as root there, and root keeps the capability to unlock them (`chmod`), so a solution inside either folder could be read by an agent that set out to.
+`tests/fixtures/` is in neither, and is masked when the repo is loaded as the skills plugin.
 
 The verifier and runner (`_offline_xaml/_verifier`, `_offline_xaml/_runner`) are `UiPath/coder_eval_uipath`'s offline XAML suite (`tasks/offline_authoring/xaml`), vendored unchanged but for the verifier's own tests.
 The tasks come from `UiPath/builder-sdk` (`typescript/tasks/rpa`), where they run in two arms, hand-written XAML with this repo's `uipath-rpa` skill and the RPA builder SDK with its preview skill; that suite's README has the results.
