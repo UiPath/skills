@@ -98,3 +98,6 @@ When the action reveals a modeling or binding problem, the fix is in the
 `.bpmn.ts`: run the [Validation loop](../SKILL.md#validation-loop) again, then
 debug or publish again.
 <!--skill-flavor:fix-and-ship:end-->
+
+<!--skill-flavor:upload-consent:start-->
+<!--skill-flavor:upload-consent:end-->

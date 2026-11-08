@@ -15,6 +15,10 @@ all but the reads need `uip login`.
 > **Where you came from.** The project is authored in `<Name>.bpmn.ts`, compiled into `<Project>/<Name>.bpmn`, formatted and validated (SKILL.md).
 > A failed or stuck run is investigated in [diagnose.md](diagnose.md), and the fix goes back into the `.bpmn.ts`.
 
+<!--skill-flavor:upload-consent:start-->
+The one exception is the Studio Web upload of a project this run created: a request to build or draft the process authorizes the upload that shows it ([Studio Web upload](#studio-web-upload)).
+<!--skill-flavor:upload-consent:end-->
+
 ## Pre-flight, before any cloud action
 
 <!--skill-flavor:preflight-target:start-->
@@ -83,11 +87,36 @@ The project's solution directory is what `bpmn init` scaffolded around it
 A project initialized with `--skip-solution-registration` has no solution, and upload and deploy both require one.
 Create one beside it with `uip solution init <SolutionName> --output json`, `cd <SolutionName>`, run `uip solution projects import <project-path> --output json` with `<project-path>` relative to that folder (for example `../A/B`), and upload the solution.
 Ask before doing this when the user named the project's path, because the uploaded copy lives in the new solution folder, not at that path.
-When the solution declares resource dependencies, refresh
-them with the solution tooling the installed CLI offers (check `uip solution
---help` rather than inventing a verb) and confirm the generated resource files
-match. Report the Studio Web URL or solution id; when the CLI returns none,
-write `Studio Web URL: <not returned by CLI>` rather than omitting it.
+When the solution declares resource dependencies, refresh them with the solution tooling the installed CLI offers (check `uip solution --help` rather than inventing a verb) and confirm the generated resource files match.
+Report the Studio Web URL (`Data.DesignerUrl`) or solution id; when the CLI returns none, write `Studio Web URL: <not returned by CLI>` rather than omitting it.
+
+**Consent.** Unless the request forbids upload, a request to build or draft the process authorizes the upload that shows it, so upload without asking when this run's `bpmn init` scaffolded the solution.
+Confirm first when it did not — the project went into a solution that already existed, or an existing project was edited in place — because `upload` overwrites the cloud solution that matches the `SolutionId` in the local `.uipx`.
+Ask once, before the first upload, and say in the question that the upload replaces the Studio Web copy.
+
+**Each later upload overwrites the same solution.**
+The first upload writes the cloud solution id back into the local `.uipx`, so each upload after it reports `Data.Action: "Overwritten"` with the same `SolutionId` and `DesignerUrl`.
+`"Imported"` on a later upload means that id was lost and a second cloud solution was just created: stop and fix that before continuing.
+
+### Check the cloud copy before editing
+
+An upload replaces the cloud copy with the local one, so it would erase edits made in Studio Web.
+Check the cloud copy before you start editing a project in a solution this run did not scaffold, so you build on the current copy, and again before each edit after this run's own first upload: the user may have changed the canvas between turns.
+Download the solution by the `SolutionId` in its `.uipx`, into a fresh directory outside the workspace:
+
+```bash
+uip solution download <SOLUTION_ID> --extract -d "$(mktemp -d)" --output json
+```
+
+- A failure whose `Instructions` say "Studio Web API returned 404" means there is no cloud copy yet (`init` writes a `SolutionId` before any upload): upload.
+- A failure for another reason (offline, not logged in): skip the check, and say so in the reply.
+- Otherwise compare each project's `.bpmn` in the download with the local one.
+  Studio Web reformats the `.uipx` and `project.uiproj` and adds `SolutionStorage.json`, so only the `.bpmn` files tell real edits apart.
+  When they match, carry on.
+
+When they differ, ask which copy to keep, unless the user is answering a draft gate this run showed: then they edited the outline you uploaded, so build on their copy without asking, and say so in the reply.
+To build on the Studio Web copy, treat it as the original of a [brownfield edit](bpmn-runtime.md#brownfield-editing): copy its `.bpmn` over `<Project>/<Name>.bpmn`, seed `<Name>.bpmn.ts` from it with `uip maestro bpmn decompile --style nested`, compile that source as the baseline before editing, and merge the compiled edit back with `uip maestro bpmn merge <edited.bpmn> --original <Project>/<Name>.bpmn --baseline <baseline.bpmn> -o <Project>/<Name>.bpmn`, so the user's layout and the elements you did not touch stay as they drew them.
+Compile the baseline and the edit into a scratch directory outside the project, so the project keeps exactly one `<Name>.bpmn`.
 
 ## Orchestrator deployment
 

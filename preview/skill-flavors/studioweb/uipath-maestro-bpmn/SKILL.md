@@ -162,3 +162,7 @@ user's choice). `bpmn debug` is a REAL run, not a validation step. Every
 mutation needs the user's decision for that action. Read
 **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:operating:end-->
+
+<!--skill-flavor:draft-upload-summary:start-->
+The canvas shows the skeleton as soon as the file is written; nothing is uploaded.
+<!--skill-flavor:draft-upload-summary:end-->
