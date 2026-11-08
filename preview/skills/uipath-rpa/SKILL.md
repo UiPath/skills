@@ -35,7 +35,7 @@ npx rpa-sdk merge Main.xaml Main.edited.xaml --in-place
 ```
 
 - Each command reads the activity catalog from `$RPA_SDK_CATALOG`, or from `--catalog <dir>`, which wins.
-  The catalog's `index.json` lists every activity by `className`; `activities/<package>/<className>@<version>.json` lists its properties, their kinds and types.
+  The catalog is a folder or a `.zip`; look activities up with the CLI, not by reading its files: `npx rpa-sdk catalog <word>` lists the activities whose name matches (`npx rpa-sdk catalog textfile`), and `npx rpa-sdk catalog <className>` lists one activity's properties, their kinds, types, and which are required (`npx rpa-sdk catalog UiPath.Core.Activities.AppendLine`).
 - `check` reports refusals and lint findings; with `--json` it prints `{"ok":true,"warnings":0,…}` when the file is clean.
   `ok` is false only for a refusal, which compile cannot write; `ok` with warnings is still not clean.
 - `compile` writes the XAML. A file in a subfolder compiles the same way: `npx rpa-sdk compile Workflows/ValidateInvoice.rpa.ts -o Workflows/ValidateInvoice.xaml`.
@@ -129,4 +129,4 @@ These pass `compile` and then go wrong when the workflow loads or runs; `check` 
 - Editing the compiled `.xaml` by hand, or compiling over an existing `.xaml` without merging: both lose what Studio wrote there.
 - Compiling while `check` still prints a warning.
 - Reaching for `rawActivity` for something the SDK models: raw XAML is unchecked, and arrows cannot reach inside it.
-- Guessing an activity's property names: read its catalog entry.
+- Guessing an activity's property names: look them up with `npx rpa-sdk catalog <className>`.

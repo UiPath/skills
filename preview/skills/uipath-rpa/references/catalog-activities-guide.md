@@ -1,7 +1,7 @@
 # Catalog activities, collections, Invoke Method and Switch
 
 Any activity the catalog lists goes through `.activity(id, catalogActivity(className), props, slots)`.
-Read the activity's catalog entry for its property names, their kinds and their types before writing it.
+Look the activity up before writing it: `npx rpa-sdk catalog <word>` finds its class name, and `npx rpa-sdk catalog <className>` lists its property names, their kinds and their types.
 
 ## Activities from the catalog
 
@@ -22,7 +22,7 @@ s.activity('validate', catalogActivity('UiPath.Core.Activities.InvokeWorkflowFil
 })
 ```
 
-Property names and kinds come from the catalog entry: `InArgument` takes an expression or literal, `OutArgument` a reference, `Literal` a plain value or enum member, `Activity` a slot (in the fourth argument, `{ Then: (t) => t… }`), `Object` an `objectValue({…})`, `Arguments` an `invokeArguments([…])`.
+Property names and kinds come from that listing: `InArgument` takes an expression or literal, `OutArgument` a reference, `Literal` a plain value or enum member, `Activity` a slot (in the fourth argument, `{ Then: (t) => t… }`), `Object` an `objectValue({…})`, `Arguments` an `invokeArguments([…])`.
 Invoke Workflow File's `WorkflowFileName` is relative to the project root (the folder with `project.json`), wherever the invoking workflow is; `check` reports a file the project has in neither its `.xaml` nor its `.rpa.ts` form (`INVOKE_FILE_MISSING`).
 `Condition` is an `Activity<T>`: an expression, or for a value an activity computes (UI Automation's `AnchorProvider`), that one activity, `activityValue((t) => t.step('find', …))`.
 `Unsupported` properties can only be `null`.
