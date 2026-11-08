@@ -113,11 +113,13 @@ success_criteria:
   # --help lists the plural), and an agent may hold the prefix in a shell variable
   # (`E="uip maestro bpmn eval"; $E simulations create ...`, R14 v2). Each pattern
   # below accepts either noun, either verb, and a `$VAR` alias only when the same
-  # command spells `uip maestro bpmn eval` out somewhere (builder-sdk#1882).
+  # call assigns THAT variable to `uip maestro bpmn eval` before using it (a
+  # backreference binds the use to the definition, so `$HOME simulations add` does
+  # not count) (builder-sdk#1882). Cases in _shared/test_grader_command_patterns.py.
   - type: command_executed
     description: "Static simulation was created — gating because its later removal leaves no durable artifact, so static-absent alone cannot tell a created-then-removed sim from one never added. (The short --mock-value makes this transcript check far less line-split-prone than the Llm one, which stays advisory.)"
     tool_name: "Bash"
-    command_pattern: '\A(?=.*(?:\buip|\$UIP)\s+maestro\s+bpmn\s+eval\b).*?(?:(?:\buip|\$UIP)\s+maestro\s+bpmn\s+eval|\$\{?[A-Za-z_]\w*\}?)\s+simulations?\s+(?:add|create)\s+(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
+    command_pattern: '(?:(?:\buip|\$UIP)\s+maestro\s+bpmn\s+eval|(?<![\w$])([A-Za-z_]\w*)=["'']?(?:uip|\$UIP)\s+maestro\s+bpmn\s+eval\b.*?\$(?:\1\b|\{\1\}))\s+simulations?\s+(?:add|create)\s+(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -125,7 +127,7 @@ success_criteria:
   - type: command_executed
     description: "Llm simulation carries an explicit --output-schema (report only; the persisted --check llm-simulation below is the gate)"
     tool_name: "Bash"
-    command_pattern: '\A(?=.*(?:\buip|\$UIP)\s+maestro\s+bpmn\s+eval\b).*?(?:(?:\buip|\$UIP)\s+maestro\s+bpmn\s+eval|\$\{?[A-Za-z_]\w*\}?)\s+simulations?\s+(?:add|create)\s+(?=.*--strategy\s+Llm\b)(?=.*--output-schema\b)'
+    command_pattern: '(?:(?:\buip|\$UIP)\s+maestro\s+bpmn\s+eval|(?<![\w$])([A-Za-z_]\w*)=["'']?(?:uip|\$UIP)\s+maestro\s+bpmn\s+eval\b.*?\$(?:\1\b|\{\1\}))\s+simulations?\s+(?:add|create)\s+(?=.*--strategy\s+Llm\b)(?=.*--output-schema\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 0.0
@@ -141,7 +143,7 @@ success_criteria:
   - type: command_executed
     description: "Simulation-list telemetry (report only; persisted state is graded directly)"
     tool_name: "Bash"
-    command_pattern: '\A(?=.*(?:\buip|\$UIP)\s+maestro\s+bpmn\s+eval\b).*?(?:(?:\buip|\$UIP)\s+maestro\s+bpmn\s+eval|\$\{?[A-Za-z_]\w*\}?)\s+simulations?\s+list\b'
+    command_pattern: '(?:(?:\buip|\$UIP)\s+maestro\s+bpmn\s+eval|(?<![\w$])([A-Za-z_]\w*)=["'']?(?:uip|\$UIP)\s+maestro\s+bpmn\s+eval\b.*?\$(?:\1\b|\{\1\}))\s+simulations?\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
