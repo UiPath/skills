@@ -70,6 +70,18 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
+  # Deterministic twin of the judge below (as in event_trigger_start.yaml), so the
+  # judge is not the only guard on the prompt's "Do NOT upload, publish, deploy, debug, run, or pack".
+  # The CLI spells these `uip solution upload|publish|deploy|pack` and `uip maestro bpmn
+  # process run|publish` (assets/uip-catalog-snapshot.json), so those count too.
+  # A `--help` on the same command is a read and does not count.
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side or packaging Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:maestro\s+bpmn\s+(?:upload|publish|deploy|debug|run|pack|process\s+(?:run|publish))|solution\s+(?:upload|publish|deploy|pack))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: llm_judge
     description: "Agent kept the lifecycle local and avoided cloud-side operations"
     weight: 2.0
