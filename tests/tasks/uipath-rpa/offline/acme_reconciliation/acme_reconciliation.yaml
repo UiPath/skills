@@ -5,12 +5,12 @@ description: >
   multi-workflow project (paged work-item list, detail pages, statements, a config file, business and
   system exceptions, retries and a stop rule), and the grader runs it headlessly under CoreWF in six
   scenarios. Ported from UiPath/builder-sdk typescript/tasks/rpa, where it benchmarks the RPA builder
-  SDK against hand-written XAML; see README.md in this folder.
+  SDK against hand-written XAML; see ../README.md.
 tags: [uipath-rpa, e2e, outcome-graded, mode:build, lifecycle:generate, feature:reframework]
 
-# Studio Web Autopilot's constraints: its host serves only `uip rpa init` and `uip rpa run`, so pre_run puts
-# _uip/uip (the same two verbs, `run` on the CoreWF runner the grader uses) ahead of skills-image's full `uip`
-# on the agent's PATH. Without them, the skill's validate-and-build loop against a cold Studio Helm took every
+# Studio Web Autopilot's constraints: its host serves only `uip rpa init` and `uip rpa run`, so pre_run
+# puts ../_offline_xaml/_uip/uip (the same two verbs, `run` on the CoreWF runner the grader uses) ahead
+# of skills-image's full `uip` on the agent's PATH. Without them, the skill's validate-and-build loop against a cold Studio Helm took every
 # trial past a 30-minute turn. The whole agent run is one turn.
 run_limits:
   expected_turns: 40
@@ -21,21 +21,21 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: "_project"
+      path: "../_offline_xaml/_project"
     - type: template_dir
-      path: "_notes"
+      path: "../_offline_xaml/_notes"
     - type: template_dir
-      path: "_uip"
+      path: "../_offline_xaml/_uip"
       mount_point: ".studio-web/bin"
     - type: template_dir
-      path: "_runner"
+      path: "../_offline_xaml/_runner"
       mount_point: ".studio-web/runner"
 
 pre_run:
   # Install the Studio Web `uip` and build the runner it serves `run` with (also what grade.sh grades
   # with), then remove both sources from the workspace before the agent starts. Only inside the docker
   # sandbox (skills-image): on a tempdir sandbox it would replace the host's own `uip`.
-  - command: "set -e; [ \"${CODER_EVAL_IN_CONTAINER:-}\" = 1 ] || { echo 'acme_reconciliation needs the docker sandbox (skills-image): run it with experiments/nightly.yaml'; exit 1; }; install -m 755 .studio-web/bin/uip /usr/local/bin/uip; dotnet publish .studio-web/runner/XamlRunner.csproj -c Release -o /opt/xaml-runner --nologo -v quiet; rm -rf .studio-web"
+  - command: "set -e; [ \"${CODER_EVAL_IN_CONTAINER:-}\" = 1 ] || { echo 'this task needs the docker sandbox (skills-image): run it with experiments/nightly.yaml'; exit 1; }; install -m 755 .studio-web/bin/uip /usr/local/bin/uip; dotnet publish .studio-web/runner/XamlRunner.csproj -c Release -o /opt/xaml-runner --nologo -v quiet; rm -rf .studio-web"
     timeout: 300
 
 initial_prompt: |
@@ -86,12 +86,12 @@ initial_prompt: |
   I won't be around for questions: just leave the finished project here.
 
 reference:
-  directory: "."
+  directory: ".."
 
 success_criteria:
   - type: run_command
     description: "Every workflow loads and compiles, Main.xaml matches the argument contract, and it uses a state machine and an Invoke"
-    command: "bash $REFERENCE_DIR/grade.sh static"
+    command: "bash $REFERENCE_DIR/_offline_xaml/grade.sh acme_reconciliation static"
     timeout: 900
     expected_exit_code: 0
     weight: 1.0
@@ -99,7 +99,7 @@ success_criteria:
 
   - type: run_command
     description: "Runs headlessly under CoreWF and behaves as specified in every scenario"
-    command: "bash $REFERENCE_DIR/grade.sh runtime"
+    command: "bash $REFERENCE_DIR/_offline_xaml/grade.sh acme_reconciliation runtime"
     timeout: 900
     expected_exit_code: 0
     weight: 1.0

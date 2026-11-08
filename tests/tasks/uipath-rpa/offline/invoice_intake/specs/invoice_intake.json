@@ -1,0 +1,286 @@
+{
+ "task": "invoice_intake",
+ "band": "real-world",
+ "candidate": "Main.xaml",
+ "reference": "../reference/Main.xaml",
+ "contract": {
+  "arguments": [
+   {
+    "name": "in_MailFolder",
+    "direction": "In",
+    "type": "System.String"
+   },
+   {
+    "name": "in_VendorsFile",
+    "direction": "In",
+    "type": "System.String"
+   },
+   {
+    "name": "in_OutputFolder",
+    "direction": "In",
+    "type": "System.String"
+   },
+   {
+    "name": "out_Queued",
+    "direction": "Out",
+    "type": "System.Int32"
+   },
+   {
+    "name": "out_Rejected",
+    "direction": "Out",
+    "type": "System.Int32"
+   },
+   {
+    "name": "out_MissingAttachment",
+    "direction": "Out",
+    "type": "System.Int32"
+   }
+  ],
+  "required_activity_types": [
+   "UiPath.Core.Activities.InvokeWorkflowFile"
+  ],
+  "forbidden_activity_types": [
+   "UiPath.Core.Activities.InvokeCode"
+  ]
+ },
+ "pass_threshold": 1.0,
+ "scenarios": [
+  {
+   "name": "approved-invoices-are-queued",
+   "note": "Unread mail only, every PDF of a message in name order, vendors matched ignoring case and spaces.",
+   "files": {
+    "mail/M-001/message.txt": "From: billing@contoso.example\r\nSubject: Invoice INV-1001\r\nDate: 2026-05-04\r\nStatus: Unread\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-001/INV-1001.pdf": "Contoso Ltd\n123 Industrial Way\n\nInvoice No: INV-1001\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 1,250.50 EUR\n",
+    "mail/M-002/message.txt": "From: ar@fabrikam.example\r\nSubject: May invoices\r\nDate: 2026-05-04\r\nStatus: Unread\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-002/fab-77.pdf": "Fabrikam GmbH\n123 Industrial Way\n\nInvoice No: FB-77\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 9,999.99 EUR\n",
+    "mail/M-002/fab-78.pdf": "  fabrikam gmbh\n123 Industrial Way\n\nInvoice No: FB-78\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 10.00 EUR\n",
+    "mail/M-002/terms.docx": "not an invoice\n",
+    "mail/M-003/message.txt": "From: billing@contoso.example\r\nSubject: Invoice INV-0999\r\nDate: 2026-05-04\r\nStatus: Read\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-003/INV-0999.pdf": "Contoso Ltd\n123 Industrial Way\n\nInvoice No: INV-0999\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 100.00 EUR\n",
+    "vendors.csv": "Vendor,CreditLimit\nContoso Ltd,5000\nFabrikam GmbH,12000.00\nNorthwind Traders,800\n"
+   },
+   "input": {
+    "in_MailFolder": "${WORKDIR}/mail",
+    "in_VendorsFile": "${WORKDIR}/vendors.csv",
+    "in_OutputFolder": "${WORKDIR}/out"
+   },
+   "expect_outputs": {
+    "out_Queued": 3,
+    "out_Rejected": 0,
+    "out_MissingAttachment": 0
+   },
+   "expect_files": {
+    "out/Posting/ERP_Queue.csv": {
+     "lines": [
+      "InvoiceNumber,Vendor,Total,MessageId",
+      "INV-1001,Contoso Ltd,1250.50,M-001",
+      "FB-77,Fabrikam GmbH,9999.99,M-002",
+      "FB-78,Fabrikam GmbH,10.00,M-002"
+     ]
+    },
+    "out/Approved/INV-1001.pdf": "Contoso Ltd\n123 Industrial Way\n\nInvoice No: INV-1001\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 1,250.50 EUR\n",
+    "out/Approved/FB-77.pdf": "Fabrikam GmbH\n123 Industrial Way\n\nInvoice No: FB-77\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 9,999.99 EUR\n",
+    "out/Approved/FB-78.pdf": "  fabrikam gmbh\n123 Industrial Way\n\nInvoice No: FB-78\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 10.00 EUR\n",
+    "mail/M-001/message.txt": {
+     "contains": [
+      "Status: Read"
+     ]
+    },
+    "mail/M-002/message.txt": {
+     "contains": [
+      "Status: Read"
+     ]
+    },
+    "mail/M-003/message.txt": "From: billing@contoso.example\r\nSubject: Invoice INV-0999\r\nDate: 2026-05-04\r\nStatus: Read\r\n\r\nPlease find our invoice attached.\r\n"
+   },
+   "expect_log_counts": []
+  },
+  {
+   "name": "rejections-go-to-failed-and-the-lead",
+   "note": "An unknown vendor, a total over the limit, and a missing invoice number are rejected; exactly the limit is fine.",
+   "files": {
+    "mail/M-010/message.txt": "From: sales@unknown.example\r\nSubject: Invoice 55\r\nDate: 2026-05-04\r\nStatus: Unread\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-010/inv-55.pdf": "Unknown Supplies\n123 Industrial Way\n\nInvoice No: U-55\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 40.00 EUR\n",
+    "mail/M-011/message.txt": "From: ar@northwind.example\r\nSubject: Invoice NW-9\r\nDate: 2026-05-04\r\nStatus: Unread\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-011/nw-9.pdf": "Northwind Traders\n123 Industrial Way\n\nInvoice No: NW-9\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 800.01 EUR\n",
+    "mail/M-012/message.txt": "From: ar@northwind.example\r\nSubject: Invoice NW-10\r\nDate: 2026-05-04\r\nStatus: Unread\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-012/nw-10.pdf": "Northwind Traders\n123 Industrial Way\n\nInvoice No: NW-10\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 800.00 EUR\n",
+    "mail/M-013/message.txt": "From: billing@contoso.example\r\nSubject: Invoice\r\nDate: 2026-05-04\r\nStatus: Unread\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-013/scan.pdf": "Contoso Ltd\n123 Industrial Way\n\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 75.00 EUR\n",
+    "vendors.csv": "Vendor,CreditLimit\nContoso Ltd,5000\nFabrikam GmbH,12000.00\nNorthwind Traders,800\n"
+   },
+   "input": {
+    "in_MailFolder": "${WORKDIR}/mail",
+    "in_VendorsFile": "${WORKDIR}/vendors.csv",
+    "in_OutputFolder": "${WORKDIR}/out"
+   },
+   "expect_outputs": {
+    "out_Queued": 1,
+    "out_Rejected": 3,
+    "out_MissingAttachment": 0
+   },
+   "expect_files": {
+    "out/Posting/ERP_Queue.csv": {
+     "lines": [
+      "InvoiceNumber,Vendor,Total,MessageId",
+      "NW-10,Northwind Traders,800.00,M-012"
+     ]
+    },
+    "out/Approved/NW-10.pdf": "Northwind Traders\n123 Industrial Way\n\nInvoice No: NW-10\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 800.00 EUR\n",
+    "out/Failed/M-010-inv-55.pdf": "Unknown Supplies\n123 Industrial Way\n\nInvoice No: U-55\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 40.00 EUR\n",
+    "out/Failed/M-011-nw-9.pdf": "Northwind Traders\n123 Industrial Way\n\nInvoice No: NW-9\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 800.01 EUR\n",
+    "out/Failed/M-013-scan.pdf": "Contoso Ltd\n123 Industrial Way\n\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 75.00 EUR\n",
+    "out/Outbox/rejected-M-010-inv-55.txt": {
+     "contains": [
+      "To: ap.lead@acme.example",
+      "Subject: Rejected invoice inv-55.pdf",
+      "Unknown vendor"
+     ]
+    },
+    "out/Outbox/rejected-M-011-nw-9.txt": {
+     "contains": [
+      "To: ap.lead@acme.example",
+      "Subject: Rejected invoice nw-9.pdf",
+      "Over credit limit"
+     ]
+    },
+    "out/Outbox/rejected-M-013-scan.txt": {
+     "contains": [
+      "To: ap.lead@acme.example",
+      "Subject: Rejected invoice scan.pdf",
+      "Missing invoice number or total"
+     ]
+    },
+    "mail/M-010/message.txt": {
+     "contains": [
+      "Status: Read"
+     ]
+    },
+    "mail/M-011/message.txt": {
+     "contains": [
+      "Status: Read"
+     ]
+    },
+    "mail/M-012/message.txt": {
+     "contains": [
+      "Status: Read"
+     ]
+    },
+    "mail/M-013/message.txt": {
+     "contains": [
+      "Status: Read"
+     ]
+    }
+   },
+   "expect_log_counts": [
+    {
+     "level": "Warn",
+     "mentions": [
+      "inv-55"
+     ],
+     "count": 1
+    },
+    {
+     "level": "Warn",
+     "mentions": [
+      "nw-9"
+     ],
+     "count": 1
+    },
+    {
+     "level": "Warn",
+     "mentions": [
+      "scan"
+     ],
+     "count": 1
+    }
+   ]
+  },
+  {
+   "name": "missing-attachments-ask-the-sender",
+   "note": "A message with no PDF gets a note back to its sender; the extension is matched ignoring case.",
+   "files": {
+    "mail/M-020/message.txt": "From: billing@contoso.example\r\nSubject: Invoice INV-2001 (resend)\r\nDate: 2026-05-04\r\nStatus: Unread\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-021/message.txt": "From: ar@fabrikam.example\r\nSubject: Statement\r\nDate: 2026-05-04\r\nStatus: Unread\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-021/statement.xlsx": "not a pdf\n",
+    "mail/M-022/message.txt": "From: billing@contoso.example\r\nSubject: Invoice INV-2002\r\nDate: 2026-05-04\r\nStatus: Unread\r\n\r\nPlease find our invoice attached.\r\n",
+    "mail/M-022/INV-2002.PDF": "Contoso Ltd\n123 Industrial Way\n\nInvoice No: INV-2002\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 5,000 EUR\n",
+    "vendors.csv": "Vendor,CreditLimit\nContoso Ltd,5000\nFabrikam GmbH,12000.00\nNorthwind Traders,800\n"
+   },
+   "input": {
+    "in_MailFolder": "${WORKDIR}/mail",
+    "in_VendorsFile": "${WORKDIR}/vendors.csv",
+    "in_OutputFolder": "${WORKDIR}/out"
+   },
+   "expect_outputs": {
+    "out_Queued": 1,
+    "out_Rejected": 0,
+    "out_MissingAttachment": 2
+   },
+   "expect_files": {
+    "out/Posting/ERP_Queue.csv": {
+     "lines": [
+      "InvoiceNumber,Vendor,Total,MessageId",
+      "INV-2002,Contoso Ltd,5000.00,M-022"
+     ]
+    },
+    "out/Approved/INV-2002.pdf": "Contoso Ltd\n123 Industrial Way\n\nInvoice No: INV-2002\nDate: 2026-05-01\n\nItem | Qty | Amount\nServices | 1 | see total\n\n\nTotal: 5,000 EUR\n",
+    "out/Outbox/missing-M-020.txt": {
+     "contains": [
+      "To: billing@contoso.example",
+      "Subject: Missing attachment: Invoice INV-2001 (resend)"
+     ]
+    },
+    "out/Outbox/missing-M-021.txt": {
+     "contains": [
+      "To: ar@fabrikam.example",
+      "Subject: Missing attachment: Statement"
+     ]
+    },
+    "mail/M-020/message.txt": {
+     "contains": [
+      "Status: Read"
+     ]
+    },
+    "mail/M-021/message.txt": {
+     "contains": [
+      "Status: Read"
+     ]
+    },
+    "mail/M-022/message.txt": {
+     "contains": [
+      "Status: Read"
+     ]
+    }
+   },
+   "expect_log_counts": []
+  },
+  {
+   "name": "an-empty-mailbox",
+   "note": "Nothing unread: an empty queue with its header, and nothing marked read.",
+   "files": {
+    "mail/M-030/message.txt": "From: billing@contoso.example\r\nSubject: Old invoice\r\nDate: 2026-05-04\r\nStatus: Read\r\n\r\nPlease find our invoice attached.\r\n",
+    "vendors.csv": "Vendor,CreditLimit\nContoso Ltd,5000\nFabrikam GmbH,12000.00\nNorthwind Traders,800\n"
+   },
+   "input": {
+    "in_MailFolder": "${WORKDIR}/mail",
+    "in_VendorsFile": "${WORKDIR}/vendors.csv",
+    "in_OutputFolder": "${WORKDIR}/out"
+   },
+   "expect_outputs": {
+    "out_Queued": 0,
+    "out_Rejected": 0,
+    "out_MissingAttachment": 0
+   },
+   "expect_files": {
+    "out/Posting/ERP_Queue.csv": {
+     "lines": [
+      "InvoiceNumber,Vendor,Total,MessageId"
+     ]
+    },
+    "mail/M-030/message.txt": "From: billing@contoso.example\r\nSubject: Old invoice\r\nDate: 2026-05-04\r\nStatus: Read\r\n\r\nPlease find our invoice attached.\r\n"
+   },
+   "expect_log_counts": []
+  }
+ ]
+}

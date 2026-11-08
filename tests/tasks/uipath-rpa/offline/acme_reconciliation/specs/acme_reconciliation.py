@@ -3,7 +3,7 @@
 The scenarios are built here, and their expected results computed by `run` from the rules the task's prompt
 states, so the data and the answers cannot drift apart. Edit this file, then:
 
-    python3 tests/tasks/uipath-rpa/acme_reconciliation/specs/acme_reconciliation.py
+    python3 tests/tasks/uipath-rpa/offline/acme_reconciliation/specs/acme_reconciliation.py
 """
 import json
 from pathlib import Path
