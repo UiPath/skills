@@ -25,10 +25,17 @@ initial_prompt: |
   yet.
 
 success_criteria:
+  # Both skills' draft guidance makes no registry lookup before the gate (v1
+  # phase-2-skeleton-guide.md rule 3, v2 draft-skeleton.md rule 3), so the guard
+  # covers v1's `uip maestro bpmn registry` and v2's `uip maestro registry`
+  # spellings, and v2's `prepare` / `describe` as well as `pull` / `search` / `get`.
+  # Excluded: v1's phase 1a preflight `uip maestro bpmn registry list` (the box
+  # kind list, which runs before the skeleton by design), and `--help`, which
+  # looks nothing up.
   - type: command_not_executed
     description: "Agent made no registry discovery before the shape was approved (the preflight kind list is allowed)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|search|get)'
+    command_pattern: '(?:\buip|\$UIP)\s+maestro\s+(?:bpmn\s+)?registry\s+(?:pull|search|get|prepare|describe)\b(?![^\n;&|]*\s(?:--help|-h)\b)'
     weight: 2.0
     pass_threshold: 1.0
 
