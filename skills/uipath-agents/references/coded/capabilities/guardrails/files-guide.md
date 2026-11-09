@@ -30,7 +30,7 @@ Guardrails only inspect files that appear in the run in one of these shapes:
 
 | Where the file is | What to write |
 |---|---|
-| Typed input `file: Attachment` | Render it into the user message with `render_attachments_block` (below). A typed input that is not rendered is never inspected |
+| Typed input `file: Attachment` | Render it into the user message with `render_attachments_block` (below). Unrendered, only a `@guardrail` on a graph or agent factory sees it, as a key of the graph's input next to `messages` (second example); middleware and LLM-scope guardrails do not |
 | Tool arguments and results | An `Attachment` or a `{"ID", "FullName", "MimeType"}` object — never a bare id string |
 | Conversational agent | Nothing; the runtime attaches each user file to its message |
 
@@ -52,6 +52,31 @@ async def main(state: Input):
     return result["structured_response"]
 ```
 
+A `@guardrail` on a graph reads the file straight from its input state:
+
+```python
+# standard imports omitted
+class State(TypedDict):
+    messages: list[BaseMessage]
+    file: Attachment
+
+
+@guardrail(
+    validator=PIIValidator(entities=[PIIDetectionEntity(PIIDetectionEntityType.EMAIL, 0.5)]),
+    action=BlockAction(),
+    stage=GuardrailExecutionStage.PRE,
+    detection_scope=DetectionScope.FILES,
+)
+def create_graph():
+    builder = StateGraph(State)
+    ...
+    return builder.compile()
+
+
+async def main(state: Input):
+    return await create_graph().ainvoke({"messages": [HumanMessage(content="Check this file")], "file": state.file})
+```
+
 Never inspected: base64 content blocks you build yourself, URLs, and files mentioned only in the system prompt. At most 5 files per check.
 
 ## What each check reads
@@ -63,7 +88,7 @@ Never inspected: base64 content blocks you build yourself, URLs, and files menti
 | Middleware · any POST | The files the output names (the model message, tool result, or structured response) |
 | Decorator on a tool | The files its arguments describe, taken as given (the run is not checked) |
 | Decorator on the LLM factory | Every file in the messages |
-| Decorator on an agent factory or graph | The files in the input messages; an input without a `messages` key is not checked |
+| Decorator on an agent factory or graph | Input: the files in the messages and the `Attachment` values in the other input keys. Output: the files the last model message or the structured response names, and the `Attachment` values it returns. An input or output without a `messages` key is not checked |
 
 The SDK docs carry the full tables: [middleware](https://uipath.github.io/uipath-python/langchain/guardrails/#files-attachments), [decorator](https://uipath.github.io/uipath-python/langchain/guardrails/#files).
 
@@ -71,7 +96,7 @@ The SDK docs carry the full tables: [middleware](https://uipath.github.io/uipath
 
 | Situation | Use |
 |---|---|
-| No `Attachment` input or output and no tool that takes or returns a file | omit (text only) |
+| Not conversational, no `Attachment` input or output, and no tool that takes or returns a file | omit (text only) |
 | A Tool-scope guardrail whose tools neither take nor return a file | omit at that guardrail; Tool · PRE reads only the files the arguments name |
 | Guard the contents of uploaded files; the surrounding text is irrelevant or could sway a judge | `Files` |
 | Guard a file the agent produces | `Files` at Agent scope — Recipe 3 |
@@ -198,7 +223,7 @@ A live test uploads a file to the tenant. Run one only when the user wants it, n
 1. **Do not set `detection_scope` on BYO, deterministic, or `CustomValidator` guardrails** — BYO reads no files, deterministic middleware raises `TypeError`, and `CustomValidator` ignores it.
 2. **Do not pass `detection_scope` to a validator constructor** — it belongs on `@guardrail(...)` or the middleware.
 3. **Do not add it when `uip agent guardrails list` does not offer `detectionScope` for that validator** — the guardrail silently checks text only.
-4. **Do not expect a typed `Attachment` input to be inspected on its own** — render it into the user message with `render_attachments_block`.
+4. **Do not expect middleware or an LLM-scope guardrail to see an unrendered `Attachment` input** — render it into the user message with `render_attachments_block`. Only a `@guardrail` on a graph or agent factory reads it from the input state.
 5. **Do not pass bare id strings where a file belongs** — tool arguments and results need the `{"ID", "FullName", "MimeType"}` object.
 6. **Do not use Filter or redact actions for `Files`** — they cannot rewrite a file.
 7. **Do not test a file guardrail with a placeholder attachment** — upload a real file.

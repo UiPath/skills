@@ -186,7 +186,7 @@ Use `Glob` / `Grep` to find the main Python file (look for `create_agent`, `Stat
 - Which `@tool` functions exist (needed for Tool-scoped guardrails)
 - Whether a separate LLM factory function exists (needed for LLM-scope decorator guardrails)
 - Which guardrails are already present (avoid duplicating)
-- Whether `Input` / `Output` declare `Attachment` fields, or tools take or return files — these decide `detection_scope` ([files-guide.md](files-guide.md))
+- Whether `Input` / `Output` declare `Attachment` fields, tools take or return files, or the agent is conversational (`runtimeOptions.isConversational: true` in `uipath.json`; users attach files to chat messages) — these decide `detection_scope` ([files-guide.md](files-guide.md))
 
 ---
 
@@ -394,7 +394,7 @@ Built-in guardrails take an optional `detection_scope=DetectionScope.TEXT | FILE
 
 1. Pass it on `@guardrail(...)` or the middleware constructor, never on the validator, and only when the validator's `uip agent guardrails list` entry offers `detectionScope`.
 2. The default is always text only. Scopes and stages do not change.
-3. A typed `Attachment` input is inspected only once it is rendered into the user message with `render_attachments_block`.
+3. Middleware and LLM-scope guardrails see a typed `Attachment` input only once it is rendered into the user message with `render_attachments_block`. A `@guardrail` on a graph or agent factory also reads it as a key of the graph's input.
 4. BYO guardrails read no files; deterministic middleware and `CustomValidator` have no file support.
 
 What each check reads, the recipes for uploaded and produced files, and how to test with a real file: [files-guide.md](files-guide.md).
@@ -533,4 +533,4 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 17. **A HITL guardrail suspends, it doesn't block.** On violation `EscalateAction` suspends via `interrupt(CreateEscalation(...))`; it terminates **only on Reject** (Approve resumes). Verify by confirming the run suspends + a task is created — never expect a "block" for an escalation guardrail (Rule for the [verification step](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails)).
 18. **BYO: pass the validator name and nothing else, and get that name from discovery — never from memory.** `ByoValidatorName` comes from `uip agent guardrails list --byo`; there is **no connection-id argument** in either construct (the platform resolves the connection server-side from the configuration). Pick the construct by style, not by framework: `UiPathByoGuardrailMiddleware` is LangChain-only, while `ByoValidator` is a **core** class (`uipath.platform.guardrails`) re-exported by `uipath_langchain.guardrails` — so **BYO is not LangChain-only**, and a subagent or stale doc claiming otherwise is wrong. Import per Rule 8 regardless. Cross-check `Enabled`/`ValidConnection` via `uip guardrails byo-configurations list` before wiring one in. See [BYO (bring-your-own) validators](#byo-bring-your-own-validators).
 19. **`uip codedagent review` does NOT validate guardrail scope or stage placement.** A `PASS` / `A+` verdict from `uip codedagent review --checks guardrails` is not evidence a guardrail is correctly scoped — the review checks structure and presence, not placement. A misplaced guardrail (e.g. LLM-only `user_prompt_attacks` decorating a `@tool` function) passes review and still never fires where intended. Scope/stage correctness comes only from the fetched SDK docs and the `AllowedScopes` in `uip agent guardrails list --output json`; to diagnose an existing guardrail, follow [guardrails-recommend.md § Validate Mode](guardrails-recommend.md#validate-mode).
-20. **Files are opt-in per guardrail.** Set `detection_scope` on `@guardrail(...)` or the middleware (never the validator), only when the validator's `uip agent guardrails list` entry offers `detectionScope`, never on BYO / deterministic / `CustomValidator` guardrails; render a typed `Attachment` input into the user message so the guardrails can see it. See [files-guide.md](files-guide.md).
+20. **Files are opt-in per guardrail.** Set `detection_scope` on `@guardrail(...)` or the middleware (never the validator), only when the validator's `uip agent guardrails list` entry offers `detectionScope`, never on BYO / deterministic / `CustomValidator` guardrails; render a typed `Attachment` input into the user message so middleware and LLM-scope guardrails can see it. See [files-guide.md](files-guide.md).

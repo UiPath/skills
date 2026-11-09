@@ -211,6 +211,7 @@ Catalog-unavailable means the **fetch itself failed**: the output contains `"Cod
 Resolve the entry `.py` (the `langgraph.json` `graphs` value's file, else `main.py`) and read:
 - **System prompt** — what the agent does, its domain and behaviors.
 - **Input / output schemas** (Pydantic `BaseModel` / function signatures) — the data it receives and produces, including `Attachment` fields (file surfaces).
+- **`runtimeOptions.isConversational` in `uipath.json`** — a conversational agent is a file surface with no `Attachment` field: users attach files to chat messages.
 - **`@tool` functions** — name, docstring, signature (the targets of Tool-scope guardrails).
 - **Wired guardrails** — `*UiPath…Middleware(...)` inside `create_agent(middleware=[...])` and `@guardrail(...)`
   decorators, plus what each decorates (a `@tool`, an LLM factory `def create_llm(): return UiPathChat(...)`, an
@@ -239,8 +240,9 @@ cases:
 - A guardrail meant to protect an `Attachment` input or output that omits `detection_scope` (or sets
   `DetectionScope.TEXT`) while the tenant list entry offers `detectionScope` — the file contents are never inspected,
   so the action cannot act on them. Fix: `detection_scope=DetectionScope.FILES` (or `BOTH`). Also report an
-  `Attachment` input that is never rendered into the user message (`render_attachments_block`) — no guardrail sees
-  it. Not applicable to BYO guardrails, which read no files.
+  `Attachment` input that no guardrail can see: never rendered into the user message (`render_attachments_block`),
+  and not a key of the input of a `@guardrail`-decorated graph or agent factory. Not applicable to BYO guardrails,
+  which read no files.
 
 Name the catalog-recommended action for that scope in the description. Severity `judgment` — a guardrail that breaks
 the agent or leaves a security gap can be Critical; a milder ineffectiveness is Warning/Info.
@@ -266,9 +268,9 @@ Two ways a format-valid guardrail can be misapplied:
   non-factory, or a module-level value silently no-ops at runtime. Emit when the decorated target won't be wrapped
   as intended. (This is the non-deterministic placement case; the CLI's `CODED_GUARDRAIL_WRONG_IMPORT` /
   `CODED_GUARDRAIL_TOOL_SCOPE_NO_TOOLS` / `CODED_GUARDRAIL_INVALID_CONTRACT` are separate — do not re-flag them.)
-- **File scope with no file** — `detection_scope=FILES` or `BOTH` where no file can reach the guardrail (an agent
-  with no `Attachment` field and no tool that takes or returns a file, or a Tool-scope guardrail whose tools neither
-  take nor return a file): the guardrail has nothing to evaluate.
+- **File scope with no file** — `detection_scope=FILES` or `BOTH` where no file can reach the guardrail (a
+  non-conversational agent with no `Attachment` field and no tool that takes or returns a file, or a Tool-scope
+  guardrail whose tools neither take nor return a file): the guardrail has nothing to evaluate.
 
 ---
 

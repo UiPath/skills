@@ -121,7 +121,7 @@ Use `Glob` / `Grep` to locate the entrypoint Python file. Look for `create_agent
 - **LLM factory** — is the LLM created inside a named function (e.g. `def create_llm(): return UiPathChat(...)`) or assigned directly at module level? Decorator-style LLM-scope guardrails require a factory.
 - **Agent factory** — is `create_agent(...)` wrapped in a named function? Decorator-style Agent-scope guardrails require a factory.
 - **Existing guardrails** — any `@guardrail(...)` decorators above functions, or `*UiPath…Middleware(...)` entries inside `middleware=[...]` in `create_agent(...)`. Note them to avoid duplicating.
-- **File surfaces** — `Attachment` fields on `Input` / `Output`, and tools that take or return an `Attachment` (or `{"ID", "FullName", "MimeType"}` objects). Record which are uploaded inputs and which are produced outputs — they drive the `detection_scope` decision in Step 7.
+- **File surfaces** — `Attachment` fields on `Input` / `Output`, tools that take or return an `Attachment` (or `{"ID", "FullName", "MimeType"}` objects), and a conversational agent (`runtimeOptions.isConversational: true` in `uipath.json`), whose users attach files to chat messages with no `Attachment` field. Record which are uploaded inputs and which are produced outputs — they drive the `detection_scope` decision in Step 7.
 
 ### Step 2 — Catalog-Driven Recommendation Analysis
 
@@ -222,7 +222,7 @@ Use the action chosen in Step 6.
 1. The agent has a file surface (Step 1) and the threat lives in file contents → pass `detection_scope=DetectionScope.FILES` on the `@guardrail(...)` or middleware call; use `BOTH` only when the text must stay covered by the same guardrail.
 2. No file surface → omit it (text only).
 3. The list entry lacks `detectionScope` → omit it and tell the user file inspection is not enabled for that validator on this tenant.
-4. An `Attachment` input that is not rendered into the user message → render it with `render_attachments_block` as part of the change; otherwise the guardrail sees no file.
+4. An `Attachment` input that is not rendered into the user message → render it with `render_attachments_block` as part of the change; otherwise middleware and LLM-scope guardrails see no file (a `@guardrail` on a graph or agent factory also reads it as a key of the graph's input).
 
 Map catalog parameter shapes to Python:
 
@@ -299,8 +299,8 @@ From the SDK docs and the catalog, look up the validator class referenced in the
 1. Read the catalog entry's `when_not_to_use`.
 2. Compare against the agent's current context (system prompt, schemas, tool docstrings).
 3. If the agent matches a `when_not_to_use` condition, flag the guardrail as potentially misapplied and explain why.
-4. **File coverage gap** — the guardrail is meant to protect an `Attachment` input or output, the list entry offers `detectionScope`, and the code omits `detection_scope` or sets `TEXT` → the file contents are never inspected; fix with `DetectionScope.FILES` (or `BOTH`). Also flag an `Attachment` input that is never rendered into the user message.
-5. **Misapplied file scope** — `FILES` or `BOTH` where no file can reach the guardrail (an agent with no `Attachment` field and no tool that takes or returns a file, or a Tool-scope guardrail whose tools neither take nor return a file) → nothing to evaluate; remove the argument.
+4. **File coverage gap** — the guardrail is meant to protect an `Attachment` input or output, the list entry offers `detectionScope`, and the code omits `detection_scope` or sets `TEXT` → the file contents are never inspected; fix with `DetectionScope.FILES` (or `BOTH`). Also flag an `Attachment` input that no guardrail can see: not rendered into the user message, and not a key of the input of a `@guardrail`-decorated graph or agent factory.
+5. **Misapplied file scope** — `FILES` or `BOTH` where no file can reach the guardrail (a non-conversational agent with no `Attachment` field and no tool that takes or returns a file, or a Tool-scope guardrail whose tools neither take nor return a file) → nothing to evaluate; remove the argument. A conversational agent receives files in its chat messages, so file scope on its Agent- or LLM-scope guardrails is not misapplied.
 
 ### Report and Fix
 
