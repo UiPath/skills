@@ -31,26 +31,28 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 1. Scaffold the project first with `uip maestro bpmn init <Name> --output json`, and take the project directory from `Data.Path`.
    Below, `<Project>` means that directory.
    It holds `<Name>.bpmn` plus `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, and `package-descriptor.json` — the layout `bpmn pack` and product tooling require.
-   `init` takes a name, not a path, and writes under the current directory:
+   Without `--path`, `init` writes under the current directory:
    - inside a solution (a `.uipx` here or in a parent): `./<Name>/`, registered in that solution;
    - outside one: `./<Name>Solution/<Name>/`, inside a solution it scaffolds;
    - with `--skip-solution-registration`: `./<Name>/`, with no solution.
 
-   **When the user names where the `.bpmn` goes**, the directory holding it is the project directory.
-   Match the path to one row and run that row's command from the workspace root, with the user's names in place of `X`, `A` and `B`:
+   **When the user names where the `.bpmn` goes**, the directory holding it is the project directory, and `init --path <dir>` writes the project files straight into it.
+   Match the path to one row and run that row's command from the workspace root, with the user's names in place of `X`, `A`, `B` and `C`:
 
    | Path named | Project directory | Command, from the workspace root |
    |---|---|---|
-   | `X.bpmn` (workspace root) | `.` | `T=$(mktemp -d) && (cd "$T" && uip maestro bpmn init X --skip-solution-registration --output json) && cp -R "$T/X/." . && rm -rf "$T"` |
-   | `A/A.bpmn` | `A` | `uip maestro bpmn init A --skip-solution-registration --output json` |
-   | `A/B/B.bpmn` (also `A/A/A.bpmn`) | `A/B` | `mkdir -p A && (cd A && uip maestro bpmn init B --skip-solution-registration --output json)` |
+   | `X.bpmn` (workspace root) | `.` | `uip maestro bpmn init X --path . --output json` |
+   | `A/A.bpmn` | `A` | `uip maestro bpmn init A --path A --output json` |
+   | `A/B/B.bpmn` (also `A/A/A.bpmn`, or deeper) | `A/B` | `uip maestro bpmn init B --path A/B --output json` |
+   | `A/B/C.bpmn` (file named apart from its directory) | `A/B` | `uip maestro bpmn init C --path A/B --output json` |
    | nothing named | `Data.Path` | `uip maestro bpmn init <Name> --output json`, as above |
 
-   `init` always creates a directory named after the project inside the directory it runs in, so never run `init X` in the directory that should hold `X.bpmn`: the first row scaffolds in a temporary directory and copies the files, dotfiles included, into the workspace root.
-   A deeper path works like the third row: `mkdir -p` the parent of the project directory and run `init` there.
-   Drop `--skip-solution-registration` only when the directory `init` runs in, or a parent, already holds a `.uipx` and the project belongs in that solution.
-   When the file name differs from its directory (`A/B/C.bpmn`), `init B` writes `B.bpmn`, so ask the user which of the two to rename before choosing.
-   Before writing anything, check that the requested path now exists (`ls A/B/B.bpmn`, or `ls X.bpmn project.uiproj` for the first row), and compile to that path, not to a copy elsewhere.
+   `--path` uses the directory as given and creates it, and any missing parents, when it does not exist; `init` writes `<Name>.bpmn` there, named after the project, not after the directory.
+   It scaffolds no `<Name>Solution`: the project is registered in a solution only when a parent directory already holds a `.uipx`, and `--skip-solution-registration` stops even that when the project does not belong in it.
+   The directory may already hold unrelated files (`package.json`, `.git`, notes), but `init` refuses one that holds a project file (`project.uiproj`, `project.json`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json` or `<Name>.bpmn`, matched case-insensitively).
+   That refusal means a project is already there: if it is the process the user means, edit it as an existing process (step 8), and ask before passing `--force`, which overwrites those files.
+   `init` refuses a directory holding a `.uipx` even with `--force`, because a project goes in a folder below its solution file, not beside it.
+   Check that `Data.Path` is the requested project directory before writing anything, and compile to `<Project>/<Name>.bpmn`, not to a copy elsewhere.
    A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.88.1 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version).
    Write `<Name>.bpmn.ts` in the workspace root (the directory you started in), not inside the solution or project folder, even when you ran `init` from the solution folder.
@@ -101,9 +103,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    the diagram out first (`format`) or it fails with `MISSING_DI_SHAPE`, and it needs an
    init-generated project — with no `project.uiproj` it has nothing to regenerate.
 <!--skill-flavor:workflow-merge:start-->
-8. Use the merge pipeline for targeted edits to an existing process: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
-   Every scratch file (the baseline, the edited and merged `.bpmn`, a probe, a second scaffold) goes in a directory made by `mktemp -d`, never in the workspace.
-   The workspace ends holding only the target `.bpmn`, its project files and `<Name>.bpmn.ts`.
+8. Edit an existing process with `merge`, which takes the edited source and the original: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
+   No `.bpmn` other than the target goes in the workspace: no intermediate copy, probe or second scaffold.
 <!--skill-flavor:workflow-merge:end-->
 
 ## Draft first
@@ -150,7 +151,7 @@ Match one name — do not read either end to end — then read the span it gives
 | A connector step in a draft with no connection (offline, or no real ids allowed) | `connector` with symbolic bindings, or a bare `task` | [Unresolved connector draft](references/connectors.md#7-draft-with-an-unresolved-connector) | — |
 | Data Fabric records and file fields | `dataService` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/ContractRegistry.bpmn.ts` |
 | Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
-| Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
+| Existing BPMN | `bpmn decompile`, `check`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 | Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
 | Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | `uip maestro bpmn eval` | [Evaluate](references/evaluate.md) | — |
