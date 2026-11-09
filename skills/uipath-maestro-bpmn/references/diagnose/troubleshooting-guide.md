@@ -107,8 +107,7 @@ Return a concise diagnosis containing:
   `uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json`). Name the read; do not run it now. If no repair is needed, the read alone is the next
   action.
 <!--skill-flavor:safe-next-read:end-->
-
-Retry, cancel, pause, resume, migrate, cursor movement, debug, process run, upload, publish, and deploy are never the next action. If one may fit later, name it on its own line as an Operate decision outside this diagnosis. When the request says not to ask for approval, do not.
+  Retry, cancel, pause, resume, migrate, cursor movement, debug, process run, upload, publish, and deploy are never the next action. If one may fit later, name it on its own line as an Operate decision outside this diagnosis. When the request says not to ask for approval, do not.
 
 ## CLI command reference
 

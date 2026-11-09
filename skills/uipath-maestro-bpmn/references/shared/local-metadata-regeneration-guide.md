@@ -6,11 +6,13 @@ Use this guide when BPMN source changes and local package metadata must be refre
 
 Run `uip maestro bpmn refresh <project-path>` as the authoritative, offline, provider-neutral source-to-derived-state boundary. It requires exactly one project-root `.bpmn`, atomically regenerates the complete package metadata set, and neither logs in, discovers a tenant, invokes a connector, nor resolves an account; it consumes only identities authored in the supported BPMN contract.
 
-## Ownership and project contract
+## Ownership
 
 - `.bpmn` is authoritative for process structure, root variables and bindings, entry point IDs, mappings, diagrams, and documented non-Integration-Service UiPath XML.
 - `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` are derived unless a CLI contract explicitly marks a field user-authored.
 - Connector-backed or dynamically schematized `Intsvc.*` payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources. Confirmed plain connectionless HTTP follows the documented pass-2 authoring recipe.
+
+## Current Local Project Contract
 
 **`uip maestro bpmn refresh <project-path>` is the only supported regeneration command.** It rewrites all four derived package files and materializes `Intsvc.*` connection bindings (activities and `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` triggers) in `bindings_v2.json` as `Connection` resources: triggers use `connectionId`; activities use `connection`. `update-metadata` is **deprecated**, never materializes connection bindings, and can make a trigger pass `validate` but fault at runtime with a null connection (error 102010). For V2 connector nodes it also writes each trigger start's `EventTrigger` and `Property` resources and bound picker resources, and makes each V2 trigger start an entry point—see [v2-connector-nodes.md](../v2-connector-nodes.md#3-refresh-validate-debug).
 
@@ -31,7 +33,7 @@ uip maestro bpmn init <ProjectName> --output json
 
 Edit the returned `Data.Path`, preserve generated metadata, and do not translate `project.uiproj`, `operate.json`, entry-point, or package-descriptor fields from another UiPath project type. If the CLI is unavailable, use the exact placeholder-safe fallback below, changing only project, file, and start-event names.
 
-## Regeneration inputs and workflow
+## Regeneration Inputs
 
 Local regeneration reads:
 
@@ -42,6 +44,8 @@ Local regeneration reads:
 - The project/start-event path from `operate.json.main` or the selected BPMN and root manual start event.
 
 Do not derive metadata from stale package files; use them only for drift comparison or CLI-supported enrichment input.
+
+## Safe Local Workflow
 
 1. Edit `.bpmn` first.
 2. Check the source itself for well-formed XML, entry-point IDs, variables, mappings, and binding references—not the diagram; step 3 generates it. Do not run `uip maestro bpmn validate` yet: it cross-checks `entry-points.json` and reports the pre-refresh error if a start event was renamed. Run it in step 5, after refresh.

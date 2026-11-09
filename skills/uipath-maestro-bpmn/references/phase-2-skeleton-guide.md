@@ -8,10 +8,10 @@ Author blank boxes, arrows, and labels; show them to the user and stop for appro
 
 A skeleton is an approval-ready phase-4 shape, never a working process.
 
-1. Make every activity a bare `<bpmn:task>` with only `id` and `name`; omit `uipath:activity`, `uipath:event`, payloads, resource identities, and connections.
-2. Do not use `serviceTask` or `sendTask`; their icons (gear, envelope) imply a decided product choice. Keep every box blank.
-3. Make no new registry calls: do not run `registry pull`, `search`, or `get`; `list` already ran in 1a. Do not choose element types yet. Box kinds come from the list 1a already read.
-4. Use genuine `bpmn:startEvent` (with plain `bpmn:timerEventDefinition` or `bpmn:messageEventDefinition` when applicable), `bpmn:exclusiveGateway`, `bpmn:parallelGateway`, `bpmn:sequenceFlow`s, and end events. These need no registry call; phase 4 wires the trigger. Converge every branch on one end event unless the request names separate outcomes. Branches converge through a join gateway, never as two flows into the end event (`FAKE_JOIN`, see [structural-bpmn.md](structural-bpmn.md#gateways)). A skeleton returns no public result, so the shared-result end-event exception in that file's validation checklist does not apply here. Do not simplify the branch structure.
+1. **Every activity is a bare `<bpmn:task>`** with only `id` and `name`; omit `uipath:activity`, `uipath:event`, payloads, resource identities, and connections.
+2. **Do not use `serviceTask` or `sendTask`.** Their icons (gear, envelope) imply a decided product choice. Keep every box blank.
+3. **Make no new registry calls.** Do not run `registry pull`, `search`, or `get`; `list` already ran in 1a. Do not choose element types yet. Box kinds come from the list 1a already read.
+4. **Control flow is real.** Use genuine `bpmn:startEvent` (with plain `bpmn:timerEventDefinition` or `bpmn:messageEventDefinition` when applicable), `bpmn:exclusiveGateway`, `bpmn:parallelGateway`, `bpmn:sequenceFlow`s, and end events. These need no registry call; phase 4 wires the trigger. Converge every branch on one end event unless the request names separate outcomes. Branches converge through a join gateway, never as two flows into the end event (`FAKE_JOIN`, see [structural-bpmn.md](structural-bpmn.md#gateways)). A skeleton returns no public result, so the shared-result end-event exception in that file's validation checklist does not apply here. Do not simplify the branch structure.
 5. **Label each box with the action first and the element's toolbox kind last,
    in brackets** — `Extract invoice data [RPA workflow]`, `Manager review
    [Action app]`, `Classify ticket [Agent]`, `Notify the team [Slack]`. Pick the box's type from the 1a
@@ -23,8 +23,8 @@ A skeleton is an approval-ready phase-4 shape, never a working process.
    a Studio Web user would most likely choose for that step and label the box
    with it; the user changes it at the gate if they disagree. The label
    carries the meaning a blank box cannot.
-6. Name each branch flow with its outcome (`approve`, `reject`, `escalate`) in its `name` attribute. Leave the name off the flows leaving a parallel gateway: every branch runs, so a name would read as a choice.
-7. Declare variables and gateway conditions for real; routing basis is part of approval. See [Gateways cost more than boxes](#gateways-cost-more-than-boxes).
+6. **Name each branch flow** with its outcome (`approve`, `reject`, `escalate`) in its `name` attribute. Leave the name off the flows leaving a parallel gateway: every branch runs, so a name would read as a choice.
+7. **Declare variables and gateway conditions for real.** Routing basis is part of approval. See [Gateways cost more than boxes](#gateways-cost-more-than-boxes).
 
 The kind is enough for a label; the type's template is resolved in phase 4.
 The resource each box will use is looked up at 3c.
@@ -78,9 +78,9 @@ Treat validation as clean when there are zero errors. Act only on error-severity
 Run phases 0 and 1 first; 2a creates or adopts the project (see [SKILL.md](../SKILL.md#workflow)). Then:
 
 - **2b Author the skeleton** by writing the `.bpmn` that `init` generated in this run (`<Name>.bpmn` at 2a's `Data.Path`) whole, in one Write, instead of patching it with a series of edits. Only that fresh starter is written whole; a downloaded or brownfield `.bpmn` is edited in place. Preserve the generated start event's `id`, its `<uipath:entryPointId>`, and the four generated JSON files. **Do not rename the start event**: its name feeds the entry-point schema, and renaming it makes `refresh` rewrite `entry-points.json` for no benefit.
-- **2c** Run `uip maestro bpmn format <file>.bpmn` to generate the diagram; without it no box renders (Rule 5).
-- **2d** Run `uip maestro bpmn validate <file>.bpmn --output json`; it must reach `Status: Valid`. This checks import readiness, not design; act on errors and ignore expected warnings. Write no file for the result: no notes, log, or memory file (Rule 20). The reply carries it.
-- **2e** From the solution directory, run `uip maestro bpmn refresh <project-path> --output json`. `refresh` validates internally and writes nothing while validation fails, so 2d must pass first. With the preserved start event it reports `WrittenFiles: []`, the drift check passing rather than a no-op to skip. Skip 2e for a trigger-start skeleton (timer or message start): `refresh` fails without a manual start, as in 4c.
+- **2c `uip maestro bpmn format <file>.bpmn`** generates the diagram; without it no box renders (Rule 5).
+- **2d `uip maestro bpmn validate <file>.bpmn --output json`** must reach `Status: Valid`. This checks import readiness, not design; act on errors and ignore expected warnings. Write no file for the result: no notes, log, or memory file (Rule 20). The reply carries it.
+- **2e `uip maestro bpmn refresh <project-path> --output json`** — run it from the solution directory. `refresh` validates internally and writes nothing while validation fails, so 2d must pass first. With the preserved start event it reports `WrittenFiles: []`, the drift check passing rather than a no-op to skip. Skip 2e for a trigger-start skeleton (timer or message start): `refresh` fails without a manual start, as in 4c.
 - **2f Make the shape visible.**
 <!--skill-flavor:make-shape-visible:start-->
   When upload is allowed, run `uip solution upload <SolutionDir> --output json`; 3c shows the returned `Data.DesignerUrl`. Do not ask first: a build request authorizes this upload, and per-iteration consent defeats the mode. Confirm only when adopting a solution the agent did not create, because `upload` overwrites the cloud solution matching the local `.uipx` SolutionId; confirm at 2a. Skip upload when forbidden.

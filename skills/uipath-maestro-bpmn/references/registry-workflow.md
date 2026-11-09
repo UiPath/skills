@@ -93,15 +93,12 @@ Use this table, not inferred names; confirm with `uip is resources describe <con
 Operation names are connector names, not activity verbs: Get Entity Record is `List`; Delete and Query are `Create`; do not change them. `<EntityName>` is the `Custom: yes` tenant entity from `uip is resources list`; its `RequestFields` are columns. Do not use `CreateEntityRecordCurated` or `UpdateEntityRecordV2` (empty `RequestFields`). File rows require `fieldName`; do not use their `V2` counterparts.
 `QueryEntityRecordsCurated` reports an empty `RequestFields` until you pass the entity:
 
-For Query, run:
-
 ```bash
 uip is resources describe <connectorKey> <object> --connection-id <id> \
     --operation Create --field entityName=<EntityName> --output json
 ```
 
-Put `_sortFieldName` only in the body and always set `isAscending`; omission sorts ascending regardless of `DefaultValue`.
-`RequestFields` then lists `_sortFieldName`. Send it only in the body; as a query parameter it is ignored.
+`RequestFields` then lists `_sortFieldName`. Send it only in the body; as a query parameter it is ignored. Always set `isAscending`; omission sorts ascending regardless of `DefaultValue`.
 
 V2 `--input-details` accepts a FilterTree in `filter` and compiles it to `queryExpression` ([reference](v2-connector-nodes.md#--input-details-reference)). V1 requires CEQL in `queryExpression`, even for a requested FilterBuilder tree: operators are `=`, `!=`, `<`, `<=`, `>`, `>=`, `LIKE`, `NOT LIKE`, `IN`, `NOT IN`, `IS NULL`, `IS NOT NULL`, joined by `AND`/`OR`; contains is `LIKE '%<text>%'`. A tree fails with `400 Error parsing query`. Put a requested tree in context `metadata` at `activityPropertyConfiguration.configuration.essentialConfiguration.savedFilterTrees.queryExpression`; summarize that runtime uses CEQL.
 
@@ -113,7 +110,6 @@ V2 `--input-details` accepts a FilterTree in `filter` and compiles it to `queryE
 ```
 
 For unlisted Data Fabric operations, drop display names ending `(Preview)` or `(Deprecated)`, prefer paths beginning `/v2/`; folder entities are the exception: only `*_V3` objects qualify and must be V2 ([v2-connector-nodes.md](v2-connector-nodes.md#1-get-the-element)).
-A **folder** entity is the exception: only the `*_V3` objects pick one, so author those as V2 elements — see [v2-connector-nodes.md](v2-connector-nodes.md#1-get-the-element).
 
 `send-mail-v2` defaults `saveAsDraft=true`. For V2, pass `"queryParameters":{"saveAsDraft":false}` in `--input-details`; `registry get` writes multipart metadata. For V1, emit `saveAsDraft` as a `target="query"` input set false, keep the message in the single `target="body"` input (its `body` parameter is `multipart`), and set context `metadata` to `{"inputMetadata":{"type":"multipart","multipart":{"bodyFieldName":"body"}}}`; otherwise the body is JSON.
 
@@ -129,7 +125,7 @@ For every `Intsvc.*` type whose `inputTarget` is `body`—`ActivityExecution`, `
 <uipath:input name="body" type="json" target="body"><![CDATA[{"fields":{"project":{"key":"=vars.Var_TargetProject"},"issuetype":{"id":"=vars.Var_IssueTypeId"},"summary":"=js:'Created from Maestro at ' + vars.Var_RunLabel}}]]></uipath:input>
 ```
 
-Take every body name from `RequestFields` in `uip is resources describe`, not provider documentation. `=vars.<id>` and `=js:` resolve inside that CDATA, so build the body from variables rather than literals. In XML attributes escape `=js:` `&&` as `&amp;&amp;` and `<` as `&lt;`; `>` needs no escaping; CDATA needs none. Nest dotted names: `fields.project.key` becomes `{"fields":{"project":{"key":…}}}`.
+Take every body name from `RequestFields` in `uip is resources describe`, not provider documentation; a vendor-doc name passes `validate` and `pack` and is then silently omitted from the request. `=vars.<id>` and `=js:` resolve inside that CDATA, so build the body from variables rather than literals. In XML attributes escape `=js:` `&&` as `&amp;&amp;` and `<` as `&lt;`; `>` needs no escaping; CDATA needs none. Nest dotted names: `fields.project.key` becomes `{"fields":{"project":{"key":…}}}`.
 
 This round-trips: Studio Web sets `isSplitInputs: false` with one `jsonBody` at `target="body"` (`origin/develop:src/services/serialization/design-schema/intsvc.activityExecution.beta.design-schema.json`); the Jira fixture at `origin/develop:src/services/serialization/xml-serialization.test.ts:706` is one nested body; copy its body shape, not its context inputs (its `operation="CreateIssue"` is wrong). The serializer preserves existing separate inputs but never generates them. Treat manifest `InputNotes` directing one input per field as stale.
 
@@ -261,6 +257,8 @@ Prefer `IsCurated: Yes`. If none covers the event, use generic `CREATED`/`UPDATE
 <uipath:input name="body" type="json" target="body"><![CDATA[{"filters":{"expression":"(parentFolderId == '<INBOX_ID>') && (contains(subject, 'Invoice'))"},"queryParams":{"parentFolderId":"<INBOX_ID>"}}]]></uipath:input>
 ```
 
+Curated pairs already confirmed:
+
 | Connector key | Trigger operation | Object |
 | --- | --- | --- |
 | `uipath-microsoft-outlook365` | `EMAIL_RECEIVED` | `Message` |
@@ -270,11 +268,11 @@ Prefer `IsCurated: Yes`. If none covers the event, use generic `CREATED`/`UPDATE
 
 `uip is triggers` and `registry get` uppercase operations; mixed-case Test Manager operations `Created`, `Updated`, `Finished` return HTTP 404 / `IS enrichment error` in CLI 1.204.0 and have no reachable CLI trigger.
 
-Hand-authored connector triggers remain **draft** until CLI supplies trigger properties, connection binding, and schemas. V1 `EventTrigger`/`WaitForEvent` use context `connectionId` = `=bindings.<bindingId>`; activities use `connection`; V2 uses `connection` for all, see [v2-connector-nodes.md](v2-connector-nodes.md). Timer has no connection. After binding, run `uip maestro bpmn format <file.bpmn>`; for an existing diagram see [Keep the user's diagram](../SKILL.md#keep-the-users-diagram), then run `uip maestro bpmn refresh <project>`. Use `refresh`, not deprecated `update-metadata`; unmaterialized connections pass `validate` but fault null with 102010. Trigger-start drafts skip refresh ([SKILL.md](../SKILL.md) step 3); package-ready/upload/debug/publish/deploy deliverables run it.
+Hand-authored connector triggers remain **draft** until CLI supplies trigger properties, connection binding, and schemas. V1 `EventTrigger`/`WaitForEvent` use context `connectionId` = `=bindings.<bindingId>`; activities use `connection`; V2 uses `connection` for all, see [v2-connector-nodes.md](v2-connector-nodes.md). Timer has no connection. After binding, run `uip maestro bpmn format <file.bpmn>`; for an existing diagram see [Keep the user's diagram](../SKILL.md#keep-the-users-diagram) instead of running `format`, then run `uip maestro bpmn refresh <project>`. Use `refresh`, not deprecated `update-metadata`; unmaterialized connections pass `validate` but fault null with 102010. Trigger-start drafts skip refresh ([SKILL.md](../SKILL.md) step 3); package-ready/upload/debug/publish/deploy deliverables run it.
 
 ## Connectionless vs connector HTTP
 
-Use a connector activity (`Intsvc.ActivityExecution`) when the call goes through a tenant connection, a dynamic connector schema, or a connector object operation; keep it **draft** until enriched. Explicit blockers are **connection binding**, **dynamic schemas**, and generated package metadata (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`); do not hand-author these (§3).
+Use a connector activity (`Intsvc.ActivityExecution`) when the call goes through a tenant connection, a dynamic connector schema, or a connector object operation; keep it **draft** until enriched. CLI-owned blockers, which must be resolved before upload or run and named explicitly in boundary notes, are **connection binding**, **dynamic schemas**, and generated package metadata (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`); do not hand-author these (§3).
 
 HTTP always uses `Intsvc.UnifiedHttpRequest`, whether `manual` or `connector`. Build it with `uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --input-details '<request>'` and add `--connection-id` for connector mode. A service with no connector of its own goes through a `uipath-uipath-http` connection in connector mode; never author legacy `Intsvc.HttpExecution` or a connector's `httpRequest` object for a new node. See [v2-connector-nodes.md](v2-connector-nodes.md#http-requests).
 
@@ -286,7 +284,7 @@ Summary status: **executable** (activity, inputs, output variable, downstream ma
 2. Declare `<uipath:variables>` variables, each with `elementId`, and `<uipath:bindings>`.
 3. Paste each `registry get` `xmlTemplate` except SKILL.md rules 6 and 18; fill placeholders and wire edges.
 4. Author sequence flows, gateway conditions/defaults, event definitions, boundary events, subprocess/call-activity containers, and multi-instance markers.
-5. After final source edit, generate `bpmndi:BPMNDiagram`: run `uip maestro bpmn format <file.bpmn>`; for an existing diagram see [Keep the user's diagram](../SKILL.md#keep-the-users-diagram).
+5. After final source edit, generate `bpmndi:BPMNDiagram`: run `uip maestro bpmn format <file.bpmn>`; for an existing diagram see [Keep the user's diagram](../SKILL.md#keep-the-users-diagram) instead of running `format`.
 6. Validate using [structural-bpmn.md#validation](structural-bpmn.md#validation); rerun step 5 after every later source edit because `validate` errors on nodes without shapes.
 
 ## OOTB extension types (29, login-free)

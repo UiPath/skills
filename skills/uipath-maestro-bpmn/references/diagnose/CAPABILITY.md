@@ -15,15 +15,15 @@ Post-run investigation for BPMN Process Orchestration runs. Diagnose owns the pr
 
 ## Critical rules
 
-1. **Investigate in priority order:** context, incidents, runtime variables, deployed BPMN asset, element executions/cursors, generated package files, then traces. For failed BPMN run triage, always run `uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json` before writing the diagnosis, even when incidents and variables reveal the likely root cause.
-2. **Include folder context on every instance and incident read:** instance commands require `--folder-key` or `-f`, and `incident get` requires `--folder-key`.
-3. **Use the CLI as the diagnostic interface:** run `uip maestro bpmn ... --output json` reads. If mock or fixture files exist in a test harness, do not read them by any means—including `cat`, `less`, `head`, `tail`, `grep`, `jq`, `sed`, file-read tools, or editor tools—on a `mocks/`, `fixtures/`, or response-cache path unless explicitly debugging the mock harness. Capturing a CLI response to your own file and reading it back is allowed; it is the CLI's own output.
-4. **Fetch deployed BPMN when local source may differ;** never assume the working tree matches what ran.
-5. **Map failures to BPMN element IDs** to identify the source node, gateway, event, sequence flow, or extension needing Author work.
-6. **Separate symptoms from fix ownership:** BPMN structure and mappings belong in Author; Integration Service enrichment and generated JSON come from CLI generation; folder/process/release choices belong to cloud configuration.
-7. **Redact private runtime data**—tenant, user, connection, folder, URL, payload, and secret values—from summaries.
-8. **Do not mutate while diagnosing:** retry, cancel, migrate, and cursor movement are Operate actions requiring explicit user consent after root cause analysis. Diagnose reads; Operate mutates after consent.
-9. **Use one literal command per diagnostic read, never a loop:** write each read in full, e.g. `uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json`. No loop, function, alias, or variable may replace the verb, ID, or folder key: the command log records what was read. To batch, chain literal reads in one Bash call, one per line.
+1. **Investigate in priority order** - context, incidents, runtime variables, deployed BPMN asset, element executions/cursors, generated package files, then traces. For failed BPMN run triage, always run `uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json` before writing the diagnosis, even when incidents and variables reveal the likely root cause.
+2. **Always include folder context on instance and incident reads** - instance commands require `--folder-key` or `-f`, and `incident get` requires `--folder-key`.
+3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. If mock or fixture files exist in a test harness, do not read them by any means—including `cat`, `less`, `head`, `tail`, `grep`, `jq`, `sed`, file-read tools, or editor tools—on a `mocks/`, `fixtures/`, or response-cache path unless explicitly debugging the mock harness. Capturing a CLI response to your own file and reading it back is allowed; it is the CLI's own output.
+4. **Fetch deployed BPMN when local source may differ** - never assume the working tree matches what ran.
+5. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow, or extension needing Author work.
+6. **Separate runtime symptoms from ownership of the fix** - BPMN structure and mappings belong in Author; Integration Service enrichment and generated JSON come from CLI generation; folder/process/release choices belong to cloud configuration.
+7. **Do not expose private runtime data** - redact tenant, user, connection, folder, URL, payload, and secret values from summaries.
+8. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions requiring explicit user consent after root cause analysis. Diagnose reads; Operate mutates after consent.
+9. **One literal command per diagnostic read, never a loop** - write each read in full, e.g. `uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json`. No loop, function, alias, or variable may replace the verb, ID, or folder key: the command log records what was read. To batch, chain literal reads in one Bash call, one per line.
 
 ## Workflow
 
