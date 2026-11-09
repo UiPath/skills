@@ -38,10 +38,6 @@ never `node -e ... fs.*`.
 either type stays unresolved as a placeholder — never record it as
 `absent` and never offer to create it.
 
-Non-creatable types never get `Create missing resources inline` in the
-empty-lookup gate. Only `agent`, `api-workflow`, and `business-rule` may
-offer that option.
-
 ## Steps
 
 1. `uip login status --output json`, then `uip maestro case registry pull --output json`.
