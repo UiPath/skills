@@ -70,7 +70,7 @@ uip maestro bpmn registry get <extensionType> --output json
 
 The placeholders you fill are the obvious ones: `{id}`, `{name}`,
 `{incomingEdge}`, `{outgoingEdge}`, `{varId}` (the output variable id), plus the
-per-context-field placeholders (`{releaseKey}`, `{queueName}`, `{appId}`, …) and
+per-context-field placeholders (`{releaseKey}`, `{queueName}`, `{nameBindingId}`, …) and
 the body CDATA. Leave the structural placeholders (`{incomingEdge}` /
 `{outgoingEdge}`) wired to the sequence-flow ids you create in
 [structural-bpmn.md](structural-bpmn.md).
@@ -433,7 +433,7 @@ A node that targets a cloud resource carries a binding. The `bindingInfo` on the
 extension type tells you the binding shape; the concrete value comes from
 discovery or the user.
 
-- **Resource bindings** (`bindingInfo.resource` = `process` / `queue`): the
+- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` / `app`): the
   context field named by `bindingInfo.contextField` (e.g. `releaseKey`,
   `queueName`) holds the resource key (`bindingInfo.propertyAttribute`,
   usually `Key`). Resolve the real key with `registry search` / discovered
