@@ -44,6 +44,7 @@ For **Maestro Automate**, run `( cd "<Solution>" && uip maestro flow init <Name>
 When `<Solution>/<Name>/` existed before this turn, skip `init`: edit its `<Name>.flow` through [Editing an existing flow](#editing-an-existing-flow), never by compiling an earlier turn's source over it. Keep `.flow-sdk/<Name>.flow.ts`, the `<Name>` directory, and `<Name>.flow` aligned. Exactly one emitted `<Name>.flow` may exist at `<Solution>/<Name>/<Name>.flow`; never put a second copy at the workspace root. Root emission is only for packaged-SDK local gates, which do not scaffold; choose [Lifecycle](#lifecycle) first and do not mix loops.
 
 See [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for installation checks and failure handling.
+**Install the SDK first, once per machine:** `npm install -g @uipath/maestro-builder-sdk`; skip it when already installed, and see [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for the checks and failure handling.
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
