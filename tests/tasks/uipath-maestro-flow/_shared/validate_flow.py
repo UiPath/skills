@@ -9,8 +9,7 @@ Usage (from a task's run_command, cwd = sandbox root):
 With no arguments the flows are discovered (below). Pass explicit paths when a
 brownfield fixture ships a second Flow project next to the one under test, which
 discovery would rightly refuse as ambiguous. ``--no-warnings`` also fails a flow
-that validates with ``Data.Warnings`` set, except the canonical-layout warning on
-Studio Web's project naming of ``new.flow``.
+that validates with ``Data.Warnings`` set.
 
 Why this exists — a hardcoded ``<Name>/<Name>/<Name>.flow`` path in a success
 criterion is brittle: ``uip maestro flow init <Name>`` scaffolds a
@@ -37,8 +36,8 @@ criterion budget instead, with a diagnosable message.
 from __future__ import annotations
 
 import json
-import os
 import re
+import os
 import subprocess
 import sys
 import time
@@ -121,21 +120,34 @@ def _attempt_cap(remaining: float, attempts_left: int) -> float:
     return max(_MIN_ATTEMPT_SECONDS, remaining / attempts_left)
 
 
-# `flow validate` reports its warnings as one string: a "N warning(s):" header,
-# then one "  - [<path>] <message>" line per warning.
-_WARNINGS_HEADER = re.compile(r"^\d+ warning\(s\):$")
-
-# The rule asking for <solution>/<projectName>/<projectName>.flow. Studio Web's
-# `new.flow` never satisfies it.
 _CANONICAL_LAYOUT_WARNING = "does not match canonical layout"
+"""The warning `flow validate` gives a ``.flow`` not named after its project directory."""
+_WARNING_COUNT = re.compile(r"^\s*(\d+) warning\(s\):\s*$")
+"""The header line of a ``Data.Warnings`` string: how many ``- `` items follow."""
 
 
-def _warnings(stdout: str, flow: str = "") -> str:
+def _only_layout_warnings(warnings: str) -> bool:
+    """True when the count header matches its items and every item is the canonical-layout warning.
+
+    Any other line (another warning, a different bullet, a wrapped continuation) keeps the warnings.
+    """
+    lines = [line for line in warnings.splitlines() if line.strip()]
+    count = _WARNING_COUNT.match(lines[0]) if lines else None
+    items = lines[1:]
+    return (
+        count is not None
+        and int(count.group(1)) == len(items) > 0
+        and all(item.lstrip().startswith("- ") and _CANONICAL_LAYOUT_WARNING in item for item in items)
+    )
+
+
+def _warnings(stdout: str, flow: str) -> str:
     """``Data.Warnings`` of a ``flow validate --output json`` envelope, or ``""``.
 
     Output that is not a JSON envelope is reported as a warning, since a clean
-    result cannot be read from it. On a ``new.flow`` the canonical-layout
-    warning is dropped and every other warning is kept.
+    result cannot be read from it. For Studio Web's ``new.flow`` the
+    canonical-layout warning is dropped: Studio Web always names the main file
+    that, so the warning only says which host made the project.
     """
     try:
         envelope = json.loads(stdout)
@@ -143,19 +155,10 @@ def _warnings(stdout: str, flow: str = "") -> str:
         return f"no JSON envelope in stdout: {stdout.strip()[:500]!r}"
     data = envelope.get("Data") if isinstance(envelope, dict) else None
     warnings = data.get("Warnings") if isinstance(data, dict) else None
-    if not warnings:
+    if isinstance(warnings, str) and Path(flow).name == STUDIO_WEB_FLOW_FILE and _only_layout_warnings(warnings):
+        print(f"note: ignoring the canonical-layout warning for Studio Web's {flow}", file=sys.stderr)
         return ""
-    if not isinstance(warnings, str):
-        return json.dumps(warnings)
-    studio_web = os.path.basename(flow) == STUDIO_WEB_FLOW_FILE
-    kept = [
-        line
-        for line in warnings.splitlines()
-        if line.strip()
-        and not _WARNINGS_HEADER.match(line.strip())
-        and not (studio_web and _CANONICAL_LAYOUT_WARNING in line)
-    ]
-    return json.dumps("\n".join(kept)) if kept else ""
+    return json.dumps(warnings) if warnings else ""
 
 
 def _validate(flow: str, deadline: float, budget: int, no_warnings: bool = False) -> int:

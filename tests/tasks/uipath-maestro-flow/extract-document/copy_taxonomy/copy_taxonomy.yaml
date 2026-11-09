@@ -1,0 +1,106 @@
+task_id: skill-flow-extract-document-copy-taxonomy
+description: >
+  Integration: the user copies the taxonomy of one Extract document node to
+  another in the same flow. Tests that the target ends up with the source's
+  whole taxonomy (prompt, a nested repeating group, fields, types, a Choice and
+  instructions) and that only the taxonomy moves: the target keeps its own
+  label, file input, extraction source and model settings, and takes no
+  processorKey from the source. Ids are not graded: the guide does not say whether a copy keeps the
+  source's ids or gets new ones.
+
+  No `flow debug`: a CLI-authored Extract document node extracts nothing
+  until the flow is saved once in Studio Web.
+
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/BillingDocs
+      mount_point: BillingDocs
+reference:
+  directory: ../..
+
+initial_prompt: |
+  In my BillingDocs flow, copy the taxonomy of the Extract Invoice node to the
+  Extract Credit Note node, as it is. Make sure the flow validates.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "Extract Credit Note's taxonomy equals Extract Invoice's: prompt, groups, nesting, fields, types, the Payment Status Choice, instructions and $defs"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name BillingDocs --node-id extractCreditNote1 copies
+      $REFERENCE_DIR/extract-document/_fixtures/BillingDocs/BillingDocs/BillingDocs.flow extractInvoice1
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Only the taxonomy moved: Extract Credit Note keeps its label, file input, extraction source, model settings and the config copy of them"
+    path: "BillingDocs/BillingDocs/BillingDocs.flow"
+    assertions:
+      - expression: "nodes[?id=='extractCreditNote1'] | [0].display.label"
+        operator: equals
+        expected: "Extract Credit Note"
+      - expression: "nodes[?id=='extractCreditNote1'] | [0].inputs.fileRef"
+        operator: equals
+        expected: "=js:$vars.start.output.creditNote"
+      - expression: "nodes[?id=='extractCreditNote1'] | [0].inputs.source"
+        operator: equals
+        expected: "1ebecee2-69ff-4bfd-9b0f-4cfc60d9d32b"
+      - expression: "nodes[?id=='extractCreditNote1'] | [0].inputs.modelConfig.model_version"
+        operator: equals
+        expected: "gemini_2_5_pro"
+      - expression: "nodes[?id=='extractCreditNote1'] | [0].inputs.modelConfig.input_config"
+        operator: equals
+        expected: "table"
+      - expression: "nodes[?id=='extractCreditNote1'] | [0].inputs.schemaDocument.config.model.version"
+        operator: equals
+        expected: "gemini_2_5_pro"
+      - expression: "nodes[?id=='extractCreditNote1'] | [0].inputs.schemaDocument.config.\"pre-processing\""
+        operator: equals
+        expected: "table"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Extract Credit Note has no processorKey: a copied key would name Extract Invoice's processor"
+    path: "BillingDocs/BillingDocs/BillingDocs.flow"
+    assertions:
+      - expression: "length(nodes[?id=='extractCreditNote1' && inputs.processorKey])"
+        operator: equals
+        expected: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every node but Extract Credit Note, Extract Invoice included, and every edge, variable and definition, is unchanged"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/BillingDocs/BillingDocs --project BillingDocs/BillingDocs --changed-node extractCreditNote1"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes with no warnings: the copy is well formed and every copied group and field carries an id"
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+  task_timeout: 900

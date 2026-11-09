@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingDocs",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7083d3d8-7617-45c7-a84f-9fc95d15b06b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BillingDocs"
+    },
+    "locks": [],
+    "key": "a2b08b90-6826-411d-b630-9a5c3becb7f9",
+    "files": []
+  }
+}

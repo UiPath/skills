@@ -148,6 +148,56 @@ def test_no_warnings_fails_a_flow_that_validates_with_warnings(monkeypatch, caps
     assert "a.flow validated with warnings" in capsys.readouterr().err
 
 
+def _layout_warning(flow: str, project: str) -> str:
+    """The canonical-layout warning as `flow validate` words it (coder_eval run adhoc-2026-11-06_10-38-56)."""
+    stem = flow.rsplit("/", 1)[-1].removesuffix(".flow")
+    return json.dumps({"Result": "Success", "Data": {"Status": "Valid", "Warnings": (
+        f'1 warning(s):\n  - [(workflow)] .flow file at /work/{flow} does not match canonical layout. '
+        f'Expected the .flow basename ("{stem}") to match its parent directory name ("{project}"). '
+        "The canonical layout is <solution>/<projectName>/<projectName>.flow."
+    )}})
+
+
+def test_no_warnings_passes_studio_webs_new_flow_with_only_the_layout_warning(monkeypatch):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    _stub(monkeypatch, [_cp(0, _layout_warning(flow, "InvoiceReader"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 0
+
+
+def test_no_warnings_still_fails_the_layout_warning_on_another_file_name(monkeypatch, capsys):
+    flow = "InvoiceReader/InvoiceReader/Draft.flow"
+    _stub(monkeypatch, [_cp(0, _layout_warning(flow, "InvoiceReader"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert "validated with warnings" in capsys.readouterr().err
+
+
+def _warned(flow: str, warnings: str) -> str:
+    return json.dumps({"Result": "Success", "Data": {"Status": "Valid", "Warnings": warnings}})
+
+
+def test_no_warnings_still_fails_studio_webs_new_flow_with_another_warning_beside_the_layout_one(monkeypatch, capsys):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    layout = json.loads(_layout_warning(flow, "InvoiceReader"))["Data"]["Warnings"].split("\n", 1)[1]
+    warnings = f"2 warning(s):\n{layout}\n  - [nodes[map].inputs.script] [EXPRESSION_DIAGNOSTIC] Property 'Text' does not exist"
+    _stub(monkeypatch, [_cp(0, _warned(flow, warnings))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert "EXPRESSION_DIAGNOSTIC" in capsys.readouterr().err
+
+
+def test_no_warnings_still_fails_studio_webs_new_flow_when_the_count_names_more_warnings_than_it_lists(monkeypatch):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    layout = json.loads(_layout_warning(flow, "InvoiceReader"))["Data"]["Warnings"].split("\n", 1)[1]
+    _stub(monkeypatch, [_cp(0, _warned(flow, f"2 warning(s):\n{layout}"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 1
+
+
+def test_no_warnings_says_when_it_drops_the_layout_warning(monkeypatch, capsys):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    _stub(monkeypatch, [_cp(0, _layout_warning(flow, "InvoiceReader"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 0
+    assert "ignoring the canonical-layout warning" in capsys.readouterr().err
+
+
 def test_no_warnings_passes_a_clean_flow(monkeypatch):
     _stub(monkeypatch, [_cp(0, '{"Result":"Success","Data":{"Status":"Valid"}}')])
     assert validate_flow.main(["--no-warnings"]) == 0
@@ -157,43 +207,6 @@ def test_no_warnings_fails_output_that_is_not_json(monkeypatch, capsys):
     _stub(monkeypatch, [_cp(0, "Valid")])
     assert validate_flow.main(["--no-warnings"]) == 1
     assert "no JSON envelope" in capsys.readouterr().err
-
-
-_LAYOUT = (
-    '[(workflow)] .flow file at /s/Sol/Docs/{base} does not match canonical layout. '
-    'Expected the .flow basename ("{stem}") to match its parent directory name ("Docs").'
-)
-_MISSING_ID = "[nodes[n1].inputs.schemaDocument.outputSchema] This field carries no x-uipath-field-id"
-
-
-def _warned(*lines):
-    text = f"{len(lines)} warning(s):\n" + "\n".join(f"  - {line}" for line in lines)
-    return json.dumps({"Result": "Success", "Data": {"Status": "Valid", "Warnings": text}})
-
-
-def test_no_warnings_skips_the_layout_warning_on_studio_webs_main_file(monkeypatch):
-    """Studio Web names every Flow project's main file new.flow, so the
-    basename never matches the project directory."""
-    flow = os.path.join("Sol", "Docs", "new.flow")
-    _stub(monkeypatch, [_cp(0, _warned(_LAYOUT.format(base="new.flow", stem="new")))], flows=(flow,))
-    assert validate_flow.main(["--no-warnings"]) == 0
-
-
-def test_no_warnings_keeps_other_warnings_on_studio_webs_main_file(monkeypatch, capsys):
-    flow = os.path.join("Sol", "Docs", "new.flow")
-    stdout = _warned(_LAYOUT.format(base="new.flow", stem="new"), _MISSING_ID)
-    _stub(monkeypatch, [_cp(0, stdout)], flows=(flow,))
-    assert validate_flow.main(["--no-warnings"]) == 1
-    err = capsys.readouterr().err
-    assert "x-uipath-field-id" in err
-    assert "canonical layout" not in err
-
-
-def test_no_warnings_keeps_the_layout_warning_on_any_other_file(monkeypatch, capsys):
-    flow = os.path.join("Sol", "Docs", "Other.flow")
-    _stub(monkeypatch, [_cp(0, _warned(_LAYOUT.format(base="Other.flow", stem="Other")))], flows=(flow,))
-    assert validate_flow.main(["--no-warnings"]) == 1
-    assert "canonical layout" in capsys.readouterr().err
 
 
 def test_every_flow_file_is_validated(monkeypatch):
