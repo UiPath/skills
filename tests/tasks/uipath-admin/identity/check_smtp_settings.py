@@ -10,9 +10,10 @@ from admin_helpers import run_cli, poll, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="check_smtp: %(message)s")
 
-# The values smtp_configure_e2e.yaml's prompt asks for. Host and port differ
-# from the inherited defaults (see identity/_setup/setup_smtp_reset.py), so a
-# match shows the agent wrote them.
+# The values smtp_configure_e2e.yaml's prompt asks for; the host is also
+# TARGET_HOST in identity/_setup/setup_smtp_reset.py. Host, port, sender
+# address and display name differ from the inherited defaults, so a match
+# shows they were written during this run.
 EXPECTED = {
     "host": "smtp-e2e.example.com",
     "port": "2525",
@@ -44,15 +45,15 @@ def main():
     # Poll for eventual consistency
     def matched():
         settings = read_settings()
+        last["settings"] = settings
         if settings is None:
             return None
-        last["settings"] = settings
         return not mismatches(settings)
 
     if not poll(matched):
         settings = last.get("settings")
         if settings is None:
-            fail("could not read SMTP settings after retries")
+            fail("could not read SMTP settings on the last attempt")
         wrong = ", ".join(f"{k}={v!r} (want {EXPECTED[k]!r})" for k, v in mismatches(settings).items())
         fail(f"SMTP settings do not match the prompt: {wrong}")
 
