@@ -31,6 +31,12 @@ may name the retained classic doc whose rule it still enforces, so for those
 files classic/skills/ also counts. They are still checked, because a doc that
 no tree has (a rename or retirement) leaves the note pointing at nothing.
 
+A citation whose prefix names a tree (`skills/x/...`, `preview/skills/x/...`,
+`classic/skills/x/...`) resolves only in that tree. For example a grader note
+saying `skills/x/references/sla.md` fails when only classic/skills/x has the
+file; write `classic/skills/x/references/sla.md` instead. A task YAML still
+cannot name classic/skills/.
+
 A `#fragment` on a citation must match a heading of the cited file, with the
 same GitHub slug rules as scripts/check-skill-links.mjs (inline code and link
 text kept, lowercased, every character but letters, digits, `_`, `-` and space
@@ -81,29 +87,39 @@ _URL_BEFORE_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://\S*$")
 # Sentence punctuation that ends a prose citation is not part of its anchor:
 # "see references/q.md#step-1.2." cites #step-1.2.
 _ANCHOR_TRAIL = ".:!?"
-_SKILLS_PREFIX_RE = re.compile(r"(?:^|/)skills/(?P<skill>[\w-]+)/(?P<sub>(?:[\w-]+/)*)$")
+# A prefix that names a tree (`skills/`, `preview/skills/`, `classic/skills/`)
+# pins the citation to that tree: `skills/x/references/y.md` must be in
+# skills/x, even when classic/skills/x has the file.
+_SKILLS_PREFIX_RE = re.compile(
+    r"(?:^|/)(?P<tree>(?:classic/|preview/)?skills)/(?P<skill>[\w-]+)/(?P<sub>(?:[\w-]+/)*)$"
+)
 
 
 def skill_exists(root: Path, skill: str) -> bool:
     return any((root / tree / skill).is_dir() for tree in ALL_TREES)
 
 
-def resolve(root: Path, task_skill: str | None, prefix: str, rest: str) -> tuple[str | None, str]:
-    """Return (skill, path inside the skill) for a citation, or (None, "") to skip."""
+def resolve(
+    root: Path, task_skill: str | None, prefix: str, rest: str
+) -> tuple[str | None, str, str | None]:
+    """Return (skill, path inside the skill, named tree or None) for a citation.
+
+    The skill is None when the citation is skipped.
+    """
     m = _SKILLS_PREFIX_RE.search(prefix)
     if m:
-        return m.group("skill"), f"{m.group('sub')}references/{rest}"
+        return m.group("skill"), f"{m.group('sub')}references/{rest}", m.group("tree")
     # `uipath-x/references/a.md`: a bare leading skill name cites that skill.
     segs = [seg for seg in prefix.split("/") if seg and seg not in ("..", ".") and not seg.startswith("$")]
     if segs and skill_exists(root, segs[0]):
-        return segs[0], "".join(seg + "/" for seg in segs[1:]) + f"references/{rest}"
+        return segs[0], "".join(seg + "/" for seg in segs[1:]) + f"references/{rest}", None
     if task_skill is None:
-        return None, ""
+        return None, "", None
     # Leading `../` or `$VAR/` segments carry no location inside the skill.
     sub = "".join(
         seg + "/" for seg in prefix.split("/") if seg and seg != ".." and seg != "." and not seg.startswith("$")
     )
-    return task_skill, f"{sub}references/{rest}"
+    return task_skill, f"{sub}references/{rest}", None
 
 
 def shipped_file(root: Path, skill: str, rel: str, trees: tuple[str, ...] = SHIPPED_TREES) -> Path | None:
@@ -196,7 +212,7 @@ def scan(root: Path) -> tuple[list[tuple[str, int, str, str]], list[str]]:
             for m in _CITATION_RE.finditer(line):
                 if _URL_BEFORE_RE.search(line[: m.start()]):
                     continue
-                skill, rel = resolve(root, task_skill, m.group("prefix"), m.group("rest"))
+                skill, rel, named_tree = resolve(root, task_skill, m.group("prefix"), m.group("rest"))
                 if skill is None:
                     continue
                 cited = m.group(0)
@@ -205,10 +221,20 @@ def scan(root: Path) -> tuple[list[tuple[str, int, str, str]], list[str]]:
                 # a tree the catalog ships. A grader or fixture is read only by
                 # maintainers and may name the retained classic doc whose rule it
                 # still enforces (the v1 rule table in rule_citations.json).
-                trees = SHIPPED_TREES if path.suffix in (".yaml", ".yml") else ALL_TREES
+                is_task = path.suffix in (".yaml", ".yml")
+                allowed = SHIPPED_TREES if is_task else ALL_TREES
+                if named_tree is not None and named_tree not in allowed:
+                    dead.append((where, lineno, cited, f"a task YAML cannot cite {named_tree}/; no eval catalog loads it"))
+                    continue
+                trees = (named_tree,) if named_tree is not None else allowed
                 target = shipped_file(root, skill, rel, trees)
                 if target is None:
-                    if not skill_exists(root, skill):
+                    if named_tree is not None:
+                        others = [t for t in ALL_TREES if t != named_tree and (root / t / skill / rel).is_file()]
+                        reason = f"not in {named_tree}/{skill}" + (
+                            f"; only {', '.join(t + '/' + skill for t in others)} has it" if others else ""
+                        )
+                    elif not skill_exists(root, skill):
                         reason = f"no skill {skill} in skills/, preview/skills/ or classic/skills/"
                     elif classic_only(root, skill, rel):
                         reason = (

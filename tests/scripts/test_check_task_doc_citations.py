@@ -129,6 +129,42 @@ def test_graders_and_fixtures_are_scanned(tmp_path):
     ]
 
 
+def test_named_tree_prefix_resolves_only_in_that_tree(tmp_path):
+    # dmetzgar's #4533 review shape: after the Case promotion a grader comment
+    # still says skills/x/references/y.md, but only classic/skills/x has y.md.
+    put(tmp_path, "skills/uipath-x/SKILL.md")
+    put(tmp_path, "classic/skills/uipath-x/references/sla.md")
+    put(tmp_path, "tests/tasks/uipath-x/_shared/check.py", '"""See skills/uipath-x/references/sla.md."""\n')
+    found = gate.scan(tmp_path)[0]
+    assert [(f, c) for f, _, c, _ in found] == [
+        ("tests/tasks/uipath-x/_shared/check.py", "skills/uipath-x/references/sla.md")
+    ]
+    assert "only classic/skills/uipath-x has it" in found[0][3]
+
+
+def test_named_classic_tree_passes_in_a_grader(tmp_path):
+    put(tmp_path, "skills/uipath-x/SKILL.md")
+    put(tmp_path, "classic/skills/uipath-x/references/sla.md")
+    put(tmp_path, "tests/tasks/uipath-x/_shared/check.py", '"""See classic/skills/uipath-x/references/sla.md."""\n')
+    assert dead(tmp_path) == []
+
+
+def test_named_classic_tree_fails_in_a_task_yaml(tmp_path):
+    put(tmp_path, "skills/uipath-x/SKILL.md")
+    put(tmp_path, "classic/skills/uipath-x/references/sla.md")
+    task(tmp_path, "uipath-x/a.yaml", "see classic/skills/uipath-x/references/sla.md")
+    found = gate.scan(tmp_path)[0]
+    assert [c for _, _, c, _ in found] == ["classic/skills/uipath-x/references/sla.md"]
+    assert "cannot cite classic/skills/" in found[0][3]
+
+
+def test_named_preview_tree_resolves_only_in_preview(tmp_path):
+    put(tmp_path, "skills/uipath-x/references/s.md")
+    put(tmp_path, "preview/skills/uipath-x/references/p.md")
+    task(tmp_path, "uipath-x/a.yaml", "see preview/skills/uipath-x/references/p.md and preview/skills/uipath-x/references/s.md")
+    assert dead(tmp_path) == ["tests/tasks/uipath-x/a.yaml:3:preview/skills/uipath-x/references/s.md"]
+
+
 def _skill_links_slug_cases() -> list[tuple[str, str]]:
     """The heading -> slug table of check-skill-links.test.mjs, read from that file."""
     text = (REPO_ROOT / "tests" / "scripts" / "check-skill-links.test.mjs").read_text(encoding="utf-8")
