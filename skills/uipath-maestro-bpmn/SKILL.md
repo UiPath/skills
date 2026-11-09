@@ -694,7 +694,10 @@ full, then end the turn with the reply exactly as it shows.
    After `bpmn refresh`, run `uip solution resources refresh` so the
    connections become solution resources.
 <!--skill-flavor:v2-solution-resources-refresh:end-->
-   When filling the V1 template (an older CLI, or reading an existing V1 node)
+   When filling the V1 template (an older CLI, reading an existing V1 node, or
+   a plain activity whose `registry get --input-details` fails with an
+   Integration Service error such as `IS enrichment returned no data` after the
+   object and operation are confirmed; name that fallback in the report)
    for an `Intsvc.*` activity whose `inputTarget` is `body`
    (`Intsvc.ActivityExecution` and its async, agent, and workflow variants),
    these rules override the template's `InputNotes`, `DiscoveryNotes`, and
@@ -835,6 +838,10 @@ full, then end the turn with the reply exactly as it shows.
 
    `validate` ignores tag case; a line the `grep` prints is a tag to lowercase
    (4b).
+   `validate` also passes a node with several `target="body"` inputs, which
+   the runtime does not merge: the request carries only the last one. List
+   them with `grep -n 'target="body"' <file.bpmn>`; more than one inside a
+   single node is a defect. Fold them into the one JSON `body` input (4c).
 
    Exit 0 = valid. Exit 1 = a parse error, a `grep` hit, or a `validate`
    failure. Read severity from each issue's `[error]`/`[warning]` tag, not
