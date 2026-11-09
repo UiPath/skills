@@ -39,7 +39,7 @@ These activities **must** be placed inside a specific parent scope:
 
 ## Use Excel File Outside an Excel Process Scope
 
-`Use Excel File` (`ExcelApplicationCard`) with no `ExcelProcessScopeX` or `SequenceX` around it raises `UiPath recommends using “Use Excel File” inside an “Excel Process Scope"`. It is a validation warning of the activity, reported by `validate` and not by `build`, and not a numbered analyzer rule; an enclosing scope clears it whatever its `ProcessMode`. The scope's properties and modes: [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
+`Use Excel File` (`ExcelApplicationCard`) with no `ExcelProcessScopeX` or `SequenceX` around it raises `UiPath recommends using “Use Excel File” inside an “Excel Process Scope"`. `validate` reports it as a warning of the activity, and `build` reports it as analyzer rule `XL-MTD-001`; an enclosing scope clears it whatever its `ProcessMode`. The scope's properties and modes: [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
 
 Put the Use Excel File activities of one step inside one scope: one Excel process serves them. At its end the scope quits that process if it started it and no workbook is left open; an Excel it reused keeps running.
 
