@@ -141,7 +141,17 @@ as literal text, in place of `<draft|auto>` in the 4g template: write `(draft mo
 gate, including after *Build it*, and write `(auto mode)` only in a run that
 never stopped at a gate. Never write `(auto mode)` after a draft gate.
 
-**Only *Build it* at 3c authorizes phase 4.** Outside plan mode, draft writes a real validated skeleton; do not report a chat outline as a skeleton. If the user keeps the outline or has not answered, report the skeleton as an outline, not a finished process.
+In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
+gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
+
+Outside plan mode, draft mode **writes the skeleton**. A request to see the
+process first asks to approve a real, validated skeleton `.bpmn`, not a sketch in
+chat: run phase 2 (2a–2f, with the guide's skips for a trigger start and a
+forbidden upload), then the 3c gate. A text-only outline with no file is not a skeleton, and reporting
+one as "outline ready" misreports it. Plan mode is the host's state: never
+enter it yourself to satisfy "show me first".
+
+**Only *Build it* at 3c authorizes phase 4.** If the user keeps the outline or has not answered, report the skeleton as an outline, not a finished process.
 <!--skill-flavor:draft-shape-display:start-->
 If upload is allowed, show by upload; otherwise show local `.bpmn` and a short outline.
 <!--skill-flavor:draft-shape-display:end-->
