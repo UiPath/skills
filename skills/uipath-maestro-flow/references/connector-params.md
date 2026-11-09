@@ -419,11 +419,24 @@ The `connectors-local/` overlay is authoring input; emitted Flow is self-contain
 Prefer curated operations for their stable contract. Use the connector's raw
 `*-http-request` operation only for raw/generic needs the curated surface lacks.
 
+Preparation requires a working live connection. When a task explicitly uses
+offline/validate-only evidence and does not require connection-specific fields,
+use the baked descriptor with its published static inputs; do not run discovery
+with a placeholder connection or invent fields that were not measured. If the
+published input list is empty, pass `{}`; offline evidence then proves operation
+identity and control-flow routing, not the provider payload or dispatch.
+
+[`bindings.json`](bindings.md) names symbolic connection/folder bindings used by
+the source. Its reference defines the schema, compile-time resolution rules,
+and boundary with emitted-artifact bindings. Populate its resource keys from
+the live connection and folder listings. A plausible GUID is not proof that a
+resource exists or belongs to the intended tenant; resource refresh and product
+debug are the evidence.
+
 ### File uploads are multipart Flow inputs
 
-If the static catalog omits an upload
-field, prepare the operation against its connection, then pass the upstream file
-like any other connector input:
+If the static catalog omits an upload field, prepare the operation against its
+connection, then pass the upstream file like any other connector input:
 
 ```ts
 .step('upload', connector(SendFileToChannel, {
@@ -449,20 +462,6 @@ the part itself; the compiler lists the part without a value, as the designer do
   body: { content: 'A request was routed to Sales.' },   // or 'body.content': …
 }, { connection: 'teams', folder: 'shared' }))
 ```
-
-Preparation requires a working live connection. When a task explicitly uses
-offline/validate-only evidence and does not require connection-specific fields,
-use the baked descriptor with its published static inputs; do not run discovery
-with a placeholder connection or invent fields that were not measured. If the
-published input list is empty, pass `{}`; offline evidence then proves operation
-identity and control-flow routing, not the provider payload or dispatch.
-
-[`bindings.json`](bindings.md) names symbolic connection/folder bindings used by
-the source. Its reference defines the schema, compile-time resolution rules,
-and boundary with emitted-artifact bindings. Populate its resource keys from
-the live connection and folder listings. A plausible GUID is not proof that a
-resource exists or belongs to the intended tenant; resource refresh and product
-debug are the evidence.
 
 ## Resolving connection-scoped reference values
 
