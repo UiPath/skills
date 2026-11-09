@@ -2,7 +2,7 @@
 """Shared checks for Data Store Schema resource tasks.
 
 `check_resource` applies the grammar Data Service enforces at deploy (the
-subset a task can break): the resource shape, changeset properties and
+subset a task can break): the resource shape, scope and order, changeset properties and
 numbers, supported changes, the `{ "column": … }` wrapper, column types, and
 decimal values written as strings. Task scripts add scenario assertions.
 """
@@ -101,6 +101,12 @@ def check_resource(document: dict) -> dict:
     spec = resource.get("spec") or {}
     if str(spec.get("scope", "Folder")).lower() not in {"folder", "tenant"}:
         fail(f"spec.scope '{spec.get('scope')}' must be Folder or Tenant")
+    order = spec.get("order")
+    if order not in (None, "") and not (
+        (type(order) is int and 0 <= order <= 999_999_999) or (isinstance(order, str) and re.fullmatch(r"[0-9]{1,9}", order))
+    ):
+        shown = order[1] if isinstance(order, tuple) else json.dumps(order)
+        fail(f"spec.order {shown} must be a whole number from 0 to 999999999")
     changesets = spec.get("changesets")
     if not isinstance(changesets, list) or not changesets:
         fail("spec.changesets must be a non-empty array")

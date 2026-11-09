@@ -41,7 +41,7 @@ A list of single-property objects: at most one `onFail`, and at least one `sqlCh
 ```
 
 - `onFail`: `HALT` (default) fails the deploy; `MARK_RAN` skips the changeset's changes and records it as installed, never to run again.
-- `sqlCheck.sql`: one `SELECT` of one value from one of this schema's tables ([rules](#where-and-sqlcheck-sql)).
+- `sqlCheck.sql`: one `SELECT` of one value from a table this changeset may change ([rules](#where-and-sqlcheck-sql)).
 - `sqlCheck.expectedResult`: a string or a JSON integer. It is compared as text, case-sensitively, with the first column of the first row (no row or NULL is `""`; a bit is `1`/`0`; a date with no time also matches `yyyy-MM-dd`). Every check must hold.
 - Other Liquibase preconditions (`tableExists`, `columnExists`, `and`, `or`, `not`, `onError`, `changeSetExecuted`, `dbms`) are not supported.
 
@@ -51,7 +51,7 @@ Typical use: seed rows only into an empty table (`MARK_RAN` + `SELECT COUNT(*) â
 
 Supported: `createTable`, `addColumn`, `dropColumn`, `modifyDataType`, `createIndex`, `dropIndex`, `addForeignKeyConstraint`, `dropForeignKeyConstraint`, `insert`, `update`, `delete`. `setColumnRemarks` is accepted and ignored. Everything else is refused, including `sql`, `dropTable`, `renameTable`, `renameColumn`, `addPrimaryKey`, `addUniqueConstraint`, `addNotNullConstraint`, `addDefaultValue`, `createView`, `loadData` (write rows as `insert`).
 
-Every change except `createTable` must name a table this schema created earlier: in an earlier changeset, or earlier in the same changeset.
+Every change except `createTable` must name a table that exists by then: one this schema created (in an earlier changeset, or earlier in the same changeset), or one of a Schema resource installed before it with the same scope and folder ([order](schema-resource-guide.md#several-schema-resources)).
 
 | Change | Attributes (required in **bold**) | Notes |
 |---|---|---|
@@ -122,11 +122,11 @@ At most 4000 characters, 32 levels of parentheses, 200 operators. Validated, the
 "where": "Status IN ('Open', 'New') AND Amount >= 1000.00 AND RegionId IS NOT NULL"
 ```
 
-**`sqlCheck.sql`** is `SELECT <one value> FROM <one of this schema's tables> [WHERE <condition as above>]`. The value is one column, one literal, or one aggregate (`COUNT`, `COUNT_BIG`, `SUM`, `MIN`, `MAX`, `AVG`, `COUNT(DISTINCT x)`). No joins, `SELECT *`, `TOP`, `GROUP BY`, `ORDER BY`, `UNION`, CTEs, hints, or two-part names (`sys.tables` is refused). Avoid reserved words as table names (`Order`, `User`): they fail to parse here.
+**`sqlCheck.sql`** is `SELECT <one value> FROM <a table this changeset may change> [WHERE <condition as above>]`. The value is one column, one literal, or one aggregate (`COUNT`, `COUNT_BIG`, `SUM`, `MIN`, `MAX`, `AVG`, `COUNT(DISTINCT x)`). No joins, `SELECT *`, `TOP`, `GROUP BY`, `ORDER BY`, `UNION`, CTEs, hints, or two-part names (`sys.tables` is refused). Avoid reserved words as table names (`Order`, `User`): they fail to parse here.
 
 ## Foreign keys
 
-- Both tables must belong to the same Schema resource; a key to another resource's table, or to a tenant schema's table from a folder schema, is refused.
+- Both tables must be this schema's, or of a Schema resource installed before it with the same scope and folder ([order](schema-resource-guide.md#several-schema-resources)). A key to a later resource's table, another solution's, or a tenant schema's table from a folder schema, is refused.
 - `baseColumnNames` / `referencedColumnNames`: comma-separated, same count, at most 16 each. Referenced columns must be a primary key or unique in SQL Server.
 - `onDelete` / `onUpdate`: `CASCADE`, `SET NULL`, `SET DEFAULT`, `NO ACTION`, `RESTRICT` (installed as `NO ACTION`).
 - `validate: false` adds the key without checking existing rows.

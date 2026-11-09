@@ -15,6 +15,7 @@
     "spec": {
       "name": "SalesSchema",
       "scope": "Folder",
+      "order": 10,
       "description": "Every supported change, in an order that installs. Keep the changesets you need, renumbered from 1, before the first deploy.",
       "changesets": [
         {

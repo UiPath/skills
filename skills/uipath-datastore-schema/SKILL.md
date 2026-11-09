@@ -25,7 +25,7 @@ A Schema resource is a solution resource that installs real SQL tables in the te
 6. **A changeset holds only `changeset`, `changes`, and optionally `preConditions`.** No `id`, `author`, `name`, `comment`, `upSql`, or `downSql`: each is refused as an unknown property.
 7. **Use only the supported changes, columns, and types** in [changes-reference.md](references/changes-reference.md). There is no `dropTable`, `renameTable`, `renameColumn`, `sql`, `autoIncrement`/identity, or `valueComputed`.
 8. **Write decimal numbers as strings.** `"valueNumeric": "12.5"`, never `12.5`; a JSON number with a fraction or exponent is refused. Whole numbers may be JSON integers.
-9. **A changeset may only touch its own schema's tables.** Foreign keys, `sqlCheck`, and every change must name tables this schema created in an earlier change or changeset; another Schema resource's tables are refused.
+9. **A changeset may touch its own schema's tables and those of Schema resources installed before it.** A deploy installs its Schema resources by `spec.order` (lowest first, those without one last), then by `spec.name`. A resource may add columns, indexes, foreign keys, and rows to, or `sqlCheck`, the tables of a resource earlier in that order with the same scope and folder. Anything else is refused: a later resource's tables, another solution's, or the other scope's. Give the resource that creates a table a lower `order` than every resource that changes it.
 10. **Rollback, downgrade, and uninstall change no tables.** Plan forward-only changes: to undo, write a new changeset that does the reverse.
 
 ## Workflow
@@ -60,6 +60,8 @@ Start from [schema-resource-template.json](assets/templates/schema-resource-temp
 ```
 
 Every change, column, type, value, `where`, and precondition rule: [changes-reference.md](references/changes-reference.md).
+
+Several Schema resources in one solution: give each a `spec.order` (`"order": 10`, `"order": 20`, …) so the resource that creates a table installs before those that change it.
 
 ### 3. Change an installed schema
 
@@ -102,4 +104,5 @@ Apps and agents send one SQL statement with `@` parameters to `POST api/v3/Query
 - **Deleting the resource file and re-adding it** to "start over". The new key makes a second schema whose tables clash with the first.
 - **Copying a Schema resource file into another solution.** Both solutions then share one resource key; for tenant scope they share one schema.
 - **`upSql` / raw SQL changesets.** Not supported; every change is a JSON change.
-- **Foreign keys between two Schema resources.** Put tables that reference each other in one Schema resource.
+- **Relying on resource names or keys for install order.** Set `spec.order` on every Schema resource that another one builds on; without it, order falls back to the name.
+- **Changing or dropping, in a later changeset, a column another Schema resource builds on.** A fresh install runs each resource's changesets in turn, so it can reach that change before the other resource's index or foreign key, unlike an upgraded tenant. Leave columns other resources use alone.
