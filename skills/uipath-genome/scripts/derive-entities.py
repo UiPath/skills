@@ -6,10 +6,16 @@ Usage:
                      [--overrides <overrides.json>] [--previous <entities.json>]
                      [--scope tenant|folder]
 
-Emits only what the inputs and the platform FORCE: `direct` entities and fields and
-`junction` entities for many-to-many. Consolidation, decomposition and federated
-views need a consumption pattern and are never emitted here — see
-references/entity-derivation-guide.md.
+Emits only what the inputs and the platform FORCE. Entity identity is the R2RML
+SUBJECT, not the class: two triples maps minting the same subject are one entity
+(`consolidation`), one class minted under two subjects is two (`decomposition`).
+Both are read off the mapping — they are never invented here, so a fold or a split
+is a `target.r2rml` edit a reviewer sees as a diff. With no subject map, or none
+carrying a template/column/constant, identity falls back to the class and the
+derivation behaves exactly as a class-per-entity one.
+
+`junction` entities are synthesized for many-to-many. Federated views are never
+emitted: they need a consumption pattern. See references/entity-derivation-guide.md.
 
 Deterministic: given the same (inventory, overrides, previous, project, scope) the
 output is byte identical. Keys are sorted and every list has a stable order.
@@ -96,9 +102,13 @@ def pascal(text):
     return "".join(p[:1].upper() + p[1:] for p in expanded if p)
 
 
-def normalize(iri, kind, taken, register, owner=None):
-    """kind is 'entity' or 'field'. Records a register row for any change."""
-    raw = local_name(iri)
+def normalize(iri, kind, taken, register, owner=None, literal=False):
+    """kind is 'entity' or 'field'. Records a register row for any change.
+
+    literal=True treats `iri` as an already-chosen name (an R2RML subject template's
+    path segment) rather than an IRI to take the local name of.
+    """
+    raw = iri if literal else local_name(iri)
     name = raw
     stripped = re.sub(r"^(has|is|had)(?=[A-Z_])", "", name)
     if len(stripped) >= 3:
@@ -349,6 +359,28 @@ def r2rml_index(inventory):
     return out
 
 
+def parent_map_index(inventory):
+    """(class IRI, predicate IRI) -> the subject key of the triples map it joins to.
+
+    When a class is minted under several subjects, its range class alone cannot say
+    which part a relationship points at. The mapping can: rr:parentTriplesMap names
+    the exact map, and that map's subject key names the entity.
+    """
+    key_of_map = {tm["iri"]: tm.get("subjectKey") for tm in inventory.get("triplesMaps", [])}
+    out, declaring = {}, {}
+    for tmap in inventory.get("triplesMaps", []):
+        cls = tmap.get("subjectClass")
+        if not cls:
+            continue
+        for pom in tmap.get("predicateObjectMaps", []):
+            if tmap.get("subjectKey"):
+                declaring.setdefault((cls, pom["predicate"]), tmap["subjectKey"])
+            parent = pom.get("parentTriplesMap")
+            if parent and key_of_map.get(parent):
+                out[(cls, pom["predicate"])] = key_of_map[parent]
+    return out, declaring
+
+
 def pick_type(prop, shape, register, subject):
     datatype = (shape or {}).get("datatype") or prop.get("range")
     if datatype in TYPE_MAP:
@@ -478,6 +510,7 @@ def main():
     shapes = shape_index(inv)
     node_annotations = shape_annotations(inv)
     r2rml = r2rml_index(inv)
+    parent_key, declaring_key = parent_map_index(inv)
     replicas = dict(overrides.get("replicas", {}))
     annotation_map = overrides.get("annotations", {})
     source_predicate = annotation_map.get("authoritativeSource")
@@ -579,10 +612,127 @@ def main():
     not_covered += [{"from": p["iri"], "why": "datatype property with no mapped domain"}
                     for p in dprops if p["iri"] not in placed]
 
-    taken_entities = set()
-    name_of = {}
+    # ---- entity identity: subject keys, not classes -------------------------
+    # An entity is one *identifier*, not one class. R2RML states identity in the
+    # subject map: two triples maps minting the same subject describe one record
+    # (a fold), one class minted under two subjects describes two (a split). A
+    # class is a type a record carries, and a record can carry two.
+    #
+    # With no subject map, or none carrying a template/column/constant, the group
+    # key falls back to the class itself, so a bundle that never mentions subjects
+    # derives exactly as it did before.
+    maps_for_class = {}
+    for tmap in inv.get("triplesMaps", []):
+        if tmap.get("subjectClass") in classes:
+            maps_for_class.setdefault(tmap["subjectClass"], []).append(tmap)
+
+    group_members = {}          # gid -> set of class IRIs
+    group_maps = {}             # gid -> list of triples maps
+    groups_of_class = {}        # class IRI -> sorted list of gids
     for iri in entity_classes:
-        name_of[iri] = normalize(iri, "entity", taken_entities, register)
+        tmaps = maps_for_class.get(iri, [])
+        keyed = [tm for tm in tmaps if tm.get("subjectKey")]
+        gids = sorted({tm["subjectKey"] for tm in keyed}) or [f"class:{iri}"]
+        groups_of_class[iri] = gids
+        for gid in gids:
+            group_members.setdefault(gid, set()).add(iri)
+        for tm in keyed:
+            group_maps.setdefault(tm["subjectKey"], []).append(tm)
+    group_ids = sorted(group_members)
+
+    def key_name(gid):
+        """A template's last literal path segment names the entity it mints."""
+        if not gid.startswith("template:"):
+            return None
+        base = gid[len("template:"):].split("{")[0].rstrip("/#")
+        seg = re.split(r"[/#]", base)[-1] if base else ""
+        return pascal(seg) or None
+
+    # The primary class of a group names it, supplies its label, comment and table,
+    # and receives any relationship that points at a split class.
+    group_primary = {}
+    for gid in group_ids:
+        members = sorted(group_members[gid])
+        want = key_name(gid) if (len(members) > 1 or
+                                 any(len(groups_of_class[m]) > 1 for m in members)) else None
+        pick = next((m for m in members if pascal(local_name(m)) == want), None)
+        group_primary[gid] = pick or members[0]
+
+    taken_entities = set()
+    name_of_group, name_of = {}, {}
+    for gid in group_ids:
+        members = sorted(group_members[gid])
+        split = any(len(groups_of_class[m]) > 1 for m in members)
+        proposed = key_name(gid) if (len(members) > 1 or split) else None
+        if proposed:
+            name_of_group[gid] = normalize(proposed, "entity", taken_entities, register,
+                                           literal=True)
+        else:
+            name_of_group[gid] = normalize(group_primary[gid], "entity",
+                                           taken_entities, register)
+    for iri in entity_classes:
+        # Incoming relationships point at the class's primary part.
+        name_of[iri] = name_of_group[groups_of_class[iri][0]]
+
+    for gid in group_ids:
+        members = sorted(group_members[gid])
+        if len(members) > 1:
+            register.add(source="metadata", from_iri=gid[gid.index(":") + 1:],
+                         subject=name_of_group[gid],
+                         statement=f"{len(members)} classes share one R2RML subject, so they "
+                                   f"are one record: {', '.join(local_name(m) for m in members)}",
+                         expressible="yes", resolution="decided",
+                         note="entity-derivation-guide.md § Identity is the subject")
+    for iri in entity_classes:
+        if len(groups_of_class[iri]) > 1:
+            register.add(source="metadata", from_iri=iri, subject=local_name(iri),
+                         statement=f"class is minted under {len(groups_of_class[iri])} distinct "
+                                   f"R2RML subjects, so it is "
+                                   f"{', '.join(name_of_group[g] for g in groups_of_class[iri])}; "
+                                   f"relationships to it point at "
+                                   f"{name_of_group[groups_of_class[iri][0]]}",
+                         expressible="yes", resolution="decided",
+                         note="entity-derivation-guide.md § Identity is the subject")
+
+    # Which group carries which property: for a split class, the map that carries
+    # the predicate owns it; a predicate no map carries falls to the primary group.
+    props_by_group = {}
+    for iri in entity_classes:
+        gids = groups_of_class[iri]
+        for prop in props_by_class.get(iri, []):
+            if len(gids) == 1:
+                props_by_group.setdefault(gids[0], []).append((iri, prop))
+                continue
+            # A split class's property belongs to every part whose map carries it —
+            # both parts of a Party have a name, read from different columns. Only a
+            # predicate no part carries falls back to the primary.
+            carried = [gid for gid in gids
+                       if any(pom.get("predicate") == prop["iri"]
+                              for tm in group_maps.get(gid, [])
+                              for pom in tm.get("predicateObjectMaps", []))]
+            if not carried:
+                carried = [gids[0]]
+                register.add(source="metadata", from_iri=prop["iri"],
+                             subject=f"{name_of_group[gids[0]]}."
+                                     f"{pascal(local_name(prop['iri']))}",
+                             statement="no subject map carries this predicate, so it was "
+                                       "placed on the class's primary part",
+                             expressible="yes", resolution="default-applied")
+            for gid in carried:
+                props_by_group.setdefault(gid, []).append((iri, prop))
+
+    # Provenance per part: (group, class, predicate) -> the column that part reads.
+    # The (class, predicate) index collapses a split class's two columns into one.
+    r2rml_group = {}
+    for tmap in inv.get("triplesMaps", []):
+        cls = tmap.get("subjectClass")
+        gid = tmap.get("subjectKey") or (f"class:{cls}" if cls else None)
+        if not cls or not gid:
+            continue
+        for pom in tmap.get("predicateObjectMaps", []):
+            if pom.get("column"):
+                r2rml_group[(gid, cls, pom["predicate"])] = {
+                    "logicalTable": tmap.get("logicalTable"), "column": pom["column"]}
 
     # A shape that names an authoritative source declares the entity a replica.
     # A declared answer beats the D1 default; an override beats both, and the
@@ -607,6 +757,28 @@ def main():
                                    f"so this entity is a replica of it",
                          expressible="yes", locus="external", level=None,
                          resolution="override")
+
+    def part_name(cls_iri, prop_iri, via=None):
+        """Which part of a split class a relationship end lands on.
+
+        A range class alone cannot say which part a link points at once that class
+        is minted under several subjects. The mapping can: rr:parentTriplesMap names
+        the map, and its subject key names the entity. With nothing to go on, the
+        class's primary part takes it, and the register says so.
+        """
+        gids = groups_of_class.get(cls_iri) or []
+        if len(gids) <= 1:
+            return name_of[cls_iri]
+        key = parent_key.get((via, prop_iri)) if via else declaring_key.get((cls_iri, prop_iri))
+        if key in gids:
+            return name_of_group[key]
+        register.add(source="metadata", from_iri=prop_iri, subject=name_of[cls_iri],
+                     statement=f"{local_name(cls_iri)} is split across "
+                               f"{len(gids)} entities and the mapping does not say which one "
+                               f"this relationship touches; it was placed on the primary part",
+                     expressible="yes", resolution="default-applied",
+                     note="entity-derivation-guide.md § Identity is the subject")
+        return name_of[cls_iri]
 
     # ---- object properties: direction and junctions -------------------------
     relationships = {}          # entity name -> list of relationship dicts
@@ -643,10 +815,26 @@ def main():
                                            "the choice is arbitrary",
                                  expressible="yes", locus=None, level=None,
                                  resolution="default-applied")
-                relationships.setdefault(name_of[child], []).append(
-                    {"prop": prop, "target": name_of[parent_cls], "cardinality": kind,
+                # A fold makes the link between the folded classes a link from the
+                # record to itself. It is not a self-reference the ontology asked
+                # for (`Employee.manager`), it is the fold absorbing the join, so
+                # the field is dropped rather than emitted pointing at its own row.
+                child_name = part_name(child, prop["iri"])
+                parent_name = part_name(parent_cls, prop["iri"], via=dom)
+                if child != parent_cls and child_name == parent_name:
+                    register.add(source="metadata", from_iri=prop["iri"],
+                                 subject=child_name,
+                                 statement=f"relationship "
+                                           f"{local_name(child)}->{local_name(parent_cls)} "
+                                           f"was absorbed: both classes are one record, so the "
+                                           f"join it carried no longer exists",
+                                 expressible="yes", resolution="decided",
+                                 note="entity-derivation-guide.md § Identity is the subject")
+                    continue
+                relationships.setdefault(child_name, []).append(
+                    {"prop": prop, "target": parent_name, "cardinality": kind,
                      "shape": shapes.get(dom, {}).get(prop["iri"], {})})
-                edges.append((name_of[child], name_of[parent_cls]))
+                edges.append((child_name, parent_name))
 
     # reified relation participants
     for iri, info in sorted(reified.items()):
@@ -659,6 +847,8 @@ def main():
                 continue
             for rng in prop.get("range", []):
                 if rng in name_of:
+                    if rng != iri and name_of[rng] == name_of[iri]:
+                        continue
                     relationships.setdefault(name_of[iri], []).append(
                         {"prop": prop, "target": name_of[rng],
                          "cardinality": "many-to-one",
@@ -747,14 +937,27 @@ def main():
 
     # ---- entities -----------------------------------------------------------
     entities = []
-    for iri in entity_classes:
-        ename = name_of[iri]
+    for gid in group_ids:
+        members = sorted(group_members[gid])
+        iri = group_primary[gid]
+        ename = name_of_group[gid]
         cls = classes[iri]
+        folded = len(members) > 1
+        is_part = len(groups_of_class[iri]) > 1
         # D1: an entity is a replica unless this solution is named as its system of
         # record. The asymmetry of harm decides the direction — a constraint left
         # unenforced is recoverable, a wrongly required field rejects data the source
         # already accepted and cannot be ingested at all.
-        table = table_of_class.get(iri)
+        group_tables = sorted({tm["logicalTable"] for tm in group_maps.get(gid, [])
+                               if tm.get("logicalTable")})
+        table = (group_tables[0] if group_tables else table_of_class.get(iri))
+        if len(group_tables) > 1:
+            register.add(source="metadata", subject=ename,
+                         statement=f"the classes sharing this subject are mapped across "
+                                   f"{len(group_tables)} tables ({', '.join(group_tables)}); "
+                                   f"ownership and hop cost were read off {table!r}",
+                         expressible="yes", resolution="default-applied",
+                         evidence={"logicalTables": group_tables})
         facts = access_tables.get(table) if table else None
         if ename in systems_of_record:
             is_master, why = True, "named under systemsOfRecord"
@@ -782,15 +985,18 @@ def main():
                      evidence={"table": table} if table else {})
         taken_fields, fields, cs_fields = set(), [], []
 
-        for prop in sorted(props_by_class.get(iri, []), key=lambda p: p["iri"]):
+        for owner, prop in sorted(props_by_group.get(gid, []),
+                                  key=lambda op: (op[1]["iri"], op[0])):
             fname = normalize(prop["iri"], "field", taken_fields, register, owner=ename)
             subject = f"{ename}.{fname}"
-            shape = shapes.get(iri, {}).get(prop["iri"], {})
+            shape = shapes.get(owner, {}).get(prop["iri"], {})
 
             # Constraints are classified for EVERY field kind before the field is
             # shaped. A choice-set field carries sh:minCount and sh:pattern like any
             # other, and skipping them here is how a constraint disappears silently.
-            column = (r2rml.get((iri, prop["iri"])) or {}).get("column")
+            prov = (r2rml_group.get((gid, owner, prop["iri"]))
+                    or r2rml.get((owner, prop["iri"])))
+            column = (prov or {}).get("column")
             level, may_require = verdict_for(column, facts, is_master)
             deactivated = bool(shape.get("allDeactivated"))
             field_locus = "none" if deactivated else locus
@@ -859,9 +1065,9 @@ def main():
                              expressible="no", locus=field_locus,
                              level=None, candidate=soft,
                              resolution=resolution or "deferred")
-            for key_group in cls.get("hasKey", []):
+            for key_group in classes[owner].get("hasKey", []):
                 if len(key_group) > 1 and prop["iri"] in key_group:
-                    register.add(source="domain", from_iri=iri, subject=subject,
+                    register.add(source="domain", from_iri=owner, subject=subject,
                                  statement="composite key cannot be expressed: isUnique is per "
                                            "field",
                                  expressible="no", locus=locus, level=None,
@@ -926,11 +1132,10 @@ def main():
 
             if required is not None:
                 field["isRequired"] = required
-            for key_group in cls.get("hasKey", []):
+            for key_group in classes[owner].get("hasKey", []):
                 if len(key_group) == 1 and key_group[0] == prop["iri"]:
                     field["isUnique"] = True
 
-            prov = r2rml.get((iri, prop["iri"]))
             if prov:
                 field["r2rml"] = prov
             fields.append(field)
@@ -984,10 +1189,18 @@ def main():
             "name": ename, "displayName": cls.get("label") or ename,
             "description": comment[:512],
             "displayField": chosen,
-            "provenance": {"from": [iri],
-                           "derivation": "direct",
-                           **({"because": "reified relation class: it already is the junction"}
-                              if iri in reified else {})},
+            "provenance": {
+                "from": members,
+                "derivation": ("consolidation" if folded else
+                               "decomposition" if is_part else "direct"),
+                **({"because":
+                    f"{len(members)} classes are minted under one R2RML subject "
+                    f"({gid[gid.index(':') + 1:]}), so they are one record"} if folded else
+                   {"because":
+                    f"the class is minted under {len(groups_of_class[iri])} R2RML subjects; "
+                    f"this part is {gid[gid.index(':') + 1:]}"} if is_part else
+                   {"because": "reified relation class: it already is the junction"}
+                   if iri in reified else {})},
             "fields": sorted(fields, key=lambda f: f["name"]),
             "relationships": sorted(rels, key=lambda r: r["name"]),
             "choiceSetFields": sorted(cs_fields, key=lambda c: c["name"]),
@@ -1015,17 +1228,54 @@ def main():
 
     # ---- envelope: what Phase 2 may not propose -----------------------------
     envelope = []
-    adjacency = {}
+    # A federated entity is an UNDIRECTED star: one primary, every other source
+    # joined directly to it, and the primary is a free choice. A join is symmetric,
+    # so which side holds the foreign key is irrelevant. A set is therefore
+    # federatable iff some member is adjacent to every other member — which makes
+    # the maximal federatable sets exactly the closed neighbourhoods, and makes a
+    # pair at distance >= 3 the minimal thing no federated entity can span.
+    # A directed two-hop path A->B->C is NOT a counter-example: it is a star on B.
+    undirected = {name: set() for name in names}
     for a, b in real_edges:
-        adjacency.setdefault(a, set()).add(b)
-    for start in sorted(adjacency):
-        for mid in sorted(adjacency[start]):
-            for end in sorted(adjacency.get(mid, ())):
+        undirected[a].add(b)
+        undirected[b].add(a)
+    stars = {centre: undirected[centre] | {centre}
+             for centre in sorted(undirected) if len(undirected[centre]) >= 2}
+    for centre, members in stars.items():
+        # A star wholly inside another is not a separate option, it is a projection
+        # of one. Reporting both buries the fact that one entity covers the model.
+        if any(other > members for other in stars.values()):
+            continue
+        envelope.append({
+            "kind": "federated-view", "members": sorted(members),
+            "verdict": "possible", "primary": centre,
+            "why": f"every other member joins directly to {centre}, so this is the "
+                   f"largest federated entity centred on it"})
+
+    def hops_from(root):
+        seen, frontier, dist = {root}, [root], {root: 0}
+        while frontier:
+            nxt = []
+            for node in frontier:
+                for peer in undirected[node]:
+                    if peer not in seen:
+                        seen.add(peer)
+                        dist[peer] = dist[node] + 1
+                        nxt.append(peer)
+            frontier = nxt
+        return dist
+
+    for a in sorted(undirected):
+        reach = hops_from(a)
+        for b in sorted(reach):
+            if b > a and reach[b] >= 3:
                 envelope.append({
-                    "kind": "federated-view", "members": [start, mid, end],
+                    "kind": "federated-view", "members": [a, b],
                     "verdict": "impossible",
-                    "why": f"{start}->{mid}->{end} is a depth-2 chain; a federated join graph is "
-                           f"a depth-1 star"})
+                    "evidence": {"hops": reach[b]},
+                    "why": f"{a} and {b} are {reach[b]} joins apart, so no member is adjacent "
+                           f"to both; no federated entity can span them, whatever else "
+                           f"is included"})
     tables = {}
     for entity in entities:
         for field in entity["fields"]:
@@ -1041,10 +1291,20 @@ def main():
                        "automation reads them together is a later phase's question"})
     # A co-read is this process's evidence, not the source's layout: two tables
     # fetched in one step are a real candidate, and the step says so.
-    class_of_table = {v: k for k, v in table_of_class.items()}
+    # One table can realize several classes — that is the denormalized-source case
+    # this whole analysis is about — so the inverse is a list, never a scalar.
+    # Inverting the dict drops every class but the last and silently shrinks the
+    # membership of every row below.
+    classes_of_table = {}
+    for cls_iri, tbl in table_of_class.items():
+        if cls_iri in name_of:
+            classes_of_table.setdefault(tbl, set()).add(cls_iri)
+
+    def entities_on(tables):
+        return sorted({name_of[c] for t in tables for c in classes_of_table.get(t, ())})
+
     for co in access.get("coReads", []):
-        members = sorted({name_of[class_of_table[t]] for t in co["tables"]
-                          if class_of_table.get(t) in name_of})
+        members = entities_on(co["tables"])
         if len(members) > 1:
             envelope.append({
                 "kind": "consolidation", "members": members, "verdict": "candidate",
@@ -1054,10 +1314,8 @@ def main():
     step_of = {s["n"]: s for s in access.get("steps", [])}
     for hot in access.get("hotPaths", []):
         step = step_of.get(hot["step"], {})
-        on_path = sorted({name_of[class_of_table[t]]
-                          for v in step.get("traversals", [])
-                          for t in (v["from"].split(".")[0], v["to"].split(".")[0])
-                          if class_of_table.get(t) in name_of})
+        on_path = entities_on({t for v in step.get("traversals", [])
+                               for t in (v["from"].split(".")[0], v["to"].split(".")[0])})
         envelope.append({
             "kind": "hot-path", "members": on_path, "verdict": "evidence",
             "evidence": {"step": hot["step"], "hops": hot["hops"], "runs": hot["runs"]},

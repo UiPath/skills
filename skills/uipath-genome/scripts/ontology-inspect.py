@@ -610,11 +610,28 @@ def extract_triples_maps(triples, notes):
         if lt is not None:
             table = lit_value(one(triples, lt, RR + "tableName"))
             sql = lit_value(one(triples, lt, RR + "sqlQuery"))
-        subject_class = None
+        subject_class = subject_key = None
         sm = one(triples, node, RR + "subjectMap")
         if sm is not None:
             cls = one(triples, sm, RR + "class")
             subject_class = cls if isinstance(cls, str) else None
+            # The subject map mints the row's identifier, and the identifier IS the
+            # thing's identity: two maps that mint the same one describe one record,
+            # one map minting two describes two. That is the only construct in R2RML
+            # that states co-identity, so it is what entity identity keys on.
+            tpl = lit_value(one(triples, sm, RR + "template"))
+            col = lit_value(one(triples, sm, RR + "column"))
+            const = one(triples, sm, RR + "constant")
+            if tpl:
+                subject_key = f"template:{tpl}"
+            elif col:
+                subject_key = f"column:{col}"
+            elif const is not None:
+                subject_key = f"constant:{lit_value(const)}"
+        if subject_key is None:
+            shortcut = one(triples, node, RR + "subject")
+            if shortcut is not None:
+                subject_key = f"constant:{lit_value(shortcut)}"
         poms = []
         for pom in objects(triples, node, RR + "predicateObjectMap"):
             predicate = one(triples, pom, RR + "predicate")
@@ -640,7 +657,7 @@ def extract_triples_maps(triples, notes):
             notes.append(f"r2rml: {node} uses rr:sqlQuery; column types are not derivable")
         maps.append({
             "iri": node, "logicalTable": table, "sqlQuery": sql,
-            "subjectClass": subject_class,
+            "subjectClass": subject_class, "subjectKey": subject_key,
             "predicateObjectMaps": sorted(poms, key=lambda p: p["predicate"] or "")})
     return maps
 

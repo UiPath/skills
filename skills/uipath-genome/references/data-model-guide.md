@@ -34,24 +34,39 @@ rules they need; the run then says which guidance it could not consult.
 ## Artifacts
 
 ```
-          ontology (.ofn) ─┐
-  SHACL shapes ────────────┼──▶  entities.json  ──▶  solution resources
-   source.r2rml ───────────┘            ▲
-        │                               │
-        └──▶ target.r2rml ──────────────┘
+  INPUT                                          DELIVERABLES
+  ontology (.ofn) ─┐
+  SHACL shapes ────┼──▶ inventory ──┐
+  source.r2rml ────┘                ├──▶ entities.json
+        │                           │
+        └──▶ target.r2rml ──────────┘    target.r2rml
+                   ▲                     process-resolved.md
+  process.md ──▶ process-resolved.md ─┘        │
+    (raw)                                      ▼
+                                   a coding agent authors the
+                                   local entities and packs the
+                                   solution from entities.json
 ```
+
+**Four inputs, three deliverables.** The user supplies the three ontology artifacts
+and a **raw** prose process description. Everything else is written by this
+extension.
 
 | Artifact | Written by | Mutable | Means |
 |---|---|---|---|
 | `<name>.ofn` | the user | no | the business world |
 | SHACL shapes | the user | no | what is true of the business world |
 | `source.r2rml` | the user | **no** | how the source realizes the ontology — executable against the source |
-| `target.r2rml` | this extension | yes, from Phase 2 on | the relational design the entity set derives from |
-| `process-resolved.md` | the agent, in phase 2a | no, once resolved | the process named against the mapping's tables — an **input** to the model |
+| `process.md` | the user | no | the process in the business's own words |
 | `<bundle>-inventory.json` | `ontology-inspect.py` | derived | the parsed, normalized reading of the three inputs |
+| **`process-resolved.md`** | **this extension** | yes — must stay resolvable against `target.r2rml` | the process named against the mapping's tables ([process-resolution-guide.md](process-resolution-guide.md)) |
 | `access-patterns.json` | `resolve-process.py` | derived | who writes what, what a branch turns on, what is read together |
-| `entities.json` | `derive-entities.py` | derived | the entity set, register and provenance |
-| solution resources | `apply-entities.py` | derived | what ships |
+| **`target.r2rml`** | this extension | yes, from Phase 2 on | the relational design **and the entity identities** the entity set derives from |
+| **`entities.json`** | `derive-entities.py` | derived | the entity set, register and provenance |
+
+Solution resources are **not** part of this flow. `entities.json` is the final
+deliverable: its entity and field objects are shaped to be handed to `uip df` by a
+downstream coding agent ([datafabric-emission-guide.md](datafabric-emission-guide.md)).
 
 **Copy `source.r2rml` to `target.r2rml` before any derivation, and do not write
 `target.r2rml` again in Author mode.** The two files are byte-identical when Author
@@ -144,18 +159,21 @@ lock a decision that later steps cannot revisit cheaply (§ Commitment ladder).
 |---|---|---|---|
 | 1 | Detect the bundle; copy `source.r2rml` → `target.r2rml` | the baseline | the diff baseline for every later phase |
 | 2 | Run `ontology-inspect.py` | `<slug>-inventory.json` | the reading of the three inputs |
-| 2a | **Resolve the process description against the mapping's tables; run `resolve-process.py`** | `access-patterns.json` | **which entities this solution owns, and where each constraint is enforced** ([process-resolution-guide.md](process-resolution-guide.md)) |
+| 2a | **Resolve the raw process description into the mapping's table vocabulary; run `resolve-process.py`** | `process-resolved.md`, `access-patterns.json` | **which entities this solution owns, and where each constraint is enforced** ([process-resolution-guide.md](process-resolution-guide.md)) |
 | 3 | Declare the four defaults for whatever 2a left open; take named overrides | the override list | the remaining category-3 answers |
 | 4 | Fix the naming convention | — | **every entity and field name** |
 | 5 | Run `derive-entities.py` | `entities.json` | entity identity, junctions, components, `numberId`s |
 | 6 | Classify every SHACL shape | the register | `expressible`; `locus` by default |
-| 7 | Run `apply-entities.py` | solution resources | the on-disk shape |
-| 8 | Run the gates | pass/fail | — |
-| 9 | Write `## Data Model`, Platform Dependencies rows, transition-level Business Rules and their criteria | the genome | the contract |
-| 10 | Work the checklist; report | — | — |
+| 7 | Run the gates on the three deliverables | pass/fail | — |
+| 8 | Write `## Data Model`, Platform Dependencies rows, transition-level Business Rules and their criteria | the genome | the contract |
+| 9 | Work the checklist; report | — | — |
 
 **Do not reorder 4 before 3** — an override can rename an entity. **Do not reorder 6
 before 5** — a register row's `subject` names an entity and field that step 5 mints.
+
+A Phase 2 revision re-enters at step 1: edit `target.r2rml`, then re-run 2, 2a and 5
+in that order. Skipping the re-resolution at 2a loses access-pattern rows silently
+([process-resolution-guide.md § Re-resolving after a revision](process-resolution-guide.md)).
 
 ## Commitment ladder
 
@@ -170,7 +188,7 @@ deferring anything "until we know more".
 | Junction vs reified class | step 5 (Author) | forced by the ontology's own shape, not by consumption | changes the entity set |
 | Component partition | step 5 (Author) | a deterministic function of the relationship graph | recomputed free, but island decisions made inside one move |
 | `numberId` per choice value | step 5, first emission | **immutable once deployed** | silently remaps deployed records — unrecoverable |
-| Tenant vs folder scope | step 7, before the first `--local` create | the resource envelope carries it | regenerate every resource |
+| Tenant vs folder scope | step 5, before `entities.json` is written | every consumer reads it off the deliverable | regenerate `entities.json` |
 | `locus` — who enforces | step 6 by default; Phase 2 on evidence | **multi-phase by design** | a register edit; cheap |
 | `level` — state / transition / monitor / assumed | Phase 2 | needs the write sites | may add or remove field options; moderate |
 | Normalization degree | Phase 2a, refined 2b | **multi-phase by design** | free until the first binding, then a rework of bindings |
@@ -238,10 +256,14 @@ worklist rather than a re-derivation.
 
 ## Validation gates
 
-All six are stated in
-[datafabric-emission-guide.md § Validation gates](datafabric-emission-guide.md):
-inventory parsed, graph sound, determinism, schema, pack, genome. Every one blocks
-offering edits.
+The gates this flow runs are over the three deliverables, not over a solution:
+inventory parsed, graph sound (no cycle, every relationship target present),
+determinism (two derivations byte-identical), `process-resolved.md` resolvable
+against `target.r2rml`, and the genome checks. Every one blocks offering edits.
+
+The schema and pack gates belong to the downstream run that authors the local
+entities, and are stated with it
+([datafabric-emission-guide.md § Validation gates](datafabric-emission-guide.md)).
 
 ## Closing the run
 
@@ -254,7 +276,7 @@ work § Closing checks, then tell the user, in this order:
    bundle declared any enforcement of its own
    ([constraint-register-guide.md](constraint-register-guide.md));
 3. the deferred set, by category, with what would resolve it;
-4. the complex tier that could not ship, and the open-items file that carries it;
+4. the complex tier a downstream run has to create on the tenant — relationship and choice-set fields;
 5. anything in `notCovered` and every `parserNotes` line, with why;
 6. the gates that passed.
 
@@ -276,6 +298,6 @@ Work these before offering edits. Each names the guide that states its rule.
 | 7 | no `source: process` row carries a `level` | [constraint-register-guide.md § What Author mode may not decide](constraint-register-guide.md) |
 | 8 | `isRequired` was never set from `sh:minCount` alone | [constraint-register-guide.md § The isRequired trap](constraint-register-guide.md) |
 | 9 | two derivation runs are byte-identical | § Determinism |
-| 10 | `validate --local` and `pack --dry-run` both pass | [datafabric-emission-guide.md § Validation gates](datafabric-emission-guide.md) |
-| 11 | every complex field has an open-item row, and every `via` step is flagged blocked | [datafabric-emission-guide.md § The two tiers](datafabric-emission-guide.md) |
+| 10 | `process-resolved.md` still resolves against `target.r2rml` | [process-resolution-guide.md § Re-resolving after a revision](process-resolution-guide.md) |
+| 11 | every relationship and choice-set field in `entities.json` is marked for the downstream run, and every `via` step is flagged blocked | [datafabric-emission-guide.md § The two tiers](datafabric-emission-guide.md) |
 | 12 | nothing was written to a tenant | § Boundaries |

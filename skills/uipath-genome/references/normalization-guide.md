@@ -73,10 +73,12 @@ they narrow the space before any judgement is applied.
 1. **No query-time join between native entities.** To filter a child by a parent's
    attribute, resolve the parent's UUID first, then filter the child — two round
    trips, per hop, per query.
-2. **The only join mechanism is a federated entity**, which is read-only, a depth-1
-   star (N sources → N−1 joins, every non-primary joined directly to the primary, no
-   chaining, one field pair per source pair, matching types), and silently ignores
-   `aggregates` / `groupBy`.
+2. **The only join mechanism is a federated entity**, which is read-only, an
+   **undirected** star (N sources → N−1 joins, every non-primary joined directly to
+   the primary, no chaining, one field pair per source pair, matching types), and
+   silently ignores `aggregates` / `groupBy`. The primary is a free choice, and a
+   join is symmetric, so which side holds the foreign key does not matter — see
+   § The feasibility envelope for what this does and does not forbid.
 3. **No composite uniqueness** — `isUnique` is per field. A junction therefore cannot
    enforce pair-uniqueness: the decomposition is paid for and the constraint that
    motivated it is still lost ([entity-derivation-guide.md § Junctions](entity-derivation-guide.md)).
@@ -86,13 +88,20 @@ they narrow the space before any judgement is applied.
 Detail on all four belongs to `uipath-platform` → `references/data-fabric/`; what is
 stated here is only their consequence for how far to decompose.
 
-> **Verify limit 1 before relying on the hop-cost argument.** It is inferred from the
-> documented access pattern — resolve-then-filter — plus the explicit rejection of
-> multi-entity joins on federated reads. It is not a positive statement that native
-> joins are unsupported. One query against a live tenant settles it. If native joins
-> exist, the anti-normalization bias weakens substantially and § Priority changes.
-> Until it is settled, state the assumption in the report rather than relying on it
-> silently.
+Limit 1 is stated by the platform, not inferred: a `RELATIONSHIP` field's stored,
+returned and filterable value is the target's UUID, and filtering a child by a
+parent's attribute is documented as resolve-the-parent-first then filter-the-child
+(`uipath-platform` → `references/data-fabric/records-query.md`). So the two
+directions cost differently, and the difference decides which argument applies:
+
+| Direction | Example | Cost over a chain of N hops |
+|---|---|---|
+| **traversal** — hold a record, want an ancestor's value | an invoice, want its supplier's country | N reads |
+| **filter** — want the records whose ancestor matches | every invoice from a DE supplier | N queries, each materializing a UUID set the next one passes as an `in` list |
+
+The filter direction is the expensive one, and it is the one a reporting surface
+needs — which is exactly why a federated entity is wanted there, and why what the
+envelope says about feasibility matters.
 
 ### Materialize or virtualize
 
@@ -127,30 +136,58 @@ platform  ──prunes──▶  domain  ──shapes──▶  process  ──t
 
 ## What Author mode may not decide
 
-| Not emitted | Needs |
+| Not decided here | Needs |
 |---|---|
-| `consolidation` — several classes folded into one entity | a read pattern showing they are always fetched together, and no write that separates them |
-| `decomposition` — one class split across entities | a lifecycle, scope or access difference |
-| `federated-view` | a query pattern recurring across surfaces, and every member read-only |
+| **to fold** several classes into one entity | a read pattern showing they are always fetched together, and no write that separates them |
+| **to split** one class across entities | a lifecycle, scope or access difference |
+| a `federated-view` | a query pattern recurring across surfaces, and every member read-only |
 
-Author mode instead writes the **feasibility envelope**: which of these are
-*structurally impossible* for this ontology, so Phase 2 does not propose them.
+The distinction that matters: Author mode may not **decide** a fold or a split, but
+it does **apply** one the mapping already states. A shared subject template in
+`target.r2rml` is a decision someone took and wrote down, and the derivation reads
+it like any other fact
+([entity-derivation-guide.md § Identity is the subject](entity-derivation-guide.md)).
+What it never does is invent one from co-location or from a hunch.
+
+## The feasibility envelope
+
+Author mode writes the envelope: which compositions are *structurally available* and
+which are *impossible*, so Phase 2 proposes neither a view that cannot exist nor
+one it wrongly believes is barred.
 
 ```jsonc
 "envelope": [
-  { "kind": "federated-view", "members": ["A", "B", "C"],
-    "verdict": "impossible",
-    "why": "A→B→C is a depth-2 chain; federated joins are a depth-1 star" },
+  { "kind": "federated-view", "members": ["A", "B", "C"], "primary": "B",
+    "verdict": "possible",
+    "why": "every other member joins directly to B" },
+  { "kind": "federated-view", "members": ["A", "D"],
+    "verdict": "impossible", "evidence": { "hops": 3 },
+    "why": "A and D are 3 joins apart, so no member is adjacent to both" },
   { "kind": "consolidation", "members": ["X", "Y"],
     "verdict": "candidate",
     "evidence": { "sharedLogicalTable": "<TABLE>" } }
 ]
 ```
 
+**The feasibility test, exactly.** A set of entities is federatable **iff some member
+is adjacent to every other member** in the undirected relationship graph. Three
+consequences follow, and the middle one is the easy mistake:
+
+1. The **maximal** federatable sets are exactly the closed neighbourhoods — one per
+   entity with two or more neighbours. The envelope reports those, dropping any star
+   wholly contained in a larger one.
+2. **A directed two-hop chain `A→B→C` is not impossible.** It is a star centred on
+   `B`: the primary is a free choice and a join is symmetric, so `A` and `C` both
+   join directly to `B`. Reading "depth-2 chain" as a bar is wrong, and it bars
+   views that are available.
+3. The minimal genuinely impossible shape is a **pair three or more joins apart** —
+   nothing is adjacent to both, whatever else the view includes. Those pairs are
+   what the `impossible` rows name, and they appear first at a four-entity path.
+
 `candidate` is **evidence recorded, not a proposal**. R2RML co-location says the
 source keeps two classes in one table; it says nothing about whether this automation
-reads them together. Phase 2 decides; Author mode only makes sure Phase 2 does not
-have to rediscover the fact.
+reads them together, and co-location is not identity. Phase 2 decides; Author mode
+only makes sure Phase 2 does not have to rediscover the fact.
 
 ## Revision has a deadline
 
@@ -185,7 +222,8 @@ The genome is read-only during execution, so a revision never edits it
 | Artifact | Holds | Mutable |
 |---|---|---|
 | genome `## Data Model` | the contract — entity set, register, verdicts | no |
-| `target.r2rml` | the evolving relational design | **yes, from Phase 2** |
+| `target.r2rml` | the evolving relational design **and the entity identities** | **yes, from Phase 2** |
+| `process-resolved.md` | the process in the table vocabulary `target.r2rml` exposes | **yes — it must stay resolvable against it** |
 | the working folder | evidence gathered, per component | yes |
 | README § Differences from the genome | any revision contradicting the contract | written at the end |
 
@@ -193,19 +231,34 @@ The genome is read-only during execution, so a revision never edits it
 later revision edits it — so the diff between them is the normalization decision
 record ([data-model-guide.md § Artifacts](data-model-guide.md)).
 
+**A revision is three edits, not one.** Changing a subject template changes which
+tables and columns the mapping exposes, so the resolved process description written
+against the old vocabulary stops resolving. Re-resolve it against the revised
+mapping and re-derive from both
+([process-resolution-guide.md § Re-resolving after a revision](process-resolution-guide.md)).
+The resolver fails loudly on a stale reference; the derivation does not, so the
+order matters.
+
 The last row closes the loop: genome's completion report already surfaces a
 divergence and offers it as a genome edit, so an iteration that outgrows the contract
 corrects the contract instead of drifting from it.
 
 ## Anti-patterns
 
-1. **Denormalizing in Author mode.** There is no evidence yet; the baseline is the
-   deliverable (§ Conservative means normalized).
-2. **Treating R2RML co-location as a proposal.** It is evidence about the source's
-   layout, not about this automation's reads (§ What Author mode may not decide).
-3. **Deciding a whole model at once** when it decomposes into components (§ The unit
+1. **Deciding to denormalize in Author mode.** There is no evidence yet; the
+   baseline is the deliverable (§ Conservative means normalized). Applying a fold the
+   mapping already states is not this.
+2. **Treating R2RML co-location as a proposal, or as identity.** One table can carry
+   two records; only one subject mints one record (§ What Author mode may not
+   decide).
+3. **Calling a two-hop chain an impossible federated view** (§ The feasibility
+   envelope). It is a star centred on the middle entity.
+4. **Deciding a whole model at once** when it decomposes into components (§ The unit
    of work).
-4. **Using 2a evidence for a hop-cost argument** (§ Revision has a deadline).
-5. **Editing `source.r2rml`**, or editing `target.r2rml` during Author mode. The
+5. **Using 2a evidence for a hop-cost argument** (§ Revision has a deadline).
+6. **Editing `source.r2rml`**, or editing `target.r2rml` during Author mode. The
    baseline is the only thing that makes a later diff meaningful.
-6. **Letting a platform limit change the ontology** (§ Priority).
+7. **Revising `target.r2rml` without re-resolving the process description against
+   it** (§ How a revision is recorded). The derivation accepts a stale resolution
+   without complaint.
+8. **Letting a platform limit change the ontology** (§ Priority).

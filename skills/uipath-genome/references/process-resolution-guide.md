@@ -28,16 +28,56 @@ Deferring these was the original design's mistake. The inputs already answer the
 
 | | Written against | By | Read by |
 |---|---|---|---|
-| **raw** | the business's own words | the user, or the agent from a brief | a person |
-| **resolved** | the R2RML logical tables and columns | **the agent, in this phase** | `resolve-process.py`, then the derivation |
-| **final** | the derived entities and fields | the agent, after the model exists | the genome's Workflow section |
+| **raw** | the business's own words | **the user — this is the input** | a person |
+| **resolved** | the R2RML logical tables and columns | **genome, in this phase — an output, never asked for** | `resolve-process.py`, then the derivation |
+| **final** | the derived entities and fields | genome, after the model exists | the genome's Workflow section |
+
+**Only the raw description is an input.** A bundle arrives as three ontology
+artifacts and a prose process description; asking the user for a resolved one asks
+them to do the step this phase exists to perform. `process-resolved.md` is written
+to the working folder and ships as a deliverable beside `entities.json` and
+`target.r2rml`.
 
 The raw description names "the order's total value". The resolved one names
 `EKKO.RLWRT`. The final one names `PurchaseOrder.PoTotalAmount`. Same step, three
 vocabularies, and only the middle one exists before the entity set does.
 
-**The resolved description is an input to the model. The final one is an output of
-it.** Conflating them is what put the process description after the derivation.
+**The resolved description is this phase's output and the derivation's input. The
+final one is an output of the model.** Conflating them is what put the process
+description after the derivation.
+
+## Reading the raw description
+
+The raw text does not name tables. Turning it into the table vocabulary is the
+judgement this phase makes, and these are the only rules it needs.
+
+1. **One numbered step in, one numbered step out.** Keep the business's own step
+   names and order. A step the business describes but that touches no data is kept
+   and left without a `**Data:**` line.
+2. **Match a noun to a table through the mapping, not through its name.** "The
+   supplier" is whichever `rr:logicalTable` a triples map with `rr:class ap:Supplier`
+   reads. Two classes on one table means two nouns resolve to the same table — that
+   is normal and says nothing about identity.
+3. **Match an attribute to a column through the predicate.** "The order's total
+   value" is the `rr:column` of the `rr:predicateObjectMap` whose `rr:predicate` is
+   the property the ontology uses for it.
+4. **A verb chooses the clause.** *Register / create / raise / open* → `creates`;
+   *record / set / capture / write back / mark* → `writes`; *look up / fetch / read
+   / check* → `reads`; *compare / decide / route on / depends on* → `decides on`
+   beside the `reads`; *for each X matching* → `filters`; *archive / purge* →
+   `deletes`.
+5. **A possessive across classes is a traversal.** "the supplier's country" with
+   `Supplier` and `Address` on different tables is one `via` clause per
+   `rr:joinCondition` the mapping crosses. Two possessives in a row are two.
+6. **Carry a cadence only when the business stated one.** "About 800 a day" becomes
+   `**Runs:**`; "regularly" becomes nothing.
+7. **Resolve nothing the mapping does not carry.** A step that needs an absent table
+   is a gap in the mapping — report it; do not invent a name. The resolver fails on
+   one anyway.
+
+A step whose resolution is a guess gets the guess written down and flagged in the
+report, not quietly dropped: an omitted step understates the hop count and argues
+for a fold nobody needs.
 
 ## Resolving a step
 
@@ -161,19 +201,47 @@ A bundle with no process description still derives. Every signal above falls bac
 The run says so: *"no process description was resolved, so `locus` is defaulted and
 every `level` is deferred."* That is the honest report, not a silent downgrade.
 
+## Re-resolving after a revision
+
+A `target.r2rml` revision changes the vocabulary — folding two classes onto one
+subject removes the join the old description traversed, and moving a logical table
+removes the table name it used. **The resolved description is written against
+`target.r2rml`, so a revision invalidates it.**
+
+The order, every time:
+
+1. revise `target.r2rml`;
+2. re-run the inspector against it;
+3. **re-resolve the raw description** against the new inventory, rewriting the
+   clauses the revision changed — a traversal that the fold absorbed disappears, and
+   its columns become plain `reads` on the surviving table;
+4. re-run `resolve-process.py`;
+5. re-derive.
+
+**Skipping step 3 is silent.** `resolve-process.py` fails loudly on a table the
+mapping no longer carries, but `derive-entities.py` accepts a stale
+`access-patterns.json` without complaint and quietly loses the rows whose tables
+have gone — taking `locus`, `level` and the fold evidence with them. Re-resolve
+before re-deriving, and check that the hop count moved the way the revision
+predicted.
+
 ## Anti-patterns
 
 1. **Writing the resolved description against entity names.** Those do not exist
    yet. The whole point of the table vocabulary is that it is available before the
    derivation runs.
-2. **Letting the SHACL declare the enforcement decision.** Whether a constraint is
+2. **Asking the user for a resolved description.** It is this phase's output
+   (§ The three descriptions).
+3. **Re-deriving after a `target.r2rml` revision without re-resolving**
+   (§ Re-resolving after a revision).
+4. **Letting the SHACL declare the enforcement decision.** Whether a constraint is
    enforced, surfaced or trusted is **genome's call**, made from the locus and the
    access pattern ([constraint-register-guide.md](constraint-register-guide.md)
    § Deriving the verdict). A bundle that pre-states it has made the decision the
    pipeline exists to make.
-3. **Inventing a table or column the mapping does not carry.** The resolver fails,
+5. **Inventing a table or column the mapping does not carry.** The resolver fails,
    and it should: the gap is in the mapping.
-4. **Omitting `decides on`.** Without it every replica constraint falls to
+6. **Omitting `decides on`.** Without it every replica constraint falls to
    `assumed`, and a value a gateway turns on gets trusted when it should be surfaced.
-5. **Declaring a cadence the business did not state.** Fold evidence invented is
+7. **Declaring a cadence the business did not state.** Fold evidence invented is
    worse than fold evidence absent.

@@ -3,6 +3,14 @@
 Rules and procedure. How the derived entity set becomes files inside the solution,
 what the on-disk shape is, and which gates must pass before edits are offered.
 
+> **This is the stage after the authoring flow, not part of it.** The data-model
+> extension ends at three deliverables — `entities.json`, `target.r2rml` and
+> `process-resolved.md` ([data-model-guide.md § Artifacts](data-model-guide.md)).
+> `entities.json` is shaped so a downstream coding agent can take each entity and
+> field object and hand it to `uip df` verbatim; this file is what that agent needs
+> to know. Do not run it as part of deriving a model, and do not treat a missing
+> solution as an incomplete run.
+
 Read whole before writing any solution resource. Router:
 [data-model-guide.md](data-model-guide.md).
 

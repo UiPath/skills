@@ -39,6 +39,7 @@ handled below.
 | required-ness *(as a domain claim)* | ○ cardinality restrictions | — | ✔ `sh:minCount` |
 | human labels | ✔ `rdfs:label` | — | ✔ `sh:name` |
 | source provenance | — | ✔ logical table and column | — |
+| **entity identity** — how many records a class becomes | — | ✔ **the subject map** | — |
 
 ✔ primary source · ○ fallback
 
@@ -53,9 +54,17 @@ Proceed and say what cannot be derived. Never substitute a guess for a missing i
 | OWL | entities from `sh:NodeShape`, fields from property shapes | class hierarchy, `owl:hasKey`, functional-property FDs, the n-ary reification signature (§ Reified relations) |
 
 **No R2RML is the serious one.** Without it there is no baseline document, so the
-later phases lose the mechanism that makes their decisions reviewable as a diff. Say
-so explicitly, and offer to emit a `target.r2rml` synthesized from the ontology so a
-baseline exists even though it was never executable against a source.
+later phases lose the mechanism that makes their decisions reviewable as a diff —
+and no subject maps, so **a fold or a split cannot be stated at all** and every
+class becomes exactly one entity
+([entity-derivation-guide.md § Identity is the subject](entity-derivation-guide.md)).
+Say so explicitly, and offer to emit a `target.r2rml` synthesized from the ontology
+so a baseline exists even though it was never executable against a source.
+
+**A mapping whose subject maps carry only `rr:class`** parses, and derives, but
+states no identity: it is the degenerate case in the table above. It is also not
+executable R2RML — a real subject map mints an IRI. When the bundle looks like this,
+say that a fold or a split will need subject templates added first.
 
 ## Reified relations — read before synthesizing a junction
 
@@ -150,6 +159,7 @@ still yields a derivation, because the inventory is far smaller than its sources
   "triplesMaps": [
     { "iri": "<IRI>", "logicalTable": "<TABLE|null>", "sqlQuery": "<SQL|null>",
       "subjectClass": "<IRI|null>",
+      "subjectKey": "template:<IRI_TEMPLATE>|column:<COLUMN>|constant:<IRI>|null",
       "predicateObjectMaps": [
         { "predicate": "<IRI>", "column": "<COLUMN|null>",
           "parentTriplesMap": "<IRI|null>",
@@ -185,6 +195,12 @@ subset.
 `ObjectIntersectionOf`, property chains, annotations other than label and comment,
 and anything requiring reasoning. **No inference is performed** — asserted axioms
 only, so a domain inherited through a superclass is not propagated.
+
+**R2RML subject maps.** `rr:class` is read for the type, and `rr:template`,
+`rr:column` or `rr:constant` — in that order of preference — for the subject key
+that decides entity identity. The `rr:subject` constant shortcut is read when no
+subject map carries one. Nothing else of the subject map is interpreted, and the
+template is compared as a string, never expanded.
 
 **Turtle (R2RML and SHACL).** A constrained reader: prefixed names, IRIs in angle
 brackets, string and integer literals, `;` and `,` continuations, and blank-node

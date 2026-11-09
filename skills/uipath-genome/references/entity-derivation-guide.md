@@ -22,6 +22,61 @@ Three decisions in this file cannot be revisited cheaply once made
 
 Everything else here is recomputed free on a re-run.
 
+## Identity is the subject
+
+**One entity is one identifier, not one class.** A class is a *type* a record
+carries, and a record can carry two; two records can carry the same type. The thing
+that decides how many records there are is the R2RML **subject map** — the rule that
+mints each row's identifier.
+
+| In `target.r2rml` | Means | Emits |
+|---|---|---|
+| two triples maps, **same** `rr:template` | one record that is both classes | **one** entity, `derivation: consolidation` |
+| one class, **two** `rr:template`s | two records that share a type | **two** entities, `derivation: decomposition` |
+| one template per class (the ordinary case) | one record per class | one entity each, `derivation: direct` |
+| no subject map, or one with no template / column / constant | nothing stated | falls back to the class; identical to a class-per-entity derivation |
+
+This is the standard construct, not a convention invented here: in R2RML the subject
+IRI *is* the identity, and `rr:class` only types it. Sharing a **logical table**
+states nothing — one flat extract legitimately carries an invoice and its supplier
+in one row, and they are still two records.
+
+**So a fold or a split is a `target.r2rml` edit, and the diff against the immutable
+`source.r2rml` is the decision record** ([normalization-guide.md § How a revision is
+recorded](normalization-guide.md)). Nothing here invents either one: the derivation
+reads what the mapping states and no more.
+
+### What follows from a fold
+
+1. **Fields merge.** Every class in the group contributes its properties, each
+   keeping the column its own triples map reads.
+2. **The link between the folded classes is absorbed.** `Supplier.registeredAt →
+   Address` becomes a link from the record to itself once both are one record, so
+   the `RELATIONSHIP` is dropped and a register row says so. This is not the
+   self-reference case of § Cycles, which the ontology asked for and which is
+   emitted normally.
+3. **The entity is named from the template's last literal path segment** —
+   `…/supplier/{LIFNR}` names it `Supplier` — because the author chose the template
+   and the class names now disagree. A segment that yields no usable name falls back
+   to the lowest-sorting member class.
+4. **Ownership and hop cost are read off the group's table.** Members mapped across
+   several tables get a register row naming the one that was used.
+
+### What follows from a split
+
+1. **A property lands on every part whose map carries it**, reading that part's own
+   column — both parts of a `Party` have a name, one from `NAME1` and one from
+   `ENAME`.
+2. **A relationship's end is resolved by `rr:parentTriplesMap`.** The range class
+   alone cannot say which part a link points at; the mapping names the exact map,
+   and that map's subject names the entity. With nothing to go on the link lands on
+   the class's primary part — the lowest-sorting subject — and a register row says
+   so, because that is a guess the reviewer must see.
+3. **The primary part also receives any property no map carries.**
+
+Every one of these emits a register row. A fold or a split that left no trace would
+be indistinguishable from a derivation that simply lost a class.
+
 ## Classes and properties
 
 | Inventory | Emits | Notes |
@@ -162,7 +217,9 @@ child→parent.
 
 1. **Discard self-references** — an edge from an entity to itself. They are legal
    (`Employee.manager → Employee`) and are emitted normally; they are simply removed
-   before the cycle check.
+   before the cycle check. A link between two classes a fold made into one record is
+   a different thing: it is dropped rather than emitted, because the join it carried
+   no longer exists (§ Identity is the subject).
 2. **Any remaining cycle fails the run**, naming every member. A cycle means the
    ontology needs further normalization before it can be modelled.
 
@@ -186,20 +243,24 @@ never a scalar, and every emitted object records why it exists.
 }
 ```
 
-| `derivation` | `from[]` holds | Phase | Forced by |
+| `derivation` | `from[]` holds | Emitted when | Forced by |
 |---|---|---|---|
-| `direct` | one class, or one property | **Author** | 1:1 |
-| `junction` | both endpoint classes **and** the object property | **Author** | many-to-many with a single-valued `RELATIONSHIP` — no alternative exists |
-| `decomposition` | the class it was split from | Phase 2 | lifecycle, scope or access |
-| `consolidation` | every class folded in | Phase 2 | a denormalization judgement |
-| `federated-view` | every class the view spans | Phase 2 | a query pattern recurring across surfaces |
+| `direct` | one class, or one property | always | 1:1 |
+| `junction` | both endpoint classes **and** the object property | always | many-to-many with a single-valued `RELATIONSHIP` — no alternative exists |
+| `consolidation` | every class folded in | **the mapping states it** — several triples maps, one subject | § Identity is the subject |
+| `decomposition` | the class it was split from | **the mapping states it** — one class, several subjects | § Identity is the subject |
+| `federated-view` | every class the view spans | never emitted | needs a cost model over a query load |
 
 Open vocabulary — a new mapping shape gets a new kind rather than being forced into
 `direct`. **A non-`direct` derivation with an empty `because` is a defect.**
 
-**Author mode emits only the first two.** The bottom three need a consumption
-pattern, and no automation exists yet in the run that authors the genome
-([data-model-guide.md § What Author mode decides](data-model-guide.md)).
+`consolidation` and `decomposition` are **read, never invented.** The derivation
+emits one because `target.r2rml` says so, and the mapping says so because someone
+took the decision and wrote it down. What the derivation may not do is decide to
+fold or split on its own: that needs a consumption pattern
+([data-model-guide.md § What Author mode decides](data-model-guide.md)). A
+`federated-view` is never emitted at all — the envelope only reports which ones are
+structurally available ([normalization-guide.md § The feasibility envelope](normalization-guide.md)).
 
 ## Coverage
 
@@ -243,9 +304,12 @@ input produce byte-identical files — the property every later phase's diff res
    tenant API, refused by `--local`, broken in the UI (§ Types).
 4. **Renaming silently.** Every rename and every collision suffix is a register row;
    the IRI is the identity (§ Naming).
-5. **Emitting `consolidation`, `decomposition` or `federated-view` in Author mode.**
-   Those need a consumption pattern that does not exist yet (§ Provenance).
-6. **Treating a self-reference as a cycle**, or a diamond as one (§ Cycles).
-7. **Letting a Data Fabric limit edit the ontology.** The conceptual level is an
+5. **Inventing a `consolidation` or a `decomposition`.** Both are read off
+   `target.r2rml`'s subject maps and nowhere else; deciding to fold or split needs a
+   consumption pattern (§ Provenance). Emitting a `federated-view` at all.
+6. **Reading co-location as identity.** Two classes on one logical table are two
+   records until one subject template mints both (§ Identity is the subject).
+7. **Treating a self-reference as a cycle**, or a diamond as one (§ Cycles).
+8. **Letting a Data Fabric limit edit the ontology.** The conceptual level is an
    input; a platform limit is a register row
    ([data-model-guide.md § Three schemas](data-model-guide.md)).
