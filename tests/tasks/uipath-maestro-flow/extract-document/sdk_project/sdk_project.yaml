@@ -39,7 +39,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "A Flow project other than PermitDesk, with no .flow-sdk/, holds an Extract document node and validates"
-    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings "$(python3 $REFERENCE_DIR/extract-document/sdk_project/find_extract_flow.py)"
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings "$(python3 $REFERENCE_DIR/extract-document/sdk_project/sdk_project_helper.py)"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

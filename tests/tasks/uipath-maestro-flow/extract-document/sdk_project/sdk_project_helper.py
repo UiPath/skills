@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print the .flow the agent built outside the PermitDesk SDK project.
+"""Helper for sdk_project.yaml: print the flow the agent built outside PermitDesk.
 
 Picks the first .flow (sorted) that holds an Extract document node, sits next to
 a project.uiproj, and has no .flow-sdk/ beside it. Prints nothing when none
