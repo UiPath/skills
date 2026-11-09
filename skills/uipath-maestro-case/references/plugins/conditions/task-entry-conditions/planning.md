@@ -70,7 +70,7 @@ For every task-entry-condition element, verify the task's `activation-mode` and 
 |---|---|
 | `sequential` | `runs-sequentially` |
 | `parallel` | `current-stage-entered`, each task in its own single-task set |
-| `parallel-after-predecessor` | `runs-sequentially`, with the siblings sharing the next task set after one predecessor |
+| `parallel-after-predecessor` | `runs-sequentially`, with the siblings sharing the next task set after one `runs-sequentially` predecessor |
 | `event-triggered` | `wait-for-connector` or another explicitly authored event/condition rule |
 | `adhoc` | `adhoc` |
 | `fan-in` | `selected-tasks-completed` with multiple selected tasks or an explicit convergence rationale |
