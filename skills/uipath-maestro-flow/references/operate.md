@@ -40,8 +40,8 @@ re-lays out every node and discards them. Upload or debug the merged file as
 `merge` wrote it.
 <!--skill-flavor:operate-format:end-->
 
-`nodes create` without `--position`, or a script that adds nodes, leaves every new
-node at `layout.nodes[<id>].position` 0,0. After such edits to a file with no
+`nodes create` without `--position`, or a hand edit that adds nodes, leaves every new
+node at `layout.nodes[<id>].position` 0,0. After such an edit to a file with no
 author-chosen layout, run `format`, then confirm each node in `layout.nodes` has a
 distinct position. With an author-chosen layout, skip `format` and pass
 `--position <x>,<y>` to each `nodes create`.
