@@ -21,6 +21,7 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 | Request | Update |
 |---|---|
 | "The SDD was revised: update the genome" (from `uipath-genome`, or the user) | Read the SDD the `Designed in:` line links whole and redo [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) items 3–6 against it: every section whose SDD content changed is rewritten, nothing else is. Then take the SDD's fingerprint again and rewrite the `Designed in:` line ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)). An unattended build's request applies the edit without offering it; the closing summary names the sections changed |
+| "Findings from `uipath-genome`" (from the build, or the user forwarding its report) | Apply each finding where it points: a checker `FAIL` → the section and rule it names ([genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md)); a genome deviation → the step the source contradicts, written as the build followed it unless the user rules otherwise; a retired skill name → the Build With row, from [skill-mapping-guide.md](../shared/skill-mapping-guide.md); a `Not covered` object to build → [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md). A build's request applies the edits without offering them |
 | "Add detail to step X" | Workflow step X; add acceptance criteria if detail is testable |
 | "Change complexity" / "complexity should be higher or lower" | Complexity section, then section depth per population matrix |
 | "Add/remove an application" | Target Applications, Workflow, Build With, Acceptance Criteria |
@@ -50,3 +51,7 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 ## Review after every edit
 
 After every edit, review what changed, and every component genome a process genome links that the edit touched, against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) before answering. An extracted genome also takes the Source Map checks [extract-guide.md](../extract/extract-guide.md) Step 6b runs against its source. Fix what breaks a rule, then name what is left.
+
+## Back to the Build
+
+An edit `uipath-genome` requested, or a request that also asks to build, ends by invoking `uipath-genome` with `build "<GENOME_MD>"` and the user's build request quoted, after § Review after every edit. A finding the edit could not apply is named in that hand-off; the build reports it instead of handing it back again. `uipath-genome` not installed → end at the summary and say the build needs it. Any other edit ends at its summary.

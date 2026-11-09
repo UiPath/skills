@@ -166,3 +166,16 @@ def unresolved_pointers(skill: Path) -> list[str]:
 @pytest.mark.parametrize("skill", [PLANNER, BUILDER], ids=lambda p: p.name)
 def test_section_pointers_resolve_in_the_skills_own_files(skill):
     assert unresolved_pointers(skill) == []
+
+
+# The requests uipath-genome hands to uipath-planner's edit; each must be matched by an edit-guide row.
+EDIT_REQUESTS = ["The SDD was revised: update the genome", "Findings from `uipath-genome`"]
+
+
+@pytest.mark.parametrize("request_text", EDIT_REQUESTS)
+def test_builder_edit_requests_have_an_edit_guide_row(request_text):
+    builder = "".join(p.read_text(encoding="utf-8") for p in (BUILDER / "references").glob("*.md"))
+    edit_rows = [line for line in (PLANNER / "references" / "edit" / "edit-guide.md").read_text(encoding="utf-8").splitlines()
+                 if line.startswith(f'| "{request_text}"')]
+    assert request_text in builder, f"uipath-genome no longer sends {request_text!r}"
+    assert edit_rows, f"uipath-planner's edit-guide.md has no row starting with {request_text!r}"
