@@ -87,4 +87,4 @@ What each section holds:
 4. **Data the build's runs changed:** each change a run made in a target system or a store, with how to undo it; nothing is undone unasked.
 5. **Files:** every file of the folder with what it holds, and the working folder that stays with the build.
 
-A section with nothing to hold reads "None.". The report does not claim results match the source; the parity tables make that comparison possible for whoever holds a source result.
+A section with nothing to hold reads "None.". When the user asks for the genome edits sections 1–3 name, they go to `uipath-planner` as one request headed "Findings from `uipath-genome`", with the genome path. The report does not claim results match the source; the parity tables make that comparison possible for whoever holds a source result.
