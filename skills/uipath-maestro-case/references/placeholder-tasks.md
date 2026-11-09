@@ -236,6 +236,6 @@ Use placeholder/external lists to drive registration and upgrades. The built-inl
 - **Do NOT create placeholders for timer tasks.** Use the full `wait-for-timer` plugin.
 - **Do NOT create a placeholder for an agent, API workflow, or business rule the user chose to build inline.** It is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)).
 - **Do NOT build an agent, API workflow, or business rule from SDD content alone.** Inline creation requires explicit selection at the Rule 18 gate; the result is an in-solution sibling that co-deploys with the case, never a separate tenant publish.
-- **Invoking `uipath-agents` / `uipath-api-workflow` / `uipath-rules` for the inline build is sanctioned.** The “don't auto-invoke other skills” rule in `SKILL.md § Non-negotiable prohibitions` still applies to every non-creatable kind (regular RPA process, action, function, case-management, connectors, agentic process) and to `uipath-planner`.
+- **Invoking `uipath-agents` / `uipath-api-workflow` / `uipath-rules` for the inline build is sanctioned.** The “don't auto-invoke other skills” rule in `SKILL.md § Anti-patterns` still applies to every non-creatable kind (regular RPA process, action, function, case-management, connectors, agentic process) and to `uipath-planner`.
 
 <!-- END: placeholder-tasks.md -->

@@ -47,7 +47,7 @@ Mark `<UNRESOLVED: agent "<name>" in folder "<folder>" not found in registry>`. 
 
 When unresolved at the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects **Create**, build an **in-solution sibling**. Use [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery) for capability probe, multi-select, § 1c build-dedup, parallel build, sequential register, and rediscover/verify/bind; use [create-inline-common.md](../create-inline-common.md) for kind-agnostic Step 1/1b/3/Failure. This section supplies agent-specific build kind, brief, and debug provisioning.
 
-Do not run `uip agent init` directly. Spawn a sub-agent invoking the `uipath-agents` skill; cross-skill invocation is allowed here despite `SKILL.md § Non-negotiable prohibitions`. Build only agents selected by the user at the gate, never from SDD content alone; the gate is the human-approval checkpoint.
+Do not run `uip agent init` directly. Spawn a sub-agent invoking the `uipath-agents` skill; cross-skill invocation is allowed here despite `SKILL.md § Anti-patterns`. Build only agents selected by the user at the gate, never from SDD content alone; the gate is the human-approval checkpoint.
 
 ### Step 1 — Compute the pinned I/O contract
 

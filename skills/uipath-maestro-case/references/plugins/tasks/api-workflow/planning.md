@@ -46,7 +46,7 @@ Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-i
 
 At the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback), when the user selects **Create**, build an **in-solution sibling**. Cross-cutting capability probe, multi-select, § 1c build-dedup, parallel build, sequential register, and rediscover/verify/bind are in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); kind-agnostic Step 1/1b/3/Failure rules are in [create-inline-common.md](../create-inline-common.md). API-specific deltas follow. The agent analog is [agent/planning.md § Creating an Agent inline](../agent/planning.md#creating-an-agent-inline).
 
-Do not run `uip api-workflow init` yourself. Spawn a sub-agent invoking `uipath-api-workflow`; cross-skill invocation is allowed here, overriding the “never auto-invoke other skills” rule in `SKILL.md § Non-negotiable prohibitions`. Build only API workflows selected at the gate, never from SDD content alone. API workflows have no build-kind choice: always build JSON-DSL `Workflow.json`.
+Do not run `uip api-workflow init` yourself. Spawn a sub-agent invoking `uipath-api-workflow`; cross-skill invocation is allowed here, overriding the “never auto-invoke other skills” rule in `SKILL.md § Anti-patterns`. Build only API workflows selected at the gate, never from SDD content alone. API workflows have no build-kind choice: always build JSON-DSL `Workflow.json`.
 
 ### Step 1 — Compute the pinned I/O contract
 
