@@ -1,11 +1,8 @@
 # Agent resource families
 
-*Exact signatures, fields, and defaults: `inlineAgent()`. Prompting, inputs and the sidecar: [inline-agent.md](inline-agent.md).*
+*Exact signatures, fields, and defaults: `inlineAgent()`. Prompting, inputs, and the sidecar: [inline-agent.md](inline-agent.md).*
 
-An inline agent's capabilities are ARTIFACT nodes hanging off its own handles — tools on `tool`, a context index on `context`, an escalation on `escalation` — not steps in the control flow.
-Each is authored as an entry on `inlineAgent`, and the compiler emits the node and the edge.
-`voiceAgent` and `conversationalAgent` take the same `tools`, `context` and `escalation` options, with the same rules ([below](#voice-and-conversational-agents)); `memory` is the inline agent's alone.
-Context index: [inline-agent.md](inline-agent.md#context-grounding).
+Inline-agent capabilities are ARTIFACT nodes on handles, not control-flow steps: tools on `tool`, a context index on `context`, and escalation on `escalation`. Author each as an `inlineAgent` entry; the compiler emits its node and edge. `voiceAgent` and `conversationalAgent` accept the same `tools`, `context`, and `escalation` options under [voice and conversational agents](#voice-and-conversational-agents); only inline agents have `memory`. Context index: [inline-agent.md](inline-agent.md#context-grounding).
 
 ```ts
 .step('triage', inlineAgent({
@@ -26,46 +23,28 @@ Context index: [inline-agent.md](inline-agent.md#context-grounding).
 
 | Kind | What it is | Identity you must supply |
 | --- | --- | --- |
-| `builtin` | A platform tool (`summarize`, `analyzefiles`, `batchtransform`) | the tool name |
-| `connector` | An Integration Service operation | `connector` + `operation` (needs a library), plus `connection` + `folder` (`bindings.json` labels) — see [inline-agent.md](inline-agent.md#tools) |
-| `process` / `api` / `flow` / `maestro` / `agent` / `function` | A deployed resource, or a sibling project of this solution | `key` (GUID) + `name` + `folderPath` (`'solution_folder'` for a sibling, see [inline-agent.md](inline-agent.md#tools)) |
-| `ixp` | A published IxP project | `projectId` + `name` |
-| `mcp` | An MCP server's tools | `name` + `key`; `slug` is what the runtime resolves |
-| `a2a` | A remote agent to delegate to | `name` + `key` + `slug` (required) |
-| `clientside` | The CALLING application runs it | `name`, plus the `inputs`/`returns` contract, or `inputSchema`/`outputSchema` for a whole JSON schema (property descriptions, `items`, `required`); not both |
-| `httpRequest` | The built-in HTTP tool | nothing — see below |
+| `builtin` | Platform tool (`summarize`, `analyzefiles`, `batchtransform`) | tool name |
+| `connector` | Integration Service operation | `connector` + `operation` (needs a library), plus `connection` + `folder` (`bindings.json` labels); see [inline-agent.md](inline-agent.md#tools) |
+| `process` / `api` / `flow` / `maestro` / `agent` / `function` | Deployed resource or sibling project | `key` (GUID) + `name` + `folderPath` (`'solution_folder'` for a sibling); see [inline-agent.md](inline-agent.md#tools) |
+| `ixp` | Published IxP project | `projectId` + `name` |
+| `mcp` | MCP server tools | `name` + `key`; `slug` is runtime-resolved |
+| `a2a` | Remote agent delegation | `name` + `key` + `slug` (required) |
+| `clientside` | Run by the CALLING application | `name` and either `inputs`/`returns` or whole-JSON `inputSchema`/`outputSchema` (property descriptions, `items`, `required`); not both |
+| `httpRequest` | Built-in HTTP tool | nothing; see below |
 
-For `mcp`, `a2a` and the per-instance resource kinds, the node TYPE is
-minted from the identity you give (`…tool.mcp.<name-slug>.<key-slug>`), so a
-wrong key emits a node the tenant cannot resolve. Read them from the tenant.
+For `mcp`, `a2a`, and per-instance resource kinds, the node TYPE is minted from supplied identity (`…tool.mcp.<name-slug>.<key-slug>`); a wrong key emits an unresolvable tenant node. Read identities from the tenant.
 
-**The HTTP tool's fields are three-way.** Each of `url`, `method`, `headers`,
-`params`, `body`, `timeout` is either FIXED (give it a value) or left for the
-MODEL to fill at call time (omit it, which keeps the definition's prompt-mode
-default and its field description). Fixing everything defeats the point of
-giving an agent a tool; fixing nothing gives the model no constraints. Fix what
-the scenario pins and leave the rest.
+**The HTTP tool's fields are three-way.** For each of `url`, `method`, `headers`, `params`, `body`, and `timeout`, either FIX it with a value or omit it for the MODEL to fill at call time, preserving the definition's prompt-mode default and field description. Fix scenario-pinned fields; fixing all defeats the tool's purpose, while fixing none gives the model no constraints.
 
-**A client-side tool declares only a CONTRACT.** The flow says what the tool is
-called and what it takes and returns; the calling application owns the
-implementation and dispatches on the name. Nothing local runs it.
+**A client-side tool declares only a CONTRACT.** The flow specifies its name, inputs, and returns; the calling application implements and dispatches it. Nothing local runs it.
 
 ## Escalation
 
-The default variant is app-backed: `app: { key, name, folderPath }` names a
-deployed Action Center app that owns the form. `folderPath` is the app's
-Orchestrator folder (`'Shared/Approvals'`); omit it for an app that ships in this
-solution, and compile writes `'solution_folder'`. `variant: 'quick-form'` puts the
-form INLINE instead — `fields` (the same rows a human task takes) and no `app`.
-`check` refuses the two mixed, in either direction.
+The default variant is app-backed: `app: { key, name, folderPath }` identifies a deployed Action Center app owning the form. `folderPath` is its Orchestrator folder (`'Shared/Approvals'`); omit it for an app shipped in this solution, and compile writes `'solution_folder'`. `variant: 'quick-form'` makes the form INLINE: provide `fields` (the same rows a human task takes) and no `app`. `check` refuses either mixed combination.
 
 ## Memory
 
-Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`).
-Find the space, declare it in the solution, then attach it to the sidecar after the
-last `compile`. `add` only attaches an existing space: an empty list means stop and
-report it. `--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`.
-`<MEMORY_SPACE_NAME>` and `<MEMORY_SPACE_FOLDER>` are the list row's `Name` and `Folder`:
+Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`). Find the space, declare it in the solution, then attach it to the sidecar after the last `compile`. `add` only attaches an existing space; if the list is empty, stop and report it. `--field` takes a sidecar `inputSchema` key, such as `start__output__userQuestion`. `<MEMORY_SPACE_NAME>` and `<MEMORY_SPACE_FOLDER>` are the list row's `Name` and `Folder`:
 
 ```bash
 uip solution resources list --source remote --kind MemorySpace --search "<MEMORY_SPACE_NAME>" --output json
@@ -78,46 +57,21 @@ uip agent refresh "<Solution>/<Name>/<source>" --inline-in-flow \
   --bindings-target "<Solution>/<Name>/bindings_v2.json" --output json
 ```
 
-`memory add` reporting `SolutionResource.Status: NotDeclared` means the space is not
-linked: run the `resources add` line, then `memory add` again. Threshold, result count,
-search mode: `uip agent memory add --help`. Do not add items: they come from real runs
-after deploy (`uip agent memory item add --help`).
+If `memory add` reports `SolutionResource.Status: NotDeclared`, run the `resources add` line, then run `memory add` again. For threshold, result count, and search mode, run `uip agent memory add --help`. Do not add items: real runs add them after deploy; run `uip agent memory item add --help` for help.
 
 ## Evidence boundary
 
-Every resource here is tenant data, runtime behaviour, or both: no local rung
-calls an MCP server, delegates to a remote agent, or asks a
-client application to run a tool. Offline `validate` proves the minted node
-types, the wiring to the right handle, and the declared contracts. Whether the
-resources exist and what they return is platform evidence.
+Every resource here is tenant data, runtime behaviour, or both. No local rung calls an MCP server, delegates to a remote agent, or asks a client application to run a tool. Offline `validate` proves minted node types, correct-handle wiring, and declared contracts; resource existence and returned values require platform evidence.
 
 ## Voice and conversational agents
 
 <!--skill-flavor:voice-conversational-resources-sdk-version:start-->
-**Needs `@uipath/maestro-builder-sdk` 6.88.2 or later.** An older SDK accepts
-these options with no finding and compiles the agent with no tool, context or
-escalation nodes. Upgrade the copy in use: `npm install
-@uipath/maestro-builder-sdk@latest` in a workspace that has its own
-`node_modules` copy (it is used before the global one), else `npm install -g
-@uipath/maestro-builder-sdk@latest`.
+**Needs `@uipath/maestro-builder-sdk` 6.88.2 or later.** An older SDK silently accepts these options and compiles no tool, context, or escalation nodes. Upgrade the copy in use by running `npm install
+@uipath/maestro-builder-sdk@latest` in a workspace with its own `node_modules` copy (used before the global one), or run `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:voice-conversational-resources-sdk-version:end-->
 
-- **`check` codes.** The inline agent's rules, under codes all three agents
-  share: `FLOW_AGENT_TOOL_*`, `FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_RESOURCE_*`,
-  `FLOW_AGENT_CONTEXT_*`. Each message names the agent's kind (`Voice agent step
-  "a" …`). An SDK older than 6.88.2 prints the same rules for an inline agent
-  as `INLINE_AGENT_TOOL_*`, `INLINE_AGENT_ESCALATION_*`, `INLINE_AGENT_RESOURCE_*`
-  and `AGENT_CONTEXT_*`.
-- **Voice agent definitions.** Compile writes each resource's definition with
-  the voice agent as an allowed source, as the designer does; the built-in
-  tools and the app escalation go out at 1.2 for that reason.
-- **What decompile does not carry back yet.** These get a `TODO` for their edge:
-  - a connector tool;
-  - a built-in tool at a version other than the one compile writes for that
-    agent, and an HTTP request tool at a version other than 1.0;
-  - an escalation at a version compile does not write: a quick-form other than
-    1.2, or an app escalation other than 1.1 (1.2 on a voice agent).
+- **`check` codes.** All three agents share the inline agent's rules under `FLOW_AGENT_TOOL_*`, `FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_RESOURCE_*`, and `FLOW_AGENT_CONTEXT_*`; SDKs older than 6.88.2 instead print `INLINE_AGENT_TOOL_*`, `INLINE_AGENT_ESCALATION_*`, `INLINE_AGENT_RESOURCE_*`, and `AGENT_CONTEXT_*` for inline agents.
+- **Voice agent definitions.** Compile writes each resource definition with the voice agent as an allowed source, as the designer does; built-in tools and app escalation therefore use version 1.2.
+- **What decompile does not carry back yet.** These receive a `TODO` for their edge: a connector tool; a built-in tool at a version other than the one compile writes for that agent, or an HTTP request tool at a version other than 1.0; and an escalation at a version compile does not write: a quick-form other than 1.2, or an app escalation other than 1.1 (1.2 on a voice agent).
 
-  Recompiling that source drops the tool or escalation. Do not recompile such a
-  flow from its decompiled source; edit the `.flow` instead.
-
+Recompiling that source drops the tool or escalation. Do not recompile such a flow from its decompiled source; edit the `.flow` instead.

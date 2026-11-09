@@ -2,74 +2,19 @@
 
 *Exact signatures, fields, and defaults: `script()`.*
 
-Script runs inline JavaScript for a computation that has no first-class Flow
-node. Upstream data is available through `$vars`; the result is read with
-`out(step, path?)`.
+`script` runs inline JavaScript for computation without a first-class Flow node. Read upstream data through `$vars`; read results with `out(step, path?)`. Flow inputs are `$vars.start.output.<name>` (the lowering of `input('<name>')`); `.var()` values are `$vars.<name>`.
 
-A flow input is read off the trigger, `$vars.start.output.<name>` (what
-`input('<name>')` lowers to); a `.var()` is read as `$vars.<name>`.
-
-```ts
-.step('normalize', script({ code: `
-  const amount = Number($vars.start.output.amount);
-  return { amount, valid: Number.isFinite(amount) };
-` }))
-```
-
-Use the named first-class node when the scenario needs a connector or HTTP for
-any external data or API call, Transform, Delay, or another product capability,
-whether or not the request names the node. A script is appropriate for
-local calculation, reshaping that needs arbitrary code, or computing a value
-before passing a bare reference to another node.
-
-Return an object literal for named fields and read them with `out('parse', 'tag')`;
-read a scalar return with `out('parse')`.
-
-## At a glance
-
-Run inline JavaScript for computation that is not a first-class Flow node.
-
-Signature: `script({ code: string })`, or `script(fn, { returns })` for [a function](#writing-the-script-as-a-function); read the result with `out(step, path?)`.
-
-Use a first-class action when the scenario names one; use script for computation.
+Use the named first-class node when the scenario needs a connector or HTTP for external data/API calls, Transform, Delay, or another product capability, whether or not requested. Use script for local calculation, arbitrary-code reshaping, or computing a value before passing a bare reference to another node. Return an object for named fields (`out('parse', 'tag')`) or a scalar (`out('parse')`). Use `script({ code: string })`, or `script(fn, { returns })` for [a function](#writing-the-script-as-a-function).
 
 ## What the step publishes
 
-The node's own definition can only declare a generic output (`object` on
-1.0.0, `any` on 1.1) — a node TYPE cannot know what a particular body returns —
-so the designer would type every script read as `Record<string, any>` and
-reject mapping one into a `string` flow output. The compiler therefore reads the body and declares what it plainly
-returns, so this needs nothing from you:
+A node TYPE cannot know a particular body’s output: its generic output is `object` on 1.0.0 and `any` on 1.1. The compiler reads the body and declares what it plainly returns. Object returns remain open objects, not field lists, and nothing is declared unless every `return` agrees. Runtime reads and calls declare nothing, so use `returns` when needed.
 
-```ts
-.step('flag', script({ code: 'return "pending-approval";' }))
-.return({ status: out('flag') })          // status: types.string — fine
-```
-
-It types, it does not enumerate: an object return stays the open object rather
-than gaining a field list, and nothing is declared unless every `return` in the
-body agrees. A body whose return type is not written down — a runtime read, a
-call — declares nothing, which is where `returns` comes in:
-
-```ts
-.step('policyLimit', script({
-  code: 'return $vars.fetchPolicy.output.body.limit;',
-  returns: 'number',
-}))
-```
-
-`returns` always wins over the body, and takes either a type
-(`'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'`) or, to name the fields
-of an object return, a map — `returns: { total: 'number', currency: 'string' }`.
-`'any'` is valid only as the top-level `returns` of a `script@1.1` step — not
-on 1.0.0 and never as a field type (`check` reports `SCRIPT_RETURNS_UNKNOWN_TYPE`).
-It keeps the output untyped even when the body plainly returns one type.
+`returns` overrides the body and accepts `'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'`, or an object-field map such as `returns: { total: 'number', currency: 'string' }`. `'any'` is valid only as the top-level `returns` of a `script@1.1` step—not on 1.0.0 and never as a field type (`check` reports `SCRIPT_RETURNS_UNKNOWN_TYPE`). It leaves the output untyped even when the body plainly returns one type.
 
 ## Writing the script as a function
 
-A body longer than a line is easier to get right as a TypeScript function: pass the function instead of a string, and the editor and tsc check the body like the rest of the `.flow.ts`.
-Prefer it for new scripts; the examples write every script this way.
-The string form remains right for a body that splices an `out()` reference in with `js`` `, which a function cannot do, and is what an SDK older than 6.57.0 takes.
+For bodies longer than a line, prefer a TypeScript function so the editor and `tsc` check it like the rest of `.flow.ts`. Prefer it for new scripts; the examples write every script this way. The string form remains necessary for a body splicing an `out()` reference with `js`` ` and for an SDK older than 6.57.0.
 
 ```ts
 import { script, type FlowVars } from '@uipath/maestro-builder-sdk';
@@ -83,30 +28,27 @@ function normalize($vars: FlowVars) {
 }
 ```
 
-- The function is never called. Its body, exactly as written, becomes the script. Its parameter stands for the runtime's `$vars`, and a second parameter for the instance metadata, `$metadata` ([below](#reading-the-instance-metadata)). Name them `$vars` and `$metadata`, as the examples do: then nothing is renamed and the body reads exactly as it runs. Any other name works too, and is renamed to the runtime's name. Parameters bind by position, so take them in that order: a parameter named like the other one (`($metadata) => …`) is refused.
-- Read the parameter only with dots (`$vars.start.output.amount`). A destructured parameter, an alias (`const v = $vars`), `$vars['start']`, `$vars?.start`, or passing `$vars` to a helper is refused, because a step read hidden that way is invisible to `check`.
+- The function is never called; its body becomes the script exactly as written. Parameter one is runtime `$vars`, parameter two is `$metadata` ([below](#reading-the-instance-metadata)); name them accordingly, though other names are renamed. Parameters bind by position, so `($metadata) => …` is refused.
+- Read parameters only with dots (`$vars.start.output.amount`). Destructuring, aliases (`const v = $vars`), bracket/optional access (`$vars['start']`, `$vars?.start`), and passing `$vars` to a helper are refused because `check` cannot see hidden step reads.
 <!--skill-flavor:script-function-returns-check:start-->
-- `returns` is what the `.flow` declares, and its type is checked against the function's return: `returns: { amount: 'string' }` over the function above is a type error. `compile` does not type-check, so the error shows only where tsc runs: with a workspace copy (`npm install --save-dev @uipath/maestro-builder-sdk typescript`), `npx tsc --noEmit --strict --module nodenext --moduleResolution nodenext --skipLibCheck <file>.flow.ts` reports it. With only the global SDK copy nothing checks it, so match the `returns` fields to what the function returns by hand. Without `returns`, the body's type is inferred as for a string body.
+- `returns` is the `.flow` declaration and is checked against the function’s return; `compile` does not type-check. With a workspace copy, run `npm install --save-dev @uipath/maestro-builder-sdk typescript`, then run `npx tsc --noEmit --strict --module nodenext --moduleResolution nodenext --skipLibCheck <file>.flow.ts`. A global SDK copy checks nothing; match fields manually. Without `returns`, the body’s type is inferred as for a string body.
 <!--skill-flavor:script-function-returns-check:end-->
-- The function reads only what [the runtime](#the-javascript-runtime) has. A value from outside the function is refused: a module constant or an import throws when the flow loads (`script(normalize) cannot be a script: it reads LIMIT, …`), and so does a module helper named like a runtime global (`parseInt`), which `compile` and `check` refuse. Move the value inside the function, or declare it with `.var()` and read `$vars.<name>`. Pass the function to `script()` by name or inline, from a `.ts` file: `compile` and `check` refuse any other shape (`script(h.check)`, a wrapper around `script`), because they cannot check what it reads.
-- Also refused, with a message naming the function: `async`, generators, more than two parameters (more than one on an SDK older than 6.72.0, which lacks [the metadata parameter](#reading-the-instance-metadata)), a default or rest parameter, `this` or `arguments` outside a nested function, a reference to the function's own name, and a `var` or function declaration that reuses the parameter's name.
-- With an SDK copy that has `dist/script-globals.d.ts`, these are refused too, each of which fails in the run (see [the runtime](#the-javascript-runtime)): a top-level declaration of, or assignment to, `console`, `uipath`, `aggregate`, `_aggregate` or `_pipe`, and a member of `crypto` or `console` the engine's lacks (`crypto.getRandomValues`, `console.table`).
-- A script function may read `console`, but not `uipath`, `aggregate`, `_aggregate` or `_pipe`: those are the engine's undocumented helpers, so `compile` refuses them.
+- The function may read only what [the runtime](#the-javascript-runtime) provides. Module constants/imports and module helpers named like runtime globals (such as `parseInt`) are refused; errors name the function (for example, `script(normalize) cannot be a script: it reads LIMIT, …`). Move values inside, or declare them with `.var()` and read `$vars.<name>`. Pass a named or inline function from a `.ts` file; `script(h.check)` and wrappers are refused because they cannot be checked.
+- Refused with a message naming the function: `async`, generators, more than two parameters (more than one on an SDK older than 6.72.0, which lacks [the metadata parameter](#reading-the-instance-metadata)), default/rest parameters, `this` or `arguments` outside a nested function, a reference to the function’s own name, and a `var` or function declaration reusing a parameter name.
+- With an SDK containing `dist/script-globals.d.ts`, also refuse top-level declaration or assignment of `console`, `uipath`, `aggregate`, `_aggregate`, or `_pipe`, and unsupported members such as `crypto.getRandomValues` or `console.table` (each fails at runtime; see [the runtime](#the-javascript-runtime)).
+- A script function may read `console`, but not `uipath`, `aggregate`, `_aggregate`, or `_pipe`; these undocumented engine helpers are refused by `compile`.
 
-To type-check a function that calls `randomUUID`, `btoa` or `atob`, add `/// <reference types="@uipath/maestro-builder-sdk/script-globals" />` to the file (an SDK copy that has `dist/script-globals.d.ts`; an older one refuses those names in a script function). Do not import an implementation: the engine provides them, and `compile` refuses a script function that reads a name from its module.
-The reference does not declare `crypto`; for `crypto.randomUUID()` the program needs `@types/node` or the DOM library, which declare it, or call the bare `randomUUID()`.
+To type-check `randomUUID`, `btoa`, or `atob`, add `/// <reference types="@uipath/maestro-builder-sdk/script-globals" />` when the SDK has `dist/script-globals.d.ts`; older SDKs refuse those names. Do not import an implementation: the engine provides them and `compile` refuses module names. The reference does not declare `crypto`; `crypto.randomUUID()` needs `@types/node` or the DOM library, or call bare `randomUUID()`.
 
 <!--skill-flavor:script-function-sdk-version:start-->
-The function form needs `@uipath/maestro-builder-sdk` 6.57.0 or later: check that `dist/api-index.md` of the SDK copy in use lists `ScriptValue`. An older SDK fails on a function with `compile: Cannot read properties of undefined (reading 'matchAll')`. Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy (it is used before the global one), else `npm install -g @uipath/maestro-builder-sdk@latest`; or write `script({ code })`.
+The function form requires `@uipath/maestro-builder-sdk` 6.57.0 or later. Check that the active SDK’s `dist/api-index.md` lists `ScriptValue`. An older SDK fails with `compile: Cannot read properties of undefined (reading 'matchAll')`. Upgrade by running `npm install @uipath/maestro-builder-sdk@latest` in a workspace with its own `node_modules` copy (used before the global copy), or run `npm install -g @uipath/maestro-builder-sdk@latest`; otherwise use `script({ code })`.
 <!--skill-flavor:script-function-sdk-version:end-->
 
 ### Reading the instance metadata
 
-A script can also read `$metadata`, the instance's metadata: `InstanceId`, `FolderKey`, `ProcessKey`, `ExternalId` (the external id a case gives the instance; unset when no case started the flow) and `ElementCount` (how many times each element has run, by element id).
-In a script function, take it as the second parameter, typed `FlowMetadata`.
-Name it `$metadata` (any name works, and is renamed to it), and read it only with dots, as the first (`$metadata.InstanceId`, not `$metadata['InstanceId']`).
-Only that first read needs the dot: an element id that is not a JavaScript name is read with brackets after it, `$metadata.ElementCount?.['my-step']`.
-`ElementCount` and `ExternalId` can be unset (`ElementCount` until the first count), so read through them with `?.`: strict `tsc` refuses a plain `.` or `[…]` on either, and the run throws a `TypeError` when the key is unset.
+A script may read `$metadata`: `InstanceId`, `FolderKey`, `ProcessKey`, `ExternalId` (the case’s external id, unset without a case), and `ElementCount` (runs per element id). A function takes it as its second parameter, typed `FlowMetadata`; name it `$metadata` (other names are renamed) and read it only with dots, as the first (`$metadata.InstanceId`, not `$metadata['InstanceId']`). Only that first read needs the dot: for a non-JavaScript element id, use brackets after it: `$metadata.ElementCount?.['my-step']`.
+
+`ElementCount` and `ExternalId` may be unset (`ElementCount` until first count); access them with `?.`. Strict `tsc` refuses plain `.` or `[…]` on either, and runtime access throws `TypeError` when unset.
 
 ```ts
 import { script, type FlowVars, type FlowMetadata } from '@uipath/maestro-builder-sdk';
@@ -119,33 +61,18 @@ function tag($vars: FlowVars, $metadata: FlowMetadata) {
 }
 ```
 
-Those five keys are all the engine sets, so `check` warns `UNKNOWN_METADATA_KEY` on a read of any other key, in a script or any other expression: a misspelled key (`$metadata.instanceId`) reads `undefined` in the run, and the warning's suggestion names the right one.
-A case that starts the flow can set keys of its own on the instance.
-When the flow is meant to read one of those, keep the read, leave the warning, and widen the parameter's type: `$metadata: FlowMetadata & { Region?: string }`.
-Decompile widens it as `FlowMetadata & Record<string, any>` instead; the two are interchangeable, so leave whichever form is there.
+Those five keys are all the engine sets. `check` warns `UNKNOWN_METADATA_KEY` for any other key, including misspellings, and suggests the correct key. A case may add keys; retain such reads, leave the warning, and widen the parameter: `$metadata: FlowMetadata & { Region?: string }`. Decompile instead uses `FlowMetadata & Record<string, any>`; the forms are interchangeable.
 
 <!--skill-flavor:script-function-metadata-sdk-version:start-->
-The metadata parameter needs `@uipath/maestro-builder-sdk` 6.72.0 or later: check that `dist/api-index.md` of the SDK copy in use lists `FlowMetadata`. An older one refuses a function with two parameters, and a function that reads `$metadata` at all. Upgrade the copy in use as above, or read `$metadata` from `script({ code })`.
+The metadata parameter requires `@uipath/maestro-builder-sdk` 6.72.0 or later. Check that the active SDK’s `dist/api-index.md` lists `FlowMetadata`. Older versions refuse two parameters and any `$metadata` read. Upgrade as above, or read `$metadata` from `script({ code })`.
 <!--skill-flavor:script-function-metadata-sdk-version:end-->
 
 ## The JavaScript runtime
 
-A script gets modern syntax (`?.`, `??`, arrow functions), the language's built-in objects, `console`, and four extras the engine provides: `btoa` and `atob` (UTF-8, unlike Node's and the browser's Latin-1), `randomUUID()` and `crypto.randomUUID()`.
-Nothing more: `require`, `fetch`, Luxon's `DateTime`, moment, lodash, `Intl`, `URL`, `TextEncoder`, `Buffer` and `structuredClone` all read `undefined` in a real run, and `crypto` has no other member.
-A body ported from a runtime that has them (a Node.js script, a low-code platform's code step) is rewritten without them.
-`console` has only `debug`, `error`, `info`, `log` and `warn`, and they do nothing, so a script's logging goes nowhere. Any other `console` method (`console.table`, `console.assert`) is undefined, so calling it throws and fails the run.
-`toLocaleDateString` returns the long English form whatever locale and options it is given, so build a formatted date from its `getUTC…` parts.
+A script has modern syntax (`?.`, `??`, arrow functions), language built-ins, `console`, and engine extras: `btoa` and `atob` (UTF-8, unlike Node/browser Latin-1), `randomUUID()`, and `crypto.randomUUID()`. It has no `require`, `fetch`, Luxon `DateTime`, moment, lodash, `Intl`, `URL`, `TextEncoder`, `Buffer`, `structuredClone`, or other `crypto` member; these read `undefined` at runtime. Rewrite code ported from Node.js or a low-code code step accordingly.
 
-The engine declares `console`, `uipath`, `aggregate`, `_aggregate` and `_pipe` with `const` before the body runs.
-Do not declare one of those names at the top of a script (`const`, `let`, `var`, `function` or `class`), and do not assign to one: the run fails with "Identifier '…' has already been declared" or "Assignment to constant variable.".
-A `let`, `const`, `function` or `class` inside a nested block or function is your own, and so is a `var` inside a nested function.
-A `var` in a plain block is not: it hoists to the top and fails the same way.
-Assigning one of the names anywhere fails too, unless your own declaration of it is in scope.
+`console` only has `debug`, `error`, `info`, `log`, and `warn`, all no-ops. Other methods such as `console.table` and `console.assert` are undefined and calling them fails. `toLocaleDateString` always returns long English regardless of locale/options; format dates from `getUTC…` parts.
 
-`flow validate` types scripts against the ES2020 library, so it warns
-`EXPRESSION_DIAGNOSTIC` on later members such as `replaceAll`, which the run
-executes. Write `replace` with a global regular expression
-(`s.replace(/-/g, '+')`) instead.
+The engine declares `console`, `uipath`, `aggregate`, `_aggregate`, and `_pipe` with `const` before execution. Do not top-level-declare (`const`, `let`, `var`, `function`, or `class`) or assign them: execution fails with `Identifier '…' has already been declared` or `Assignment to constant variable.` A nested block/function may own `let`, `const`, `function`, or `class`, and a nested function may own `var`; a plain-block `var` hoists and fails. Assigning these names anywhere fails unless an in-scope own declaration exists.
 
-It also warns `EXPRESSION_DIAGNOSTIC Cannot find name 'randomUUID'` and `Cannot find name 'crypto'` on a script that uses them, because its library does not declare them (`btoa` and `atob` it knows).
-Those warnings are expected: the flow is still `Valid`, and the run has the names, so leave the script as it is.
+`flow validate` uses the ES2020 library and warns `EXPRESSION_DIAGNOSTIC` for later members such as `replaceAll`, although runtime executes them. Use `replace` with a global regular expression (`s.replace(/-/g, '+')`). It also warns `EXPRESSION_DIAGNOSTIC Cannot find name 'randomUUID'` and `Cannot find name 'crypto'`; these are expected because the library omits them, while runtime provides them. Leave the script unchanged; the flow remains `Valid`.

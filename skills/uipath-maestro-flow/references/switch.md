@@ -2,9 +2,7 @@
 
 Switch routes one value among several cases.
 
-Signature:
-`.switch(name, on, [{ value: string | number | boolean, label?, body }], defaultFn?)`;
-a case may use `when: Expr` instead of `value` (below).
+Signature: `.switch(name, on, [{ value: string | number | boolean, label?, body }], defaultFn?)`; a case may use `when: Expr` instead of `value`.
 
 ```ts
 .switch('priority', input('priority'), [
@@ -13,17 +11,9 @@ a case may use `when: Expr` instead of `value` (below).
 ], (other) => other.step('normal', script({ code: 'return 3;' })))
 ```
 
-Prefer Switch when one discriminant selects three or more paths; Branch is
-usually clearer for two. Decide whether cases end independently or rejoin a
-shared successor.
+Prefer Switch when one discriminant selects three or more paths; Branch is usually clearer for two. Decide whether cases end independently or rejoin a shared successor.
 
-Cases are tried top to bottom; a `value` case compares strictly (`===`) with
-`on`. Each case gets a generated `case-<id>` port; the optional final callback
-uses `default`.
-
-A case can carry its own condition instead of a value: ``{ when: js`...`, label?,
-body }``. The switch takes the first case whose condition is true. Pass
-`undefined` for `on` when every case uses `when`:
+Try cases top to bottom and select the first true condition. A `value` case strictly compares `on` (`===`). Each case (value or when) gets a generated `case-<id>` port. The optional final callback uses `default`. Each case must have exactly one of `value` or `when` (`SWITCH_CASE_FORM` otherwise); a `value` case requires `on`. Pass `undefined` for `on` when every case uses `when`:
 
 ```ts
 .switch('route', undefined, [
@@ -32,31 +22,6 @@ body }``. The switch takes the first case whose condition is true. Pass
 ])
 ```
 
-A case has exactly one of `value` or `when` (`SWITCH_CASE_FORM` otherwise), and
-a `value` case needs an `on`. Decompile writes `when` cases for a designer-drawn
-switch whose cases are not one shared `<discriminant> === <value>`; keep them.
+In a new flow, use `when` cases when each of three or more paths needs its own condition (such as ranges or different fields); use `.branch` for two conditions. Decompile preserves `when` cases for designer-drawn switches whose cases are not one shared `<discriminant> === <value>`; keep them.
 
-In a new flow, use `when` cases when each path needs its own condition (ranges,
-different fields) and there are three or more paths; two conditions are still a
-`.branch`.
-
-A decompiled switch the designer drew may carry `id: "default-1"` (and so on) on
-its cases. That keeps the case ids the original file has, so the merged edges
-match the original switch node. Leave those `id`s as they are; do not add one to
-a case you write yourself.
-
-## At a glance
-
-Split runtime control among cases of one discriminant.
-
-Signature: `.switch(name, on, [{ value, label?, body }], defaultFn?)`; a case may use
-`when: Expr` instead of `value`, with `on` = `undefined` when every case does.
-
-```ts
-.switch('priority', input('priority'), [
-  { value: 'high', body: (b) => b.step('page', script({ code: 'return 1;' })) },
-  { value: 'low', body: (b) => b.step('queue', script({ code: 'return 2;' })) },
-])
-```
-
-Prefer switch when one value selects three or more paths; use branch for two.
+A decompiled designer-drawn switch may carry case IDs such as `id: "default-1"`. Leave them unchanged to preserve original case IDs so merged edges match the original switch node; do not add IDs to cases written yourself.

@@ -1,21 +1,14 @@
 # Evaluate — evaluators, eval sets, simulations, runs
 
-Evaluators, eval sets, data points and simulations are project assets managed by
-`uip maestro flow eval`; defining an `inlineAgent(...)` node does not create
-them. Use this when the request asks for evaluation assets, or for a flow to be
-evaluated.
-
-Every `eval` command takes `--path <project-dir>` — the directory holding
-`project.uiproj`.
+Manage evaluators, eval sets, data points, and simulations with `uip maestro flow eval`; defining an `inlineAgent(...)` node does not create them. Every `eval` command takes `--path <project-dir>` containing `project.uiproj`.
+Use this when the request asks for evaluation assets, or for a flow to be evaluated.
 
 <!--skill-flavor:eval-login:start-->
-**Local `add` / `list` / `remove` edit project files and need no login.**
-Starting a run does — `uip login` first, and it needs a matching solution in
-Studio Web.
+**Local `add` / `list` / `remove` edit project files and need no login.** Before starting a run, run `uip login`; it needs a matching solution in Studio Web.
+Starting a run does — `uip login` first, and it needs a matching solution in Studio Web.
 <!--skill-flavor:eval-login:end-->
 
-Probe the installed CLI once, then let it write the JSON formats and generated
-file references rather than hand-authoring them:
+Probe the installed CLI once, then let it write the JSON formats and generated file references rather than hand-authoring them:
 
 ```bash
 uip maestro flow eval --help --output json
@@ -35,11 +28,7 @@ uip maestro flow eval evaluator list        --path ./MySolution/MyFlow --output 
 uip maestro flow eval evaluator remove <id> --path ./MySolution/MyFlow --output json
 ```
 
-`llm-judge-output` produces
-`evaluatorTypeId: "uipath-llm-judge-output-semantic-similarity"`. Always pin a
-model for an LLM judge. For deterministic values prefer `exact-match`,
-`json-similarity`, or `contains` — a judge on a value that can simply be
-compared is variance for nothing.
+`llm-judge-output` produces `evaluatorTypeId: "uipath-llm-judge-output-semantic-similarity"`; always pin its model. Prefer deterministic `exact-match`, `json-similarity`, or `contains` for directly comparable values.
 
 ## Evals and eval sets
 
@@ -60,43 +49,21 @@ uip maestro flow eval set list        --path ./MySolution/MyFlow --output json
 uip maestro flow eval set remove <id> --path ./MySolution/MyFlow --output json
 ```
 
-Almost everything is addressed **through its set**. `--set` is required on
-`eval list` and `eval remove`, on all three `simulation` commands, and on every
-`run` verb including `status` and `results`; omitting it fails with
-`required option '--set <name>' not specified` before anything runs. Only the
-`set` commands themselves and the evaluator commands do without it.
+Address almost everything through its set. `--set` is required on `eval list`, `eval remove`, all three `simulation` commands, and every `run` verb including `status` and `results`; omitting it fails before execution with `required option '--set <name>' not specified`. Only `set` and evaluator commands omit it.
 
-Use the generated evaluator id or filename when explicitly passing
-`--evaluators`; a display name alone is not a stable reference. Omitting the
-flag on `eval set add` links all evaluators that currently exist.
+For `--evaluators`, use the generated evaluator id or filename, not only a display name. Omitting it on `eval set add` links all existing evaluators.
 
-A data point's input keys must match the flow's declared inputs. Declare them
-with `.input({ … })` in the source and compile before `eval add`: it reads them
-from the compiled `.flow`, so an input missing there fails with `Input "<name>"
-is not declared as an input variable in the flow`. Do not add inputs with
-`uip maestro flow variable add` — the next `compile -o` rewrites the `.flow`
-from the source, so the CLI edit either disappears or collides with the compiled
-input (`Variable '<name>' already exists`). To confirm what the compiled flow
-declares, pass the `.flow` file itself; `variable` takes no `--path`:
+Data-point input keys must match declared flow inputs. Declare them with `.input({ … })` in source and compile before `eval add`; it reads the compiled `.flow`, and a missing input fails with `Input "<name>" is not declared as an input variable in the flow`. Do not add inputs with `uip maestro flow variable add`: the next `compile -o` rewrites the `.flow`, so the edit disappears or collides with `Variable '<name>' already exists`. Inspect declarations by passing the `.flow` itself; `variable` takes no `--path`:
 
 ```bash
 uip maestro flow variable list ./MySolution/MyFlow/MyFlow.flow --output json
 ```
 
-Build expected outputs from real records rather than invented ones, for the same
-reason a debug run needs real inputs: an invented key matches no record, and the
-eval scores a fault instead of an answer.
+Build expected outputs from real records, not invented ones; invented keys match no record and score a fault instead of an answer.
 
 ## Simulations — stop an eval from really sending
 
-A simulation stands in for a component during a run, keyed by component id: the
-step id from the source, or the tool name for an inline agent's tool. A
-simulation is scoped to one **data point inside one set**, not to the project,
-so all three commands require `--set` and `--data-point`. `add` also requires
-`--strategy`: `Static` returns `--mock-value` verbatim, `Llm` generates a
-response from `--simulation-instructions`. And it requires `--component-type`
-naming what the component is — `connector`, `agent`, `subflow` — unless
-`--parent <agent-id>` adds a child tool simulation, which defaults it to `Node`.
+A simulation stands in for a component, keyed by its source step id or an inline agent tool name, and is scoped to one data point in one set. All three commands require `--set` and `--data-point`. `add` also requires `--strategy`: `Static` returns `--mock-value` verbatim; `Llm` generates from `--simulation-instructions`. It requires `--component-type` (`connector`, `agent`, or `subflow`) unless `--parent <agent-id>` adds a child-tool simulation, which defaults to `Node`.
 
 ```bash
 uip maestro flow eval simulation add <component-id> \
@@ -110,8 +77,7 @@ uip maestro flow eval simulation remove <component-id> \
   --set "Smoke Tests" --data-point <id> --path ./MySolution/MyFlow --output json
 ```
 
-Simulate every side-effecting component before running a set more than once. An
-unsimulated connector step really sends — once per eval, every run.
+Simulate every side-effecting component before running a set more than once. An unsimulated connector step really sends once per eval, every run.
 
 ## Running a set
 
@@ -124,49 +90,24 @@ uip maestro flow eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
 
-`run start` returns an `evalSetRunId` and does not block. Poll `run status`
-until it settles, then read `run results`. `run compare` puts a run against a
-previous one — it takes both ids, the subject and `--compare-to` — which is how
-a prompt or guidance change is shown to have helped rather than asserted to
-have.
+`run start` returns `evalSetRunId` without blocking. Poll `run status` until settled, then read `run results`. `run compare` takes both ids—the subject and `--compare-to`—to show that a prompt or guidance change helped rather than assert it.
 
 ## Never upload as part of an eval workflow
 
 <!--skill-flavor:eval-no-upload:start-->
 **Never run `uip solution upload` automatically here. Always ask first.**
 
-`eval run start` needs the solution in Studio Web, and when it cannot resolve
-one it fails with `solution-id could not be resolved` or a variant. That error
-is not licence to upload.
+`eval run start` needs the solution in Studio Web; if it cannot resolve one, it fails with `solution-id could not be resolved` or a variant. That error is not permission to upload.
 
-`uip solution upload` writes to Studio Web: it creates, or **overwrites**, the
-solution matching the local `.uipx` `SolutionId`. No flag is needed and no
-prompt is raised. Three ways that costs someone real work:
+`uip solution upload` writes to Studio Web, creating or **overwriting** the solution matching the local `.uipx` `SolutionId`; it needs no flag and raises no prompt. This can publish unfinished local work, overwrite unrelated remote changes after a download, or discard divergent remote state—nothing is merged.
 
-1. The user is iterating locally and meant to test *before* publishing. Upload
-   pushes work in progress to where teammates and triggers pick it up.
-2. The user pulled the solution with `uip solution download` to change one
-   piece. Upload sends partial local state back over whatever else moved.
-3. Local and Studio Web have diverged. Upload discards the remote side —
-   nothing is merged.
-
-The overwrite is recorded as a restorable version unless `--no-snapshot` was
-passed, but recovery is browser-only, after the fact, by the user, and it does
-not undo case 1. Ask, and offer the two real options: upload now with the user's
-acknowledgement, or pass `--solution-id` and `--project-id` for an existing
-Studio Web solution and plumb them through to `eval run start`.
+The overwrite is recorded as a restorable version unless `--no-snapshot` was passed, but recovery is browser-only, after the fact, by the user, and does not undo publishing unfinished work (teammates or triggers may already have picked it up). Ask, and offer either uploading now with the user's acknowledgement or passing `--solution-id` and `--project-id` for an existing Studio Web solution and plumbing them through to `eval run start`.
 <!--skill-flavor:eval-no-upload:end-->
 
 ## Confirm what was written
 
-After authoring, list the evaluator and the eval set and read the generated
-JSON. Confirm the evaluator carries the requested `evaluatorTypeId`, the set
-contains its generated file reference, and the entry point matches the flow.
+After authoring, list the evaluator and eval set and read the generated JSON. Confirm the evaluator has the requested `evaluatorTypeId`, the set contains its generated file reference, and the entry point matches the flow.
 
 ## Evidence boundary
 
-A score is evidence about this flow's output on these inputs under these
-evaluators. It is not evidence the flow is correct, and an `llm-judge-output`
-score carries a model's variance — one run moving a point or two is noise.
-Compare runs rather than reading one, and name the eval set and the evaluator
-behind any number reported.
+A score is evidence about this flow's output on these inputs under these evaluators—not proof the flow is correct. An `llm-judge-output` score includes model variance; a one- or two-point movement is noise. Compare runs rather than reading one, and name the eval set and evaluator behind every reported number.

@@ -1,272 +1,113 @@
 # Author — build and edit a flow with the builder SDK
 
-Everything that happens on disk before a flow touches the cloud: scaffold the
-project, choose each node, write `<Name>.flow.ts`, and run the loop in
-[`CLI-LOOP.md`](CLI-LOOP.md) until the emitted `.flow` validates. Authoring ends
-at a valid artifact; publishing, running and debugging are
-[`operate.md`](operate.md), and a failed run is [`diagnose.md`](diagnose.md).
+Everything before a flow touches the cloud—scaffolding, node selection, `<Name>.flow.ts`, and [`CLI-LOOP.md`](CLI-LOOP.md)—ends when the emitted `.flow` validates. Publishing, running, and debugging are [`operate.md`](operate.md) and [`diagnose.md`](diagnose.md).
 
-The builder owns the `.flow` JSON. `compile` emits every node definition, the
-`variables.nodes[]` entries that make `$vars.<step>.output` resolve, the
-resource bindings, the connector `inputs.detail`, and the error flags, so none
-of that is hand-authored here. What stays with you is judgment the compiler
-cannot make: which node, which topology, what an output means, and what to ask.
+The builder owns `.flow` JSON: `compile` emits node definitions, `variables.nodes[]` entries resolving `$vars.<step>.output`, resource bindings, connector `inputs.detail`, and error flags. Authoring supplies node choice, topology, output meaning, and questions.
 
 ## Critical rules
 
-1. **Choose the node before writing it, from a search, never from a brand
-   name.** For an external service run `uip maestro registry search
-   '<service>'` and prefer, in order: a curated connector, managed HTTP in
-   connector mode, a connector you build with `uip is connectors builder` for
-   an authenticated REST+JSON API with no connector, manual HTTP otherwise (it
-   keeps the credential in the flow, outside `uip is connections list`), and an
-   RPA workflow only when there is no API at all (a desktop app, a terminal). For a
-   tenant resource (agent, process, API workflow, IxP model) run the family's
-   `uip maestro flow registry search`; it only returns published resources, so
-   `uip maestro flow registry pull --force` first, and check the solution's own
-   projects with `uip maestro flow registry list --local` before concluding a
-   resource is missing. `mock()` marks a capability both searches proved
-   absent; it is never a stand-in for one they found.
-2. **Read the node's reference before writing the step.** The router table in
-   [SKILL.md](../SKILL.md#supported-node-types) names one reference and one
-   example per node. Copy identity fields (keys, model names, folder keys)
-   from the tenant; never construct them.
-3. **Read the Integration Service contract before any `uip is` call.** Both
-   live in [/uipath:uipath-platform](/uipath:uipath-platform), under
-   `references/integration-service/`. `connections.md` covers selection,
-   folder scoping, BYOA filtering and empty-result recovery; if no healthy
-   connection exists after its recovery flow, stop and report it as an open
-   question. `resources.md` covers reference-field lookups; finish its
-   pagination loop before reporting "not found".
-4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit
-   with `compile -o` for a new flow; a non-empty `.flow` that existed before this
-   turn is re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)).
-   Never hand-edit the emitted `.flow`, `content/*.bpmn`, `bindings_v2.json`,
-   `entry-points.json`, `operate.json` or `package-descriptor.json` — the CLI
-   regenerates them, and the next compile silently undoes a hand edit.
-   Brownfield JSON goes through `decompile` ([`brownfield.md`](brownfield.md)).
-5. **Run the loop once the source is complete.** `check --source` is cheap, so
-   use it freely while writing; `compile` and `validate` run on the finished
-   source, and again after the last edit. `compile` does not run `check`, so a
-   clean `check` comes before every `compile` (in a brownfield edit, with
-   `--baseline <original.flow>`: [`brownfield.md`](brownfield.md#check-only-what-you-changed-check---baseline)).
-   The exception is an error whose message says when to ignore it, in a case
-   that applies (a false positive such as `INLINE_AGENT_PROMPT_JSON_TEXT` on a
-   prompt that mentions JSON only as data).
-   Emit-only mode is the exception: there `check` refuses and `validate` is
-   the gate. Treat every `validate` warning as a
-   failure unless the loop reference names it as reviewed.
-6. **Bind every declared output on every path.** Each `.return({...})` must
-   name every key in `.output({...})`. `check` does not catch a missing one:
-   `compile` binds it to `$vars.<name>`, `validate` only warns
-   (`EXPRESSION_DIAGNOSTIC`), and the run returns `undefined` for it.
-7. **Handle an error only when the request says what should happen.** Add
-   `.onError(...)` only for a stated failure ("if the call fails…", "return X
-   for invalid input", "handle timeouts"); an unhandled failure must fault the
-   run. A handler either genuinely recovers or reaches a terminal the caller
-   can tell apart from success — a distinct `.return`, or `.terminate`.
-   Likewise add a human task (`hitl`) only when the request has the run wait for
-   a person. A person who reviews the output afterward, such as a drafted reply,
-   is not one. This overrides `uipath-human-in-the-loop` Step 2b and its
-   pattern guide: a signal the request did not state goes under Open questions.
-8. **Never invent the business meaning of a named output or an uncovered
-   input case — ask.** When a request names an output (`caseKey`, `severity`,
-   `ticketId`) without saying how to derive it, whether it passes through or
-   is reformatted is the user's rule. Ask, or state the assumption and confirm
-   it. A guessed format compiles and validates and returns the wrong value.
-   Rules that cover only some input values, ranges, or combinations leave the
-   rest open: `High` for refunds over $500 and `Low` under $50 leave $50 to
-   $500 unassigned; `Expedite` for an overdue order from a Gold customer
-   leaves overdue orders from every other tier unassigned. Check coverage over
-   the valid values of the inputs the stated rules read; invalid input stays
-   under rule 7. List each uncovered case and ask; never fold it into a stated
-   value or a default the user did not give. When the request says no one will
-   answer (headless, CI), the no-folding rule lifts: map each uncovered case
-   to the most defensible stated value rather than stopping, and list each
-   under Open questions as **[REQUIRED]**.
-9. **Present a finite decision as a list of options, with "Something else"
-   last.** Which solution, which connector, which trigger, which resource to
-   bind: ask with the enumerated choices, never as an open question. Without a
-   structured-question tool, ask in chat as a numbered list. With nobody to ask
-   (CI, headless), take the recommended option and record it prominently in
-   the final report; if none is recommended, stop and report the open
-   decision, except an uncovered rule case (rule 8), which you still decide.
-   Consent gates — destructive operations, tenant writes — are never
-   auto-answered.
+1. **Choose the node before writing it, from a search, never from a brand name.** For an external service run `uip maestro registry search '<service>'`; prefer, in order: a curated connector, managed HTTP in connector mode, a connector built with `uip is connectors builder` for an authenticated REST+JSON API without a connector, manual HTTP otherwise (it keeps the credential in the flow, outside `uip is connections list`), and RPA only when no API exists (desktop app or terminal). For a tenant resource (agent, process, API workflow, IxP model), run the family’s `uip maestro flow registry search`; it returns only published resources, so run `uip maestro flow registry pull --force` first and check solution projects with `uip maestro flow registry list --local` before declaring it missing. `mock()` means both searches proved the capability absent; never use it for a found capability.
+2. **Read the node’s reference before writing the step.** [SKILL.md](../SKILL.md#supported-node-types) maps each node to one reference and example. Copy tenant identity fields (keys, model names, folder keys); never construct them.
+3. **Read the Integration Service contract before any `uip is` call.** Both are in [/uipath:uipath-platform](/uipath:uipath-platform), under `references/integration-service/`. `connections.md` covers selection, folder scoping, BYOA filtering, and empty-result recovery; after recovery, stop and report an open question if no healthy connection exists. `resources.md` covers reference lookups; finish pagination before reporting “not found”.
+4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit with `compile -o` for a new flow. Re-emit a pre-existing non-empty `.flow` with decompile and merge ([`brownfield.md`](brownfield.md)). Never hand-edit `.flow`, `content/*.bpmn`, `bindings_v2.json`, `entry-points.json`, `operate.json`, or `package-descriptor.json`; the CLI regenerates them. Route brownfield JSON through `decompile` ([`brownfield.md`](brownfield.md)).
+5. **Run the loop once the source is complete.** Use `check --source` while writing; on finished source and after the last edit run `check`, `compile`, and `validate`. `compile` does not run `check`, so clean `check` precedes every `compile`; brownfield edits use `--baseline <original.flow>` ([`brownfield.md`](brownfield.md#check-only-what-you-changed-check---baseline)). Ignore an error only when its message says to do so and the case applies (for example, false-positive `INLINE_AGENT_PROMPT_JSON_TEXT` when JSON is mentioned only as data). In emit-only mode, `check` refuses and `validate` is the gate. Treat every `validate` warning as failure unless the loop reference names it reviewed.
+6. **Bind every declared output on every path.** Every `.return({...})` names every key in `.output({...})`. `check` misses omissions; `compile` binds them to `$vars.<name>`, `validate` only warns (`EXPRESSION_DIAGNOSTIC`), and the run returns `undefined`.
+7. **Handle an error only when the request says what should happen.** Add `.onError(...)` only for a stated failure (“if the call fails…”, “return X for invalid input”, “handle timeouts”); an unhandled failure must fault the run. A handler must recover genuinely or reach a caller-distinguishable terminal: a distinct `.return` or `.terminate`. Add `hitl` only when the request says the run waits for a person; post-run review (such as reviewing a drafted reply) is not `hitl`. This overrides `uipath-human-in-the-loop` Step 2b and its pattern guide; unstated signals go under Open questions.
+8. **Never invent the business meaning of a named output or uncovered input case—ask.** If an output (`caseKey`, `severity`, `ticketId`) lacks derivation, ask or state and confirm an assumption; never guess pass-through or formatting. Check coverage across valid values of inputs read by stated rules: `High` over $500 and `Low` under $50 leaves $50 to $500; `Expedite` for an overdue Gold order leaves other tiers uncovered. List every uncovered case and ask; never fold it into a stated value or unstated default. Invalid input remains under rule 7. If nobody will answer (headless, CI), map each uncovered case to the most defensible stated value and list it under Open questions as **[REQUIRED]**.
+9. **Present a finite decision as a list of options, with "Something else" last.** For solution, connector, trigger, or resource choices, ask with the enumerated choices, never as an open question; without a structured-question tool, use a numbered chat list. Headless/CI uses the recommended option and records it prominently in the final report; with no recommendation, stop and report the open decision, except rule-8 uncovered cases, which you still decide. Never auto-answer consent gates (destructive operations, tenant writes).
 <!--skill-flavor:solution-lookup:start-->
-10. **Look for an existing solution before `uip solution init`.** Run
-    `find . -maxdepth 2 -name '*.uipx'`. If one exists, ask which to use (one
-    option per solution, "Create a new solution", then "Something else"); do
-    not silently adopt, re-initialize, or repair it. The scaffold itself is in
-    [SKILL.md](../SKILL.md#project-layout).
+10. **Look for an existing solution before `uip solution init`.** Run `find . -maxdepth 2 -name '*.uipx'`. If one exists, ask which to use with one option per solution, "Create a new solution", then "Something else"; do not silently adopt, re-initialize, or repair it. The scaffold is in [SKILL.md](../SKILL.md#project-layout).
 <!--skill-flavor:solution-lookup:end-->
-11. **Never invoke another skill on your own.** When the flow needs an RPA
-    process, an agent, or an app that does not exist, name the gap and hand
-    the user what they need to switch skills.
-12. **Batch independent calls; chain dependent ones.** Scaffold, install and
-    the registry search go in one turn; `check`, each `prepare` it names, the
-    re-`check`, `compile` and `validate` chain in the next. Split only where a
-    later step needs an earlier step's output.
+11. **Never invoke another skill on your own.** If an RPA process, agent, or nonexistent app is needed, name the gap and give the user what they need to switch skills.
+12. **Batch independent calls; chain dependent ones.** Scaffold, install, and registry search go in one turn. In the next, chain `check`, each named `prepare`, re-`check`, `compile`, and `validate`; split only when a later step needs earlier output.
 
 ## Journeys
 
 | Journey | Read |
 | --- | --- |
-| Create a new flow | [SKILL.md — Project layout](../SKILL.md#project-layout), then [SKILL.md — Lifecycle](../SKILL.md#lifecycle) (the local gates alone are in [`CLI-LOOP.md`](CLI-LOOP.md#local-authoring-hard-gates)) |
+| Create a new flow | [SKILL.md — Project layout](../SKILL.md#project-layout), then [SKILL.md — Lifecycle](../SKILL.md#lifecycle) (local gates alone: [`CLI-LOOP.md`](CLI-LOOP.md#local-authoring-hard-gates)) |
 | Edit an existing flow (`.flow.ts` or raw `.flow`) | [`brownfield.md`](brownfield.md) |
-| Add or change one node | the node's row in [SKILL.md — Supported node types](../SKILL.md#supported-node-types) |
+| Add or change one node | The node row in [SKILL.md — Supported node types](../SKILL.md#supported-node-types) |
 | Connector with tenant-specific fields | [`connector-params.md`](connector-params.md) + [`bindings.md`](bindings.md) |
 
 ### Count what the request names before building
 
-Count the steps the request names: services, systems, documents, decisions,
-approvals, schedules, computations. A domain or an outcome ("shipment
-tracking", "our onboarding") is not a step, and neither is the project name.
+Count named services, systems, documents, decisions, approvals, schedules, and computations. A domain/outcome (“shipment tracking”, “our onboarding”) and project name are not steps.
 
-- **Zero steps: scaffold only.** Scaffold the project, compile the stub, and
-  validate. Do not invent a pipeline from the domain word. Report what the flow
-  should do as open questions; that is the finished deliverable.
-- **One or more steps: build all of them.** An outcome next to a step does not
-  cancel the step. "Check the weather for the Bellevue office and tell me if
-  it's a nice day" names a lookup and a threshold decision; build both.
+- **Zero steps: scaffold only.** Scaffold, compile the stub, and validate; do not invent a pipeline. Report requested behavior as open questions.
+- **One or more steps: build all.** An adjacent outcome does not cancel a step; “Check the weather for the Bellevue office and tell me if it's a nice day” names a lookup and threshold decision.
 
 ### Plan first only when the flow is complex
 
-Plan before building when the flow has five or more nodes with branching or
-parallel paths, needs connector or resource discovery, or the requirements are
-ambiguous. Build directly for a single-node edit, a linear pipeline, or a
-topology the user already spelled out.
+Plan before building for five or more nodes with branching/parallel paths, connector/resource discovery, or ambiguity. Build directly for a single-node edit, linear pipeline, or stated topology. Skipping the plan never skips node choice. Two outcomes are `.branch`, not a script ternary; three or more are `.switch`; named external services follow rule 1.
 
-Skipping the plan never skips the node choice. Two outcomes ("if … otherwise
-…") are a `.branch`, never a script ternary; three or more are a `.switch`; a
-named external service goes through rule 1.
+A plan contains a one-line summary; node table (step, node, why); wiring; inputs/outputs; connectors and connections; and open questions. Get approval before building (rule 9, with “proceed” recommended).
 
-A plan states: a one-line summary, the node table (step name, node, why), the
-wiring, the inputs and outputs, every connector and its connection, and open
-questions. Get it approved before building (rule 9, with "proceed"
-recommended).
+**Is Maestro the right home?** Prefer it for several waits, branching/parallel paths, SLAs, cross-product composition, or per-case visibility. A single-wait, mostly linear process may be simpler as queue plus Action Center; say so before designing topology.
 
-**Is Maestro the right home?** A flow earns its place with several waits,
-branching or parallel paths, SLAs, cross-product composition, or per-case
-visibility. A single-wait, mostly linear process may be simpler as a queue plus
-Action Center; say so before designing topology.
+## Patterns
 
-### Patterns
-
-Six topologies the Flow canvas also inserts. When a new flow or an edit has one
-of these shapes, or finishes one the canvas inserted ([`brownfield.md`](brownfield.md)),
-read its guide before choosing nodes. With two or more, also read
-[composing-guide.md](patterns/composing-guide.md).
+For a new flow or edit matching one of these shapes, or finishing one inserted by the canvas ([`brownfield.md`](brownfield.md)), read its guide before choosing nodes. For two or more, also read [composing-guide.md](patterns/composing-guide.md).
 
 | Pattern | Reach for it when | Guide |
 | --- | --- | --- |
-| `ai-decision-human-review` | An agent decides or proposes an action, and a person reviews or approves it before the flow acts | [guide](patterns/ai-decision-human-review-guide.md) |
-| `routing-triage` | Emails, tickets or claims are classified and routed by category, with a person catching low-confidence or unmatched items | [guide](patterns/routing-triage-guide.md) |
-| `batch-ai` | An agent handles each item of a list, and one bad item must not stop the rest | [guide](patterns/batch-ai-guide.md) |
-| `conversational-intake` | A chat or chatbot answers or gathers a request over several turns | [guide](patterns/conversational-intake-guide.md) |
-| `parallel-agents` | Several AI agents work one input at once, and one agent merges them | [guide](patterns/parallel-agents-guide.md) |
+| `ai-decision-human-review` | An agent decides/proposes an action and a person reviews/approves before action | [guide](patterns/ai-decision-human-review-guide.md) |
+| `routing-triage` | Emails, tickets, or claims are classified/routed, with a person catching low-confidence or unmatched items | [guide](patterns/routing-triage-guide.md) |
+| `batch-ai` | An agent handles each list item and one bad item must not stop the rest | [guide](patterns/batch-ai-guide.md) |
+| `conversational-intake` | Chat gathers or answers a request over several turns | [guide](patterns/conversational-intake-guide.md) |
+| `parallel-agents` | Several agents work one input and one merges them | [guide](patterns/parallel-agents-guide.md) |
 | `voice-agents` | A phone call or call line is handled by voice agents | [guide](patterns/voice-agents-guide.md) |
 
-Not for a linear pipeline, a single node, a human approval with no agent
-deciding, an agent that classifies with no person in the request
-(`inlineAgent()` plus `.branch()` or `.switch()`), a switch on a field, or an
-edit that adds none of these. `summarize()` and `batchTransform()` are single
-nodes, not patterns.
+These are not patterns for a linear pipeline, single node, human approval without an agent deciding, an agent classification without a person in the request (`inlineAgent()` plus `.branch()` or `.switch()`), a field switch, or an edit adding none of them. `summarize()` and `batchTransform()` are single nodes.
 
-1. Adapt counts and branches to the request, but keep what the guide's "Why it
-   works" names, or say you are building something else.
-2. A shape table marks each step **Entry**, **Mechanism** or **Placeholder**.
-   Entry steps are the pattern's own start and end: drop an Entry start when
-   the flow already has one, and drop an Entry End when steps follow, wiring
-   its inbound edge to them. Keep every Mechanism step. Choose a Placeholder
-   like any node (rule 1), or skip it when the flow already does that work.
-3. An agent step is a published agent the search found, else an
-   `inlineAgent()`; never `mock()`. Write its prompt; never decide its runtime
-   answer while authoring.
-4. A threshold the request leaves out is an open question (rule 8): ask, or
-   headless, use the guide's value and list it as **[REQUIRED]**.
+1. Adapt counts and branches to the request, preserve what the guide's “Why it works” names, or say you are building something else.
+2. Shape tables mark each step **Entry**, **Mechanism**, or **Placeholder**. Entry is the pattern's start/end: drop Entry start when the flow already has one; drop Entry End when steps follow, wiring its inbound edge to them. Keep every Mechanism step. Choose Placeholder like any node (rule 1), or skip it when existing work covers it.
+3. An agent step is a published agent found by search, otherwise `inlineAgent()`; never `mock()`. Write its prompt; never decide its runtime answer while authoring.
+4. An omitted threshold is an open question (rule 8): ask, or headless, use the guide's value and list it as **[REQUIRED]**.
 
 ## Variable types
 
-Inputs, outputs and vars take one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`.
+Inputs, outputs, and vars use the six Flow CLI/Workbench types: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`.
 
-- `float`, `double`, `date`, `datetime` and `jsonSchema` are Case-only. The Flow builder refuses them: a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build. Write a date as `types.string`, a decimal as `types.number`, and a `jsonSchema` as `types.object` or `types.array` with its shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. A decompiled `.flow` that already carries one: [brownfield](brownfield.md#a-case-only-variable-type) (`date`/`datetime` come back as `types.string`; the others stop merge until you retype them).
-- `types.integer` builds and packs as an integer, but Workbench does not offer it, so prefer `types.number`.
-- `types.any` is the untyped declaration: use it only when a value really has no fixed type.
+- `float`, `double`, `date`, `datetime`, and `jsonSchema` are Case-only. The Flow builder refuses them with a TypeScript error and `DECLARATION_TYPE_NOT_FLOW` at build. Use `types.string` for dates, `types.number` for decimals, and `types.object` or `types.array` for `jsonSchema`, with shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. For an existing decompiled `.flow`, see [brownfield](brownfield.md#a-case-only-variable-type): `date`/`datetime` return as `types.string`; other types stop merge until retyped.
+- `types.integer` builds and packs as integer but Workbench does not offer it; prefer `types.number`.
+- `types.any` is untyped; use it only when the value has no fixed type.
 
 ## Anti-patterns
 
-- **Never replace a registered connector with `mock()` or a script because it
-  cannot be configured yet.** Write the `connector(...)` step, run the
-  `prepare` that `check` names, and if there is no live connection, report
-  "prepare pending" as an open question. Reviewers and Studio Web need the real
-  connector in the artifact.
-- **Never reuse a reference id from another flow or session** — a mailbox
-  folder, a Slack channel, a Jira project. Ids are scoped to the account behind
-  the connection: a reused one compiles, validates, and faults at run time.
-  Resolve it again with a `lookup()` token and the `prepare` that `check`
-  names.
-- **Never write a reference field you could not resolve.** If the lookup fails
-  (401/403 on an expired grant, 5xx), you have no id: do not substitute the
-  display name, an alias, or a remembered value. Stop and report the failed
-  resolve.
-- **Never reference a parent's values inside a subflow.** A child flow has its
-  own scope; pass values through the `subflow(child, {...})` inputs and read
-  them with `input(...)`. `check` does not flag a child script that reads
-  `$vars.start.output.*` from the parent — it compiles and resolves to nothing.
-- **Never use `console.log` in a script.** The script runtime has no
-  `console`, and `check` does not flag it. Return the value to inspect:
-  `return { debug: value }`.
-- **Never treat a green `validate` as proof of business correctness.** It
-  checks structure. Named outputs, reference ids and connector field values
-  are only proven by the evidence in [`CLI-LOOP.md`](CLI-LOOP.md#bounded-completion).
+- **Never replace a registered connector with `mock()` or a script because it cannot be configured yet.** Write `connector(...)`, run the `prepare` named by `check`, and if no live connection exists report “prepare pending” as an open question. Reviewers and Studio Web need the real connector.
+- **Never reuse a reference id from another flow or session** (mailbox folder, Slack channel, Jira project). IDs are connection-account scoped; resolve again with a `lookup()` token and the `prepare` named by `check`.
+- **Never write an unresolvable reference field.** On lookup failure (401/403 expired grant or 5xx), do not substitute display name, alias, or remembered value; stop and report the failed resolve.
+- **Never reference a parent's values inside a subflow.** Pass through `subflow(child, {...})` inputs and read with `input(...)`; `check` misses `$vars.start.output.*` reads in child scripts, which compile and resolve to nothing.
+- **Never use `console.log` in a script.** The runtime has no `console`; return the value to inspect: `return { debug: value }`.
+- **Never treat green `validate` as business-correctness proof.** It checks structure; named outputs, reference IDs, and connector field values require evidence from [`CLI-LOOP.md`](CLI-LOOP.md#bounded-completion).
 
 ## Completion output
 
-When authoring is done, report:
+When authoring ends, report:
 
-1. **File paths** — the `.flow.ts` source and the emitted `.flow`.
-2. **What was built** — steps, branches and outputs, in a sentence or two.
-3. **Loop status** — the last `check`, `compile` and `validate` results,
-   including any warning you judged acceptable and why.
-4. **Placeholders** — each `mock()` and the capability it stands for.
-5. **Connections** — per connector, the `connection: <Name> (<id>)` line
-   `prepare` printed and its folder (from the candidate line, or
-   `uip is connections list <connector-key> --all-folders --output json`), or
-   what is missing or still to prepare. A guessed connection
-   ([bindings.md](bindings.md#where-both-values-come-from)) also goes under Open questions as **[REQUIRED]**.
-6. **Open questions** — every decision the request left open, each marked
-   **[REQUIRED]** or **[OPTIONAL]**.
+1. **File paths** — `.flow.ts` source and emitted `.flow`.
+2. **What was built** — steps, branches, and outputs in one or two sentences.
+3. **Loop status** — final `check`, `compile`, and `validate` results, including each accepted warning and why.
+4. **Placeholders** — every `mock()` and its capability.
+5. **Connections** — per connector, the `connection: <Name> (<id>)` line printed by `prepare` and its folder (candidate line or `uip is connections list <connector-key> --all-folders --output json`), or what is missing/still to prepare. Put guessed connections ([bindings.md](bindings.md#where-both-values-come-from)) under Open questions as **[REQUIRED]**.
+6. **Open questions** — every unresolved decision marked **[REQUIRED]** or **[OPTIONAL]**.
 <!--skill-flavor:completion-next:start-->
-7. **What's next** — when the request did not already say, ask with rule 9:
-   upload to Studio Web, debug the flow, deploy to Orchestrator, or "Something
-   else". Each hands off to [`operate.md`](operate.md). A request that already
-   named the next step ("publish it", "debug it") is the selection; act on it.
+7. **What's next** — if not already specified, ask via rule 9: upload to Studio Web, debug the flow, deploy to Orchestrator, or “Something else”. Each hands off to [`operate.md`](operate.md). If the request named the next step (“publish it”, “debug it”), select and act on it.
 <!--skill-flavor:completion-next:end-->
 
 ## Narration and progress
 
-Silent by default: surface decisions, failures, consent gates and the final
-result. Narrate each logical step in one plain-English line, and keep a
-step-level progress list, only when the user asks for it (verbose, show steps,
-track progress) or has a standing preference for it. A logical step is the
-smallest outcome the user cares about — "added the Slack step", not the three
-commands behind it.
+Be silent by default except for decisions, failures, consent gates, and the final result. Narrate each logical step in one plain-English line and maintain a step-level progress list only when requested (verbose, show steps, track progress) or when the user has a standing preference. A logical step is the smallest user-relevant outcome (“added the Slack step”), not its commands.
 
 ## API index lookups
 
-The two index files, `dist/api-members.md` and `dist/api-index.md`, ship in the installed `@uipath/maestro-builder-sdk` package. A row looks like this, and its path is relative to that package's root:
+The installed `@uipath/maestro-builder-sdk` package contains `dist/api-members.md` and `dist/api-index.md`. Rows use package-root-relative paths, for example:
 
 ```
 | `outcomePorts` | property | `HitlInputs` | `dist/core/actions.d.ts:583-597` |
 ```
 
-Each file's own header names the repo and generator it came from, and says not to edit it there — the rows are regenerated from the declarations on every build.
+Each file header identifies its source repo/generator and says not to edit it there; builds regenerate rows from declarations. Match one name, then read its full declaration span, including doc comment, types, `@remarks`, and `@example`; do not search or use a shell. Field/method names are usual because references have one row per field; `api-members.md` is usually the target. Both cover all three entry points, including `/case` and `/bpmn`.
 
-Match one name, then read the span — it is the whole declaration including its doc comment, so one read answers the question, with the types and the `@remarks` and `@example` bodies in full. No searching and no shell, so it works the same on Windows.
-
-A field or method name is the usual case, because these references are one line per field — so `api-members.md` is usually the one you want. Both cover all three entry points, `/case` and `/bpmn` included.
-
-They live in the package rather than in SKILL.md **because the spans are only true of one build**: a line moves whenever a declaration above it changes, and the skill ships on its own cadence. An index beside the `.d.ts` files it points into cannot disagree with them.
-
-Read the `.d.ts`, never `dist/*.js`: the compiled JavaScript carries no types and no comments, so searching it is how a lookup turns into twenty tool calls. A name in neither index is probably a RUNTIME output key — a human task's `Action`, an error envelope's fields — which no declaration carries; those are in the node references. The sibling surfaces' runtime-only decisions live in their own skills: `uipath-maestro-case` and `uipath-maestro-bpmn`; neither is needed to build a Flow.
+The indexes live with the package rather than SKILL.md because spans are build-specific: declaration changes move lines, while the skill ships independently. Read `.d.ts`, never `dist/*.js`; JavaScript has no types/comments. A name in neither index is probably a RUNTIME output key (for example a human task's `Action` or error-envelope fields), found in node references. Runtime-only decisions for sibling surfaces belong to `uipath-maestro-case` and `uipath-maestro-bpmn`; neither is needed to build a Flow.

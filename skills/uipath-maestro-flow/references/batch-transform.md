@@ -1,10 +1,6 @@
 # Batch Transform
 
-*Exact signatures, fields, and defaults: `batchTransform()`.*
-
-Adds AI-generated columns to a CSV and returns a new file attachment.
-
-Signature: `batchTransform({ attachment, prompt, outputColumns, enableWebSearchGrounding? })`
+`batchTransform({ attachment, prompt, outputColumns, enableWebSearchGrounding? })` adds AI-generated columns to a CSV and returns a new file attachment.
 
 ```ts
  .step('categorizeRows',
@@ -18,12 +14,8 @@ Signature: `batchTransform({ attachment, prompt, outputColumns, enableWebSearchG
    }))
 ```
 
-## At a glance
-
-Batch transform enriches a CSV into a new file; Summarize ([summarize.md](summarize.md)) reads a document.
-
-Request web grounding only when the scenario needs it.
+Use Summarize ([summarize.md](summarize.md)) for documents; request web grounding only when needed.
 
 ## General
 
-- Error **460005** can be transient; retry it once before classifying the failure
+- **460005** may be transient; retry once before classifying the failure.
