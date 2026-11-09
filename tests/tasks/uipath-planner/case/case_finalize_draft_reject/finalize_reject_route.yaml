@@ -1,4 +1,4 @@
-task_id: skill-case-reject-route
+task_id: skill-planner-case-finalize-reject-route
 description: >
   Regression: deterministic rejection is routed from the decision fact, not from
   `user-selected-stage`. A small GrantReview draft is staged whose Application
@@ -65,8 +65,8 @@ success_criteria:
   # the FIRST rung of the ladder and not a harmless line count: in both the loan and sla
   # runs that same `wc` is immediately followed by `sed` range reads of the whole file.
   # The Grep and Glob rows close the tool surface rather than a measured escape: no run had
-  # yet reached the validator through them, but nothing stopped it, and Grep is this lane's
-  # heaviest reader (10 calls in the original skill-case-phase-0-finalize-draft failure,
+  # yet reached the validator through them, but nothing stopped it, and Grep is this verb's
+  # heaviest reader (10 calls in the original skill-planner-case-finalize-draft failure,
   # all aimed at the guides and template rather than the validator).
   - type: command_not_executed
     description: "Advisory: no gate script is read — the § Validation gate is a checklist, not a file"

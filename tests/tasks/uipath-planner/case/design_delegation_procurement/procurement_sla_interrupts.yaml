@@ -1,4 +1,4 @@
-task_id: skill-case-phase-0-procurement-sla-interrupts
+task_id: skill-planner-case-design-procurement-sla-interrupts
 description: >
   Design handoff (uipath-planner `design`, handed over in-conversation) for a supplier application with global withdrawn and
   SLA events, explicit sequential work, and design-rationale requirements.

@@ -1,4 +1,4 @@
-task_id: skill-case-phase-0-case-reasoning-regressions
+task_id: skill-planner-case-design-reasoning-regressions
 description: >
   Design-only run for a case that combines the known task-sequencing
   regressions: parallel tasks after a predecessor, payment obligation racing,
