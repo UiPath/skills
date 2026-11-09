@@ -46,7 +46,7 @@ deployment's `modelName` and `folderKey` — copy them from the tenant, never
 construct them — although the node never reads them: it runs the taxonomy it
 carries, through `inputs.processorKey`, which compiling never writes. A flow
 compiled from this factory needs `uip maestro flow nodes provision <file>`
-afterwards, where CLI authoring provisions as it goes
+afterwards; CLI authoring, by contrast, provisions as it goes
 ([Making it actually extract](extract-document-node.md#making-it-actually-extract)).
 Decompiling a flow that holds this node and compiling it back also throws on
 the missing `model`. So the factory is usable only where a flow must stay in

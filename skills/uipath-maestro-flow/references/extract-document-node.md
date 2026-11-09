@@ -179,13 +179,13 @@ For this node, validation enforces that `fileRef` is a `$vars` reference rather 
 At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. The CLI provisions it while you author: `nodes create` mints the key and writes the processor's resource file into the enclosing solution, `nodes schema set` does the same for a node that has none, and `uip solution pack` regenerates the resource from the node — so the deployed processor matches the taxonomy last written. The `.flow` and the resource file under `resources/` belong together: whatever stores, uploads or versions the solution must carry both, since pack builds from what it is given.
 <!--skill-flavor:extract-processor-sync:end-->
 
-A node from before the CLI provisioned anything, onewritten by hand, or compiled from `.flow.ts` source, arrives without a processor. `validate` reports it as an error, and one command repairs the whole file:
+A node from before the CLI provisioned anything, one written by hand, or one compiled from `.flow.ts` source, arrives without a processor. `validate` reports it as an error, and one command repairs the whole file:
 
 ```bash
 uip maestro flow nodes provision <file> --output json
 ```
 
-Never write a `processorKey` by hand, and never copy one from another node: a processor holds exactly one node's extraction definition, and pack refuses a solution where two nodes define the same one. A node meant to run another node's processor sets `inputs.processorReadOnly: true` instead.
+Never write a `processorKey` by hand, and never copy one from another node: a processor holds exactly one node's extraction definition, and a solution where two nodes define the same one refuses to pack or publish. A node meant to run another node's processor sets `inputs.processorReadOnly: true` instead.
 
 A package built from a node without a processor faults at run time:
 

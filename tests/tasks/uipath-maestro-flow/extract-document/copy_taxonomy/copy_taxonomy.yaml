@@ -81,6 +81,8 @@ success_criteria:
     description: "Extract Credit Note does not carry Extract Invoice's processorKey: a copied key would name the source's processor, which pack refuses as a duplicate author. A key of its own, or none, both pass — provisioning at `nodes schema set` depends on the CLI version."
     path: "BillingDocs/BillingDocs/BillingDocs.flow"
     assertions:
+      # The literal is the source node's key in
+      # _fixtures/BillingDocs/BillingDocs/BillingDocs.flow — keep them in step.
       - expression: "length(nodes[?id=='extractCreditNote1' && inputs.processorKey=='3f6b2a9e-8c41-4d7a-9b25-61e0c4d8f713'])"
         operator: equals
         expected: 0

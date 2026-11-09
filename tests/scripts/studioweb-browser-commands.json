@@ -441,7 +441,7 @@
       {
         "file": "references/integration-service/activity-generation/runtime.md",
         "command": "is resources",
-        "reason": "Prose in a diagram (`uip is resources reads the file \u2026`), not a command."
+        "reason": "Prose in a diagram (`uip is resources reads the file …`), not a command."
       },
       {
         "file": "references/licensing/diagnose/references/troubleshooting-guide.md",
