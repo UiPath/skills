@@ -1,33 +1,25 @@
 # wait-for-timer task — Planning
 
-A timer task inside a stage. Suspends the stage for a duration, until a specific time, or on a repeating cycle.
+A stage task that suspends execution for a duration, until a time, or on a repeating cycle.
 
 ## When to Use
 
-Pick this plugin when the sdd.md describes a task that **pauses or delays execution** within a stage. Typical patterns:
-
-- "Wait 24 hours before reminding"
-- "Delay until next business day at 9 AM"
-- "Poll every hour for up to 5 iterations"
-
-Distinguish from:
+Use this plugin when sdd.md describes pausing or delaying execution within a stage (for example, waiting 24 hours, delaying until a time, or polling cyclically). Distinguish:
 
 - **Case-level timer triggers** (start the case on a schedule) → [`plugins/triggers/timer/`](../../triggers/timer/planning.md)
 - **Connector event wait** → [connector-trigger](../connector-trigger/planning.md)
 
 ## Required Fields from sdd.md
 
-| Field | Source | Notes |
-|-------|--------|-------|
-| `display-name` | sdd.md task name | |
-| Either `timeDuration` (`--every`) OR `timeCycle` OR `timeDate` (`--at`) | sdd.md timer semantics | At least one required |
-| `repeat` | sdd.md (optional) | Number of repetitions — omit for infinite |
-| `isRequired` | sdd.md (default `true`) | |
-| `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type. |
+- `display-name`: sdd.md task name
+- At least one of `timeDuration` (`--every`), `timeCycle`, or `timeDate` (`--at`)
+- `repeat`: optional repetition count; omit for infinite
+- `isRequired`: sdd.md, default `true`
+- `runOnlyOnce`: sdd.md, default `false`; re-entry behavior comes from the SDD, not the task type
 
 ## Registry Resolution
 
-**No cache lookup required.** Timer is a built-in task type with no registry representation — no `taskTypeId`, no `enrich`, no `describe`.
+**No cache lookup required.** Timer is built-in and has no registry representation: do not use `taskTypeId`, `enrich`, or `describe`.
 
 ## Duration Formats
 
@@ -58,7 +50,7 @@ Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations 
 
 ## Fields to Resolve
 
-Timers are a built-in type with no registry dependency, so a wait-for-timer task produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+Timers are built-in and have no registry dependency, so a wait-for-timer task produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only; Phase 2 reads them from sdd.md ([planning.md § Step 4](../../../planning.md)).
 
 ```text
 wait-for-timer task "<display-name>" in stage "<stage>"
