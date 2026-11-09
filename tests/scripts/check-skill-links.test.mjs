@@ -53,6 +53,11 @@ test("a dead anchor fails the run in every skill, classic tree and flavor", () =
       "classic/skills/uipath-flow/SKILL.md": "# Flow v1\n\n[go](references/r.md#gone)\n",
       "classic/skills/uipath-flow/references/r.md": "## Here\n",
     },
+    {
+      "skills/uipath-a/SKILL.md": "# A\n\n[x](references/r.md#step-2)\n",
+      "skills/uipath-a/references/r.md": `# R\n\n${blockOf("steps", "## Step 2")}`,
+      "skill-flavors/sw/uipath-a/references/r.md": blockOf("steps", "## Something else"),
+    },
   ]) {
     const { status, out } = run(files);
     assert.equal(status, 1, out);
@@ -69,11 +74,23 @@ test("slugs follow GitHub's rules", () => {
     ["### Relevance Check → `LC_GUARDRAIL_MISAPPLIED`", "relevance-check--lc_guardrail_misapplied"],
     ["## Aggregated loop output (`$vars.<loopId>.output`)", "aggregated-loop-output-varsloopidoutput"],
     ["## Step 11a: Pull a change (`--source remote`)", "step-11a-pull-a-change---source-remote"],
+    // Raw HTML renders as nothing. `<N>` is a tag; `<STAGE_NAME>` is not
+    // (`_` is not allowed in a tag name), so it stays as text. Checked against
+    // github.com's rendered ids for the planner's case-sdd-template.md.
+    ["### Stage <N>: <STAGE_NAME> (`<stage_id>`)", "stage--stage_name-stage_id"],
+    ["### Secondary Stage: <SECONDARY_STAGE_NAME> (`<stage_id>`)", "secondary-stage-secondary_stage_name-stage_id"],
+    ["## Use <b>bold</b> <br/> here", "use-bold--here"],
   ];
   for (const [heading, fragment] of cases) {
     const { status, out } = run(linkTo(heading, fragment));
     assert.equal(status, 0, `${heading} should slug to #${fragment}\n${out}`);
   }
+});
+
+test("a raw HTML tag in a heading adds nothing to the slug", () => {
+  const { status, out } = run(linkTo("### Stage <N>: <NAME>", "stage-n-name"));
+  assert.equal(status, 1, out);
+  assert.match(out, /#stage-n-name/);
 });
 
 test("a repeated heading takes the -1 suffix", () => {

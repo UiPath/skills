@@ -119,6 +119,13 @@ const isExternal = (t) => !addressesTree(t) || t.startsWith("#");
  * character but letters, digits, `_` and `-` dropped, spaces to `-`, and a
  * repeated slug suffixed `-1`, `-2`.
  *
+ * Raw inline HTML outside code spans renders as nothing, so it adds nothing
+ * to the slug. CommonMark only treats `<name ...>` as a tag when the name is a
+ * letter followed by letters, digits or `-`. So in a template heading like
+ * `Stage <N>: <STAGE_NAME>`, GitHub drops `<N>` (a tag) but keeps
+ * `<STAGE_NAME>` as text (`_` is not allowed in a tag name), and the anchor is
+ * `#stage--stage_name`.
+ *
  * A dead anchor fails the run in every tree, like a missing file does.
  *
  * `skill-flavors/` is excluded outright. A flavor file is a sparse set of
@@ -126,8 +133,20 @@ const isExternal = (t) => !addressesTree(t) || t.startsWith("#");
  */
 const HEADING_RE = /^#{1,6}\s+(.*?)(?:\s+#+)?\s*$/;
 
-function slugify(heading) {
+// An HTML open or close tag per CommonMark: `<` or `</`, a tag name (a letter,
+// then letters, digits or `-`), optional attributes, optional `/`, `>`.
+const INLINE_TAG_RE = /<\/?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?\/?>/g;
+
+/** Drop raw inline HTML tags, but never inside a code span. */
+function dropInlineTags(heading) {
     return heading
+        .split(/(`[^`]*`)/)
+        .map((part, i) => (i % 2 === 1 ? part : part.replace(INLINE_TAG_RE, "")))
+        .join("");
+}
+
+function slugify(heading) {
+    return dropInlineTags(heading)
         .replace(/`([^`]*)`/g, "$1")
         .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
         .trim()
