@@ -95,6 +95,8 @@ This lists provisioning regions in which Portal can stand up tenants and orgs.
 
 **Output code:** `OmsRegionsList`
 
+**Automation Suite:** there is no region list, so the command fails with `ErrorCode: not_supported`. Don't retry or re-login. The organization and its tenants share one region, so report the `Region` from `organizations get --output json` and pass that value to `--region`.
+
 ## Org-Level Services — `uip admin organizations services`
 
 This surface is read-only: only `list` and `list-available` exist. Do not use org-level `add`, `enable`, `disable`, or `remove`; mutate services on a tenant with [`tenants services` →](tenants-commands.md#tenant-level-services--uip-admin-tenants-services).

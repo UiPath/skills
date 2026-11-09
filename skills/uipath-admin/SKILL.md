@@ -58,7 +58,7 @@ Each rule is part of the agent contract.
 18. **Async lifecycle: auto-poll, then hand off.** Tenant create/update/delete/enable/disable return `operationId`; poll `organizations operation get <OP_ID>` three times at five-second intervals, stop on terminal status, then, if still in progress, present a numbered menu. Never loop indefinitely. Organizations create/delete are unavailable in the CLI and require Portal/support. See [Polling procedure](references/organization-management.md#polling-procedure-auto-poll-then-hand-off).
 19. **`tenants delete` is soft-only.** Restoration requires support; no hard-delete flag exists.
 20. **Tenant commands default to the login tenant.** Always provide explicit `<TENANT_ID>` for tenant delete/disable and `tenants services remove`.
-21. **Resolve region before tenant creation:** Run `organizations regions list` first because `--region` is required and region-aware.
+21. **Resolve region before tenant creation:** Run `organizations regions list` first because `--region` is required and region-aware. On Automation Suite it fails with `ErrorCode: not_supported` (the region list is cloud-only): the organization has one region, so use `Region` from `organizations get`.
 22. **Service disable/remove can falsely report Success.** Always re-list afterward. See [Tenants concepts](references/tenants-commands.md#concepts-and-safety-rules).
 
 ### Audit
