@@ -711,6 +711,11 @@
       },
       {
         "file": "SKILL.md",
+        "command": "vss deploy packages",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra, cli-ready) says `uip vss deploy` is not in this host and tells the agent to stop and send the user to a terminal, so these steps are never run here."
+      },
+      {
+        "file": "SKILL.md",
         "command": "login tenant set",
         "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra, cli-ready) says `uip vss deploy` is not in this host and tells the agent to stop and send the user to a terminal, so these steps are never run here."
       }
@@ -720,7 +725,7 @@
       "login status": 6,
       "vss deploy": 4,
       "vss deploy cancel": 1,
-      "vss deploy packages": 6,
+      "vss deploy packages": 4,
       "vss deploy resume": 7,
       "vss deploy seed": 5,
       "vss deploy status": 4
