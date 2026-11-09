@@ -2,21 +2,23 @@
 
 The manual trigger is the default start node: an on-demand call from a person, test, API, or parent automation, with no factory call. Omit `.trigger(...)` and declare caller values with `.input(...)`; use `.trigger(manual(), { updates })` only when the default root needs its own variable rows ([below](#other-variable-updates-on-a-trigger)).
 
-Signature: `flow(id).input({...}).step(...).build()`.
-
 ```ts
 export default flow('lookup').input({ id: types.string }).output({ value: types.string })
   .step('read', script({ code: 'return $vars.start.output.id;' }))
   .return({ value: out('read') }).build();
 ```
 
-Choose it only when something supplies every run's inputs. A local run satisfies the contract but does not prove an external caller or deployment integration exists.
-
 Declared inputs are the trigger node's OUTPUT: `input('name')` reads `$vars.start.output.name`, and `out('start', 'name')` is equivalent. Never read one as bare `$vars.name`; it works only accidentally because a manual trigger emits a process-level copy and is null under other triggers. The designer reports `Property 'name' does not exist`; `check`, `compile`, and `uip maestro flow validate` refuse it. `$vars.name` is for a `.var()` or output.
 
 This applies to every trigger kind. Inputs bind to the starting node (`triggerNodeId` on the emitted variable), so an `onEvent(...)` flow also reads them through its trigger. Its output may additionally contain connector payload fields, such as `$vars.start.output.subject` and `$vars.start.output.queueName`, alongside declared inputs.
 
 The default node id is `start`; rename it with `.triggerId('intake')`, then use `$vars.intake.output.name`. In a `subflow` body, the child start node is `<callerStepId>Start`; `input()` renders this automatically, but hand-written child-script `$vars.…` strings must use that name.
+
+## At a glance
+
+Signature: `flow(id).input({...}).step(...).build()`.
+
+Choose it only when something supplies every run's inputs. A local run satisfies the contract but does not prove an external caller or deployment integration exists.
 
 ## Multiple entry points
 

@@ -4,7 +4,7 @@
 
 Call a curated or generic Integration Service operation.
 
-**Some Data Fabric entity operations are Integration Service connector actions.** “Data Fabric” and “Data Service” name one product; the tenant displays connector key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE: `core.datafabric.*` has `dataFabricRead()`, `dataFabricCreate()`, `dataFabricUpdate()`, and `dataFabricDelete()`; read covers filters, paging, and sort. Route here only get-by-id when the whole long-text value is needed (native reads, including `Id` filters, return a 10,000-character preview), file record fields, Record Created / Updated events, or a scenario that names the connector; see [`data-fabric.md`](data-fabric.md).
+**Some Data Fabric entity operations are Integration Service connector actions.** "Data Fabric" and "Data Service" name one product; the tenant displays connector key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE: `core.datafabric.*` has `dataFabricRead()`, `dataFabricCreate()`, `dataFabricUpdate()`, and `dataFabricDelete()`; read covers filters, paging, and sort. Route here only get-by-id when the whole long-text value is needed (native reads, including `Id` filters, return a 10,000-character preview), file record fields, Record Created / Updated events, or a scenario that names the connector; see [`data-fabric.md`](data-fabric.md).
 
 Signatures:
 
@@ -28,7 +28,7 @@ Call a curated or generic operation by descriptor or key/action. For Data Fabric
 Never wait on `prepare` while authoring or run discovery before authoring:
 
 1. **Search** the library and read the operation page.
-2. **Author** from the task’s words, including intended fields, `lookup()` id tokens, and `{ object: '<name-as-the-task-said-it>' }` for generic operations.
+2. **Author** from the task's words, including intended fields, `lookup()` id tokens, and `{ object: '<name-as-the-task-said-it>' }` for generic operations.
 3. **Check** with `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each gap and remedy: `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
 
 These codes mean the operation itself does not resolve; edit the source and rerun `check`:
@@ -67,7 +67,7 @@ FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md --output plain)" \
   || echo "no connector library yet: run uip maestro registry pull" >&2
 ```
 
-The four library verbs are `pull`, `search`, `path`, and `prepare`. They require prerelease `@uipath/cli` and delegate to the workspace’s `@uipath/maestro-builder-sdk`; `uip` is the entry point and is present wherever this guidance is read. The package also exposes `flow-sdk` for the same commands; printed remedies use it when `FLOW_SDK_INVOKED_AS` is unset.
+The four library verbs are `pull`, `search`, `path`, and `prepare`. They require prerelease `@uipath/cli` and delegate to the workspace's `@uipath/maestro-builder-sdk`; `uip` is the entry point and is present wherever this guidance is read. The package also exposes `flow-sdk` for the same commands; printed remedies use it when `FLOW_SDK_INVOKED_AS` is unset.
 <!--skill-flavor:library-discovery:end-->
 
 **`uip maestro registry` is not `uip maestro flow registry`.** The former is the connector library used by compilers; the latter (`uip maestro flow registry pull|search|get`) syncs tenant **node manifests** (`uipath.core.function`, `uipath.core.agent.<name>`). Connector operations are never node-registry entries, and node types are never library entries, so a miss in one is not evidence about the other.
@@ -102,7 +102,7 @@ import { SendMessageToChannel } from './connectors/uipath-salesforce-slack.ts';
 ```
 <!--skill-flavor:descriptor-imports:end-->
 
-Older environments provide bare `prepare-connector` on `PATH`; arguments are identical except connector version is `--connector-version` (not `--version`, which is Commander’s CLI-version flag). For many connectors that first command is **not enough on its own** — see [the parent-field loop](#schema-dynamic-operations-the-parent-field-loop) below before concluding a field does not exist.
+Older environments provide bare `prepare-connector` on `PATH`; arguments are identical except connector version is `--connector-version` (not `--version`, which is Commander's CLI-version flag). For many connectors that first command is **not enough on its own** — see [the parent-field loop](#schema-dynamic-operations-the-parent-field-loop) below before concluding a field does not exist.
 
 ### A Generic operation is authored from the LIBRARY, not through registry prepare
 
@@ -169,9 +169,9 @@ uip maestro registry prepare uipath-atlassian-jira --action create-issue \
   -f fields.project.key=UIP -f fields.issuetype.id=10732
 ```
 
-Missing parents are refused (`No api-type ObjectAction matched for fields [fields.project.key]`); a value absent from the connection can silently produce only parent fields, so treat “I passed `-f` and still got only the parents” as a wrong value. `registry prepare` fails on both cases rather than writing the overlay.
+Missing parents are refused (`No api-type ObjectAction matched for fields [fields.project.key]`); a value absent from the connection can silently produce only parent fields, so treat "I passed `-f` and still got only the parents" as a wrong value. `registry prepare` fails on both cases rather than writing the overlay.
 
-**1. Find parents.** Describe without values and inspect each input’s reference. A parent has `Reference.Path` containing a `{placeholder}` naming another field:
+**1. Find parents.** Describe without values and inspect each input's reference. A parent has `Reference.Path` containing a `{placeholder}` naming another field:
 
 ```bash
 uip is resources describe <connector-key> <object> \
@@ -216,9 +216,7 @@ Preparation separately fails for service rejection and accepted values resolving
 
 Use the generated descriptor and call; it carries resolved operation/object identity even when action ids differ from the catalog. `connectors-local/` is authoring input; emitted Flow is self-contained. Prefer curated operations; use raw `*-http-request` only for raw/generic needs absent from the curated surface.
 
-### File uploads are multipart Flow inputs
-
-Prepare against the connection when the static catalog omits an upload field, then pass the upstream file as a normal connector input:
+File uploads are multipart Flow inputs. Prepare against the connection when the static catalog omits an upload field, then pass the upstream file as a normal connector input:
 
 ```ts
 .step('upload', connector(SendFileToChannel, {
@@ -284,17 +282,17 @@ connection: is-sandboxes-test@…-sandbox-380 (uipath-maestro-flow) resolves fie
 
 It does not retry a pinned `--connection-id` / `--connection`, transport or permission failures, or choose between multiple successful connections; report candidates and choose.
 
-Do not crawl Integration Service after lookup failure. Use the failure’s connection and candidate command. When the candidates share a name or several resolve, choose as [bindings.md](bindings.md#where-both-values-come-from) says, and pass the `--connection-id <id>` its candidate line prints; `bindings.json` is written on that route too. The entries are named after the `connection:` and `folder:` labels your source already uses for this connector, which [must differ](bindings.md#where-both-values-come-from); a source that uses none gets `<connector's last segment>` (`slack`) and `shared`; `--bind-connection` / `--bind-folder` override both. If a computed/untraceable source label cannot be read, prepare prints `bindings:` and binds the one readable label or default. It refuses one connector with several labels or two connectors sharing a connection label; `next:` prints bound names. `compile` refuses undeclared labels as `BINDING_UNDECLARED` and warns `CONNECTION_STUB` for declarations lacking tenant ids.
+Do not crawl Integration Service after lookup failure. Use the failure's connection and candidate command. When the candidates share a name or several resolve, choose as [bindings.md](bindings.md#where-both-values-come-from) says, and pass the `--connection-id <id>` its candidate line prints; `bindings.json` is written on that route too. The entries are named after the `connection:` and `folder:` labels your source already uses for this connector, which [must differ](bindings.md#where-both-values-come-from); a source that uses none gets `<connector's last segment>` (`slack`) and `shared`; `--bind-connection` / `--bind-folder` override both. If a computed/untraceable source label cannot be read, prepare prints `bindings:` and binds the one readable label or default. It refuses one connector with several labels or two connectors sharing a connection label; `next:` prints bound names. `compile` refuses undeclared labels as `BINDING_UNDECLARED` and warns `CONNECTION_STUB` for declarations lacking tenant ids.
 
 `check` warns on literal lookup ids and runtime lookup expressions (`LOOKUP_RUNTIME_VALUE`), stating the sent id (for example `reporter.accountId`, not a name); it errors when an e-mail expression feeds a lookup that neither sends nor searches e-mail. (A field that sends an e-mail, such as SendGrid's `from`, takes one silently.) A required lookup field you have no value for is resolved with its helper, not filled from a look-alike input. Run `check` before compile so the expensive prepare is last.
 
 <!--skill-flavor:connection-user:start-->
-**When the task names nobody for a person-shaped required field** (`reporter`, `requester`, `owner`), use the connection’s own user: take the account from `uip login status` and resolve by **display name**. Search only by the names the field's "matches on" list declares — do not improvise queries against raw collections. Jira in particular hides e-mail addresses from user search, so an `emailAddress=` query returns nothing for a user that plainly exists, while `displayName=` finds them; the field's spec (`matches on displayName | accountId`) already told you e-mail was not searchable.
+**When the task names nobody for a person-shaped required field** (`reporter`, `requester`, `owner`), use the connection's own user: take the account from `uip login status` and resolve by **display name**. Search only by the names the field's "matches on" list declares — do not improvise queries against raw collections. Jira in particular hides e-mail addresses from user search, so an `emailAddress=` query returns nothing for a user that plainly exists, while `displayName=` finds them; the field's spec (`matches on displayName | accountId`) already told you e-mail was not searchable.
 <!--skill-flavor:connection-user:end-->
 
 Operation pages and generated-descriptor comments list lookup helpers and searchable fields; `grep -B6 'export const SendMessageToUser'` finds the latter. Plain strings are correct for enumerated legal values and tenant-invariant collections (countries, timezones); their pages give accepted-value commands.
 
-For manual inspection or fields without helpers, use the same bound connection. **Choose the collection from the prepared action definition before the first `resources run list` call.** Run `registry prepare`, inspect the target input’s `reference` in `.flow-sdk/connectors-local/*.v1def.json`, and use exact `reference.path`; placeholders require earlier resolution. `reference.objectName` is only a starting point. Use it only when `uip is resources describe <connector-key> <objectName>` reports a matching `Path`; otherwise find the object whose path covers it and pass placeholders as `--query` parameters. Do not substitute by name resemblance.
+For manual inspection or fields without helpers, use the same bound connection. **Choose the collection from the prepared action definition before the first `resources run list` call.** Run `registry prepare`, inspect the target input's `reference` in `.flow-sdk/connectors-local/*.v1def.json`, and use exact `reference.path`; placeholders require earlier resolution. `reference.objectName` is only a starting point. Use it only when `uip is resources describe <connector-key> <objectName>` reports a matching `Path`; otherwise find the object whose path covers it and pass placeholders as `--query` parameters. Do not substitute by name resemblance.
 
 ```bash
 uip is resources run list <connector-key> <object-name> \
@@ -320,7 +318,7 @@ Stop when the target appears; otherwise continue until `Data.Pagination.HasMore`
 A get-by-id not-found is a service error. Add `.onError(...)` when the scenario wants a not-found answer; otherwise loud failure may be intentional.
 
 <!--skill-flavor:output-names:start-->
-Output names are case-sensitive and unchecked by `check`: `out('upload', 'WebUrl')` compiles but reads `null` when the field is `webUrl`. Copy names from the operation’s `## Outputs` in `$FLOW_SDK_LIBRARY_MD`.
+Output names are case-sensitive and unchecked by `check`: `out('upload', 'WebUrl')` compiles but reads `null` when the field is `webUrl`. Copy names from the operation's `## Outputs` in `$FLOW_SDK_LIBRARY_MD`.
 <!--skill-flavor:output-names:end-->
 
 For responses without declared fields, read whole output into a script local before inspecting service properties:

@@ -16,6 +16,8 @@
    }))
 ```
 
+## At a glance
+
 Use Summarize ([summarize.md](summarize.md)) for documents; request web grounding only when needed.
 
 ## General

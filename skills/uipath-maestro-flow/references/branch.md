@@ -8,4 +8,8 @@ Use `.branch(name, condition, thenFn, elseFn?)` for a two-way runtime decision; 
   (no) => no.step('approve', script({ code: 'return "approved";' })))
 ```
 
-Arms may end locally or fall through to shared work. Sequence ports are `true` and `false`; arm labels map to `trueLabel` and `falseLabel`, defaulting to `True` and `False`.
+Sequence ports are `true` and `false`; arm labels map to `trueLabel` and `falseLabel`, defaulting to `True` and `False`.
+
+## At a glance
+
+Arms may end locally or fall through to shared work.

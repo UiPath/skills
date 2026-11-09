@@ -17,6 +17,8 @@ Signature: `hitl({ variant?: 'quick-form' | 'action-app' | 'document-validation'
 .return({ status: v('status') })
 ```
 
+## At a glance
+
 With an assignee and a pre-filled `inOut` field:
 
 ```ts
@@ -41,14 +43,14 @@ Default-node tasks with multiple outcomes route per outcome. A plain `.step()` c
 - `recipient` is `{ channels?, assignee: { type, value? }, connections? }`. Channels: `'Slack' | 'teams' | 'Email' | 'ActionCenter'` (Teams is lowercase `'teams'`). Assignee types: `user`, `group`, `staticEmail`, `staticGroupName`, `workload`, `roundRobin`, `custom`. Omit `recipient` for default channels: Email + Action Center on default and `'quick-form'`; Action Center alone on `'action-app'` and `'document-validation'`. Omitted recipients and assignees without `value` leave tasks unassigned in their folder. `user` and `staticEmail` require `value`; otherwise `check` warns `HITL_RECIPIENT_NO_USER` with `@uipath/maestro-builder-sdk` 6.61.1 or later. Older SDK silence does not make the assignee valid.
 - `labels` is one comma-separated string shown in Action Center.
 - Field `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'` (pre-filled/editable; provide `value`; the reviewed value returns at its id).
-- An asked field writes to the Flow variable named by `variable` (name only, no `vars.` prefix), defaulting to its field id. Read it with `v('<variable>')`; bind shown fields with `value: v('<variable>')`. Studio Web names it `<Step>_<field>` (`variable: 'P_comments'` writes `vars.P_comments`); preserve decompiled names or reads fail `EXPR_UNDECLARED_REF`. `check` reports `HITL_FIELD_VARIABLE` for a `vars.` prefix, dotted path, or `variable` on a non-`direction: 'output'` field. The answer is also always `out('<step>', '<id>')`. This needs `@uipath/maestro-builder-sdk` 6.44.0 or later; older SDKs ignore `variable`, write `vars.<id>`, cause `EXPR_UNDECLARED_REF`, and warn on decompile that the designer row cannot be written back.
+- An asked field writes to the Flow variable named by `variable` (name only, no `vars.` prefix), defaulting to its field id. Read it with `v('<variable>')`; bind shown fields with `value: v('<variable>')`. Studio Web names it `<Step>_<field>` (`variable: 'P_comments'` writes `vars.P_comments`); preserve decompiled names or reads fail `EXPR_UNDECLARED_REF`. `check` reports `HITL_FIELD_VARIABLE` for a `vars.` prefix, dotted path, or `variable` on a non-`direction: 'output'` field. The answer is also always `out('<step>', '<id>')`. This needs `@uipath/maestro-builder-sdk` 6.44.0 or later; older SDKs ignore `variable`, write `vars.<id>`, cause `EXPR_UNDECLARED_REF`, and warn on decompile that the designer row cannot be written back
 <!--skill-flavor:field-variable-sdk-upgrade:start-->
-  Run `npm install -g @uipath/maestro-builder-sdk@latest` to upgrade.
+  — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:field-variable-sdk-upgrade:end-->
 - Field `type` is one of the 11 quick-form types: `'string'`, `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`, `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are accepted older spellings of `'string'`/`'datetime'`; leave them unchanged in existing source; decompiled canvas forms preserve types except bound Flow-variable types such as `'string[]'` and `'string | null'`, which decompile to resolved types (`'array'`, `'string'`).
-- Picker types are `'singleSelect'` and `'enum'` (single-choice dropdown, `string` answer) or `'multiSelect'` (multi-select, `array` answer), with `options: [{ id, value, label }]` and all keys required. Do not replace them with `'string'` or `'array'`. Decompiled forms preserve spellings and `options`; edit unless `flow decompile` warns about a field. This needs `@uipath/maestro-builder-sdk` 6.31.9 or later; older SDKs report `HITL_FIELD_TYPE_UNKNOWN`; do not follow their `type: 'string'` hint.
+- Picker types are `'singleSelect'` and `'enum'` (single-choice dropdown, `string` answer) or `'multiSelect'` (multi-select, `array` answer), with `options: [{ id, value, label }]` and all keys required. Do not replace them with `'string'` or `'array'`. Decompiled forms preserve spellings and `options`; edit unless `flow decompile` warns about a field. This needs `@uipath/maestro-builder-sdk` 6.31.9 or later; older SDKs report `HITL_FIELD_TYPE_UNKNOWN` (do not follow their `type: 'string'` hint),
 <!--skill-flavor:field-type-sdk-upgrade:start-->
-  Run `npm install -g @uipath/maestro-builder-sdk@latest` to upgrade.
+  so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:field-type-sdk-upgrade:end-->
 
   ```ts
@@ -57,9 +59,9 @@ Default-node tasks with multiple outcomes route per outcome. A plain `.step()` c
     options: [{ id: 'opt-1', value: 'high', label: 'High' }, { id: 'opt-2', value: 'low', label: 'Low' }],
   }]
   ```
-- Preserve platform field settings and shapes: `controlType` (`'text'`, `'textarea'`, `'numberInput'`, `'datePicker'`, `'dateAndTimePicker'`, `'checkbox'`, `'dropdown'`, `'radioGroup'`, `'multiSelect'`, `'checkboxGroup'`, `'fileUpload'`), `defaultValue` (string or multi-select list), `colSpan` (1 to 12), `rules` (`{ id, conditions: [{ when, is?, ... }], operator?, effects }`), `requiredMessage`, and `description`. Preserve `type: 'string', controlType: 'dropdown'`; removing `controlType` makes a text box. Invalid values produce `HITL_FIELD_SETTING_INVALID`, `FLOW_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent quick-form escalation, or `INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an SDK older than 6.88.2. These need `@uipath/maestro-builder-sdk` 6.35.0 or later; older SDKs drop them on decompile and do not write them on compile.
+- Preserve platform field settings and shapes: `controlType` (`'text'`, `'textarea'`, `'numberInput'`, `'datePicker'`, `'dateAndTimePicker'`, `'checkbox'`, `'dropdown'`, `'radioGroup'`, `'multiSelect'`, `'checkboxGroup'`, `'fileUpload'`), `defaultValue` (string or multi-select list), `colSpan` (1 to 12), `rules` (`{ id, conditions: [{ when, is?, ... }], operator?, effects }`), `requiredMessage`, and `description`. Preserve `type: 'string', controlType: 'dropdown'`; removing `controlType` makes a text box. Invalid values produce `HITL_FIELD_SETTING_INVALID`, `FLOW_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent quick-form escalation, or `INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an SDK older than 6.88.2. These need `@uipath/maestro-builder-sdk` 6.35.0 or later; older SDKs drop them on decompile and do not write them on compile,
 <!--skill-flavor:field-settings-sdk-upgrade:start-->
-  Run `npm install -g @uipath/maestro-builder-sdk@latest` to upgrade.
+  so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:field-settings-sdk-upgrade:end-->
 
   ```ts
@@ -124,9 +126,9 @@ Without it, every `app.inputs` value is typed and delivered as a string; `check`
 
 Decompile preserves the schema: it prints `app.actionSchema` when that compiles to the node's exact `inputSchema`; otherwise, such as a hand-edited schema with `title`s, it prints the node schema as `app.inputSchema`. Preserve it and provide `actionSchema` or `inputSchema`, never both.
 
-Needs `@uipath/maestro-builder-sdk` 6.59.1 or later; older SDKs lack `actionSchema` on `app`, so TypeScript rejects it. Check that `dist/api-index.md` lists `PlatformActionSchema`.
+Needs `@uipath/maestro-builder-sdk` 6.59.1 or later; older SDKs lack `actionSchema` on `app`, so TypeScript rejects it (check that `dist/api-index.md` lists `PlatformActionSchema`),
 <!--skill-flavor:action-schema-sdk-upgrade:start-->
-  Run `npm install -g @uipath/maestro-builder-sdk@latest` to upgrade.
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:action-schema-sdk-upgrade:end-->
 
 ## Variant judgment
@@ -149,9 +151,9 @@ A coded Action App in the SAME solution is not yet deployed to a folder. Use `lo
 <!--skill-flavor:app-sibling-register:end-->
   generated `resources/solution_folder/app/codedAction/<App>.json` maps `resource.key` to `key` and `resource.name` to `name`. Never invent the key; the full recipe is in [agent.md](agent.md#task-created-in-solution-coded-agent).
 - Do not provide `folderPath` with `location: 'in-solution'`. A literal `'solution_folder'` reaches the engine and the task is refused; `check` reports `HITL_APP_LOCAL_HAS_FOLDER`. Decompiled in-solution tasks with folder `''` or `'solution_folder'` return as `location: 'in-solution'`. This differs from an agent escalation app ([agent-resources.md](agent-resources.md#escalation)), which is an agent resource and does carry `'solution_folder'`; do not transfer either rule.
-- Needs `@uipath/maestro-builder-sdk` 6.66.2 or later; older SDKs reject `location` on `app` (type error and `check` asks for missing `folderPath`).
+- Needs `@uipath/maestro-builder-sdk` 6.66.2 or later; older SDKs reject `location` on `app` (type error and `check` asks for missing `folderPath`),
 <!--skill-flavor:inso-app-sdk-upgrade:start-->
-  Run `npm install -g @uipath/maestro-builder-sdk@latest` to upgrade.
+  so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:inso-app-sdk-upgrade:end-->
 <!--skill-flavor:inso-app-uip-floor:start-->
   No `uip` build checked so far preserves the app folder when packing this task (1.204.0 and 1.205.0-preview.269 both drop it); the task then fails at runtime with `170004 Invalid input for the HITL task`. Tell the user that an in-solution app task needs a `uip` release carrying the fix, and do not retry the run.

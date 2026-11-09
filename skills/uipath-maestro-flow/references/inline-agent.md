@@ -13,13 +13,15 @@ Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, so
   returns: { category: 'string' } }))
 ```
 
-`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds, each with its own identity ([agent-resources.md](agent-resources.md#tool-kinds)); attach memory with the CLI, not `inlineAgent` ([agent-resources.md](agent-resources.md#memory)); `escalation: { variant: 'quick-form' }` creates an inline form; `mode: 'advanced'` selects the Advanced harness.
+## At a glance
+
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds, each with its own identity ([agent-resources.md](agent-resources.md#tool-kinds)); attach memory with the CLI, not `inlineAgent` ([agent-resources.md](agent-resources.md#memory)); an `escalation` entry takes `variant: 'quick-form'` for an inline form; `mode: 'advanced'` selects the Advanced harness.
 
 ## Model and answer judgment
 
 Select a tenant-available model (`uip agent model list`) and make the decision and answer contract explicit. Static checks establish wiring and output shape, not semantic quality.
 
-`returns` is the typed answer contract. Describe every field (for example, “Return a result conforming to the output schema. `<field>`: `<how to fill it>`”); never request JSON text, which packs the answer into one string field.
+`returns` is the typed answer contract. Describe every field (for example, "Return a result conforming to the output schema. `<field>`: `<how to fill it>`"); never request JSON text, which packs the answer into one string field.
 
 ## Context grounding
 

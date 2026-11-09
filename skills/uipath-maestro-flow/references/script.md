@@ -4,11 +4,15 @@
 
 `script` runs inline JavaScript for computation without a first-class Flow node. Read upstream data through `$vars`; read results with `out(step, path?)`. Flow inputs are `$vars.start.output.<name>` (the lowering of `input('<name>')`); `.var()` values are `$vars.<name>`.
 
-Use the named first-class node when the scenario needs a connector or HTTP for external data/API calls, Transform, Delay, or another product capability, whether or not requested. Use script for local calculation, arbitrary-code reshaping, or computing a value before passing a bare reference to another node. Return an object for named fields (`out('parse', 'tag')`) or a scalar (`out('parse')`). Use `script({ code: string })`, or `script(fn, { returns })` for [a function](#writing-the-script-as-a-function).
+Use the named first-class node when the scenario needs a connector or HTTP for external data/API calls, Transform, Delay, or another product capability, whether or not requested. Use script for local calculation, arbitrary-code reshaping, or computing a value before passing a bare reference to another node. Return an object for named fields (`out('parse', 'tag')`) or a scalar (`out('parse')`).
+
+## At a glance
+
+Use `script({ code: string })`, or `script(fn, { returns })` for [a function](#writing-the-script-as-a-function).
 
 ## What the step publishes
 
-A node TYPE cannot know a particular body’s output: its generic output is `object` on 1.0.0 and `any` on 1.1. The compiler reads the body and declares what it plainly returns. Object returns remain open objects, not field lists, and nothing is declared unless every `return` agrees. Runtime reads and calls declare nothing, so use `returns` when needed.
+A node TYPE cannot know a particular body's output: its generic output is `object` on 1.0.0 and `any` on 1.1. The compiler reads the body and declares what it plainly returns. Object returns remain open objects, not field lists, and nothing is declared unless every `return` agrees. Runtime reads and calls declare nothing, so use `returns` when needed; without `returns` the designer types the read as `Record<string, any>` and rejects mapping it into a typed (e.g. `string`) flow output.
 
 `returns` overrides the body and accepts `'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'`, or an object-field map such as `returns: { total: 'number', currency: 'string' }`. `'any'` is valid only as the top-level `returns` of a `script@1.1` step—not on 1.0.0 and never as a field type (`check` reports `SCRIPT_RETURNS_UNKNOWN_TYPE`). It leaves the output untyped even when the body plainly returns one type.
 
@@ -34,7 +38,7 @@ function normalize($vars: FlowVars) {
 - `returns` is what the `.flow` declares, and its type is checked against the function's return: `returns: { amount: 'string' }` over the function above is a type error. `compile` does not type-check, so the error shows only where tsc runs: with a workspace copy (`npm install --save-dev @uipath/maestro-builder-sdk typescript`), `npx tsc --noEmit --strict --module nodenext --moduleResolution nodenext --skipLibCheck <file>.flow.ts` reports it. With only the global SDK copy nothing checks it, so match the `returns` fields to what the function returns by hand. Without `returns`, the body's type is inferred as for a string body.
 <!--skill-flavor:script-function-returns-check:end-->
 - The function reads only what [the runtime](#the-javascript-runtime) has. A value from outside the function is refused: a module constant or an import throws when the flow loads (`script(normalize) cannot be a script: it reads LIMIT, …`), and so does a module helper named like a runtime global (`parseInt`), which `compile` and `check` refuse. Move the value inside the function, or declare it with `.var()` and read `$vars.<name>`. Pass the function to `script()` by name or inline, from a `.ts` file: `compile` and `check` refuse any other shape (`script(h.check)`, a wrapper around `script`), because they cannot check what it reads.
-- Refused with a message naming the function: `async`, generators, more than two parameters (more than one on an SDK older than 6.72.0, which lacks [the metadata parameter](#reading-the-instance-metadata)), default/rest parameters, `this` or `arguments` outside a nested function, a reference to the function’s own name, and a `var` or function declaration reusing a parameter name.
+- Refused with a message naming the function: `async`, generators, more than two parameters (more than one on an SDK older than 6.72.0, which lacks [the metadata parameter](#reading-the-instance-metadata)), default/rest parameters, `this` or `arguments` outside a nested function, a reference to the function's own name, and a `var` or function declaration reusing a parameter name.
 - With an SDK copy that has `dist/script-globals.d.ts`, these are refused too, each of which fails in the run (see [the runtime](#the-javascript-runtime)): a top-level declaration of, or assignment to, `console`, `uipath`, `aggregate`, `_aggregate` or `_pipe`, and a member of `crypto` or `console` the engine's lacks (`crypto.getRandomValues`, `console.table`).
 - A script function may read `console`, but not `uipath`, `aggregate`, `_aggregate`, or `_pipe`; these undocumented engine helpers are refused by `compile`.
 
@@ -46,7 +50,7 @@ The function form needs `@uipath/maestro-builder-sdk` 6.57.0 or later: check tha
 
 ### Reading the instance metadata
 
-A script may read `$metadata`: `InstanceId`, `FolderKey`, `ProcessKey`, `ExternalId` (the case’s external id, unset without a case), and `ElementCount` (runs per element id). A function takes it as its second parameter, typed `FlowMetadata`; name it `$metadata` (other names are renamed) and read it only with dots, as the first (`$metadata.InstanceId`, not `$metadata['InstanceId']`). Only that first read needs the dot: for a non-JavaScript element id, use brackets after it: `$metadata.ElementCount?.['my-step']`.
+A script may read `$metadata`: `InstanceId`, `FolderKey`, `ProcessKey`, `ExternalId` (the case's external id, unset without a case), and `ElementCount` (runs per element id). A function takes it as its second parameter, typed `FlowMetadata`; name it `$metadata` (other names are renamed) and read it only with dots, as the first (`$metadata.InstanceId`, not `$metadata['InstanceId']`). Only that first read needs the dot: for a non-JavaScript element id, use brackets after it: `$metadata.ElementCount?.['my-step']`.
 
 `ElementCount` and `ExternalId` may be unset (`ElementCount` until first count); access them with `?.`. Strict `tsc` refuses plain `.` or `[…]` on either, and runtime access throws `TypeError` when unset.
 
@@ -67,7 +71,7 @@ When the flow is meant to read one of those, keep the read, leave the warning, a
 Decompile widens it as `FlowMetadata & Record<string, any>` instead; the two are interchangeable, so leave whichever form is there.
 
 <!--skill-flavor:script-function-metadata-sdk-version:start-->
-The metadata parameter requires `@uipath/maestro-builder-sdk` 6.72.0 or later. Check that the active SDK’s `dist/api-index.md` lists `FlowMetadata`. Older versions refuse two parameters and any `$metadata` read. Upgrade as above, or read `$metadata` from `script({ code })`.
+The metadata parameter requires `@uipath/maestro-builder-sdk` 6.72.0 or later. Check that the active SDK's `dist/api-index.md` lists `FlowMetadata`. Older versions refuse two parameters and any `$metadata` read. Upgrade as above, or read `$metadata` from `script({ code })`.
 <!--skill-flavor:script-function-metadata-sdk-version:end-->
 
 ## The JavaScript runtime

@@ -1,6 +1,6 @@
 # Parallel / Merge
 
-`.parallel(name, [armFn, armFn, ...])` fans out independent arms and joins them at a Merge named `name`. Use it only when no arm needs another arm's result before the join: it expresses graph independence, not executor concurrency; the local executor processes arms in authored order. Execution continues from `.parallel(...)`'s `output` port, which can read every arm's output.
+`.parallel(name, [armFn, armFn, ...])` fans out independent arms and joins them at a Merge named `name`. Execution continues from `.parallel(...)`'s `output` port, which can read every arm's output.
 
 ```ts
 .parallel('ready', [
@@ -24,6 +24,10 @@ If every arm ends with `.return`, `.terminate`, or `.stepToRef` into an End writ
 
 Decompile (SDK 6.46.6 or later) writes a canvas fan-out whose arms never meet again as `.parallel` `<node>Fork`, where `<node>` is the node they leave. A canvas arm that runs a step before its Terminate remains an unstructured fan-out (see [brownfield.md](brownfield.md)).
 
+## At a glance
+
+Use it only when no arm needs another arm's result before the join: it expresses graph independence, not executor concurrency; the local executor processes arms in authored order.
+
 ## Options
 
 `.parallel(name, arms, options)` accepts `version` and `label` for the Merge, as `.branch()` does, plus `fork`. Both require `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK ignores `fork` (writes no fork node and rejects the option in TypeScript),
@@ -33,7 +37,7 @@ so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 
 ### A fork node
 
-Studio Web draws a parallel split as a `core.logic.merge` node with one incoming edge and one edge per arm (the “Parallel” gateway). `fork` writes that node; without it, arms leave the previous step's own port, one edge per arm, and the platform runs both shapes identically. Use `fork` to preserve a canvas flow's shape. Decompiled canvas forks include it; leave it written, because removing it deletes the fork and rewires every arm.
+Studio Web draws a parallel split as a `core.logic.merge` node with one incoming edge and one edge per arm (the "Parallel" gateway). `fork` writes that node; without it, arms leave the previous step's own port, one edge per arm, and the platform runs both shapes identically. Use `fork` to preserve a canvas flow's shape. Decompiled canvas forks include it; leave it written, because removing it deletes the fork and rewires every arm.
 
 ```ts
 .parallel('J1', [

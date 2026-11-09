@@ -68,7 +68,7 @@ There is no positional solution argument. Omit `--solution-folder` only from the
 ## Publish
 
 <!--skill-flavor:operate-publish:start-->
-“Publish” without a target means **Studio Web**:
+"Publish" without a target means **Studio Web**:
 
 ```bash
 uip solution upload <SolutionDir> --output json

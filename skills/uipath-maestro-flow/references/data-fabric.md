@@ -15,7 +15,7 @@ Whole long-text values (native reads return a 10,000-character preview; [see bel
 
 ## One product, two surfaces
 
-“Data Fabric” and “Data Service” are the same product. The tenant connector key is `uipath-uipath-dataservice` (**UiPath Data Fabric**); `uip df entities` manages both. Native `core.datafabric.*` covers all four CRUD verbs without connection binding or `prepare`; use the connector only for unsupported operations.
+"Data Fabric" and "Data Service" are the same product. The tenant connector key is `uipath-uipath-dataservice` (**UiPath Data Fabric**); `uip df entities` manages both. Native `core.datafabric.*` covers all four CRUD verbs without connection binding or `prepare`; use the connector only for unsupported operations.
 
 | Operation | Surface |
 | --- | --- |
@@ -100,7 +100,7 @@ System columns are never writable. Writes to `Id`, `CreateTime`, `CreatedBy`, `U
 
 ## Query-many needs `resultMode`, and `resultMode` needs 1.4
 
-`core.datafabric.read` began as read-one (“Read entity”) and became read-one/query-many at **1.4** (“Query entity records”). `resultMode: 'single'` publishes `output`; `resultMode: 'multiple'` publishes `output.results`. Plain `dataFabricRead()` emits SDK-pinned **1.0**; passing `resultMode` selects 1.4. `dataFabricRead({ resultMode }, { version: '1.0' })` is refused at compile time.
+`core.datafabric.read` began as read-one ("Read entity") and became read-one/query-many at **1.4** ("Query entity records"). `resultMode: 'single'` publishes `output`; `resultMode: 'multiple'` publishes `output.results`. Plain `dataFabricRead()` emits SDK-pinned **1.0**; passing `resultMode` selects 1.4. `dataFabricRead({ resultMode }, { version: '1.0' })` is refused at compile time.
 
 ```ts
 .step('open', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',
@@ -130,9 +130,9 @@ Tenant-scoped entities use `entity: '<Name>'`; folder-scoped entities use the na
 .step('read', dataFabricRead({ entity: { name: 'Orders', folder: 'Finance/Prod' }, resultMode: 'multiple' }))
 ```
 
-Requires `@uipath/maestro-builder-sdk` 6.73.0 or later. Older SDKs refuse `{ name, folder }` and lack key-less `prepare`.
+Requires `@uipath/maestro-builder-sdk` 6.73.0 or later. Older SDKs refuse `{ name, folder }` and lack key-less `prepare`,
 <!--skill-flavor:data-fabric-entity-ref-sdk:start-->
-Upgrade by running `npm install -g @uipath/maestro-builder-sdk@latest`. If `uip maestro registry prepare --entity …` reports `missing required argument 'connector-key'`, run the same command with `npx flow-sdk registry prepare --entity …`.
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`. If `uip maestro registry prepare --entity …` reports `missing required argument 'connector-key'`, run the same command with `npx flow-sdk registry prepare --entity …`.
 <!--skill-flavor:data-fabric-entity-ref-sdk:end-->
 
 `check` reports `RESOURCE_UNRESOLVED` and prints the command recording keys; run it, then run `check` again:

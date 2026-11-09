@@ -126,7 +126,7 @@ A filter is `{ field, <operator>: value }` with exactly one operator. The design
 | `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual` | number, or an ISO date string | ``priority>`3` ``, `to_number(dueDate)<to_number('2026-08-04')` |
 | `is`, `isNot` | always `true` | ``hasAttachments==`true` ``, ``isRead!=`true` `` |
 
-`is`/`isNot` are the canvas “Is”/“Is not” boolean tests and always compare with `true`; `isNot: true` also matches a missing field. For “is false”, use `equals: false`. Any other value is refused (`EVENT_FILTER_BAD_VALUE`).
+`is`/`isNot` are the canvas "Is"/"Is not" boolean tests and always compare with `true`; `isNot: true` also matches a missing field. For "is false", use `equals: false`. Any other value is refused (`EVENT_FILTER_BAD_VALUE`).
 
 Ordering a plain string is refused (`EVENT_FILTER_BAD_VALUE`): JMESPath compares numbers only. Use a number, an ISO-8601 date, or a text operator.
 

@@ -11,14 +11,12 @@ uip or processes list --all-folders --process-type !!ProcessType!! --limit 200 -
 uip or processes list --folder-path '<folder>' --process-type !!ProcessType!! --limit 200 --output json
 ```
 
-Replace `!!ProcessType!!` with a type such as `Agent` or `ProcessOrchestration`. `--process-type` accepts one entry, so search each needed process type separately. If *Pagination.HasMore* is true, run the next paginated request with `--offset`. The resulting list will have *Name*, *ProcessKey*, and sometimes *Description* fields that may help identify the process you need. Use *IsLatestVersion* to distinguish published versions sharing a process key. *Key* (GUID) is the unique process ID. Since the default `list` response omits *ProcessType*, use `--all-fields` or run a separate `list` command for each process type.
-
-**ProcessOrchestration**, **CaseManagement**, and **Flow** are "Agentic Processes".
+Replace `!!ProcessType!!` with a type such as `Agent` or `ProcessOrchestration`. If *Pagination.HasMore* is true, run the next paginated request with `--offset`. The resulting list will have *Name*, *ProcessKey*, and sometimes *Description* fields that may help identify the process you need. Use *IsLatestVersion* to distinguish published versions sharing a process key. *Key* (GUID) is the unique process ID.
 
 ## Getting the inputs and outputs
 Once you find the process, you must use the `get` command with the *Key* to retrieve more details.
 
-After finding a process, run `get` with its *Key*. Published-process inputs and outputs are in *ArgumentsV2*, exposed only with `--all-fields`; *Input* and *Output* are escaped JSON strings. Extract them as JSON text:
+Published-process inputs and outputs are in *ArgumentsV2*, exposed only with `--all-fields`; *Input* and *Output* are escaped JSON strings. Extract them as JSON text:
 
 ```shell
 uip or processes get BAADF00D-BAAD-F00D-BAAD-F00DBAADF00D --all-fields --output json 2>/dev/null \
@@ -64,3 +62,9 @@ The defined inputs and outputs would be represented in an action similar to the 
     returns: { status: 'boolean' } // output object
   }))
 ```
+
+## Notes
+
+**ProcessOrchestration**, **CaseManagement**, and **Flow** are "Agentic Processes".
+
+`--process-type` accepts one entry, so search each needed process type separately. Since the default `list` response omits *ProcessType*, use `--all-fields` or run a separate `list` command for each process type.

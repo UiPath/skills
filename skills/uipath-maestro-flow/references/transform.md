@@ -2,7 +2,7 @@
 
 *Exact signatures, fields, and defaults: `transform()`.*
 
-Transform applies `filter`, `map`, or `group-by` to an array without custom JavaScript. Use a named variant for one operation, generic Transform for a chain, and Script when the calculation does not fit these operations.
+Transform applies `filter`, `map`, or `group-by` to an array without custom JavaScript.
 
 Signature:
 `transform({ collection, operations, variant?: 'filter' | 'map' | 'group-by' })`.
@@ -14,6 +14,10 @@ Operations are the SDK's `filter`, `map`, and `groupBy` discriminated shapes.
     { field: 'status', condition: 'equals', value: 'active' },
   ] }] }))
 ```
+
+## At a glance
+
+Use a named variant for one operation, generic Transform for a chain, and Script when the calculation does not fit these operations.
 
 ## Choosing the shape
 
