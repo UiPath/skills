@@ -5,10 +5,14 @@ Verifies the artifacts a Simple Function scaffold MUST produce:
 
   1. `echo-agent/pyproject.toml` exists, has `[project]` with `authors`,
      and contains NO `[build-system]` section (Critical Rule C1).
-  2. `echo-agent/main.py` defines `Input` and `Output` Pydantic models
-     and the entry function that `uipath.json` registers. The function
-     NAME is arbitrary (SKILL.md), so it is read from `uipath.json`
-     rather than assumed to be `main`.
+  2. `echo-agent/main.py` defines the entry function that `uipath.json`
+     registers, with typed I/O (SKILL.md rule 4): its first parameter
+     and its return are annotated with a Pydantic `BaseModel`, a
+     dataclass (stdlib or Pydantic), a thin typed class defined in
+     main.py, or a class main.py imports. Neither the function name nor
+     the class names are fixed by the skill, so none is assumed: the
+     function name comes from `uipath.json`, and `EchoIn`/`EchoOut`
+     passes the same as `Input`/`Output`.
   3. `echo-agent/main.py` does NOT instantiate any UiPath* class at
      module level (Critical Rule C4 — lazy LLM init).
   4. `echo-agent/uipath.json` registers a `main` KEY (required — the
@@ -26,9 +30,9 @@ Exits 0 on PASS, with a `FAIL: ...` message on the first violation.
 
 from __future__ import annotations
 
+import ast
 import json
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -110,20 +114,113 @@ def check_uipath_json() -> str:
     return func
 
 
+# Annotations that are not typed I/O under SKILL.md rule 4, even though
+# they are valid Python types.
+_UNTYPED = {
+    "Any", "dict", "Dict", "list", "List", "object", "str", "int", "float",
+    "bool", "bytes", "None", "Mapping", "MutableMapping", "TypedDict",
+}
+_DATACLASS_DECORATORS = {"dataclass"}  # matches dataclasses.dataclass and pydantic.dataclasses.dataclass
+
+
+def _dotted(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        base = _dotted(node.value)
+        return f"{base}.{node.attr}" if base else node.attr
+    if isinstance(node, ast.Call):
+        return _dotted(node.func)
+    return None
+
+
+def _is_typed_class(cls: ast.ClassDef) -> bool:
+    """BaseModel subclass, dataclass, or a thin class with annotated fields."""
+    for base in cls.bases:
+        name = _dotted(base) or ""
+        if name.split(".")[-1] == "BaseModel":
+            return True
+    for dec in cls.decorator_list:
+        name = _dotted(dec) or ""
+        if name.split(".")[-1] in _DATACLASS_DECORATORS:
+            return True
+    return any(isinstance(stmt, ast.AnnAssign) for stmt in cls.body)
+
+
+def _annotation_name(ann: ast.AST | None) -> str | None:
+    if ann is None:
+        return None
+    if isinstance(ann, ast.Constant) and isinstance(ann.value, str):
+        try:
+            ann = ast.parse(ann.value, mode="eval").body
+        except SyntaxError:
+            return None
+    return _dotted(ann)
+
+
+def typed_io_problems(source: str, entry_func: str) -> list[str]:
+    """Return why `entry_func` in `source` lacks typed I/O; [] when it has it."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as e:
+        return [f"main.py does not parse: {e}"]
+    classes = {n.name: n for n in tree.body if isinstance(n, ast.ClassDef)}
+    imported = set()
+    for n in tree.body:
+        if isinstance(n, ast.ImportFrom):
+            imported.update(a.asname or a.name for a in n.names)
+        elif isinstance(n, ast.Import):
+            imported.update((a.asname or a.name).split(".")[0] for a in n.names)
+    funcs = [
+        n for n in tree.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == entry_func
+    ]
+    if not funcs:
+        return [
+            f"main.py does not define `def {entry_func}` at module level; "
+            f"uipath.json registers it as the entrypoint"
+        ]
+    fn = funcs[0]
+    params = fn.args.posonlyargs + fn.args.args
+    checks = [
+        ("input", params[0].annotation if params else None),
+        ("return", fn.returns),
+    ]
+    problems = []
+    for role, ann in checks:
+        name = _annotation_name(ann)
+        if role == "input" and not params:
+            problems.append(f"`{entry_func}` takes no input parameter")
+            continue
+        if name is None:
+            problems.append(f"`{entry_func}` {role} has no type annotation")
+            continue
+        leaf = name.split(".")[-1]
+        if leaf in _UNTYPED:
+            problems.append(
+                f"`{entry_func}` {role} is annotated `{name}`, which is not typed I/O "
+                f"(SKILL.md rule 4: BaseModel, dataclass, or a thin typed class)"
+            )
+        elif leaf in classes:
+            if not _is_typed_class(classes[leaf]):
+                problems.append(
+                    f"`{entry_func}` {role} class `{leaf}` is not a BaseModel, a "
+                    f"dataclass, or a class with annotated fields"
+                )
+        elif name.split(".")[0] not in imported:
+            problems.append(
+                f"`{entry_func}` {role} type `{name}` is neither defined nor imported in main.py"
+            )
+    return problems
+
+
 def check_main_py(entry_func: str) -> None:
     main = ROOT / "main.py"
     text = _read_text(main)
-    for needle in ("class Input", "class Output"):
-        if needle not in text:
-            sys.exit(f"FAIL: main.py is missing `{needle}`")
-    # The entry function's NAME is arbitrary — take it from uipath.json and
-    # assert main.py actually defines it (sync or async).
-    if not re.search(rf"^\s*(async\s+)?def\s+{re.escape(entry_func)}\s*\(", text, re.M):
-        sys.exit(
-            f"FAIL: main.py does not define `def {entry_func}` — uipath.json "
-            f"registers it as the entrypoint but the function is missing"
-        )
-    print(f"OK: main.py defines Input, Output, and {entry_func}()")
+    problems = typed_io_problems(text, entry_func)
+    if problems:
+        sys.exit("FAIL: " + " | ".join(problems))
+    print(f"OK: main.py defines {entry_func}() with typed input and output")
     violations = find_module_level_llm_clients(main)
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
