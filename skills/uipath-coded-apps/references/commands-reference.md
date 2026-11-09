@@ -53,6 +53,8 @@ uip codedapp push --ignore-resources
 uip codedapp push --solution-name "Product Announcements" --project-name "Announcements Portal"
 ```
 
+When the project has a `.env.example` (or `.env.template`), push also adds its `UIPATH_PUBLIC_*` names and values to the app resource's environment variables in the solution, so the deploy wizard shows what can be configured. It only adds names the solution does not list yet; values set in Studio Web are kept. Plain `.env` is never read or pushed. See [environment-variables.md](environment-variables.md).
+
 **Auto-create project flow:**
 ```
 ? No project ID found. Would you like to create a new solution or use an existing one? Create a new solution
@@ -248,6 +250,8 @@ uip codedapp deploy [options]
 | `--tenant-id <id>` | Tenant ID | From `uip login` session |
 | `--folder-key <key>` | UiPath folder key | From `UIPATH_FOLDER_KEY` env var |
 | `--access-token <token>` | Access token | From `uip login` session |
+| `--env-vars-file <path>` | Publish the `UIPATH_PUBLIC_*` variables in this `.env` file to the app; other names in it are skipped. Omit to keep the deployed values; an empty file clears them | Keep deployed values |
+| `--env <NAME=value>` | One `UIPATH_PUBLIC_<NAME>=<value>` to publish, applied over `--env-vars-file`. Repeatable | - |
 
 **Examples:**
 
@@ -263,7 +267,12 @@ uip codedapp deploy -n my-webapp --folder-key my-folder-key
 
 # Same deploy, key via env var — skips the --folder-key pre-check (incomplete folder lookup on accounts with very many folders)
 UIPATH_FOLDER_KEY=my-folder-key uip codedapp deploy -n my-webapp
+
+# Publish the app's UIPATH_PUBLIC_* environment variables from a .env file, overriding one value
+uip codedapp deploy -n my-webapp --folder-key my-folder-key --env-vars-file .env.production --env UIPATH_PUBLIC_REGION=EU
 ```
+
+The environment variables are public configuration the app reads with `env` from the SDK; see [environment-variables.md](environment-variables.md) for the rules and the in-solution path.
 
 > `--folder-key` pre-checks the key against one unpaged copy of the account's folder list, which is incomplete on accounts with very many folders. If it reports an existing folder as `not found among folders accessible to your account`, use the env-var form — see [pack-publish-deploy.md](pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
 

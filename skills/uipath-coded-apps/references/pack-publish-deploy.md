@@ -218,6 +218,10 @@ Deploy picks fresh-vs-upgrade purely on whether the app is **already deployed** 
 
 > **On upgrade, omit `--path-name` unless you deliberately want to change the URL.** Re-passing a slug the app no longer owns fails with `routing name must be unique`.
 
+### Environment Variables (`--env-vars-file`, `--env`)
+
+A deploy can publish per-deployment configuration the app reads with `env` from `@uipath/uipath-typescript`: `--env-vars-file <path>` takes the `UIPATH_PUBLIC_*` variables from a `.env` file (other names are skipped), and `--env UIPATH_PUBLIC_<NAME>=<value>` adds or overrides one value on top, repeatable. Omit both to keep the deployed values. The values are public, so never pass a secret. Changing them later needs no redeploy: **Edit app details** in Orchestrator, or `deploy` again with the flags, rewrites only the app's `env.js`. Rules, local development and the in-solution path: [environment-variables.md](environment-variables.md).
+
 ### Folder Key
 
 The `deploy` command requires a folder **key** (GUID), not a folder name. Users typically know the folder name only — resolve the key via `uip or folders list` before calling `deploy`.
