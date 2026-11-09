@@ -10,21 +10,21 @@ the same switch, and every read of its `statusCode` becomes an `.onError()`
 handler ([error-handling.md](error-handling.md)); leave an untouched one alone.
 An older SDK's `HTTP_V1_RETIRED` text saying to "keep managed: false" for a URL without a connection is outdated; still use `managed: true`.
 
-Signature:
-`http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
-
-```ts
-.step('policy', http({ method: 'GET', url: policyUrl,
-  managed: true, returns: { limit: 'number' } }))
-.step('read', script({
-  code: 'return $vars.policy.output.body.limit;' }))
-```
-
 ## At a glance
 
 Managed HTTP routes non-2xx responses through its error port and exposes a JSON
-response body as a parsed value. A status check is an `.onError()` handler reading
-`err(step, 'status')`, not a `branches` condition on `statusCode`.
+response body as a parsed value. Its success `output` is `{ code, headers, body }`
+with `code` a number; there is no `statusCode`. Reading `output.code` needs
+`@uipath/maestro-builder-sdk` 6.90.1 or later; an older SDK's `check` rejects it
+(`HTTP_READ_UNKNOWN_FIELD`), so on it read neither field and route a status with
+`.onError()` + `err(step, 'status')`,
+<!--skill-flavor:http-code-sdk-upgrade:start-->
+or upgrade the copy `uip` uses:
+`npm install -g @uipath/maestro-builder-sdk@latest`, or
+`npm install --save-dev @uipath/maestro-builder-sdk@latest` for a workspace copy.
+<!--skill-flavor:http-code-sdk-upgrade:end-->
+A status check is an `.onError()` handler reading `err(step, 'status')`, not a
+`branches` condition on `statusCode`.
 
 Signature: `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
 
@@ -113,16 +113,21 @@ proxied request reuses that connector's authentication:
 
 `targetConnector` requires both bindings.
 
+## Failure fields
+
+The envelope shape and how to read it: [error-handling.md](error-handling.md#reading-the-failure).
+On managed HTTP `code` is a string and `status` a number. The server's body and
+headers are not parsed; they appear only as text inside `detail`. An unhandled
+non-2xx raises incident `102001` (observed for 404).
+
 ## Response branches
 
-`branches: [{ name, condition }]` declares extra exits evaluated against the
-response — each becomes a `branch-<name>` source port routed with
-`.stepToList('branch-<name>', …)`, while the main path continues from the
-default port. Conditions are expressions (e.g.
-``js`$vars.fetch.output.body.limit > 100` ``), typically reading the step's
-own declared `returns`. A non-2xx never reaches a branch; handle it with
-`.onError()`. Names must be unique and constant conditions are
-rejected by `check`.
+`branches: [{ name, condition }]` declares extra `branch-<name>` exits routed
+with `.stepToList('branch-<name>', …)`. A managed branch fires only with SDK
+6.90.1 or later; an older SDK writes the condition without `=js:` and no branch
+fires, not even on a 200. A non-2xx fails the step and never reaches a branch:
+route it with `.onError()` + `err(step, 'status')`. Names must be unique and
+constant conditions are rejected by `check`.
 
 ## Evidence
 
