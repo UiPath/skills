@@ -11,9 +11,8 @@ description: >
   asserts that the agent did NOT take the build path: no .flow file should be
   created for a listing question.
 
-  Failure here is signal about the IxP plugin's Listing Published Models /
-  Listing Available Models sections — do NOT relax assertions, tighten the
-  copy.
+  Failure here is signal about references/ixp.md (Listing published
+  models) — do NOT relax assertions, tighten the copy.
 
 tags: [uipath-maestro-flow, integration, mode:operate, lifecycle:discover, node:ixp]
 

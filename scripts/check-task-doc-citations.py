@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when a task YAML cites a skill reference file that does not exist.
+"""Fail when a task file cites a skill reference file that does not exist.
 
 Task prompts and grader notes under tests/tasks/<skill>/ often name the skill
 doc that states the rule under test, for example "write a placeholder task per
@@ -9,14 +9,18 @@ cannot open (UiPath/skills#4531: #675 renamed skeleton-tasks.md, and the v2
 Flow promotion retired references/plugins/ixp/impl.md, but tasks kept citing
 both).
 
-A citation is any `<prefix>references/<path>.md` in a task YAML:
+A citation is any `<prefix>references/<path>.md` in a file under tests/tasks/:
+a task YAML, or a grader script (.py) or fixture (.json) beside it. One inside a
+URL (`https://.../references/a.md`) is a web link and is skipped.
 
-- `skills/<other>/.../references/x.md` resolves inside skills/<other>.
+- `skills/<other>/.../references/x.md` resolves inside skills/<other>, and so
+  does `<other>/references/x.md` when `<other>` is a skill folder name.
 - Anything else resolves inside the skill the task folder is named after
   (tests/tasks/<skill>/...), with any leading folders kept, so
   `author/references/x.md` means skills/<skill>/author/references/x.md.
 
-A citation passes when the file exists in a tree an eval catalog loads:
+A citation in a task YAML (what the agent reads) passes when the file exists in
+a tree an eval catalog loads:
 skills/ (the default package, which nightly and smoke load) or preview/skills/
 (the preview catalog, which flow-v2-preview loads). classic/skills/ does not
 count: it holds a retained previous generation that only a pinned flavor
@@ -25,6 +29,11 @@ and no task can declare that it targets it. So a task citing a doc that only the
 classic tree still has sends the agent to a file its catalog does not ship
 (#4533 review: quality_04 cited v1-only references/brownfield.md once #4529
 moved v1 Case to classic/).
+
+A citation in a grader (.py) or fixture (.json) is read only by maintainers and
+may name the retained classic doc whose rule it still enforces, so for those
+files classic/skills/ also counts. They are still checked, because a doc that
+no tree has (a rename or retirement) leaves the note pointing at nothing.
 
 A `#fragment` on a citation must match a heading of the cited file, with the
 same GitHub slug rules as scripts/check-skill-links.mjs (inline code and link
@@ -50,20 +59,32 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Trees an eval catalog loads. classic/skills only feeds a pinned flavor build.
 SHIPPED_TREES = ("skills", "preview/skills")
+
+# Task YAMLs, and the grader scripts and JSON fixtures beside them: a grader's
+# message or a fixture's rule table cites skill docs the same way a prompt does.
+SCANNED_SUFFIXES = (".yaml", ".yml", ".py", ".json")
 ALL_TREES = SHIPPED_TREES + ("classic/skills",)
 
 # `(?<![\w.-])` keeps the match from starting mid-word; the prefix is any run of
 # path segments before `references/`, so `skills/x/references/...`,
 # `author/references/...` and a bare `references/...` are all captured.
 _CITATION_RE = re.compile(
-    r"(?<![\w.-])(?P<prefix>(?:[\w.$-]+/)*)references/(?P<rest>[\w./-]+?\.md)\b(?:#(?P<anchor>[\w-]+))?"
+    r"(?<![\w.-])(?P<prefix>(?:[\w.$-]+/)*)references/(?P<rest>[\w./-]+?\.md)\b"
+    r"(?:#(?P<anchor>[^\s)\]\"'`,;<>]+))?"
 )
+# A citation inside a URL (`https://host/.../references/a.md`) points at a web
+# page, not at a skill file, so it is not checked.
+_URL_BEFORE_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://\S*$")
+# Sentence punctuation that ends a prose citation is not part of its anchor:
+# "see references/q.md#step-1.2." cites #step-1.2.
+_ANCHOR_TRAIL = ".:!?"
 _SKILLS_PREFIX_RE = re.compile(r"(?:^|/)skills/(?P<skill>[\w-]+)/(?P<sub>(?:[\w-]+/)*)$")
 
 
@@ -76,6 +97,10 @@ def resolve(root: Path, task_skill: str | None, prefix: str, rest: str) -> tuple
     m = _SKILLS_PREFIX_RE.search(prefix)
     if m:
         return m.group("skill"), f"{m.group('sub')}references/{rest}"
+    # `uipath-x/references/a.md`: a bare leading skill name cites that skill.
+    segs = [seg for seg in prefix.split("/") if seg and seg not in ("..", ".") and not seg.startswith("$")]
+    if segs and skill_exists(root, segs[0]):
+        return segs[0], "".join(seg + "/" for seg in segs[1:]) + f"references/{rest}"
     if task_skill is None:
         return None, ""
     # Leading `../` or `$VAR/` segments carry no location inside the skill.
@@ -85,9 +110,9 @@ def resolve(root: Path, task_skill: str | None, prefix: str, rest: str) -> tuple
     return task_skill, f"{sub}references/{rest}"
 
 
-def shipped_file(root: Path, skill: str, rel: str) -> Path | None:
-    """The cited file in the first shipped tree that has it, else None."""
-    for tree in SHIPPED_TREES:
+def shipped_file(root: Path, skill: str, rel: str, trees: tuple[str, ...] = SHIPPED_TREES) -> Path | None:
+    """The cited file in the first of `trees` that has it, else None."""
+    for tree in trees:
         candidate = root / tree / skill / rel
         if candidate.is_file():
             return candidate
@@ -103,12 +128,36 @@ _FENCE_RE = re.compile(r"^\s*(```|~~~)")
 _A_ID_RE = re.compile(r"""<a\s+(?:name|id)=["']([^"']+)["']""")
 
 
+# An HTML open or close tag per CommonMark: `<` or `</`, a tag name (a letter,
+# then letters, digits or `-`), optional attributes, optional `/`, `>`. Same
+# pattern as INLINE_TAG_RE in scripts/check-skill-links.mjs.
+_INLINE_TAG_RE = re.compile(r"</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>")
+
+
+def _drop_inline_tags(heading: str) -> str:
+    """Drop raw inline HTML tags, but never inside a code span."""
+    parts = re.split(r"(`[^`]*`)", heading)
+    return "".join(part if i % 2 == 1 else _INLINE_TAG_RE.sub("", part) for i, part in enumerate(parts))
+
+
+def _slug_char(ch: str) -> bool:
+    # Mirrors `[^\p{L}\p{N}\p{M}_ -]` in check-skill-links.mjs: letters, digits
+    # and combining marks are kept.
+    return ch in "_- " or unicodedata.category(ch)[0] in "LNM"
+
+
 def slugify(heading: str) -> str:
-    """GitHub heading slug, mirroring slugify() in scripts/check-skill-links.mjs."""
-    text = re.sub(r"`([^`]*)`", r"\1", heading)
+    """GitHub heading slug; a port of slugify() in scripts/check-skill-links.mjs.
+
+    tests/scripts/test_check_task_doc_citations.py reads the heading/slug cases
+    from tests/scripts/check-skill-links.test.mjs, so the two sluggers cannot
+    drift apart without a test failing.
+    """
+    text = _drop_inline_tags(heading)
+    text = re.sub(r"`([^`]*)`", r"\1", text)
     text = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", text)
     text = text.strip().lower()
-    text = "".join(ch for ch in text if ch.isalnum() or ch in "_- ")
+    text = "".join(ch for ch in text if _slug_char(ch))
     return text.replace(" ", "-")
 
 
@@ -140,7 +189,7 @@ def scan(root: Path) -> tuple[list[tuple[str, int, str, str]], list[str]]:
     orphans: set[str] = set()
     tasks_root = root / "tests" / "tasks"
     for path in sorted(tasks_root.rglob("*")):
-        if path.suffix not in (".yaml", ".yml") or not path.is_file():
+        if path.suffix not in SCANNED_SUFFIXES or not path.is_file():
             continue
         folder = path.relative_to(tasks_root).parts[0]
         task_skill = folder if skill_exists(root, folder) else None
@@ -149,12 +198,19 @@ def scan(root: Path) -> tuple[list[tuple[str, int, str, str]], list[str]]:
         text = path.read_text(encoding="utf-8", errors="replace")
         for lineno, line in enumerate(text.splitlines(), 1):
             for m in _CITATION_RE.finditer(line):
+                if _URL_BEFORE_RE.search(line[: m.start()]):
+                    continue
                 skill, rel = resolve(root, task_skill, m.group("prefix"), m.group("rest"))
                 if skill is None:
                     continue
                 cited = m.group(0)
                 where = path.relative_to(root).as_posix()
-                target = shipped_file(root, skill, rel)
+                # A task YAML is what the agent reads, so its citations must be in
+                # a tree the catalog ships. A grader or fixture is read only by
+                # maintainers and may name the retained classic doc whose rule it
+                # still enforces (the v1 rule table in rule_citations.json).
+                trees = SHIPPED_TREES if path.suffix in (".yaml", ".yml") else ALL_TREES
+                target = shipped_file(root, skill, rel, trees)
                 if target is None:
                     if not skill_exists(root, skill):
                         reason = f"no skill {skill} in skills/, preview/skills/ or classic/skills/"
@@ -167,7 +223,7 @@ def scan(root: Path) -> tuple[list[tuple[str, int, str, str]], list[str]]:
                         reason = f"not in skills/{skill} or preview/skills/{skill}"
                     dead.append((where, lineno, cited, reason))
                     continue
-                anchor = m.group("anchor")
+                anchor = (m.group("anchor") or "").rstrip(_ANCHOR_TRAIL)
                 if anchor and anchor.lower() not in anchors_of(target):
                     rel_target = target.relative_to(root).as_posix()
                     dead.append((where, lineno, cited, f"no heading in {rel_target} has the slug #{anchor}"))

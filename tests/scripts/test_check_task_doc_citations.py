@@ -1,6 +1,6 @@
 """
 Behaviour tests for scripts/check-task-doc-citations.py, the gate that fails
-when a task YAML under tests/tasks/ cites a skill reference file (or a section of
+when a file under tests/tasks/ cites a skill reference file (or a section of
 one) that no eval catalog ships (UiPath/skills#4531, #4533 review).
 
 Each test builds a throwaway repo layout in tmp_path and runs the script on it.
@@ -11,6 +11,8 @@ Run from repo root:
 """
 
 import importlib.util
+import json
+import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -85,6 +87,73 @@ def test_anchor_must_match_a_heading(tmp_path):
         "tests/tasks/uipath-x/a.yaml:3:references/q.md#not-a-heading",
         "tests/tasks/uipath-x/a.yaml:3:references/q.md#filter-bodies",
     ]
+
+
+def test_anchor_is_read_whole_and_trailing_punctuation_dropped(tmp_path):
+    # `#step-1.2` used to be cut at the `.` and checked as `#step-1`, so it
+    # passed against a "Step 1" heading. GitHub drops `.` from slugs, so no
+    # heading can have the slug `step-1.2`: it is dead. A sentence-ending `.`
+    # after a real anchor is punctuation, not part of the anchor.
+    put(tmp_path, "skills/uipath-x/references/q.md", "# Q\n\n## Step 1\n")
+    task(tmp_path, "uipath-x/a.yaml", "see references/q.md#step-1.2 and also references/q.md#step-1.")
+    assert dead(tmp_path) == ["tests/tasks/uipath-x/a.yaml:3:references/q.md#step-1.2"]
+
+
+def test_citation_inside_a_url_is_not_checked(tmp_path):
+    put(tmp_path, "skills/uipath-x/SKILL.md")
+    task(
+        tmp_path,
+        "uipath-x/a.yaml",
+        "see https://github.com/UiPath/skills/blob/main/skills/uipath-x/references/gone.md#x",
+    )
+    assert dead(tmp_path) == []
+
+
+def test_bare_skill_name_prefix_resolves_in_that_skill(tmp_path):
+    put(tmp_path, "skills/uipath-x/SKILL.md")
+    put(tmp_path, "skills/uipath-y/references/sync.md")
+    task(tmp_path, "uipath-x/a.yaml", "see uipath-y/references/sync.md and uipath-y/references/gone.md")
+    assert dead(tmp_path) == ["tests/tasks/uipath-x/a.yaml:3:uipath-y/references/gone.md"]
+
+
+def test_graders_and_fixtures_are_scanned(tmp_path):
+    # A grader note or fixture that names a retired doc is caught too. Unlike a
+    # task YAML, it may cite the retained classic doc whose rule it enforces.
+    put(tmp_path, "skills/uipath-x/SKILL.md")
+    put(tmp_path, "classic/skills/uipath-x/references/v1-rule.md")
+    put(tmp_path, "tests/tasks/uipath-x/_shared/check.py", '"""Enforces references/v1-rule.md and references/gone.md."""\n')
+    put(tmp_path, "tests/tasks/uipath-x/_shared/rules.json", '{"doc": "references/also-gone.md"}\n')
+    assert dead(tmp_path) == [
+        "tests/tasks/uipath-x/_shared/check.py:1:references/gone.md",
+        "tests/tasks/uipath-x/_shared/rules.json:1:references/also-gone.md",
+    ]
+
+
+def _skill_links_slug_cases() -> list[tuple[str, str]]:
+    """The heading -> slug table of check-skill-links.test.mjs, read from that file."""
+    text = (REPO_ROOT / "tests" / "scripts" / "check-skill-links.test.mjs").read_text(encoding="utf-8")
+    start = text.index('test("slugs follow GitHub\'s rules"')
+    block = text[start : text.index("];", start)]
+    pair = re.compile(r'\[\s*("(?:[^"\\]|\\.)*")\s*,\s*("(?:[^"\\]|\\.)*")\s*\]')
+    return [(json.loads(h), json.loads(f)) for h, f in pair.findall(block)]
+
+
+def test_slugify_matches_check_skill_links():
+    # The two checkers must agree on what a heading's anchor is, or a citation
+    # is dead in one and live in the other. The case table is read from the
+    # link checker's own test, so a new rule there fails here until it is ported.
+    cases = _skill_links_slug_cases()
+    assert len(cases) >= 5, "could not read the slug cases from check-skill-links.test.mjs"
+    for heading, fragment in cases:
+        assert gate.slugify(heading.lstrip("#").strip()) == fragment, heading
+
+
+def test_slugify_drops_inline_html_but_not_inside_code_spans():
+    assert gate.slugify("Stage <N>: <STAGE_NAME> (`<stage_id>`)") == "stage--stage_name-stage_id"
+    assert gate.slugify("Use <b>bold</b> <br/> here") == "use-bold--here"
+    assert gate.slugify("Use `<b>` here") == "use-b-here"
+    # Combining marks are kept, like \\p{M} in the link checker.
+    assert gate.slugify("Cafe\u0301 menu") == "cafe\u0301-menu"
 
 
 def test_orphan_uipath_task_folder_warns(tmp_path, capsys):
