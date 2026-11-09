@@ -16,3 +16,5 @@ For the full cross-task wiring procedure, see [bindings-and-expressions.md](../.
 <!--skill-flavor:case-action-shape-pointer:start-->
 For the full `inputs[]`/`outputs[]` variable shapes, see [action/impl-json.md](../../uipath-maestro-case/references/plugins/tasks/action/impl-json.md).
 <!--skill-flavor:case-action-shape-pointer:end-->
+<!--skill-flavor:case-json-reading-note:start-->
+<!--skill-flavor:case-json-reading-note:end-->
