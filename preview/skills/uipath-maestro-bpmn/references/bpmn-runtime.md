@@ -187,8 +187,8 @@ binding half, which is the same for every connector-backed node.
 
 <!-- RULE:bpmn.activity.snapshot-covers-registry -->
 - The snapshot carries the registry's whole list (51 types on uip 1.205), so every
-  type `registry list` prints compiles offline through `.activity()`. Two that had
-  no authorable form now do: `A2A.AgentExecution` with
+  type `registry list` prints compiles offline through `.activity()`, including
+  `A2A.AgentExecution` with
   `inputs: { agentUrl, skillId, input, authToken, agentName }`, and the throw side
   of `.receiveMessage()`, `.activity(id, 'Maestro.SendMessageEvent', { context:
   { name, inputSchema }, inputs: { Reference } })`. Both validate on uip 1.205.
