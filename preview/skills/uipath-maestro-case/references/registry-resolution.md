@@ -18,7 +18,7 @@ entry shape by hand from the pulled index files: `stage`, `task`, `taskType`,
 |---|---|---|---|
 | `agent` | `agent-index.json` | `entityKey` | yes |
 | `api-workflow` | `api-index.json` | `entityKey` | yes |
-| `business-rule` | `businessRule-index.json` ¹ | `entityKey` | yes |
+| `business-rule` | `businessRule-index.json` ¹ | `entityKey` | yes ¹ |
 | `process` | `processOrchestration-index.json` | `entityKey` | no |
 | `rpa` | `process-index.json` | `entityKey` | no |
 | `action` | `action-apps-index.json` | `id` | no |
