@@ -92,7 +92,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 - A request that must reach a connection's webhook (to fire a `waitForEvent` on an HTTP Webhook connection, say) is a manual `.http()` with the webhook URL as a literal `url` and no `connection`: `.http('ping', { url: '<WEBHOOK_URL>', method: 'GET' })`.
   Get the URL from `uip is webhooks config <connector-key> --connection-id <id> --output json`: it is `Data.WebhookUrl`.
   Never use `uip is connections base-url` for it; that is the connection's API base, a different address, so the event never arrives.
-  An error that the connection `has no element instance id` means it cannot receive webhooks: use a connection of the HTTP Webhook connector (`uipath-http-webhook`) instead.
+  If `webhooks config` fails with `has no element instance id`, check the id and the connector with `uip is connections list <connector-key> --output json`.
+  Only a connection of the HTTP Webhook connector (`uipath-http-webhook`) can fire this event.
 
 <!-- RULE:bpmn.orchestrator.names -->
 - Published work is addressed by name and folder. Queue items require a folder;
