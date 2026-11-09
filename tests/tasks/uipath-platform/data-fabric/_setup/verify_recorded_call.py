@@ -5,8 +5,8 @@ Reads the `uip` calls recorded by `_cli_recorder/uip`, so a command typed in
 Bash and one run from a script the agent wrote count alike. Each call of the
 given verb is matched as the text `uip <argv joined by spaces>`, followed on
 new lines by any `--file` or stdin body the recorder captured. The pattern is
-matched from the start of that text (the same regex a Bash-only
-`command_executed` criterion would use). Like that criterion, the call's exit
+searched anywhere in that text, as a Bash-only `command_executed` criterion
+searches the command text. Like that criterion, the call's exit
 code is not checked.
 
 Exit 0 on pass, 1 with a reason on failure.
@@ -51,7 +51,7 @@ def main() -> None:
         if not isinstance(argv, list) or not any(argv[i:i + 3] == verb for i in range(len(argv))):
             continue
         seen += 1
-        if pattern.match(call_text(call)):
+        if pattern.search(call_text(call)):
             matched += 1
     if matched == 0:
         print(f"FAIL: {seen} recorded `records {args.verb}` call(s), none match {args.pattern}", file=sys.stderr)

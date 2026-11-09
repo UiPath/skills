@@ -35,6 +35,11 @@ pre_run:
     timeout: 300
     fail_on_error: true
 
+  # Grade only the agent's uip calls, whatever PATH pre_run ran with.
+  - command: rm -f _cli_recorder/uip-calls.jsonl
+    timeout: 10
+    fail_on_error: true
+
 reference:
   directory: .
 

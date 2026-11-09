@@ -130,12 +130,15 @@ def live_active_ids(entity_id: str) -> set[str]:
         if cursor:
             args += ["--cursor", cursor]
         data = run_uip(*args).get("Data") or {}
-        for row in data.get("Items") or []:
-            if is_true(row.get("Active")) and is_score_1_300(row.get("Score")):
-                ids.add(str(row["Id"]).lower())
-        if not data.get("HasNextPage"):
+        for row in data.get("Items") or data.get("Records") or data.get("records") or []:
+            row_id = row.get("Id") or row.get("ID") or row.get("id")
+            if row_id and is_true(row.get("Active")) and is_score_1_300(row.get("Score")):
+                ids.add(str(row_id).lower())
+        cursor = data.get("NextCursor")
+        if isinstance(cursor, dict):
+            cursor = cursor.get("Value") or cursor.get("value")
+        if not data.get("HasNextPage", bool(cursor)):
             return ids
-        cursor = (data.get("NextCursor") or {}).get("Value")
     fail("records list did not finish paging")
 
 
