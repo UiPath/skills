@@ -403,17 +403,12 @@
       "maestro flow": 25,
       "maestro flow eval": 16,
       "maestro flow nodes": 1,
-      "maestro flow nodes schema get": 3,
-      "maestro flow nodes schema set": 4,
       "solution pack": 2
     }
   },
   "uipath-mcp-servers": {
     "allow": [],
     "ceiling": {
-      "agenthub mcp-user-connections delete": 2,
-      "agenthub mcp-user-connections list": 2,
-      "agenthub mcp-user-connections set": 1,
       "login": 1,
       "mcp serve": 2
     }
