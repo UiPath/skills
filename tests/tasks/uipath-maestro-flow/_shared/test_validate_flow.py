@@ -171,6 +171,33 @@ def test_no_warnings_still_fails_the_layout_warning_on_another_file_name(monkeyp
     assert "validated with warnings" in capsys.readouterr().err
 
 
+def _warned(flow: str, warnings: str) -> str:
+    return json.dumps({"Result": "Success", "Data": {"Status": "Valid", "Warnings": warnings}})
+
+
+def test_no_warnings_still_fails_studio_webs_new_flow_with_another_warning_beside_the_layout_one(monkeypatch, capsys):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    layout = json.loads(_layout_warning(flow, "InvoiceReader"))["Data"]["Warnings"].split("\n", 1)[1]
+    warnings = f"2 warning(s):\n{layout}\n  - [nodes[map].inputs.script] [EXPRESSION_DIAGNOSTIC] Property 'Text' does not exist"
+    _stub(monkeypatch, [_cp(0, _warned(flow, warnings))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert "EXPRESSION_DIAGNOSTIC" in capsys.readouterr().err
+
+
+def test_no_warnings_still_fails_studio_webs_new_flow_when_the_count_names_more_warnings_than_it_lists(monkeypatch):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    layout = json.loads(_layout_warning(flow, "InvoiceReader"))["Data"]["Warnings"].split("\n", 1)[1]
+    _stub(monkeypatch, [_cp(0, _warned(flow, f"2 warning(s):\n{layout}"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 1
+
+
+def test_no_warnings_says_when_it_drops_the_layout_warning(monkeypatch, capsys):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    _stub(monkeypatch, [_cp(0, _layout_warning(flow, "InvoiceReader"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 0
+    assert "ignoring the canonical-layout warning" in capsys.readouterr().err
+
+
 def test_no_warnings_passes_a_clean_flow(monkeypatch):
     _stub(monkeypatch, [_cp(0, '{"Result":"Success","Data":{"Status":"Valid"}}')])
     assert validate_flow.main(["--no-warnings"]) == 0
