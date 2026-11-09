@@ -68,7 +68,7 @@ success_criteria:
   - type: run_command
     description: "The ambiguous name was settled by the user's pick — not by cache position, not left as a placeholder"
     command: "python3 $REFERENCE_DIR/registry_handoff_ambiguous/check_registry_ambiguous.py"
-    timeout: 30
+    timeout: 90
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

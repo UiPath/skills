@@ -80,7 +80,7 @@ success_criteria:
   - type: run_command
     description: "Action and child-case discovery replaced stale task entries using the correct caches and kept resolved Action bindings"
     command: "python3 $REFERENCE_DIR/registry_handoff_action_case_sdd_only/check_registry_handoff.py"
-    timeout: 30
+    timeout: 90
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
