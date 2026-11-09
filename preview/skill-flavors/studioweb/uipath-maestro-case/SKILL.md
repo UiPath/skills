@@ -83,14 +83,22 @@ the whole declaration, doc comment included.
 
 <!--skill-flavor:validation-loop:start-->
 Every change is the same round trip through the target plan. Run it from the
-project folder:
+project folder.
+
+Step 1, the seed: once per turn, before the first edit. It writes an undo
+copy of the target, then a fresh source:
 
 ```bash
 cd /solution/<Project>
 mkdir -p .flow-sdk/original
-# 1. Seed, every turn: an undo copy of the target, then a fresh source
 cp <Plan> .flow-sdk/original/<Plan>
 uip maestro case decompile <Plan> -o .flow-sdk/<Name>.case.ts --no-pipeline
+```
+
+Steps 2 and 3, repeated until clean:
+
+```bash
+cd /solution/<Project>
 # 2. Edit .flow-sdk/<Name>.case.ts narrowly, then check until clean
 uip maestro case check .flow-sdk/<Name>.case.ts --source
 # 3. Compile back into the target, then the product's own check
@@ -99,9 +107,10 @@ uip maestro case validate <Plan> --strict --sdd <sdd.md> --output json  # SDD su
 uip maestro case validate <Plan> --strict --output json                 # no SDD
 ```
 
-- **Step 1 runs once per turn.** When a later step fails, fix the source and
-  start again at step 2. Step 1 again would copy the compiled plan over the
-  undo copy.
+- **Never re-run the seed after an edit or compile in the same turn.** It
+  replaces the undo copy with the compiled plan and the source with a fresh
+  decompile, which discards your edits. When a later step fails, fix the
+  source and start again at step 2.
 - **The designer re-renders the open plan after each write.** Always finish
   with the compile into the target; never `uip solution upload`.
 - **To undo the compile**, copy `.flow-sdk/original/<Plan>` back over the
