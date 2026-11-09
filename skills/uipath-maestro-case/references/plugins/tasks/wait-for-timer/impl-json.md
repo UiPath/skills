@@ -32,7 +32,7 @@ Write the timer task directly to `caseplan.case`; no CLI command is needed.
 
 1. Generate a unique task ID: `t` + 8 alphanumeric chars.
 2. Generate `elementId`: `<stageId>-<taskId>`.
-3. Write the task with `"data": {}` to the target stage's `data.tasks` using the common placement contract: strict sequential timers get their own single-task inner array; `parallel-after-predecessor` timers share the planned same next inner array even though their entry rule is `runs-sequentially`; adhoc/event-driven/fan-in/conditional-gate/standalone timers get their own single-task inner array; only explicitly parallel or parallel-after-predecessor timers may share an inner array.
+3. Write the task with `"data": {}` to the target stage's `data.tasks` using the common placement contract: strict sequential timers get their own single-task inner array; `parallel-after-predecessor` timers share the planned same next inner array even though their entry rule is `runs-sequentially`; adhoc/event-driven/fan-in/conditional-gate/standalone timers get their own single-task inner array; `parallel` (`current-stage-entered`) timers each get their own single-task inner array; only `parallel-after-predecessor` timers may share an inner array.
 
 **Step 2 — Populate timer details:**
 

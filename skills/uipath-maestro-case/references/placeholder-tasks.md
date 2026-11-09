@@ -40,7 +40,7 @@ During **execution** (Phase 2, Step 9), create a placeholder for each `registry-
 
 ## JSON Shape
 
-Keep placeholders in normal `stageNode.data.tasks` position, preserving order and any `runs-sequentially` entry condition. Use consecutive single-task sets for a strict sequential chain; group same-set tasks only when explicitly parallel siblings.
+Keep placeholders in normal `stageNode.data.tasks` position, preserving order and any `runs-sequentially` entry condition. Use consecutive single-task sets for a strict sequential chain; group same-set tasks only for `parallel-after-predecessor` placeholder siblings (`runs-sequentially`); stage-start `parallel` placeholders each get their own set.
 
 A placeholder in `caseplan.case.nodes[<stage>].data.tasks[<lane>][]` is:
 
