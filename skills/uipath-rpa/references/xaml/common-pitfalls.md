@@ -149,6 +149,10 @@ Alternatives:
 
 Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-activity-binding-guide.md § `ThrowIfNotInTree` at runtime](csharp-activity-binding-guide.md#throwifnotintree-at-runtime--two-causes).
 
+## `InUiElement` on a Use Application/Browser Card Skips Its Wait
+
+A card (`NApplicationCard`) with `InUiElement` set skips its own targeting, so its window selector and `Timeout` are ignored: a card meant to wait for a window never waits, and its not-found error never fires. To wait for a window, use Check App State on an element of it, or leave `InUiElement` unset so the card's selector waits. The general rule (an activity with `InUiElement` skips its targeting) is in the package's `UiElement` shared-type reference, routed from `ui-automation-guide.md` § Documentation.
+
 ## OCR Engine Asks to "install the UiPath.CoreIPC package"
 
 If an OCR engine activity in XAML fails `build` or `run` with that message, read the PDF from a coded workflow that calls the PDF package's coded `ReadPdfWithOcr`, and invoke it from the XAML.

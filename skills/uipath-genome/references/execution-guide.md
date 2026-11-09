@@ -245,7 +245,7 @@ Execution ends with a hand-off for the engineer who maintains and deploys the bu
 | `integration-check.md` | the independent review of the projects against each other and what became of each finding | after every project is built (§ 3.5) |
 | `reports/<project-slug>.md` | each project's group reports: files, validation and link counts, the activity kinds read, what each step's source defects became | at each group's end (§ 2.2 step 4) |
 
-The README is the completion report. It is written for a reader who has this folder and the build but no working folder: in full sentences, with steps and components by the names the genome gives them (§ 1.3 rule 2b), source objects by the names their author wrote, and each decision with its reason, never by a ruling, part or finding number. It states each fact once: the tables stay in their files, and the README counts and links them. The final message to the user is the README's Status section and its path.
+The README is the completion report. It is written for a reader who has this folder and the build but no working folder: in full sentences, with steps and components by the names the genome gives them (§ 1.3 rule 2b), source objects by the names their author wrote, and each decision with its reason, never by a ruling, part or finding number. It states each fact once: the tables stay in their files, and the README counts and links them. The final message to the user is the README's Status section and its path. A change to the build after the hand-off was accepted re-checks the hand-off's tables and counts against the code before the build is delivered again.
 
 ````markdown
 # <Solution or project>: hand-off
