@@ -42,7 +42,7 @@
       "agent eval run results": 5,
       "agent eval run start": 8,
       "agent eval run status": 2,
-      "agent memory item": 2,
+      "agent memory item remove": 2,
       "agent tool": 1,
       "agenthub mcp create": 1,
       "codedagent": 6,
@@ -134,9 +134,11 @@
       "ah automations schema get": 3,
       "ah automations update": 2,
       "ah categories get": 3,
-      "ah comments": 7,
+      "ah comments": 3,
       "ah comments create": 3,
+      "ah comments delete": 2,
       "ah comments list": 3,
+      "ah comments update": 2,
       "ah components list": 2,
       "ah documents create": 2,
       "ah documents download": 2,
@@ -221,8 +223,6 @@
     "ceiling": {
       "codedagent run": 1,
       "login status": 1,
-      "maestro flow check": 1,
-      "maestro registry prepare": 1,
       "rpa build": 2,
       "rpa data-fabric-entities install": 1,
       "rpa debug start": 1,
@@ -342,9 +342,11 @@
   "uipath-maestro-bpmn": {
     "allow": [],
     "ceiling": {
-      "login": 4,
+      "login": 3,
       "login status": 3,
-      "maestro bpmn": 62,
+      "maestro bpmn": 42,
+      "maestro bpmn eval": 19,
+      "maestro bpmn eval list": 1,
       "maestro bpmn pack": 5,
       "rules describe": 1,
       "solution pack": 1
@@ -371,10 +373,10 @@
     "ceiling": {
       "codedagent": 3,
       "codedagent init": 1,
-      "login": 14,
+      "login": 13,
       "maestro case": 32,
       "rules debug": 1,
-      "solution pack": 12
+      "solution pack": 11
     }
   },
   "uipath-maestro-flow": {
@@ -396,25 +398,22 @@
       }
     ],
     "ceiling": {
-      "agent tool": 2,
-      "codedagent deploy": 2,
-      "codedagent run": 1,
-      "conversational trunks": 1,
-      "login": 61,
-      "login status": 10,
+      "login": 1,
       "maestro": 1,
-      "maestro flow": 168,
-      "maestro flow eval": 82,
-      "maestro flow hitl": 6,
-      "maestro flow nodes": 8,
-      "solution pack": 3,
-      "tools update": 10
+      "maestro flow": 25,
+      "maestro flow eval": 16,
+      "maestro flow nodes": 1,
+      "maestro flow nodes schema get": 3,
+      "maestro flow nodes schema set": 4,
+      "solution pack": 2
     }
   },
   "uipath-mcp-servers": {
     "allow": [],
     "ceiling": {
-      "agenthub": 5,
+      "agenthub mcp-user-connections delete": 2,
+      "agenthub mcp-user-connections list": 2,
+      "agenthub mcp-user-connections set": 1,
       "login": 1,
       "mcp serve": 2
     }
@@ -463,7 +462,6 @@
       "login tenant set": 10,
       "login which": 3,
       "logout": 1,
-      "maestro flow": 2,
       "mcp serve": 2,
       "or": 1,
       "orchestrator": 1,
@@ -518,7 +516,7 @@
       "rpa activities find": 27,
       "rpa activities get-default-xaml": 88,
       "rpa analyze": 3,
-      "rpa analyzer-rules list": 2,
+      "rpa analyzer-rules list": 1,
       "rpa build": 22,
       "rpa cleanup": 2,
       "rpa data-fabric-entities": 1,
@@ -541,8 +539,8 @@
       "rpa pack": 4,
       "rpa packages": 1,
       "rpa packages inspect": 16,
-      "rpa packages install": 19,
-      "rpa packages versions": 7,
+      "rpa packages install": 18,
+      "rpa packages versions": 5,
       "rpa publish": 4,
       "rpa remote": 3,
       "rpa remote configure": 2,
@@ -639,16 +637,16 @@
       }
     ],
     "ceiling": {
-      "login": 5,
-      "login status": 9,
+      "login": 4,
+      "login status": 8,
       "login tenant set": 2,
       "rpa build": 1,
-      "rpa pack": 4,
+      "rpa pack": 3,
       "tm customfield": 2,
       "tm defects": 1,
       "tm migration": 1,
       "tm migration schemas": 1,
-      "tm objectlabel": 2,
+      "tm objectlabel": 1,
       "tm project": 1,
       "tm schedules": 1,
       "tm testcases": 1
@@ -713,6 +711,11 @@
       },
       {
         "file": "SKILL.md",
+        "command": "vss deploy packages",
+        "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra, cli-ready) says `uip vss deploy` is not in this host and tells the agent to stop and send the user to a terminal, so these steps are never run here."
+      },
+      {
+        "file": "SKILL.md",
         "command": "login tenant set",
         "reason": "Deliberate Node-only guidance: the Studio Web override (host-availability-extra, cli-ready) says `uip vss deploy` is not in this host and tells the agent to stop and send the user to a terminal, so these steps are never run here."
       }
@@ -720,9 +723,9 @@
     "ceiling": {
       "login": 9,
       "login status": 6,
-      "login tenant set": 1,
-      "vss deploy": 26,
+      "vss deploy": 4,
       "vss deploy cancel": 1,
+      "vss deploy packages": 4,
       "vss deploy resume": 7,
       "vss deploy seed": 5,
       "vss deploy status": 4
