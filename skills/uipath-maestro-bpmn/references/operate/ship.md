@@ -97,6 +97,23 @@ Deployment and activation are platform lifecycle concerns.
 Use the platform workflow for `uip solution deploy ...` commands and keep this BPMN skill focused on the
 BPMN project/package boundary.
 
+<!--skill-flavor:process-publish:start-->
+### Standalone process publish
+
+When the user explicitly asks to publish one BPMN project as an Orchestrator process, without a solution, use `process publish`.
+It packs the project, uploads it to the tenant feed, and creates the release in the folder.
+It does not run `bpmn refresh`: run that first (Pre-flight step 4).
+
+```bash
+uip maestro bpmn process publish <project-path> --folder-key <FOLDER_KEY> --wait --output json
+```
+
+`--folder-key` is required. `--wait` returns once the entry points are available.
+`Data.ProcessKey`, `Data.ProcessVersion` and `Data.ReleaseKey` feed
+[run.md](run.md#process-run---deployed-process); `<PROCESS_KEY>` is `<ProcessKey>:<ProcessVersion>`.
+Anything shipped with a solution still goes through the solution path above.
+<!--skill-flavor:process-publish:end-->
+
 ## Import/package correlation
 
 When Studio Web import or packaging fails, inspect the generated package files against
