@@ -12,7 +12,7 @@ its three options are fixed:
 <Name>: outline ready<, uploaded> (draft mode). <One sentence if a lookup failed or you kept the user's online changes.>
 <!--skill-flavor:gate-first-line:end-->
 <!--skill-flavor:gate-path-line:start-->
-<DesignerUrl as a link on its own line, or the local .bpmn path as plain text, never a link>
+<Data.DesignerUrl as a link on its own line when you uploaded; only when you did not, the local .bpmn path as plain text: no link, no line number>
 <!--skill-flavor:gate-path-line:end-->
 
 - <each box, in order>: <resource and folder | which of two | none yet, create it or name one | not checked | no resource needed>
@@ -41,7 +41,10 @@ needs no resource (`no resource needed`): the box
 lines are the outline, so a box left off is a step the user never sees.
 List task boxes only, never the start event, a timer, a gateway, or the
 end event, and give each box one short clause: no element type ids, no
-phase-4 plans, no alternatives for the kind. When a lookup failed, say why
+phase-4 plans, no alternatives for the kind. Start each line with the box's
+name as the `.bpmn` has it (the bracketed kind may be left off) and add no
+words to it: the branch a box sits on, its condition, and its threshold
+belong to the gateway, which the canvas shows, not to the box line. When a lookup failed, say why
 once, in the one sentence the first line allows, not on the box lines.
 
 Do not describe the shape in any other form. Send no `Flow:` or

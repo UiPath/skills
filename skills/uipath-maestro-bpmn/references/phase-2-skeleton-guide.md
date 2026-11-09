@@ -148,7 +148,8 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
 <!--skill-flavor:make-shape-visible:start-->
   When the request allows an upload, run
   `uip solution upload <SolutionDir> --output json`; 3c shows the returned
-  `Data.DesignerUrl`. Do not ask first: a request to build the
+  `Data.DesignerUrl`: the 3c reply's first line then says `, uploaded` and
+  its second line is that link, never the local path. Do not ask first: a request to build the
   process authorizes the upload that shows it, and a consent gate per
   iteration would defeat the mode. The one case that still needs confirmation
   is adopting a solution the agent did not create, because `upload` overwrites
@@ -275,7 +276,9 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   and read that file in full before you write the reply.
 
   *Build it* goes to phase 4, which binds each box to the resource named here
-  and asks nothing more about structure or resources. A box still marked
+  and asks nothing more: not about structure, resources, or a business value
+  the request left open (choose one and report it under `Assumed:`). That
+  turn ends with the 4g report in its template. A box still marked
   *none yet* gets a placeholder binding (4a) and is listed under
   `Needs:` in 4g (`Unverified` is for mappings and nodes that could not be checked); a *not checked* box is looked up in 4a; an unanswered *which of two* takes the first named, reported under `Assumed`. *Change it* goes back to 3a. *Keep it* ends the run
   with the skeleton reported as an outline.
