@@ -78,7 +78,7 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # The Author lane records the genome in the SDD's handoff and changes nothing else about it.
+  # `author` records the genome in the SDD's handoff and changes nothing else about it.
   - type: run_command
     description: "The SDD stays ready and gains its Genome handoff row"
     command: >-
