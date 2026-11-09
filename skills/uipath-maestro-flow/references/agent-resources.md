@@ -74,21 +74,26 @@ step's `enableWebSearchGrounding`, it defaults to on.
 
 **`query` takes the canvas's sources:** omitted (the model writes the task), a
 string or `{ prompt }` (the model writes it, guided), `{ value }` (pinned), or
-`{ variable }` (ONE flow reference, which becomes an agent input). A bare
-`query: input('task')` is pinned text, never evaluated. `summarize` takes the
-same forms; the other two settings are `batchtransform`'s only.
+`{ variable }` (ONE flow reference, which becomes an agent input as a process
+tool argument's Variable does). A bare `query: input('task')` is pinned text,
+never evaluated. `summarize` takes the same forms; the other two settings are
+`batchtransform`'s only. `voiceAgent` and `conversationalAgent` take the tool
+too, but not a task `{ variable }`: give them a `value` or a `prompt`.
 
-`check` reports these as `INLINE_AGENT_BATCH_TRANSFORM_*` (`_NO_COLUMNS`,
+`check` reports these as `FLOW_AGENT_BATCH_TRANSFORM_*` (`_NO_COLUMNS`,
 `_TOO_MANY_COLUMNS`, `_COLUMN_NAME`, `_COLUMN_DESCRIPTION`, `_GROUNDING`) and
-`INLINE_AGENT_BUILTIN_*` (`_QUERY_SOURCE`, `_COMPOSITE_REF`,
-`_SETTING_NOT_APPLICABLE`). Compile also refuses `_GROUNDING` and the three
-`BUILTIN` codes.
+`FLOW_AGENT_BUILTIN_*` (`_QUERY_SOURCE`, `_COMPOSITE_REF`,
+`_SETTING_NOT_APPLICABLE`, `_TASK_VARIABLE`). Compile also refuses
+`_GROUNDING` and the four `BUILTIN` codes, the first in `tools` order once the
+rest of the agent is judged; `check` reports one such refusal per agent, so fix
+it and rerun.
 
-**Brownfield.** Decompile reports lossy what it cannot read back: a setting
+**Brownfield.** Decompile reads a task Variable back as `{ variable }`, and
+prints its agent input only there unless dropping the `inputs` row would
+reorder the inputs. It reports lossy what it cannot read back: a setting
 with no SDK form (a file bound to a variable, a non-`csv` `fileExtension`), a
 tool node cut to `{ source }` whose `resource.json` it could not read, and any
-Summarize task but Empty. Edit
-those flows with `merge --baseline`
+Summarize task but Empty. Edit those flows with `merge --baseline`
 ([brownfield.md](brownfield.md#agent-resources-added-changed-removed)), which
 keeps the original `resource.json`. Adding or removing a column replaces the
 whole array.
@@ -146,8 +151,8 @@ escalation nodes. Upgrade the copy in use: `npm install
 <!--skill-flavor:voice-conversational-resources-sdk-version:end-->
 
 - **`check` codes.** The inline agent's rules, under codes all three agents
-  share: `FLOW_AGENT_TOOL_*`, `FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_RESOURCE_*`,
-  `FLOW_AGENT_CONTEXT_*`. Each message names the agent's kind (`Voice agent step
+  share: `FLOW_AGENT_TOOL_*`, `FLOW_AGENT_BUILTIN_*`, `FLOW_AGENT_BATCH_TRANSFORM_*`,
+  `FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_RESOURCE_*`, `FLOW_AGENT_CONTEXT_*`. Each message names the agent's kind (`Voice agent step
   "a" …`). An SDK older than 6.88.2 prints the same rules for an inline agent
   as `INLINE_AGENT_TOOL_*`, `INLINE_AGENT_ESCALATION_*`, `INLINE_AGENT_RESOURCE_*`
   and `AGENT_CONTEXT_*`.

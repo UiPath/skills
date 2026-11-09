@@ -22,7 +22,7 @@ Signature: `batchTransform({ attachment, prompt, outputColumns, enableWebSearchG
 
 Batch transform enriches a CSV into a new file; Summarize ([summarize.md](summarize.md)) reads a document.
 
-This is the flow step. To let an inline agent call Batch Transform as a tool, use `{ kind: 'builtin', tool: 'batchtransform' }` ([agent-resources.md](agent-resources.md#the-batch-transform-tool)).
+This is the flow step. To let an agent (inline, voice or conversational) call Batch Transform as a tool, use `{ kind: 'builtin', tool: 'batchtransform' }` ([agent-resources.md](agent-resources.md#the-batch-transform-tool)).
 
 Request web grounding only when the scenario needs it.
 
