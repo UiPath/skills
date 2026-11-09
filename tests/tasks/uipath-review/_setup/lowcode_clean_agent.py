@@ -80,6 +80,8 @@ DATAPOINTS = [
      {"status": "Degraded", "owner_team": "Storage"}),
     ("asset-down", "Subject: Print server AT-02345\nNobody on floor 3 can print.", "High",
      {"status": "Down", "owner_team": "Workplace"}),
+    ("asset-operational", "Subject: Docking station AT-04567\nMy monitor flickers when docked.", "Low",
+     {"status": "Operational", "owner_team": "Workplace"}),
     ("asset-lookup-fails", "Subject: Laptop AT-03456\nMy laptop fan is loud.", "Low", "error"),
     ("single-user", "Subject: Outlook will not start\nOnly my laptop is affected.", "Medium", None),
     ("many-users-workaround", "Subject: VPN drops\nThe sales team loses VPN every hour; reconnecting works.",
