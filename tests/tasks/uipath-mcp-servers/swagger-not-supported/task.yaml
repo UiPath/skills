@@ -42,7 +42,8 @@ success_criteria:
 - type: command_not_executed
   description: Agent did NOT log in again (not_supported is not an auth failure)
   tool_name: Bash
-  command_pattern: 'uip\s+(login|auth\s+login)\b'
+  # `uip login status` only reads the session; it is not a new login.
+  command_pattern: 'uip\s+(login|auth\s+login)\b(?!\s+status\b)'
   weight: 1.0
 - type: llm_judge
   description: The answer says swagger MCP servers aren't available on the connected environment

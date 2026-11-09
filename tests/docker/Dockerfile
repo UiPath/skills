@@ -332,6 +332,15 @@ RUN set -euo pipefail && \
       > "$FLOW_SDK_SETUP_STATUS" && \
     cat "$FLOW_SDK_SETUP_STATUS"
 
+# Declare the versions this image bakes in, as a flat JSON object of name to
+# version. coder-eval 1.x records it with each run (the Evalboard run header
+# shows it); coder-eval 0.12 does not read it. An unresolved version is left out.
+RUN mkdir -p /etc/coder-eval && \
+    jq --arg cli "$(uip --version | tail -n 1)" \
+      '{"uip-cli": $cli, "flow-sdk": .sdk.resolvedVersion, "connectors-library": .registry.libraryHash} | with_entries(select(.value != null and .value != ""))' \
+      "$FLOW_SDK_SETUP_STATUS" > /etc/coder-eval/image-versions.json && \
+    cat /etc/coder-eval/image-versions.json
+
 # Persist the built-with name into the image. `ARG` is build-time only, and
 # `stage-preview-sdk-workspace.sh` reads this at TASK time — without it a
 # non-default build (an old-name baseline) would install one name and have the

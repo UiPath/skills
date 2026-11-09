@@ -131,11 +131,20 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # One criterion per project: a single loop over both projects counts for both.
   - type: command_executed
-    description: "Agent invoked uip rpa get-errors or validate on each project"
+    description: "Agent invoked uip rpa get-errors or validate on ProjectA"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rpa\s+(get-errors|validate)'
-    min_count: 2
-    weight: 1.5
+    command_pattern: '\bProjectA\b.*\buip\s+rpa\s+(get-errors|validate)\b|\buip\s+rpa\s+(get-errors|validate)\b.*\bProjectA\b'
+    min_count: 1
+    weight: 0.75
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked uip rpa get-errors or validate on ProjectB"
+    tool_name: "Bash"
+    command_pattern: '\bProjectB\b.*\buip\s+rpa\s+(get-errors|validate)\b|\buip\s+rpa\s+(get-errors|validate)\b.*\bProjectB\b'
+    min_count: 1
+    weight: 0.75
     pass_threshold: 1.0
 
