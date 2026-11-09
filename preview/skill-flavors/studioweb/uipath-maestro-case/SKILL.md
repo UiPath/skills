@@ -39,7 +39,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip solution resources add`, `list` | Work. |
 | `uip solution resources refresh`, `remove` | Not available: no local `.uipx`. Add connections with `resources add` (the [Validation loop](#validation-loop)). |
 | `uip solution publish`, `uip solution deploy run` | Work. Studio Web packages and signs in for `publish`. |
-| `uip maestro case debug "<Project>"` | Works: a real run of the case saved in the open solution (step 8 of the [Workflow](#workflow)). |
+| `uip maestro case debug "<Project>" --inputs '{}'` | Works: a real run of the case saved in the open solution (step 8 of the [Workflow](#workflow)). Without `--inputs` it waits on a dialog. |
 | `uip maestro case pack`, `uip solution pack`, `upload`, creating a solution | Not available. Studio Web owns the solution. |
 | `uip login` | Not available. You are already signed in to the tenant of the user. |
 | `node -e` | Works for a small script with `fs`. It has no `crypto` and no `uuidgen`. |
@@ -65,11 +65,11 @@ When a reference tells you to run a command that is not available, use the Studi
 8. Run live debug only when the user asks for it and tenant resources are available. A debug run is a REAL run: it sends emails, posts messages and calls APIs.
 
    ```bash
-   uip maestro case debug "<Project>"
+   uip maestro case debug "<Project>" --inputs '{}'
    uip maestro case debug "<Project>" --inputs '{"claimId": "C-1"}'
    ```
 
-   `<Project>` is a project name in the open solution, not a path. Debug runs the plan saved in the open solution, so there is no pack or upload step. `--inputs` takes inline JSON only; `@file` is not supported. The output is plain text, not JSON: the status, `Trace ID: <id>` when one was found, the run logs and the execution trace. Exit 1 means `Faulted` or `Failed`. `TimedOut after <N>s` also exits 1, but the run is still going in Studio Web: do not troubleshoot it, and do not run it again. Tell the user to follow the run in Studio Web.
+   `<Project>` is a project name in the open solution, not a path. Debug runs the plan saved in the open solution, so there is no pack or upload step. Always pass `--inputs`: the input values as inline JSON, or `'{}'` when the case takes none; `@file` is not supported. Without `--inputs`, Studio Web opens its Debug configuration dialog and the run waits for the user to click **Save & Debug**. The output is plain text, not JSON: the status, `Trace ID: <id>` when one was found, the run logs and the execution trace. Exit 1 means `Faulted` or `Failed`. `TimedOut after <N>s` also exits 1, but the run is still going in Studio Web: do not troubleshoot it, and do not run it again. Tell the user to follow the run in Studio Web.
 <!--skill-flavor:workflow-build:end-->
 
 <!--skill-flavor:api-index-location:start-->
