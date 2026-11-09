@@ -10,7 +10,7 @@
     {"id": "LC_OUTPUT_CLASSIFIER_NO_ENUM", "reason": "priority has an enum"},
     {"id": "LC_OUTPUT_ENUM_VS_PROMPT_DRIFT", "reason": "prompt and enum list the same three values"},
     {"id": "LC_SETTINGS_TEMPERATURE_FIT", "reason": "temperature 0 for classification"},
-    {"id": "LC_EVAL_JUDGE_FOR_CLOSED_CLASS", "reason": "equality evaluator, no LLM judge"},
+    {"id": "LC_EVAL_JUDGE_FOR_CLOSED_CLASS", "reason": "priority uses an equality evaluator; the LLM judge targets free-text reason"},
     {"id": "LC_FAILURE_PROMPT_INJECTION", "reason": "data boundary in prompt and prompt_injection guardrail at Llm"},
     {"id": "LC_MULTI_TOOL_NO_SEQUENCING", "reason": "single tool, explicit order"},
     {"id": "VAGUE_TOOL_DESCRIPTION", "reason": "tool description states purpose, effects and use condition"}
