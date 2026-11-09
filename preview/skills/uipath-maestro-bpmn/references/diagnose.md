@@ -43,9 +43,11 @@ key and final status from the JSON:
 uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
+<!--skill-flavor:debug-handle:start-->
 For a **debug** run, the `instanceId` the debug command returned is the handle,
 and the `debug-instance` commands read it (see below). Keep deployed-instance
 reads and debug-session reads separate.
+<!--skill-flavor:debug-handle:end-->
 
 ## Step 2 — read incidents
 
@@ -158,10 +160,16 @@ Redact tenant, user, connection, folder, URL, payload and secret values.
 
 ## Failure modes that reach the runtime
 
-The builder removes a class of BPMN defects at compile time — unparsable XML, an
-element with no id, a flow to nowhere, a `vars.<id>` read of an undeclared
-variable, a gateway with every flow conditioned (`NO_DEFAULT_FLOW`) — so a
-compiled process does not carry them. These are the ones that survive:
+The builder catches a class of BPMN defects before the process runs. `compile`
+refuses unparsable XML, an element with no id and a flow to nowhere. `check`
+reports a `vars.<id>` read of an undeclared variable (`EXPR_UNDECLARED_REF`, an
+error), a declared variable read without `vars.` (`EXPR_BARE_VAR_REF`, an error)
+and a gateway with every flow conditioned (`NO_DEFAULT_FLOW`, a warning); `compile`
+writes those as authored, so a process compiled without a clean `check` can carry
+them. A run that reads an undefined `vars.<id>` means: re-run `bpmn check --source`
+on the authored source and fix what it reports. (From the SDK release with
+UiPath/builder-sdk#1712; an older `compile` refuses the undeclared read itself.)
+These are the ones that survive both:
 
 - **Binding resolution** — a node reads `=bindings.<id>` and the resource the
   binding names is not reachable from the folder the process ran in, or the

@@ -11,12 +11,17 @@ Usage (from a task's run_command, cwd = sandbox root):
 
 Checks:
     fields JSON          each entry of the JSON array claims a field it fits:
-                         '[{"name_contains": "date", "type": "ft-date"}, {"name": "Total"}]'
-                         "name", "type" and "id" must equal the field's name,
-                         type and x-uipath-field-id. "name_contains" and
-                         "says_contains" are case-insensitive regexes searched
-                         in the field's name and instructions. An entry may
-                         give any of these keys. Entries claim in order, each
+                         '[{"name_matches": "date", "type": "ft-date"}, {"name": "Total"}]'
+                         "name", "group", "type", "instructions" and "id"
+                         must equal the field's name, its group's key, its
+                         type, its instructions and its x-uipath-field-id.
+                         "name_matches", "group_matches" and
+                         "instructions_matches" are case-insensitive regexes
+                         searched in the same name, group key and
+                         instructions. "repeats" (true or
+                         false) says whether the group is a table ("type":
+                         "array"). An entry may give any of these keys.
+                         Entries claim in order, each
                          taking the first field no earlier entry took. With
                          --only, every field is claimed.
     has-instructions     the overall prompt, every group and every field have
@@ -28,6 +33,12 @@ Checks:
                          with each OLD field renamed to NEW (same id, type and
                          instructions): prompt, config, groups, fields, ids
                          and $defs. The order of "required" lists is ignored.
+    extends ORIGINAL     every group, field, id, instruction, config value
+                         and $defs entry of the taxonomy in the ORIGINAL
+                         .flow is still there, unchanged. New groups, new
+                         fields, their "required" entries and new $defs
+                         entries (a Choice) may be added, and the overall
+                         prompt may change.
     file-ref             the node's inputs.fileRef reads a declared
                          ``direction: in``, ``type: file`` global
                          (``flow validate`` passes a fileRef to an input that
@@ -61,9 +72,9 @@ BUILT_IN_TYPES = (
     "ft-monetary-quantity",
     "ft-boolean",
 )
-EXACT_KEYS = ("name", "type", "id")
-PATTERN_KEYS = ("name_contains", "says_contains")
-FIELD_KEYS = {*EXACT_KEYS, *PATTERN_KEYS}
+EXACT_KEYS = ("name", "group", "type", "instructions", "id")
+PATTERN_KEYS = ("name_matches", "group_matches", "instructions_matches")
+FIELD_KEYS = {*EXACT_KEYS, *PATTERN_KEYS, "repeats"}
 MAX_DIFFERENCES = 10
 ONLY_CHECKS = ("fields", "defs")
 
@@ -98,10 +109,24 @@ def _get_field_type(field: dict) -> str:
     return field.get("$ref", "").rsplit("/", 1)[-1] or "no type"
 
 
-def _fits(want: dict, name: str, field: dict) -> bool:
-    exact = {"name": name, "type": _get_field_type(field), "id": field.get("x-uipath-field-id")}
-    searched = {"name_contains": name, "says_contains": field.get("description") or ""}
+def _is_repeating(group: dict) -> bool:
+    kind = group.get("type")
+    return "array" in (kind if isinstance(kind, list) else [kind])
+
+
+def _fits(want: dict, group: str, name: str, field: dict, repeats: bool) -> bool:
+    instructions = field.get("description") or ""
+    exact = {
+        "name": name,
+        "group": group,
+        "type": _get_field_type(field),
+        "instructions": instructions,
+        "id": field.get("x-uipath-field-id"),
+    }
+    searched = {"name_matches": name, "group_matches": group, "instructions_matches": instructions}
     if any(k in want and want[k] != exact[k] for k in EXACT_KEYS):
+        return False
+    if "repeats" in want and want["repeats"] != repeats:
         return False
     return not any(k in want and not re.search(want[k], searched[k], re.IGNORECASE) for k in PATTERN_KEYS)
 
@@ -126,10 +151,11 @@ def parse_fields(values: list[str]) -> list[dict]:
             not isinstance(want, dict)
             or not want
             or set(want) - FIELD_KEYS
-            or not all(isinstance(v, str) for v in want.values())
+            or not all(isinstance(v, bool) if k == "repeats" else isinstance(v, str) for k, v in want.items())
         ):
             raise ValueError(
-                f"each entry has string {', '.join(sorted(FIELD_KEYS))} keys, not {json.dumps(want)}"
+                f"each entry has string {', '.join(sorted(FIELD_KEYS - {'repeats'}))} keys"
+                f" and a true/false repeats key, not {json.dumps(want)}"
             )
         for key in PATTERN_KEYS:
             if key in want:
@@ -142,10 +168,11 @@ def parse_fields(values: list[str]) -> list[dict]:
 
 def check_fields(_: dict, node: dict, args: argparse.Namespace) -> str | None:
     fields = _list_fields(node)
+    groups = _list_groups(node)
     unclaimed = list(range(len(fields)))
     problems = []
     for want in args.wanted:
-        claim = next((i for i in unclaimed if _fits(want, fields[i][1], fields[i][2])), None)
+        claim = next((i for i in unclaimed if _fits(want, *fields[i], _is_repeating(groups[fields[i][0]]))), None)
         if claim is None:
             problems.append(f"no field left fits {json.dumps(want)}")
         else:
@@ -188,8 +215,13 @@ def _rename_field(node: dict, old: str, new: str) -> bool:
     return False
 
 
-def _find_differences(want: object, got: object, path: str = "") -> list[str]:
-    """Each JSON path where ``got`` differs from ``want``; ``required`` lists compare as sets."""
+def _find_differences(want: object, got: object, path: str = "", grow: bool = False) -> list[str]:
+    """Each JSON path where ``got`` differs from ``want``; ``required`` lists compare as sets.
+
+    With ``grow``, ``got`` may add keys to a ``properties`` map (new groups and
+    fields) or to ``$defs`` (a new Choice), names to a ``required`` list, or a
+    ``required`` list where there was none.
+    """
     if isinstance(want, dict) and isinstance(got, dict):
         found = []
         for key in sorted(set(want) | set(got)):
@@ -197,11 +229,15 @@ def _find_differences(want: object, got: object, path: str = "") -> list[str]:
             if key not in got:
                 found.append(f"{where} was dropped")
             elif key not in want:
-                found.append(f"{where} was added: {json.dumps(got[key])[:80]}")
+                if not (grow and (path.endswith(("properties", "$defs")) or key == "required")):
+                    found.append(f"{where} was added: {json.dumps(got[key])[:80]}")
             else:
-                found += _find_differences(want[key], got[key], where)
+                found += _find_differences(want[key], got[key], where, grow)
         return found
     if path.endswith(".required") and isinstance(want, list) and isinstance(got, list):
+        if grow:
+            lost = sorted(set(map(str, want)) - set(map(str, got)))
+            return [f"{path} lost {json.dumps(lost)[:80]}"] if lost else []
         want, got = sorted(map(str, want)), sorted(map(str, got))
     if want == got:
         return []
@@ -224,7 +260,20 @@ def check_unchanged(_: dict, node: dict, args: argparse.Namespace) -> str | None
         old, new = rename.split("=", 1)
         if not _rename_field(expected, old, new):
             raise SystemExit(f"FAIL: the original taxonomy has no field named {old!r}")
-    found = _find_differences(_read_schema_document(expected), _read_schema_document(node))
+    return _report_differences(_find_differences(_read_schema_document(expected), _read_schema_document(node)))
+
+
+def check_extends(_: dict, node: dict, args: argparse.Namespace) -> str | None:
+    expected = _read_schema_document(_read_extract_node(args.values[0]))
+    got = _read_schema_document(node)
+    return _report_differences(_find_differences(
+        {k: v for k, v in expected.items() if k != "prompt"},
+        {k: v for k, v in got.items() if k != "prompt"},
+        grow=True,
+    ))
+
+
+def _report_differences(found: list[str]) -> str | None:
     if not found:
         return None
     more = f"; and {len(found) - MAX_DIFFERENCES} more" if len(found) > MAX_DIFFERENCES else ""
@@ -281,6 +330,7 @@ CHECKS = {
     "has-instructions": check_has_instructions,
     "defs": check_defs,
     "unchanged": check_unchanged,
+    "extends": check_extends,
     "file-ref": check_file_ref,
     "edge": check_edge,
     "no-other-ixp": check_no_other_ixp,
@@ -301,6 +351,9 @@ def _find_usage_error(args: argparse.Namespace) -> str | None:
     elif args.check == "unchanged":
         if not args.values or not all(re.fullmatch(r"[^=]+=[^=]+", v) for v in args.values[1:]):
             return "unchanged takes: ORIGINAL [OLD=NEW ...]"
+    elif args.check == "extends":
+        if len(args.values) != 1:
+            return "extends takes: ORIGINAL"
     elif args.values:
         return f"{args.check} takes no values"
     return None

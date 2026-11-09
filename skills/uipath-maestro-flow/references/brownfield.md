@@ -203,12 +203,19 @@ flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derive
 
 <!--skill-flavor:draft-nodes:start-->
 A canvas-saved flow often holds **draft** nodes: a connector with no connection
-yet, a required input left empty, or a generic operation with no object picked
-(connector action steps only; a draft trigger, `waitForEvent` or connector tool
-still refuses and must be finished first). Decompile carries the definition
-of each draft the canvas saved, so `compile` writes it with a warning
-(`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on this
-page get past it. Three cases still stop `compile`, and with it the pipeline
+yet, a required input left empty, a generic operation with no object picked, a
+`waitForEvent` with no connection, a Transform with no collection, or a
+decision with no condition (a draft trigger or connector tool still refuses and
+must be finished first). Decompile carries the definition of each draft the
+canvas saved and marks its step `{ draft: true }`, so `compile` writes it with a
+warning (`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on
+this page get past it. For instance a decision saved with no condition
+decompiles as `.branch("decision1", undefined, (t) => ..., (e) => ..., { draft: true })`
+and a Transform with no collection as `transform({ operations: [] })` with
+`{ draft: true }`: leave those as written unless the user asked you to finish
+the node. The `waitForEvent`, Transform and decision drafts need `@uipath/maestro-builder-sdk`
+6.86.5 or later; an older one refuses them (`BINDING_MISSING`,
+`TRANSFORM_COLLECTION_LITERAL`, `EXPR_SYNTAX`). Three cases still stop `compile`, and with it the pipeline
 and the by-hand loop below: a generic operation with no object
 (`CONNECTOR_OBJECT_REQUIRED`), a draft you wrote yourself (no carried
 definition), and an untouched node the SDK cannot compile (`check --baseline`
@@ -365,11 +372,13 @@ Leave these as they are. Removing them makes compile name the node
 `<agent>Context` / `Tool` / `Escalation` (with `2`, `3`, ... for more than one)
 with a new directory, so merge drops the original node and adds a different
 one. Do not add them to a resource you create, including one copied from a
-decompiled entry. `check` reports `INLINE_AGENT_RESOURCE_NODE_ID` for a blank
+decompiled entry. `check` reports `FLOW_AGENT_RESOURCE_NODE_ID` for a blank
 `nodeId` or one another node has (or that compile derives for another
-resource), `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
-uuid, and `INLINE_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
-with the same `source`: both would write one `resource.json`. Delete both
+resource), `FLOW_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
+uuid, and `FLOW_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
+with the same `source`: both would write one `resource.json`. (An SDK older
+than 6.88.2 spells these three
+`INLINE_AGENT_RESOURCE_*`.) Delete both
 `nodeId` and `source` from a copied entry.
 Needs `@uipath/maestro-builder-sdk`
 6.33.0 or later; an older SDK's decompile omits these fields and compile renames

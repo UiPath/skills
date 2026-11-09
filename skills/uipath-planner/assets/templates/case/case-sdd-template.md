@@ -339,7 +339,7 @@ the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| flow-process \| document-extraction \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| script \| flow-process \| document-extraction \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -444,6 +444,19 @@ The task's own outputs are `response` and `Error`; a later task reads a field as
 **Connection ID:** <tenant connection id, or <UNRESOLVED>; only with Connector Key>
 
 Outputs are the response's `code`, `headers` and `body`, plus `Error`.
+
+###### Script Task Detail (type: `script`)
+
+<!-- One ```js fenced FUNCTION BODY (```javascript also reads): read case state through `vars.<name>`
+(and `metadata`), end in `return { … }`; a top-level `return` is legal. Only the first js fence in the
+block is read. No Inputs table: the task receives `vars`, the whole case state. Outputs are fixed:
+`scriptResponse` (what the body returns) and `Error`; bind the result with an arrow row,
+`| scriptResponse | object | -> <variable> |`. Never a credential or secret in the body: it ships in
+caseplan.case. -->
+
+```js
+<function body: reads vars.<name>, ends in return { … }>
+```
 
 ###### Document Extraction Task Detail (type: `document-extraction`)
 

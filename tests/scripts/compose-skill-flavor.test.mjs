@@ -29,6 +29,7 @@ import {
   createAllVariants,
   createCompositionPlan,
   createDefaultPlan,
+  createPreviewVariants,
   materializeComposition,
   packageName,
   packAllVariants,
@@ -704,6 +705,90 @@ test("invalid pins and unpinned classic trees are rejected", (t) => {
 
   rmSync(join(studio, "uipath-flow", ".canonical"));
   expectFlavorError(() => createAllVariants(repo), /no flavor pins this retained tree/);
+});
+
+function addPreviewSkill(repo, name, body = "Preview guidance.\n") {
+  const skill = join(repo, "preview", "skills", name);
+  mkdirSync(skill, { recursive: true });
+  writeFileSync(join(skill, "SKILL.md"), entrypoint(name, body));
+  return skill;
+}
+
+function writePreviewOverride(repo, flavor, relativePath, text) {
+  const root = join(repo, "preview", "skill-flavors", flavor);
+  const target = join(root, ...relativePath.split("/"));
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, text);
+  return root;
+}
+
+test("a preview flavor composes preview skills and stays out of the packaged variants", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-bpmn", block("host", "Current default."));
+  addPreviewSkill(repo, "uipath-bpmn", block("host", "Preview default."));
+  writeOverride(repo, "studioweb", "uipath-bpmn/SKILL.md", block("host", "Studio Web current."));
+  writePreviewOverride(repo, "studioweb", "uipath-bpmn/SKILL.md", block("host", "Studio Web preview."));
+
+  const previews = createPreviewVariants(repo);
+  assert.deepEqual(previews.map(({ name }) => name), ["studioweb"]);
+  assert.deepEqual(previews[0].plan.skills, ["uipath-bpmn"]);
+  assert.equal(previews[0].plan.replacementCount, 1);
+  assert.deepEqual(createAllVariants(repo).map(({ name }) => name), ["default", "studioweb"]);
+
+  buildAllSkillTrees(repo);
+  const preview = readFileSync(join(repo, "build", "preview", "studioweb", "uipath-bpmn", "SKILL.md"), "utf8");
+  assert.match(preview, /Studio Web preview\./);
+  assert.ok(!containsFlavorMarker(preview));
+  assert.match(
+    readFileSync(join(repo, "build", "skills", "studioweb", "uipath-bpmn", "SKILL.md"), "utf8"),
+    /Studio Web current\./,
+  );
+  assert.deepEqual(readdirSync(join(repo, "build", "preview")), ["studioweb"]);
+
+  const validate = runCli(repo, "validate");
+  assert.equal(validate.status, 0, validate.stderr);
+  assert.match(validate.stdout, /preview\/studioweb: 1 skills, 1 files, 1 replacements/);
+});
+
+test("invalid preview flavors are rejected against the preview tree", async (t) => {
+  const setup = (child) => {
+    const repo = fixtureRepo(child);
+    addSkill(repo, "uipath-current", block("host", "Current."));
+    addPreviewSkill(repo, "uipath-bpmn", block("host", "Preview."));
+    writeOverride(repo, "studioweb", "uipath-current/SKILL.md", block("host", "Studio Web."));
+    return repo;
+  };
+  const cases = [
+    ["missing target", "uipath-bpmn/references/gone.md", block("host", "x"), /canonical target does not exist: preview\/skills\/uipath-bpmn\/references\/gone\.md/],
+    ["missing marker", "uipath-bpmn/SKILL.md", block("other", "x"), /no matching canonical marker in preview\/skills\/uipath-bpmn\/SKILL\.md/],
+    ["skill not in preview", "uipath-current/SKILL.md", block("host", "x"), /unknown canonical skill "uipath-current"/],
+    ["pin", "uipath-bpmn/.canonical", "classic\n", /a preview flavor cannot pin a skill/],
+  ];
+  for (const [label, relativePath, text, pattern] of cases) {
+    await t.test(label, (child) => {
+      const repo = setup(child);
+      writePreviewOverride(repo, "studioweb", relativePath, text);
+      expectFlavorError(() => createPreviewVariants(repo), pattern);
+      expectFlavorError(() => buildAllSkillTrees(repo), pattern);
+    });
+  }
+
+  if (process.platform !== "win32") {
+    await t.test("a promoted preview skill link is skipped", (child) => {
+      const repo = setup(child);
+      symlinkSync("../../skills/uipath-current", join(repo, "preview", "skills", "uipath-current"), "dir");
+      writePreviewOverride(repo, "studioweb", "uipath-bpmn/SKILL.md", block("host", "x"));
+      assert.deepEqual(createPreviewVariants(repo)[0].plan.skills, ["uipath-bpmn"]);
+      writePreviewOverride(repo, "studioweb", "uipath-current/SKILL.md", block("host", "x"));
+      expectFlavorError(() => createPreviewVariants(repo), /unknown canonical skill "uipath-current"/);
+    });
+  }
+
+  await t.test("no matching flavor", (child) => {
+    const repo = setup(child);
+    writePreviewOverride(repo, "other-host", "uipath-bpmn/SKILL.md", block("host", "x"));
+    expectFlavorError(() => createPreviewVariants(repo), /preview flavor has no matching skill-flavors\/other-host\//);
+  });
 });
 
 test("default plan includes every canonical skill and strips CRLF marker boundaries", (t) => {
@@ -1654,6 +1739,20 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
 
   assert.doesNotMatch(defaultWorkflow, /publish-studioweb\.yml/);
 
+  // The stable flavor publish is its own dispatch-only caller of the same
+  // GitHub Packages-only publisher, so it can never reach npmjs.
+  const stableWorkflow = readFileSync(
+    join(REPO_ROOT, ".github", "workflows", "publish-studioweb-stable.yml"),
+    "utf8",
+  );
+  assert.match(stableWorkflow, /^\s*uses:\s*\.\/\.github\/workflows\/publish-skill-flavor\.yml\s*$/m);
+  assert.match(stableWorkflow, /^\s*flavor:\s*studioweb\s*$/m);
+  assert.match(stableWorkflow, /^\s*channel:\s*stable\s*$/m);
+  assert.doesNotMatch(stableWorkflow, /^\s*(push|schedule|release|pull_request):/m);
+  assert.match(stableWorkflow, /^\s*workflow_dispatch:\s*$/m);
+  assert.match(stableWorkflow, /github\.ref == 'refs\/heads\/main'/);
+  assert.doesNotMatch(stableWorkflow, /npm publish|id-token\s*:|--provenance/i);
+
   assert.match(flavorWorkflow, /^\s*workflow_call:\s*$/m);
   assert.match(
     flavorPublish,
@@ -1667,7 +1766,7 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
     [...workflowInputs.matchAll(/^ {6}([a-z][a-z0-9_-]*):\s*$/gm)].map(
       (match) => match[1],
     ),
-    ["flavor", "channel"],
+    ["flavor", "channel", "commit", "version"],
   );
   assert.match(flavorWorkflow, /FLAVOR:\s*\$\{\{ inputs\.flavor \}\}/);
   assert.match(flavorWorkflow, /https:\/\/npm\.pkg\.github\.com/);
