@@ -22,7 +22,6 @@ WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 # owners' call (they shell out to sh/bash and read the eval image's Dockerfile);
 # remove an entry once a job runs it.
 NOT_YET_IN_CI = {
-    "tests/scripts/test_dockerfile_connectors_library_pin.py",
     "tests/scripts/test_stage_preview_sdk_workspace.py",
     "tests/scripts/test_stage_shared.py",
     "tests/scripts/test_verb_checkers.py",
