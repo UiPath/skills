@@ -45,12 +45,9 @@ success_criteria:
     pass_threshold: 1.0
 
   # Correct agent-job classification: any spelling of the discriminator, never sourceType.
-  # Graded on USE, not on the word: the old --forbid-substr "sourceType" failed
-  # correct builds that only showed sourceType as a "Trigger" column or warned
-  # against it in a comment, and it missed the skill's own Wrong example
-  # (`SourceType eq 'Agent'`, capital S).
+  # Graded on use, not the word: a "Trigger" column or a comment naming sourceType is fine.
   - type: run_command
-    description: "Metric module discriminates agent jobs on the packageType/processType field and never on sourceType (no `SourceType eq|ne` filter and no `.sourceType ===|!==` comparison; showing it as a column or naming it in a comment is fine)"
+    description: "Metric module discriminates agent jobs on the packageType/processType field and never on sourceType"
     command: >
       python3 $REFERENCE_DIR/_shared/check_dashboard.py
       --min-metrics 1 --require-substr "eq 'Agent'" --forbid-sourcetype-filter
