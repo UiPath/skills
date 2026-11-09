@@ -4,7 +4,7 @@ Manage evaluators, eval sets, data points, and simulations with `uip maestro flo
 Use this when the request asks for evaluation assets, or for a flow to be evaluated.
 
 <!--skill-flavor:eval-login:start-->
-**Local `add` / `list` / `remove` edit project files and need no login.** Before starting a run, run `uip login`; it needs a matching solution in Studio Web.
+**Local `add` / `list` / `remove` edit project files and need no login.**
 Starting a run does — `uip login` first, and it needs a matching solution in Studio Web.
 <!--skill-flavor:eval-login:end-->
 

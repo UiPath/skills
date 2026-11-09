@@ -102,7 +102,7 @@ import { SendMessageToChannel } from './connectors/uipath-salesforce-slack.ts';
 ```
 <!--skill-flavor:descriptor-imports:end-->
 
-Older environments provide bare `prepare-connector` on `PATH`; arguments are identical except connector version is `--connector-version` (not `--version`, which is Commander’s CLI-version flag). For many connectors, follow [the parent-field loop](#schema-dynamic-operations-the-parent-field-loop).
+Older environments provide bare `prepare-connector` on `PATH`; arguments are identical except connector version is `--connector-version` (not `--version`, which is Commander’s CLI-version flag). For many connectors that first command is **not enough on its own** — see [the parent-field loop](#schema-dynamic-operations-the-parent-field-loop) below before concluding a field does not exist.
 
 ### A Generic operation is authored from the LIBRARY, not through registry prepare
 
@@ -117,14 +117,14 @@ This generic form needs no live resolution and compiles from the library. `regis
 
 ### Finding the object id for a Generic operation
 
-Author `{ object: '<name-as-the-task-said-it>' }` first; let `check` report `OBJECT_UNPREPARED` and the command. `--object` matches API/display names case-insensitively, narrowed to objects supporting the action verb:
+Do not hunt for it, and do not resolve it before authoring: write the step with `{ object: '<name-as-the-task-said-it>' }` and let `check` name this command (`OBJECT_UNPREPARED`). `--object` matches API/display names case-insensitively, narrowed to objects supporting the action verb:
 
 ```bash
 uip maestro registry prepare <connector-key> --action <action> --object Company__C
 #   object: matched "Company__C" -> Company__c
 ```
 
-Multiple matches are refused with API name, display name, custom, and operations. `Custom: yes` identifies tenant-only objects. Pick by the task's wording, or present the candidates and let the user choose — never pick for them — then re-run with the chosen `Name`. After refreshed-catalog retry, no match means the object is absent from the connection; surface that. Do not use `uip is resources list` plus `--output-filter`; prepare performs matching, verb narrowing, staleness retry, and records `.flow-sdk/connectors-local/resolutions.json` (`objects`).
+Multiple matches are refused with API name, display name, custom, and operations. `Custom: yes` identifies tenant-only objects. Pick by the task's wording, or present the candidates and let the user choose — never pick for them — then re-run with the chosen `Name`. When **nothing** matches, the command has already retried a refreshed catalog: the object is not on this connection, so surface that rather than inventing a name. Do not use `uip is resources list` plus `--output-filter`; prepare performs matching, verb narrowing, staleness retry, and records `.flow-sdk/connectors-local/resolutions.json` (`objects`).
 
 ## Structured filters (CEQL)
 
@@ -136,7 +136,7 @@ connector('uipath-microsoft-azureactivedirectory', 'list-groups',
   { connection: 'entra', folder: 'shared' })
 ```
 
-The artifact must contain runtime `inputs.detail.queryParameters.where` and design-time `essentialConfiguration.savedFilterTrees.where` in node `configuration`; validation rejects only one half. If a separate review artifact is requested, compile and copy `configuration.essentialConfiguration.savedFilterTrees.<parameter>` verbatim, directly or under a named top-level property; retain numeric `groupOperator` and `filters`. Do not replace it with an ad hoc `{ field, operator, value }` object or only the CEQL string.
+The artifact must contain runtime `inputs.detail.queryParameters.where` and design-time `essentialConfiguration.savedFilterTrees.where` in node `configuration`; Studio Web renders the FilterBuilder from the tree; product validation rejects a filter that has only one of the two, so a string alone fails `validate` even though the run would have worked. If a separate review artifact is requested, compile and copy `configuration.essentialConfiguration.savedFilterTrees.<parameter>` verbatim, directly or under a named top-level property; retain numeric `groupOperator` and `filters`. Do not replace it with an ad hoc `{ field, operator, value }` object or only the CEQL string.
 
 Supported operators are `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`, `Like`, their `Not` forms, and `Is Null` / `Is Not Null`; combine with `AND` or `OR` and parenthesize. Mixing `AND` and `OR` at one level is refused. Column tokens are unquoted, values use single quotes, double quotes mark columns, and OData `eq`/`ne`/`gt`/`ge`/`lt`/`le` are invalid; these are compile errors rather than tenant `[102003] Integration Services bad request`:
 
@@ -240,7 +240,7 @@ The compiler emits `multipartParameters`. This is Flow artifact transport; `uip 
 
 Preparation requires a working live connection. For explicitly offline/validate-only evidence without connection-specific fields, use the baked descriptor and published static inputs; do not use a placeholder connection or invent fields. If the list is empty, pass `{}`; offline evidence proves identity/control-flow routing, not provider payload or dispatch.
 
-[`bindings.json`](bindings.md) defines symbolic connection/folder bindings, schema, compile-time resolution, and the emitted-artifact boundary. Populate resource keys from live connection/folder listings; a plausible GUID is not evidence of tenant membership.
+[`bindings.json`](bindings.md) defines symbolic connection/folder bindings, schema, compile-time resolution, and the emitted-artifact boundary. Populate resource keys from live connection/folder listings. A plausible GUID is not proof that a resource exists or belongs to the intended tenant; resource refresh and product debug are the evidence.
 
 ## Resolving connection-scoped reference values
 
@@ -259,19 +259,15 @@ channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 
 Never carry an alias into the second form; use `.by('profile.email', …)`. Searchable names are in the descriptor `LOOKUP:` header and `check` diagnostics.
 
-A folder-tree lookup matches a bare name only at the tree top or one level below. Deeper paths start at the picker’s top entry:
+A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top of the tree or one level below. For anything deeper, give the path from the root picker's own top entry, not from the drive root (`<folder>/<file>` fails at its first segment):
 
 ```ts
 referenceID: lookup(DownloadFile, 'referenceID').by('FullName', 'OneDrive/<folder>/<file>')
 ```
 
-Expect four to six minutes; a wrong first segment fails quickly, while a wrong file name can fail after the walk and reports the stopped segment. Confirm first with:
+Expect a walk to take four to six minutes. A wrong first segment fails within seconds, but a wrong file name fails only after that walk, naming the segment it stopped at (`stops at segment 3, '<file>'`). So confirm the name first: list the folder through the picker's `childPath`, `uip is resources run list uipath-microsoft-onedrive EventFolderPicker --connection-id <connection-id> --query '{"parentReference":"<folder ReferenceID>","includeFiles":"true"}' --output json` (drop `parentReference` for the top level).
 
-```bash
-uip is resources run list uipath-microsoft-onedrive EventFolderPicker --connection-id <connection-id> --query '{"parentReference":"<folder ReferenceID>","includeFiles":"true"}' --output json
-```
-
-Drop `parentReference` at top level. When `check` reports `LOOKUP_UNRESOLVED`, run one prepare for all tokens:
+When `check` reports `LOOKUP_UNRESOLVED`, run one prepare for all tokens:
 
 ```bash
 uip maestro registry prepare uipath-salesforce-slack --action send-message-to-user \
@@ -288,12 +284,12 @@ connection: is-sandboxes-test@…-sandbox-380 (uipath-maestro-flow) resolves fie
 
 It does not retry a pinned `--connection-id` / `--connection`, transport or permission failures, or choose between multiple successful connections; report candidates and choose.
 
-Do not crawl Integration Service after lookup failure. Use the failure’s connection and candidate command. Follow [bindings.md](bindings.md#where-both-values-come-from) when names conflict; pass the printed `--connection-id <id>`. Source labels must differ; if absent use `<connector's last segment>` (`slack`) and `shared`; `--bind-connection` / `--bind-folder` override. If a computed/untraceable source label cannot be read, prepare prints `bindings:` and binds the one readable label or default. It refuses one connector with several labels or two connectors sharing a connection label; `next:` prints bound names. `compile` refuses undeclared labels as `BINDING_UNDECLARED` and warns `CONNECTION_STUB` for declarations lacking tenant ids.
+Do not crawl Integration Service after lookup failure. Use the failure’s connection and candidate command. When the candidates share a name or several resolve, choose as [bindings.md](bindings.md#where-both-values-come-from) says, and pass the `--connection-id <id>` its candidate line prints; `bindings.json` is written on that route too. The entries are named after the `connection:` and `folder:` labels your source already uses for this connector, which [must differ](bindings.md#where-both-values-come-from); a source that uses none gets `<connector's last segment>` (`slack`) and `shared`; `--bind-connection` / `--bind-folder` override both. If a computed/untraceable source label cannot be read, prepare prints `bindings:` and binds the one readable label or default. It refuses one connector with several labels or two connectors sharing a connection label; `next:` prints bound names. `compile` refuses undeclared labels as `BINDING_UNDECLARED` and warns `CONNECTION_STUB` for declarations lacking tenant ids.
 
-`check` warns on literal lookup ids and runtime lookup expressions (`LOOKUP_RUNTIME_VALUE`), stating the sent id (for example `reporter.accountId`, not a name); it errors when an e-mail expression feeds a lookup that neither sends nor searches e-mail. (A field that sends an e-mail, such as SendGrid's `from`, takes one silently.) Required lookup fields without values require their helper. Run `check` before compile so the expensive prepare is last.
+`check` warns on literal lookup ids and runtime lookup expressions (`LOOKUP_RUNTIME_VALUE`), stating the sent id (for example `reporter.accountId`, not a name); it errors when an e-mail expression feeds a lookup that neither sends nor searches e-mail. (A field that sends an e-mail, such as SendGrid's `from`, takes one silently.) A required lookup field you have no value for is resolved with its helper, not filled from a look-alike input. Run `check` before compile so the expensive prepare is last.
 
 <!--skill-flavor:connection-user:start-->
-**When the task names nobody for a person-shaped required field** (`reporter`, `requester`, `owner`), use the connection’s own user: take the account from `uip login status` and resolve by **display name**. Search only names declared by the field’s “matches on” list. Jira user search hides e-mail addresses; `emailAddress=` returns nothing while `displayName=` finds the user when the spec says `matches on displayName | accountId`.
+**When the task names nobody for a person-shaped required field** (`reporter`, `requester`, `owner`), use the connection’s own user: take the account from `uip login status` and resolve by **display name**. Search only by the names the field's "matches on" list declares — do not improvise queries against raw collections. Jira in particular hides e-mail addresses from user search, so an `emailAddress=` query returns nothing for a user that plainly exists, while `displayName=` finds them; the field's spec (`matches on displayName | accountId`) already told you e-mail was not searchable.
 <!--skill-flavor:connection-user:end-->
 
 Operation pages and generated-descriptor comments list lookup helpers and searchable fields; `grep -B6 'export const SendMessageToUser'` finds the latter. Plain strings are correct for enumerated legal values and tenant-invariant collections (countries, timezones); their pages give accepted-value commands.

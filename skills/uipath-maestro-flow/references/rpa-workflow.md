@@ -7,6 +7,12 @@ Run a published robotic process and wait for its output arguments.
 Signature: `rpaWorkflow({ key, name, folderPath?, location?, projectId?, inputs?, returns? })`.
 Published processes require `folderPath`; a sibling project in the same solution uses `location: 'in-solution'` and `projectId` instead ([below](#in-solution-sibling)).
 
+```ts
+.step('title', rpaWorkflow({ key: releaseKey,
+  name: 'RPA Workflow', folderPath: 'Shared',
+  inputs: { problemId: 123 }, returns: { title: 'string' } }))
+```
+
 ## At a glance
 
 Run a deployed robotic process and wait for its job result. Confirm its identity and exact argument names against the same deployed tenant resource.
@@ -15,7 +21,15 @@ Run a deployed robotic process and wait for its job result. Confirm its identity
 
 ## In-solution sibling
 
-For an RPA project in the SAME solution as the Flow (not a deployed process), set `location: 'in-solution'` and `projectId`; omit `folderPath`.
+To call an RPA project that sits in the SAME solution as the Flow (not a
+deployed process), set `location: 'in-solution'` and `projectId`, and omit
+`folderPath`:
+
+```ts
+.step('title', rpaWorkflow({ key: localResourceKey, name: '<RpaProject>',
+  location: 'in-solution', projectId: localProjectKey,
+  inputs: { problemId: 123 }, returns: { title: 'string' } }))
+```
 
 - **Where the two ids come from.**
 <!--skill-flavor:rpa-sibling-register:start-->

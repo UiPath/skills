@@ -39,7 +39,16 @@ Each connector entry should carry the complete shape below. Each entry resolves 
 
 Usually do not fill values manually. Run `uip maestro registry prepare <connector-key> --action <action>` to discover the connection and write both entries; see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values). Use the manual route only without `prepare`.
 
-Run `uip is connections list --all-folders --output json`; one record gives the connection id **and its folder key**. Always pass `--all-folders`; otherwise shared connections may be invisible — an empty or unrelated default listing is not evidence that the connection does not exist.
+If you are doing it by hand: `uip is connections list --all-folders` returns the
+connection id **and its folder key** on the same record, so one call answers both.
+Always pass `--all-folders`: the default listing is your own folder only, and a
+connection shared from another folder (the usual case on a team tenant) is
+invisible without it — an empty or unrelated default listing is not evidence
+that the connection does not exist.
+
+```bash
+uip is connections list --all-folders --output json
+```
 
 ```text
 {

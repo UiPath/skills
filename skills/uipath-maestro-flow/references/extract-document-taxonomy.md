@@ -85,7 +85,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 
 ## The document
 
-Write exactly the relevant members:
+The document has two members that matter:
 
 - `prompt`: overall extraction instructions.
 - `outputSchema`: OpenAI structured-outputs JSON Schema; top-level `properties` are groups and `$defs` are field types.
@@ -187,11 +187,15 @@ A Choice is the only type to add. Use it only for a small, fixed, evident set of
 "ft-payment-status": { "title": "Payment Status", "type": ["string", "null"], "enum": ["Paid", "Unpaid", "Partially paid"] }
 ```
 
-Never infer an enum's complete set only from samples; omitted values must still extract. For large or open sets, use `ft-inferred-text` and name likely values in the field instructions.
+Never infer the allowed values from what happens to appear in the samples — a value the documents did not show still extracts, and an enum that omits it loses it. For large or open sets, use `ft-inferred-text` and name likely values in the field instructions.
 
 ### Names
 
-A group key, field key, and field-type `title` must be **64 characters or fewer**, counting spaces. Names must be nonempty, not start with punctuation, a symbol, or a space, and be unique among siblings. Prefer concise wording from the document, such as its column header or row label.
+A group key, field key, and field-type `title` must be **64 characters or fewer**, counting spaces.
+
+For a nested group, keep the **whole composed key** within 64 — `Invoice > Line Items` counts as 20, separator included. Keeping the composed key inside the limit satisfies every reader of the document.
+
+Names must be nonempty, not start with punctuation, a symbol, or a space, and be unique among siblings. Prefer concise wording from the document, such as its column header or row label.
 
 ### Instructions
 
@@ -199,7 +203,7 @@ Write instructions for every group, every field and the document as a whole: `de
 
 ### Size
 
-These limits are not CLI-enforced but improve extraction: keep groups to a readable number of fields (25 is a reasonable ceiling, matching the IXP taxonomy quota this node does not share); keep distinct field types few; and treat a Choice with many values as text.
+These limits are not CLI-enforced but improve extraction: keep groups to a readable number of fields (25 is a reasonable ceiling, matching the IXP taxonomy quota this node does not share); keep distinct field types few (every Choice with a different set of values is another type); and treat a Choice with many values as text.
 
 ## What `set` does for you
 
@@ -246,4 +250,4 @@ On edits, inspect `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 
 This process is offline. `set` and `flow validate` prove only that the taxonomy is well formed, references resolve, and names and instructions fit—not extraction accuracy. Run the node against real documents to assess values; instructions usually need tightening.
 
-It does not update the tenant-side processor used by a Studio Web-created node. A solution published before the flow is next saved there may still extract with the previous taxonomy; `set`'s warning identifies this. It also does not take anything live; that remains the user's Studio Web decision.
+It does not update the tenant-side processor used by a Studio Web-created node. A solution published before the flow is next saved there extracts with the previous taxonomy; `set`'s warning identifies this. It also does not take anything live; that remains the user's Studio Web decision.

@@ -1,6 +1,6 @@
 # Return / End
 
-`.return({ outputName: expression, ... })` ends the current path and binds Flow outputs; return in every complete arm, or use a shared successor when common work remains.
+`.return({ outputName: expression, ... })` ends the current path and binds Flow outputs. Returning in each arm is appropriate when those paths are complete. Let arms fall through to a shared successor when they need common work before the final answer.
 
 ```ts
 .branch('valid', out('check'),
@@ -8,7 +8,7 @@
   (no) => no.return({ status: 'rejected' }))
 ```
 
-`.terminate(...)` aborts the whole run. Dangling tails receive an End unless the flow calls `.openTails()` (decompile writes it; see [brownfield.md](brownfield.md#a-path-without-an-end-stays-open)). Use explicit `.return(...)` only when values must be bound. Multiple path ends emit as `end`, `end2`, `end3`, and so on.
+`.terminate(...)` aborts the whole run. Dangling tails receive an End unless the flow calls `.openTails()` (decompile writes it; see [brownfield.md](brownfield.md#a-path-without-an-end-stays-open)). An explicit `.return(...)` is required only when values must be bound. Multiple path ends emit as `end`, `end2`, `end3`, and so on.
 
 Only an End sets a flow output. If a step sets an output with `{ updates }`, code reads it as `$vars.<output>`, or a `{ shared }` input/default feeds one, the SDK stores it in `<output>Value`; every End maps that output from the Variable. Still declare and write the output's own name:
 
@@ -50,7 +50,7 @@ Run `npm install -g @uipath/maestro-builder-sdk@latest` to upgrade.
 - Two `.return`s with the same name but different values, label, version, or updates, or in different scopes (such as a loop body and main path), are refused by `check` and `compile` with `DUP_END_NAME`; they are not renamed `failed2`. Identical repeats in one scope are one End. Prefer one `.return` and `.stepToRef('<name>')` elsewhere.
 - An End's `name` is its node id and is never renamed. A name used by a step, trigger, or entry point is refused by `check` and `compile` with `STEP_ID_COLLISION`; for example, `.step('x', ...).return({}, { name: 'x' })` fails `check`. Give the End its own name, such as `endX`. This requires `@uipath/maestro-builder-sdk` 6.32.3 or later; an older SDK renames the End `x2` without error.
 <!--skill-flavor:end-name-sdk-upgrade:start-->
-  Upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`:
+  Upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:end-name-sdk-upgrade:end-->
 - In a decompiled brownfield flow, an HTTP `branch-*`, human-task `outcome-*`, `.stepSwitch` arm, error handler, or `.entryPoint` prefix may reach an End already used by another path. Preserve `.stepToRef('<end id>')` and that End's `name` when editing.
 

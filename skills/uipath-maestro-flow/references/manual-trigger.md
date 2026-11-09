@@ -30,7 +30,7 @@ To run a non-default root, pass `--entry-point <id>` (the `.entryPoint` id; the 
 
 ### One input, whichever root fired: `{ shared }`
 
-Use `{ shared }` when the shared body should receive whichever root's input. Mark each root input with the variable it feeds, then read that variable with `v('refundAmount')` in an Expr slot or `$vars.refundAmount` in script code. `manual()` is the `.entryPoint` factory; the default root still omits `.trigger(...)` unless it needs `{ updates }`.
+This is the default way to hand the shared body "the input, whichever root started the run". Mark each root input with the variable it feeds, then read that variable with `v('refundAmount')` in an Expr slot or `$vars.refundAmount` in script code. `manual()` is the `.entryPoint` factory; the default root still omits `.trigger(...)` unless it needs `{ updates }`.
 
 ```ts
 export default flow('refund-intake')

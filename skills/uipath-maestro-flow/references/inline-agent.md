@@ -42,7 +42,9 @@ Map `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, and `FolderKey
 Local execution has no semantic retrieval service: answers remain ungrounded even with resource wiring. Platform evidence must establish that the intended index was used and retrieved knowledge influenced the answer.
 
 <!--skill-flavor:cg-bridge:start-->
-Run setup in the project's Python environment before list/search; setup is the command itself, not a `setup --help` probe:
+The `uip context-grounding` bridge runs in the project's Python environment.
+Activate the existing environment and run setup once before list/search; setup
+is the command itself, not a `setup --help` probe:
 
 ```bash
 source .venv/bin/activate

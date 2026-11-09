@@ -39,7 +39,9 @@ An injected start payload tests downstream wiring, not subscription delivery; us
 
 ## Tenant discovery — `check` names it, `prepare` does it
 
-Author every id-valued subscription parameter with `lookup()`; never paste an id. Run one prepare command:
+Event parameters and their ids are connection-specific. Author the
+subscription first — an id-valued parameter as a `lookup()` token, never a
+pasted id — and one `prepare` discharges everything `check` names:
 
 ```ts
 .trigger(onEvent({
@@ -94,7 +96,7 @@ The emitted node carries the object in `inputs.detail.objectName` and `configura
 
 ## Started by an HTTP call
 
-For a caller-started flow, use the HTTP Webhook connector: `onEvent({ connector: 'uipath-http-webhook', event: 'http-webhook', connection, folder })`. Integration Service sets caller authentication on the connection; missing or wrong header authentication returns 401 and starts no run.
+A caller that starts the flow over HTTP, such as another system's webhook or a script, reaches it through the HTTP Webhook connector: `onEvent({ connector: 'uipath-http-webhook', event: 'http-webhook', connection, folder })`. The caller's authentication is set on the connection when it is created in Integration Service. With header authentication, Integration Service answers 401 to a request whose header is missing or wrong, and no run starts.
 
 This is a webhook-mode event. Read the caller URL by running:
 
@@ -111,7 +113,7 @@ Read the request from trigger output with `out('start', …)`:
 - `request_body` and `request_headers` as JSON text, also accepted by `filters`;
 - `eventType`.
 
-Query-string parameters are not delivered. Headers include the authentication header: never log or return `headers` whole. The caller receives only acceptance (200 with a `webhookEventId`), not flow output; use another trigger if it needs the run result.
+Query-string parameters are not delivered. The headers include the authentication header itself, so never log or return `headers` whole. The caller gets only the acceptance (200 with a `webhookEventId`), never the flow's output, so a caller that needs the run's result is not served by this trigger.
 
 ## Filter operators
 

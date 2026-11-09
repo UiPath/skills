@@ -115,7 +115,11 @@ ls <SolutionName>/resources/solution_folder/process/*/<AgentProject>.json
 }))
 ```
 
-An in-solution agent has no `folderPath`; bind it with the bare local resource key and carry the sibling project id in its definition. The SDK checker rejects a missing project id or a published agent missing a folder, so the forms cannot silently collapse.
+An in-solution agent intentionally has no `folderPath`. Its generated binding
+uses the bare local resource key, and its definition carries the sibling
+project id. The SDK checker rejects a missing project id or a published agent
+with a missing folder, so the two resource forms cannot silently collapse into
+one another.
 
 ## Evidence boundary
 

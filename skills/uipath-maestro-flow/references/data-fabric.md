@@ -9,7 +9,7 @@
   filters: [{ field: 'Status', value: 'Open' }], limit: 200, sort: { field: 'CreateTime' } }))
 ```
 
-`resultMode: 'multiple'` publishes matches at `output.results` and selects read 1.4; plain `dataFabricRead()` remains 1.0 and reads one record. Wrong columns are dropped **SILENTLY**; `validate` proves nothing. Resolve columns with `uip df entities get`. Delete publishes nothing. System columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable. `fromRead` requires a single-record read. Folder-scoped entities use `entity: { name, folder: '<folder path>' }`; `check` prints the one `prepare` that records its keys ([below](#a-folder-scoped-entity-name-it-and-its-folder)).
+`resultMode: 'multiple'` publishes matches at `output.results` and selects read 1.4; plain `dataFabricRead()` remains 1.0 and reads one record. Wrong columns are dropped **SILENTLY**; `validate` proves nothing. Resolve columns with `uip df entities get` first. Delete publishes nothing. System columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable. `fromRead` requires a single-record read. Folder-scoped entities use `entity: { name, folder: '<folder path>' }`; `check` prints the one `prepare` that records its keys ([below](#a-folder-scoped-entity-name-it-and-its-folder)).
 
 Whole long-text values (native reads return a 10,000-character preview; [see below](#long-text-queries-return-a-10000-character-preview)), file record fields, and Record Created/Updated events remain connector-only. Use `connector('uipath-uipath-dataservice', …)` plus `registry prepare -f entityName=<Entity>`.
 
@@ -248,6 +248,13 @@ uip df entities list --native-only --include-folders --output json  # writes nee
 uip df entities get <entity-id> --output json                       # exact column names and types
 ```
 
-`limit`/`skip`/`sort` are documented but the local converter emits them as `_recordLimit`/`_skip`/`_sort`, which runtime reads; `flow-debug` is not evidence either way. Offline `validate` checks only `entityConfig` shape—not column existence, writability, value type, native versus federated status, or whether a `byId` id exists. Each can validate green and fail silently; the tenant is authoritative.
+Two query options are documented by the platform but not applied by the
+converter the local engine runs: `limit`/`skip`/`sort` reach the file as
+`_recordLimit`/`_skip`/`_sort` and are read at run time, so `flow-debug` is not
+evidence either way for them.
 
-Typed columns also need the canvas `_outputSchema` snapshot for coercion, and dotted related paths need `_entityFields`; SDK authors provide neither. Keep from-scratch nodes on the entity's own columns with string or expression values, and let the designer populate snapshots on first open.
+Offline `validate` checks only `entityConfig` shape—not column existence, writability, value type, native versus federated status, or whether a `byId` id exists. Each can validate green and fail silently; the tenant is authoritative.
+
+A typed column also needs the canvas's `_outputSchema` snapshot to coerce
+values, and a dotted related path needs `_entityFields`. The SDK authors neither,
+so keep from-scratch nodes on the entity's own columns with string or expression values, and let the designer populate snapshots on first open.

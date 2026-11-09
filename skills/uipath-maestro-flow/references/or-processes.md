@@ -11,7 +11,7 @@ uip or processes list --all-folders --process-type !!ProcessType!! --limit 200 -
 uip or processes list --folder-path '<folder>' --process-type !!ProcessType!! --limit 200 --output json
 ```
 
-Replace `!!ProcessType!!` with a type such as `Agent` or `ProcessOrchestration`. `--process-type` accepts one entry, so search each needed process type separately. If *Pagination.HasMore* is true, run the next paginated request with `--offset`. Results may include *Name*, *ProcessKey*, and *Description*; use *IsLatestVersion* to distinguish published versions sharing a process key. *Key* (GUID) is the unique process ID. Since the default `list` response omits *ProcessType*, use `--all-fields` or run a separate `list` command for each process type.
+Replace `!!ProcessType!!` with a type such as `Agent` or `ProcessOrchestration`. `--process-type` accepts one entry, so search each needed process type separately. If *Pagination.HasMore* is true, run the next paginated request with `--offset`. The resulting list will have *Name*, *ProcessKey*, and sometimes *Description* fields that may help identify the process you need. Use *IsLatestVersion* to distinguish published versions sharing a process key. *Key* (GUID) is the unique process ID. Since the default `list` response omits *ProcessType*, use `--all-fields` or run a separate `list` command for each process type.
 
 **ProcessOrchestration**, **CaseManagement**, and **Flow** are "Agentic Processes".
 

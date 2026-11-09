@@ -13,7 +13,9 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-The default is a published IXP model, covered in [ixp.md](ixp.md); build and deploy its project first and keep its taxonomy in `uipath-ixp`. Use this guide only when the user requests Extract document, already has `uipath.ixp.extract-document-builder` (check `uip maestro flow nodes list <file> --output json`), or asks about inline taxonomy.
+The default for document extraction in a flow is a published IXP model, covered in [ixp.md](ixp.md), where the IXP project is built and deployed first and the flow then runs against it. Use the Extract document node only when the user asks for it by name or is already using it: the flow holds a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or the request is about the taxonomy an Extract document node carries inline. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
+
+Three node families share the `uipath.ixp.` prefix and they are not interchangeable:
 
 | Node | Node type | Where it is covered |
 | --- | --- | --- |
@@ -105,7 +107,7 @@ Read the embedded definition if the shape evolves: this node's `definitions[]` e
 
 **`ExtractionResult` is the published-model node's output, not this one.** `ExtractionResult.ResultsDocument.Fields[]` belongs to [ixp.md](ixp.md); a downstream step using that shape against this node reads a missing key.
 
-The `error` port carries failures. Wire recovery with `edges create --source-port error`; leaving it unwired makes the flow fail loudly.
+The `error` port carries failures. Wire it with `edges create --source-port error` when an unreadable document should follow a recovery path; leaving it unwired means the flow fails loudly instead, which is often the right behaviour.
 
 ## Returning the result
 

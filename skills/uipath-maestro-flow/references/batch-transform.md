@@ -1,5 +1,7 @@
 # Batch Transform
 
+*Exact signatures, fields, and defaults: `batchTransform()`.*
+
 `batchTransform({ attachment, prompt, outputColumns, enableWebSearchGrounding? })` adds AI-generated columns to a CSV and returns a new file attachment.
 
 ```ts

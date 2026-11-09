@@ -15,7 +15,7 @@ UiPath Flow uses `@uipath/maestro-builder-sdk` to type-safely build inputs, outp
 1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It contains separately numbered critical rules, the scope gate, and the completion report the final response must follow.
 2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types), including signature, example, and hazards.
 3. Choose every node from a registry search, never a brand name.
-4. Ask whenever a finite decision remains open, including an input, range, or combination not covered by a stated rule; never fold it into a stated value. If nobody can answer (headless, CI), use the most defensible stated value and list it under Open questions as **[REQUIRED]**.
+4. Ask whenever a finite decision remains open, including an input, range, or combination not covered by a stated rule; never fold it into a stated value. When the request says no one will answer (headless, CI), map it to the most defensible stated value and list it under Open questions as **[REQUIRED]**.
 5. Bind every declared output on every path. `check` does not detect missing bindings; the run returns `undefined`.
 6. Handle an error only when the request specifies the outcome.
 7. Never re-run `flow debug` to inspect a failed run.
@@ -47,7 +47,6 @@ See [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) fo
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
-For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'`: a hit is a connector, `"total": 0` is a miss and means `http()`. A `script()` returning fixed values is never a stand-in for that step.
 For non-UiPath systems, **choose the node before writing it**. Unless the request names the transport (“over HTTP, not a connector” means `http()`), search the local connector library with `uip maestro registry search '<brand or service name>'`: a hit selects a connector, `"total": 0` means `http()` (not for an external agent; see the table), and a usage error means the library is uncached, so run `uip maestro registry pull`. For another tenant capability (agent, process), use the family’s `uip maestro flow registry search` ([`references/agent.md`](references/agent.md)). Default document extraction to a published IxP model ([`references/ixp.md`](references/ixp.md)); use the Extract document node only when named or already present ([`references/extract-document-node.md`](references/extract-document-node.md)). Never replace such a step with fixed-value `script()`; `mock()` only marks a capability the search proved absent.
 
 Connectors require [`.flow-sdk/bindings.json`](references/bindings.md). `uip maestro registry pull` writes each referenced descriptor to `.flow-sdk/connectors/<key>.ts` and caches the library outside the project. Prepared modules are `.flow-sdk/connectors-local/<key>.ts`, with descriptor data at `.flow-sdk/connectors-local/descriptors/<key>/`; source imports `./connectors/<key>.ts` or `./connectors-local/<key>.ts`.
@@ -215,8 +214,7 @@ Triage in order: existing debug response, incidents, runtime variables, deployed
 
 ## Evaluating a flow
 
-An inline agent creates no evaluators, eval sets, data points, or simulations; the Flow eval CLI manages them as project files. Read [`references/evaluate.md`](references/evaluate.md).
-Read **[`references/evaluate.md`](references/evaluate.md)**.
+An inline agent creates no evaluators, eval sets, data points, or simulations; the Flow eval CLI manages them as project files. Read **[`references/evaluate.md`](references/evaluate.md)**.
 
 ## Final evidence
 
