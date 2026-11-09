@@ -122,7 +122,7 @@ Defer rule output binding with the stub. After the Phase 3 upgrade produces real
 "rules": [[ { "id": "rxxxxxxxx", "rule": "runs-sequentially" } ]]
 ```
 
-The sequential/ordered-task-set rule is the task's only entry condition for strict sequences and parallel siblings starting after an immediate predecessor. Preserve task order in the stage's `data.tasks`. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); `parallel-after-predecessor` siblings after one predecessor share a later inner array (`[[A], [B, C], [D]]`) and each sibling carries `runs-sequentially`. In the first task set it means the current stage was entered; in later sets it means the preceding task set completed. Do not use `selected-tasks-completed` or an additional `current-stage-entered` rule for immediate-predecessor sequencing.
+The sequential/ordered-task-set rule is the task's only entry condition for strict sequences and parallel siblings starting after an immediate predecessor. Preserve task order in the stage's `data.tasks`. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); `parallel-after-predecessor` siblings after one predecessor share a later inner array (`[[A], [B, C], [D]]`) and each sibling carries `runs-sequentially`. In the first `runs-sequentially` set it means the current stage was entered; in later sets it means the preceding `runs-sequentially` set completed. Sets with no `runs-sequentially` task are skipped, so the predecessor A must be `runs-sequentially` too. Do not use `selected-tasks-completed` or an additional `current-stage-entered` rule for immediate-predecessor sequencing.
 
 ### sla-status-change — the `start-task` SLA response
 
