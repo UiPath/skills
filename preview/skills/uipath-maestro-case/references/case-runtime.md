@@ -82,13 +82,16 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Resource refresh is additive. After removing or repointing a resource-bound
   task, prune orphans before refreshing:
 
-  1. Recompile. `compile` emits `ORPHANED_SOLUTION_RESOURCE` for each
-     process or app declaration no binding still references.
+  1. Recompile. `compile` (SDK 6.86.23+) emits `ORPHANED_SOLUTION_RESOURCE`
+     for each process or app declaration no binding still references. An
+     older SDK emits nothing, so step 2 removes nothing and the orphan ships.
   2. For each reported orphan:
      `uip solution resources remove {key} --solution-folder {solution} --output json`
   3. Connection declarations are not covered by the warning. Remove one
-     only when no project in the solution still binds it:
-     `grep -rl '<connection-key>' {solution}/*/bindings_v2.json`
+     only when no project in the solution still binds it. Search both
+     binding files, because a coded agent binds a connection in
+     `bindings.json`, not `bindings_v2.json`:
+     `grep -rl --include=bindings_v2.json --include=bindings.json --exclude-dir=resources --exclude-dir=.venv '<connection-key>' {solution}`
      No match means safe to remove with `resources remove`.
   4. Never remove the Case project's own process/package pair, and never
      target package entries directly.
