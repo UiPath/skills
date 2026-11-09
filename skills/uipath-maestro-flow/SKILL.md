@@ -20,6 +20,7 @@ UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/maes
 7. Never re-run `flow debug` to look again at a failed run.
 8. Simulate every side-effecting component before running an eval set, and never `solution upload` as part of an eval workflow without asking.
 9. Run the final pass with the loop [Lifecycle](#lifecycle) picks for this workspace, after the last edit.
+10. Use the Extract document node only when the user asks for it by name or is already using it ([Which extraction node the user wants](references/extract-document-node.md#which-extraction-node-the-user-wants)).
 
 ## Project layout
 

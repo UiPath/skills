@@ -13,7 +13,7 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-The default for document extraction in a flow is a published IXP model, covered in [ixp.md](ixp.md), where the IXP project is built and deployed first and the flow then runs against it. Use the Extract document node only when the user asks for it by name or is already using it: the flow holds a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or the request is about the taxonomy an Extract document node carries inline. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
+The default for document extraction in a flow is a published IXP model, covered in [ixp.md](ixp.md), where the IXP project is built and deployed first and the flow then runs against it. Use the Extract document node only when the user asks for it by name or is already using it: the flow holds a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or the request is about the taxonomy an Extract document node carries inline. If no published model fits ([Resource identity](ixp.md#resource-identity)), follow the no-extractor rule there and never fall back to this node. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
 
 Three node families share the `uipath.ixp.` prefix and they are not interchangeable:
 
