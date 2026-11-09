@@ -59,8 +59,8 @@ do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
 neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
 Exception: `validate` errors on a payload with a `type` attribute or outside
-`<bpmn:extensionElements>`, and on an `Orchestrator.StartAgentJob` or `Orchestrator.StartJob` whose type
-version is not `v2` and whose `releaseKey` or `folderId` has no value. Rewrite
+`<bpmn:extensionElements>`, and on an `Orchestrator.StartAgentJob` or
+`Orchestrator.StartJob` whose type version is not `v2` and whose `releaseKey` or `folderId` has no value. Rewrite
 those payloads per rule 6 and name each in the summary.
 
 For an existing ScriptTask, preserve its mapping discriminator and
@@ -168,7 +168,8 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    if it has none; this overrides paste-as-is in 4b and 4c. Take
    `<version>` from the template's `uipath:type`, else from
    `uip maestro bpmn registry get <Type>`. `Orchestrator.StartAgentJob` takes
-   `v2`, binds `name`/`folderPath`, and drops `releaseKey`/`folderId`.
+   `v2`, binds `name`/`folderPath`, and drops `releaseKey`/`folderId`; so do
+   `Orchestrator.StartJob` and `Actions.HITL` (rule 18).
    Event extension types (`Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
    `Maestro.ReceiveMessageEvent`, `Maestro.SendMessageEvent`) must use
    `<uipath:event>`, including when the BPMN host is task-like such as
@@ -250,8 +251,9 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    (4) Pick the wrapper by `ProcessType`, read from
    `uip or processes list --folder-path <path> --all-fields --output json`
    ([registry-workflow.md](references/registry-workflow.md#agent-wrapper-selection--pick-by-processtype-not-the-label));
-   a low-code agent uses `Orchestrator.StartAgentJob` (type `v2`, rule 6),
-   which binds `name` and `folderPath`, not rule 18. For a rule-18 wrapper, read
+   a low-code agent uses `Orchestrator.StartAgentJob` and a coded Function
+   agent `Orchestrator.StartJob`: both `v2`, bound by `name` and `folderPath`
+   (rule 18), not `Key`/`FolderKey`. For a `releaseKey` wrapper, read
    the same response's `Key` and `FolderKey` (PascalCase, like the default
    list; the default list without `--all-fields` omits `ProcessType`) and
    bind per rule 18, never a fabricated or placeholder key. Re-read both
@@ -283,7 +285,8 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    `folderPath`. A `v2` node with other bindings fails `validate`. A `v1`
    StartJob needs `releaseKey` and `folderId`, else `validate` fails. A `v1`
    HITL only warns, but the runtime ignores its `appId`: rebuild it from
-   `registry get`.
+   `registry get`. Binding shape:
+   [references/registry-workflow.md](references/registry-workflow.md#4-bindings--from-bindinginfo-never-invented).
 19. **Fill every placeholder (`{name}`, `<name>`) in an HTTP request's `url` before `registry
    get`, with a discovered or given value or a `=js:` expression; never invent
    one.** To change the url, run `registry get` again, never edit it in the

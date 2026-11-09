@@ -433,11 +433,23 @@ A node that targets a cloud resource carries a binding. The `bindingInfo` on the
 extension type tells you the binding shape; the concrete value comes from
 discovery or the user.
 
-- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` / `app`): the
+- **Resource bindings** (`bindingInfo.resource` = `process` / `queue`, v1): the
   context field named by `bindingInfo.contextField` (e.g. `releaseKey`,
   `queueName`) holds the resource key (`bindingInfo.propertyAttribute`,
   usually `Key`). Resolve the real key with `registry search` / discovered
   `Processes` / `Queues`; never guess a GUID.
+- **Name and folder bindings** (v2 `Orchestrator.StartJob`, `StartAgentJob`:
+  `process`; `Actions.HITL`: `app`): the context `name` and `folderPath` each
+  reference a binding of that `resource`, `propertyAttribute` `name` /
+  `folderPath`. `default`s are the resource's `Name` (from `uip or processes
+  list`) and the folder path you listed; both bindings share `resourceKey`
+  `<folderPath>.<name>`. `StartAgentJob` bindings also carry
+  `resourceSubType="Agent"`.
+
+  ```xml
+  <uipath:binding id="Binding_ProcName"   name="name"       type="string" resource="process" propertyAttribute="name"       resourceKey="<FOLDER_PATH>.<NAME>" default="<NAME>" />
+  <uipath:binding id="Binding_ProcFolder" name="folderPath" type="string" resource="process" propertyAttribute="folderPath" resourceKey="<FOLDER_PATH>.<NAME>" default="<FOLDER_PATH>" />
+  ```
 - **Business rule bindings** (`BusinessRule`): the context `name` and
   `folderPath` each reference a `BusinessRule` binding (`propertyAttribute`
   `name` / `folderPath`) — never a `Key` binding or a `process` `releaseKey`,
@@ -478,7 +490,7 @@ type merge into one entry and the others are lost. Omitting it fails
 `validate`, `refresh` and `pack` — on a connection binding with `Integration
 Service activity connection binding "<id>" is missing resourceKey`, on any
 other with `Binding "<id>" (resource=…, propertyAttribute=…) is missing
-resourceKey`. `process` and `queue`
+resourceKey`. v1 `process` and `queue`
 bindings carry `resourceKey` from `bindingInfo.resourceKeyPattern`, which
 `registry get <type>` shows. Both `BusinessRule` bindings carry the same
 `resourceKey`, `<folderPath>.<name>` (`<name>` alone when the folder path is empty):

@@ -84,7 +84,7 @@ that artifact -- form fields nested one level down under `fields`, decision
 and reason expressed as boolean/string literal defaults instead of pointer
 keys). Both match skills/uipath-maestro-bpmn/validator/bpmn-spec.json's
 Actions.HITL extensionType: `contextFields` are fixed app-identity metadata
-(appId, appVersion, actions, key, taskTitle) -- NOT the reviewer-facing form
+(app `name` and `folderPath` bindings, taskTitle) -- NOT the reviewer-facing form
 fields. Form fields live at any depth inside the ONE `HitlTaskArguments` JSON
 body, and the single `<uipath:output type="Actions.HITL" var="...">` is
 opaquely typed; downstream code reads its fields as `vars.<var>.<field>`.
