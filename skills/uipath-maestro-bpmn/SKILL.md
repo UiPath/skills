@@ -217,7 +217,9 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    the node that will perform it — a UiPath agent, Document Understanding, a
    business rule task. Never do that work at authoring time or hardcode its
    result. Bare "agent" in any process description means a UiPath agent, never
-   you.
+   you. A person's decision is a `bpmn:userTask`; when no resource resolves,
+   keep the node with placeholder identity and report its `MISSING_BINDING`
+   (4e). Never swap it for a script task to make `validate` pass.
 16. **Generated package files are CLI-owned.** Never hand-author
    `bindings_v2.json`, `entry-points.json`, `operate.json`, or
    `package-descriptor.json`. Run `uip maestro bpmn refresh <project-path>` to
@@ -851,7 +853,8 @@ full, then end the turn with the reply exactly as it shows.
    placeholder, a source-only draft (Rule 16), or a boundary handoff, or 4a found no `Enabled`
    candidate, or the 3c gate reported *none yet*, no invented identifier can clear
    `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
-   expected result. Report the pair once and continue. A connection binding
+   expected result. Report the pair once and continue; never replace the
+   node with another element to clear it (Rule 15). A connection binding
    whose `default` is a placeholder fails `refresh` (4f) with "default must be
    a GUID", so that draft skips 4f; refresh needs a real connection id from
    `uip is connections list`. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
