@@ -1,23 +1,27 @@
 task_id: skill-api-workflow-http-request-retry
 description: >
   Build (brown-field): give one existing HTTP Request its own retry policy. The
-  seeded `OrderSync` project holds a registry-shaped `UiPath.Http` GET; the agent
-  must put the call inside a `try` whose `catch.retry` has 4 retries, 1500 ms,
-  exponential backoff and a `when` filter on exactly 429 and 503 read from
-  `$<catch.as>.status` (the real HTTP status), in the
-  `[...].includes($<as>.status)` form: the only filter form Studio Web
-  round-trips, so `===` / `||` chains are graded wrong. Only the HTTP Request's
-  own Retry shape passes: an `HttpRequest_1#Retry` wrapper without `catch.do`.
-  A Try/Catch fails, because Studio Web's Try/Catch has no status filter and
-  drops a hand-written `when` on its next save. With the wrapper unwrapped, the
-  workflow must equal the seed (call, Response, schemas), and no
-  workflow-level `httpRetryConfig` may be added (it would not be per-activity, and
-  a retrying `try` replaces it anyway).
+  seeded `OrderSync` project holds a registry-shaped `UiPath.Http` GET. The agent
+  must wrap it in an `HttpRequest_1#Retry` wrapper without `catch.do`, whose
+  `catch.retry` has 4 retries, 1500 ms, exponential backoff, and a `when` filter
+  on exactly 429 and 503 written exactly as
+  `${ [<codes>].includes($<as>.status) }`. That is the regex Studio Web's
+  `parseStatusCondition` reads, so spacing variants and `===` / `||` chains are
+  graded wrong. A Try/Catch fails: Studio Web's Try/Catch has no status filter
+  and drops a hand-written `when` on its next save.
 
-  The validate criterion requires Valid, so it passes only on a `uip` that
-  includes UiPath/cli#5785: earlier releases reject a string `retry.when`
-  and the #Retry wrapper. The skill tells agents to report that
-  validator gap rather than drop the filter.
+  The call's `call`, `with`, `export` and non-display `metadata` must equal the
+  seed. `activityType` / `displayName` / `fullName` may stay on the call (a stub
+  wrapped as-is) or move to the wrapper, as Studio Web writes it; the wrapper
+  must carry `activityType: Connector`. With the wrapper unwrapped, the rest of
+  the workflow must equal the seed, and no workflow-level `httpRetryConfig` may
+  be added.
+
+  The validate criterion passes on Valid, or when every error is the documented
+  validator gap of `uip` releases without UiPath/cli#5785: the three
+  `catch/retry/when` schema errors and the wrapper's `must contain 'call'`. The
+  skill gives agents the same rule, so the task scores the same before and after
+  that CLI release.
 
   Offline: the call is never sent and no registry lookup is needed.
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, feature:http]

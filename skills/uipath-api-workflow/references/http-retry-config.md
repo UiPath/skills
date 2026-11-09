@@ -63,11 +63,24 @@ Do not add a `when` to a Try/Catch that must stay editable in Studio Web. The ex
 
 ### HTTP Request With Retry (`<id>#Retry` Wrapper)
 
-Retry section on the HTTP Request activity: Studio Web wraps the call in a `try` task keyed `<id>#Retry`. The wrapper carries the display metadata, its `catch` has `retry` and **no `do`**, the error name is `__retryError`, and **Retry on status codes** becomes the `when` condition (default `[408, 429, 500, 502, 503, 504]`). A disabled activity's `if` moves from the call to the wrapper.
+Retry section on the HTTP Request activity: Studio Web wraps the call in a `try` task keyed `<id>#Retry`. The display metadata moves from the call to the wrapper, its `catch` has `retry` and **no `do`**, the error name is `__retryError`, and **Retry on status codes** becomes the `when` condition (default `[408, 429, 500, 502, 503, 504]`). A disabled activity's `if` moves from the call to the wrapper.
 
 ```json
 "HttpRequest_1#Retry": {
-  "try": [ { "HttpRequest_1": { "call": "UiPath.Http", "...": "registry stub, unchanged" } } ],
+  "try": [
+    {
+      "HttpRequest_1": {
+        "call": "UiPath.Http",
+        "with": { "...": "registry stub, unchanged" },
+        "export": { "as": "...registry stub, unchanged" },
+        "metadata": {
+          "configuration": "<stub metadata.configuration>",
+          "uiPathActivityTypeId": "<stub metadata.uiPathActivityTypeId>",
+          "assemblyQualifiedName": "Connector"
+        }
+      }
+    }
+  ],
   "catch": {
     "as": "__retryError",
     "retry": {
@@ -77,13 +90,24 @@ Retry section on the HTTP Request activity: Studio Web wraps the call in a `try`
       "limit": { "attempt": { "count": 3 } }
     }
   },
-  "metadata": { "activityType": "Connector", "displayName": "HTTP Request" }
+  "metadata": {
+    "activityType": "Connector",
+    "displayName": "HTTP Request",
+    "fullName": "Connector",
+    "configuration": "<same as the call>",
+    "uiPathActivityTypeId": "<same as the call>"
+  }
 }
 ```
 
 Rules for the wrapper:
 
-1. `try` holds exactly one task, the `call` task. Keep its key, `export`, and `metadata` unchanged; downstream reads stay `$context.outputs.<ExportBucketKey>`.
+1. `try` holds exactly one task, the `call` task. To wrap a registry stub the way Studio Web does:
+    - keep the call's key, `call`, `with`, `export`, and its other `metadata` (`configuration`, `uiPathActivityTypeId`, `assemblyQualifiedName`, …) unchanged; downstream reads stay `$context.outputs.<ExportBucketKey>`;
+    - move `activityType`, `displayName`, and `fullName` from the call's `metadata` to the wrapper's;
+    - copy `configuration` and `uiPathActivityTypeId` onto the wrapper as well, so they sit on both.
+
+    A call that still has its own `activityType` / `displayName` (a stub wrapped as-is) restores the same: Studio Web reads both from the wrapper only and drops them from the call on its next save. Leave such a workflow as it is.
 2. Never add `catch.do`: Studio Web reads a wrapper with `do` as a plain Try/Catch, and without `do` exhausted retries fail the workflow as the bare call would.
 3. The wrapper key `<id>#Retry` is reserved and must be globally unique like `#Wrapper` / `#Body`.
 4. Some `validate` releases reject this shape; see [Validation Gap](#validation-gap).
@@ -95,9 +119,9 @@ Rules for the wrapper:
 `uip api-workflow validate` releases without UiPath/cli#5785 reject two valid task-level retry forms:
 
 1. A string `retry.when` or `retry.exceptWhen`, on a `#Retry` wrapper or a Try/Catch: three errors at `…/catch/retry/when` (or `…/catch/retry/exceptWhen`): `Expected type 'object' but got a different type`, `Expected type 'array' but got a different type`, and `Value must match exactly one of the allowed formats`.
-2. An `<id>#Retry` wrapper: a Connector task missing `call` or `metadata.configuration` at the wrapper path.
+2. An `<id>#Retry` wrapper: the error `Task '<id>#Retry' has activityType 'Connector' but must contain 'call'. Missing key: 'call'` at the wrapper path. The call inside a wrapper in Studio Web's shape also gets two warnings at `…#Retry/try/0/<id>/metadata`: `Task '<id>' is missing 'metadata.activityType'. Studio Web cannot restore this activity without it` and `Task '<id>' is missing 'metadata.displayName'`. Both are part of the same gap: the wrapper carries those fields, so do not put them back on the call. A wrapper with no `metadata.configuration` also gets `Connector task '<id>#Retry' is missing 'metadata.configuration'`; that one is real, so copy the call's `configuration` onto the wrapper (rule 1).
 
-When those are the only errors, treat the workflow as valid and report the validator gap; otherwise fix normally. Keep an existing workflow as it is: dropping `when`, unwrapping the call, or copying `configuration` onto the wrapper changes what the workflow does. For a new retry that must validate clean on such a release and needs no status filter, write a Try/Catch whose `retry` has no `when`; it retries every caught error.
+When those are the only errors and warnings, treat the workflow as valid and report the validator gap; otherwise fix normally. Do not reshape the workflow to silence them: leave `when` and the wrapper as they are. For a new retry that must validate clean on such a release and needs no status filter, write a Try/Catch whose `retry` has no `when`; it retries every caught error. A release with UiPath/cli#5785 reports none of these and adds its own retry messages; see [troubleshooting.md](troubleshooting.md#validate-warns-that-studio-web-drops-part-of-a-retry-policy).
 
 ### Precedence Over `httpRetryConfig`
 

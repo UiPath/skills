@@ -5,16 +5,18 @@ Modes:
   trycatch    In project `FlakyCompute`, a TryCatch whose catch carries `retry`
               (5 retries, 2000 ms, linear) around a JavaScript activity, a
               `catch.do` Response containing "failed", and a success-path Response.
-  http        The seeded `HttpRequest_1` call sits inside a `try` whose catch
-              carries `retry` (4 retries, 1500 ms, exponential, `when` filtering on
-              exactly 429 and 503 via `$<catch.as>.status`), as an
-              `HttpRequest_1#Retry` wrapper without `catch.do`. A TryCatch fails:
+  http        The seeded `HttpRequest_1` call sits in an `HttpRequest_1#Retry`
+              wrapper without `catch.do`, whose `catch.retry` is 4 retries,
+              1500 ms, exponential, with `when` exactly
+              `${ [429, 503].includes($<catch.as>.status) }`. A TryCatch fails:
               Studio Web's TryCatch has no status filter and drops `when` on its
-              next save. With the retry container unwrapped, the workflow must
-              equal the seed, and no workflow-level `httpRetryConfig` may be added.
-              The status filter must use the `[...].includes($<as>.status)` form,
-              the only form Studio Web round-trips.
-  validation  `uip api-workflow validate` returns Valid.
+              next save. The call's `call`, `with`, `export` and non-display
+              metadata must equal the seed; `activityType` / `displayName` /
+              `fullName` may stay on the call or move to the wrapper. With the
+              wrapper unwrapped, the rest of the workflow must equal the seed, and
+              no workflow-level `httpRetryConfig` may be added.
+  validation  `uip api-workflow validate` returns Valid, or reports only the
+              documented validator gap of releases without UiPath/cli#5785.
 """
 
 from __future__ import annotations
@@ -175,8 +177,38 @@ def unwrap(value: Any, owner_ids: set[int]) -> Any:
     return value
 
 
-# Studio Web round-trips only this form of status filter, so the checker grades only it.
-STATUS_RE = re.compile(r"\[([\d,\s]*)\]\s*\.includes\(\s*\$([A-Za-z_$][\w$]*)\.status\s*\)")
+# Exact copy of the regex in Studio Web's `parseStatusCondition`
+# (packages/api-workflows-common/lib/translation/translators/retry-policy-translators.ts),
+# also copied by `STATUS_CONDITION` in UiPath/cli api-workflow-tool's
+# apiwf-validate-service.ts. Studio Web reads a status list back only in this form:
+# group 1 is the code list, group 2 the error name.
+STATUS_RE = re.compile(r"^\$\{\s*\[([\d,\s]*)\]\.includes\(\$([A-Za-z_$][\w$]*)\.status\)\s*\}$")
+
+# Studio Web moves these from the call to its `#Retry` wrapper; a call that keeps
+# them (a stub wrapped as-is) restores the same, so either place passes.
+DISPLAY_KEYS = ("activityType", "displayName", "fullName")
+
+
+def without_display(metadata: Any) -> Any:
+    if not isinstance(metadata, dict):
+        return metadata
+    return {k: v for k, v in metadata.items() if k not in DISPLAY_KEYS}
+
+
+def strip_call_display(value: Any) -> Any:
+    """Copy of a task tree with HttpRequest_1's display metadata removed."""
+    if isinstance(value, list):
+        return [strip_call_display(item) for item in value]
+    if isinstance(value, dict):
+        return {
+            key: (
+                {**child, "metadata": without_display(child.get("metadata"))}
+                if key == "HttpRequest_1" and isinstance(child, dict)
+                else strip_call_display(child)
+            )
+            for key, child in value.items()
+        }
+    return value
 
 
 def check_http(document: dict[str, Any], seed: dict[str, Any]) -> None:
@@ -188,15 +220,22 @@ def check_http(document: dict[str, Any], seed: dict[str, Any]) -> None:
     if len(calls) != 1:
         fail(f"expected exactly one HttpRequest_1 task, found {len(calls)}")
     call = calls[0]
-    for field in ("call", "with", "metadata", "export"):
+    for field in ("call", "with", "export"):
         if call.get(field) != seed_call.get(field):
             fail(f"HttpRequest_1.{field} changed; keep the registry-generated call as is")
+    call_meta = call.get("metadata") or {}
+    seed_meta = seed_call.get("metadata") or {}
+    if without_display(call_meta) != without_display(seed_meta):
+        fail("HttpRequest_1.metadata changed beyond moving activityType / displayName / fullName to the wrapper")
+    for k in DISPLAY_KEYS:
+        if k in call_meta and call_meta[k] != seed_meta.get(k):
+            fail(f"HttpRequest_1.metadata.{k} changed")
 
     owners = [(key, task) for key, task in retried_try_tasks(document) if contains_key(task["try"], "HttpRequest_1")]
     if not owners:
         fail("HttpRequest_1 is not inside a try task with catch.retry")
     owner_ids = {id(task) for _, task in owners}
-    if unwrap(document.get("do"), owner_ids) != seed.get("do"):
+    if strip_call_display(unwrap(document.get("do"), owner_ids)) != strip_call_display(seed.get("do")):
         fail("tasks outside the retry container changed; leave the rest of the workflow as it is")
     for field in ("input", "output", "evaluate"):
         if document.get(field) != seed.get(field):
@@ -207,9 +246,9 @@ def check_http(document: dict[str, Any], seed: dict[str, Any]) -> None:
         retry = catch["retry"]
         errors = check_policy(retry, count=4, delay=1500, backoff="exponential")
         when = retry.get("when")
-        match = STATUS_RE.search(when) if isinstance(when, str) else None
+        match = STATUS_RE.match(when) if isinstance(when, str) else None
         if not match:
-            errors.append("retry.when is not a `[...].includes($<as>.status)` filter")
+            errors.append("retry.when is not exactly `${ [<codes>].includes($<as>.status) }`")
         else:
             codes = {int(c) for c in match.group(1).replace(" ", "").split(",") if c}
             if codes != {429, 503}:
@@ -223,6 +262,12 @@ def check_http(document: dict[str, Any], seed: dict[str, Any]) -> None:
                 errors.append("#Retry wrapper must not have catch.do")
             if direct_keys(task["try"]) != ["HttpRequest_1"]:
                 errors.append("#Retry wrapper try must hold only the call")
+            wrapper_meta = task.get("metadata") or {}
+            if wrapper_meta.get("activityType") != "Connector":
+                errors.append("#Retry wrapper metadata.activityType must be 'Connector'")
+            for k in DISPLAY_KEYS:
+                if k not in call_meta and k in seed_meta and wrapper_meta.get(k) != seed_meta[k]:
+                    errors.append(f"{k} left the call but is not on the wrapper")
         elif (task.get("metadata") or {}).get("activityType") == "TryCatch":
             errors.append(
                 "status filter on a TryCatch: Studio Web drops `when` on save; "
@@ -249,8 +294,31 @@ def check_validation(path: Path) -> None:
         fail(f"validator did not return JSON: {exc}")
     if not isinstance(payload, dict):
         fail("validator JSON is not an object")
-    if result.returncode != 0 or payload.get("Data", {}).get("Status") != "Valid":
-        fail(f"validate did not return Valid: {payload.get('Instructions', '')}")
+    if result.returncode == 0 and (payload.get("Data") or {}).get("Status") == "Valid":
+        return
+    instructions = str(payload.get("Instructions", ""))
+    errors = ERROR_LINE_RE.findall(instructions)
+    if errors and all(is_documented_gap(p, m) for p, m in errors):
+        print("NOTE: only the documented task-level retry validator gap was reported")
+        return
+    fail(f"validate did not return Valid: {instructions}")
+
+
+# The errors that `uip` releases without UiPath/cli#5785 report for valid task-level
+# retry shapes. The skill tells agents to treat these, and only these, as a
+# validator gap (references/http-retry-config.md, Validation Gap).
+ERROR_LINE_RE = re.compile(r"^\s*- \[error\] \[([^\]]+)\] (.*)$", re.M)
+GAP_WHEN_MESSAGES = (
+    "Expected type 'object' but got a different type",
+    "Expected type 'array' but got a different type",
+    "Value must match exactly one of the allowed formats",
+)
+
+
+def is_documented_gap(path: str, message: str) -> bool:
+    if path.endswith(("/catch/retry/when", "/catch/retry/exceptWhen")):
+        return message in GAP_WHEN_MESSAGES
+    return path.endswith("#Retry") and "has activityType 'Connector' but must contain 'call'" in message
 
 
 def main() -> None:
