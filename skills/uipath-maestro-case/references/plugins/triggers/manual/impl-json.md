@@ -2,7 +2,7 @@
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
-> **Layout-strip (Rule 19).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement` (when applicable per Case A vs B below), `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`.
+> **Layout-strip (Rule 19).** Omit `position`, `style`, `measured`, `width`, `height`, and `zIndex` from the trigger node. Keep `data.parentElement` when applicable, plus `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, and `data.description`.
 
 ## Purpose
 
@@ -10,27 +10,22 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../
 >
 > **Any other spelling silently becomes a connector trigger.** That switch's `default` arm is `connector`, so a near-miss — PascalCase `Timer`, an invented token, the document's own wording — is classified as a connector with no error raised. It then receives neither a timer nor a message event definition, and the wrong word is baked into a runtime variable. Design-time clean, runtime wrong: nothing on any profile reports it. The three legal tokens are `"None"`, `"Intsvc.EventTrigger"`, and lowercase `"timer"`.
 
-Add a manual trigger to a case. Adapts shape to whether any Trigger node already exists in `schema.nodes`: emits the initial `trigger_1` minimal shape if none, or a secondary trigger with full render fields if one or more exist. This plugin performs **two file writes as an atomic pair**:
-
-1. Append a `uipath.case.trigger` node to `caseplan.case.nodes`.
-2. Append a matching entry to `entry-points.json.entryPoints` (sibling of `caseplan.case`).
-
-The sibling-file sync is the main reason this plugin needs a dedicated JSON recipe rather than reusing a generic "add node" primitive — orchestrator discovers entry points via `entry-points.json`, so a trigger node without a matching entry is invisible to runtime.
+Count existing Trigger nodes in `schema.nodes`. Append the selected node to `caseplan.case` and its matching entry to sibling `entry-points.json.entryPoints` as an atomic pair; the orchestrator discovers runtime entry points there.
 
 ## Input spec (from `sdd.md`)
 
 | Field | Required | Notes |
 |---|---|---|
-| `displayName` | yes | the SDD row's display name. Fallback: `Trigger ${existingTriggerCount + 1}`. The first manual trigger written into a fresh caseplan therefore defaults to `"Trigger 1"`. |
-| `description` | yes | Always emitted into `data.description`. Sourced from the element's `description:` field when present; otherwise the LLM infers a natural-language description from surrounding sdd.md context. |
+| `displayName` | yes | SDD row display name; if absent use `Trigger ${existingTriggerCount + 1}`. |
+| `description` | yes | Always emit in `data.description`; use the element's `description:` or infer a natural-language description from surrounding sdd.md context. |
 
-Position is not a user input. It is computed statefully (see below).
+Compute position statefully below; do not accept it from the user.
 
 ## Pre-flight
 
-1. **`caseplan.case` exists** at `<SolutionDir>/<ProjectName>/caseplan.case`. Created by the `case` plugin at T01. If absent, run that plugin first — do not synthesize.
-2. **`entry-points.json` exists** in the same directory (sibling of `caseplan.case`). Written by the `case` plugin's § Scaffold at T01. If absent, hard-fail (`entry-points.json not found in <dir>. Run the case plugin first to scaffold the project.`). Do not lazily create it — a missing `entry-points.json` indicates an incomplete project scaffold, not a recoverable state.
-3. Both files must be parseable JSON. Read → validate → modify → write.
+1. Confirm **`caseplan.case` exists** at `<SolutionDir>/<ProjectName>/caseplan.case`; the `case` plugin creates it at T01. If absent, run that plugin first; do not synthesize it.
+2. Confirm **`entry-points.json` exists** beside it; the `case` plugin's § Scaffold creates it at T01. If absent, hard-fail (`entry-points.json not found in <dir>. Run the case plugin first to scaffold the project.`); do not lazily create it.
+3. Parse and validate both JSON files, then modify and write them.
 
 ## ID generation
 
@@ -65,11 +60,9 @@ With `trigger_1` pre-seeded, the first secondary trigger without a display name 
 
 ## Recipe — `caseplan.case` (append to `schema.nodes`)
 
-Append (not prepend) the trigger node, in the shape the existing-trigger count selects.
+Append, never prepend, the branch-selected node.
 
 ### Case A — zero existing triggers (first-trigger path)
-
-Emit the canonical first-trigger shape:
 
 ```json
 {
@@ -84,11 +77,9 @@ Emit the canonical first-trigger shape:
 }
 ```
 
-No `data.parentElement` in Case A. Studio Web hydrates layout on load.
+Do not emit `data.parentElement` in Case A; Studio Web hydrates layout on load.
 
 ### Case B — one or more existing triggers (secondary-trigger path)
-
-Emit a secondary trigger with `data.parentElement` included:
 
 ```json
 {
@@ -104,11 +95,11 @@ Emit a secondary trigger with `data.parentElement` included:
 }
 ```
 
-**`data.inputs.serviceType` is `"None"` for manual triggers.** Older schemas may omit `inputs` entirely — both forms are valid when reading. Always emit `"inputs": {"serviceType": "None", "entryPointId": "<uniqueId>"}` when writing — `entryPointId` equals the `uniqueId` of the entry-points.json entry below. See [case-schema.md § Trigger Node](../../../case-schema.md#a-trigger-node--uipathcasetrigger) for the `entryPointId` rule.
+Manual triggers always emit `data.inputs.serviceType` as `"None"` and `entryPointId` as the entry's `uniqueId`; older schemas may omit `inputs` when reading, but always emit both when writing. See [case-schema.md § Trigger Node](../../../case-schema.md#a-trigger-node--uipathcasetrigger).
 
 ## Recipe — `entry-points.json` (append to `entryPoints`)
 
-Read the file, parse, append:
+Read, parse, and append:
 
 ```json
 {
@@ -121,36 +112,29 @@ Read the file, parse, append:
 }
 ```
 
-Where `basename(caseplanFile)` is the schema file's base name including extension (typically `caseplan.case`), yielding a `filePath` fragment like `/content/caseplan.case.bpmn#trigger_xY2mNp`.
-
-Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
-
-Write back with **4-space indent** (`JSON.stringify(obj, null, 4)`).
+`basename(caseplanFile)` includes the schema file extension, typically `caseplan.case`, so the fragment is like `/content/caseplan.case.bpmn#trigger_xY2mNp`. Leave `input` and `output` schemas empty; Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)). Write with 4-space indent (`JSON.stringify(obj, null, 4)`).
 
 ## Write order
 
-Write both files atomically in this order:
+Write both files atomically and in this order:
 
-1. `caseplan.case` — node appended.
-2. `entry-points.json` — entry appended.
+1. `caseplan.case` with the node appended.
+2. `entry-points.json` with the entry appended.
 
-If the second write fails, the `caseplan.case` mutation must be rolled back to avoid a half-written state. Simplest rollback: re-read the `caseplan.case` that existed pre-mutation (kept in memory), write it back. Prefer fail-fast: verify `entry-points.json` exists BEFORE the first write.
+Verify `entry-points.json` before the first write and fail fast. If the second write fails, roll back `caseplan.case` by writing the pre-mutation content kept in memory.
 
 ## Post-write validation
 
-After writing, confirm:
+Confirm that:
 
-- `caseplan.case.nodes` contains the new node with the branch-correct id (`trigger_1` in Case A, generated `trigger_XXXXXX` in Case B), at the end of the array.
-- `nodes[].type === "uipath.case.trigger"`.
-- `nodes[].data.display.label` matches the resolved `displayName`.
-- `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
-- `nodes[].data.typeVersion === "1.0.0"`.
-- `nodes[].data.parentElement` present in Case B, absent in Case A. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 19).
-- `nodes[].data.inputs.serviceType === "None"` (or `inputs` absent in older schemas — both are valid).
-- `nodes[].data.inputs.entryPointId` equals the `uniqueId` of this trigger's `entry-points.json` entry.
-- **`schema.edges` is still `[]`** (Rule 21) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
-- `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
+- `caseplan.case.nodes` ends with the new `uipath.case.trigger`, using `trigger_1` in Case A or generated `trigger_XXXXXX` in Case B.
+- `nodes[].data.display.label` equals the resolved `displayName`; `nodes[].data.description` is present and non-empty (direct-JSON-write divergence); and `nodes[].data.typeVersion === "1.0.0"`.
+- `nodes[].data.parentElement` is present in Case B and absent in Case A.
+- The node has no `position`, `style`, `measured`, `width`, `height`, or `zIndex` (Rule 19).
+- `nodes[].data.inputs.serviceType === "None"`; `inputs` may be absent only in older schemas, and `nodes[].data.inputs.entryPointId` equals this entry's `uniqueId`.
+- **`schema.edges` is still `[]`** (Rule 21). The trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. Remove any authored edge before proceeding.
+- `entry-points.json.entryPoints` contains the new entry whose `filePath` ends in `#<trigger_XXXXXX>` and whose `displayName === <displayName>`.
 
-Run `uip maestro case validate <caseplan.case> --output json` after all triggers for this plugin's batch are added. A default-profile `Valid` here is a batch check, not completion: the build ends only on `validate --strict --sdd sdd.md` at [Step 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
+After all triggers for this plugin's batch are added, run `uip maestro case validate <caseplan.case> --output json`. A default-profile `Valid` is only a batch check; completion requires `validate --strict --sdd sdd.md` at [Step 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
 
 <!-- END: impl-json.md -->

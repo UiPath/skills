@@ -43,7 +43,7 @@ export default casePlan('claim-review-sla')
     when: '=js:vars.priority === "Urgent"',
     count: 30,
     unit: 'min',
-    escalations: [escalation({ trigger: 'sla-breached', notify: [toGroup('Incident Response Team')], displayName: 'Notify Incident Response' })],
+    escalations: [escalation({ trigger: 'sla-breached', notify: [toGroup('<UNRESOLVED: Incident Response Team group id>', 'Incident Response Team')], displayName: 'Notify Incident Response' })],
   })
   .sla({ when: '=js:vars.priority === "Standard"', count: 5, unit: 'd' })
   .sla({
@@ -53,7 +53,7 @@ export default casePlan('claim-review-sla')
       escalation({
         trigger: 'at-risk',
         atRiskPercentage: 80,
-        notify: [toUser('manager@corp.com'), toGroup('Operations Leadership')],
+        notify: [toUser('manager@corp.com'), toGroup('<UNRESOLVED: Operations Leadership group id>', 'Operations Leadership')],
         displayName: 'Notify Manager + Ops Leadership',
       }),
     ],

@@ -33,7 +33,8 @@ reference:
   directory: ../migrate-classic/fixture
 
 initial_prompt: |
-  i want to migrate the ConsentBannerProbe project to the modern uia activities. make a plan
+  i want to migrate the ConsentBannerProbe project to the modern uia activities. make a plan.
+  download the activity migrator if it is not installed
 
 simulation:
   enabled: true

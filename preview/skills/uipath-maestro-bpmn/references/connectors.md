@@ -40,10 +40,14 @@ Each hit carries what the call needs:
 ```
 
 The **action** is `nodeType`'s last segment — `create-issue` — not the label and not the REST path.
+<!--skill-flavor:field-reference:start-->
 `markdownPath` is that operation's field reference: read it rather than guessing input names.
+<!--skill-flavor:field-reference:end-->
 
 `"total": 0` is a real miss, and means either `http()` or a connector the library does not carry (see §4).
+<!--skill-flavor:library-pull:start-->
 A usage error saying no library is cached means `uip maestro registry pull` first.
+<!--skill-flavor:library-pull:end-->
 
 ## 2. Write the node
 
@@ -84,8 +88,10 @@ uip maestro bpmn check <Name>.bpmn.ts --source
 | `CUSTOM_FIELDS_UNPREPARED` | an input outside the tenant-agnostic snapshot, on a connector that discovers fields per connection. |
 | `BINDING_SELF_NAME` | a binding whose value is its own name. That packs into `bindings_v2.json` as a stub where a connection id belongs, and the deploy is what notices. |
 | `BINDING_UNDECLARED` | a label a populated `bindings.json` does not declare. |
+| `CONNECTION_BINDING_NOT_GUID` (warning) | a connection binding whose default is not a connection id. `check` and `compile` accept a symbolic label offline; `refresh` refuses it (`Connection binding "<id>" default must be a GUID.`). `prepare` writes the real id; never invent one. |
 
-Each of these names one `uip maestro registry prepare`:
+When one of these comes from a missing schema, lookup value or binding, its message names the `uip maestro registry prepare` that closes it.
+An unknown key, a wrong value type (`CONNECTOR_INPUT`) or a runtime value in an id field (`LOOKUP_RUNTIME_VALUE`) is a mistake in your source: fix it there, since `prepare` doesn't touch the source.
 
 ```bash
 uip maestro registry prepare uipath-atlassian-jira --action create-issue \
@@ -99,6 +105,18 @@ Then re-run `check` and compile.
 `compile` and `check` both auto-detect `./connectors-local/`; `--connectors-local <dir>` names another one.
 
 **`prepare` is a live call.** It reads through a real connection, so it needs `uip login` and a connection on the tenant. Run it when `check` asks for it, not speculatively.
+
+These codes are mistakes in your own source, and `prepare` does not close them; fix the source and re-run `check`:
+
+| Code | What it means | Fix |
+| --- | --- | --- |
+| `INTSVC_CONNECTION_NOT_BINDING` | a connector node's connection that is not `=bindings.<id>`. | Write the value as `=bindings.<id>`; a hand-filled wait reads `connectionId: '=bindings.<id>'`. |
+| `INTSVC_CONNECTION_BINDING_MISSING` | a `=bindings.<id>` with no root binding of resource `Connection` and property `ConnectionId`, spelled exactly. | Declare that root binding. |
+| `INTSVC_EVENT_NO_CONNECTION` | a wait or trigger with no connection: the runtime faults on it. | Give the node a `connection:`. |
+| `INTSVC_CONNECTION_MISSING` | an activity with no connection (error on a V1 activity, warning otherwise). | Give the node a `connection:`. |
+| `INTSVC_CONNECTION_FOLDER_MISMATCH` | an activity whose connection and folder bindings name different connection resources: `refresh` or `validate` refuses it. | Point the connection and folder at the same connection's bindings. |
+| `INTSVC_CONNECTION_RESOURCE_CONFLICT` | one connection resource used by nodes with different connectors or connections. | Give each connector or connection its own binding. |
+| `INTSVC_CONNECTOR_KEY_MISSING` | a node bound to a connection with no `connectorKey` (or an HTTP request with no `body.targetConnector`): `refresh` refuses it before it looks at the binding. | Set the node's `connectorKey`; on an HTTP request, set `body.targetConnector` to the connection's connector key. |
 
 ## 4. When the connector is not in the library
 
@@ -126,6 +144,7 @@ It never asks Integration Service for a connector the catalog does serve: a miss
 
 Only when `prepare` cannot reach the tenant at all, fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`** — and only on evidence gathered while the tenant was reachable: the commands below are the same tenant reads `prepare` makes, so they fail for the same reason.
 Use a connection id, an activity row and a `registry get` template saved from an earlier session (or carried in the task), never a guess; with none of those, connector authoring waits for access, because an invented identity validates and dispatches to nothing.
+A draft that cannot wait for access takes the form in §7.
 The identity comes from the catalog, never from the connector's OpenAPI document:
 
 ```bash
@@ -171,3 +190,34 @@ uip is triggers describe <connector> <EVENT> <object> --connection-id <id> --out
   `outputs` maps payload fields onto variables of their own, and its sources read the payload under `response`: `outputs: { subject: '=response.subject' }`.
   A bare `'=subject'` reads nothing: the payload is not at the top level.
 - `folderPath` is deprecated and ignored: the task names its folder by the `folder` binding alone, so drop it.
+
+## 7. Draft with an unresolved connector
+
+A source-only draft (offline, no connection on the tenant, or a task that forbids real ids) is missing the connection, and sometimes the operation.
+Write the step so that `check` passes and the CLI, not prose, says what is missing:
+
+- **The operation's metadata is local**: §1 finds it in the library (a local cache, so this works offline), and `check` names no `uip maestro registry prepare` for it (`OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, or a `CONNECTOR_INPUT` for a field only the connection discovers), since only a live `prepare` clears those.
+  Write the `.connector()` call of §2 with symbolic `connection` and `folder` names and no `bindings.json`.
+  Leave no `lookup()` in it, because `compile` refuses one until `prepare` records it (`LOOKUP_UNRESOLVED`); a lookup field takes a runtime `=vars.<id>` or a fixed-vocabulary literal (`send_as: 'bot'`), which `check` only warns about (`LOOKUP_RUNTIME_VALUE`, `LOOKUP_LITERAL_ID`).
+  `check`, `compile` and `format` pass and emit a real `Intsvc.ActivityExecution` task reading `=bindings.<name>`.
+  `refresh` then refuses (`Connection binding "<name>" default must be a GUID.`) and `validate` reports `MISSING_BINDING`: that is the draft's blocker, so stop there, and do not edit a binding or a package file to get past it.
+- **Otherwise, with no tenant for `prepare` to reach** (the operation is not in the library, or `check` asks for a `prepare`): write the step as a bare `.task(id, { name })` whose name says what it does and carries the connector key and the operation, such as `'Send Slack digest (uipath-salesforce-slack / send-message-to-channel, unresolved)'`.
+  The whole loop passes; the node is a placeholder, and the notes say so.
+- **Never a placeholder `.activity(id, 'Intsvc.ActivityExecution', …)`.**
+  `check` refuses empty context (`EMPTY_REQUIRED_FIELD`) and sentinel values (`INTSVC_METHOD_UNKNOWN`, `INTSVC_OPERATION_NOT_IDENTIFIER`), and a file compiled past it is one `validate` rejects.
+  §4's hand-filled form needs evidence read from a reachable tenant.
+
+Then leave a notes file (`README.md` beside the source) that names each CLI-owned blocker in these exact words, says what it is, and names the step that resolves it:
+
+| Blocker | What it is | Resolved by |
+| --- | --- | --- |
+| connection binding | the tenant connection, and its folder companion, that `=bindings.<name>` reads; the draft carries only the symbolic name | `uip maestro registry prepare <key> --action <action>` against a live connection writes `bindings.json` |
+| dynamic schemas | the connection-specific input and output schemas, custom fields, objects and lookup ids | the same `prepare`, with `--resolve` / `--object`, which writes `./connectors-local/` |
+| connector operation metadata (bare `.task()` only) | `objectName`, `method`, path and the generated outputs (`<id>_response`, `<id>_Error`) | `prepare`, then replace the `.task()` with the `.connector()` call it prints |
+| `bindings_v2.json` | the packaged binding resources | `uip maestro bpmn refresh <project>` after `compile`, once the connection binding resolves |
+<!--skill-flavor:package-metadata-row:start-->
+| package metadata | `entry-points.json`, `operate.json`, `package-descriptor.json` | the same `refresh`; `uip solution resources refresh --solution-folder <solution-dir>` for the solution |
+<!--skill-flavor:package-metadata-row:end-->
+
+Name them as written, not paraphrased ("the connection", "the schema"), because the user acts on the artifact each one names.
+Name no private value: no connection id, folder key, tenant URL, resource key or schema copied from a tenant.
