@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-product-selection
+task_id: skill-planner-design-product-selection
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill to
   analyze a PDD with clear AI agent signals. Tests whether the product

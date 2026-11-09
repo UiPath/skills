@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-need-driven-selection
+task_id: skill-planner-design-need-driven-selection
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill to analyze a
   PDD saturated with "AI"/"smart" keywords whose decisions are all

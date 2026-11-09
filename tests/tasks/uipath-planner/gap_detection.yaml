@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-gap-detection
+task_id: skill-planner-design-gap-detection
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill to
   analyze a deliberately incomplete PDD. Tests whether the skill correctly

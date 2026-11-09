@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-pdd-to-sdd
+task_id: skill-planner-design-pdd-to-sdd
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill to
   analyze a small inline PDD and generate an SDD file. Tests whether the

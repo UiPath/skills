@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-single-project-queue
+task_id: skill-planner-design-single-project-queue
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill on a PDD for a
   SINGLE RPA project that consumes an EXISTING Orchestrator queue owned by an

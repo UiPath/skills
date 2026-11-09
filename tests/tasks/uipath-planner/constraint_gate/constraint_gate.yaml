@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-constraint-gate
+task_id: skill-planner-design-constraint-gate
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill on a PDD with
   strong Coded Apps and Maestro signals BUT an explicit Automation Suite

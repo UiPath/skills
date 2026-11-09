@@ -1,4 +1,4 @@
-task_id: skill-sdd-e2e-rpa-process
+task_id: skill-planner-design-e2e-rpa-process
 description: >
   End-to-end evaluation: agent uses the uipath-planner skill to read a
   comprehensive PDD, select RPA Process as the product, and generate a complete

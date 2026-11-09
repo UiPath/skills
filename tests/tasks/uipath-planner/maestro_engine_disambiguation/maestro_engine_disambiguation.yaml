@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-maestro-engine-disambiguation
+task_id: skill-planner-design-maestro-engine-disambiguation
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill to analyze a
   PDD with formal BPMN control-flow structure (parallel fork/join, boundary
