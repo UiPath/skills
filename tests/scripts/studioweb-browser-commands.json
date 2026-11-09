@@ -342,9 +342,9 @@
   "uipath-maestro-bpmn": {
     "allow": [],
     "ceiling": {
-      "login": 2,
+      "login": 4,
       "login status": 3,
-      "maestro bpmn": 48,
+      "maestro bpmn": 62,
       "maestro bpmn pack": 5,
       "rules describe": 1,
       "solution pack": 1

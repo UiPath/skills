@@ -183,7 +183,18 @@ Cloud-resource nodes carry bindings shaped by extension `bindingInfo`; values co
 - **Business rule bindings** (`BusinessRule`): context `name` and `folderPath` each reference a `BusinessRule` binding with `propertyAttribute` `name`/`folderPath`, never `Key` or process `releaseKey`. Use `uip rules list --all-folders`; bind `Name` and `FolderPath`. Both share `resourceKey=<folderPath>.<name>` or `<name>` when folder empty, never catalog key/process key/release key. The engine runs the rule by `name` + `folderPath` and uses `resourceKey` only to match deploy-time binding overwrites. Bind only deployed rules; deploy a solution-only rule first (SKILL.md rule 17). Task must be `version="v3"`: below v3 the engine cannot read the `.uirule` package a BusinessRules project deploys. Bind only decision-keyed rules: `uip rules describe` `OutputArguments` must contain `"x-uipath-decision-keyed": true`; a rule without it reads back empty columns from the task's `output` — do not bind it; run `uip rules refresh <project-path>` and redeploy. `folderPath` always has `default`, `""` when in the running job folder. Unbound `_label` contains the rule name.
 - **Connection bindings** (`Intsvc.*`): context uses `=bindings.<bindingId>` and process-level `<uipath:binding resource="Connection" propertyAttribute="ConnectionId">` uses live connection id. Activities use context `connection`; triggers/waits use `connectionId`. `uip maestro bpmn refresh` and `pack` materialize a `Connection` resource in `bindings_v2.json`; otherwise `validate` passes but runtime fails `102010 IntSvcArgumentsError - Integration Services invalid value in input` because connection is null.
 
-Declare all bindings in one process-level `<uipath:bindings version="v1">`; each has `id`, `resource`, `propertyAttribute`, and `default`. Connection bindings also require `resourceKey`; omission fails `validate` with `Integration Service activity connection binding "<id>" is missing resourceKey`. Process/queue bindings use `bindingInfo.resourceKeyPattern`; BusinessRule bindings share `<folderPath>.<name>` or `<name>`:
+Declare all bindings in a single process-level `<uipath:bindings version="v1">`
+block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, and a
+`default` value (the resolved key or id), plus a `resourceKey`: Studio Web
+files each binding in `bindings_v2.json` under it, so keyless bindings of one
+type merge into one entry and the others are lost. Omitting it fails
+`validate`, `refresh` and `pack` — on a connection binding with `Integration
+Service activity connection binding "<id>" is missing resourceKey`, on any
+other with `Binding "<id>" (resource=…, propertyAttribute=…) is missing
+resourceKey`. `process` and `queue`
+bindings carry `resourceKey` from `bindingInfo.resourceKeyPattern`, which
+`registry get <type>` shows. Both `BusinessRule` bindings carry the same
+`resourceKey`, `<folderPath>.<name>` (`<name>` alone when the folder path is empty):
 
 ```xml
 <uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<FOLDER_PATH>.<RULE_NAME>" default="<RULE_NAME>" />

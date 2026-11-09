@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects, including a BPMN process the user wants to see or sketch before it is built. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, diagnose, and evaluate .bpmn projects, including a BPMN process the user wants to see or sketch before it is built. Evaluate: eval sets, evaluators, simulations, eval runs. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -172,7 +172,7 @@ If a solution is found, stop and ask the user which to use, as a pick list if th
 If none, run `init` per **Assemble**; draft uses 2b, auto 4c.
 
 ### Phase 3 — Iterate
-Adjust, re-`format`, show, and hold approval until accepted: [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating). End the turn with the 3c reply exactly as that guide's template shows it (see its 3c section).
+Adjust, re-`format`, show, and hold approval until accepted: [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating). Draft mode only. Before you write the 3c reply, read [references/gate-reply-template.md](references/gate-reply-template.md) in full, then end the turn with the reply exactly as it shows.
 
 ### Phase 4 — Wire it up
 - **4a Discover:** Run `uip maestro bpmn registry pull` once per session; use list/search to map intent. For live connections run `uip is connections list --all-folders`. Bind a box only to a resource that fits its step (kind and purpose, not a similar name); when unsure, report it as none yet. In draft mode, bind each box to the resource the 3c gate named; when a connection it named does not ping `Enabled`, fall to the next candidate below and name the swap under `Assumed` in 4g. Bind each connector to an `Enabled` connection in the named folder, else `IsDefault` `Yes`, else first. Confirm with `uip is connections ping <id> --output json` (`Data.Status` must be `Enabled`; the list's `State` is cached); try the next candidate otherwise. Another owner is not a reason to skip. Report each bound connection's Name, Owner, Folder, never Id, as a rule-4 assumption. Use placeholders only for requested source-only draft/handoff/placeholder/synthetic/public-safe values or when none pings `Enabled`, or when the 3c gate reported the box's resource as *none yet*. See [references/registry-workflow.md](references/registry-workflow.md).
@@ -241,7 +241,7 @@ Give public inputs and outputs explicit runtime bridges, and converge routes ret
 
   `validate` ignores tag case; a line the `grep` prints is a tag to lowercase (4b).
 
-  Exit 0 = valid. Exit 1 = a parse error, a `grep` hit, or a `validate` failure. Read severity from each issue's `[error]`/`[warning]` tag, not from the `Found N error(s)` header, which counts errors while the list under it prints warnings too. Fix only error-severity findings, then re-run 4d and validate again; stop re-validating once every remaining finding is a warning or the placeholder pair below. `read but never assigned` is a defect no error covers: nothing writes a value the process reads, so a step that should produce it does not. `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding about one unresolved node, and the binding half is a live tenant lookup. Bind the node to a deployed resource. When the user asked for a placeholder, a source-only draft (Rule 16), or a boundary handoff, or 4a found no `Enabled` candidate, or the 3c gate reported *none yet*, no invented identifier can clear `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the expected result. Report the pair once and continue. A connection binding whose `default` is a placeholder fails `refresh` (4f) with "default must be a GUID", so that draft skips 4f; refresh needs a real connection id from `uip is connections list`. Fix every `VARIABLE_DOES_NOT_EXIST` warning: it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on the node reading a start-event-scoped caller input is expected; see [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+  Exit 0 = valid. Exit 1 = a parse error, a `grep` hit, or a `validate` failure. Read severity from each issue's `[error]`/`[warning]` tag, not from the `Found N error(s)` header, which counts errors while the list under it prints warnings too. Fix error-severity findings and the warnings named below, then re-run 4d and validate again; stop re-validating once every remaining finding is another warning or the placeholder pair below. `read but never assigned` is a defect no error covers: nothing writes a value the process reads, so a step that should produce it does not. `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding about one unresolved node, and the binding half is a live tenant lookup. Bind the node to a deployed resource. When the user asked for a placeholder, a source-only draft (Rule 16), or a boundary handoff, or 4a found no `Enabled` candidate, or the 3c gate reported *none yet*, no invented identifier can clear `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the expected result. Report the pair once and continue. A connection binding whose `default` is a placeholder fails `refresh` (4f) with "default must be a GUID", so that draft skips 4f; refresh needs a real connection id from `uip is connections list`. Fix every `VARIABLE_DOES_NOT_EXIST` warning: it names a reference with no declaration. Fix every `VARIABLE_NOT_SET` and `read but never assigned` on a variable a node or a flow condition reads; neither is expected. A declared start-event input reaches a process variable only through the start event's `BPMN.Variables` mapping, see [references/structural-bpmn.md#variables](references/structural-bpmn.md#variables).
 
   `[warning] [(xml)] unknown attribute <type>` is expected noise from the script-task template's `<uipath:inputSchema type="jsonSchema">`. Leave it. `type` is required on `uipath:input`, `uipath:output`, and `uipath:inputOutput`; removing it there fails the load with `BPMN_PARSE_ERROR ... to be a string`. Do not bisect the file and do not read package bundles under `node_modules` to find the rule.
 
@@ -301,11 +301,12 @@ Give public inputs and outputs explicit runtime bridges, and converge routes ret
   fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
   Before sending, check the message against the template line by line and delete every line the template does not have.
 
-## Operate and diagnose
+## Operate, evaluate, and diagnose
 
-Beyond authoring, this skill packages, ships, runs, and diagnoses Maestro projects through the UiPath CLI.
+Beyond authoring, this skill packages, ships, runs, evaluates, and diagnoses Maestro projects through the UiPath CLI.
 
 - **Package and operate** (package a project, upload to Studio Web, publish or deploy, run or debug instances, and manage jobs, instances, incidents, and lifecycle actions): see [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
+- **Evaluate** (design evaluators and eval sets, add data points and simulations, and start/monitor/compare Studio Web evaluation runs for a BPMN project): see [references/evaluate.md](references/evaluate.md). `eval run start` deploys and overwrites the matching Studio Web solution (never auto-run a separate `uip solution upload`); read evaluate.md before running it.
 - **Diagnose** (fetch incidents, variables, and element executions, and trace a failed run back to its BPMN element): see [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md). Runtime evidence — incidents, variables, element executions, cursors, the deployed asset — comes only from a `uip maestro bpmn ... --output json` read, one literal command per read, never a loop (rule 9 there); local `.bpmn` source and generated package files are read from disk as usual. Never substitute the files backing that CLI for the CLI itself — see rule 3 in that reference.
 
 Any cloud-side change (publish, deploy, run, pause, resume, cancel, retry, migrate) requires explicit user consent, and local validation should pass first. `solution upload` is the exception — see Rule 10.
@@ -334,6 +335,7 @@ Flagged registry gaps: the registry serves no template for structural BPMN, sequ
 | Topic | Read |
 | --- | --- |
 | Phase 2 skeleton — blank boxes, real control flow, no new registry calls | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
+| 3c gate reply — the fixed message that ends a draft-mode run | [references/gate-reply-template.md](references/gate-reply-template.md) |
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Authoring a process from an image | [references/image-transcription.md](references/image-transcription.md) |
@@ -342,5 +344,6 @@ Flagged registry gaps: the registry serves no template for structural BPMN, sequ
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
 | Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |
 | Package, upload, publish, run, or manage instances | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
+| Design and run BPMN evaluations (evaluators, eval sets, data points, simulations, runs) | [references/evaluate.md](references/evaluate.md) |
 | Diagnose a failed or misbehaving run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
 | Project layout and generated package files | [references/shared/project-layout.md](references/shared/project-layout.md) |
