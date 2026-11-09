@@ -20,7 +20,7 @@ Emit the `32.0.3` shape `{ id, version, name, metadata, bindings, variables, nod
 
 ## Why phased
 
-Do not build the full case in one pass. Phase 2 runs `sdd convert` and creates a reviewable preview; Phase 3 adds connector `case spec` detail and task-value binding. SKILL.md Rule 12 controls only whether the preview pauses: pause-at-preview stops for visual review; straight-through narrates and continues. Phases 4–7 and publish/debug/Orchestrator gates are unconditional. Publish precedes Debug so Debug exercises the Studio Web build; Orchestrator publish is last so only an exercised build reaches the tenant solution feed.
+Do not build the full case in one pass. Phase 2 runs `sdd convert` and creates a reviewable preview; Phase 3 adds connector `case spec` detail and task-value binding. SKILL.md Rule 12 controls only whether the preview pauses: pause-at-preview stops for visual review; straight-through narrates and continues. Validate (Phase 4), Publish (Phase 5), Debug (Phase 6), and Publish to Orchestrator (Phase 7) follow; the publish, debug, and Orchestrator-publish gates are unconditional. Publish precedes Debug so Debug exercises the Studio Web build; Orchestrator publish is last so only an exercised build reaches the tenant solution feed.
 
 ## Phase summary
 
@@ -51,14 +51,14 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 
 If the response names `sdd` or `convert` unknown (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand, say so once, and continue. Exit 3 without that command-specific message is a real failure: report it and do not fall back.
 
-Read the authoritative `UnresolvedItem` union in CLI `sdd-convert/types.ts`; never retype it. Only these kinds have downstream closers (plus `placeholder`); all others close through Phase 4 using `detail`:
+**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). The authoritative list of kinds is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it. The rows below are the kinds with a *named downstream closer*, plus `placeholder`, which needs none; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
 
 | `kind` | Closure |
 |---|---|
 | `resource-binding` | Close with Phase 1 bindings; project `selected` into root bindings (Step 12 Check 7). |
 | `output-type` | Close at Step 9 via `uip maestro case tasks describe` or `case spec`. |
 | `connector-context` | Close with Phase 3 connector context (Step 12 Check 12): `folderKey` and connector-version `metadata`. |
-| `case-role` | Covers Personas mapping, gated permissions (`Assign`, `Tasks*`, `TaskAssignment*`, `TaskSelfAssignment*`), row/plan-role mismatch, unreadable/undeclared/uncarrried roles, and v1 apps with no roles. Never change user design (SKILL.md Rule 2). Show `detail` and planner Personas comment; with approval edit row and rerun convert. For gated permission ask whether tenant flag exists; retain key if yes, remove only with approval. Otherwise follow `detail`: approved row edit, remove role, or move case to V2. Non-interactive: leave rows and list every item in `build-issues.md`. Never guess-edit `metadata.caseRoles`. |
+| `case-role` | Covers Personas mapping, gated permissions (`Assign`, `Tasks*`, `TaskAssignment*`, `TaskSelfAssignment*`), row/plan-role mismatch, unreadable/undeclared/uncarried roles, and v1 apps with no roles. Never change user design (SKILL.md Rule 2). Show `detail` and planner Personas comment; with approval edit row and rerun convert. For gated permission ask whether tenant flag exists; retain key if yes, remove only with approval. Otherwise follow `detail`: approved row edit, remove role, or move case to V2. Non-interactive: leave rows and list every item in `build-issues.md`. Never guess-edit `metadata.caseRoles`. |
 | `task-grouping` | Only when the stage declares no Activation Mode or Task set: shared `runs-sequentially` tasks may be parallel siblings or a strict chain. Closed in Phase 2 — read the stage's intent in the SDD. For a strict chain, move each named task into consecutive single-task sets, retaining `runs-sequentially` as its only entry rule ([case-schema.md § Positioning](case-schema.md)); for siblings, retain the emitted set. |
 | `placeholder` | Ledger defers task (`gateDecision: "resolve-at-build"` or `<UNRESOLVED: …>` identity slot per SKILL.md Rule 10); convert emits Rule 9 `data: {}`, retained entry conditions, no binding. Do not re-edit or add `data`. If `where` is an expression (skip/input/condition), it reads a valueless placeholder output; list it in `build-issues.md`. |
 
@@ -68,7 +68,7 @@ Convert maps Personas to `metadata.caseRoles` (role name, description, `case`/`s
 
 Convert emits root `bindings[]` (two entries per resource, `name` and `folderPath` sharing one `resourceKey`), never `bindings_v2.json`. Run `uip maestro case bindings sync` at the end of Step 9 and again at Step 12 Check 7, after resolution can change bindings; derive the sidecar from bindings and `metadata.caseRoles`. Do not sync here.
 
-`Unresolved[]` is a floor, not a ceiling: it omits wrong or silently omitted output. Phase 4 `--strict --sdd` is authoritative; plain-profile `Status: Valid` on convert output does not finish the plan.
+**`Unresolved[]` is a floor, not a ceiling.** It reports what convert knew it was skipping — never what convert emitted wrongly, and never what it omitted silently. Phase 4's `--strict --sdd` stays the authority, and a plain-profile `Status: Valid` on convert output is not a finished plan.
 
 **Verify task entry rules before leaving Phase 2, whatever convert emitted** — this check is not optional and nothing upstream covers it. Walk every task in every stage and verify its own `entryConditions`. Empty rules produce only `Task has no entry rules` under plain validate, are absent from `Unresolved[]`, and hang `uip maestro case debug` indefinitely (SKILL.md Rule 7). Write missing rules from SDD §4.6 **Entry Condition** and **Activation Mode** cells, per task, never once per group.
 
@@ -135,7 +135,18 @@ Use **AskUserQuestion**: `Publish for review` (upload skeleton to Studio Web), `
 
 If `DesignerUrl` is absent, rerun once without `--output-filter`, dump the response to `tasks/upload-response.json`, print its path, and continue prompting. This is a second upload and the maximum allowed within consent. Mention once with the URL that Phase 5 re-publish overwrites review-time Studio Web edits with final local state and records replaced contents as a restorable version; Phase 6 fix→re-publish has its own confirmation. Users may compare Studio Web before/after Phase 3.
 
-`Skip publish and continue` proceeds to Phase 3. On `Abort`, append current buffered issues to existing `tasks/build-issues.md`, then fill the summary per [`plugins/logging/impl-json.md` § Flush](plugins/logging/impl-json.md). Never whole-file dump; preserve prior journal rows. If absent, create per § Flush. Print `caseplan.case`, `sdd.md`, `registry-resolved.json`, and solution-directory paths; print `Suggested next steps: inspect tasks/build-issues.md and the generated artifacts, then rerun after editing the design or plan.` Exit without deleting artifacts.
+#### On `Skip publish and continue`
+
+Proceed directly to Phase 3.
+
+#### On `Abort`
+
+1. **Append** the current section's buffered issues to the existing `tasks/build-issues.md` journal, then fill the summary block, per [`plugins/logging/impl-json.md` § Flush](plugins/logging/impl-json.md). **Never whole-file dump here** — the journal already holds rows from every completed section and the per-section buffer has been cleared, so replacing the file would destroy that history. If the file does not exist (abort before the first section boundary), create it per § Flush.
+2. Print paths of `caseplan.case`, `sdd.md`, `registry-resolved.json`, and solution directory.
+3. Print `Suggested next steps: inspect tasks/build-issues.md and the generated artifacts, then rerun after editing the design or plan.`
+4. Exit skill.
+
+Do **not** delete artifacts. User may want to inspect them, or re-run skill later (re-resolves and rebuilds `caseplan.case` from `sdd.md` per Rule 7).
 
 ## Phase 3 — Implementation
 
@@ -271,11 +282,11 @@ uip solution publish "<packagePath>" --wait --output json
 Run `resources refresh` first to sync artefacts/debug overwrites from `bindings_v2.json` (Rule 15). Run `case pack` every time, without exception: it recompiles `caseplan.case` to `caseplan.case.bpmn` in the case project; its `.nupkg` is throwaway. Output must be `<SolutionDir>/dist`, a sibling of the project; never put it inside the project. `case pack` is mandatory per [§ Why `case pack` is mandatory](#why-case-pack-is-mandatory). Run `solution pack` on the solution directory containing `.uipx`, not the case project; it bundles project `.nupkg`s into one `.zip` under `<SolutionDir>/dist`. Add `--version <version>` when user names one; default `1.0.0`. Existing `name+version` is rejected; bump on republish. Run `solution publish` on the `.zip`; `--wait` blocks until the package reaches `Ready`/`Active`. Add `--personal-workspace` only when requested. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
 
 Read `<packagePath>` from `solution pack` response `Data.Packages` or list `<SolutionDir>/dist`; never guess. The zip is `<name>_<version>.zip` (underscore); `case pack` emits `<Name>.case.Case.<version>.nupkg`. Never publish the case `.nupkg`.
-<!--skill-flavor:phase-seven-commands:end-->
 
-### Why case pack is mandatory
+### Why `case pack` is mandatory
 
 `uip solution pack` only bundles an on-disk `.bpmn`; `uip maestro case validate` does not generate it. Only `uip maestro case pack` compiles `caseplan.case` → `caseplan.case.bpmn`. Run it on every Phase 7 pass whether Phase 5/6 ran or `.bpmn` exists; otherwise the package may contain no or stale `.bpmn` while pack/publish still succeed. `case pack` requires `package-descriptor.json` in the case project (scaffolded by [plugins/case/impl-json.md](plugins/case/impl-json.md)); on `Missing package-descriptor.json`, restore it and do not skip. `case pack` emits one project `.nupkg`; `solution pack` internally creates the project package and wraps it in the publishable `.zip`.
+<!--skill-flavor:phase-seven-commands:end-->
 
 Phase 7 stops at publish. `uip solution deploy run` is out of scope; report the package and tell the user to deploy from Orchestrator.
 

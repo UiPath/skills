@@ -11,11 +11,11 @@ Use while interpreting sdd.md → task.md to determine task type (`agent`, `proc
 <!--skill-flavor:prerequisite-login:start-->
 Run `uip login status --output json`, then
 <!--skill-flavor:prerequisite-login:end-->
-`uip maestro case registry pull` before any cache inspection. This unconditional Phase-1 gate forbids cache inspection first. Exception: use SKILL.md Rule 3's same-session fast path when the delegated design lane pull (`uipath-planner`, SKILL.md Rule 16) succeeded and `sdd.md` was just written from its confirmed in-memory model; run verify-only against the planner's resolution ledger. Any doubt requires the full gate. Login/pull failure stops Phase 1 before planning artifacts. Exit 0 with `Data.Errors` is partial: read rows; route each 5xx `typecache-*` row to [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx); 401/403 stops Phase 1 as a login/permission failure.
+`uip maestro case registry pull`, before any cache inspection or lookup. This is a Phase 1 hard gate, not a conditional refresh: never inspect the cache first and use its absence to skip the pull. Exception: use SKILL.md Rule 3's same-session fast path when the delegated design lane pull (`uipath-planner`, SKILL.md Rule 16) succeeded and `sdd.md` was just written from its confirmed in-memory model; run verify-only against the planner's resolution ledger. Any doubt requires the full gate. Login/pull failure stops Phase 1 before planning artifacts. Exit 0 with `Data.Errors` is partial: read rows; route each 5xx `typecache-*` row to [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx); 401/403 stops Phase 1 as a login/permission failure.
 
 The design lane starts the same login → pull chain in the background only when tenant-bound work first appears, then performs full identity resolution and the ambiguity/empty gate at Case Review; it does not discover schemas there. A successful pull populates `~/.uip/case-resources/`. Read those files through `sdd resolve` first, then directly for what remains; do not use `uip maestro case registry search` as primary discovery. See § When a search returns nothing.
 
-> **Missing file ≠ empty match.** Before searching `<type>-index.json`, verify it exists. If absent, run `uip maestro case registry pull` (not `--force`); before that pull, absence is a precondition failure. After a pull listing the type in `Data.ResourceTypes[]` rather than `Data.Errors[]`, an absent index means zero resources of that type; a type in `Data.Errors[]` is not empty. Route `typecache-*` errors to [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx). For non-creatable types (regular RPA process, agentic processes / Process Orchestration, action, case-management, connectors), proceed to placeholder. For creatable `agent`, `api-workflow`, or `business-rule`, first resolve an in-solution sibling using [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md](plugins/tasks/api-workflow/planning.md#registry-resolution), or [business-rule/planning.md](plugins/tasks/business-rule/planning.md#registry-resolution), and § Handle Empty Results. Only absence from both tenant index and local siblings is genuinely empty; send it to the [Rule 18 / § MUST-Confirm gate](#must-confirm-before-placeholder-fallback), where Create may be offered.
+> **Missing file ≠ empty match.** Before searching `<type>-index.json`, verify it exists. If absent, run `uip maestro case registry pull` (not `--force`); before that pull, absence is a precondition failure. After a pull listing the type in `Data.ResourceTypes[]` rather than `Data.Errors[]`, an absent index means zero resources of that type; a type in `Data.Errors[]` is not empty. Route `typecache-*` errors to [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx). For non-creatable types (regular RPA process, agentic processes / Process Orchestration, action, case-management, connectors), proceed to placeholder. For creatable `agent`, `api-workflow`, or `business-rule`, first resolve an in-solution sibling using [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md](plugins/tasks/api-workflow/planning.md#registry-resolution), or [business-rule/planning.md](plugins/tasks/business-rule/planning.md#registry-resolution), and § Handle Empty Results. Only a resource absent from **both** the tenant index **and** the local siblings is genuinely empty → feed it to the [Rule 18 / § MUST-Confirm gate](#must-confirm-before-placeholder-fallback) (Create offered), NOT straight to placeholder.
 
 ## Resolve with the CLI first
 
@@ -25,7 +25,9 @@ After the pull, resolve every task in one call. With a solution, run from the di
 cd "<SOLUTION_DIR>" && uip maestro case sdd resolve "<SDD_PATH>" --out "<PROJECT_ROOT>/tasks/registry-resolved.json" --output json
 ```
 
-`<SDD_PATH>` and `<PROJECT_ROOT>` are absolute or relative to `<SOLUTION_DIR>`; the ledger is beside `sdd.md` in `tasks/`. Without a solution, run from the `sdd.md` folder. Resolve reads caches only and must write the entire Rule 10 ledger; never hand-author it.
+`<SDD_PATH>` and `<PROJECT_ROOT>` are absolute or relative to `<SOLUTION_DIR>`; the ledger is beside `sdd.md` in `tasks/`. Without a solution, run from the `sdd.md` folder.
+
+It does the part of discovery that has one right answer — which index each task type uses, the exact-name search on the task's portable name, the narrowing by the SDD's folder — and writes the whole Rule 10 ledger, creating `tasks/`. It reads caches only: no tenant, no network. Never hand-author the ledger it writes.
 
 Read `Data.Counts` (`tasks`, `selected`, `ambiguous`, `absent`), `Data.Unresolved[]` (`reason`, `usages`, `creatable`), and `Data.Scope.siblingsChecked`. A local sibling is `selected` with `source: "local"` and `folder: solution_folder`, and beats a same-named tenant entry in `matches`. `siblingsChecked: false` (no solution or CLI older than `@uipath/maestro-tool` 1.205.0-dev.9328) requires the per-type `registry search --local` check.
 
@@ -113,7 +115,7 @@ Options:  one per unique (name, type): "<Name> (<type>) — used by <Stage>/<Tas
 
 ### 1b — Choose build kind
 
-For each selected `agent`, ask one `AskUserQuestion` (header = agent name; ≤4 questions per call) with equal options **Low-code** and **Coded (Python)**; never share one question among agents or infer from the SDD. Non-interactive defaults to **Low-code** (`uip agent init`); coded is `uip codedagent`. Put the choice in the brief's `Kind:` line ([agent/planning.md § Creating an Agent inline → Step 2](plugins/tasks/agent/planning.md#creating-an-agent-inline)); see [agent/planning.md § Coded agents](plugins/tasks/agent/planning.md#creating-an-agent-inline). API workflows and business rules have no kind choice; API workflows always use JSON-DSL `Workflow.json`.
+For each selected `agent`, ask one `AskUserQuestion` (header = agent name; ≤4 questions per call) with equal options **Low-code** and **Coded (Python)**; never share one question among agents or infer from the SDD. Non-interactive defaults to **Low-code** (`uip agent init`); coded is `uip codedagent`. Put the choice in the brief's `Kind:` line ([agent/planning.md § Creating an Agent inline → Step 2](plugins/tasks/agent/planning.md#creating-an-agent-inline)). Coded integration is kind-agnostic on the case side but carries an Orchestrator-deploy caveat — see [agent/planning.md § Coded agents](plugins/tasks/agent/planning.md#creating-an-agent-inline). API workflows and business rules have no kind choice; API workflows always use JSON-DSL `Workflow.json`.
 
 ### 1c — Dedup the selected builds (one resource per name and type)
 
@@ -155,12 +157,15 @@ Both positionals MUST be absolute paths; relative paths fail with `Failed to add
 
 ### 3b — "Already exists" = adopt (kind-agnostic residual)
 
-An interrupted build may leave an unregistered sibling. If type `init` reports `directory exists / not empty`, or `uip solution projects add` reports `Project name already exists`, neither is failure. Check `uip maestro case registry list --local --output json`: if the name exists, `Category` identifies the owner; a different kind is a cross-kind collision—rename and rebuild. If absent, read the directory's `project.uiproj` `ProjectType`; matching kind means adopt:
+An interrupted prior run can leave a built sibling **on disk but unregistered**. Nothing that reads `.uipx` `Projects[]` sees it — the pre-gate `--local` check misses, the gate fires, and the build/register step collides: the type's `init` fails *"directory exists / not empty"*, or `uip solution projects add` returns *"Project name already exists"*. **Neither is a failure.** Adopt:
 
+1. **Kind-check the collision.** Name present in `uip maestro case registry list --local --output json` → its `Category` identifies a registered owner; a different kind = cross-kind name collision, NOT a prior build → rename the new resource (§1 name-uniqueness) and rebuild. Name absent (`list --local` also reads only `Projects[]`) → read the colliding directory's `project.uiproj` `ProjectType`. Matching kind → adopt:
 <!--skill-flavor:adopt-register:start-->
-1. Register with `uip solution projects add` using absolute paths. If it still says `Project name already exists` while absent from `.uipx` `Projects[]`, stale declaration files caused it. Get the key from `uip solution resources list --source local`; run `uip solution resources remove <ResourceKey> --solution-folder <SolutionDir> --output json` (removing `process` cascades its `package`; never delete files by hand; see [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)), re-run `project add`, then `uip solution resources refresh`.
+2. **Register.** `uip solution projects add` (absolute paths). It can refuse *"Project name already exists"* even when the name is absent from `.uipx` `Projects[]` — its collision check keys on **stale resource declaration files** from a prior registration, not the manifest. Clear the stale declaration with `uip solution resources remove <ResourceKey> --solution-folder <SolutionDir> --output json` (key from `uip solution resources list --source local`; removing the `process` entry cascades to its `package` declaration — never delete either file by hand, see [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)), re-run `project add`, then `uip solution resources refresh` regenerates them.
 <!--skill-flavor:adopt-register:end-->
-2. Continue at § 4. Never rebuild, Retry/Skip, or placeholder. Per-type verbs/kind markers are in each plugin's § Failure blockquote.
+3. **Continue at §4** (rediscover, verify, bind). Never rebuild, never Retry/Skip, never placeholder — the sibling is already built.
+
+Per-type verbs and kind markers: each plugin's § Failure blockquote.
 
 ### 4 — Rediscover + verify + bind (offline `--local`)
 
@@ -173,6 +178,8 @@ uip maestro case registry search "<Name>" --type <agent|api|businessRule> --loca
 Read PascalCase recursively: `Code: "ResourceSearchSuccess"`, `Data.ResultCount`, and `Data.Resources[]` entries `{ ResourceType, Resource: {...} }`. Select exact `Resource.Name == <Name>` and `Resource.Source == "local"`; filter partial keyword matches. Confirm `Folders[0].FullyQualifiedName == "solution_folder"`. `Resource.EntityKey` is opaque, derived, and audit-only—not `.uipx` `Projects[].Id` or an on-disk id; never write it. No exact local match is a build/registration failure.
 
 > ⚠️ **Do NOT read I/O field names from `Resource.{Inputs,Outputs}`.** `--output json` PascalCases object keys recursively, so the declared property keys come back mis-cased (`poText` → `PoText`, `classification` → `Classification`) — wiring against those names would bind to fields the resource doesn't have. Read the **case-preserving** names + types from the sibling's raw `entry-points.json` on disk instead (`<sibling path>/entry-points.json`), under `entryPoints[0].input.properties` / `.output.properties`. Reading the wrong/absent key returns `undefined`, yielding an empty contract → silent mis-wire. For **api-workflow** siblings apply the fallback chain (flat `input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas; warn on any fallback — see [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution)). Use `--local` only to locate/confirm the sibling.
+
+> Shapes: `search`/`get` nest each entry under `Data.Resources[].Resource.*`; `list --local` flattens to `Data.Resources[].{EntityKey,Name,Category,Source}` (no `Resource` wrapper, no I/O). Use `search` here because it matches by name and confirms the sibling; the sub-agent's returned `finalInputs/finalOutputs` are a liveness signal only — the on-disk `entry-points.json` is authoritative.
 
 Then:
 
@@ -211,7 +218,9 @@ Use the sdd.md component type for the primary file and related files as fallback
 | `external-workflow` | `typecache-external-automation-activities-index.json` |
 | TIMER | *(not in cache)* |
 
-For TIMER skip lookup and emit `wait-for-timer`; `external-agent`/`external-workflow` are connector activities (see [connector-activity § External agents and automations](plugins/tasks/connector-activity/planning.md#external-agents-and-automations)). If primary lookup is empty, use compatible cross-type fallback (e.g. RPA in `process-index.json`, AGENTIC_PROCESS in `process-index.json`). For `process`, this fallback is a hard gate before unresolved/placeholder ([`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution)). Never cross-type-fallback `action`, `case-management`, `function`, `flow-process`, or `business-rule`: their IDs are valid only from `action-apps-index.json`, `caseManagement-index.json`, `function-index.json`, `flow-index.json`, or `businessRule-index.json`, respectively.
+For `TIMER` ("not in cache"), skip the cache lookup — it has no registry representation; emit the `wait-for-timer` plugin shape. `external-agent` / `external-workflow` are built like a connector activity — see [connector-activity § External agents and automations](plugins/tasks/connector-activity/planning.md#external-agents-and-automations).
+
+**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. For `process` tasks the fallback is a hard gate before any unresolved/placeholder outcome — see [`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution). **Exception: do not cross-type-fallback an `action`, `case-management`, `function`, `flow-process`, or `business-rule` lookup.** An Action App ID is valid only from `action-apps-index.json`, a child-case `entityKey` is valid only from `caseManagement-index.json`, a function `entityKey` is valid only from `function-index.json`, and a rule `entityKey` is valid only from `businessRule-index.json`, a flow `entityKey` is valid only from `flow-index.json`; a same-named process, agent, or API workflow is not a compatible substitute for any of these task types.
 
 ### 2. Search by Name and Folder Path
 
@@ -261,7 +270,7 @@ For each result record Rule 10 keys exactly: `stage` (exact SDD stage), `task` (
 
 ## Type Mapping
 
-Map the cache file to task JSON `type`; the identifier field supplies identity:
+After finding a match, map the **cache file type** (not the sdd.md component type) to the JSON `type` value written into the task node:
 
 | Cache file | Task `type` | Identifier |
 |---|---|---|

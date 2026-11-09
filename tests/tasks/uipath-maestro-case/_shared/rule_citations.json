@@ -4,7 +4,7 @@
     "Build-review preference": 2,
     "Convert before authoring": 1,
     "Empty lookup gate": 5,
-    "Handoff contract": 1,
+    "Handoff contract": 2,
     "Phase 1 registry gate": 2,
     "Resolution audit": 1,
     "SDD is the sole post-design input, across sessions": 1,
@@ -71,7 +71,7 @@
     "Resolution audit": 1,
     "Runnable resources and sidecars": 3,
     "SDD is the sole post-design input, across sessions": 1,
-    "The build is lossless against the SDD": 2,
+    "The build is lossless against the SDD": 3,
     "Unresolved resources": 2
   },
   "references/placeholder-tasks.md": {
@@ -207,13 +207,14 @@
     "Empty lookup gate": 1
   },
   "references/plugins/variables/global-vars/impl-json.md": {
-    "Convert before authoring": 1
+    "Convert before authoring": 1,
+    "The build is lossless against the SDD": 1
   },
   "references/plugins/variables/global-vars/planning.md": {
     "The build is lossless against the SDD": 1
   },
   "references/plugins/variables/io-binding/impl-json.md": {
-    "Empty lookup gate": 3
+    "Empty lookup gate": 7
   },
   "references/registry-discovery.md": {
     "Artifact I/O": 1,

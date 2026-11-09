@@ -8,7 +8,7 @@ Use this plugin when sdd.md describes `CONNECTOR_ACTIVITY` or a named external-s
 
 ## External agents and automations
 
-External agents and automations are connector-activity task types:
+An external agent (CrewAI, Snowflake Cortex, Salesforce Agentforce, Azure AI Foundry, Google Vertex…) or an external automation (Power Automate, Salesforce flows) is a task of its own type, built exactly like a connector activity:
 
 | `type` | TypeCache index (§ 1) |
 |---|---|

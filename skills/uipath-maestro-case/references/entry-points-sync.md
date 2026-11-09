@@ -4,7 +4,7 @@ Refresh `entry-points.json` `entryPoints[].input` / `.output` JSON-Schemas from 
 
 Trigger plugins scaffold ([`plugins/case/impl-json.md`](plugins/case/impl-json.md)) and append ([`plugins/triggers/*/impl-json.md`](plugins/triggers/manual/impl-json.md)) entries with empty `input`/`output` (`{ "type": "object", "properties": {} }`) at Step 6.1, before variables exist. Back-fill them here; do not change trigger plugins.
 
-This mirrors Studio Web’s canvas transformation: `PO.Frontend/src/utils/PackagingUtil.ts` (`getEntryPoints()`, `getEntryPointJsonSchemaForVariable()`, `getTypeAndFormatForType()`, `JOB_ATTACHMENTS_DEFINITION`) and `src/services/uipath/variables/VariableUtil.ts` (`getVariablesDefinedInRootUiPath`). The FE regenerates this file on every canvas save and, since PR #6062, first load; this skill does the same.
+This mirrors Studio Web's canvas transformation: `PO.Frontend/src/utils/PackagingUtil.ts` (`getEntryPoints()`, `getEntryPointJsonSchemaForVariable()`, `getTypeAndFormatForType()`, `JOB_ATTACHMENTS_DEFINITION`) and `src/services/uipath/variables/VariableUtil.ts` (`getVariablesDefinedInRootUiPath`). The FE regenerates this file on every canvas save and, since PR #6062, first load; this skill does the same.
 
 ## When to Run
 
@@ -64,13 +64,13 @@ For `jsonSchema`, use `var.body ?? var._jsonSchema`. If absent/null or an unpars
 
 For `array`, parse string `var.body` (unparseable means `{}`). Choose `<items>` in this order: `rewriteJobAttachmentRefs(body.items)` when `body?.items` exists; `{ "$ref": "#/definitions/job-attachment" }` when `var.subType` is `file` or `octet-stream` (set the definitions flag); `getTypeAndFormatForType(var.subType)` for a primitive; otherwise `{}`. `title` is always `var.name`; arrays have no default.
 
-### rewriteJobAttachmentRefs (nested JobAttachment rewrite)
+### `rewriteJobAttachmentRefs` (nested JobAttachment rewrite)
 
 Walk a schema node. Return non-object/null nodes unchanged. Replace any node carrying `"x-uipath-resource-kind": "JobAttachment"` with `{ "$ref": "#/definitions/job-attachment" }` and set the definitions flag. Preserve an already equal `{ "$ref": "#/definitions/job-attachment" }` and set the flag. Recurse through object/array children except under `definitions` and `$defs`; if no descendant matches, return the original node unchanged (identity preserved).
 
-### JOB_ATTACHMENTS_DEFINITION (constant)
+### `JOB_ATTACHMENTS_DEFINITION` (constant)
 
-Emit this exact fixed constant, independent of the file variable’s `body`:
+Emit this exact fixed constant, independent of the file variable's `body`:
 
 ```json
 {

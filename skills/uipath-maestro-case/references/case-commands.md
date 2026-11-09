@@ -15,7 +15,7 @@
 | `maestro case pack`, `solution pack`, `solution publish` | Phase 7: recompile `caseplan.case.bpmn`, create `.zip`, publish to tenant solution feed (consent-gated) | Yes for `publish` |
 <!--skill-flavor:phase-seven-row:end-->
 <!--skill-flavor:resources-row:start-->
-| `solution resources list [--source local]`, `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Inventory and atomic local/remote resource mutations; see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
+| `solution resources list [--source local]`, `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Inventory read (`list`) + atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 <!--skill-flavor:resources-row:end-->
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Read-only registry/metadata discovery | Yes for `pull` |
 | `validate` | Validate `caseplan.case` | No |
@@ -107,7 +107,7 @@ uip solution resources refresh --solution-folder <SolutionDir> --output json
 uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"
 ```
 
-Pass the directory containing `.uipx`; no bundling is needed. Upload goes to Studio Web. `--output-filter` is mandatory and projects response `Data` to `Status`, `Action`, `SolutionId`, and `DesignerUrl`; `Action` is `Imported` or `Overwritten`, and report which. If `DesignerUrl` is missing, re-run once without `--output-filter`, dump the unfiltered response to `tasks/upload-response.json`, and diagnose it; this second upload/overwrite is allowed at most once within existing publish consent. Default unspecified “publish” behavior: refresh, run the filtered upload, and share the URL.
+Pass the directory containing `.uipx`; no bundling is needed. Upload goes to Studio Web. `--output-filter` is mandatory and projects response `Data` to `Status`, `Action`, `SolutionId`, and `DesignerUrl`; `Action` is `Imported` or `Overwritten`, and report which. If `DesignerUrl` is missing, re-run once without `--output-filter`, dump the unfiltered response to `tasks/upload-response.json`, and diagnose it; this second upload/overwrite is allowed at most once within existing publish consent. Default unspecified "publish" behavior: refresh, run the filtered upload, and share the URL.
 
 ---
 
@@ -169,7 +169,7 @@ Name the selected profile in the Phase 2 summary. Legacy `--skeleton` checks str
 
 ### Which profile in which phase
 
-Use plain validation at section ends in Phases 2–3. At Phase 3 exit and for every Phase 4 validation, run `--strict --sdd sdd.md --output json`; never quote a post-Phase-3 plain result as a close. A `Valid` without `"Profile": "strict"` does not close the build (SKILL.md Rule 7). **Run strict validation alone, never chained with another validate**; otherwise the first response envelope is read and the second is discarded.
+Section-end validates in Phases 2–3 use the plain profile — a half-built plan fails strict by design. The Phase 3 exit and every Phase 4 validate carry `--strict --sdd sdd.md --output json`, and no plain-profile result after Phase 3 entry is ever quoted as a close: a `Valid` without `"Profile": "strict"` does not close the build (SKILL.md Rule 7). **Run strict validation alone, never chained with another validate**; otherwise the first response envelope is read and the second is discarded.
 
 ### Version guard — `--strict` / `--sdd` require CLI 1.202
 
@@ -191,7 +191,7 @@ uip maestro case format <file> --output json
 
 ## uip maestro case bindings sync
 
-Never hand-author/edit the sidecar; derive it from root `bindings[]`:
+Derive `bindings_v2.json` from the plan's root `bindings[]` and write it next to the plan. Never author or edit the sidecar by hand.
 
 ```bash
 uip maestro case bindings sync <caseplan.case> --output json
@@ -247,7 +247,7 @@ uip maestro case spec --type <activity|trigger> \
   --input-details '<json>' --output json
 ```
 
-Required: `--type <activity\|trigger>`, `--activity-type-id <uuid>` (TypeCache `uiPathActivityTypeId`), and `--connection-id <uuid>` (choose from `case registry get-connection`). `--object-name <name>` overrides TypeCache `objectName`; it is required for entity-typed Curated triggers with placeholders (for example Data Service `{tenantEntityName\|folderEntityName}`) and Generic activities/triggers (`activityType === "Generic"` or `"GenericTrigger"`) whose shared definition covers multiple objects. Missing it for case (2) causes fetch-time opaque `unknown_error`. Discover Generic objects with `uip is resources list/describe` and entity-typed Curated objects with `uip is triggers objects`; see [`connector-trigger-planning.md`](connector-trigger-planning.md), [`connector-integration.md`](connector-integration.md). `--skip-case-shape` omits `caseShape` for planning and is mutually exclusive with `--input-details`. `--input-details <json>` populates `caseShape`: activities accept `{bodyParameters?, queryParameters?, pathParameters?, filter?}`, triggers `{eventParameters?, filter?}`; connection identity is derived from `--connection-id` and TypeCache, not input. Full contract: [`case-spec-input-details.md`](case-spec-input-details.md).
+Required: `--type <activity\|trigger>`, `--activity-type-id <uuid>` (TypeCache `uiPathActivityTypeId`), and `--connection-id <uuid>` (choose from `case registry get-connection`). `--object-name <name>`: Override the typecache `objectName`. Required in two cases: (1) **entity-typed Curated triggers** whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`); (2) **Generic-typed activities/triggers** (activity typecache `activityType === "Generic"`; trigger typecache `activityType === "GenericTrigger"`) whose typecache definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord` covering Account/Contact/Lead/...). The CLI errors at spec-fetch time when missing in case (2) — opaque `unknown_error`, see [`connector-trigger-planning.md`](connector-trigger-planning.md). Discovery: `uip is resources list/describe` (Generic) or `uip is triggers objects` (entity-typed Curated). See [`connector-integration.md`](connector-integration.md) and [`connector-trigger-planning.md`](connector-trigger-planning.md). `--skip-case-shape` omits `caseShape` for planning and is mutually exclusive with `--input-details`. `--input-details <json>` populates `caseShape`: activities accept `{bodyParameters?, queryParameters?, pathParameters?, filter?}`, triggers `{eventParameters?, filter?}`; connection identity is derived from `--connection-id` and TypeCache, not input. Full contract: [`case-spec-input-details.md`](case-spec-input-details.md).
 
 Returns `ConnectorTaskSpec` with `identity`, `operation`, `connection`, `inputs`, `outputs`, optional `filter`, `essentialConfiguration`, `references[]` (including `discoverCommand`), `diagnostics`, and, unless skipped, FE-canonical `caseShape` inputs/outputs/context. Webhook URL is intentionally absent and deterministic from `connectionId` + `elementInstanceId` + `connectorKey` + `eventOperation`; fetch via `getWebhookConfig` only when needed. `--input-details.filter` compiles to CEQL (activity) or JMESPath (trigger) per [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
@@ -284,9 +284,10 @@ uip maestro case registry search <keyword> --filter "name:contains=Foo" --type a
 uip maestro case registry get <identifier>
 uip maestro case registry get <identifier> --type agent
 uip maestro case registry get <uiPathActivityTypeId> --type typecache-activities --connection-id <uuid>
+# --local: in-solution (offline) discovery of sibling projects (.uipx in cwd/parent/grandparent), no tenant/login
 uip maestro case registry list --local --output json
-uip maestro case registry search "<Name>" --type <agent|api|businessRule> --local --output json
-uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api|businessRule> --local --output json
+uip maestro case registry search "<Name>" --type <agent|api|businessRule> --local --output json    # matches by name (keyword); `agent` = agent sibling, `api` = api-workflow sibling, `businessRule` = business-rule sibling
+uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api|businessRule> --local --output json   # matches by key, NOT name
 ```
 
 Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `businessRule`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`. `pull`: `-f, --force` (ignore 24-hour TTL), `-s, --solution-id <id>`. `search`: optional `[keyword]`, `-t, --type <type>`, `-f, --filter <filter>`; syntax is `field=value` or `field:operator=value`, fields `name`, `description`, `category`, `tags`, operators `equals`, `contains`, `in`, `startsWith`, `endsWith`; keyword or filter is required. `get` requires `<identifier>` (entityKey, id, or `uiPathActivityTypeId`), accepts `-t, --type <type>`, `--connection-id <id>` only for `typecache-activities`/`typecache-triggers`, and `--local`. `--local` resolves against in-solution sibling projects (offline; no login), on `list`/`search`/`get`. Local types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `function`, `businessRule`.

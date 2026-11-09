@@ -21,18 +21,32 @@ Use this plugin when sdd.md describes pausing or delaying execution within a sta
 
 **No cache lookup required.** Timer is built-in and has no registry representation: do not use `taskTypeId`, `enrich`, or `describe`.
 
-## Duration Formats and Translation
+## Duration Formats
 
-Accept `--every` values `10s`, `5m`, `1h`, `2d`, `1w`, `3mo`, or raw ISO 8601 such as `PT10S` (10 seconds); `--at` values must be ISO 8601 datetimes, such as `2026-04-26T10:00:00.000Z`; and `--time-cycle` values must be raw ISO 8601 repeating intervals, such as `R/PT1H` (repeat every hour, infinite). `--time-cycle` overrides `--every`, `--at`, and `--repeat`.
+Accepted `--every` values:
 
-Translate:
+| Format | Example | Meaning |
+|--------|---------|---------|
+| Seconds | `10s` | 10 seconds |
+| Minutes | `5m` | 5 minutes |
+| Hours | `1h` | 1 hour |
+| Days | `2d` | 2 days |
+| Weeks | `1w` | 1 week |
+| Months | `3mo` | 3 months |
+| ISO 8601 | `PT10S` | 10 seconds (raw ISO) |
 
-- “Wait X hours” → `--every Xh`, with no `--at` or `--repeat`.
-- “Every day at 9 AM” → `--every 1d --at <ISO datetime with 09:00>`.
-- “Every hour, up to N times” → `--every 1h --repeat N`.
-- “Run repeatedly forever every N” → `--time-cycle R/PT<N>`.
+Accepted `--at` values: ISO 8601 datetime (e.g., `2026-04-26T10:00:00.000Z`).
 
-For ambiguous phrasing, **AskUserQuestion** with 2–3 candidate interpretations plus “Something else”.
+Accepted `--time-cycle` values: raw ISO 8601 repeating interval (e.g., `R/PT1H` = repeat every hour, infinite). Overrides `--every`, `--at`, `--repeat` if set.
+
+## Translation Guidance
+
+- "Wait X hours" → `--every Xh`, no `--at`, no `--repeat`.
+- "Every day at 9 AM" → `--every 1d --at <ISO datetime with 09:00>`.
+- "Every hour, up to N times" → `--every 1h --repeat N`.
+- "Run repeatedly forever every N" → `--time-cycle R/PT<N>`.
+
+Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations + "Something else".
 
 ## Fields to Resolve
 

@@ -43,7 +43,7 @@ Record whether the project was pulled from SW at `<SolutionId>` or was local-onl
 
 Edit size does not change the journey: remain brownfield, edit in place, and preserve IDs. Batch multi-edit passes under [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical), with one `validate` at the end.
 
-For many-node or “rebuild this case” requests, confirm with AskUserQuestion: `Edit in place` (default) or `Rebuild from an updated spec` (greenfield via [planning.md](planning.md), re-mints IDs). Only an explicit rebuild choice or a new/updated `sdd.md` escalates.
+For many-node or "rebuild this case" requests, confirm with AskUserQuestion: `Edit in place` (default) or `Rebuild from an updated spec` (greenfield via [planning.md](planning.md), re-mints IDs). Only an explicit rebuild choice or a new/updated `sdd.md` escalates.
 
 ## Read this first
 
@@ -90,7 +90,7 @@ An SLA clock and response are separate edits. Choose response, status shape, and
 
 - **Do not widen the edit.** A notify-only requirement means add an escalation to the target's `slaRules[].escalationRule` ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and stop—no stage, task, or condition.
 - **`start-task` adds a task, not a lane** ([sla-response-shapes.md § 1](sla-response-shapes.md#1-pick-the-response)): put the follow-up task in the breached stage, with the `sla-status-change` rule as its own task-entry condition, never as a stage-entry row (which reruns other tasks).
-- **Four defects `validate` accepts:** task without an entry condition; non-interrupting lane demoted to a regular stage; `escalationId: "any"` “repaired” by repointing instead of deleting; and `start-task` authored as stage re-entry. Re-read [§ 5](sla-response-shapes.md#5-four-defects-validate-cannot-see) before finishing.
+- **Four defects `validate` accepts:** task without an entry condition; non-interrupting lane demoted to a regular stage; `escalationId: "any"` "repaired" by repointing instead of deleting; and `start-task` authored as stage re-entry. Re-read [§ 5](sla-response-shapes.md#5-four-defects-validate-cannot-see) before finishing.
 - Passing `validate` does not prove the response is correct; all four defects validate clean.
 
 ## After edits

@@ -25,7 +25,7 @@ Do not halt. Generate the complete reviewable, validatable workflow in `caseplan
 | Input/output variable bindings | real JSON edits via `io-binding` plugin | **skipped entirely** (no `data.inputs[]`) | edits to nonexistent inputs |
 | Task-entry conditions; stage-exit `selected-tasks-completed` references | ✓ | ✓ | ✓ |
 
-Mocks are forbidden: typed cross-task outputs reject nonexistent schemas, fabricated task-type IDs cause `uip maestro case validate` unknown-binding errors, while a binding-free placeholder validates cleanly and produces `<UNRESOLVED>` markers in `registry-resolved.json` with an explicit upgrade path.
+**Mocks are forbidden for tasks** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `registry-resolved.json`, explicit upgrade path.
 
 ## When a Placeholder Is Created
 
@@ -236,6 +236,6 @@ Use placeholder/external lists to drive registration and upgrades. The built-inl
 - **Do NOT create placeholders for timer tasks.** Use the full `wait-for-timer` plugin.
 - **Do NOT create a placeholder for an agent, API workflow, or business rule the user chose to build inline.** It is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)).
 - **Do NOT build an agent, API workflow, or business rule from SDD content alone.** Inline creation requires explicit selection at the Rule 18 gate; the result is an in-solution sibling that co-deploys with the case, never a separate tenant publish.
-- **Invoking `uipath-agents` / `uipath-api-workflow` / `uipath-rules` for the inline build is sanctioned.** The “don't auto-invoke other skills” rule in `SKILL.md § Anti-patterns` still applies to every non-creatable kind (regular RPA process, action, function, case-management, connectors, agentic process) and to `uipath-planner`.
+- **Invoking `uipath-agents` / `uipath-api-workflow` / `uipath-rules` for the inline build is sanctioned.** The "don't auto-invoke other skills" rule in `SKILL.md § Anti-patterns` still applies to every non-creatable kind (regular RPA process, action, function, case-management, connectors, agentic process) and to `uipath-planner`.
 
 <!-- END: placeholder-tasks.md -->

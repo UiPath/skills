@@ -77,7 +77,7 @@ Select in order:
 3. If creation is chosen, create it and continue to Step 3 with returned `ConnectionId`; see [§ Creating a Connection](#creating-a-connection).
 4. If skipped, declined, failed, or non-interactive, set `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks/registry-resolved.json`, omit `input-values`, emit a placeholder connector task with `type` + `displayName` + `data: {}` and no `data.typeId` / `data.connectionId`, and report it. A failed `is connections create` MUST follow this path after surfacing its error (§ Creating a Connection step 4); planning continues and never stalls. See [placeholder-tasks.md](placeholder-tasks.md).
 
-### Creating a Connection
+#### Creating a Connection
 
 When requested or no usable connection exists, run:
 
@@ -91,7 +91,10 @@ Use `Config.connectorKey` as positional `<connector-key>`, including when `Conne
 1. Run it in the background so human-paced OAuth survives foreground timeouts; read the result when it exits.
 2. Capture `Data.ConnectionId` and pass it directly as `--connection-id` to Step 3. Do **NOT** re-run `get-connection`; its cache may be stale and create output is authoritative.
 3. Optionally verify with `uip is connections ping "<ConnectionId>" --output json`.
-4. On non-zero exit, JSON `Result: "Failure"`, or missing `Data.ConnectionId` (OAuth denial/failure, closed browser, or misconfiguration), surface `Message` and any `Instructions` verbatim, then AskUserQuestion: **Retry create** (re-run `is connections create`) / **Skip (defer)**. On Skip or repeated failure, use Selection rule 4, emit the placeholder, and finish writing `registry-resolved.json`. Auth failure exits (verified: exit 1); it does not hang.
+4. **On failure — surface and re-prompt, never stall.** The create failed if the command **exits non-zero**, the JSON `Result` is `"Failure"`, or no `Data.ConnectionId` is returned (e.g. OAuth denied/failed, browser closed, connector misconfigured). On auth failure the command **exits** (verified: exit 1) — it does not hang. Do NOT silently proceed and do NOT leave planning incomplete:
+   1. Show the user the failure `Message` (and `Instructions` if present) verbatim — do not invent a cause. Example: `{ "Result": "Failure", "Message": "Authentication failed", "Instructions": "Check credentials and try again." }`.
+   2. Re-prompt via **AskUserQuestion**: **Retry create** (re-run `is connections create`) / **Skip (defer)**.
+   3. On **Skip**, or after a repeated failure, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `registry-resolved.json`** so resolution completes.
 
 **Headless/no-browser fallback** (CI, remote sandbox, no display): ask the user to run `! uip is connections create "<connector-key>" --output json` in their terminal and return `ConnectionId`, or run with `--no-wait`, surface the pending authorization URL, and poll until `State: Enabled`.
 
@@ -133,7 +136,18 @@ For `Config.activityType === "Generic"`, TypeCache has an empty/templated `objec
 
 ### Step 4 — Resolve reference fields
 
-For each `inputs.*` entry with `reference`, run its `discoverCommand` exactly as given, match the SDD value to `lookupNames[0]`, and put `lookupValue` (the id) in `input-values`.
+Each `inputs.*` entry with a `reference` carries a pre-built `discoverCommand`:
+
+```jsonc
+"reference": {
+    "objectName": "MailFolder",
+    "lookupValue": "id",
+    "lookupNames": ["displayName"],
+    "discoverCommand": "uip is resources run list <connector> <object> --connection-id <id>"
+}
+```
+
+Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
 > **Reference IDs are connection-scoped.** Resolve every reference freshly against the current `--connection-id`, immediately before writing `registry-resolved.json` / minting the spec. Never reuse an ID from another connection. See [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
@@ -163,8 +177,27 @@ Author filters for activities (CEQL) and triggers (JMESPath) as structured Filte
 
 ## Output Contract to `registry-resolved.json`
 
-Alongside Rule 10 keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`), record `type-id`, `connection-id`, `connector-key`, `object-name`, `input-values`, and `filter`; also record the selected connection, connector metadata, and any surfaced `spec.diagnostics.fallbacks[]`.
+Record the resolved values on the task's ledger entry, alongside Rule 10's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
 
-`input-values` and `filter` are JSON objects, not strings; Phase 2 reads them verbatim into `--input-details` ([connector-activity/impl-json.md § Step 1](plugins/tasks/connector-activity/impl-json.md)).
+```json
+{
+  "stage": "Triage",
+  "task": "Create Jira Issue",
+  "taskType": "connector-activity",
+  "type-id": "718fdc36-73a8-3607-8604-ddef95bb9967",
+  "connection-id": "7622a703-5d85-4b55-849b-6c02315b9e6e",
+  "connector-key": "uipath-atlassian-jira",
+  "object-name": "issue",
+  "input-values": { "bodyParameters": { "fields.project.key": "PROJ", "fields.issuetype.id": "10004" } },
+  "filter": {
+    "groupOperator": "And",
+    "filters": [
+      { "id": "Status", "operator": "Equals", "value": { "isLiteral": true, "rawString": "\"Open\"", "value": "Open" }, "uiId": null }
+    ]
+  }
+}
+```
+
+`input-values` and `filter` are real JSON objects, not strings — Phase 2 reads them back verbatim into `--input-details` ([connector-activity/impl-json.md § Step 1](plugins/tasks/connector-activity/impl-json.md)). Also record the selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.
 
 <!-- END: connector-integration.md -->

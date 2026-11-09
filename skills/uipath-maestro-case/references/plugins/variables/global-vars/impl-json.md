@@ -34,7 +34,7 @@ return allVariables.find(v => v.id === variableId);
 
 A **companion** is the paired `inputOutputs[]` entry whose `id` equals the lookup name. It is required for trigger outputs without `id`, load-bearing for Out-args with a `Default`, and optional when a task output already self-declares.
 
-### Validator contract
+### Validator contract — `validate` is stricter than the resolver
 
 `uip maestro case validate` is stricter/different from the runtime resolver:
 
@@ -68,7 +68,7 @@ A normal `field -> caseVar` owns an independently minted source-side `id` althou
 
 For equal-name reassignment, when `baseId == target case-variable id`, exclude exactly the matching root companion (`variables.inputOutputs[]`, `id == target`, `elementId == "root"`) from source allocation. Exclude no task, trigger, rule, argument, or unrelated root entry. The first `greeting -> greeting` may use `id == var == originalVar == "greeting"`; with another owner use `id: "greeting2"`, `originalVar: "greeting2"`, `target: "=greeting2"`, while `var` and `value` remain `"greeting"`. Never suffix root companion or pointer `var`. `originalVar` marks reassignment so `mutateRootVariables` retains the companion.
 
-### Pool composition
+### Pool composition (what to scan)
 
 Scan every current `var`/`id` in `caseplan.case` globally:
 
@@ -107,7 +107,7 @@ When re-minting converted plans, set `var` to the name in the same edit replacin
 
 Both loops run at Phase 3 Step 6.2 and write the same root arrays.
 
-### Loop A — Trigger spec output dispatch
+### Loop A — Trigger spec output dispatch (for trigger-sourced rows)
 
 For each cache trigger, resolve `triggerId` from `id-map.json[T<N>].id`, find its node, then process each `caseShape.outputs[]`:
 
@@ -139,11 +139,13 @@ root.inputOutputs[]: [
 
 Six entries total: 3 trigger outputs (no id) + 3 companions (with id — resolution surface). The auto-emit companions carry the full body schemas so the FE picker can navigate sub-fields. The Pattern C companion has no body (its type is the primitive `string`).
 
-For spec `type: "file"` or `"octet-stream"` (normalize to `"file"`), add `target: "=orchestrator.JobAttachments"` to trigger output and `body: <FILE_TYPE_JSON_SCHEMA verbatim>` to companion; see [`## file type`](#file-type).
+**File-type carve-out:** when the spec output's `type` is `"file"` (or `"octet-stream"` — normalize to `"file"`), both rows above additionally require:
+- `triggerNode.outputs[]` entry: add `target: "=orchestrator.JobAttachments"` — runtime persists attachment bytes via this expression. Without it, the JobAttachment record is never written.
+- `root.inputOutputs[]` companion: add `body: <FILE_TYPE_JSON_SCHEMA verbatim>` (see [`## file type`](#file-type)). Pattern C companions normally have no body, but file-type companions MUST carry the FILE_TYPE_JSON_SCHEMA so the FE picker can navigate `=vars.<id>.FullName` sub-fields and activate the JobAttachment widget.
 
 `Category=In` is never dispatched by spec-name matching. `Category=Variable` with `sourceTrigger(s)` is Loop A; without it is Loop B.
 
-### Loop B — non-extraction rows
+### Loop B — non-extraction rows (In / Out / pure-state Variable)
 
 Process every `Category=In` (any trigger, single or blank), `Category=Out`, and triggerless `Category=Variable`:
 
@@ -170,34 +172,107 @@ A non-primitive default is silently deleted by the caseplan→BPMN converter, wh
 
 ### Trigger-sourced Variable (Pattern C)
 
-For each `sourceTriggers` trigger, write a trigger output with `{name: <last sourceField segment>, var: <sdd-name>, source: "=<sourceField>", type: <sdd type>, value: <sdd-name>}` and no `id`/`elementId`; write one root companion `{id/name: <sdd-name>, type: <type>, elementId: "root", custom: true}`. Multi-trigger rows write one trigger entry per trigger and one shared companion; each `name` is that trigger's last path segment. One trigger fires per lifecycle; last writer wins.
+SDD row: `Category=Variable`, `sourceTriggers: T02`, `sourceFields: response.subject`.
+
+```json
+// triggerNode.data.inputs.outputs[]  (the trigger plugin's caseplan node — written by THIS plugin under B)
+{ "name": "subject", "var": "calendarTitle",
+  "source": "=response.subject", "type": "string", "value": "calendarTitle" }
+// No `id`, no `elementId` — FE auto-emit convention. `name` is the last segment of sourceField path.
+
+// variables.inputOutputs[]
+{ "id": "calendarTitle", "name": "calendarTitle", "type": "string",
+  "elementId": "root", "custom": true }
+```
+
+`elementId: "root"` on the root companion places the variable under FE's Case Variables panel (correct semantics — it's case state, not a formal trigger argument). `custom: true` marks it user-declared.
+
+### Trigger-sourced Variable — multi-trigger
+
+SDD row: `Category=Variable`, `sourceTriggers: T02, T03`, `sourceFields: T02: response.user; T03: response.initiator`.
+
+Write TWO `triggerNode.outputs[]` entries (one per trigger node) + ONE shared `root.inputOutputs[]` companion:
+
+```json
+// On trigger_T02's node:
+{ "name": "user", "var": "caseStarter",
+  "source": "=response.user", "type": "string", "value": "caseStarter" }
+
+// On trigger_T03's node:
+{ "name": "initiator", "var": "caseStarter",
+  "source": "=response.initiator", "type": "string", "value": "caseStarter" }
+// No `id`, no `elementId` on either entry. `name` reflects each trigger's spec sub-field segment.
+
+// root.inputOutputs[] — single shared companion
+{ "id": "caseStarter", "name": "caseStarter", "type": "string", "elementId": "root", "custom": true }
+```
+
+Resolver doesn't care that two trigger entries write to the same `vars.caseStarter` slot — last writer wins, and only one trigger fires per case lifecycle. The companion is the canonical declaration.
 
 ### In argument
 
-`Category=In` has empty `sourceFields`, works for manual/timer/event triggers, and binds to the single `sourceTriggers` T-number or primary T02 when blank. Emit exactly:
+SDD row: `Category=In`, optional `sourceTriggers: T<N>` (a single T-number selecting the bound trigger; blank → primary trigger T02). `sourceFields` is empty for In rows. **Works on any trigger type — manual, timer, or event.** For event triggers, the bridge mechanics are identical; the formal slot's `default` propagates to the companion at trigger fire (no caller-override path since events have no API caller, but the structural emission is the same).
+
+**Trigger resolution.** `<triggerId>` in the entries below = `id-map.json[T<N>].id` for the trigger named by `sourceTriggers`; blank `sourceTriggers` → `id-map["T02"].id` (the primary trigger). Entries 1 (formal slot) and 2 (companion) carry it as `elementId`; entry 3 (bridge) is written on that same trigger node's `data.inputs.outputs[]`. `sourceFields` is not consulted for In.
+
+> **Manual bound trigger:** a manual trigger is spelled `data.inputs.serviceType: "None"` — `"None"` is a named arm in the product's own `getTriggerType` switch, and 503 of 542 corpus trigger nodes carry it (see [`../../triggers/manual/impl-json.md`](../../triggers/manual/impl-json.md)). Older plans may omit `inputs` entirely; both forms read as manual, so **never assume `data.inputs` is absent**. When the bound trigger is manual (the common case — the primary trigger is usually manual), append the bridge to the existing `data.inputs.outputs`, creating `outputs: []` on the node's existing `data.inputs` if that array is missing. Do not change or remove a `serviceType: "None"` that is already there.
+
+Three entries — formal slot + companion + bridge:
 
 ```json
-{ "id": "v<random8>", "name": "applicantName", "type": "string", "default": "", "elementId": "<triggerId>" }
-{ "id": "applicantName", "name": "applicantName", "type": "string", "elementId": "<triggerId>" }
+// 1. root.inputs[]  — formal-arg slot (caller writes here at fire, OR initialized via default for event triggers)
+{ "id": "v<random8>", "name": "applicantName", "type": "string",
+  "default": "", "elementId": "<triggerId>" }
+
+// 2. root.inputOutputs[]  — companion (readable as =vars.applicantName)
+{ "id": "applicantName", "name": "applicantName", "type": "string",
+  "elementId": "<triggerId>" }
+
+// 3. triggerNode.data.inputs.outputs[]  — bridge from formal slot to companion
 { "name": "applicantName", "type": "string", "source": "=vars.v<random8>", "var": "applicantName" }
+// No `id`, no `elementId` on bridge — FE convention. `type` matches the SDD row's Type column.
 ```
 
-The third entry is on that trigger's `data.inputs.outputs[]`; it has no `id`/`elementId`, and MUST use `source`, never `value`. The formal `id`, not the name, is the source. Do not emit Pattern C `{value}` shape. The bridge copies formal slot to readable companion; without it `=vars.<name>` is undefined although `validate` may return `Valid`.
+> **An In-arg bridge carries `source`, never `value`.** The two Pattern C shapes immediately above this section (§ Trigger-sourced Variable, § Trigger-sourced Variable — multi-trigger) carry `value: "<companionName>"`; an In-arg bridge MUST NOT. Do not merge the two shapes. The In-arg bridge's only copy instruction is `source: "=vars.<formal-slot-id>"` — the formal slot's `id` from entry 1, not the argument's name. Emitting `{name, var, type, value}` with no `source` produces a bridge that copies nothing: `uip maestro case validate` still returns `Valid`, and `=vars.<name>` is undefined at runtime. Step 12 Check 17 is the backstop.
 
-A manual trigger is `data.inputs.serviceType: "None"`; older plans may omit `inputs`, but never assume it is absent. Preserve existing `"None"`; append to existing `data.inputs.outputs`, creating that array on existing `data.inputs` if missing. If the bound trigger is a placeholder, emit formal and companion only; do not create bridge or `data.inputs.outputs`.
+**Why three entries instead of one?** The runtime resolver (`VariablesService.findVariableByVariableId`) is a single string-equality find on `Variable.id`. The caller (or trigger fire for event triggers) writes the formal-arg's value into `vars.v<random8>` at trigger fire (because `inputs[].id` is `v<random8>`); downstream code wants to read it as `=vars.applicantName` (because that's the readable name). There is no automatic forwarding between the two slots — the bridge entry on `triggerNode.outputs[]` executes the copy at fire time: `source: "=vars.v<random8>"` reads the formal slot, `var: "applicantName"` writes to the companion's slot. Without the bridge, `=vars.applicantName` resolves to undefined. The companion's `inputOutputs[]` entry alone declares the *name* in the namespace, but holds no *value* because nobody writes to it.
 
-For `type === "file"`, formal and companion carry `body: <FILE_TYPE_JSON_SCHEMA>`; bridge is unchanged and has no `target`; formal `default` MUST stay `""` (FE rejects any other value). See [`## file type`](#file-type).
+> **Placeholder trigger interaction:** if the **bound trigger** (the one named by `sourceTriggers`, or the primary trigger when blank) is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.inputs.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 7) after the trigger resolves to get the working bridge.
+
+**File-type In-arg carve-out:** when `type === "file"`:
+- Formal slot (entry 1) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` (see [`## file type`](#file-type)) — drives entry-points.json `$ref: "#/definitions/job-attachment"` at packaging
+- Companion (entry 2) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` — drives FE picker sub-field navigation (`=vars.<id>.FullName`)
+- Bridge (entry 3) unchanged — no `target` on the bridge; the runtime caller has already uploaded the bytes via JobAttachments API before case-start
+- `default` MUST stay `""` — FE rejects any other value for file Variables (`InputOutputArgumentsDialog.tsx:148`)
 
 ### Out argument
 
-Always emit the companion, regardless of Default; downstream `collapseArgumentCompanions` may collapse it. Emit:
+SDD row: `Category=Out`. **Companion is ALWAYS emitted at write time** (per FE convention — `UnifiedBuildCaseDataManager.tsx:298-324` always writes the companion when an Out-arg is created). The BPMN packager's `collapseArgumentCompanions` (`CaseManagementRootConverterUtils.ts:211-237`) may collapse the companion at packaging time, but that's downstream of the skill.
+
+| SDD `Default` | Producer in the SDD (via task's `->` Outputs row or `=` Updates row) | Runtime behavior |
+|---|---|---|
+| empty | yes | Producer task fires → writes to `vars.<name>` → caller gets that value at case end. If producer fails to fire, caller gets `""` (the companion's empty default). |
+| present | yes | Producer fires → overwrites companion default. If producer skipped, companion default returned. |
+| present | no | Companion default always returned at case end. |
+| empty | no | **Pure orphan** — Out-arg producer-presence validator AskUserQuestion at end of Phase 3 (see [`io-binding/impl-json.md` § Check 2](../io-binding/impl-json.md)). Author picks: (a) add producer, (b) add Default, (c) recategorize, (d) continue with best-effort emit. |
+
+#### Shape
+
+Same shape regardless of Default presence (two entries):
 
 ```json
-{ "id": "v<random8>", "name": "finalDecision", "type": "string", "var": "finalDecision" }
-{ "id": "finalDecision", "name": "finalDecision", "type": "string", "default": "<value or empty string>", "elementId": "root" }
+// 1. variables.outputs[]  — formal Out-arg pointer
+{ "id": "v<random8>", "name": "finalDecision", "type": "string",
+  "var": "finalDecision" }
+// var is a POINTER — at case end, engine reads vars.finalDecision via this pointer
+
+// 2. variables.inputOutputs[]  — companion (always written)
+{ "id": "finalDecision", "name": "finalDecision", "type": "string",
+  "default": "<value or empty string>", "elementId": "root" }
+// no custom — argument companions are NOT custom per FE convention
 ```
 
-No `custom` on argument companion. A producer that fires overwrites the default; if skipped, default is returned. Empty default with no producer is a pure orphan: at end of Phase 3 the io-binding validator asks the user to (a) add producer, (b) add Default, (c) recategorize, or (d) continue best-effort; see [`io-binding/impl-json.md` § Check 2](../io-binding/impl-json.md).
+**Default + producer precedence at runtime:** if a producer task is declared AND fires, its output value overwrites the companion's default in `vars.<name>`. If the producer task does NOT fire (e.g., skipped by stage entry condition, or stage exited without running it), the companion's default is what gets returned at case end. The runtime resolver does not see "default vs producer" — it sees a single slot whose value is whatever was last written to it; the design-time companion default is the initial value at case start.
 
 ### InOut argument
 
@@ -289,7 +364,16 @@ Normalize `"octet-stream"` → `"file"` before emitting. The FE's `isFileType` a
 
 ## date / datetime types
 
-Primitive: no `body` or `target`; FE uses DatePicker/DateTimePicker. Defaults remain strings, e.g. `""` or `"=js:new Date().toISOString()"`.
+Primitive — no body, no target. FE renders DatePicker / DateTimePicker based on the type.
+
+```json
+{ "id": "submittedOn", "name": "submittedOn", "type": "date",
+  // Case-root Variable only. An In argument's companion keeps its trigger elementId and carries neither default nor custom (Loop B table).
+  "default": "", "custom": true, "elementId": "root" }
+
+{ "id": "lastSeen", "name": "lastSeen", "type": "datetime",
+  "default": "=js:new Date().toISOString()", "custom": true, "elementId": "root" }
+```
 
 ## Expression Syntax
 

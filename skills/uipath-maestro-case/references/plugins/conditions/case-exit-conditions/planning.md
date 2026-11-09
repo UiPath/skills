@@ -4,7 +4,7 @@ Conditions controlling when the entire case completes or exits without completin
 
 ## When to Use
 
-Use this plugin when sdd.md literally uses “case exit condition” or a close variant: “case exit conditions”, “case completion condition”, or “case close condition”. For stage-level conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md); for task-level conditions, use [task-entry-conditions](../task-entry-conditions/planning.md).
+Use this plugin when sdd.md literally uses "case exit condition" or a close variant: "case exit conditions", "case completion condition", or "case close condition". For stage-level conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md); for task-level conditions, use [task-entry-conditions](../task-entry-conditions/planning.md).
 
 ## No omission — one caseplan element per sdd.md case-exit row
 
@@ -29,7 +29,7 @@ Allowed `ruleType` values depend on `marks-case-complete`:
 
 ## Preferred Pattern
 
-Normally define one completion condition: `required-stages-completed` + `marks-case-complete: true`; each stage’s `isRequired` flag (from [`plugins/stages/`](../../stages/planning.md)) determines which stages count.
+Normally define one completion condition: `required-stages-completed` + `marks-case-complete: true`; each stage's `isRequired` flag (from [`plugins/stages/`](../../stages/planning.md)) determines which stages count.
 
 At least one root `caseExitRules[]` entry must have `marksCaseComplete: true`, or the case cannot close. Stage completion is separate: a stage exit with `marksStageComplete: true` advances the case but does not complete it. Add `marks-case-complete: false` only for explicit non-completing exits such as rejection, withdrawal, or cancellation; they do not replace the positive completion rule.
 

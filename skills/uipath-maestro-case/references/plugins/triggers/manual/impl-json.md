@@ -6,7 +6,9 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../
 
 ## Purpose
 
-A manual trigger uses `data.inputs.serviceType: "None"`. `getTriggerType` maps `"Intsvc.TimerTrigger"` to timer and `"None"` to manual; any other spelling uses the `default` connector arm without error. Legal tokens are `"None"`, `"Intsvc.EventTrigger"`, and lowercase `"timer"`.
+> **A manual trigger is spelled `data.inputs.serviceType: "None"`.** The absence of a real service type is what makes it manual, and `"None"` is how that absence is written — it is a named arm in the product's own `getTriggerType` switch (`"Intsvc.TimerTrigger"` → timer, `"None"` → manual), not a tolerated placeholder, and it has survived unchanged through every schema migration since v23. Measured across 542 trigger nodes in the artifact corpus, 503 carry it.
+>
+> **Any other spelling silently becomes a connector trigger.** That switch's `default` arm is `connector`, so a near-miss — PascalCase `Timer`, an invented token, the document's own wording — is classified as a connector with no error raised. It then receives neither a timer nor a message event definition, and the wrong word is baked into a runtime variable. Design-time clean, runtime wrong: nothing on any profile reports it. The three legal tokens are `"None"`, `"Intsvc.EventTrigger"`, and lowercase `"timer"`.
 
 Count existing Trigger nodes in `schema.nodes`. Append the selected node to `caseplan.case` and its matching entry to sibling `entry-points.json.entryPoints` as an atomic pair; the orchestrator discovers runtime entry points there.
 
@@ -27,21 +29,34 @@ Compute position statefully below; do not accept it from the user.
 
 ## ID generation
 
-Before writing, count:
+- **Trigger node ID** — count existing Trigger nodes in `schema.nodes` **before** writing and branch:
+
+  ```text
+  existingTriggers = schema.nodes.filter(n => n.type === "uipath.case.trigger")
+  ```
+
+  - First-trigger path (zero existing): literal `trigger_1` (no randomness).
+  - Secondary path (one or more existing): `trigger_` + 6 random chars from `[A-Za-z0-9]`. Algorithm per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation).
+
+  Never mint a random id for the first trigger in a fresh caseplan — `trigger_1` is a fixed literal, same as the [timer](../timer/impl-json.md#id-generation) and [event](../event/impl-json.md) plugins.
+- **Entry-point `uniqueId`** — `crypto.randomUUID()`. Generate inline:
+
+  ```bash
+  node -e "console.log(crypto.randomUUID())"
+  ```
+
+Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — e.g., the global-vars plugin resolves this trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or when it is the primary trigger and the In-arg leaves `sourceTriggers` blank).
+
+## Default-name fallback
+
+If the SDD row does not supply a display name:
 
 ```text
 existingTriggers = schema.nodes.filter(n => n.type === "uipath.case.trigger")
+displayName = `Trigger ${existingTriggers.length + 1}`
 ```
 
-Use literal `trigger_1` for zero existing triggers; otherwise use `trigger_` plus 6 random chars from `[A-Za-z0-9]`, using [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation). Never randomize the first trigger; `trigger_1` matches the [timer](../timer/impl-json.md#id-generation) and [event](../event/impl-json.md) plugins.
-
-If no display name is supplied, use `Trigger ${existingTriggers.length + 1}` (first trigger: `"Trigger 1"`; first secondary: `"Trigger 2"`). Generate the entry-point `uniqueId` inline:
-
-```bash
-node -e "console.log(crypto.randomUUID())"
-```
-
-Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference, including global-vars resolution of this trigger's node id for an In-argument whose `sourceTriggers` names its T-number or leaves `sourceTriggers` blank for the primary trigger.
+With `trigger_1` pre-seeded, the first secondary trigger without a display name becomes `"Trigger 2"`, the second `"Trigger 3"`, etc.
 
 ## Recipe — `caseplan.case` (append to `schema.nodes`)
 

@@ -1,41 +1,12 @@
 # I/O Binding — Planning
 
-Trust the SDD and emit inputs/outputs exactly as declared. Every SDD Outputs row carries `->` or `=`; preserve its operator and both operands in the caseplan. Bare outputs come only from resolved-schema discovery, never from an SDD row.
+Trust the SDD. Emit inputs/outputs exactly as declared. Every SDD Outputs row carries `->` or `=`; preserve that operator and both operands into the caseplan. Bare outputs come only from resolved-schema discovery, never from an SDD row.
 
-## Input/Output Notation
+The **canonical binding form** below (`<field-path> -> <case-variable>`, `<case-variable> = <expression>`, `<Field> <- <Binding>`) is the normalized reading of an SDD table row that [impl-json.md](impl-json.md) consumes when it writes `data.inputs[]` / `data.outputs[]`. It is a reasoning form, not a file: never write it to disk as an intermediate plan.
 
-Use only these canonical reasoning forms—not intermediate-plan files: `<field-path> -> <case-variable>`, `<case-variable> = <expression>`, and `<Field> <- <Binding>`. Normalize SDD rows for [impl-json.md](impl-json.md), which writes `data.inputs[]` / `data.outputs[]`.
+## SDD Outputs table to caseplan projection (mandatory)
 
-For the full notation and expression prefixes, see [bindings-and-expressions.md](../../../bindings-and-expressions.md). Quick reference:
-
-| Source | Notation | Example |
-|---|---|---|
-| Cross-task output | `input <- "Stage"."Task".output` | `emails <- "Triage"."Fetch Inbox".emails` |
-| Global variable | `input = "=vars.<id>"` | `caseId = "=vars.caseId"` |
-| Metadata | `input = "=metadata.<field>"` | `caseRef = "=metadata.ExternalId"` |
-| Binding | `input = "=bindings.<id>"` | `connectionId = "=bindings.bA1B2C3D4"` |
-| Literal | `input = "<value>"` | `maxResults = "50"` |
-
-> **Note:** task INPUT bindings still use `<-` for cross-task references (`input <- "Stage"."Task".output`) — this is the planner-side notation for "this input value comes from another task's output." Task OUTPUT bindings use `->` for extract (`Field -> caseVar`) and `=` for set/compute/copy. Different directional conventions because inputs read from somewhere; outputs write to somewhere.
-
-## Canonical output list
-
-Record outputs on each task entry as one item per row. This is the common output-list grammar for every resolved task type. Project SDD-declared rows using the table in [§ SDD Outputs table to caseplan projection](#sdd-outputs-table-to-caseplan-projection-mandatory), then preserve each canonical item unchanged; append only genuinely additional schema-discovered fields as bare items:
-
-```markdown
-- outputs:
-  - APIOutput1
-  - greeting -> greeting
-  - Error.Message -> errorMessage
-  - literalResult = "literal-assigned"
-  - copiedResult = =vars.renamedResult
-```
-
-Do not reduce this to a comma-separated list of names: that representation loses the operator and destination required by implementation.
-
-### SDD Outputs table to caseplan projection (mandatory)
-
-The SDD Outputs table has `Field`, `Type`, and `Binding / Value`; project each row exactly once:
+The SDD Outputs table has separate `Field`, `Type`, and `Binding / Value` columns; the canonical form is one item per row. Project each SDD row exactly once:
 
 | SDD `Field` | SDD `Binding / Value` | Canonical item |
 |---|---|---|
@@ -43,7 +14,7 @@ The SDD Outputs table has `Field`, `Type`, and `Binding / Value`; project each r
 | `—` or blank | `literalResult = "literal-assigned"` | `literalResult = "literal-assigned"` |
 | `—` or blank | `copiedResult = =vars.renamedResult` | `copiedResult = =vars.renamedResult` |
 
-For `=` rows with blank or `—` `Field`, copy the complete `Binding / Value` cell unchanged; do not prepend `Field` or another `=`. For `->` rows, concatenate non-empty `Field` and `Binding / Value` once. Reject a non-empty `Field` with blank or `—` Binding and use AskUserQuestion. A bare output such as `APIOutput1` is schema-discovered, not SDD-authored.
+Treat `—` and blank `Field` cells on `=` rows as presentation-only placeholders, never as operands or operators. The `Binding / Value` cell already contains the complete assignment; copy that cell unchanged and do not prepend the Field or another `=`. For a `->` row, concatenate the non-empty Field and `Binding / Value` cells once. A non-empty Field with a blank or `—` Binding is not a third SDD form; reject it as ambiguous and use AskUserQuestion.
 
 ```markdown
 <!-- INVALID: leaked the SDD Field placeholder and invented an extra operator -->
@@ -56,17 +27,19 @@ For `=` rows with blank or `—` `Field`, copy the complete `Binding / Value` ce
 - literalResult = "literal-assigned"
 ```
 
-Before writing `data.outputs[]`, reject SDD Outputs rows lacking `->` or `=`, and projected items whose first token is `—`, `->`, or `=`. Every SDD-projected item must match `<field-path> -> <case-variable>` or `<case-variable> = <expression>`; reserve `<top-level-field>` for schema-discovered items.
+Before writing the task's `data.outputs[]`, reject any SDD Outputs row without `->` or `=`, and reject any projected output item whose first token is `—`, `->`, or `=`. Every SDD-projected item must match `<field-path> -> <case-variable>` or `<case-variable> = <expression>`; `<top-level-field>` is reserved for schema-discovered items.
 
-### SDD Inputs table to caseplan projection (mandatory)
+## SDD Inputs table to caseplan projection (mandatory)
 
-The SDD Inputs table has `Field`, `Type`, and `Binding`; drop `Type`. Project each row as `<Field> <- <Binding>` or `<Field> = <Binding>`, using the Binding-cell operator per [Input/Output Notation](#inputoutput-notation):
+The SDD Inputs table has separate `Field`, `Type`, and `Binding` columns, exactly like the Outputs table above — but the canonical input item drops the `Type` column entirely. Project each SDD Inputs row to `<Field> <- <Binding>` or `<Field> = <Binding>` (operator comes from the Binding cell itself, per [Input/Output Notation](#inputoutput-notation) below); never carry the `Type` column through to the caseplan:
 
-- `APIInput1`, `string`, `"literal-seed"` → `APIInput1 = "literal-seed"`
-- `APIInput1`, `string`, `=vars.caseInput` → `APIInput1 = =vars.caseInput`
-- `APIInput1`, `string`, `<- "Binding Matrix"."Echo literal".APIOutput1` → `APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1`
+| SDD `Field` | SDD `Type` | SDD `Binding` | Canonical item |
+|---|---|---|---|
+| `APIInput1` | `string` | `"literal-seed"` | `APIInput1 = "literal-seed"` |
+| `APIInput1` | `string` | `=vars.caseInput` | `APIInput1 = =vars.caseInput` |
+| `APIInput1` | `string` | `<- "Binding Matrix"."Echo literal".APIOutput1` | `APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1` |
 
-Binding cells are Markdown code spans (`` `=vars.caseInput` ``, `` `<- "Stage"."Task".out` ``): unwrap them and copy their contents verbatim. Never re-wrap them, add quotes, use `:`, or retain backticks; preserve existing quotes. Apply the same rule to `input.value` in `caseplan.case`; a backtick or quote absent from the SDD cell must not reach JSON.
+**SDD `Binding` cells are Markdown code spans — unwrap them.** The SDD template wraps every Inputs `Binding` cell in backticks (`` `=vars.caseInput` ``, `` `<- "Stage"."Task".out` ``). Those backticks are presentation, not value. Strip them and copy the cell contents verbatim. Never re-wrap the projected value in backticks, single quotes, or double quotes, and never separate the input name from its value with `:` — the separator IS the operator (`<-` or `=`). A cell that already carries its own quotes (`` `"literal-seed"` ``) keeps exactly those and gains no others.
 
 ```markdown
 <!-- INVALID: leaked the SDD Type column as a literal pipe segment -->
@@ -82,7 +55,7 @@ Binding cells are Markdown code spans (`` `=vars.caseInput` ``, `` `<- "Stage"."
 - APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1
 ```
 
-Before writing `data.inputs[]`, reject values wrapped in backticks or an unprovided quote pair, and items separating name and value with `:` rather than `<-` or `=`. Do not carry the SDD Type column into the caseplan.
+Before writing the task's `data.inputs[]`, reject any projected input item that wraps its value in backticks or in a quote pair the SDD `Binding` cell did not itself contain, and any item whose name and value are separated by `:` rather than `<-` or `=`. The same delimiter-strip rule governs the value that reaches `input.value` in `caseplan.case`: a backtick or quote the SDD cell did not contain must never survive into the JSON.
 
 ## Discovering Input/Output Names
 
@@ -121,6 +94,35 @@ Before writing `data.inputs[]`, reject values wrapped in backticks or an unprovi
 
 Do not fabricate names not in the SDD or `tasks describe`. Validation of variable existence happens at planning time (Phase 1) for `=` rows (target must exist in Case Variables); at implementation time (Phase 3) for `->` rows (deferred to io-binding validator).
 
+## Input/Output Notation
+
+For the full notation and expression prefixes, see [bindings-and-expressions.md](../../../bindings-and-expressions.md). Quick reference:
+
+| Source | Notation | Example |
+|---|---|---|
+| Cross-task output | `input <- "Stage"."Task".output` | `emails <- "Triage"."Fetch Inbox".emails` |
+| Global variable | `input = "=vars.<id>"` | `caseId = "=vars.caseId"` |
+| Metadata | `input = "=metadata.<field>"` | `caseRef = "=metadata.ExternalId"` |
+| Binding | `input = "=bindings.<id>"` | `connectionId = "=bindings.bA1B2C3D4"` |
+| Literal | `input = "<value>"` | `maxResults = "50"` |
+
+> **Note:** task INPUT bindings still use `<-` for cross-task references (`input <- "Stage"."Task".output`) — this is the planner-side notation for "this input value comes from another task's output." Task OUTPUT bindings use `->` for extract (`Field -> caseVar`) and `=` for set/compute/copy. Different directional conventions because inputs read from somewhere; outputs write to somewhere.
+
+### Canonical output list
+
+Record outputs on each task entry as one item per row. This is the common output-list grammar for every resolved task type. Project SDD-declared rows using the table above, then preserve each canonical item unchanged; append only genuinely additional schema-discovered fields as bare items:
+
+```markdown
+- outputs:
+  - APIOutput1
+  - greeting -> greeting
+  - Error.Message -> errorMessage
+  - literalResult = "literal-assigned"
+  - copiedResult = =vars.renamedResult
+```
+
+Do not reduce this to a comma-separated list of names: that representation loses the operator and destination required by implementation.
+
 > **The SDD carries natural form; impl applies the per-sink canonical wrap.** Values in the canonical form use the natural prefix notation shown above — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<-`. The implementation step rewrites each value to its canonical sink form when constructing `caseplan.case` (e.g., `=js:(vars.X)` for connector body fields, `=js:metadata.X` for `=metadata` references in any sink that runs the JS evaluator). Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## I/O table validation rules
@@ -136,7 +138,7 @@ Apply at planning time (Phase 1). The first two rules cover Inputs; the rest cov
 | `->` row missing left-side Field | ERROR | `->` requires a schema field name on the left. |
 | `=` row has a non-empty Field column | ERROR | `=` rows have `—` (no field), since the source is the right-side expression, not a schema field. |
 | SDD row has a non-empty Field and blank / `—` Binding | ERROR | Bare output is not SDD syntax. AskUserQuestion; schema discovery may independently add the field as a bare auto-mint output. |
-| A projected output item starts with `—`, `->`, or `=` | ERROR | An SDD table placeholder or operator leaked into the left operand. Re-project the row using the mandatory table in [§ SDD Outputs table to caseplan projection](#sdd-outputs-table-to-caseplan-projection-mandatory). |
+| A projected output item starts with `—`, `->`, or `=` | ERROR | An SDD table placeholder or operator leaked into the left operand. Re-project the row using the mandatory table above. |
 | Per task: same target case variable appears in multiple Outputs rows | ERROR | No double-binding; one row per target var per task. Last-writer-wins is a runtime footgun. |
 | Any SDD Outputs row differs from its projected item in operator or operand | ERROR | The projection is lossy. Restore the exact SDD row before approval; this includes equal-name `field -> field`. |
 

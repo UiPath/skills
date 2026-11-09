@@ -59,13 +59,13 @@ Outside the fast path, do not inspect `~/.uip/case-resources/` first to decide w
 
 ## Step 2 — Locate and parse the design document
 
-Accept the user’s `sdd.md` path or ask for it. If its directory has multiple `.md` files, use **AskUserQuestion** with candidates plus “Something else”.
+Accept the user's `sdd.md` path or ask for it. If its directory has multiple `.md` files, use **AskUserQuestion** with candidates plus "Something else".
 
-If the path has no `sdd.md`, the skill hands design to the `uipath-planner` Case Design Lane before this step (SKILL.md Rule 16 + § Design handoff). Phase 1 starts after Case Review’s Build answer and lane-written `sdd.md`; use the in-memory model that rendered it directly (Rule 2), not a re-read. Case Review is approval context, not a parsing source.
+If the path has no `sdd.md`, the skill hands design to the `uipath-planner` Case Design Lane before this step (SKILL.md Rule 16 + § Design handoff). Phase 1 starts after Case Review's Build answer and lane-written `sdd.md`; use the in-memory model that rendered it directly (Rule 2), not a re-read. Case Review is approval context, not a parsing source.
 
 `sdd.md` is the sole required input and describes stages, tasks, conditions, SLA, component types, persona information, and registry search keys. Portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow/function/business-rule, Action App title in `HITL Implementation` for action, and `Child Case` for case-management. `Resource Identity` or `Action App ID` states whether it was previously resolved. The SDD has no edges; transitions are stage entry/exit conditions (Rule 21). Trust it as written; do not validate or gap-fill it.
 
-> **Cache-state distinction — mandatory.** Step 1 refreshes discovery state but does not validate/override the SDD. Before a successful pull, absent cache/index is a failed refresh precondition, not evidence of unavailability. After pull, search the SDD’s concrete portable name; only an empty exact-name set or still-absent index is a genuine empty lookup. `<UNRESOLVED>` identity/folder means name-only discovery, not permission to skip it.
+> **Cache-state distinction — mandatory.** Step 1 refreshes discovery state but does not validate/override the SDD. Before a successful pull, absent cache/index is a failed refresh precondition, not evidence of unavailability. After pull, search the SDD's concrete portable name; only an empty exact-name set or still-absent index is a genuine empty lookup. `<UNRESOLVED>` identity/folder means name-only discovery, not permission to skip it.
 >
 > **Design-lane carryover.** `tasks/registry-resolved.json` is an optional performance cache/audit artifact, never resource intent. In the same session, seed it verbatim from the planner ledger (Rule 10); Step 1 still runs first. Associate entries by exact `stage` + `task`; reuse only if: (1) `taskType` matches; (2) `cacheFile` is compatible under [registry-discovery.md](registry-discovery.md), with `action` and `case-management` requiring their primary cache exactly; (3) `searchQuery` and selected canonical name equal the type-specific portable name; and (4) concrete SDD identity and folder equal selected identity and exact folder.
 >
@@ -137,7 +137,7 @@ Otherwise, continue with the normal resolution path:
 | On task entry | `plugins/conditions/task-entry-conditions/` |
 | On case exit | `plugins/conditions/case-exit-conditions/` |
 
-> **Connector-bound conditions.** Any scope may have a `wait-for-connector` WHEN rule binding an Integration Service connector event. Use the same pipeline as task-class `wait-for-connector` (TypeCache + `case spec --type trigger` + reference-resolution). Collect from the SDD, in the condition’s `registry-resolved.json` entry, `type-id`, `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`, optional `outputs`, plus `display-name`, `rule-type`, and `condition-expression`. See [`connector-trigger-impl.md § Target: connector-bound condition rule`](connector-trigger-impl.md#target-connector-bound-condition-rule) and each scope plugin’s `planning.md`.
+> **Connector-bound conditions.** Any scope may have a `wait-for-connector` WHEN rule binding an Integration Service connector event. Use the same pipeline as task-class `wait-for-connector` (TypeCache + `case spec --type trigger` + reference-resolution). Collect from the SDD, in the condition's `registry-resolved.json` entry, `type-id`, `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`, optional `outputs`, plus `display-name`, `rule-type`, and `condition-expression`. See [`connector-trigger-impl.md § Target: connector-bound condition rule`](connector-trigger-impl.md#target-connector-bound-condition-rule) and each scope plugin's `planning.md`.
 
 ### 3.4 Unresolved resources
 
@@ -145,14 +145,14 @@ When registry resolution and cache matching fail, or a connection is missing, do
 
 > **Connector catalog unavailable — no gate, no create offer.** Elements of a `typecache-*` index listed in `Data.Errors` with 5xx go directly to step 1 below with reason `connector catalog unavailable (TypeCache <status>)`; see [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx) for served elements.
 >
-> **Missing connection — offer creation first.** A missing/empty IS connection is not immediately unresolved. Offer `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-planning.md § Resolve the connection](connector-trigger-planning.md#2-resolve-the-connection)); only user decline or creation failure yields `<UNRESOLVED>` and the steps below.
->
-> **Missing agent/API workflow/business rule — offer creation first.** At Rule 18 empty-lookup gate, offer an in-solution sibling: spawn a sub-agent invoking `uipath-agents` / `uipath-api-workflow` / `uipath-rules`, then rediscover and bind via `registry --local` ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery); details: [agent/planning.md § Creating an Agent inline](plugins/tasks/agent/planning.md#creating-an-agent-inline), [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline), [business-rule/planning.md § Creating a business rule inline](plugins/tasks/business-rule/planning.md#creating-a-business-rule-inline)). Only decline/skip, build failure, or absent `registry --local` yields `<UNRESOLVED>`. Other kinds (regular RPA process, action, case-management, connectors, agentic process) have no inline-create path.
+> **Missing connection — offer to create first.** A missing/empty IS connection is not immediately "unresolved". The connector pipeline offers to create one via `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-planning.md § Resolve the connection](connector-trigger-planning.md#2-resolve-the-connection)). Only after the user **declines** or creation fails does the connection become `<UNRESOLVED>` and fall through to the steps below.
+
+> **Missing agent, API workflow, or business rule — offer to create first.** A missing `agent` (no `agent-index.json` match), `api-workflow` (no `api-index.json` match), or `business-rule` (no `businessRule-index.json` match) is not immediately "unresolved". At the Rule 18 empty-lookup gate the skill offers to build it as an in-solution sibling — it spawns a sub-agent that invokes `uipath-agents` (agent) / `uipath-api-workflow` (API workflow) / `uipath-rules` (business rule), then rediscovers + binds via `registry --local` ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery); specifics in [agent/planning.md § Creating an Agent inline](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline) / [business-rule/planning.md § Creating a business rule inline](plugins/tasks/business-rule/planning.md#creating-a-business-rule-inline)). Only after the user **declines**/skips, the build fails, or the CLI lacks `registry --local` does it become `<UNRESOLVED>` and fall through to the steps below. Other kinds (regular RPA process, action, case-management, connectors, agentic process) have no inline-create path — they fall straight through.
 
 Otherwise:
 
-1. Record `<UNRESOLVED: <reason>>` in the entry’s `taskTypeId` / `typeId` / `connectionId` slot in `registry-resolved.json`, and set `selected` to `null`.
-2. Carry SDD input mapping into the entry’s `wiringNotes` string array; Phase 2 has no schema to wire against and the completion report reads it. See [placeholder-tasks.md](placeholder-tasks.md).
+1. Record `<UNRESOLVED: <reason>>` in the entry's `taskTypeId` / `typeId` / `connectionId` slot in `registry-resolved.json`, and set `selected` to `null`.
+2. Carry SDD input mapping into the entry's `wiringNotes` string array; Phase 2 has no schema to wire against and the completion report reads it. See [placeholder-tasks.md](placeholder-tasks.md).
 3. Continue; do not halt. The SDD still supplies display name, required, and run-only-once, and Phase 2 still writes the task node and entry conditions.
 
 At execution, unresolved tasks become **placeholder tasks** in `caseplan.case` (display-name + type only, no task-type-id or bindings). The graph remains reviewable; the user attaches resources and bindings externally before runtime. See [placeholder-tasks.md](placeholder-tasks.md).
@@ -163,7 +163,7 @@ Step 3's `sdd resolve` already wrote `tasks/registry-resolved.json` (creating `t
 
 - one entry per case trigger and connector-bound condition from the connector pipeline;
 - `gateDecision` for Rule 18 answers;
-- each genuine miss’s `<UNRESOLVED: <reason>>` identity-slot marker (SKILL.md Rule 10) and §3.4 `wiringNotes`.
+- each genuine miss's `<UNRESOLVED: <reason>>` identity-slot marker (SKILL.md Rule 10) and §3.4 `wiringNotes`.
 
 `rationale` explains selection (for example, `"exact name match in caseManagement folder"`); never use it for verify-text, SDD/spec field translation, or downstream-plugin claims.
 
@@ -184,7 +184,7 @@ Use the same section-batched write discipline the caseplan uses — one Read per
 
 Phase 1 completes when every SDD resource row has a ledger entry: resolved, `<UNRESOLVED: …>`, or created inline at Rule 18. Report resolved / created inline / unresolved counts and proceed directly to Phase 2—no AskUserQuestion approval or sign-off wait.
 
-**Stop-before-build exception:** if explicitly scoped to design or resolution only (for example, “just the SDD”, “resolve resources but don’t build”, or “don’t build the case yet”), stop; report SDD and ledger and do not create a solution or `caseplan`. This is the only auto-proceed halt.
+**Stop-before-build exception:** if explicitly scoped to design or resolution only (for example, "just the SDD", "resolve resources but don't build", or "don't build the case yet"), stop; report SDD and ledger and do not create a solution or `caseplan`. This is the only auto-proceed halt.
 
 At Phase 2 entry, re-read `sdd.md` and `registry-resolved.json` because context may have compacted; see [implementation.md](implementation.md).
 

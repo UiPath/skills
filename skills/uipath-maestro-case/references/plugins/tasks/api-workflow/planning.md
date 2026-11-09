@@ -1,6 +1,6 @@
 # api-workflow task — Planning
 
-An API Workflow (formerly “Coded Workflow”) task invoking a UiPath API workflow by entityKey.
+An API Workflow (formerly "Coded Workflow") task invoking a UiPath API workflow by entityKey.
 
 ## When to Use
 
@@ -11,7 +11,7 @@ Use this plugin when sdd.md labels a task `API_WORKFLOW`, typically a TypeScript
 | Field | Source | Notes |
 |---|---|---|
 | `display-name` | Task `Task Name` | |
-| `name` | Resolved registry entry `name` (not sdd.md `Resolved Resource`) | Binds to `data.name` and supplies `resourceKey` suffix `<folderPath>.<name>`. `Resolved Resource` only searches `folders[0].displayName`. Read the fetched entry’s `name` verbatim; it may be generic `"API Workflow"` or real (for example `"ContractOperationsApi"`). See [§ Registry Resolution](#registry-resolution). |
+| `name` | Resolved registry entry `name` (not sdd.md `Resolved Resource`) | Binds to `data.name` and supplies `resourceKey` suffix `<folderPath>.<name>`. `Resolved Resource` only searches `folders[0].displayName`. Read the fetched entry's `name` verbatim; it may be generic `"API Workflow"` or real (for example `"ContractOperationsApi"`). See [§ Registry Resolution](#registry-resolution). |
 | `folder-path` | Resolved `folders[0].fullyQualifiedName` (not sdd.md `Folder`) | Binds to `data.folderPath`; Orchestrator starts here. `Folder` only seeds lookup and may be parent/truncated. For an inline in-solution sibling use empty `""` (co-located); keep `resourceKey` as `solution_folder.<name>` and never put the `solution_folder` sentinel in `folder-path` (`runtime folder not exist`). See [§ Creating an API workflow inline](#creating-an-api-workflow-inline). |
 | `task-type-id` | Registry resolution | `entityKey` in `api-index.json` |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
@@ -40,17 +40,17 @@ As in [agent/planning.md § No tenant-index match](../agent/planning.md#no-tenan
 
 > **Build it inline first (creatable kind).** At the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback), the user may choose **Create** to build a missing API workflow as an in-solution sibling; see [§ Creating an API workflow inline](#creating-an-api-workflow-inline). This fallback applies only when the user declines/skips Create, build fails, or the CLI lacks `registry --local`.
 
-Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-index.json>`. Omit resolved-schema keys `inputs` / `outputs`; put intended wiring in the entry’s `wiringNotes` string array. Execution creates a placeholder task; see [placeholder-tasks.md](../../../placeholder-tasks.md).
+Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-index.json>`. Omit resolved-schema keys `inputs` / `outputs`; put intended wiring in the entry's `wiringNotes` string array. Execution creates a placeholder task; see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## Creating an API workflow inline
 
 At the [Rule 18 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback), when the user selects **Create**, build an **in-solution sibling**. Cross-cutting capability probe, multi-select, § 1c build-dedup, parallel build, sequential register, and rediscover/verify/bind are in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); kind-agnostic Step 1/1b/3/Failure rules are in [create-inline-common.md](../create-inline-common.md). API-specific deltas follow. The agent analog is [agent/planning.md § Creating an Agent inline](../agent/planning.md#creating-an-agent-inline).
 
-Do not run `uip api-workflow init` yourself. Spawn a sub-agent invoking `uipath-api-workflow`; cross-skill invocation is allowed here, overriding the “never auto-invoke other skills” rule in `SKILL.md § Anti-patterns`. Build only API workflows selected at the gate, never from SDD content alone. API workflows have no build-kind choice: always build JSON-DSL `Workflow.json`.
+Do not run `uip api-workflow init` yourself. Spawn a sub-agent invoking `uipath-api-workflow`; cross-skill invocation is allowed here, overriding the "never auto-invoke other skills" rule in `SKILL.md § Anti-patterns`. Build only API workflows selected at the gate, never from SDD content alone. API workflows have no build-kind choice: always build JSON-DSL `Workflow.json`.
 
 ### Step 1 — Compute the pinned I/O contract
 
-Apply [create-inline-common.md § Step 1](../create-inline-common.md#step-1--compute-the-pinned-io-contract), including the wired-field ladder and § 1c deduped-build identity. Mapping case vocabulary to JSON-Schema I/O is `uipath-api-workflow`’s concern.
+Apply [create-inline-common.md § Step 1](../create-inline-common.md#step-1--compute-the-pinned-io-contract), including the wired-field ladder and § 1c deduped-build identity. Mapping case vocabulary to JSON-Schema I/O is `uipath-api-workflow`'s concern.
 
 ### Step 1b — Compose the Purpose from the SDD
 
@@ -69,33 +69,35 @@ do not ask for approval; do not publish/upload/deploy; do NOT execute the workfl
   Required inputs:   <Step-1 pinned inputs: [{name, type?}, ...]>   (the workflow MUST expose these — the case wires them; honor type when given, else choose the type that best fits the purpose)
   Required outputs:  <Step-1 pinned outputs: [{name, type?}, ...]>  (the workflow MUST expose these; honor type when given)
   Scaffold with `uip api-workflow init <WorkflowName> --skip-solution-registration` run from
-the solution dir (name is positional; registration status `OptedOut` is expected, not an
-error), then author the generated `Workflow.json` in place.
+  the solution dir (name is positional; registration status `OptedOut` is expected, not an
+  error), then author the generated `Workflow.json` in place.
   Declare the pinned I/O consistently in BOTH files: the `Workflow.json` root input/output
-schemas AND `entry-points.json` `entryPoints[0].input` / `.output` — using the FLAT deploy
-shape, agent-identical: `"input": {"type":"object","properties":{...},"required":[...]}`.
-  Do NOT nest Workflow.json’s `schema.document` wrapper inside the entry point (no
-`input.schema.document.properties`). `init` scaffolds the entry-point input/output as null,
-no CLI verb fills them, and `validate` does not flag drift; the caller reads the finished
-contract from `entry-points.json` `entryPoints[0].input.properties`.
-  Back-filling entry-points.json this way is a sanctioned exception to that skill’s rule 19a
-"Then edit Workflow.json only" (and to its "input/output may be null") — populated
-entry-point I/O is part of the deliverable; null is NOT acceptable here.
-  Design everything else — activities, expressions, control flow, connectors, and additional
-I/O — as Purpose needs; the uipath-api-workflow skill owns that choice, including HTTP and
-Integration Service connectors (`uip login` is already active, so its `registry resolve` +
-`stub` work). Remain non-interactive: where rule 16 would stop and ask because a required
-Integration Service activity lacks a connection confirmed by `uip is connections ping`, do
-NOT ship `<REPLACE_WITH_*>` or improvise; return
-{ built:false, error:"<name> needs an unavailable Integration Service connection" } so the
-caller placeholders the task. If you author an Integration Service connector, run
-`uip api-workflow bindings sync --workflow <Workflow.json>` before returning (rule 16),
-even though registration is deferred; it writes the connection to `bindings_v2.json`, which
-the caller’s `uip solution resources refresh` (run post-register) catalogs into the solution.
-  Http-kind (`ImplicitConnection`) and pure-compute workflows need no connection or bindings sync.
-  Do NOT register into the solution — the caller registers via `uip solution projects add`.
+  schemas AND `entry-points.json` `entryPoints[0].input` / `.output` — using the FLAT deploy
+  shape, agent-identical: `"input": {"type":"object","properties":{...},"required":[...]}`.
+  Do NOT nest Workflow.json's `schema.document` wrapper inside the entry point (no
+  `input.schema.document.properties`). `init` scaffolds the entry-point input/output as
+  null, no CLI verb fills them, and `validate` does not flag drift; the caller reads the
+  finished contract from `entry-points.json` `entryPoints[0].input.properties`.
+  Back-filling entry-points.json this way is a sanctioned exception to that skill's
+  rule 19a "Then edit Workflow.json only" (and to its "input/output may be null") —
+  the populated entry-point I/O contract is part of your deliverable; null is NOT
+  acceptable here.
+  Design everything else — activities, expressions, control flow, connectors, and any
+  additional I/O — as the purpose needs; the uipath-api-workflow skill owns that choice,
+  HTTP and Integration Service connectors included (`uip login` is already active, so its
+  `registry resolve` + `stub` work). You are non-interactive: where that skill's rule 16
+  would stop and ask — a required Integration Service activity has no connection that
+  `uip is connections ping` confirms — do NOT ship a `<REPLACE_WITH_*>` placeholder or
+  improvise; return { built:false, error:"<name> needs an unavailable Integration Service
+  connection" } so the caller placeholders the task. If you DO author an Integration Service
+  connector, run `uip api-workflow bindings sync --workflow <Workflow.json>` before returning
+  (rule 16) even though registration is deferred — it writes the connection into
+  `bindings_v2.json`, which the caller's `uip solution resources refresh` (run post-register)
+  then catalogues into the solution. Http-kind (`ImplicitConnection`) and pure-compute
+  workflows need no connection and no bindings sync.
+  Do NOT register into the solution — the caller registers (via `uip solution projects add`).
   If you cannot locate/load the uipath-api-workflow skill, do NOT improvise a build — return
-{ built:false, error:"skill uipath-api-workflow not installed" }.
+  { built:false, error:"skill uipath-api-workflow not installed" }.
 Return JSON: { built: bool, path, finalInputs:[{name,type}], finalOutputs:[{name,type}], error? }
 ```
 
@@ -103,9 +105,9 @@ The brief carries only Step-1b Purpose and pinned I/O, not `caseplan.case` or si
 
 ### Step 3 — Binding (no new field)
 
-Apply [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants): two bindings with `resource:"process"`, **`resourceSubType:"Api"`**, and shared `resourceKey="solution_folder.<WorkflowName>"`; default `name` is `<WorkflowName>` and `folderPath` is `""`. The sentinel/`""`` decoupling and deploy-provisioning rationale are there; Api debug differs:
+Shared invariants — [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants): two bindings `resource:"process"`, **`resourceSubType:"Api"`**, shared `resourceKey="solution_folder.<WorkflowName>"`; `name` default `<WorkflowName>`, `folderPath` default `""` (the sentinel/`""` decoupling and deploy-provisioning rationale live there — except debug provisioning, which differs for Api: next blockquote).
 
-> **Runtime: full deploy YES — `case debug` NO (e2e-verified 2026-07).** `uip maestro case pack` → `uip solution pack` → `publish` → `deploy run` provisions the sibling as a runnable process in the case’s Orchestrator folder (process key `<Package>.Api.<Name>`), and the task invokes it successfully. `uip maestro case debug` does **NOT** provision Api siblings (unlike agent siblings); the task reaches `Orchestrator.StartJob` and faults with incident `170007` "The job's associated process could not be found" despite a valid binding. Verify inline API runtime behavior via full solution deploy, never `case debug`. `validate` and binding correctness are unaffected.
+> **Runtime: full deploy YES — `case debug` NO (e2e-verified 2026-07).** `uip maestro case pack` → `uip solution pack` → `publish` → `deploy run` provisions the sibling as a runnable process in the case's Orchestrator folder (process key `<Package>.Api.<Name>`), and the task invokes it successfully. `uip maestro case debug` does **NOT** provision Api siblings (unlike agent siblings); the task reaches `Orchestrator.StartJob` and faults with incident `170007` "The job's associated process could not be found" despite a valid binding. Verify inline API runtime behavior via full solution deploy, never `case debug`. `validate` and binding correctness are unaffected.
 
 ### Failure — surface and re-prompt, never stall
 

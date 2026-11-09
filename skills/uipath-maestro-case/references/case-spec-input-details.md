@@ -24,7 +24,7 @@ Use `--input-details` with `case spec` when body, query, path, event, or filter 
 
 `{}` is valid and equivalent to omitting `--input-details`.
 
-### `--trigger-kind` (trigger only)
+#### `--trigger-kind` (trigger only)
 
 A case start trigger and a wait-for-connector task share a TypeCache entry; runtime distinguishes them by `activityType`. Always pass `--trigger-kind`:
 

@@ -34,11 +34,17 @@ Use:
 
 ### selected-stage-completed / selected-stage-exited — upstream stage trigger
 
-Use `selected-stage-completed` when completion semantics are required; otherwise use `selected-stage-exited`. Both require `selectedStageIds` as an array, including for one stage:
-
 ```json
-"rules":[[{"id":"Rule_xxxxxx","rule":"selected-stage-exited","selectedStageIds":["Stage_aB3kL9"]}]]
+"rules": [[
+  {
+    "id": "Rule_xxxxxx",
+    "rule": "selected-stage-exited",
+    "selectedStageIds": ["Stage_aB3kL9"]
+  }
+]]
 ```
+
+Swap `rule` to `selected-stage-completed` when completion semantics are required.
 
 ### user-selected-stage — target of a `wait-for-user` exit
 

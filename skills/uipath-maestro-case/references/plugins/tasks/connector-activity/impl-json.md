@@ -8,7 +8,18 @@ Fetch the populated scaffold with `uip maestro case spec --input-details` and pu
 
 ## Prerequisites from Planning
 
-The SDD row provides `type-id`, `connection-id`, `connector-key`, `object-name`, resolved `input-values` (dotted body keys), optional `filter` (`FilterTree`, only when planning Step 7 authored one), `isRequired`, and `runOnlyOnce`. Example row shape: [planning.md § Fields to Resolve](planning.md#fields-to-resolve).
+The SDD row provides:
+
+| Field | Example |
+|---|---|
+| `type-id` | `"c7ce0a96-2091-3d94-b16f-706ebb1eb351"` |
+| `connection-id` | `"bc095c1f-671f-4669-8634-b7164fa46aa0"` |
+| `connector-key` | `"uipath-microsoft-outlook365"` |
+| `object-name` | `"send-mail-v2"` |
+| `input-values` | `{"bodyParameters":{"message.toRecipients":"user@example.com"},"queryParameters":{...}}` (already resolved IDs, dotted body keys) |
+| `filter` (optional) | `{"groupOperator":"And","filters":[...]}` (FilterTree object — present only when planning Step 7 authored a filter) |
+| `isRequired` | `true` |
+| `runOnlyOnce` | `false` |
 
 ## Configuration Workflow
 
@@ -29,7 +40,7 @@ Build from `registry-resolved.json`, rewriting connector-body references per Ste
 
 For synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-request"`), do not pass `bodyParameters`; pass the HTTP body through `queryParameters` or omit it. The CLI rejects `bodyParameters`.
 
-Pass a solution-resource picker’s resource **name** as a plain string; `case spec` resolves it and returns the binding. If it exists in multiple folders, add `"<picker>_folderKey": "<folder key>"` and rerun. Put the companion under the `inputs.*` list shown by `case spec` (it may differ from the picker). Orchestrator **Get Asset** uses `id` under `pathParameters` and `id_folderKey` under `queryParameters`. A wrong-list companion is refused and the error identifies the right one; with no companion listed, put it beside the picker. A gating scope selector such as `entityScope` is a reference field: write its lookup `value` (`folder`), not `displayName` (`Folder`).
+Pass a solution-resource picker's resource **name** as a plain string; `case spec` resolves it and returns the binding. If it exists in multiple folders, add `"<picker>_folderKey": "<folder key>"` and rerun. Put the companion under the `inputs.*` list shown by `case spec` (it may differ from the picker). Orchestrator **Get Asset** uses `id` under `pathParameters` and `id_folderKey` under `queryParameters`. A wrong-list companion is refused and the error identifies the right one; with no companion listed, put it beside the picker. A gating scope selector such as `entityScope` is a reference field: write its lookup `value` (`folder`), not `displayName` (`Folder`).
 
 #### Step 1.a — Rewrite references to canonical sink form
 
@@ -92,7 +103,7 @@ uip maestro case spec --type activity \
 
 Do not pass `--skip-case-shape` in Phase 3; it conflicts with `--input-details` ([case-spec-input-details.md § Validation rules](../../../case-spec-input-details.md#validation-rules-invalidinputdetailserror-on-violation)). The CLI returns the full populated `caseShape`.
 
-Run a separate `case spec` for every connector task. Never reuse another task’s output, even with the same `connection-id`; `caseShape` depends on `objectName`, `httpMethod`, `inputs`, and `outputs`.
+Run a separate `case spec` for every connector task. Never reuse another task's output, even with the same `connection-id`; `caseShape` depends on `objectName`, `httpMethod`, `inputs`, and `outputs`.
 
 ### Step 3 — Required-field validation (HARD GATE)
 
@@ -117,9 +128,7 @@ If `spec.filter` is undefined, repair the malformed top-level `filter:` before S
 
 ### Step 5 — Write the task skeleton, then `splice`
 
-#### 5.a — Skeleton (agent-authored, from the SDD)
-
-Write an empty `data` block with only SDD-known fields:
+**5.a — Skeleton (agent-authored, from the SDD).** Write the task with an empty `data` block and the fields only the SDD knows:
 
 ```json
 {
@@ -134,11 +143,12 @@ Write an empty `data` block with only SDD-known fields:
 }
 ```
 
-For an external agent or automation, use `external-agent` or `external-workflow` ([planning § External agents and automations](planning.md#external-agents-and-automations)); `splice` writes `serviceType`. The task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
+- `type`: `external-agent` or `external-workflow` for an external agent or automation ([planning § External agents and automations](planning.md#external-agents-and-automations)); `splice` then writes its `serviceType`.
+- `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
-Append to the target stage’s `data.tasks` using `activation-mode` + `entry-rule`, never `lane` alone. Strict `sequential` tasks are new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned next inner array although their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks each get a single-task inner array. Share an inner array only for `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale. Add `runs-sequentially` when the frontend toggle or ordered task-set rule selects it; if `lane` conflicts with mode, mode wins.
+Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
 
-#### 5.b — Splice (CLI-authored)
+**5.b — Splice (CLI-authored).** One call fills `data` from the saved spec and appends the connection's root bindings:
 
 ```bash
 uip maestro case splice "<caseplan.case>" \
@@ -148,20 +158,16 @@ uip maestro case splice "<caseplan.case>" \
   --output json
 ```
 
-`splice` writes `data.serviceType`, `data.context` with sentinels resolved to `=bindings.<id>`, `data.inputs` / `data.outputs` with `id` / `var` / `elementId`, and ConnectionId + FolderKey root bindings with `default` (reusing an existing pair). It copies `body` keys untouched. Re-running with the same arguments is byte-identical; Phase 4 may splice again after fresh `case spec`. Read `Data.Summary` (`ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and record it in `build-issues.md`.
+It writes `data.serviceType`, `data.context` with the two sentinels resolved to `=bindings.<id>`, `data.inputs` / `data.outputs` with `id` / `var` / `elementId` minted, and the ConnectionId + FolderKey root bindings (each with its `default`; reused, not duplicated, when the connection already has a pair). Keys inside `body` are copied untouched. Re-running with the same arguments is byte-identical, so a Phase 4 repair may splice again after a fresh `case spec`. Read `Data.Summary` (`ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and record it in `build-issues.md`. A `Warning` on an external task means splice guessed the sync service type, because the spec's `executionType` was missing or not sync, async or hybrid: record it in `build-issues.md`, and check the activity type id came from the external-agent or external-automation catalog.
 
-For an external task, a `Warning` means splice guessed the sync service type because `executionType` was missing or not sync, async, or hybrid; record it in `build-issues.md` and verify the activity type id came from the external-agent or external-automation catalog.
+Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings for a connector task — every field `splice` writes is CLI-authoritative. **Do not open `connector-trigger-impl.md`, `connector-trigger/impl-json.md`, `case-spec-input-details.md`, or `bindings/impl-json.md` for this task after splicing: nothing in them applies to a spliced task.** They describe the manual transport for the event-trigger node and connector-bound rules, and the binding shape splice already wrote. Never edit the spec envelope to make `splice` accept it; a rejected spec means it was saved without `caseShape` (run `case spec` again without `--skip-case-shape`). `--connection-id` must be the connection the spec was fetched for; splice refuses a mismatch and names both ids. Splice takes the folder key from the same spec, so pass no `--folder-key`; with two connector tasks, each splice reads its own spec's folder, never the other task's.
 
-Never hand-write `data.context`, `data.inputs`, `data.outputs`, or connector root bindings. **Do not open `connector-trigger-impl.md`, `connector-trigger/impl-json.md`, `case-spec-input-details.md`, or `bindings/impl-json.md` for this task after splicing:** they describe manual event-trigger transport and connector-bound rules, not spliced tasks. Never edit the spec envelope to make splice accept it; a rejected spec lacks `caseShape`, so run `case spec` again without `--skip-case-shape`. `--connection-id` must match the spec’s connection; splice refuses a mismatch and names both ids. Do not pass `--folder-key`; splice takes it from that spec. Each connector task uses its own spec and folder.
+**5.c — What stays with the agent after splice**, each as a narrow Edit on the spliced task:
 
-#### 5.c — What stays with the agent after splice
-
-Make only these edits:
-
-- **Output binding:** for every output referenced by the SDD (bare name or first segment of a `->` path), apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes), retaining `id` / `var` / `elementId`. Leave unreferenced outputs minted.
-- **Output ids:** new outputs use `id` = `var` = camelCase name (`response`, `Error` → `error`); on collision with any id, var, or case variable, suffix `2`, `3`, …; retain an existing output id. If an older CLI minted a `v…` id that is not the name, before any read set `id` / `var` / `value` to the camelCase name, `target` to `=<new var>`, and apply suffixes from 2 per [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule); preserve `name`, `displayName`, and `source`. Never rename an id already read. The Case Designer preserves name-shaped ids but rewrites `v…` ids without updating reads, causing `CASE_MGMT_REFERENCE_UNBOUND` after save.
-- **Solution-resource pickers:** when `spec.resourceBindings[]` exists, do nothing. `splice` creates/reuses one root binding per `rows[]` item (same `resource`, `resourceKey`, `propertyAttribute`), replaces each `bindingIdPlaceholder`, and lists picker rows in task `data.bindings[]`; Summary reports `ResourceBindingIds`. If splice reports `This spec references {{RESOURCE_BINDING_ID:<field>}}, but its ResourceBindings define no row for it`, run `case spec` again. If Summary lacks `ResourceBindingIds` and `data.inputs` retains `{{RESOURCE_BINDING_ID:`, mint one id per row, a root binding for each (`id`, `type` = `"string"`, `resource`, `resourceKey`, `name`, `propertyAttribute`, `default`), replace the placeholder, and list each root binding in task `data.bindings[]`.
-- **Multipart file inputs:** apply 5.d.
+- **Output binding.** For every output the SDD references — bare name or first segment of a `->` path — apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes) to the entry `splice` wrote, keeping its `id` / `var` / `elementId`. Outputs the SDD does not reference stay as splice minted them.
+- **Output ids are the output's name.** `splice` gives each new output `id` = `var` = its name in camelCase (`response`, `Error` → `error`), adds `2`, `3`, … on a clash with any id, var or case variable already in the plan, and keeps the id of an output the task already carries. Nothing to do. **If `splice` minted a `v…` output id instead** (an older CLI: the output's `id` starts with `v` and is not its name), apply the same rule yourself before anything reads the output: `id` / `var` / `value` = camelCase name, `target` = `=<new var>`, a counter suffix from 2 per the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule); `name`, `displayName` and `source` stay unchanged. Never rename an output id something already reads. The Case Designer keeps name-shaped output ids on save and rewrites `v…` ones without updating the reads, so a read of a `v…` output id breaks on the next Designer save (`CASE_MGMT_REFERENCE_UNBOUND` on the pulled plan).
+- **Solution-resource pickers: nothing to do.** When `spec.resourceBindings[]` is present, `splice` writes one root binding per `rows[]` item (reusing a root binding that already has the same `resource`, `resourceKey` and `propertyAttribute`), replaces each `bindingIdPlaceholder` with its id, and lists those picker rows on the task's `data.bindings[]`, as Studio Web saves them; its Summary reports them as `ResourceBindingIds`. If `splice` refuses with `This spec references {{RESOURCE_BINDING_ID:<field>}}, but its ResourceBindings define no row for it`, the spec is stale: run `case spec` again. On a CLI whose Summary has no `ResourceBindingIds` and leaves a `{{RESOURCE_BINDING_ID:` in `data.inputs`, mint the rows yourself: one id per `rows[]` item, a root binding for each (`id`, `type` = `"string"`, `resource` and `resourceKey` from the entry, `name`, `propertyAttribute`, `default` from the row), that id in place of the row's placeholder, and each of those root bindings listed on the task's `data.bindings[]`.
+- **Multipart file inputs** — 5.d below.
 
 #### Step 5.d — Multipart file inputs (after splice)
 
@@ -204,7 +210,7 @@ Append all issues to the shared issue list per [logging/impl-json.md](../../logg
 9. Every `data.inputs[]` and `data.outputs[]` entry has splice-authored `var` / `id` / `elementId`, with output uniqueness from Step 5.c.
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 for every connector node.
 11. After deferred sync, `bindings_v2.json` `resources` matches top-level `bindings[]`.
-12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (`JSON.stringify` + regex `"[^"]*\[\*\][^"]*"\s*:`). Halt on any; Step 1.b was skipped or incomplete. Use real arrays under parent names, e.g. `"toRecipients": [{...}]`, never `"toRecipients[*]": {...}`. Validation may pass, but runtime returns HTTP 400.
+12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 13. **Lossless inputs (HARD GATE).** Every resolved `input-values` field appears unchanged in its matching `data.inputs[].body`; a resolved picker and `_folderKey` companion instead contain `=bindings.<id>`. A top-level `filter:` requires `spec.filter` and successful compilation. Otherwise halt and repair; never warn and continue.
 14. **Spliced subtree is byte-identical to the cache (HARD GATE).** Compare written `data.context` / `data.inputs` / `data.outputs` with `tasks/spec-cache.<elementId>.json`; only placeholder substitutions and minted `var`/`id`/`elementId` may differ. `validate` does not catch content loss; missing `multipartParameters` can pass validation and fail with `400 "Unable to parse multipart body"`.
 15. **No placeholder left behind.** No `{{RESOURCE_BINDING_ID:` remains, and every `rows[]` item has a root binding with its id.

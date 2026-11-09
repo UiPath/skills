@@ -4,7 +4,7 @@ Conditions controlling when a task within a stage starts. Attach to a task.
 
 ## When to Use
 
-Use this plugin only when sdd.md literally uses “task entry condition” or a close variant: “task entry conditions”, “entry rule on task”, “task gate”, or “task precondition”. For whole-stage entry/exit conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md).
+Use this plugin only when sdd.md literally uses "task entry condition" or a close variant: "task entry conditions", "entry rule on task", "task gate", or "task precondition". For whole-stage entry/exit conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md).
 
 ## No omission — one caseplan element per sdd.md Entry Condition row
 

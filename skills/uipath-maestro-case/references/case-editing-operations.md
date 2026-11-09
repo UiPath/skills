@@ -2,7 +2,7 @@
 
 Mutate `caseplan.case` only with direct Read/Write/Edit; plugin JSON shapes are in each plugin's `impl-json.md`.
 
-## Core authoring rules
+## Responsibilities of Direct JSON Authoring
 
 - Never hand-author `taskTypeId`, `inputs`, or `outputs`; source them from `registry-resolved.json` / `uip maestro case tasks describe` ([registry-discovery.md](registry-discovery.md)).
 - Generate IDs with `prefixedId(prefix, count)` and set every task `elementId = ${stageId}-${taskId}`. New Stages require `data.parentElement`, `data.isInvalidDropTarget`, and `data.isPendingParent`; never emit node `style`, `measured`, `width`, `height`, `zIndex`, or `position` (Rules 19/20).
@@ -55,9 +55,27 @@ Use `prefixedId(prefix, count)`: prefix plus `count` uniformly selected characte
 | Binding | `b` | 8 | `b3KmNp7Q9` | |
 | Variable formal arg slot (`variables.inputs[]` / `variables.outputs[]` `id`) | `v` | 8 | `vK3mNp9Qx` | Must be letter-leading; see [global-vars](plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format). |
 
-Any BPMN/input or `=vars.<id>`/`=bindings.<id>` identifier begins with a letter or underscore; never mint a prefix-less random variable/argument ID. Pick IDs inline while writing JSON: no `node -e`, Bash subprocess, or helper. Scan all existing `id` values in the just-Read `caseplan.case` and loaded `id-map.json`; IDs in one write must differ. Start with mixed uppercase/lowercase/digits; avoid pure-letter/pure-digit suffixes, sequential alphabet, dictionary words, and reuse. Cryptographic randomness is unnecessary; every run generates fresh IDs.
+> **Leading-letter requirement.** Any id that surfaces as a BPMN element / input id, or is referenced via `=vars.<id>` / `=bindings.<id>` dot notation, MUST start with a letter or underscore (C# identifier + XML NCName rules). Every prefix above is letter-leading, which satisfies this — never mint a **prefix-less** random id for a variable / argument slot; a digit-leading id fails BPMN with `illegal ID`.
 
-UUID v4 differs: retain `node -e "console.log(crypto.randomUUID())"` for `operate.json.projectId` and `entry-points.json` `uniqueId`, using `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx` with version/variant bits.
+### Algorithm — inline, no subprocess
+
+Prefixed IDs are picked **inline by the agent** while writing the JSON. No `node -e`, no Bash subprocess. The schema requires only: prefix + `count` chars from `[A-Za-z0-9]` + within-case uniqueness. Cryptographic randomness is NOT required (the CLI uses `Math.random()`-grade entropy too).
+
+Steps:
+
+1. Start with the prefix string.
+2. Pick `count` chars from `[A-Za-z0-9]` (62 chars). Constraints:
+   - **Mix uppercase, lowercase, and digits** in every ID. Pure-letter or pure-digit suffixes look like patterns, not IDs.
+   - **No sequential alphabet** (`abcdef`, `xyz123`) and no obvious dictionary words (`secret`, `loginX`).
+   - **No reuse within the same caseplan.** Before embedding the ID, scan all existing `id` values in the just-Read `caseplan.case` (and `id-map.json` if loaded). If collision, pick again.
+   - **Different IDs in the same write must differ from each other**, not just from existing IDs.
+3. Concatenate prefix + chars. Embed via Write/Edit.
+
+The 62-char alphabet at length 6 = 56B combinations; at length 8 = 218T. Collision risk inside a single caseplan (~30 IDs) is negligible — the per-write existing-ID scan in step 2 is the safety net.
+
+> **UUID v4 fields are different.** `operate.json.projectId` and `entry-points.json` `uniqueId` follow `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx` with version + variant bits. Agent-picking those is too error-prone — keep the `node -e "console.log(crypto.randomUUID())"` stdout-only Bash one-liner for those two fields. Prefixed-IDs (`Stage_`, `t`, `Rule_`, etc.) are inline.
+
+Every skill run generates fresh IDs — no determinism.
 
 ### Sidecar `id-map.json`
 
@@ -141,8 +159,11 @@ Edit the task's `data.inputs[<index>]` in place: each input has literal/expressi
 2. If deleting a stage with successors, repoint every successor entry rule whose `selectedStageIds` contains the removed ID and whose rule is `selected-stage-completed`/`selected-stage-exited` to the removed stage's surviving predecessor, or `case-entered` if first. Do not leave unreachable successors.
 3. Keep `schema.edges` `[]`; defensively drop stray edges referencing the ID.
 4. If Trigger, remove from `entry-points.json.entryPoints` the entry whose `filePath` ends `#<removedTriggerId>`.
-5. If Trigger In-args/outputs existed, prune `root.inputs[]` entries with `elementId == <removedTriggerId>`; read each companion name, sweep `=vars.<name>` consumers, and prune root `inputOutputs[]` companion (`id == <name>`, `elementId == "root"`) when no producer remains. This is distinct from connector-rule output cleanup.
-6. If a removed Stage held connector task/rule resources, walk remaining tasks/triggers/rules and prune top-level `bindings[]` entries whose `resourceKey` is unreferenced. Connector rules use `rule.uipath.context[name="connection"|"folderKey"]` and `=bindings.<bindingId>`; case-exit rules are out of scope.
+5. **If the deleted node is a Trigger with In-args / trigger outputs, run the variable cascade.** An In-arg emits three entries keyed by the trigger ([global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md)): the formal slot in `root.inputs[]` (`elementId == <triggerId>`), the companion in `root.inputOutputs[]` (`elementId == "root"`), and the bridge on `triggerNode.data.inputs.outputs[]`. The bridge dies with the node, but the formal slot and companion survive — leaving every `=vars.<name>` consumer reading undefined (`validate` does not catch dangling `=vars.*`). For the deleted trigger:
+   - Prune `root.inputs[]` entries with `elementId == <removedTriggerId>`.
+   - For each, read its companion's name, then sweep consumers of `=vars.<name>` and prune the `root.inputOutputs[]` companion (`id == <name>`, `elementId == "root"`) when no other producer remains — per § Rename or delete a global variable or argument (Delete path).
+   - Step 7's companion-prune below is scoped to connector *rule* outputs (`elementId == "root"`); this trigger branch covers the In-arg companions specifically.
+6. If the node was a stage containing a connector task **or a connector condition rule** (in `entryConditions[]` / `exitConditions[]` / task `entryConditions[]`), prune entries from the top-level `bindings` referenced only by that task/rule. A connector rule contributes the same Connection/Folder binding pair as a task — `rule.uipath.context[name="connection"|"folderKey"]` references `=bindings.<bindingId>`. Walk every remaining task/trigger/rule; an entry whose `resourceKey` is no longer referenced anywhere is the one to prune. Case-exit rules are NOT in scope here — they live on root, not inside a node; use § Delete a condition rule for those.
 7. For removed connector-rule outputs at `elementId = <removedStageId>-<ruleId>`, read `var` and prune root companion (`id == <var>`, `elementId == "root"`) when no producer remains.
 8. Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
 9. Edit separate narrow slices for nodes, trigger entry points, variable arrays, and bindings; never whole-file Write.
@@ -206,16 +227,20 @@ Follow [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md): edit `
 2. Read and locate by task ID.
 3. Edit `data` to match schema, including `taskTypeId`, `inputs`, and `outputs`; preserve `id` and `elementId = ${stageId}-${taskId}`.
 4. Re-bind added/renamed/retyped inputs and repoint/remove consumers of dropped outputs using [bindings-and-expressions.md](bindings-and-expressions.md): single lookup `=vars.X`/`=bindings.X`, otherwise `=js:...`.
-5. Prune unreferenced top-level bindings. If the resource binding set changed, regenerate [bindings-v2-sync.md](bindings-v2-sync.md) and run `uip solution resources refresh` before debug/publish (Rule 15). If the change repointed or dropped a binding, also prune the orphan ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)). Pure schema reshaping with no binding added/removed/repointed leaves `bindings_v2.json` and refresh unchanged.
+5. Prune unreferenced top-level bindings. **If the resource binding set changed (connector or non-connector), regenerate `bindings_v2.json`** ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 15) — same scope as § Repoint a non-connector task step 5 and the brownfield After-edits step 2. If the change repointed or dropped a binding, also prune the orphan ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)). A pure schema-only re-sync (same resource, `data.inputs`/`data.outputs` reshaped but no `bindings[]` entry added/removed/repointed) leaves `bindings_v2.json` unchanged — skip the refresh in that case.
 6. Edit narrow task/consumer/bindings slices and validate at the section boundary.
 
 ### Repoint a non-connector task at a different resource
 
+Swap which process / agent / RPA / api-workflow / function / business-rule / case-management resource a task runs. The node references its resource indirectly — `data.name` / `data.folderPath` are `=bindings.<id>` pointers into top-level `bindings[]` ([process impl-json](plugins/tasks/process/impl-json.md), [bindings impl-json](plugins/variables/bindings/impl-json.md)). The new resource almost always has a different I/O schema, so this is a **superset of § Re-sync a task after its source schema changed** plus a binding swap. Keep the task `id` / `elementId` / `entryConditions` so references stay valid.
+
 1. Run `uip maestro case registry pull --force`; search [registry-discovery.md](registry-discovery.md) cache for name/folder; capture `entityKey`, resolved `name`, and `folders[0].fullyQualifiedName` (never raw SDD folder), and record the swap in `registry-resolved.json`.
-2. Swap the deduplicated `name`/`folderPath` pair sharing `resourceKey = <folderPath>.<name>`: if only this task uses it, update `default` and `resourceKey`; if shared, create/reuse a new pair, repoint task pointers, then prune old unreferenced entries.
+2. **Swap the resource bindings — respect dedup.** The task's two binding entries (`propertyAttribute` `name` / `folderPath`) share `resourceKey = <folderPath>.<name>`.
+   - Old pair referenced **only** by this task → update each entry's `default` (new name / folder) and `resourceKey` (`<newFolderPath>.<newName>`) in place.
+   - Old pair **shared** with other tasks (deduped by `default + resource + resourceKey`) → do NOT mutate in place. Create or reuse a binding pair for the new resource, repoint this task's `data.name` / `data.folderPath` to the new ids, then prune the old pair if no task references it any longer (caseplan `bindings[]` only — the solution resource goes in step 5).
 3. Run `uip maestro case tasks describe --type <type> --id <newEntityKey> --output json`; update schema, inputs, outputs, consumers, and bindings as in re-sync.
 4. If type changes, update node `type`, binding `resource`/`resourceSubType` per [tasks](plugins/tasks/) recipe, and rebuild `data`; preserve task `id`, `elementId`, and `entryConditions`.
-5. Regenerate [bindings-v2-sync.md](bindings-v2-sync.md), run `uip solution resources refresh` before debug/publish (Rule 15), then prune the orphan per [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources).
+5. Regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 15) — the swap changes which Orchestrator resource declaration the case needs. Then prune the resource the swap orphaned ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)).
 6. Edit narrow task/bindings/consumer slices and validate.
 
 ### Move a task to a different stage or lane
@@ -229,12 +254,12 @@ Follow [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md): edit `
 
 ### Rename or delete a global variable or argument
 
-Runtime matches `=vars.<id>` by exact `Variable.id` ([global-vars impl-json](plugins/variables/global-vars/impl-json.md)).
+The runtime resolver matches `=vars.<id>` by **exact string equality on `Variable.id`** ([global-vars impl-json](plugins/variables/global-vars/impl-json.md)). Renaming or removing a variable dangles every consumer, and `validate` does not reliably catch a dangling `=vars.*` — sweep them by hand.
 
 1. Read and identify ID and owner: `variables.{inputs,outputs,inputOutputs}[]`, task `data.outputs[]`, or trigger output.
 2. Sweep every `=vars.<id>`/`=bindings.<id>` consumer in task inputs, all condition/rule expressions including `=js:...`, connector bodies/context, and `inputOutputs[]` companion/`var` pointers.
 3. Rename owning `id` and mirrored `var`/`target` (not `name`/`source`), then all consumers. Or delete declaration and companion, repoint/remove consumers, and clear or replace inputs bound to the deleted variable.
-4. For connector consumers, regenerate [bindings-v2-sync.md](bindings-v2-sync.md) and refresh before debug/publish; prune dropped Connection orphans per [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources).
+4. Connector consumers only — if a swept reference was a connector binding, regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish. If a Connection binding was dropped, also prune the orphan ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)).
 5. Edit owning/consumer slices and validate.
 
 ### Change a variable's type or default
@@ -253,7 +278,7 @@ Use [plugins/sla/impl-json.md](plugins/sla/impl-json.md). SLA arrays are `metada
 
 1. Read and locate root array or stage by `data.label`.
 2. Modify rule `count`/`unit`/`expression`; keep `expression == "=js:true"` last.
-3. Remove a rule with escalations and sidecar IDs. If none remain, remove `slaRules` entirely per [sla/impl-json.md](plugins/sla/impl-json.md) emission rule 5; never leave empty/orphan default. If conditional rules remain, retain `=js:true` last.
+3. **Remove a rule:** delete the rule object from `slaRules[]` (its nested `escalationRule[]` goes with it — drop those `esc_` ids from `id-map.json`). If removing leaves the target with **no** SLA rules, remove the `slaRules` key entirely ([sla/impl-json.md](plugins/sla/impl-json.md) emission rule 5) — do not leave an empty array or an orphan default. If conditional rules remain, the `=js:true` default must still be present and last.
 4. Modify escalation `action.recipients[]`, `triggerInfo.type`, or `atRiskPercentage`; include `atRiskPercentage` only for `at-risk`, drop it for `sla-breached`, and omit `displayName` rather than emitting `undefined`.
 5. Remove escalation by `esc_` ID and sidecar entry; retain `escalationRule: []` per [sla/impl-json.md](plugins/sla/impl-json.md) emission rule 4.
 6. Edit the specific slice and validate.
@@ -264,9 +289,9 @@ Keep trigger ID.
 
 1. Read and locate.
 2. Rebuild `data.inputs` from [triggers/manual](plugins/triggers/manual/impl-json.md), [triggers/timer](plugins/triggers/timer/impl-json.md), or [triggers/event](plugins/triggers/event/impl-json.md): manual deletes `data.inputs` entirely; timer sets `{ serviceType: "timer", … }`; event sets `{ serviceType: "Intsvc.EventTrigger", … }` or unresolved placeholder. Preserve `data.display.label`, `data.typeVersion`, `data.description`, and secondary `data.parentElement`.
-3. When host changes, cascade In-arg bridges: manual removal sweeps consumers and prunes/repoints `root.inputs[]` and root companions; timer/event retain `data.inputs.outputs[]` and re-emit bridges.
+3. **Run the In-arg / trigger-output variable cascade when the bridge host changes.** The In-arg bridge lives on `triggerNode.data.inputs.outputs[]` ([global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md)). Replacing → manual removes `data.inputs` and therefore the only host for `outputs[]`, silently orphaning every bridge and its trigger-sourced companion. For each bridge dropped by the type change, sweep `=vars.<name>` consumers and prune/repoint the `root.inputs[]` formal slot + `root.inputOutputs[]` companion per § Rename or delete a global variable or argument (Delete path). When the target type still hosts `outputs[]` (timer / event), re-emit the bridges on the new `data.inputs.outputs[]`.
 4. Update matching `entry-points.json` entry; retain `#<triggerId>`. Manual/timer `input` and `output` are always `{ "type": "object", "properties": {} }`; only `displayName` may change; event may be non-empty. See [manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints](plugins/triggers/manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints) and [timer/impl-json.md § entry-points.json append](plugins/triggers/timer/impl-json.md).
-5. If Connection binding is added/dropped (manual/timer → event or reverse), regenerate [bindings-v2-sync.md](bindings-v2-sync.md), run `uip solution resources refresh` before debug/publish (Rule 15), and on drop prune the orphan.
+5. **If the type change added or dropped a Connection binding** (manual/timer → event adds one; event → manual/timer drops one), regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 15). On a drop, then prune the orphaned Connection ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)).
 6. Edit node inputs, entry point, and variable slices; validate.
 
 ### Re-target an event trigger (same type, different event)

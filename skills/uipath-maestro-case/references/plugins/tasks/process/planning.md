@@ -4,7 +4,7 @@ An RPA-driven task invoking a UiPath or agentic process by name and folder.
 
 ## When to Use
 
-Use this plugin when sdd.md describes `PROCESS`, `AGENTIC_PROCESS`, or generic “run automation X” where X is a published process. For RPA robot tasks, prefer [rpa](../rpa/planning.md); for Coded workflows / API-workflows, use [api-workflow](../api-workflow/planning.md).
+Use this plugin when sdd.md describes `PROCESS`, `AGENTIC_PROCESS`, or generic "run automation X" where X is a published process. For RPA robot tasks, prefer [rpa](../rpa/planning.md); for Coded workflows / API-workflows, use [api-workflow](../api-workflow/planning.md).
 
 ## Required Fields from sdd.md
 
