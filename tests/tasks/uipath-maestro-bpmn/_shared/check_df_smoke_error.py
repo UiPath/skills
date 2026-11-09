@@ -9,7 +9,7 @@ parallel branch] is not parsed -- the prompt-driven shape plus entity split
 already blocks the common wrong-reason paths"), translated from a JSON
 node/`inputs.detail` walk to an XML walk over the registry-driven
 ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
 
 BPMN has no fixed home for `entityName` (BATCH1-ADDENDUM.md "Where connector
 node values live in BPMN" and its "CI run 35488848026" section on the two

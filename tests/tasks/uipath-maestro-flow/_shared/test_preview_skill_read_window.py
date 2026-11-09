@@ -1,7 +1,7 @@
 """The routing part of each builder-SDK Maestro SKILL.md must arrive in an agent's first read.
 
-Checked: the promoted `skills/uipath-maestro-flow` and `skills/uipath-maestro-case`,
-and every skill still under `preview/skills/` (BPMN).
+Checked: the promoted `skills/uipath-maestro-flow`, `skills/uipath-maestro-case` and
+`skills/uipath-maestro-bpmn`, and every skill still under `preview/skills/` (none today).
 
 Agents open SKILL.md with a line window, not the whole file. In run
 adhoc-2026-09-23_16-15-07 (codex gpt-5.6-luna, v2 arm), 121 of the 122 tasks
@@ -54,9 +54,9 @@ from flavor_markers import shipped  # noqa: E402
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
 _PREVIEW_SKILLS = os.path.join(_REPO, "preview", "skills")
-# Promoted out of preview/ (the SDK Flow and Case skills); still held to the same window.
+# Promoted out of preview/ (the SDK Flow, Case and BPMN skills); still held to the same window.
 _PROMOTED_SKILLS = [os.path.join(_REPO, "skills", s, "SKILL.md")
-                    for s in ("uipath-maestro-flow", "uipath-maestro-case")]
+                    for s in ("uipath-maestro-flow", "uipath-maestro-case", "uipath-maestro-bpmn")]
 
 ROUTER_WINDOW = 220
 POINTER_WINDOW = 240

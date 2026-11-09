@@ -1,7 +1,10 @@
 # Maestro BPMN Skill Eval Tasks
 
-These tasks exercise the `uipath-maestro-bpmn` skill — a registry-driven,
-authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
+These tasks exercise the `uipath-maestro-bpmn` skill. Since the promotion,
+`skills/uipath-maestro-bpmn` is the builder-SDK skill (author `<Name>.bpmn.ts`,
+compile to `.bpmn`); the previous registry-driven XML skill lives in
+`classic/skills/uipath-maestro-bpmn` and ships only in the Studio Web flavor.
+Several descriptions below still describe the classic skill's mechanism.
 
 - `smoke/` covers the core registry-driven authoring loop.
   `registry_discovery.yaml` checks that the agent discovers extension types via
@@ -39,12 +42,13 @@ authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
 These tasks validate with `uip maestro bpmn validate <file>`, which runs the
 full PO.Frontend canvas rule set offline (added in UiPath/cli#3135). If the CLI
 is unavailable, they fall back to parsing the BPMN for well-formedness and
-walking the structural checklist in the skill's `references/structural-bpmn.md`.
+walking the structural checklist in the classic skill's `references/structural-bpmn.md`.
 
 ## Arm neutrality — two invariants these tasks must keep
 
-Every task here is shared by both comparison arms: the shipped `skills/uipath-maestro-bpmn`
-(registry + raw XML) and `preview/skills/uipath-maestro-bpmn` (the TypeScript builder SDK),
+Every task here is shared by both comparison arms: the classic `classic/skills/uipath-maestro-bpmn`
+(registry + raw XML; Studio Web's pinned generation) and the shipped `skills/uipath-maestro-bpmn`
+(the TypeScript builder SDK; `preview/skills/uipath-maestro-bpmn` is a symlink to it),
 selected by `agent.plugins` in the experiment, not by the task.
 Two things therefore have to stay out of the task YAMLs, or a run measures the fixture instead of the skill.
 
@@ -78,8 +82,8 @@ The exception is a task that grades registry usage itself (`smoke/registry_disco
 There the registry IS the subject under test, so naming it is correct.
 
 **3. Never name a `references/*.md` file in a prompt.**
-`preview/skills/uipath-maestro-bpmn/references/` holds exactly one file, `bpmn-runtime.md`.
-`structural-bpmn.md`, `public-safety.md`, `expression-authoring.md` and `registry-workflow.md` exist only under `skills/uipath-maestro-bpmn/`, so "per the skill's structural reference" dangles under the SDK arm.
+The two generations name their references differently: the SDK skill's `references/` holds `bpmn-runtime.md`, `connectors.md`, `diagnose.md`, `draft-skeleton.md`, `operate.md` and `patterns/`.
+`structural-bpmn.md`, `public-safety.md`, `expression-authoring.md` and `registry-workflow.md` exist only under `classic/skills/uipath-maestro-bpmn/`, so "per the skill's structural reference" dangles under the SDK arm.
 Read those documents as a task AUTHOR; write what the output must contain, and let each arm's skill decide how.
 
 **4. Grade the artifact where the arm's workflow puts it, and by what it is, not by the v1 mechanism.**

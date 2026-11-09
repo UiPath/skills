@@ -284,7 +284,7 @@ def body_object(element: ET.Element) -> dict:
     """The request body ``element``'s ``target="body"`` input encodes.
 
     The runtime reads exactly one ``target="body"`` input as the whole body;
-    several do not merge (skills/uipath-maestro-bpmn/references/registry-workflow.md,
+    several do not merge (classic/skills/uipath-maestro-bpmn/references/registry-workflow.md,
     "Body shape"). So the only gradeable shape is::
 
         <uipath:input name="body" type="json" target="body"><![CDATA[{...}]]></uipath:input>
@@ -360,7 +360,7 @@ def path_parameters(element: ET.Element) -> dict[str, str]:
     A V1 template node writes one ``target="path"`` input per field. A V2
     element from ``registry get --input-details`` writes one
     ``target="pathParameters"`` input holding them all as a JSON object
-    (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
+    (classic/skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
     from the V1 template"). A V2 payload that is not a JSON object adds
     nothing, and neither does a null, object or array value. A V2 boolean or
     number reads as V1 spells it: ``"false"``, ``"1"``.

@@ -202,12 +202,6 @@ Write the step so that `check` passes and the CLI, not prose, says what is missi
   `check`, `compile` and `format` pass and emit a real `Intsvc.ActivityExecution` task reading `=bindings.<name>`.
   `refresh` then refuses (`Connection binding "<name>" default must be a GUID.`) and `validate` reports `MISSING_BINDING`: that is the draft's blocker, so stop there, and do not edit a binding or a package file to get past it.
 - **Otherwise, with no tenant for `prepare` to reach** (the operation is not in the library, or `check` asks for a `prepare`): write the step as a bare `.task(id, { name })` whose name says what it does and carries the connector key and the operation, such as `'Send Slack digest (uipath-salesforce-slack / send-message-to-channel, unresolved)'`.
-  The name must contain the connector key exactly as the library spells it (`uipath-salesforce-slack`, not "Slack" or "Integration Service") and a verb for what the step does:
-
-  ```ts
-  .task('sendDigest', { name: 'Send digest via uipath-salesforce-slack' })
-  ```
-
   The whole loop passes; the node is a placeholder, and the notes say so.
 - **Never a placeholder `.activity(id, 'Intsvc.ActivityExecution', …)`.**
   `check` refuses empty context (`EMPTY_REQUIRED_FIELD`) and sentinel values (`INTSVC_METHOD_UNKNOWN`, `INTSVC_OPERATION_NOT_IDENTIFIER`), and a file compiled past it is one `validate` rejects.
