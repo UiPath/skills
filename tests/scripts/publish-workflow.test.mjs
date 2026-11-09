@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const WORKFLOWS = join(REPO_ROOT, ".github", "workflows");
 const PUBLISH = readFileSync(join(WORKFLOWS, "publish.yml"), "utf8");
+const RELEASE_GATE = readFileSync(join(REPO_ROOT, ".pipelines", "release-gate.yml"), "utf8");
 
 /** Text of one top-level job, up to the next job key at two-space indent. */
 function job(name) {
@@ -46,8 +47,14 @@ test("the packed tarball is the tarball that gets published", () => {
   assert.match(PUBLISH, /npm publish "\$\{\{ steps\.pack\.outputs\.tarball \}\}"/);
 });
 
-test("gate failure has no ungated fallback", () => {
-  assert.match(PUBLISH, /^\s*run: node scripts\/run-release-gate\.mjs\s*$/m);
+// The two halves of one rule: release-gate.yml lets FOSSA findings through on
+// `preview`, so a failed preview gate is the gate's own infrastructure and
+// must not cost a release line. `latest` blocks on both.
+test("a gate failure blocks latest and only warns on preview", () => {
+  const gateJob = job("release-gate");
+  assert.match(gateJob, /^\s*run: node scripts\/run-release-gate\.mjs\s*$/m);
+  assert.match(gateJob, /^\s*continue-on-error: \$\{\{ github\.event\.inputs\.channel != 'latest' \}\}\s*$/m);
+  assert.match(RELEASE_GATE, /^\s*blockOnIssue: \$\{\{ eq\(parameters\.channel, 'latest'\) \}\}\s*$/m);
   assert.doesNotMatch(PUBLISH, /REQUIRE_HOOK_SIGNING|REQUIRE_SIGNING|REQUIRE_GATE/);
   assert.doesNotMatch(PUBLISH, /publishing ungated|publishing unsigned/i);
 });

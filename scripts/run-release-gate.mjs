@@ -8,7 +8,7 @@
  * connection. Publishing stays in GitHub Actions because npm mints provenance
  * attestations only for GitHub Actions and GitLab CI identities. This script
  * is the seam: it starts the gate pipeline against the exact commit being
- * published and fails the publish when the gate fails.
+ * published and exits non-zero when the gate fails.
  *
  * (Until the hooks migrated from PowerShell to Node — see hooks/*.mjs — the
  * gate also Authenticode-signed `hooks/*.ps1` and this script, then named
@@ -35,7 +35,8 @@
  *   GATE_TIMEOUT_MS     Give up after this long           (default: 2700000)
  *   GATE_POLL_MS        Poll interval                        (default: 15000)
  *
- * Exits non-zero on any failure; publish.yml treats that as fatal.
+ * Exits non-zero on any failure; publish.yml treats that as fatal for `latest`
+ * and as a warning for `preview`.
  */
 
 import fs from "node:fs";

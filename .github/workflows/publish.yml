@@ -17,9 +17,9 @@ name: Publish skills package
 #   - workflow_dispatch (channel: dev)     -> `dev`     : GitHub Packages
 #
 # npmjs publishes (`latest`, `preview`) use OIDC trusted publishing +
-# `--provenance`, and are gated on the Azure DevOps release gate
-# (.pipelines/release-gate.yml), which runs the blocking per-release FOSSA
-# scan. `dev` builds skip the gate: they publish on every push to main, and a
+# `--provenance`, and run the Azure DevOps release gate
+# (.pipelines/release-gate.yml), the per-release FOSSA scan: blocking for
+# `latest`, advisory for `preview`. `dev` builds skip the gate: they publish on every push to main, and a
 # gate run per merge buys nothing for a channel no end user installs. Package
 # integrity is carried by the provenance attestation — the hooks are Node
 # scripts (hooks/*.mjs), which have no interpreter-enforced signature format
@@ -145,12 +145,19 @@ jobs:
         with:
           node-version: "22.x"
 
-      # Runs the gate (blocking FOSSA) against this ref and waits for its
-      # verdict. A failure stops the publish -- there is no ungated fallback.
+      # Runs the gate (FOSSA) against this ref and waits for its verdict. For
+      # `latest` a failure stops the publish -- there is no ungated fallback.
+      # For `preview` it is advisory: release-gate.yml already lets FOSSA
+      # findings through on that channel, so the only failures left are the
+      # gate's own infrastructure, and those must not cost a release line.
+      # From 2026-10-30 the Key Vault firewall rejected every Security-Linux
+      # agent, which blocked the 1.206 preview on npmjs.
       # AZURE_SIGNING_CLIENT_ID keeps its historical name: it is the same
       # federated app registration the retired hook-signing gate used, and
       # renaming a repository variable is infra churn this workflow avoids.
       - name: Run the release gate in Azure DevOps
+        id: gate
+        continue-on-error: ${{ github.event.inputs.channel != 'latest' }}
         env:
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ vars.AZURE_SIGNING_CLIENT_ID }}
@@ -161,6 +168,11 @@ jobs:
           GATE_REF: ${{ github.ref }}
           GATE_COMMIT: ${{ github.sha }}
         run: node scripts/run-release-gate.mjs
+
+      # Reached only on `preview`: on `latest` the failed step above ends the job.
+      - name: Report the advisory gate failure
+        if: steps.gate.outcome == 'failure'
+        run: echo "::warning title=Release gate failed (advisory for preview)::The Azure DevOps release gate failed; the preview publishes anyway. latest still blocks on the gate -- the step above links the failed gate run."
 
   publish-npmjs:
     name: Publish to npmjs (latest / preview)
