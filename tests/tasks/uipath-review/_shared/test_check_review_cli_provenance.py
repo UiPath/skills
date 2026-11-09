@@ -147,7 +147,12 @@ def test_fails_on_clean_fixture_when_report_evidences_nothing(tmp_path):
 
 
 
-def test_passes_on_clean_fixture_when_validation_table_shows_zero_cli_counts(tmp_path):
+@pytest.mark.parametrize("command", [
+    "uip agent review",
+    "uip agent review ReviewSol/SampleAgent --output json",
+    "uip codedagent review ReviewSol/SampleAgent --output json",
+])
+def test_passes_on_clean_fixture_when_validation_table_shows_zero_cli_counts(tmp_path, command):
     uip = _fake_uip(tmp_path, _payload([], grade="A+", score=100))
     report = textwrap.dedent(
         """\
@@ -157,9 +162,9 @@ def test_passes_on_clean_fixture_when_validation_table_shows_zero_cli_counts(tmp
 
         | Project | Command | Errors | Warnings | Info |
         |---|---|---|---|---|
-        | SampleAgent | `uip agent review` | 0 | 0 | 0 |
+        | SampleAgent | `{command}` | 0 | 0 | 0 |
         """
-    )
+    ).format(command=command)
     r = run(tmp_path, report, uip)
     assert r.returncode == 0, r.stderr
 
