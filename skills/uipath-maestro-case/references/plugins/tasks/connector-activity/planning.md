@@ -1,16 +1,10 @@
 # connector-activity task — Planning
 
-A connector activity task inside a stage. Calls an external service (Jira, Slack, Salesforce, Gmail, etc.) via UiPath Integration Service.
-
-This plugin is **schema-data-driven** — one plugin covers every connector. Connector-specific input shapes are discovered from the `case spec` CLI's normalized output, not baked into this plugin.
+A connector activity in a stage calls an external service through UiPath Integration Service. Connector input shapes come from normalized `case spec` output, not this plugin.
 
 ## When to Use
 
-Pick this plugin when the sdd.md describes a task as `CONNECTOR_ACTIVITY` or names a specific external service action (e.g., "send a Slack message", "create a Jira issue", "update Salesforce opportunity").
-
-For **connector-based triggers** inside a stage (wait for an external event), use [connector-trigger](../connector-trigger/planning.md).
-
-For **case-level event triggers** (outside any stage), use [`plugins/triggers/event/`](../../triggers/event/planning.md).
+Use this plugin when sdd.md describes `CONNECTOR_ACTIVITY` or a named external-service action. For stage connector triggers, use [connector-trigger](../connector-trigger/planning.md). For case-level event triggers outside stages, use [`plugins/triggers/event/`](../../triggers/event/planning.md).
 
 ## External agents and automations
 
@@ -21,26 +15,25 @@ An external agent (CrewAI, Snowflake Cortex, Salesforce Agentforce, Azure AI Fou
 | `external-agent` | `typecache-external-agent-activities-index.json` |
 | `external-workflow` | `typecache-external-automation-activities-index.json` |
 
-Differences from a connector activity:
-- **§ 1:** search the index in the table, not `typecache-activities-index.json`. Pass `--type typecache-external-agent-activities` (or `typecache-external-automation-activities`) to `registry get-connection` in § 2.
-- **§ 2:** the connection must be the agent's own connector's. Execute Salesforce Agent is `uipath-salesforce-agent`, not a `uipath-salesforce-sfdc` connection; `case spec` refuses another connector's with `invalid_argument`.
-- **§ 3:** `case spec --type activity` finds the entry in the external catalog by itself.
+For § 1, search the listed index, not `typecache-activities-index.json`; in § 2 pass `--type typecache-external-agent-activities` or `--type typecache-external-automation-activities` to `registry get-connection`. Use the agent's own connector connection: Execute Salesforce Agent uses `uipath-salesforce-agent`, not `uipath-salesforce-sfdc`; `case spec` refuses another connector with `invalid_argument`. In § 3, `case spec --type activity` finds the external catalog entry itself.
 
-If `sdd convert` drops the task as a type an SDD may not declare, or `splice` refuses it as `not a connector task`, the CLI predates external tasks: say so in one line, keep the task as an `<UNRESOLVED>` placeholder ([§ Unresolved Fallback](#unresolved-fallback)), and ask the user to update `uip`.
+If `sdd convert` drops the task because its type is undeclared, or `splice` says `not a connector task`, say so in one line, retain it as an `<UNRESOLVED>` placeholder ([§ Unresolved Fallback](#unresolved-fallback)), and ask the user to update `uip`.
 
 ## Resolution Pipeline
 
-Run these steps during planning. Each step feeds into the resolved entry.
+Run these steps during planning; each feeds the resolved entry.
 
 ### 1. Find the connector in TypeCache
 
-If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 18 gate does not apply). If still missing after a pull whose `Data.Errors` lists `typecache-activities` with a 5xx, the catalog is unavailable — Scenario C below, no Rule 18 gate. If the pull synced it and the file is still absent, the tenant has no connector activities — emit placeholder per § Unresolved Fallback below.
+If `~/.uip/case-resources/typecache-activities-index.json` is absent, run `uip maestro case registry pull`. Absence before pulling is a precondition failure, not a 0-match, so Rule 18 does not apply. If it remains absent after a pull whose `Data.Errors` lists `typecache-activities` with a 5xx, the catalog is unavailable: use Scenario C without the Rule 18 gate. If the pull synced it but the file is still absent, the tenant has no connector activities: emit the placeholder in § Unresolved Fallback.
 
-Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
+Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match `displayName` or `connectorKey` plus the sdd.md operation description, and record `uiPathActivityTypeId`.
 
-**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 18 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Use placeholders for all`) for the lookup batch before any fallback. Only after the user picks `Use placeholders for all`: mark `type-id` `<UNRESOLVED: no typecache activity for <query>>`, skip § 2 (no `activity-type-id` to pass to `get-connection`), and fall through to § Unresolved Fallback (placeholder task, `data: {}`). Continue planning — do not halt ([planning.md § 3.4](../../../planning.md)).
+**No match (Scenario A — connector not found).** A 0-match in an existing cache is gated by Rule 18: run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Use placeholders for all`) for the lookup batch. Only after `Use placeholders for all`, set `type-id` to `<UNRESOLVED: no typecache activity for <query>>`, skip § 2 because there is no `activity-type-id`, and use § Unresolved Fallback with `data: {}`. Continue planning; do not halt ([planning.md § 3.4](../../../planning.md)).
 
 ### 2. Resolve the connection
+
+Run:
 
 ```bash
 uip maestro case registry get-connection \
@@ -48,20 +41,18 @@ uip maestro case registry get-connection \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
 
-Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, match it by `name` and use it directly. Otherwise **always present the choice via AskUserQuestion — do not auto-select**, even when one connection exists:
+The response has `Entry`, `Config`, and `Connections`. If sdd.md names a connection, match by `name` and use it. Otherwise **always present AskUserQuestion; never auto-select**, even with one connection:
 
-- **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option**.
-- **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
-- **Create chosen** → create it (background `is connections create`, capture `ConnectionId`), then continue with the new id. Procedure: [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection).
-- **Skip / create fails** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:` ([§ Unresolved Fallback](#unresolved-fallback)).
+- With non-empty `Connections`, list each `name` and **Create a new connection**.
+- With empty `Connections`, offer **Create a new connection** / **Skip (defer)**.
+- For Create, create it (background `is connections create`), capture `ConnectionId`, and continue with the new id. Follow [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection).
+- For Skip or creation failure, set `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:` ([§ Unresolved Fallback](#unresolved-fallback)).
 
-Record `connection-id`, `connector-key`, `object-name` from the response (or from the create output).
-
-Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
+Record `connection-id`, `connector-key`, and `object-name` from the response or creation output. For selection mechanics (`--refresh` retry, ping verification, BYOA workflow, creation), see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
 
 ### 3. Discover the operation contract via `case spec`
 
-One CLI call replaces the legacy `case tasks describe` + `is resources describe` dance:
+Run:
 
 ```bash
 uip maestro case spec --type activity \
@@ -71,7 +62,7 @@ uip maestro case spec --type activity \
   --output json
 ```
 
-`--skip-case-shape` returns a leaner response (no `caseShape`) — the right size for planning. Phase 3 re-runs the same command without the flag, plus `--input-details`, to mint the populated `caseShape`. See [`case-spec-input-details.md`](../../../case-spec-input-details.md) for the full `--input-details` JSON contract.
+`--skip-case-shape` omits `caseShape` for a lean planning response. Phase 3 reruns the command without it and with `--input-details` to mint populated `caseShape`. See [`case-spec-input-details.md`](../../../case-spec-input-details.md) for the full `--input-details` JSON contract.
 
 > **Synthetic HTTP request branch.** When `spec.identity.objectName` is `"httpRequest"` or `"http-request"`, the activity is the synthetic generic-HTTP path — `bodyParameters` is rejected (no curated body schema). Pass HTTP body via `queryParameters` instead, or omit. Spec output reflects this in `inputs.bodyFields = []`.
 
