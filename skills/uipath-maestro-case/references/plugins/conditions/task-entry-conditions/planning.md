@@ -1,30 +1,32 @@
 # task-entry-conditions — Planning
 
-Conditions controlling when a task within a stage starts. Attach to a task.
+Conditions that control **when a specific task within a stage starts**. Attach to a task.
 
 ## When to Use
 
-Use this plugin only when sdd.md literally uses "task entry condition" or a close variant: "task entry conditions", "entry rule on task", "task gate", or "task precondition". For whole-stage entry/exit conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md).
+Pick this plugin when the sdd.md **literally uses the phrase "task entry condition"** (or close variants: "task entry conditions", "entry rule on task", "task gate", "task precondition").
+
+For **stage-level** conditions (entire stage enters/exits), use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md).
 
 ## No omission — one caseplan element per sdd.md Entry Condition row
 
-Every task with an **Entry Condition** row gets its own task-entry condition, including `current-stage-entered`. Never skip, collapse, or omit it because the rule appears default; if sdd.md wrote the row, the build emits the element.
+Every task in sdd.md that declares an **Entry Condition** row gets its own task-entry condition — **including rule-type `current-stage-entered`**. Do NOT skip, collapse, or omit a condition because the rule-type looks like a default. If sdd.md wrote the row, the build emits the element. "The default behavior would already cover it" is not a valid reason to omit.
 
 ## Required Fields from sdd.md
 
-| Field | Source / requirements |
-|---|---|
-| `<stage-id>`, `<task-id>` | Captured from prior steps |
-| `rationale` | sdd.md task Design Rationale; required reviewer context for activation/sequencing, not emitted into caseplan JSON |
-| `display-name` | SDD Display Name verbatim when nonblank; omit blank / `—`, never invent. The implementation defaults to `Entry rule {N}`. If the SDD already contains that pattern, implementation renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
-| `rule-type` | Rule-Type Catalog below |
-| `selected-tasks-ids` | Required for `selected-tasks-completed`; comma-separated task IDs |
-| `sla-target` | `sla-status-change` arg 1: `"root"` (case-level SLA) or the SLA-owning stage name — normally the stage containing this task. Scopes the lookups below to that one SLA table. Required for `sla-status-change` |
-| `sla-display-name` | `sla-status-change` arg 2 — the target's SDD `SLA Title` (or a Variable SLA Rules `Display Name`). Target-unique SLA rule title; resolves to the SLA rule ID emitted from §4.8 during Phase 2. Required |
-| `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table. Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response, which references the SLA alone ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
-| `connector fields` | SDD **Connector Rule Detail** block: `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
-| `condition-expression` | Optional. Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block. Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
+| Field | Source | Notes |
+|-------|--------|-------|
+| `<stage-id>`, `<task-id>` | Captured from prior steps | |
+| `rationale` | sdd.md task Design Rationale | Required reviewer context for the activation/sequencing choice. Not emitted into caseplan JSON. |
+| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim. Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Entry rule {N}`. A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
+| `rule-type` | From catalog below | |
+| `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs |
+| `sla-target` | `sla-status-change` arg 1 | `"root"` (case-level SLA) or the SLA-owning stage name — normally the stage containing this task. Scopes the lookups below to that one SLA table. Required for `sla-status-change` |
+| `sla-display-name` | `sla-status-change` arg 2 — the target's SDD `SLA Title` (or a Variable SLA Rules `Display Name`) | Target-unique SLA rule title; resolves to the SLA rule ID emitted from §4.8 during Phase 2. Required |
+| `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table | Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response, which references the SLA alone ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
+| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
+| `condition-expression` | Optional | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
 
 ## Rule-Type Catalog (task-entry scope)
 

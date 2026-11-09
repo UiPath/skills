@@ -1,39 +1,60 @@
 # `case spec --input-details` — JSON shape reference
 
-> **Vendored from the CLI repo.** Canonical source: `packages/maestro-sdk/docs/connector-input-details.md` in the `UiPath/cli` repo (shared with `uip maestro bpmn registry get --input-details`; BPMN-only sections are omitted). Re-sync when the CLI `--input-details` contract changes; validators in `packages/maestro-sdk/src/connector-spec/input-validator.ts` are authoritative.
+> **Vendored from the CLI repo.** Canonical source: `packages/maestro-sdk/docs/connector-input-details.md` in the `UiPath/cli` repo (shared with `uip maestro bpmn registry get --input-details`; its BPMN-only sections are left out). Re-sync when the CLI's `--input-details` contract changes (the validators in `packages/maestro-sdk/src/connector-spec/input-validator.ts` are the source of truth).
 
-`uip maestro case spec` accepts optional `--input-details <json>` to pre-fill `caseShape`. Without it, `caseShape.inputs[*].body` are empty containers; with it, values populate and filters compile into FE-canonical sinks. Use this reference to construct the JSON.
+`uip maestro case spec` accepts an optional `--input-details <json>` flag that pre-fills the generated `caseShape` with values the consumer already has on hand. Without the flag, `caseShape.inputs[*].body` are empty containers (default behavior); with it, they're populated and the filter (if any) is compiled and spliced into the FE-canonical sinks.
+
+This document is the canonical reference for skills/agents that construct `--input-details` JSON.
+
+---
 
 ## When to use it
 
-Use `--input-details` with `case spec` when body, query, path, event, or filter values are known. Omit it when unknown so downstream substitution uses the default empty shape.
+- You're calling `case spec` to generate a connector task, AND you already know the values for body / query / path / event parameters AND/OR the filter the user wants to apply.
+- The compiled `caseShape` will be ready to drop into the case JSON without an additional configure step.
+
+If you don't yet have values, omit the flag — the default empty `caseShape` is the right shape for downstream substitution.
+
+---
 
 ## Top-level shape per task type
 
 ### `--type activity`
 
 ```jsonc
-{"bodyParameters":{},"queryParameters":{},"pathParameters":{},"filter":{}}
+{
+    "bodyParameters":  {},   // optional — body request fields (dotted keys allowed)
+    "queryParameters": {},   // optional — query string params
+    "pathParameters":  {},   // optional — path-template substitutions
+    "filter":          {}    // optional — FilterTree (compiles to CEQL)
+}
 ```
 
 ### `--type trigger`
 
 ```jsonc
-{"eventParameters":{},"queryParameters":{},"pathParameters":{},"filter":{}}
+{
+    "eventParameters": {},   // optional — design-time params scoping the trigger
+    "queryParameters": {},   // optional — trigger query params (scope selectors, resource pickers)
+    "pathParameters":  {},   // optional — trigger path params
+    "filter":          {}    // optional — FilterTree (compiles to JMESPath)
+}
 ```
 
-`{}` is valid and equivalent to omitting `--input-details`.
+Empty input details (`{}`) is valid and a no-op — equivalent to omitting the flag.
 
 #### `--trigger-kind` (trigger only)
 
-A case start trigger and a wait-for-connector task share a TypeCache entry; runtime distinguishes them by `activityType`. Always pass `--trigger-kind`:
+A case start trigger and a wait-for-connector task share one TypeCache entry; the runtime tells them apart only by `activityType`. Always pass it:
 
 | `--trigger-kind` | Use for |
 |---|---|
 | `start` | case-level start trigger (`Intsvc.EventTrigger` on the trigger node) |
-| `wait-for` (default) | in-stage `wait-for-connector` task or connector-bound condition rule |
+| `wait-for` (default) | in-stage `wait-for-connector` task, or a connector-bound condition rule |
 
-A start trigger without `--trigger-kind start` is typed as a wait and never fires.
+A start trigger spec'd without `--trigger-kind start` is typed as a wait and never fires.
+
+---
 
 ## Per-key reference
 
