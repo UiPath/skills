@@ -333,11 +333,14 @@ RUN set -euo pipefail && \
     cat "$FLOW_SDK_SETUP_STATUS"
 
 # Declare the versions this image bakes in, as a flat JSON object of name to
-# version. coder-eval 1.x records it with each run (the Evalboard run header
-# shows it); coder-eval 0.12 does not read it. An unresolved version is left out.
+# string. coder-eval 1.x records it with each run (the Evalboard run header
+# shows it); coder-eval 0.12 does not read it. An unresolved value is left out.
+# The connectors library is reported only when its registry snapshot is
+# available: `connectors-library` is the pinned build (absent for `latest`),
+# `connectors-library-sha` the content hash of the snapshot actually installed.
 RUN mkdir -p /etc/coder-eval && \
     jq --arg cli "$(uip --version | tail -n 1)" \
-      '{"uip-cli": $cli, "flow-sdk": .sdk.resolvedVersion, "connectors-library": .registry.libraryHash} | with_entries(select(.value != null and .value != ""))' \
+      '(.registry.status == "available") as $registry | {"uip-cli": $cli, "flow-sdk": .sdk.resolvedVersion, "connectors-library": (if $registry and .registry.requestedVersion != "latest" then .registry.requestedVersion else null end), "connectors-library-sha": (if $registry then .registry.libraryHash else null end)} | with_entries(select(.value != null and .value != ""))' \
       "$FLOW_SDK_SETUP_STATUS" > /etc/coder-eval/image-versions.json && \
     cat /etc/coder-eval/image-versions.json
 

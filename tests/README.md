@@ -437,6 +437,11 @@ success_criteria:
     command: "python3 $REFERENCE_DIR/check_asset_scoping.py"
 ```
 
+coder-eval 1.x stages only `reference.directory` itself, so a grader that
+imports a sibling (`../_shared`) needs `directory: ..` and
+`$REFERENCE_DIR/<subdir>/check_*.py` commands. When a task changes its
+`reference.directory`, update any grader docstring that states what is staged.
+
 A single helper script (`tests/tasks/uipath-platform/_setup/seed.py`) writes
 `seed.json` with a fresh `uuid8` and — when `E2E_PROCESS_KEY` is set —
 `process_key` + `folder_path` (resolved via `uip or processes list`, matched by Key — the `get` endpoint doesn't populate FolderPath). Tests

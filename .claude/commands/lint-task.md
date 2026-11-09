@@ -167,6 +167,8 @@ Severity passthrough from the script's findings:
 - **High** — pattern's verb path does not exist in the catalog. The criterion can never match a passing run; the task scores zero on the check. Fix: replace the verb with one that exists in the catalog, or delete the criterion if the test no longer requires that command.
 - **Medium** — pattern matches only retired verbs. Fix: update to the canonical verb listed in `.claude/rules/cli-renames.md`, or use an alternation (`(retired|canonical)`) if both must be accepted during a deprecation window.
 - **Info** — pattern is too dynamic to verify (contains `.*`, a character class, or an unbounded quantifier in a position that prevents literal enumeration). Not reported in the task's verdict — purely advisory.
+- **Info `unbounded-dot-repeat`** — a `.*`-like repeat sits between the `uip` verb and a required literal, so an operand named in another command of the same Bash call still counts. Surface it under "Could pass for the wrong reason"; suggest `[^;&|\n]*`.
+- **Info `negative-guard-coverage`** — for a `command_not_executed` guard, lists which catalog subcommands of the named verb group (plus `--help`) it forbids. Flag read-only subcommands in `forbidden` (e.g. `login which`) as likely false failures.
 
 The catalog is regenerated nightly by `.github/workflows/refresh-uip-catalog.yml`. If the script cannot find the catalog (`assets/uip-catalog-snapshot.json` missing), skip this axis entirely and emit an Info finding telling the user to run `python3 scripts/build-uip-catalog.py` locally.
 

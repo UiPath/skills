@@ -222,7 +222,7 @@ success_criteria:
     description: "Agent cloned with labels included (`clone ... --include ... labels`, must succeed)"
     tool_name: "Bash"
     # A single-quoted word is skipped whole, so a `;` inside `$(python3 -c '...')` does not end the command.
-    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+clone\b(?:\x27[^\x27\n]*\x27|\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--include(?:[\s\\=]+["\x27]?[a-z]+["\x27]?)*?[\s\\=]+["\x27]?labels\b'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+clone\b(?:(?<=[\s=($\x22])\x27[^\x27\n]*\x27|\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&\x27])*?--include(?:[\s\\=]+["\x27]?[a-z]+["\x27]?)*?[\s\\=]+["\x27]?labels\b'
     require_success: true
     min_count: 1
     weight: 1.5
