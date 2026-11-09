@@ -210,7 +210,7 @@ These limits are not CLI-enforced but improve extraction: keep groups to a reada
 - **Stable ids:** Groups and fields carry `x-uipath-field-group-id` and `x-uipath-field-id`, used by annotations, evaluator settings, and taxonomy history. First writes mint ids; later writes preserve submitted ids and assign a missing id from the same-named replaced entry.
 - **Model settings:** It rebuilds them from `inputs.modelConfig`.
 - **Validation:** It validates before writing. A non-schema or limit violation returns exit 3 and changes nothing on disk.
-- **Draft protection:** If Studio Web has an editing draft, `set` stops. Run `--discard-draft` only on the user's say-so; it proceeds by throwing the draft away.
+- **It refuses to destroy an unsaved draft.** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops rather than overwriting it. `--discard-draft` proceeds and throws the draft away — only on the user's say-so.
 
 ## Editing a taxonomy that already exists
 
@@ -241,7 +241,7 @@ On edits, inspect `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 | 3 | `Schema document failed validation` | Read `Data.Issues` for paths and problems. A missing parent is included: `Nested field group "<key>" has no parent group "<parent>"`. `Parent > Child` requires `Parent` in the same document; if an existing group was intended as parent, rename one key to match—never add an empty parent. |
 | 3 | `Invalid schema document` | Supply `prompt` and `outputSchema`; the document is not a schema. |
 | 3 | `Legacy schema document shape` | Send `{ prompt, outputSchema }`, not `{taxonomy, fieldTypes}`. An existing legacy node document is replaced and reports `ReplacedLegacyDocument: true`. |
-| 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Ask before running `--discard-draft`; it discards unfinished work. |
+| 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. |
 | 1 | `Invalid --schema JSON` | The argument did not parse; prefer `--schema @<file>` for sizeable JSON because shells mangle inline JSON. |
 | 1 | `Cannot read the schema file` | The `@` path is missing or unreadable; this is a path error, not malformed schema JSON. |
 | 1 | node not found, or wrong node type | Run `uip maestro flow nodes list <file>` for ids and types. Only Extract document nodes carry taxonomies. |
