@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration (`.bpmn`, `<Name>.bpmn.ts`): author, validate, package, operate and diagnose, including a BPMN process the user wants to see or sketch before it is built. Author `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and run the `uip maestro bpmn` check/compile/format/validate loop; edit an existing `.bpmn` by decompiling it. Operate: refresh package metadata, pack, upload to Studio Web, publish, debug, run a deployed process, inspect jobs and instances, pause/resume/cancel/retry/migrate. Diagnose a failed or stuck run: incidents, runtime variables, the deployed asset, element executions, cursors, traces. Covers events, gateways, tasks, sub-processes, sequence flows, the diagram, bindings, boundary handlers, event sub-processes, human tasks, Integration Service connectors, Data Fabric records and files, and any registry-backed extension type. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration (`.bpmn`, `.bpmn.ts`): author, validate, package, operate and diagnose, including a BPMN process the user wants to see or sketch before it is built. Author `.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and run the `uip maestro bpmn` check/compile/format/validate loop; edit an existing `.bpmn` by decompiling it. Operate: refresh package metadata, pack, upload to Studio Web, publish, debug, run a deployed process, inspect jobs and instances, pause/resume/cancel/retry/migrate. Diagnose a failed or stuck run: incidents, runtime variables, the deployed asset, element executions, cursors, traces. Covers events, gateways, tasks, sub-processes, sequence flows, the diagram, bindings, boundary handlers, event sub-processes, human tasks, Integration Service connectors, Data Fabric records and files, and any registry-backed extension type. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
@@ -13,6 +13,14 @@ variables, bindings, and sequence flows.
 
 Use this file as a router. Read only the reference named by the capability you
 need, then let TypeScript and `bpmn check` provide the detailed contract.
+
+## Critical Rules
+
+1. Edit the `<Name>.bpmn.ts` source, never the compiled `.bpmn`: the next `compile` overwrites a hand edit, so change the source and rebuild.
+2. Seed an existing process, or the stub `bpmn init` wrote, with `bpmn decompile`; never hand-write the skeleton (step 4).
+3. Leave a `.preserve({ … })` call that `decompile` wrote alone; it carries state nothing else derives (step 4).
+4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (step 5).
+5. After each compile, run `format`, then `refresh`, then `validate`, in that order (steps 6–7).
 
 <!--skill-flavor:host-setup:start-->
 

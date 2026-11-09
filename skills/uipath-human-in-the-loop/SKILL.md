@@ -83,8 +83,10 @@ find . -maxdepth 4 \( -iname "*.json" -o -iname "*.case" \) -print0 2>/dev/null 
 # Check for agent.json (Low-Code Agent project)
 find . -name "agent.json" -maxdepth 4 | head -3
 
-# Check for Maestro .bpmn (Maestro process)
-find . -name "*.bpmn" -maxdepth 4 | head -3
+<!--skill-flavor:bpmn-sdk-surface-detect:start-->
+# Check for Maestro .bpmn or .bpmn.ts source (Maestro process)
+find . -maxdepth 4 \( -name "*.bpmn" -o -name "*.bpmn.ts" \) | head -3
+<!--skill-flavor:bpmn-sdk-surface-detect:end-->
 ```
 
 | Found | Surface | How HITL is added |
@@ -97,7 +99,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 <!--skill-flavor:case-sdk-surface-row:end-->
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 <!--skill-flavor:bpmn-sdk-surface-row:start-->
-| `<Name>.bpmn.ts` or `.bpmn` (Maestro) | **Maestro** | Author a `.humanTask(...)` in `<Name>.bpmn.ts` through the `uipath-maestro-bpmn` skill ([Human tasks](../uipath-maestro-bpmn/references/bpmn-runtime.md#human-task-outcomes)); never write task XML into the compiled `.bpmn` — `compile` overwrites it |
+| `<Name>.bpmn.ts` or `.bpmn` (Maestro) | **Maestro** | Author a `.humanTask(...)` in `<Name>.bpmn.ts` through the `uipath-maestro-bpmn` skill (its *Human task outcomes* section in `references/bpmn-runtime.md`); never write task XML into the compiled `.bpmn` — `compile` overwrites it |
 <!--skill-flavor:bpmn-sdk-surface-row:end-->
 
 <!--skill-flavor:flow-sdk-hitl-stop:start-->
@@ -109,7 +111,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 
 <!--skill-flavor:case-sdk-hitl-stop:end-->
 <!--skill-flavor:bpmn-sdk-hitl-stop:start-->
-**Maestro surface (a `<Name>.bpmn.ts`, a `.bpmn`, or a new Maestro process) — the default: stop here too.** Hand the HITL request to the `uipath-maestro-bpmn` skill: it authors `.humanTask(...)` in `<Name>.bpmn.ts` — decompiling an existing `.bpmn` first — and compiles ([Human tasks](../uipath-maestro-bpmn/references/bpmn-runtime.md#human-task-outcomes)). A task is an inline form unless the request names a deployed Action App. Never hand-edit the compiled `.bpmn`; the next `compile` overwrites it. In this package, the Maestro sections of Steps 2–6 below do not apply.
+**Maestro surface (a `<Name>.bpmn.ts`, a `.bpmn`, or a new Maestro process) — the default: stop here too.** Hand the HITL request to the `uipath-maestro-bpmn` skill: it authors `.humanTask(...)` in `<Name>.bpmn.ts` — decompiling an existing `.bpmn` first — and compiles (that skill's *Human task outcomes* section in `references/bpmn-runtime.md`). A task is an inline form unless the request names a deployed Action App. Never hand-edit the compiled `.bpmn`; the next `compile` overwrites it. In this package, the Maestro sections of Steps 2–6 below do not apply.
 
 <!--skill-flavor:bpmn-sdk-hitl-stop:end-->
 **If the user mentioned a specific file path**, use that directly.
@@ -348,7 +350,7 @@ response = interrupt(CreateTask(
 ### Surface: Maestro
 
 <!--skill-flavor:bpmn-xml-write:start-->
-In this package, Maestro HITL is authored by the `uipath-maestro-bpmn` skill (the Maestro stop in Step 1). Do not write BPMN XML here.
+In this package, Maestro HITL is authored by the `uipath-maestro-bpmn` skill (the Maestro stop in Step 1). Do not write BPMN XML here. If the `uipath-maestro-bpmn` skill is not installed, tell the user it is needed to add a human task to a Maestro process (`npx skills add UiPath/skills --skill uipath-maestro-bpmn`), and stop; do not fall back to writing XML into the compiled `.bpmn`.
 <!--skill-flavor:bpmn-xml-write:end-->
 
 ---

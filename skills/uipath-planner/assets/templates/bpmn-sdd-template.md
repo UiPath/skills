@@ -309,9 +309,11 @@ flowchart LR
 
 ### HITL Touchpoints
 
-<!-- Flag userTask nodes. Authored INLINE by uipath-maestro-bpmn (Actions.HITL on bpmn:UserTask) — do NOT route
-     to uipath-human-in-the-loop, which does not support .bpmn hosts. Record business intent only (who approves,
-     what criteria); the BPMN specialist owns the task schema. -->
+<!--skill-flavor:bpmn-hitl-touchpoints:start-->
+<!-- Flag human-task nodes. Authored INLINE by uipath-maestro-bpmn (`.humanTask(...)` in the `.bpmn.ts` source) — do
+     NOT route to uipath-human-in-the-loop, which hands Maestro HITL back to uipath-maestro-bpmn. Record business
+     intent only (who approves, what criteria); the BPMN specialist owns the task schema. -->
+<!--skill-flavor:bpmn-hitl-touchpoints:end-->
 
 | Node Key | HITL Type | Purpose | Approval Criteria |
 |---|---|---|---|
