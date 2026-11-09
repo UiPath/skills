@@ -443,9 +443,23 @@ outline, or has not answered, report the skeleton as an outline, not as a
 finished process.
 <!--skill-flavor:draft-shape-display:start-->
 Draft mode shows the
-shape by upload when the request allows one (2f); when it forbids upload,
-show the laid-out local `.bpmn` path and a short text outline instead.
+shape by upload when the request allows one (2f): the upload returns
+`Data.DesignerUrl`, and that link is the reply's second line. When the
+request forbids upload, the second line is the laid-out local `.bpmn` path
+and the 3c reply's box lines are the outline.
 <!--skill-flavor:draft-shape-display:end-->
+
+**A draft run has two endings, and each is a fixed template.** The turn
+that makes the skeleton ends with the 3c reply: read
+[references/gate-reply-template.md](references/gate-reply-template.md) in
+full before you write it. Its first characters are `<Name>: outline ready`
+and it is your whole final message. Never draw or describe the shape in
+chat: no diagram, arrow chain, `Shape:` or `File:` line, or validation note.
+The turn that answers *Build it* runs phase 4 and ends with the 4g report in
+its template, whose first characters are `<Name>: built`. That turn asks the
+user nothing. Where the request leaves a business value open (a rate, a
+threshold, a price band), choose a defensible value, build with it, and name
+it under `Assumed:`.
 
 Author early: do not pre-read every reference before writing. Read a reference
 only when you reach the structure it covers, and read only the section covering
@@ -914,7 +928,7 @@ full, then end the turn with the reply exactly as it shows.
   <Name>: built, validated<, uploaded><, run> (<draft|auto> mode). <One sentence if you kept the user's online changes.>
 <!--skill-flavor:final-first-line:end-->
 <!--skill-flavor:final-path-line:start-->
-  <DesignerUrl as a link on its own line, or the local .bpmn path>
+  <Data.DesignerUrl as a link on its own line when you uploaded; the local .bpmn path only when you did not>
 <!--skill-flavor:final-path-line:end-->
 
   - <what changed, one line each, at most 5 lines in all>
