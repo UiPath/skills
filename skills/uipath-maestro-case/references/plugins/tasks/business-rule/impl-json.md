@@ -58,7 +58,7 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
      "elementId": "Stage_aB3kL9-tR7kWm2Pd" }
    ```
 
-4. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
+4. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. `activation-mode: parallel` (`current-stage-entered`) tasks get their own single-task inner array; only `parallel-after-predecessor` siblings (`runs-sequentially`) may share `tasks[laneIndex][]`. If `lane` conflicts with mode, mode wins.
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 

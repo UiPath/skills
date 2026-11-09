@@ -19,7 +19,7 @@ For structural edits to an existing `caseplan.case` (add, change, or remove task
 ## R1 — Add a wait-for-timer task
 
 1. Locate the stage by `id`; ensure `data.tasks` exists.
-2. Give the task its own inner array: `data.tasks.push([task])`. Share one only when explicitly requested as a parallel sibling of existing tasks; otherwise use its own.
+2. Give the task its own inner array: `data.tasks.push([task])`. Share one only when the request makes it a `parallel-after-predecessor` sibling (`runs-sequentially`) of existing tasks; a sibling that starts with the stage still gets its own.
 3. Use this shape; `data` contains only `timerType` and the duration; every other field is a top-level sibling:
 
    ```json
