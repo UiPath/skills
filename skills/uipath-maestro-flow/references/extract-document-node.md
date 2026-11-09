@@ -35,7 +35,7 @@ uip maestro flow nodes list Flow/Flow.flow --output json
 uip maestro flow validate Flow/Flow.flow --output json
 ```
 
-`fileRef` is the one input only the author can supply, and the flow does not validate without it. The taxonomy is written next, in [extract-document-taxonomy.md](extract-document-taxonomy.md), and the node extracts nothing until the user saves the flow once in Studio Web ([Making it actually extract](#making-it-actually-extract)).
+`fileRef` is the one input only the author can supply, and the flow does not validate without it. The taxonomy is written next, in [extract-document-taxonomy.md](extract-document-taxonomy.md). The processor the extraction runs through arrives with the node, and packing keeps it in step ([Making it actually extract](#making-it-actually-extract)).
 
 ## The loop
 
@@ -49,7 +49,7 @@ that lives in Studio Web and has to be pulled down first — ask them for its UR
 4. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
 5. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
 6. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
-7. **Report** what was added, where it reads its file from, and what it extracts, and tell the user about the Studio Web save ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is their step too.
+7. **Report** what was added, where it reads its file from, and what it extracts, and that the node's processor resource was written under the solution's `resources/`, which travels with the `.flow` ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
 
 ## Not available everywhere
 
@@ -70,6 +70,7 @@ The created node already carries everything else it needs:
 | `inputs.schemaDocument` | an empty taxonomy with the six built-in field types defined, so the first taxonomy written to it never has to invent a type shape |
 | `inputs.modelConfig` | working model defaults, so the node runs without being configured |
 | `inputs.source` | a minted identifier for the node's own extraction; nothing for you to supply |
+| `inputs.processorKey` and `inputs.processorName` | the processor the extraction runs through; inside a solution its resource file is written too, and outside one the output says `ResourcePending` and pack creates it later ([Making it actually extract](#making-it-actually-extract)) |
 | `outputs.output` and `outputs.error` | both ports named on the instance, which is what lets a downstream `$vars` read resolve |
 | no top-level `model` block | the slim manifest model belongs in `definitions[]`, and validation rejects a copy on the instance |
 
@@ -174,21 +175,29 @@ For this node, validation enforces that `fileRef` is a `$vars` reference rather 
 
 ## Making it actually extract
 
-A node authored entirely through the CLI validates and deploys, but extracts nothing until the user opens the flow in Studio Web and saves it once. Say this when handing the work over, rather than letting them discover it from a failed run.
+<!--skill-flavor:extract-processor-sync:start-->
+At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. The CLI provisions it while you author: `nodes create` mints the key and writes the processor's resource file into the enclosing solution, `nodes schema set` does the same for a node that has none, and `uip solution pack` regenerates the resource from the node — so the deployed processor matches the taxonomy last written. The `.flow` and the resource file under `resources/` belong together: whatever stores, uploads or versions the solution must carry both, since pack builds from what it is given.
+<!--skill-flavor:extract-processor-sync:end-->
 
-At run time the extraction service resolves which processor to use from `inputs.processorKey`, a tenant-side resource holding its own copy of the taxonomy. Nothing in the CLI provisions one. Running without it faults the instance:
+A node from before the CLI provisioned anything, onewritten by hand, or compiled from `.flow.ts` source, arrives without a processor. `validate` reports it as an error, and one command repairs the whole file:
+
+```bash
+uip maestro flow nodes provision <file> --output json
+```
+
+Never write a `processorKey` by hand, and never copy one from another node: a processor holds exactly one node's extraction definition, and pack refuses a solution where two nodes define the same one. A node meant to run another node's processor sets `inputs.processorReadOnly: true` instead.
+
+A package built from a node without a processor faults at run time:
 
 ```
 errorCode 461008 — Invalid IDP.Extraction node input
 'processorKey' is required and must be a GUID, unless a processor name and folder are provided to resolve one
 ```
 
-Before that fault the node may appear to succeed: the element completes in a fraction of a second and publishes an empty object, which reads as a working step returning nothing rather than as a missing one. Treat an extract step that finishes that fast, or returns `{}`, as unprovisioned rather than as a taxonomy that matched nothing.
-
-The Studio Web save is what provisions the processor; extraction works from then on. Do not synthesise a `processorKey`, and do not copy one from another node — it names a different taxonomy.
+and before that fault the step can look like it worked: it completes in a fraction of a second and publishes an empty object. Treat a deployed extract step behaving that way as shipped without its processor — provision, then pack or publish again — rather than as a taxonomy that matched nothing.
 
 <!--skill-flavor:extract-after-save:start-->
-One thing to expect on the way back. Saving in Studio Web may convert the node to the processor variant (`uipath.ixp.processor.<key>`), which is a different node type from the one that was created. Pull the solution down again before editing it further, so a later CLI write does not overwrite what Studio Web wrote — and where the pulled node is the processor variant, `nodes schema set` refuses it, and the taxonomy is edited in Studio Web from then on.
+When the flow has been through Studio Web since it was pulled down, pull the solution again before editing it further, so a later CLI write does not overwrite what the designer saved — it saves as the user edits, with no save button. The node comes back as it went: the designer keeps its type, its `processorKey` and its resource file. A node the user added there as the processor variant (`uipath.ixp.processor.<key>`) is a different node type — `nodes schema set` refuses it, and its taxonomy is edited in Studio Web.
 <!--skill-flavor:extract-after-save:end-->
 
 ## When Extract document is not available
@@ -227,8 +236,7 @@ For an Extract document node setting or resource that this guide does not cover,
 | "Confirm these values" / "annotate the documents" | "I can't annotate test documents. See [Validating predicted values](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/validating-extractions)." |
 | "Set up the evaluators" / "how should this field be scored?" | "I can't configure the node's evaluators. See [Running an evaluation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/running-an-evaluation)." |
 | "Run an eval" / "evaluate on this one file" / "what's my score?" / "compare the eval runs" / "improve the accuracy" | "I can't run or read evaluations for this node. See [Running an evaluation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/running-an-evaluation) and [Evaluating model performance](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/evaluating-model-performance)." |
-| "Make the extract node actually run" / "provision the processor" / "set the processorKey" | "I can't create the node's processor from here. Save the flow once in the flow designer; that creates it, and extraction works after you publish and deploy." |
 
 ## Evidence boundary
 
-Everything here is offline file authoring, apart from the registry lookup, which needs login to see what the tenant serves. `validate` proves the node is wired and shaped correctly — that `fileRef` resolves to something upstream, that the ports are named, that the taxonomy is well formed. It proves nothing about what the node extracts: that takes the Studio Web save ([Making it actually extract](#making-it-actually-extract)) and then a run against real documents, which usually sends the taxonomy back for a round of tightening.
+Everything here is offline file authoring, apart from the registry lookup, which needs login to see what the tenant serves. `validate` proves the node is wired and shaped correctly — that `fileRef` resolves to something upstream, that the ports are named, that the taxonomy is well formed, that the node has its processor. It proves nothing about what the node extracts: that takes a deploy and a run against real documents, which usually sends the taxonomy back for a round of tightening.

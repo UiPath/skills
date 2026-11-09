@@ -6,10 +6,13 @@ description: >
   instructions) and that only the taxonomy moves: the target keeps its own
   label, file input, extraction source and model settings, and takes no
   processorKey from the source. Ids are not graded: the guide does not say whether a copy keeps the
-  source's ids or gets new ones.
+  source's ids or gets new ones. Whether the target ends up with a processorKey
+  of its own is not graded either — a CLI that provisions at `nodes schema set`
+  mints one, an older one leaves the node without — only that it never carries
+  the source's.
 
-  No `flow debug`: a CLI-authored Extract document node extracts nothing
-  until the flow is saved once in Studio Web.
+  No `flow debug`: the task is offline authoring, and nothing in it deploys or
+  runs the flow.
 
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
 
@@ -75,10 +78,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Extract Credit Note has no processorKey: a copied key would name Extract Invoice's processor"
+    description: "Extract Credit Note does not carry Extract Invoice's processorKey: a copied key would name the source's processor, which pack refuses as a duplicate author. A key of its own, or none, both pass — provisioning at `nodes schema set` depends on the CLI version."
     path: "BillingDocs/BillingDocs/BillingDocs.flow"
     assertions:
-      - expression: "length(nodes[?id=='extractCreditNote1' && inputs.processorKey])"
+      - expression: "length(nodes[?id=='extractCreditNote1' && inputs.processorKey=='3f6b2a9e-8c41-4d7a-9b25-61e0c4d8f713'])"
         operator: equals
         expected: 0
     weight: 1.5

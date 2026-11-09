@@ -406,7 +406,7 @@
       "maestro flow": 168,
       "maestro flow eval": 82,
       "maestro flow hitl": 6,
-      "maestro flow nodes": 8,
+      "maestro flow nodes": 10,
       "solution pack": 3,
       "tools update": 10
     }
@@ -441,7 +441,7 @@
       {
         "file": "references/integration-service/activity-generation/runtime.md",
         "command": "is resources",
-        "reason": "Prose in a diagram (`uip is resources reads the file …`), not a command."
+        "reason": "Prose in a diagram (`uip is resources reads the file \u2026`), not a command."
       },
       {
         "file": "references/licensing/diagnose/references/troubleshooting-guide.md",
