@@ -39,8 +39,9 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:case.script.positional-rename -->
 - The function form's parameters are positional: first parameter becomes
-  `vars`, second becomes `metadata`. Original names do not matter; the
-  mapping is by position, not by name. A function-local `const` is fine;
+  `vars`, second becomes `metadata`. The mapping is by position, not by
+  name. Any names work, except `metadata` first or `vars` second, which
+  compile refuses. A function-local `const` is fine;
   a module-scope constant or an `import` is refused at compile.
 
 <!-- RULE:case.script.string-body -->
