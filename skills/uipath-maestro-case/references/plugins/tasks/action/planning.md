@@ -1,73 +1,70 @@
 # action task — Planning
 
-A human-in-the-loop (HITL) action task. Assigns a task to a user or group for manual review, approval, or data entry via the Actions app.
+A human-in-the-loop (HITL) action task assigns manual review, approval, or data entry to a user or group through the Actions app.
 
 ## When to Use
 
-Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring manual user interaction: approval, review, sign-off, correction, classification by a person.
+Use this plugin when sdd.md describes a `HITL` task or manual interaction: approval, review, sign-off, correction, or human classification.
 
 ## Required Fields from sdd.md
 
-| Field | Source | Notes |
-|-------|--------|-------|
-| `display-name` | sdd.md task name |  |
-| `resource-name` | `Action App: <deploymentTitle>` in sdd.md `HITL Implementation` | Concrete registry query; REQUIRED and never `<UNRESOLVED>`. Do not substitute `display-name`. |
-| `name` | Selected registry `deploymentTitle` | Runtime resource binding consumed by Phase 2; use the selected app's canonical title. |
-| `folder-path` | Selected registry `deploymentFolder.fullyQualifiedName` | Runtime folder binding consumed by Phase 2; use the selected app's exact deployment folder. |
-| `task-type-id` | Registry resolution (below) | Action-app ID |
-| `task-title` | sdd.md task title or description (see fallback below) | Required for `action` type. |
-| `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`.  |
-| `recipient` | sdd.md assignee email; **prompt the user if silent** | See Recipient Handling below. |
-| `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
-| `isRequired` | sdd.md (default `true`) |  |
+| Field | Source / rule |
+|---|---|
+| `display-name` | sdd.md task name |
+| `resource-name` | `Action App: <deploymentTitle>` in sdd.md `HITL Implementation`; query the concrete registry value, REQUIRED and never `<UNRESOLVED>`. Never substitute `display-name`. |
+| `name` | Selected registry `deploymentTitle`; canonical title consumed by Phase 2. |
+| `folder-path` | Selected registry `deploymentFolder.fullyQualifiedName`; exact folder consumed by Phase 2. |
+| `task-type-id` | Registry resolution below; action-app ID. |
+| `task-title` | sdd.md task title or description; required for `action`, using the fallback below. |
+| `priority` | sdd.md, default `Medium`; `Low` / `Medium` / `High` / `Critical`. |
+| `recipient` | sdd.md assignee email; **prompt the user if silent**. See Recipient Handling. |
+| `inputs` | sdd.md task data mapping; see [bindings-and-expressions.md](../../../bindings-and-expressions.md). |
+| `outputs` | sdd.md task Outputs + `tasks describe` schema; follow [the shared I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
+| `isRequired` | sdd.md, default `true`. |
 
 ## Task Title Fallback
 
-`task-title` is what the user sees in the Actions app. Required on resolved action tasks (placeholders skip — see § Unresolved Fallback). Derive in this order:
+`task-title` is shown in the Actions app and required on resolved action tasks; placeholders skip it (see § Unresolved Fallback). Derive it in order:
 
-1. SDD has an explicit title or question field → use it
-2. SDD has a Description → summarize into a short, concise title
-3. Neither → use the `display-name`
+1. Use an explicit SDD title or question field.
+2. Otherwise summarize the SDD Description into a short, concise title.
+3. Otherwise use `display-name`.
 
 ## Registry Resolution
 
-1. **Primary cache file:** `action-apps-index.json`.
+1. Use the primary cache file `action-apps-index.json`; always inspect it directly because **CLI search known to fail** for action-apps.
 2. **Identifier field:** `id` (NOT `entityKey` — action-apps use a different field).
-3. **Name field:** `deploymentTitle` (not `name`).
-4. **Folder field:** `deploymentFolder.fullyQualifiedName`.
-5. **CLI search known to fail** for action-apps — always use direct cache-file inspection.
-6. Set `name` to the selected entry's canonical `deploymentTitle` and `folder-path` to its exact `deploymentFolder.fullyQualifiedName`. Never substitute the task display name or a parent/truncated folder.
-7. Discover form fields / inputs / outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
+3. Use `deploymentTitle`, not `name`.
+4. Use `deploymentFolder.fullyQualifiedName` for the folder.
+5. Query the exact concrete `resource-name` from the SDD, then set `name` to the selected entry's canonical `deploymentTitle` and `folder-path` to its exact `deploymentFolder.fullyQualifiedName`; never use the task display name or a parent/truncated folder.
+6. Run `tasks describe` to discover form fields, inputs, and outputs—see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
-Query by the exact concrete `resource-name` from the SDD. `Action App ID` determines whether the prior phase resolved the app; an unresolved ID does not erase or replace the intended title. Action lookups stay in `action-apps-index.json` — never adopt a same-named resource from another cache type.
-
-See [registry-discovery.md](../../../registry-discovery.md#when-a-search-returns-nothing) for the fallback rationale.
+`Action App ID` indicates whether the prior phase resolved the app; an unresolved ID does not erase or replace the intended title. Keep action lookups in `action-apps-index.json`; never use a same-named resource from another cache type. See [registry-discovery.md](../../../registry-discovery.md#when-a-search-returns-nothing) for the fallback rationale.
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found in action-apps-index.json>`, using the SDD's preserved Action App title even when its ID/folder are unresolved. Emit only structural fields — drop every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
+Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found in action-apps-index.json>`, preserving the SDD's Action App title even when its ID or folder is unresolved. Emit only structural fields: omit every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
 
 ## Recipient Handling
 
-> Resolved action tasks only — placeholders skip this entire section (see § Unresolved Fallback).
+> Resolved action tasks only; placeholders skip this section.
 
-`recipient` decides whose Actions queue the task lands in. Planning records a bare value; the build wraps it into the `{ Type, Value }` object the caseplan carries.
+`recipient` determines whose Actions queue receives the task. Planning records a bare value; the build wraps it in the `{ Type, Value }` object carried by the caseplan.
 
-1. **sdd.md names a user email** — record the bare email exactly as authored: `recipient: alex@corp.com`.
-2. **sdd.md names a group or role** — record the bare group name behind a `UserGroup:` prefix: `recipient: UserGroup: Compliance`. The prefix is what marks it a group; it is stripped from the value. Do not look the group up.
-3. **sdd.md is silent** — ask with **AskUserQuestion**, using a direct open-ended prompt rather than a finite option list:
+1. If sdd.md names a user email, record it exactly as authored: `recipient: alex@corp.com`.
+2. If it names a group or role, record the bare name behind a `UserGroup:` prefix: `recipient: UserGroup: Compliance`. The prefix marks it as a group and is stripped from the value. Do not look up the group.
+3. If sdd.md is silent, ask with **AskUserQuestion** using a direct open-ended prompt, not a finite option list:
    > "The action task '<display-name>' has no assignee specified in sdd.md. Who should receive it? Enter an email, a group/role name, or 'Skip' to leave it unassigned for now."
 
-   Then apply rule 1 or 2 to the answer. `Skip`, empty, or a non-interactive run with no answer available → omit `recipient` and record an `assignment-note` saying the task will reach nobody until someone assigns it.
+   Apply rule 1 or 2 to the answer. `Skip`, an empty answer, or a non-interactive run without an answer omits `recipient` and records an `assignment-note` that the task will reach nobody until someone assigns it.
 
-> **This field holds a name, never a UUID.** An assignment recipient is not an escalation recipient: an SLA escalation writes `{ scope, target, value }` and needs the directory UUID in `target`, while an assignment writes one field that holds the name or email. The two shapes read alike, so the SLA plugin's group-to-UUID lookup looks reusable here. It is not, and a UUID in this field is rejected at runtime.
+> **This field holds a name, never a UUID.** An assignment recipient is not an escalation recipient: SLA escalation writes `{ scope, target, value }` and requires the directory UUID in `target`; assignment writes one field containing a name or email. Do not reuse the SLA plugin's group-to-UUID lookup. A UUID here is rejected at runtime.
 
-> **A group must already have folder access, which this skill cannot grant.** It reaches the task only when it exists in Orchestrator **and** holds a role on the task's folder; `uip admin groups create` gives it neither. Without both the task is created and reaches nobody — the same visible outcome as omitting the recipient, and `validate` sees neither. Record an `assignment-note` naming the group so the user can grant it access.
+> **A group must already have folder access, which this skill cannot grant.** The group receives the task only if it exists in Orchestrator and holds a role on the task's folder; `uip admin groups create` grants neither. Without both, the task is created but reaches nobody—the same visible outcome as omitting the recipient—and `validate` sees neither. Record an `assignment-note` naming the group so the user can grant access.
 
 ## Fields to Resolve
 
-Ledger entry in `tasks/registry-resolved.json` for a resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape).
+For a resolved action task, record this ledger entry in `tasks/registry-resolved.json`. For the unresolved placeholder shape, see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape).
 
 ```json
 {
@@ -87,8 +84,8 @@ Ledger entry in `tasks/registry-resolved.json` for a resolved action task. For t
 }
 ```
 
-`recipient` carries the resolved assignee — `UserGroup: <group name>` for a group, omitted on Skip or no answer; `assignment-note` is optional. `matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object.
+`recipient` contains the resolved assignee—`UserGroup: <group name>` for a group—and is omitted on Skip or no answer; `assignment-note` is optional. `matches` is the complete exact-name set from the refreshed cache, and `selected` is the chosen match object.
 
-Everything else the SDD declares — task title, priority, inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. Phase 2 reads it straight from there ([planning.md § Step 4](../../../planning.md)).
+All other SDD declarations—task title, priority, inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text—remain in `sdd.md`; Phase 2 reads them there ([planning.md § Step 4](../../../planning.md)).
 
 <!-- END: planning.md -->

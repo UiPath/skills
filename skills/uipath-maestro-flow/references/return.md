@@ -30,10 +30,10 @@ so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:named-end-sdk-upgrade:end-->
 
 ```ts
-.step('fetch', http({ url, managed: false, branches: [{ name: 'missing', condition: js`$vars.fetch.output.statusCode === 404` }] }))
-.stepToList('branch-missing', (b) => b.step('reportMissing', script({ code })).stepToRef('done'))
+.step('fetch', http({ url, managed: true }))
+.onError((h) => h.step('reportFailure', script({ code })).stepToRef('done'))
 .step('useResult', script({ code }))
-.return({}, { name: 'done' })   // reportMissing -> done, useResult -> done
+.return({}, { name: 'done' })   // reportFailure -> done, useResult -> done
 ```
 
 - Only a named End is a target. Unnamed `.return()` ends emit `end`, `end2`, ... in emission order; `.stepToRef('end')` is `REF_UNKNOWN_TARGET` unless an End declares `{ name: 'end' }`.

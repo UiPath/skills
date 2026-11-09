@@ -25,13 +25,12 @@ Route failures through a handler path. `.stepToList(port, fn)` runs a path from 
 | `core.subflow` | `<step>.error` | the envelope |
 | `core.action.queue.create` | `<step>.error` | the envelope |
 | `core.action.http.v2` (`managed: true`) | `<step>.output` | the boolean `true` |
-| `core.action.http` (`managed: false`) | nowhere | the boolean `true` |
 
 `serialize` rewrites exception-family reads, keeping authored source uniform; update the family table rather than fleet-wide source. `flow validate` warns `EXPRESSION_DIAGNOSTIC` for runtime-filled but undeclared `element` and `response` on any family (`Property 'element' does not exist on type '<Step>_Error'`), and for every managed HTTP envelope field because rewritten `<step>.output` is typed only as `{ error }` (`Property 'output' does not exist on type '{ error: <Step>_Error; }'`). Accept exactly these diagnostics on reads written with `err()` or `h.err()`; any other `EXPRESSION_DIAGNOSTIC` resolves to nothing.
 
 When a handled step fails, a script step still applies its own `{ updates }`; a sub-flow and `.loop()` container do not. Put success-only updates on the following step.
 
-Plain `http({ managed: false })` publishes no envelope in any version: 1.0.0 and the 1.3 `uip maestro flow migrate` upgrades it to both leave `<step>.output` null. `check` therefore refuses its handler (`HTTP_ONERROR_V1`) rather than emitting a useless read. The node is retired from the tenant registry, which serves only `core.action.http.v2`; `check` reports `HTTP_V1_RETIRED`. Moving to the managed node makes non-2xx fail instead of reaching success with `statusCode`; read the status branch in a handler with `err(step, 'status')`.
+Plain `http({ managed: false })` no longer runs: the tenant answers 500 `No handler registered for extension type 'Intsvc.HttpExecution'` and its registry serves only `core.action.http.v2`. `check` warns `HTTP_V1_RETIRED` and refuses a handler there (`HTTP_ONERROR_V1`). Moving to the managed node makes non-2xx fail instead of reaching success with `statusCode`; read the status branch in a handler with `err(step, 'status')`.
 
 A `.loop()` may carry a handler: `.onError()` after `.loop(...)` wires the container error port; body failures route there, and the instance completes with the body's message in `detail` and failing body label in `element`. Read it with `h.err('detail')`. Inside a loop body, end a step handler with `.continue()` to skip the item and continue to the next ([`loops.md`](loops.md#loop-options)).
 

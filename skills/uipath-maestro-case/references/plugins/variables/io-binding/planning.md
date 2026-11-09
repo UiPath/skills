@@ -59,10 +59,10 @@ Before writing the task's `data.inputs[]`, reject any projected input item that 
 
 ## Discovering Input/Output Names
 
-1. **SDD per-task tables** — primary source. Each task lists input/output field names, types, and variable bindings.
-2. **`uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). The SDD per-task Outputs table uses TWO operators (per v1 contract — see the case SDD template (`uipath-planner`) Section 2):
+1. **SDD per-task tables** are primary: each task declares input/output names, types, and variable bindings.
+2. Run `uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json` to validate SDD names and discover additional fields (for example, standard `Error` output). The SDD per-task Outputs table uses two operators per v1 contract (see the case SDD template (`uipath-planner`) Section 2):
+   - **`->` extract:** `<sdd-field-path> -> <case variable>`. The left side is the full runtime path relative to the task root; the right side is the target case variable, which MUST exist in the Case Variables table. Emit the source as `"=<sdd-field-path>"` verbatim; never infer, add, remove, or alter envelope prefixes. The target becomes `var` / `value` on `task.data.outputs[]`; allocate `id` / `originalVar` / `target` independently from the source leaf and global collision pool.
 
-   **`->` operator — extract a field into a case variable.** Left side is the **full runtime path** the value lives at relative to the task's root scope; right side is the target case variable name:
    ```markdown
    - outputs:
      - response.status        -> sendStatus    # connector payload field → vars.sendStatus
@@ -72,19 +72,15 @@ Before writing the task's `data.inputs[]`, reject any projected input item that 
      - Action                 -> userDecision  # action task's top-level output → vars.userDecision
    ```
 
-   `<sdd-field-path> -> <case variable>`. Left side is the full runtime path. Right side becomes `var` / `value` on `task.data.outputs[]` (the case-scope variable pointer); `id` / `originalVar` / `target` are allocated independently from the source leaf and global collision pool. Extracted source is `"=<sdd-field-path>"` verbatim — the skill emits the SDD's left-side string with `=` prefix; never adds, removes, or infers envelope prefixes. Target case variable MUST exist in the Case Variables table.
+   - Equal-name extracts remain extracts: `greeting -> greeting` keeps the arrow, points `var` / `value` to the existing Case variable, and emits `originalVar`. If the only collision is the matching root companion, source-side `id`, `originalVar`, and `target` remain `greeting`; an unrelated task/trigger/rule owner forces normal allocation (`greeting2`, `greeting3`, ...).
+   - **`=` set/compute/copy:** `<case variable> = <expression>`. The target MUST already exist in Case Variables. Expressions may be a plain literal string/number/bool, `=js:` computation, or `=vars.X.Y` reference. **For `=` rows only, the emitted JSON carries `"target": ""` and `"body": ""` as present keys** — an empty value is not a reason to omit the key. This blank form is specific to `=`; `->` and bare outputs carry a real `target` (`"=<id>"`) and a real `value`, and must not be blanked. Full shape: [`impl-json.md` § Scenario E](impl-json.md).
 
-   **Equal-name extract is still an extract.** `greeting -> greeting` means "write schema field `greeting` into the already-declared case variable `greeting`." Keep the arrow in the projected item; never normalize it to bare `greeting`. Implementation keeps `var` / `value` pointed at the existing `greeting` Case variable and always emits `originalVar`. The source-side `id`, `originalVar`, and `target` stay `greeting` when the only collision is that matching root companion; an unrelated task/trigger/rule owner forces normal allocation (`greeting2`, `greeting3`, ...).
-
-   **`=` operator — set / compute / copy a literal or expression into an existing case variable.** Left side is the target case variable (must already exist in Case Variables); right side is the expression. The SDD `Field` cell is `—` or blank and contributes no token to the projected item:
    ```markdown
    - outputs:
      - caseStatus  = "InReview"                            # literal
      - reviewCount = =js:vars.reviewCount + 1              # computed expression
      - summary     = =vars.response.message.text           # copy from another variable's sub-field
    ```
-
-   `<case variable> = <expression>`. Expression can be a plain literal string/number/bool, a `=js:` computation, or a `=vars.X.Y` variable reference. Target case variable MUST exist in the Case Variables table. **For `=` rows only, the emitted JSON carries `"target": ""` and `"body": ""` as present keys** — an empty value is not a reason to omit the key. This blank form is specific to `=`; `->` and bare outputs carry a real `target` (`"=<id>"`) and a real `value`, and must not be blanked. Full shape: [`impl-json.md` § Scenario E](impl-json.md).
 
    **Dot-path support** on the left side of `->`: full paths like `response.message.ts`, `response.data.user.email`, `Error.code` are emitted as-is. The first segment selects the top-level schema output; implementation then walks that output's nested schema one segment at a time and takes the emitted **`name` and `type` from the final leaf — never from the top-level parent, and never the dotted path itself**. `Error.Message -> errorMessage` emits `name: "Message"` (the leaf's display name, else its exact final segment) and the leaf's `type`; `name: "Error.Message"` and the parent's `type: "jsonSchema"` are both wrong. Full shape and worked example: [`impl-json.md` § Nested extract example](impl-json.md). A nested row references its top-level parent, so `Error.Message -> errorMessage` does NOT also auto-mint a bare `Error` output unless schema discovery independently adds `Error` as a bare output. Array indexing (`items[0]`) is NOT supported in v1 — fall back to consuming the array variable and using `=js:` expressions downstream.
 
