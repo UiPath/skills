@@ -36,6 +36,7 @@ criterion budget instead, with a diagnosable message.
 from __future__ import annotations
 
 import json
+import re
 import os
 import subprocess
 import sys
@@ -121,6 +122,23 @@ def _attempt_cap(remaining: float, attempts_left: int) -> float:
 
 _CANONICAL_LAYOUT_WARNING = "does not match canonical layout"
 """The warning `flow validate` gives a ``.flow`` not named after its project directory."""
+_WARNING_COUNT = re.compile(r"^\s*(\d+) warning\(s\):\s*$")
+"""The header line of a ``Data.Warnings`` string: how many ``- `` items follow."""
+
+
+def _only_layout_warnings(warnings: str) -> bool:
+    """True when the count header matches its items and every item is the canonical-layout warning.
+
+    Any other line (another warning, a different bullet, a wrapped continuation) keeps the warnings.
+    """
+    lines = [line for line in warnings.splitlines() if line.strip()]
+    count = _WARNING_COUNT.match(lines[0]) if lines else None
+    items = lines[1:]
+    return (
+        count is not None
+        and int(count.group(1)) == len(items) > 0
+        and all(item.lstrip().startswith("- ") and _CANONICAL_LAYOUT_WARNING in item for item in items)
+    )
 
 
 def _warnings(stdout: str, flow: str) -> str:
@@ -137,10 +155,9 @@ def _warnings(stdout: str, flow: str) -> str:
         return f"no JSON envelope in stdout: {stdout.strip()[:500]!r}"
     data = envelope.get("Data") if isinstance(envelope, dict) else None
     warnings = data.get("Warnings") if isinstance(data, dict) else None
-    if isinstance(warnings, str) and Path(flow).name == STUDIO_WEB_FLOW_FILE:
-        items = [line for line in warnings.splitlines() if line.lstrip().startswith("- ")]
-        if items and all(_CANONICAL_LAYOUT_WARNING in line for line in items):
-            return ""
+    if isinstance(warnings, str) and Path(flow).name == STUDIO_WEB_FLOW_FILE and _only_layout_warnings(warnings):
+        print(f"note: ignoring the canonical-layout warning for Studio Web's {flow}", file=sys.stderr)
+        return ""
     return json.dumps(warnings) if warnings else ""
 
 
