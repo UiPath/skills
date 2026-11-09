@@ -80,6 +80,13 @@ Inputs, outputs, and vars use the six Flow CLI/Workbench types: `types.string`, 
 - **Never write an unresolvable reference field.** On lookup failure (401/403 expired grant or 5xx), do not substitute display name, alias, or remembered value; stop and report the failed resolve.
 - **Never reference a parent's values inside a subflow.** Pass through `subflow(child, {...})` inputs and read with `input(...)`; `check` misses `$vars.start.output.*` reads in child scripts, which compile and resolve to nothing.
 - **Never use `console.log` in a script.** The script runtime has no `console`, and `check` does not flag it. Return the value to inspect: `return { debug: value }`.
+- **Never put every `$vars` reference of an expression inside double quotes.**
+  An End-node `=js:` expression like `'No results for "' + $vars.start.output.topic + '".'`
+  evaluates to null, with no warning. Keep at least one reference outside the
+  quotes.
+- **Never rely on a dotted JSON key surviving `$vars`.** Read through `$vars`,
+  `{"5.3.0":"x"}` becomes `{"5":{"3":{"0":"x"}}}`. Pass the JSON as a string and
+  `JSON.parse` it in a script.
 - **Never treat green `validate` as business-correctness proof.** It checks structure; named outputs, reference IDs, and connector field values require evidence from [`CLI-LOOP.md`](CLI-LOOP.md#bounded-completion).
 
 ## Completion output
@@ -90,7 +97,7 @@ When authoring ends, report:
 2. **What was built** — steps, branches, and outputs in one or two sentences.
 3. **Loop status** — final `check`, `compile`, and `validate` results, including each accepted warning and why.
 4. **Placeholders** — every `mock()` and its capability.
-5. **Connections** — per connector, the `connection: <Name> (<id>)` line printed by `prepare` and its folder (candidate line or `uip is connections list <connector-key> --all-folders --output json`), or what is missing/still to prepare. Put guessed connections ([bindings.md](bindings.md#where-both-values-come-from)) under Open questions as **[REQUIRED]**.
+5. **Connections** — per connector, the `connection: <Name> (<id>)` line printed by `prepare` and its folder (candidate line or `uip is connections list <connector-key> --all-folders --output json`), or what is missing/still to prepare. A guessed connection ([bindings.md](bindings.md#where-both-values-come-from)) also goes under Open questions as **[REQUIRED]**.
 6. **Open questions** — every unresolved decision marked **[REQUIRED]** or **[OPTIONAL]**.
 <!--skill-flavor:completion-next:start-->
 7. **What's next** — if not already specified, ask via rule 9: upload to Studio Web, debug the flow, deploy to Orchestrator, or “Something else”. Each hands off to [`operate.md`](operate.md). If the request named the next step (“publish it”, “debug it”), select and act on it.

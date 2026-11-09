@@ -103,13 +103,13 @@ Compilation resolves the names and writes connector-authenticated node detail an
 ## Refresh, debug, and preserve evidence
 
 <!--skill-flavor:debug-flags:start-->
-`flow debug` takes the project directory, not the `.flow` file; run resource refresh first. From the solution directory, `<Name>` names that project. A `500` at `prepare-custom-debug` is transient; retry once. Use only flags needed by the behavior claim:
+`flow debug` takes the project directory, not the `.flow` file; run resource refresh first. From the solution directory, `<Name>` names that project. A `500` at `prepare-custom-debug` is transient; retry once. A `403` or `404` there comes from a folder flag: drop it, unless the account has no personal workspace ([operate.md](operate.md#debug--a-real-end-to-end-run)). Use only flags needed by the behavior claim:
 
 | Need | Exact form |
 |---|---|
 | JSON inputs | `-i '{"name":"value"}'` or `--inputs @inputs.json` |
 | File input | `--attachment <input-name>=<path>`; repeat for multiple files |
-| Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
+| Folder | omit it; debug uses your personal workspace. With none (service-principal or CI token): `--folder-id <number>` |
 | Start trigger | `--entry-point <trigger-node-id>`; omit to start at the default root |
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
 | Compact read-back | `--output-filter "<JMESPath>" --output json` |

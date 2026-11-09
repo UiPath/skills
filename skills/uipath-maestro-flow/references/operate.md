@@ -82,7 +82,7 @@ Use Orchestrator only when explicitly requested because it bypasses Studio Web:
 uip maestro flow pack <project-path> <OutputDir>
 ```
 
-Then run `uip solution publish`; see the `uipath-solution` skill. Ask before packing when the target is genuinely ambiguous.
+Then run `uip solution publish`; see the `uipath-solution` skill. `uip maestro flow publish <project-path>` packs and uploads the `.nupkg` to Orchestrator packages in one step (`--folder-key` or `--folder-path` picks a folder feed). Ask before packing when the target is genuinely ambiguous.
 <!--skill-flavor:operate-publish:end-->
 
 ## Debug — a real end-to-end run
@@ -94,7 +94,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json
 
 Pass the PROJECT directory containing `project.uiproj`.
 
-`flow debug` executes the flow for real, including emails, messages, and APIs; `validate` is the validation step. If a user can answer and did not request a run, ask once before the first run, even when the request is for a flow that works; that approval covers fixing and rerunning this turn. If nobody can answer, run for a request for a working flow unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report it unverified. Debug overwrites the Studio Web solution whose `SolutionId` matches local `.uipx`; for a solution not scaffolded this turn, debug only after a yes explicitly naming that overwrite, and never headlessly.
+`flow debug` executes the flow for real, including emails, messages, and APIs; `validate` is the validation step. When a user can answer and did not ask for the run, ask once before the first run, even when the request is for a flow that works; that yes covers the fix-and-re-run loop on the flow the user asked to get working this turn. With nobody to ask, run it when the request is for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report the flow as unverified rather than letting a passing `validate` stand as the result. Debug overwrites the Studio Web solution whose `SolutionId` matches the local `.uipx`: for a solution not scaffolded this turn, debug only on a yes to a question that names that overwrite, and headless, never debug it.
 <!--skill-flavor:operate-debug:end-->
 
 Operational constraints:
@@ -110,11 +110,14 @@ Operational constraints:
 <!--skill-flavor:operate-debug-scratch-copy:start-->
 - **Every process and connection node must resolve.** Missing tenant resources (placeholder process keys or stub connections) fail provisioning and start no instance; `Data.missingResources` names them, although `check` and `validate` pass. To debug other nodes first, debug a scratch copy without them, delete it afterward, and report the run as the copy's.
 <!--skill-flavor:operate-debug-scratch-copy:end-->
-- **Do not pass `--folder-path` or `--folder-key`.** Debug uses your personal workspace; shared folders fail `HTTP 500` at `Stage: prepare-custom-debug` without starting an instance.
+- **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into your personal workspace; any other folder fails `403` at `Stage: prepare-custom-debug`, even for a trivial flow, and a personal workspace `--folder-key` gives `404`. No instance starts.
 <!--skill-flavor:debug-shared-resources:start-->
 Shared resources reach the run through `resources refresh`, not the debug folder.
 <!--skill-flavor:debug-shared-resources:end-->
-Use the flag only if the account lacks a personal workspace or the flow needs folder-scoped assets or queues.
+  Exception: an account with no personal workspace (a service-principal or CI
+  token gets `403` at `get-personal-folder`) passes `--folder-id <number>`, which
+  skips that lookup. `prepare-custom-debug` for a non-personal folder may still
+  `403`; if it does, tell the user.
 
 Inputs for flows with `.input(...)` parameters:
 
@@ -183,6 +186,10 @@ uip maestro flow process run <process-key> <folder-key> --output json \
 `process list` also accepts `--folder-path <path>` instead of `--folder-key`. For `process list`, use `<folder-key>` from the user or the `Key` of `uip or folders list --output json`; for `process run`, the list entry's `folderKey` also works.
 
 For `process run` only, `--attachment` overrides `--inputs` on key collision, and `--validate` accepts pre-uploaded attachment references for file slots even though their nominal type is `string`.
+`--validate` is not a dry run: after the check passes it starts a real job.
+
+Give a Flow's `types.file` input with `flow process run --attachment`, never
+`uip or jobs start --attachment`.
 
 `--entry-point <triggerNodeId>` starts that root and makes `--validate` check that root's schema. A wrong id exits 3 and lists process trigger ids. Without it, use the release's default entry point. `flow pack` or `solution pack` sets that to the flow's first trigger, which is the default for an SDK-built flow; other packaging can differ. Pass `--entry-point` whenever the root matters. You do not need `--feed-id`; the CLI reads the feed from the release.
 
@@ -207,6 +214,9 @@ uip maestro flow instance resume <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro flow instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro flow instance retry  <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
+
+`-f` does not filter `instance list`: do not assume every listed instance is
+in that folder.
 
 Never `retry` a faulted instance before reading its cause in the debug response or incident; retrying without it repeats the failure. Orchestrator defines effect and recovery behavior; run `uip maestro flow instance <sub> --help` for flags.
 

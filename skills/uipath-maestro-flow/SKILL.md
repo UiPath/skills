@@ -37,11 +37,11 @@ uip solution init "<Solution>"
 # edit <Solution>/<Name>/.flow-sdk/<Name>.flow.ts, then run the Lifecycle loop below
 ```
 
-Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; hand-written `flow('<name>')` invents an id. The stub is the seed; the first `compile -o` overwrites it. If `init` says “already exists and is not empty. Use --force to overwrite”, edit it and never pass `--force`. Omit `--sdk-source` for a Flow containing an Extract document node; it is CLI-authored ([`references/extract-document-node.md`](references/extract-document-node.md)).
+Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; hand-written `flow('<name>')` invents an id. The stub is the seed; the first `compile -o` overwrites it. `init` answering "already exists and is not empty. Use --force to overwrite" means it exists: never pass `--force`; edit it. Omit `--sdk-source` for a Flow containing an Extract document node; it is CLI-authored ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
 For **Maestro Automate**, run `( cd "<Solution>" && uip maestro flow init <Name> --automate --sdk-source )`; a bare request such as “automate invoice intake” means a plain Flow. Nothing after `init` changes: the flag writes `runtimeOptions.profile` to `operate.json` and a `.maestro_automate` marker; `compile -o` rewrites only `.flow`, so both survive.
 
-If `<Solution>/<Name>/` predates this turn, skip `init` and edit its `<Name>.flow` through [Editing an existing flow](#editing-an-existing-flow), never by compiling an earlier-turn source over it. Keep `.flow-sdk/<Name>.flow.ts`, the `<Name>` directory, and `<Name>.flow` aligned. Exactly one emitted `<Name>.flow` may exist at `<Solution>/<Name>/<Name>.flow`; never put a second copy at the workspace root. Root emission is only for packaged-SDK local gates, which do not scaffold; choose [Lifecycle](#lifecycle) first and do not mix loops.
+When `<Solution>/<Name>/` existed before this turn, skip `init`: edit its `<Name>.flow` through [Editing an existing flow](#editing-an-existing-flow), never by compiling an earlier turn's source over it. Keep `.flow-sdk/<Name>.flow.ts`, the `<Name>` directory, and `<Name>.flow` aligned. Exactly one emitted `<Name>.flow` may exist at `<Solution>/<Name>/<Name>.flow`; never put a second copy at the workspace root. Root emission is only for packaged-SDK local gates, which do not scaffold; choose [Lifecycle](#lifecycle) first and do not mix loops.
 
 See [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for installation checks and failure handling.
 <!--skill-flavor:sdk-project-layout:end-->
@@ -100,7 +100,7 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 ## Editing an existing flow
 
 <!--skill-flavor:sdk-editing:start-->
-Preserve supplied source, step names, and unaffected wiring. Insert a step by routing the old edge through it, not by creating a second path. Unless source was supplied, freshly decompile the `.flow`, compile the baseline, edit narrowly, and merge the delta into the original. Decompiling overwrites supplied source; use [its loop](references/brownfield.md#a-supplied-source).
+Preserve supplied source, step names, and unaffected wiring. Insert a step by routing the old edge through it, not by creating a second path. Unless source was supplied, freshly decompile the `.flow`, compile the baseline, edit narrowly, and merge the delta into the original. Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source).
 
 For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which runs twice and keeps baseline, edited, and merged `.flow` files in `.flow-sdk/`:
 
@@ -109,7 +109,7 @@ For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which run
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
 node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
 # edit .flow-sdk/<Name>.flow.ts narrowly; no .layout() for added steps (builder-sdk#1320)
-uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error
+uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error; `unknown option`: brownfield.md
 node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
 ```
 
@@ -217,7 +217,7 @@ This table is the authoritative router; read a node’s `Reference` before writi
 ## Operating a deployed flow
 
 <!--skill-flavor:sdk-operate:start-->
-Upload, deploy, debug, trigger, inspect jobs, and drive instance lifecycle only after `uip login`; run `uip solution resources refresh` before every upload, publish, or debug. `flow debug` is a REAL run, not validation: ask first. Read **[`references/operate.md`](references/operate.md)**.
+Upload, deploy, debug, trigger, inspect jobs, and drive instance lifecycle only after `uip login`; run `uip solution resources refresh` before every upload, publish, or debug. `flow debug` is a REAL run, not a validation step: ask first, as it says. Read **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:sdk-operate:end-->
 
 ## Diagnosing a failed run

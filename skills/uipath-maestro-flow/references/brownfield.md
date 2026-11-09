@@ -63,6 +63,13 @@ Requires `@uipath/maestro-builder-sdk` 6.64.0 or later. Older SDKs appear as a b
 <!--skill-flavor:check-baseline-sdk-upgrade:start-->
 Upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
+<!--skill-flavor:check-baseline-uip-version:start-->
+For `unknown option '--baseline'`, check the SDK version first
+(`npm ls -g @uipath/maestro-builder-sdk`, or the project's `node_modules`). Below
+6.64.0, upgrade it. Only when it is 6.64.0 or later and the error persists is
+`uip` too old (1.205.0 is). Until a newer `uip` is installed, run `check --source`
+without `--baseline` and fix only the errors on nodes you changed.
+<!--skill-flavor:check-baseline-uip-version:end-->
 
 ```text
 $ uip maestro flow check <Name>.flow.ts --source --baseline <original>.flow
