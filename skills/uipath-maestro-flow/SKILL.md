@@ -122,7 +122,19 @@ The basic shape is `flow(id)`, declarations, nodes, `.return(...)`, `.build()`:
 
 - `.var(name, types.*, default?)` declares a flow variable—state written or read by multiple steps. A step writes it with `{ updates: { name: <expr> } }`. `.input` and `.output` are caller contracts. Supported types are `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, and `types.file`; `float`, `double`, `date`, `datetime`, and `jsonSchema` are refused: [variable types](references/author.md#variable-types). No node reads an Orchestrator asset; retain a setting as a var default or input.
 - `.return(...)` ends a PATH; `.terminate(...)` ends the RUN. In a `.parallel` arm, terminate aborts sibling arms; return lets them continue.
-- Expressions: `input(name)` reads a flow input; `v(name)` a variable; `out(step, path?)` a result or field; `err(step, field?)` a FAILED step’s error envelope only inside its handler; `ran(step)` whether a step ran; `lit(value)` an unambiguous constant; ``js`…` `` / ``tmpl`…` `` an authored expression or string. When arms converge, prefer one shared continuation; use `ran` to test whether its needed value was produced.
+- **Expressions are how a step names something that is not a literal.** There is one per kind of thing you can refer to:
+
+  | | refers to |
+  | --- | --- |
+  | `input(name)` | a flow input |
+  | `v(name)` | a flow variable |
+  | `out(step, path?)` | a step's result, whole or one field |
+  | `err(step, field?)` | a FAILED step's error envelope — only inside its handler |
+  | `ran(step)` | whether a step ran at all, as a boolean |
+  | `lit(value)` | a constant, where a raw value would be ambiguous |
+  | ``js`…` `` / ``tmpl`…` `` | an expression, or a string, you write yourself |
+
+  `ran(step)` earns an early mention: when arms converge, one shared continuation usually reads better than the same work duplicated per arm, and `ran` is how that continuation asks whether the value it wants was produced.
 
 ## API index
 

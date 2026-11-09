@@ -5,6 +5,12 @@ Classify incoming emails, tickets, or claims and send each to its category handl
 ## Why it works
 
 Each category has one shared handler and its own End recording the outcome; human-selected items rejoin that handler. Agent routing gates on confidence; rule routing sends unmatched items to a person. Nothing is dropped or guessed.
+- **One set of category handlers.** Every route into a category, whether a rule,
+  a confident agent, or a person, reaches the same handler for that category.
+  A second dispatch path for human-picked items duplicates every handler.
+- **The person rejoins, not replaces, the routing.** Low-confidence or
+  unmatched items go to a person who picks the category, and the item is then
+  handled exactly as if it had been routed automatically.
 
 ## Shape
 

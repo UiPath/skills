@@ -100,6 +100,14 @@ uip maestro flow eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 `eval run start` needs the solution in Studio Web; if it cannot resolve one, it fails with `solution-id could not be resolved` or a variant. That error is not permission to upload.
 
 `uip solution upload` writes to Studio Web, creating or **overwriting** the solution matching the local `.uipx` `SolutionId`; it needs no flag and raises no prompt. This can publish unfinished local work, overwrite unrelated remote changes after a download, or discard divergent remote state—nothing is merged.
+Three ways that costs someone real work:
+
+1. The user is iterating locally and meant to test *before* publishing. Upload
+   pushes work in progress to where teammates and triggers pick it up.
+2. The user pulled the solution with `uip solution download` to change one
+   piece. Upload sends partial local state back over whatever else moved.
+3. Local and Studio Web have diverged. Upload discards the remote side —
+   nothing is merged.
 
 The overwrite is recorded as a restorable version unless `--no-snapshot` was passed, but recovery is browser-only, after the fact, by the user, and does not undo publishing unfinished work (teammates or triggers may already have picked it up). Ask, and offer either uploading now with the user's acknowledgement or passing `--solution-id` and `--project-id` for an existing Studio Web solution and plumbing them through to `eval run start`.
 <!--skill-flavor:eval-no-upload:end-->
