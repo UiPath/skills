@@ -24,7 +24,7 @@ sandbox:
 
 pre_run:
   - command: "bash -c 'cd roundtrip-agent && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
-    timeout: 180
+    timeout: 300
   - command: "bash -c 'echo UIPATH_PROJECT_ID=89852b5d-8559-4c57-b752-0e2b500902fc >> roundtrip-agent/.env'"
     timeout: 10
 

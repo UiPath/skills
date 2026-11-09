@@ -96,7 +96,7 @@ Otherwise, continue with the normal resolution path:
 
 ### 3.1 Task Type catalog
 
-> **Closed enum — 16 values.** SDD `Type:` and caseplan.case `type` use column-1 schema-kebab values; column 2 is the planning/execution plugin folder, not JSON. See SKILL.md Rule 17 and Plugin Index naming-asymmetry note. Any other value (`connector-activity`, `wait-for-event`, etc.) is invalid; write `<UNRESOLVED>`.
+> **Closed enum — 17 values.** SDD `Type:` and caseplan.case `type` use column-1 schema-kebab values; column 2 is the planning/execution plugin folder, not JSON. See SKILL.md Rule 17 and Plugin Index naming-asymmetry note. Any other value (`connector-activity`, `wait-for-event`, etc.) is invalid; write `<UNRESOLVED>`.
 
 | sdd.md `Type:` / caseplan.case `type` | Plugin folder |
 |---|---|
@@ -112,6 +112,7 @@ Otherwise, continue with the normal resolution path:
 | `flow-process` | `plugins/tasks/flow-process/` |
 | `http-request` | `plugins/tasks/http-request/` |
 | `document-extraction` | `plugins/tasks/document-extraction/` |
+| `script` | `plugins/tasks/script/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `external-agent` | `plugins/tasks/connector-activity/` (External agents and automations) |
 | `external-workflow` | `plugins/tasks/connector-activity/` (External agents and automations) |

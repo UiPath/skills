@@ -310,8 +310,9 @@ Never mutate through subprocesses/helper scripts; never human-pattern IDs; never
 | Add action/agent/RPA/process task | [tasks/action](plugins/tasks/action/impl-json.md) · [tasks/agent](plugins/tasks/agent/impl-json.md) · [tasks/rpa](plugins/tasks/rpa/impl-json.md) · [tasks/process](plugins/tasks/process/impl-json.md) |
 | Add api-workflow/function/business-rule/case-management/wait-for-timer | [tasks/api-workflow](plugins/tasks/api-workflow/impl-json.md) · [tasks/function](plugins/tasks/function/impl-json.md) · [tasks/business-rule](plugins/tasks/business-rule/impl-json.md) · [tasks/case-management](plugins/tasks/case-management/impl-json.md) · [tasks/wait-for-timer](plugins/tasks/wait-for-timer/impl-json.md) |
 | Add flow-process | [tasks/flow-process](plugins/tasks/flow-process/impl-json.md) |
-| Add http-request | [tasks/http-request](plugins/tasks/http-request/impl-json.md) |
-| Add document-extraction | [tasks/document-extraction](plugins/tasks/document-extraction/impl-json.md) |
+| Add http-request | [tasks/http-request](plugins/tasks/http-request/impl-json.md) — convert writes it; a brownfield add is a placeholder |
+| Add document-extraction | [tasks/document-extraction](plugins/tasks/document-extraction/impl-json.md) — convert writes it; a brownfield add is a placeholder |
+| Add a script task | [tasks/script](plugins/tasks/script/impl-json.md) — convert writes it; a brownfield add is a placeholder |
 | Add connector activity/trigger | [tasks/connector-activity](plugins/tasks/connector-activity/impl-json.md) · [tasks/connector-trigger](plugins/tasks/connector-trigger/impl-json.md) |
 | Write stage entry/exit conditions | [stage-entry-conditions](plugins/conditions/stage-entry-conditions/impl-json.md) · [stage-exit-conditions](plugins/conditions/stage-exit-conditions/impl-json.md) |
 | Write task entry/case exit conditions | [task-entry-conditions](plugins/conditions/task-entry-conditions/impl-json.md) · [case-exit-conditions](plugins/conditions/case-exit-conditions/impl-json.md) |

@@ -43,9 +43,11 @@ key and final status from the JSON:
 uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
+<!--skill-flavor:debug-handle:start-->
 For a **debug** run, the `instanceId` the debug command returned is the handle,
 and the `debug-instance` commands read it (see below). Keep deployed-instance
 reads and debug-session reads separate.
+<!--skill-flavor:debug-handle:end-->
 
 ## Step 2 — read incidents
 

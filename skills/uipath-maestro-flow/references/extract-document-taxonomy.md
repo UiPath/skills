@@ -273,7 +273,7 @@ On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 
 | Exit | Message | What to do |
 | --- | --- | --- |
-| 3 | `Schema document failed validation` | Content problems arrive under this message. Read `Data.Issues`: each entry names the path and the problem. A missing parent is reported here too (`Nested field group "<key>" has no parent group "<parent>"`) — a group named `Parent > Child` needs `Parent` defined in the same document. |
+| 3 | `Schema document failed validation` | Content problems arrive under this message. Read `Data.Issues`: each entry names the path and the problem. A missing parent is reported here too (`Nested field group "<key>" has no parent group "<parent>"`) — a group named `Parent > Child` needs `Parent` defined in the same document. When an existing group was clearly meant as the parent, rename one of the two so the keys match; never add an empty parent group. |
 | 3 | `Invalid schema document` | The document is not a schema — it needs `prompt` and `outputSchema`. |
 | 3 | `Legacy schema document shape` | The document sent uses the superseded `{taxonomy, fieldTypes}` form; send `{ prompt, outputSchema }`. A legacy document already on the node is simply replaced, reported as `ReplacedLegacyDocument: true`. |
 | 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. |
