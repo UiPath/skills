@@ -31,6 +31,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
+    main_flow_path,
     assert_edge,
     assert_external_tool_shape,
     assert_tool_folder_binding,
@@ -42,7 +43,7 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_resource_source,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "WeatherFlowSol" / "WeatherFlow" / "WeatherFlow.flow"
+FLOW_PATH = main_flow_path(Path(os.getcwd()) / "WeatherFlowSol" / "WeatherFlow" / "WeatherFlow.flow")
 API_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.api."
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
