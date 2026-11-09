@@ -51,6 +51,13 @@ the cell is optional, note the provenance, and move on. -->
 
 ## Table of Contents
 
+<!--
+Write one stage line per stage, and build each stage link from that stage's
+filled heading, not from the placeholder below: lowercase it, drop backticks and
+punctuation except `-` and `_`, and turn each space into a hyphen.
+Example: the heading `### Stage 1: Intake (`stage_1`)` links as `#stage-1-intake-stage_1`.
+-->
+
 1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables, Business Events
 2. [Stages & Tasks](#section-2-stages--tasks)
    - [Stage <N>: <STAGE_NAME>](#stage--stage_name-stage_id) — <N> tasks

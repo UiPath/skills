@@ -80,6 +80,12 @@ test("slugs follow GitHub's rules", () => {
     ["### Stage <N>: <STAGE_NAME> (`<stage_id>`)", "stage--stage_name-stage_id"],
     ["### Secondary Stage: <SECONDARY_STAGE_NAME> (`<stage_id>`)", "secondary-stage-secondary_stage_name-stage_id"],
     ["## Use <b>bold</b> <br/> here", "use-bold--here"],
+    // A tag-shaped name inside a code span is text, not a tag; an autolink is
+    // not a tag either. Expected ids read from github.com's rendered page.
+    ["## Use `<b>` here", "use-b-here"],
+    ["## Use `<b>` and <i>x</i>", "use-b-and-x"],
+    ["## See <https://x.io> now", "see-httpsxio-now"],
+    ["### Stage 1: Intake (`stage_1`)", "stage-1-intake-stage_1"],
   ];
   for (const [heading, fragment] of cases) {
     const { status, out } = run(linkTo(heading, fragment));
