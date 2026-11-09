@@ -1,111 +1,76 @@
 # entry-points.json Input/Output Refresh
 
-Refresh `entry-points.json` `entryPoints[].input` / `.output` JSON-Schemas from the declared case In/Out arguments. The entry-point `input`/`output` is the case's external-caller contract — the typed arguments another process/case passes in and reads back.
+Refresh `entry-points.json` `entryPoints[].input` / `.output` JSON-Schemas from declared case In/Out arguments; these fields are the external-caller contract.
 
-Trigger plugins scaffold ([`plugins/case/impl-json.md`](plugins/case/impl-json.md)) and append ([`plugins/triggers/*/impl-json.md`](plugins/triggers/manual/impl-json.md)) each entry with **empty** `input`/`output` (`{ "type": "object", "properties": {} }`) at Step 6.1 — variables don't exist yet. This step back-fills them once variables are declared. No trigger-plugin change: empty-at-emit is correct.
+Trigger plugins scaffold ([`plugins/case/impl-json.md`](plugins/case/impl-json.md)) and append ([`plugins/triggers/*/impl-json.md`](plugins/triggers/manual/impl-json.md)) entries with empty `input`/`output` (`{ "type": "object", "properties": {} }`) at Step 6.1, before variables exist. Back-fill them here; do not change trigger plugins.
 
-> **This is a direct port of the Studio Web canvas transformation.** Source: `PO.Frontend/src/utils/PackagingUtil.ts` — `getEntryPoints()`, `getEntryPointJsonSchemaForVariable()`, `getTypeAndFormatForType()`, and the `JOB_ATTACHMENTS_DEFINITION` constant; variable extraction in `src/services/uipath/variables/VariableUtil.ts` (`getVariablesDefinedInRootUiPath`). The FE runs this on every canvas save and (since PR #6062, `always save canvas file on canvas load`) on first load, regenerating `entry-points.json` from the case variables. The skill produces the same file directly.
+This mirrors Studio Web’s canvas transformation: `PO.Frontend/src/utils/PackagingUtil.ts` (`getEntryPoints()`, `getEntryPointJsonSchemaForVariable()`, `getTypeAndFormatForType()`, `JOB_ATTACHMENTS_DEFINITION`) and `src/services/uipath/variables/VariableUtil.ts` (`getVariablesDefinedInRootUiPath`). The FE regenerates this file on every canvas save and, since PR #6062, first load; this skill does the same.
 
 ## When to Run
 
-**Phase 2 Step 6.3** — immediately after Step 6.2 (variable declaration). One run. Both prerequisites complete:
+Run at **Phase 2 Step 6.3**, immediately after Step 6.2, after all `entryPoints[]` and `variables.inputs[]` / `outputs[]` are final. Phase 3 neither adds nor renames them (uniqueness suffixes `var`/`id`, never `name`), and this step keys on `name`, so the Phase-2 publish-for-review artifact remains correct. On regenerate-from-scratch (Rule 7), recompute fully and never append; the operation is idempotent.
 
-- all `entryPoints[]` entries exist (Step 6.1 triggers),
-- all In/Out formal args exist (Step 6.2 variables Loop B).
-
-In/Out formal args (`variables.inputs[]` / `outputs[]`) are final at 6.2 — Phase 3 never adds or renames them (the uniqueness rule suffixes `var`/`id`, never `name`, and this step keys on `name`). Running at 6.3 keeps the Phase-2 publish-for-review artifact correct.
-
-Re-run on regenerate-from-scratch (Rule 7). Idempotent — full recompute, never append.
-
-**Check 6** (end of Phase 3, [`implementation.md` § Step 12](implementation.md)) re-verifies parity as cheap insurance.
+**Check 6** (end of Phase 3, [`implementation.md` § Step 12](implementation.md)) re-verifies parity.
 
 ## Source → target
 
-| Entry-point field | Source (`getEntryPoints`) | Scope |
-|---|---|---|
-| `input` | `variables.inputs[]` | only In-args whose `elementId` == THIS entry's trigger id (= `filePath` after `#`) |
-| `output` | `variables.outputs[]` | ALL Out-args → every entry |
+- `input`: `variables.inputs[]` whose `elementId` equals the entry trigger id (`filePath` after its last `#`).
+- `output`: every `variables.outputs[]` item, for every entry.
 
-NOT projected: `variables.inputOutputs[]` root state and trigger-payload `Variable`s. Only formal In/Out args reach the contract.
-
-**Out-arg field sourcing.** The FE reads `default`/`required`/`body` directly off the in-memory output Variable. On disk those fields are split: `variables.outputs[]` carries only `{id,name,type,var}`; the matching `inputOutputs[]` companion (same `name`, `elementId:"root"`) carries `default`/`required`/`body`. So treat each Out-arg as its `outputs[]` entry **merged with its `inputOutputs[]` companion** (matched by `name`). In-args need no merge — `variables.inputs[]` already carries `default`/`required`/`body`.
+Project only formal In/Out args; do not project root `variables.inputOutputs[]` state or trigger-payload `Variable`s. For each Out-arg, merge its `outputs[]` entry (`{id,name,type,var}`) with the `inputOutputs[]` companion matching `name` and `elementId:"root"`; the companion supplies `default`/`required`/`body`. In-args need no merge.
 
 ## Procedure
 
 1. Read `caseplan.case` (`variables.inputs[]`, `variables.outputs[]`, `variables.inputOutputs[]`) and `entry-points.json`.
-2. For each entry in `entryPoints[]`:
-   - `triggerId` = `filePath` substring after the last `#`.
-   - `entry.input`  = projectSchema(`inputs[]` where `elementId === triggerId`).
-   - `entry.output` = projectSchema(Out-args from all `outputs[]`, each merged with its companion).
-   - Preserve `filePath`, `uniqueId`, `type`, `displayName` verbatim. `displayName` is FE-derived (`getElementLabel`) but the trigger plugin already set it — the refresh does NOT recompute it, only the `input`/`output`. Mint NO `uniqueId` (`uniqueId` == the BPMN start-event `entryPointId` GUID; a pure refresh keeps it).
-   - `isTransactionRoot: true` is emitted by the FE only when `root.data.isTransactionRoot` is set. The case skill does not set it today; if a future entry carries it, preserve it — never strip.
-3. Preserve top-level `$schema`, `$id`. Write the whole file with **4-space indent** (matches the trigger recipe — no whitespace churn).
+2. For every existing `entryPoints[]`, set `triggerId` to the substring of `filePath` after its last `#`, `input` to `projectSchema(inputs[] where elementId === triggerId)`, and `output` to `projectSchema(all merged Out-args)`.
+3. Preserve `filePath`, `uniqueId`, `type`, `displayName`, and any `isTransactionRoot: true` verbatim. Do not recompute `displayName` or mint `uniqueId` (`uniqueId` is the BPMN start-event `entryPointId`); this skill does not set `isTransactionRoot` but must preserve it.
+4. Preserve top-level `$schema` and `$id`; write the whole file with **4-space indent**. Never append entries; trigger plugins own them at Step 6.1.
 
-> **FE entry set ≡ existing `entryPoints[]`.** `getEntryPoints` emits an entry only for a BPMN start event that (a) has an `entryPointId` and (b) is not inside a `bpmn:SubProcess`. In the skill these map 1:1 to the entries the trigger plugin already created (each case trigger is a top-level start event with a minted `uniqueId`/`entryPointId`). So iterating existing `entryPoints[]` is equivalent — the refresh creates none and drops none. (Case triggers are never inside a subprocess, so the SubProcess guard never excludes one.)
-
-Never append `entryPoints[]` entries here — entries are owned by the trigger plugins (Step 6.1).
+The FE entry set equals existing `entryPoints[]`: `getEntryPoints` emits only BPMN start events with an `entryPointId` outside `bpmn:SubProcess`. Case triggers are top-level and already have minted `uniqueId`/`entryPointId`, so refresh creates and drops none.
 
 ### projectSchema(vars) → schema object
 
-Mirrors `getEntryPointJsonSchemaForVariable`:
+Mirror `getEntryPointJsonSchemaForVariable`:
 
-- **Empty set** (`vars.length === 0`) → `{ "type": "object", "properties": {} }`. No `required`, no `definitions`. (This is exactly the scaffold/trigger empty shape — correct when a trigger has no In-args, or a case has no Out-args.)
+- Empty `vars` returns `{ "type": "object", "properties": {} }`, with no `required` or `definitions`.
 - **Non-empty** →
 
 ```json
 { "type": "object", "properties": { /* one per var, source order */ }, "required": [ /* see below */ ], "definitions": { /* only if needed */ } }
 ```
+- Otherwise emit keys in order `type`, `properties`, `required`, then `definitions` if needed; emit one property per var in source order, keyed by `var.name`.
+- `required` contains every `var.name` with `required === true`, in source order, with no type exclusion.
+- Emit `definitions` when a `file` var or a `jsonSchema`/`array` body contains a JobAttachment schema; its value is `JOB_ATTACHMENTS_DEFINITION` below.
 
-Object key order: `type`, `properties`, `required`, then `definitions`.
-
-- **`properties`** — one entry per var, in source-array order, keyed by `var.name` (NOT `id`/`var`). Body per the type rules below.
-- **`required`** — `var.name` for every var with `required === true`, in source order (`variables.filter(v => v.required)`). **No type exclusion** — `jsonSchema`/`file`/etc. all qualify. The FE UI permits marking any start-event **input** required regardless of type (`canMarkRequired = isStartEvent && variableType === "input"`, `InputOutputVariablesAddNewDialog.tsx:148`), and `required` is preserved through every serialization stage for all types (no per-type branch; repo round-trip test `xml-serialization.test.ts:2657`). Confirmed against a re-saved `test_in_out` FE export: `input.required` = `["test_date","test_file","test_json"]` — the `jsonSchema` var `test_json` **is** included. (An earlier export of the same case omitted it only because `entry-points.json` hadn't been regenerated after `test_json` was marked required — the staleness PR #6062 addresses; re-saving produced the correct array.) Include every `.required` var, regardless of type.
-- **`definitions`** — present only when a `file`-typed var, or a `jsonSchema`/`array` body that contained a JobAttachment schema, was projected (the `shouldAddJobAttachmentsDefinition` flag). Value = the constant `JOB_ATTACHMENTS_DEFINITION` block below.
+The current type enum ([`global-vars/planning.md` § Types](plugins/variables/global-vars/planning.md)) is `string | number | integer | float | double | boolean | datetime | date | jsonSchema | file`; retain `array` and `time` for FE fidelity/future-proofing. Array-shaped data may arrive as `jsonSchema` with an array body.
 
 ### Per-variable property body
 
-Keyed by `var.name`. Branch on `var.type`:
+| `var.type` | Body | `title` / `default` |
+|---|---|---|
+| `string`, `integer`, `number`, `boolean` | `{ "type": <same type> }` | both |
+| `float` | `{ "type": "number", "format": "float" }` | both |
+| `double` | `{ "type": "number", "format": "double" }` | both |
+| `date` | `{ "type": "string", "format": "date" }` | both |
+| `datetime` | `{ "type": "string", "format": "date-time" }` | both |
+| `time` | `{ "type": "string", "format": "time" }` | both |
+| `file` | `{ "$ref": "#/definitions/job-attachment" }` | neither |
+| `jsonSchema` | inlined body | neither |
+| `array` | `{ "type": "array", "items": <items>, "title": <name> }` | title only |
 
-| `type` | property body | `title` | `default` |
-|---|---|---|---|
-| `string` | `{ "type": "string" }` | yes | yes |
-| `integer` | `{ "type": "integer" }` | yes | yes |
-| `number` | `{ "type": "number" }` | yes | yes |
-| `boolean` | `{ "type": "boolean" }` | yes | yes |
-| `float` | `{ "type": "number", "format": "float" }` | yes | yes |
-| `double` | `{ "type": "number", "format": "double" }` | yes | yes |
-| `date` | `{ "type": "string", "format": "date" }` | yes | yes |
-| `datetime` | `{ "type": "string", "format": "date-time" }` | yes | yes |
-| `time` | `{ "type": "string", "format": "time" }` | yes | yes |
-| `file` | `{ "$ref": "#/definitions/job-attachment" }` | no | no |
-| `jsonSchema` | inlined body (see below) | no | no |
-| `array` | `{ "type": "array", "items": <items>, "title": <name> }` (see below) | yes | no |
+For scalar/date/time/float/double types, emit `type`, optional `format`, `title: var.name`, then `default` only when `var.default` is truthy. Preserve the default verbatim as a string; omit `""` or absent values. Unmatched types fall back to `{ "type": <rawType> }`. `file` sets the definitions flag.
 
-- **scalar / date / datetime / time / float / double** (the `getTypeAndFormatForType` path) — emit `{ <type>, <format?> }`, then append `"title": <var.name>` (always), then `"default": <var.default>` **only when `var.default` is truthy** (verbatim string — never coerced; `""`/absent → omit). Property body key order: `type`, `format`, `title`, `default`. **Fallback:** any `type` not matched above (i.e. not double/float/date/datetime/time and not file/jsonSchema/array) falls through to bare `{ "type": <rawType> }` — string/integer/boolean today, and any future enum value degrades to `{type}` rather than failing.
-- **`file`** — `{ "$ref": "#/definitions/job-attachment" }` only. Sets the definitions flag. No `title`/`default`.
-- **`jsonSchema`** — `body = var.body ?? var._jsonSchema`. **Fallback:** if `body` is null/absent, or (when a string) fails `JSON.parse`, the property is `{}` (empty object — no schema, no title/default). Otherwise: parse if string, delete its `$schema` key, run `rewriteJobAttachmentRefs`, inline the result. No `title`/`default`.
-- **`array`** — `{ "type":"array", "items": <items>, "title": <var.name> }` (title always; no default). `body = var.body` parsed if string (unparseable → `{}`, so `body?.items` is absent and resolution falls to `subType`). `<items>` =
-  1. `rewriteJobAttachmentRefs(body.items)` if `body?.items` exists,
-  2. else `{ "$ref": "#/definitions/job-attachment" }` if `var.subType` is `file`/`octet-stream` (sets definitions flag),
-  3. else `getTypeAndFormatForType(var.subType)` if `subType` is a primitive,
-  4. else `{}`.
+For `jsonSchema`, use `var.body ?? var._jsonSchema`. If absent/null or an unparsable string, emit `{}`. Otherwise parse strings, delete `$schema`, apply `rewriteJobAttachmentRefs`, and inline the result.
 
-> The current case-variable type enum ([`global-vars/planning.md` § Types](plugins/variables/global-vars/planning.md)) is `string | number | integer | float | double | boolean | datetime | date | jsonSchema | file` — no `array` or `time`. Those two rows are ported from the FE for fidelity/future-proofing; today array-shaped data arrives as `jsonSchema` with an array body (handled by the jsonSchema branch).
+For `array`, parse string `var.body` (unparseable means `{}`). Choose `<items>` in this order: `rewriteJobAttachmentRefs(body.items)` when `body?.items` exists; `{ "$ref": "#/definitions/job-attachment" }` when `var.subType` is `file` or `octet-stream` (set the definitions flag); `getTypeAndFormatForType(var.subType)` for a primitive; otherwise `{}`. `title` is always `var.name`; arrays have no default.
 
-### `rewriteJobAttachmentRefs` (nested JobAttachment rewrite)
+### rewriteJobAttachmentRefs (nested JobAttachment rewrite)
 
-Used by the `jsonSchema` and `array` branches to normalize a file embedded inside a schema. Walk the schema node:
+Walk a schema node. Return non-object/null nodes unchanged. Replace any node carrying `"x-uipath-resource-kind": "JobAttachment"` with `{ "$ref": "#/definitions/job-attachment" }` and set the definitions flag. Preserve an already equal `{ "$ref": "#/definitions/job-attachment" }` and set the flag. Recurse through object/array children except under `definitions` and `$defs`; if no descendant matches, return the original node unchanged (identity preserved).
 
-- Non-object / null → returned unchanged.
-- A node carrying `"x-uipath-resource-kind": "JobAttachment"` → replaced with `{ "$ref": "#/definitions/job-attachment" }`; sets the definitions flag.
-- A node already equal to `{ "$ref": "#/definitions/job-attachment" }` → kept; sets the flag (counts as a match).
-- Object/array → recurse into children, **except** the `definitions` and `$defs` keys, which are left as-authored (no recursion). If no descendant matched, the original node is returned unchanged (identity preserved).
+### JOB_ATTACHMENTS_DEFINITION (constant)
 
-So a `jsonSchema`/`array` body whose items or properties include a JobAttachment schema gets those occurrences rewritten to `$ref` and triggers the input/output-level `definitions` block — same mechanism as a top-level `file` var.
-
-### `JOB_ATTACHMENTS_DEFINITION` (constant)
-
-Emit verbatim. Note the inner quotes in `MimeType.description` — reproduce exactly (this matches the FE constant; a divergent `description` triggers FE re-save drift):
+Emit this exact fixed constant, independent of the file variable’s `body`:
 
 ```json
 {
@@ -123,87 +88,25 @@ Emit verbatim. Note the inner quotes in `MimeType.description` — reproduce exa
 }
 ```
 
-Fixed constant — NOT sourced from the file var's `body` (the FE emits it even when the var carries no `body`).
-
-The decoded `MimeType.description` is `The MIME type of the content, such as "application/json" or "image/png` — plain quotes, the last one unclosed. In the file's JSON text that is exactly three `\"` and no other backslash. Write the block above with Write/Edit as JSON text; never build it through a shell or code string, which adds a second layer of escaping (`\\\"`). After writing, the parsed value must contain no `\`.
+The decoded `MimeType.description` is `The MIME type of the content, such as "application/json" or "image/png` (plain quotes, final quote unclosed). In file JSON text it contains exactly three `\"` and no other backslash. Write it with Write/Edit as JSON text, never through a shell or code string that adds a second escaping layer (`\\\"`). After writing, the parsed value must contain no `\`.
 
 ## FE branch coverage (audit)
 
-Every conditional in the FE source (`PackagingUtil.ts`) and where this doc handles it:
-
-| FE function / branch | Handled |
-|---|---|
-| `getEntryPoints`: start event **has** `entryPointId` | → one entry (≡ existing `entryPoints[]`) |
-| `getEntryPoints`: **no** `entryPointId` | → no entry (skill never creates an entry without a minted `uniqueId`) |
-| `getEntryPoints`: start event inside `bpmn:SubProcess` | → skipped (N/A — case triggers are top-level) |
-| `getEntryPoints`: `displayName` truthy / falsy | preserved as-is (not recomputed) |
-| `getEntryPoints`: `isTransactionRoot` set / unset | preserved if present; skill doesn't set it |
-| `getEntryPoints`: input scoped `elementId === startNode.id`; output = all | Source → target |
-| `getEntryPointJsonSchemaForVariable`: empty var set | `{type:object,properties:{}}` — no `required`/`definitions` |
-| …non-empty | `properties` + `required` (+ `definitions` if flagged) |
-| …`required = vars.filter(v=>v.required)` | required rule — no type exclusion |
-| per-var: `jsonSchema` body present | inline (strip `$schema`, rewrite) |
-| per-var: `jsonSchema` body null / unparseable | property `{}` |
-| per-var: `file` | `$ref` + definitions flag |
-| per-var: `array` (4 item fallbacks) | array bullet |
-| per-var: scalar / date / datetime / time / float / double | scalar bullet + type table |
-| per-var: type not matched anywhere | bare `{type:<raw>}` passthrough |
-| `getTypeAndFormatForType`: double/float, date, datetime, time, else | type table |
-| `rewriteJobAttachmentRefs`: non-object, JobAttachment, existing `$ref`, recurse (skip `definitions`/`$defs`), no-match identity | `rewriteJobAttachmentRefs` subsection |
-| `default` emitted iff `variable.default` truthy (verbatim) | scalar bullet |
-| Out-arg `default`/`required`/`body` from companion | Out-arg field sourcing |
+Cover every FE branch: `getEntryPoints` start events with/without `entryPointId`; `bpmn:SubProcess` exclusion; truthy/falsy `displayName`; set/unset `isTransactionRoot`; input scoping by `elementId === startNode.id`; all outputs; empty/non-empty schemas; all-variable `required`; `jsonSchema` present/null/unparseable; `file`; `array` and its four item fallbacks; scalar/date/datetime/time/float/double mappings; unmatched raw types; `rewriteJobAttachmentRefs` non-object, JobAttachment, existing `$ref`, recursion excluding `definitions`/`$defs`, and no-match identity; truthy-only defaults; and Out-arg companion sourcing.
 
 ## Check 6 — Entry-point schema parity (Step 12 validator)
 
-Non-HALT. For each entry in `entryPoints[]` (`triggerId` = `filePath` after `#`):
+Non-HALT. For each entry, with `triggerId` equal to `filePath` after `#`:
 
-1. `input` == projectSchema(`inputs[]` where `elementId == triggerId`); `output` == projectSchema(Out-args). Compare keys, type/format mapping, `$ref` for `file`, inlined body for `jsonSchema`, `title`/`default` presence, the empty-set `{type,properties:{}}` (no `required`) shape, and `definitions` presence.
-2. `required` == names of all vars with `required === true` (no type exclusion).
-3. **Uniqueness guard** — `filePath` `#`-fragments unique across `entryPoints[]`. The trigger append is blind — a re-run duplicates an entry; the refresh propagates schemas to duplicates but cannot dedup (that is trigger-plugin identity).
-4. **Orphan guard** — every `inputs[].elementId` matches some entry's trigger fragment (an orphaned In-arg projects into no entry and silently vanishes from the contract).
+1. Verify `input == projectSchema(inputs[] where elementId == triggerId)` and `output == projectSchema(merged Out-args)`, including keys, type/format mapping, file `$ref`, inlined `jsonSchema`, title/default presence, empty `{type,properties:{}}` shape without `required`, and `definitions` presence.
+2. Verify `required` contains every var with `required === true`, with no type exclusion.
+3. Verify `filePath` `#` fragments are unique. Trigger append is blind and may duplicate entries; refresh propagates schemas but cannot deduplicate them.
+4. Verify every `inputs[].elementId` matches an entry trigger fragment. An orphaned In-arg silently vanishes from the contract.
 
-On a (1)/(2) mismatch → re-run the Procedure (deterministic recompute), re-check once. On a (3)/(4) finding or still-divergent (1)/(2) → log to `## Open Items for User` in `tasks/build-issues.md`, continue. Never HALT (build-with-best policy, [`implementation.md` § Step 12](implementation.md)).
-
-## Worked example
-
-`variables.inputs[]` (all `elementId: trigger_1`): `test_date` (datetime, default `"2029-10-12"`, `required:true`), `test_arrary` (jsonSchema, body `{"$schema":…,"type":"array","items":{"type":"string"}}`), `test_default` (float, default `"12.0"`), `test_date_time` (datetime, default `""`), `test_file` (file, `required:true`), `test_json` (jsonSchema, body `{"$schema":…,"type":"object","properties":{…},"required":[]}`, `required:true`). `variables.outputs[]`: `test_out` (double); its `inputOutputs[]` companion default `"1.3"`.
-
-Entry `/content/caseplan.case.bpmn#trigger_1`:
-
-```json
-"input": {
-    "type": "object",
-    "properties": {
-        "test_date": { "type": "string", "format": "date-time", "title": "test_date", "default": "2029-10-12" },
-        "test_arrary": { "type": "array", "items": { "type": "string" } },
-        "test_default": { "type": "number", "format": "float", "title": "test_default", "default": "12.0" },
-        "test_date_time": { "type": "string", "format": "date-time", "title": "test_date_time" },
-        "test_file": { "$ref": "#/definitions/job-attachment" },
-        "test_json": { "type": "object", "properties": { "test": { "type": "string" }, "newProperty2": { "type": "boolean" } }, "required": [] }
-    },
-    "required": ["test_date", "test_file", "test_json"],
-    "definitions": { "job-attachment": { "...": "constant block above" } }
-},
-"output": {
-    "type": "object",
-    "properties": {
-        "test_out": { "type": "number", "format": "double", "title": "test_out", "default": "1.3" }
-    },
-    "required": []
-}
-```
-
-Notes: `test_arrary`/`test_json` inline their body minus `$schema` (no `title`/`default`). `test_file` → `$ref`, and triggers the `input`-level `definitions` block. `test_date_time`'s empty default is omitted. `test_json` (jsonSchema, `required:true`) **is** included in `input.required` — confirmed against a re-saved `test_in_out` FE export (`["test_date","test_file","test_json"]`).
+On a (1)/(2) mismatch, re-run the Procedure and re-check once. On a (3)/(4) finding or continuing (1)/(2) divergence, log it to `## Open Items for User` in `tasks/build-issues.md` and continue. Never HALT (build-with-best policy, [`implementation.md` § Step 12](implementation.md)).
 
 ## Multi-trigger distribution (confirmed)
 
-A `test_in_out` re-saved with two triggers — `trigger_1` (primary) and `StartEvent_Trigger_OkGfLw` (Trigger 2) — produces **two** entries, confirming the scoping rule from a real FE export:
-
-| entry (`filePath#`) | `input.properties` (scoped by `elementId`) | `output.properties` (all) |
-|---|---|---|
-| `trigger_1` | trigger_1's In-args (`test_date` … `test_intput_t1_bool`) | `test_out`, `test_out_t2` |
-| `StartEvent_Trigger_OkGfLw` | **only `test_t2_in_var`** | `test_out`, `test_out_t2` |
-
-Each entry's `input` carries only the In-args whose `elementId` is that trigger; **every** entry carries **all** Out-args. An In-arg bound to a trigger with no entry — e.g. one still pointing at a `preview-node-id` ghost node (an uncommitted canvas preview that leaked into `caseplan.case`) — matches no entry and is silently dropped from the contract; the `elementId` filter skips it (Check 6's orphan guard catches it).
+Each entry receives only In-args whose `elementId` matches its trigger fragment; every entry receives all Out-args. Multiple triggers produce one existing entry per trigger with separately scoped `input.properties` and identical output projection. An In-arg bound to a trigger with no entry, including a leaked `preview-node-id` ghost node from an uncommitted canvas preview, is skipped and silently dropped; Check 6’s orphan guard catches it.
 
 <!-- END: entry-points-sync.md -->

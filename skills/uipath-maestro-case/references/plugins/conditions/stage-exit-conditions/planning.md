@@ -1,69 +1,58 @@
 # stage-exit-conditions — Planning
 
-Conditions that control **when and how a stage exits**. Attach to a stage; fire when the inbound rule is satisfied.
+Conditions controlling stage exit; attach one to a stage and fire it when its inbound rule is satisfied.
 
 ## When to Use
 
-Pick this plugin when the sdd.md **literally uses the phrase "stage exit condition"** (or close variants: "stage exit conditions", "stage completion condition", "exit rule on <stage>").
-
-For when a stage **enters**, use [stage-entry-conditions](../stage-entry-conditions/planning.md).
+Use only when sdd.md literally says “stage exit condition” or a close variant: “stage exit conditions”, “stage completion condition”, or “exit rule on <stage>”. For stage entry, use [stage-entry-conditions](../stage-entry-conditions/planning.md).
 
 ## No omission — one caseplan element per sdd.md Exit Condition row
 
-Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exit condition — **including type `exit-only`, rule-type `required-tasks-completed`, and `marks-stage-complete: true`**. Never skip a condition because it looks like "the obvious default completion." If sdd.md wrote the row, the build emits the element.
+Every stage with an **Exit Condition** row gets its own stage-exit condition, including `exit-only`, `required-tasks-completed`, and `marks-stage-complete: true`. Never omit a written row as an obvious default; the build emits it.
 
 ## Required Fields from sdd.md
 
-| Field | Source | Notes |
-|-------|--------|-------|
-| `<stage-id>` | Captured from the stages plugin | Target stage |
-| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim. Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Completion rule {N}` (marks-stage-complete `true`) / `Exit rule {N}` (`false`). A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
-| `type` | sdd.md exit style | `exit-only` / `wait-for-user` / `return-to-origin` |
-| `exit-to-stage-id` | sdd.md routing target (optional) | Required when routing to a specific stage |
-| `marks-stage-complete` | sdd.md (default depends on type) | `true` for completion exits, `false` for diverging routes |
-| `rule-type` | From catalog below | |
-| `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs. Selected tasks must be non-adhoc siblings in the same stage. |
-| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
-| `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
+- `<stage-id>`: captured from the stages plugin; target stage.
+- `display-name`: optional sdd.md Display Name, carried verbatim; omit blank / `—`; never invent. Implementation defaults to `Completion rule {N}` when `marks-stage-complete` is `true`, otherwise `Exit rule {N}`. If the cell already contains that pattern, echo the default; implementation renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)).
+- `type`: `exit-only`, `wait-for-user`, or `return-to-origin`.
+- `exit-to-stage-id`: optional routing target; required when routing to a specific stage.
+- `marks-stage-complete`: sdd.md value; default depends on type. Use `true` for completion exits and `false` for diverging routes.
+- `rule-type`: from the stage-exit catalog.
+- `selected-tasks-ids`: required for `selected-tasks-completed`; comma-separated task IDs, each a non-adhoc sibling in the same stage.
+- Connector fields from the SDD **Connector Rule Detail** block: `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, and optional `filter`; see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline).
+- `condition-expression`: optional for any rule type: extra `=js:` gate on case state (`=js:vars.X ...`), never the event payload (no `event` namespace).
+- `outputs`: optional SDD **Connector Rule Outputs** block: `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution).
 
 ## Exit Type Catalog
 
-| Exit `type` | When to pick |
-|-------------|--------------|
-| `exit-only` | **Default.** Stage exits normally; the next stage is whichever one's entry condition matches (or `exit-to-stage-id` when set). No edges — routing is condition-driven. |
-| `wait-for-user` | Exit requires manual user decision or approval. |
-| `return-to-origin` | Rework / exception loop — sends the case back to the previous stage. |
+- `exit-only`: **Default.** Normal exit; the next stage is whichever entry condition matches, or `exit-to-stage-id` when set. Use no edges: routing is condition-driven.
+- `wait-for-user`: manual user decision or approval is required.
+- `return-to-origin`: rework / exception loop sending the case to the previous stage.
 
-`return-to-origin` uses the completion pairing: `marks-stage-complete: true` with `required-tasks-completed` (or `wait-for-connector`). Never plan it as `false` + `selected-tasks-completed`; that routing shape does not render as a return lane.
+`return-to-origin` requires `marks-stage-complete: true` with `required-tasks-completed` or `wait-for-connector`. Never use `false` + `selected-tasks-completed`; that shape does not render as a return lane.
 
-> **Routing the origin INTO a decision/signal-routed exception lane.** The origin stage carries the route: a gated divert exit (`marks-stage-complete: false`, `selected-tasks-completed("<decider>")`, `conditionExpression =js:(<signal> === <exception-value>)`, `exit-to-stage-id` → the lane) PLUS its completion exit gated by the inverse `IF`. The two must be mutually exclusive (ungated completion → dual-fire; gated completion with no divert → deadlock). The lane returns via `return-to-origin`. See [stage-exit-conditions/impl-json.md § Divert into an exception lane](impl-json.md#divert-into-an-exception-lane-gated-routing-exit) and the design-side divert-and-return contract (case SDD content contract § Logical integrity step 5, authored by `uipath-planner`).
+> **Routing the origin INTO a decision/signal-routed exception lane.** The origin stage carries the route: a gated divert exit (`marks-stage-complete: false`, `selected-tasks-completed("<decider>")`, `conditionExpression =js:(<signal> === <exception-value>)`, `exit-to-stage-id` → the lane) plus its completion exit gated by the inverse `IF`. They must be mutually exclusive: ungated completion causes dual-fire; gated completion without divert causes deadlock. The lane returns via `return-to-origin`. See [stage-exit-conditions/impl-json.md § Divert into an exception lane](impl-json.md#divert-into-an-exception-lane-gated-routing-exit) and the design-side divert-and-return contract (case SDD content contract § Logical integrity step 5, authored by `uipath-planner`).
 
 ## Rule-Type Catalog (stage-exit scope)
 
-Allowed `ruleType` values depend on `marks-stage-complete`:
+Allowed `ruleType` depends on `marks-stage-complete`:
 
-**When `marks-stage-complete: true`:**
-| Rule type | Extra fields |
-|-----------|--------------|
-| `required-tasks-completed` | — |
-| `wait-for-connector` | connector fields (fills `uipath`); `conditionExpression` optional |
+| `marks-stage-complete` | Allowed `rule-type` | Required fields |
+|---|---|---|
+| `true` | `required-tasks-completed` | — |
+| `true` | `wait-for-connector` | Connector fields (fills `uipath`); optional `conditionExpression`. |
+| `false` (exit-only, routing) | `selected-tasks-completed` | `selectedTasksIds` (comma-separated). |
+| `false` (exit-only, routing) | `wait-for-connector` | Connector fields (fills `uipath`); optional `conditionExpression`. |
 
-**When `marks-stage-complete: false` (exit-only, routing):**
-| Rule type | Extra fields |
-|-----------|--------------|
-| `selected-tasks-completed` | `selectedTasksIds` (comma-separated) |
-| `wait-for-connector` | connector fields (fills `uipath`); `conditionExpression` optional |
-
-Before planning `selected-tasks-completed`, verify the selected tasks are not ad-hoc/manual tasks. The frontend excludes ad-hoc tasks from selected-task dependency rules; if required routing depends on a human activity, model that human work as a regular `action` task instead of an `adhoc` task.
+Before planning `selected-tasks-completed`, verify selected tasks are not ad-hoc/manual. The frontend excludes ad-hoc tasks from selected-task dependency rules; if required routing depends on human activity, model it as a regular `action` task instead of `adhoc`.
 
 ## Ordering
 
-Stage exit conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve). Planning records task names; implementation looks up captured IDs.
+Create stage exit conditions **after** all tasks in the stage so `selected-tasks-ids` can resolve. Planning records task names; implementation looks up captured IDs.
 
 ## Fields to Resolve
 
-A condition produces **no `tasks/registry-resolved.json` entry** unless its `rule-type` is `wait-for-connector` (see the note below the block). These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+A condition produces **no `tasks/registry-resolved.json` entry** unless `rule-type` is `wait-for-connector` (see the note below the block). These are reasoning fields only; Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
 
 ```text
 stage-exit condition on "<stage>" — <summary>
@@ -78,6 +67,6 @@ stage-exit condition on "<stage>" — <summary>
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution).
+> `rule-type: wait-for-connector` also needs the connector fields; see [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution).
 
 <!-- END: planning.md -->

@@ -1,32 +1,17 @@
 # action task — Implementation (Direct JSON Write)
 
-> **Shared shape.** The rules every resource task follows — id/elementId format, `=bindings.` references, the Phase 2/3 split, binding dedup, output binding, and the placeholder fallback — are in [resource-task-common.md](../resource-task-common.md). This file states only what is specific to this type.
-
+> **Shared shape.** Common resource-task rules—id/elementId format, `=bindings.` references, Phase 2/3 split, binding dedup, output binding, and placeholder fallback—are in [resource-task-common.md](../resource-task-common.md). This file covers action-specific rules.
 
 ## Task JSON Shape
 
 ```json
 {
-  "id": "ty5UcykfU",
-  "type": "action",
-  "displayName": "Review Purchase Order",
-  "elementId": "Stage_aB3kL9-ty5UcykfU",
-  "isRequired": true,
-  "shouldRunOnlyOnce": false,
-  "description": "An approver reads the purchase order and either approves it or rejects it with a reason.",
-  "data": {
-    "taskTitle": "Please review this PO and approve or reject",
-    "priority": "High",
-    "recipient": { "Type": 2, "Value": "approver@corp.com" },
-    "labels": "<labels string>",
-    "name": "=bindings.bG0SraLpg",
-    "folderPath": "=bindings.bH1iJK2lm",
-    "inputs": [],
-    "outputs": []
-  }
+  "id":"ty5UcykfU","type":"action","displayName":"Review Purchase Order",
+  "elementId":"Stage_aB3kL9-ty5UcykfU","isRequired":true,"shouldRunOnlyOnce":false,
+  "description":"An approver reads the purchase order and either approves it or rejects it with a reason.",
+  "data":{"taskTitle":"Please review this PO and approve or reject","priority":"High","recipient":{"Type":2,"Value":"approver@corp.com"},"labels":"<labels string>","name":"=bindings.bG0SraLpg","folderPath":"=bindings.bH1iJK2lm","inputs":[],"outputs":[]}
 }
 ```
-
 
 ## Action-Specific Fields
 
@@ -52,14 +37,11 @@
 uip maestro case tasks describe --type action --id "<action-app-id>" --output json
 ```
 
-
 **Step 1 — Root-level bindings:**
-
 
 - `resource`: `"app"`
 - `resourceSubType`: omit (no resourceSubType for action tasks)
 - `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields
-
 
 **Step 2 — Write task:**
 

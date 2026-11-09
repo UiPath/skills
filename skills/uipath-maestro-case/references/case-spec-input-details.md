@@ -1,98 +1,45 @@
 # `case spec --input-details` — JSON shape reference
 
-> **Vendored from the CLI repo.** Canonical source: `packages/maestro-sdk/docs/connector-input-details.md` in the `UiPath/cli` repo (shared with `uip maestro bpmn registry get --input-details`; its BPMN-only sections are left out). Re-sync when the CLI's `--input-details` contract changes (the validators in `packages/maestro-sdk/src/connector-spec/input-validator.ts` are the source of truth).
+> **Vendored from the CLI repo.** Canonical source: `packages/maestro-sdk/docs/connector-input-details.md` in the `UiPath/cli` repo (shared with `uip maestro bpmn registry get --input-details`; BPMN-only sections are omitted). Re-sync when the CLI `--input-details` contract changes; validators in `packages/maestro-sdk/src/connector-spec/input-validator.ts` are authoritative.
 
-`uip maestro case spec` accepts an optional `--input-details <json>` flag that pre-fills the generated `caseShape` with values the consumer already has on hand. Without the flag, `caseShape.inputs[*].body` are empty containers (default behavior); with it, they're populated and the filter (if any) is compiled and spliced into the FE-canonical sinks.
-
-This document is the canonical reference for skills/agents that construct `--input-details` JSON.
-
----
+`uip maestro case spec` accepts optional `--input-details <json>` to pre-fill `caseShape`. Without it, `caseShape.inputs[*].body` are empty containers; with it, values populate and filters compile into FE-canonical sinks. Use this reference to construct the JSON.
 
 ## When to use it
 
-- You're calling `case spec` to generate a connector task, AND you already know the values for body / query / path / event parameters AND/OR the filter the user wants to apply.
-- The compiled `caseShape` will be ready to drop into the case JSON without an additional configure step.
-
-If you don't yet have values, omit the flag — the default empty `caseShape` is the right shape for downstream substitution.
-
----
+Use `--input-details` with `case spec` when body, query, path, event, or filter values are known. Omit it when unknown so downstream substitution uses the default empty shape.
 
 ## Top-level shape per task type
 
 ### `--type activity`
 
 ```jsonc
-{
-    "bodyParameters":  {},   // optional — body request fields (dotted keys allowed)
-    "queryParameters": {},   // optional — query string params
-    "pathParameters":  {},   // optional — path-template substitutions
-    "filter":          {}    // optional — FilterTree (compiles to CEQL)
-}
+{"bodyParameters":{},"queryParameters":{},"pathParameters":{},"filter":{}}
 ```
 
 ### `--type trigger`
 
 ```jsonc
-{
-    "eventParameters": {},   // optional — design-time params scoping the trigger
-    "queryParameters": {},   // optional — trigger query params (scope selectors, resource pickers)
-    "pathParameters":  {},   // optional — trigger path params
-    "filter":          {}    // optional — FilterTree (compiles to JMESPath)
-}
+{"eventParameters":{},"queryParameters":{},"pathParameters":{},"filter":{}}
 ```
 
-Empty input details (`{}`) is valid and a no-op — equivalent to omitting the flag.
+`{}` is valid and equivalent to omitting `--input-details`.
 
-#### `--trigger-kind` (trigger only)
+### `--trigger-kind` (trigger only)
 
-A case start trigger and a wait-for-connector task share one TypeCache entry; the runtime tells them apart only by `activityType`. Always pass it:
+A case start trigger and a wait-for-connector task share a TypeCache entry; runtime distinguishes them by `activityType`. Always pass `--trigger-kind`:
 
 | `--trigger-kind` | Use for |
 |---|---|
 | `start` | case-level start trigger (`Intsvc.EventTrigger` on the trigger node) |
-| `wait-for` (default) | in-stage `wait-for-connector` task, or a connector-bound condition rule |
+| `wait-for` (default) | in-stage `wait-for-connector` task or connector-bound condition rule |
 
-A start trigger spec'd without `--trigger-kind start` is typed as a wait and never fires.
-
----
+A start trigger without `--trigger-kind start` is typed as a wait and never fires.
 
 ## Per-key reference
 
 ### `bodyParameters` (activity only)
 
-Object keyed by field name. Dotted keys (`message.body.contentType`) get nested into structured objects via `nestDottedKeys` — that nesting is purely about how the CLI groups keys, NOT about the leaf value type.
-
-> **Per-field leaf shape is connector-specific. Always read `inputs.bodyFields[].dataType` AND `description` from `case spec --skip-case-shape` before authoring a value.** Curated wrappers often expose a simplified leaf type (e.g. `string` with `description: "separated by comma(,)"`) where the underlying upstream API expects a structured object. Authoring the structured shape against a Curated wrapper produces a runtime failure even though the input JSON nests correctly through `nestDottedKeys`. The `dataType` + `description` returned by `case spec` are authoritative; the example below illustrates the dotted-key nesting mechanic only — different connectors and different operations on the same connector may type-narrow the same dotted-key path differently.
-
-> **Array values are leaves** — pass arrays as their final shape, not via index syntax (`x[0]` is NOT supported). Whether a given field WANTS an array or a scalar is determined by `bodyFields[].dataType`, not by whether the field name suggests plurality.
-
-**Example input** (Outlook 365 Send Email — the connector's curated contract declares every recipient leaf as `dataType: string` with `description: "separated by comma(,)"`, so the values below are plain comma-strings, not arrays of email-address objects):
-```json
-{
-    "bodyParameters": {
-        "message.subject": "Quarterly Review",
-        "message.body.contentType": "Text",
-        "message.body.content": "Please review the attached report.",
-        "message.toRecipients": "alice@example.com,bob@example.com",
-        "message.importance": "high"
-    }
-}
-```
-
-**What lands in `caseShape.inputs[name="body"].body`:**
-```json
-{
-    "message": {
-        "subject": "Quarterly Review",
-        "body": {
-            "contentType": "Text",
-            "content": "Please review the attached report."
-        },
-        "toRecipients": "alice@example.com,bob@example.com",
-        "importance": "high"
-    }
-}
-```
+Use field names as keys. `nestDottedKeys` nests dotted keys for grouping, not leaf typing; arrays are final leaf values, and `x[0]` syntax is unsupported. Before authoring, **always read `inputs.bodyFields[].dataType` AND `description` from `case spec --skip-case-shape`**. These connector-specific values are authoritative: do not infer paths or shapes from field names or examples. Paths may differ across connectors or operations; `dataType` determines scalar versus array.
 
 A different Send Email-like operation (Microsoft Graph passthrough, Gmail API, custom connector) may declare its recipients via a different **field path** AND a different **leaf shape**. For example, the Graph passthrough POST `/messages` activity exposes `toRecipients[*].emailAddress.address` at the **top level** of `bodyParameters` (NOT under `message.`) with `dataType: string` per `[*]` array element; the wire result is `bodyParameters.toRecipients = [{"emailAddress":{"address":"…"}}]`. Always inspect `inputs.bodyFields[].name` AND `dataType` before authoring — do not assume path or shape from the field name alone.
 
