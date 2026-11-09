@@ -1,71 +1,55 @@
 # case-exit-conditions — Planning
 
-Conditions that control **when the entire case completes (or exits non-completing)**. Attach at the case root level, not to any stage.
+Conditions controlling when the entire case completes or exits without completing. Attach them at the case root, not to a stage.
 
 ## When to Use
 
-Pick this plugin when the sdd.md **literally uses the phrase "case exit condition"** (or close variants: "case exit conditions", "case completion condition", "case close condition").
-
-For stage-level conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md). For task-level, use [task-entry-conditions](../task-entry-conditions/planning.md).
+Use this plugin when sdd.md literally uses "case exit condition" or a close variant: "case exit conditions", "case completion condition", or "case close condition". For stage-level conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md); for task-level conditions, use [task-entry-conditions](../task-entry-conditions/planning.md).
 
 ## No omission — one caseplan element per sdd.md case-exit row
 
-Every case-exit condition declared in sdd.md gets its own caseplan element — **including rule-type `required-stages-completed` with `marks-case-complete: true`** (the "preferred pattern"). Never skip a condition because it's the default completion shape. If sdd.md wrote the row, the build emits the element.
+Emit one caseplan element for every case-exit condition in sdd.md, including `required-stages-completed` with `marks-case-complete: true`; never omit a written row, including the default completion shape.
 
 ## Required Fields from sdd.md
 
-| Field | Source | Notes |
-|-------|--------|-------|
-| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Case resolved", "Closed — escalation path". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Completion rule {N}` (marks-case-complete `true`) / `Exit rule {N}` (`false`). A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
-| `marks-case-complete` | sdd.md | `true` for normal completion, `false` for non-completing exits |
-| `rule-type` | From catalog below | See §Rule-type catalog |
-| `selected-stage-id` | Required for `selected-stage-*` rule-types | Resolved from stage capture map |
-| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
-| `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
+- `display-name` (sdd.md Display Name column, optional): Carry a semantic SDD value verbatim, e.g. "Case resolved", "Closed — escalation path". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Completion rule {N}` (marks-case-complete `true`) / `Exit rule {N}` (`false`). A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)).
+- `marks-case-complete`: sdd.md `true` for normal completion; `false` for non-completing exits.
+- `rule-type`: Use the catalog below.
+- `selected-stage-id`: Required for `selected-stage-*` rule-types; resolve from the stage capture map.
+- Connector fields: SDD **Connector Rule Detail**: `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, and optional `filter`; see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline).
+- `condition-expression`: Optional for any rule-type: extra `=js:` gate on **case state** (`=js:vars.X ...`), not the event payload; there is no `event` namespace.
+- `outputs`: Optional SDD **Connector Rule Outputs**: `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution).
 
 ## Rule-Type Catalog (case-exit scope)
 
 Allowed `ruleType` values depend on `marks-case-complete`:
 
-**When `marks-case-complete: true`** (the case completes):
-
-| Rule type | Meaning | Extra fields |
-|-----------|---------|--------------|
-| `required-stages-completed` | **Preferred.** Case completes when every stage with `isRequired: true` (set in the stage node's `data.isRequired`) has completed. No stage list needed. | — |
-| `wait-for-connector` | Wait for an external connector event to close the case (fills `uipath`). | connector fields; `conditionExpression` optional |
-
-**When `marks-case-complete: false`** (the case exits without closing):
-
-| Rule type | Meaning | Extra fields |
-|-----------|---------|--------------|
-| `selected-stage-completed` | Exit triggered by the named stage(s) completing. | `selectedStageIds` |
-| `selected-stage-exited` | Exit triggered by the named stage(s) being exited (even without completing). | `selectedStageIds` |
-| `wait-for-connector` | Wait for an external connector event (fills `uipath`). | connector fields; `conditionExpression` optional |
+- `true`: `required-stages-completed` (**Preferred**; completes when every stage whose node `data.isRequired` is `true` has completed; no stage list) or `wait-for-connector` (waits for an external connector event to close the case; fills `uipath`; connector fields and optional `conditionExpression`).
+- `false`: `selected-stage-completed` (named stage(s) complete), `selected-stage-exited` (named stage(s) exit, even without completing), or `wait-for-connector` (waits for an external connector event; fills `uipath`; connector fields and optional `conditionExpression`). The stage rules use `selectedStageIds`.
 
 ## Preferred Pattern
 
-For most cases, define a single completion condition with `required-stages-completed` + `marks-case-complete: true`. The `isRequired` flag on each stage (from [`plugins/stages/`](../../stages/planning.md)) controls which stages count toward completion.
+Normally define one completion condition: `required-stages-completed` + `marks-case-complete: true`; each stage's `isRequired` flag (from [`plugins/stages/`](../../stages/planning.md)) determines which stages count.
 
-This is the case-close contract: at least one root `caseExitRules[]` entry must have `marksCaseComplete: true`, otherwise the case can never close. Stage completion is separate — a stage exit with `marksStageComplete: true` advances the case but does not mark the case complete. Add `marks-case-complete: false` rules only for explicit non-completing exits such as rejection, withdrawal, or cancellation; they do not replace the positive completion rule.
+At least one root `caseExitRules[]` entry must have `marksCaseComplete: true`, or the case cannot close. Stage completion is separate: a stage exit with `marksStageComplete: true` advances the case but does not complete it. Add `marks-case-complete: false` only for explicit non-completing exits such as rejection, withdrawal, or cancellation; they do not replace the positive completion rule.
 
-**Decide `marksCaseComplete` by whether the work was done, not by whether the case ended.** Every case-exit rule ends the case; the flag records whether it ended *successfully*. Ask of each outcome: did the case achieve what it exists to achieve?
+Choose `marksCaseComplete` by objective achievement, not merely case termination:
 
 | Outcome in the SDD | `marksCaseComplete` |
 |---|---|
-| The work finished — approved, fulfilled, paid, resolved | `true` |
-| The case stopped without the work being done — rejected, withdrawn, cancelled, abandoned, timed out | `false` |
-| The case was handed off, escalated out, or closed by exception | `false` |
+| Work finished — approved, fulfilled, paid, resolved | `true` |
+| Work not done — rejected, withdrawn, cancelled, abandoned, timed out | `false` |
+| Handed off, escalated out, or closed by exception | `false` |
 
 **A word like "closed", "ends", or "complete" in the prose is not the signal — the signal is whether the objective was met.** An SDD that says an outcome is *not the same as* normal completion, or names it alongside a separate completion path, is describing a non-completing exit however it phrases the ending: "closed as escalated" ends the case and does not complete it. These are not rare — any case with a rejection or escalation path has one.
 
 ## Ordering
 
-Case exit conditions are created **after** all stages exist (so `selectedStageIds` can resolve via the stage capture map). In execution order, place these between stage conditions and SLA.
+Create case exit conditions **after** all stages exist so `selectedStageIds` can resolve through the stage capture map. In execution order, place them between stage conditions and SLA.
 
 ## Fields to Resolve
 
-A condition produces **no `tasks/registry-resolved.json` entry** unless its `rule-type` is `wait-for-connector`. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+A condition produces **no `tasks/registry-resolved.json` entry** unless its `rule-type` is `wait-for-connector`. These are reasoning fields only; Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
 
 ```text
 case-exit condition — <summary>

@@ -104,6 +104,17 @@ def is_scratch_bpmn(path: str | Path) -> bool:
     )
 
 
+STUDIO_WEB_MAIN_FILE = "Process.bpmn"
+"""The main file Studio Web gives every BPMN project; the Node CLI names it ``<Project>.bpmn``."""
+
+
+def bpmn_file_is_named(path: _PathLike, name: str) -> bool:
+    """True for ``<name>.bpmn``, or for Studio Web's ``Process.bpmn`` in a project directory named ``<name>``."""
+    file = Path(path)
+    stem = name.removesuffix(".bpmn")
+    return file.name == f"{stem}.bpmn" or (file.name == STUDIO_WEB_MAIN_FILE and file.parent.name == stem)
+
+
 def find_bpmn_file(name_hint: str | None = None) -> str:
     paths = [
         p for p in sorted(glob.glob("**/*.bpmn", recursive=True)) if not is_scratch_bpmn(p)
@@ -119,6 +130,14 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
         matches = exact or [
             p for p in paths if name_hint.lower() in os.path.basename(p).lower()
         ]
+        if not matches:
+            # Studio Web names the file Process.bpmn and the project after the task's name.
+            matches = [
+                p
+                for p in paths
+                if os.path.basename(p) == STUDIO_WEB_MAIN_FILE
+                and name_hint.lower() in os.path.basename(os.path.dirname(p)).lower()
+            ]
         if matches:
             # A hint narrows to a basename, not to a project: `Foo-old.bpmn`
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
@@ -145,7 +164,12 @@ def _sha256(path: str | Path) -> str:
 
 
 def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
-    """Locate the project directory containing ``bpmn_name``.
+    """Locate the project directory containing ``bpmn_name``; see :func:`resolve_bpmn_file`."""
+    return resolve_bpmn_file(bpmn_name, exclude_under).parent
+
+
+def resolve_bpmn_file(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
+    """Locate ``bpmn_name`` (or Studio Web's ``Process.bpmn`` for it) in its project.
 
     Grades the project wherever the agent placed it (top level or nested under
     a ``<Name>Solution/`` wrapper -- ``uip maestro bpmn init`` creates the
@@ -162,9 +186,12 @@ def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
     """
     excluded = [Path(d).resolve() for d in exclude_under]
     cwd = Path.cwd()
+    named = list(cwd.rglob(bpmn_name)) or [
+        p for p in cwd.rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)
+    ]
     candidates = [
         p
-        for p in _project_files(cwd.rglob(bpmn_name))
+        for p in _project_files(named)
         if not any(p.resolve().is_relative_to(d) for d in excluded)
         and not is_scratch_bpmn(p.relative_to(cwd))
     ]
@@ -173,7 +200,7 @@ def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "
             f"found {[str(p) for p in candidates]}"
         )
-    return candidates[0].parent
+    return candidates[0]
 
 
 def parse_bpmn(name_hint: str | None = None) -> tuple[str, ET.Element]:

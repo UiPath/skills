@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -606,6 +607,76 @@ def test_find_bpmn_file_without_hint_accepts_identical_copies(tmp_path, monkeypa
     (tmp_path / "Proj" / "Proj.bpmn").write_text("<y/>", encoding="utf-8")
     with pytest.raises(SystemExit):
         bpmn_check.find_bpmn_file()
+
+
+def _studio_web_project(root: Path, solution: str, project: str) -> Path:
+    """Studio Web's export layout: ``<Solution>/<Project>/Process.bpmn`` beside ``project.uiproj``."""
+    directory = root / solution / project
+    directory.mkdir(parents=True)
+    (directory / "Process.bpmn").write_text("<x/>", encoding="utf-8")
+    (directory / "project.uiproj").write_text("{}", encoding="utf-8")
+    return directory
+
+
+def test_find_bpmn_file_takes_studio_webs_process_bpmn_for_the_named_project(tmp_path, monkeypatch) -> None:
+    _studio_web_project(tmp_path, "ExpenseApprovalBpmn", "ExpenseApprovalBpmn")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("ExpenseApprovalBpmn") == "ExpenseApprovalBpmn/ExpenseApprovalBpmn/Process.bpmn"
+
+
+def test_find_bpmn_file_refuses_process_bpmn_in_another_project(tmp_path, monkeypatch) -> None:
+    _studio_web_project(tmp_path, "Sol", "OtherProject")
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit):
+        bpmn_check.find_bpmn_file("ExpenseApprovalBpmn")
+
+
+def test_resolve_project_takes_studio_webs_process_bpmn(tmp_path, monkeypatch) -> None:
+    project = _studio_web_project(tmp_path, "Sol", "Proj")
+    _studio_web_project(tmp_path, "Sol", "Other")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.resolve_project("Proj.bpmn") == project
+
+
+def test_resolve_bpmn_file_returns_studio_webs_process_bpmn(tmp_path, monkeypatch) -> None:
+    project = _studio_web_project(tmp_path, "Sol", "Proj")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.resolve_bpmn_file("Proj.bpmn") == project / "Process.bpmn"
+
+
+@pytest.mark.parametrize(
+    ("path", "named"),
+    [
+        ("Sol/Proj/Proj.bpmn", True),
+        ("Sol/Proj/Process.bpmn", True),
+        ("Sol/Other/Process.bpmn", False),
+        ("Sol/Proj/Draft.bpmn", False),
+    ],
+)
+def test_bpmn_file_is_named(path: str, named: bool) -> None:
+    assert bpmn_check.bpmn_file_is_named(path, "Proj") is named
+
+
+def _check_present(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    script = Path(__file__).with_name("check_bpmn_present.py")
+    return subprocess.run([sys.executable, str(script), *args], cwd=cwd, capture_output=True, text=True)
+
+
+def test_check_bpmn_present_checks_files_beside_and_text_inside_the_bpmn(tmp_path) -> None:
+    project = _studio_web_project(tmp_path, "Sol", "Proj")
+    (project / "Process.bpmn").write_text("<x>Article not found</x>", encoding="utf-8")
+
+    assert _check_present(tmp_path, "Proj", "--beside", "project.uiproj", "--contains", "Article not found").returncode == 0
+    missing = _check_present(tmp_path, "Proj", "--beside", "operate.json")
+    assert missing.returncode != 0
+    assert "operate.json missing beside" in missing.stderr
+    absent = _check_present(tmp_path, "Proj", "--contains", "exclusiveGateway")
+    assert absent.returncode != 0
+    assert "does not contain" in absent.stderr
 
 
 def test_resolve_project_excludes_the_live_run_copy(tmp_path, monkeypatch) -> None:

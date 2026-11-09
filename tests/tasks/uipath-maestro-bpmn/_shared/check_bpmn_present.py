@@ -11,11 +11,10 @@ the criterion on layout alone (skill-bpmn-debug-not-validation, run 2026-09-25).
 this makes the presence check use the same rule, including its "never grade a stray
 draft copy" tie-break.
 
-`--contains TEXT` (repeatable) also asserts each literal TEXT is in that file. It
-replaces `file_contains` criteria pinned to the root `<Name>.bpmn`, which fail the
-builder-SDK skill's `<Name>/<Name>.bpmn` on layout alone.
-
-Usage: check_bpmn_present.py <Name> [--contains TEXT ...]   (basename without `.bpmn`)
+Usage: check_bpmn_present.py <Name> [--beside FILE]... [--contains TEXT]...
+  <Name>      basename without `.bpmn`; Studio Web's `<Name>/Process.bpmn` counts as the same file
+  --beside    a file that must sit next to the BPMN (`project.uiproj`, `operate.json`)
+  --contains  text the BPMN must contain
 """
 
 from __future__ import annotations
@@ -29,25 +28,22 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import fail, find_bpmn_file  # noqa: E402
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="Assert the graded BPMN file exists.")
-    parser.add_argument("name", help="basename without `.bpmn`")
-    parser.add_argument(
-        "--contains",
-        action="append",
-        default=[],
-        metavar="TEXT",
-        help="literal text the file must contain (repeatable)",
-    )
-    args = parser.parse_args(argv)
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="check_bpmn_present.py")
+    parser.add_argument("name")
+    parser.add_argument("--beside", action="append", default=[])
+    parser.add_argument("--contains", action="append", default=[])
+    args = parser.parse_args()
     name = args.name.removesuffix(".bpmn")
-    path = find_bpmn_file(name)
-    if args.contains:
-        text = Path(path).read_text(encoding="utf-8", errors="replace")
-        missing = [needle for needle in args.contains if needle not in text]
-        if missing:
-            fail(f"{path} does not contain {missing}")
-    print(f"OK: {name}.bpmn present at {path}" + (f", contains {args.contains}" if args.contains else ""))
+    path = Path(find_bpmn_file(name))
+    missing = [f for f in args.beside if not (path.parent / f).is_file()]
+    if missing:
+        fail(f"{', '.join(missing)} missing beside {path}")
+    text = path.read_text(encoding="utf-8") if args.contains else ""
+    absent = [t for t in args.contains if t not in text]
+    if absent:
+        fail(f"{path} does not contain {absent}")
+    print(f"OK: {name}.bpmn present at {path}")
 
 
 if __name__ == "__main__":
