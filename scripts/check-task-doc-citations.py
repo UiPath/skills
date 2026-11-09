@@ -5,9 +5,7 @@ Task prompts and grader notes under tests/tasks/<skill>/ often name the skill
 doc that states the rule under test, for example "write a placeholder task per
 references/placeholder-tasks.md". When that doc is renamed or retired, nothing
 else re-reads the task, so the prompt keeps sending the agent to a file it
-cannot open (UiPath/skills#4531: #675 renamed skeleton-tasks.md, and the v2
-Flow promotion retired references/plugins/ixp/impl.md, but tasks kept citing
-both).
+cannot open.
 
 A citation is any `<prefix>references/<path>.md` in a file under tests/tasks/:
 a task YAML, or a grader script (.py) or fixture (.json) beside it. One inside a
@@ -26,9 +24,7 @@ skills/ (the default package, which nightly and smoke load) or preview/skills/
 count: it holds a retained previous generation that only a pinned flavor
 (skill-flavors/<flavor>/<skill>/.canonical) composes, no experiment loads it,
 and no task can declare that it targets it. So a task citing a doc that only the
-classic tree still has sends the agent to a file its catalog does not ship
-(#4533 review: quality_04 cited v1-only references/brownfield.md once #4529
-moved v1 Case to classic/).
+classic tree still has sends the agent to a file its catalog does not ship.
 
 A citation in a grader (.py) or fixture (.json) is read only by maintainers and
 may name the retained classic doc whose rule it still enforces, so for those
