@@ -120,6 +120,9 @@ _UNTYPED = {
     "Any", "dict", "Dict", "list", "List", "object", "str", "int", "float",
     "bool", "bytes", "None", "Mapping", "MutableMapping", "TypedDict",
 }
+# Note: a class main.py imports passes without further checks (for example
+# `from models import EchoIn`). The grader does not resolve imports, so it
+# trusts the import rather than fail a valid shared-model layout.
 _DATACLASS_DECORATORS = {"dataclass"}  # matches dataclasses.dataclass and pydantic.dataclasses.dataclass
 
 
@@ -134,16 +137,39 @@ def _dotted(node: ast.AST) -> str | None:
     return None
 
 
-def _is_typed_class(cls: ast.ClassDef) -> bool:
-    """BaseModel subclass, dataclass, or a thin class with annotated fields."""
-    for base in cls.bases:
-        name = _dotted(base) or ""
-        if name.split(".")[-1] == "BaseModel":
-            return True
+def _is_typed_class(
+    cls: ast.ClassDef,
+    classes: dict[str, ast.ClassDef],
+    imported: set[str],
+    seen: frozenset[str] = frozenset(),
+) -> bool:
+    """BaseModel subclass, dataclass, or a thin class with annotated fields.
+
+    Local base classes are followed, so `class Input(SharedBase)` passes when
+    `SharedBase(BaseModel)` does. A base that main.py imports is trusted,
+    because the grader does not resolve imports. A `TypedDict` is not typed
+    I/O under SKILL.md rule 4, so a class built on it fails even though it
+    has annotated fields.
+    """
     for dec in cls.decorator_list:
         name = _dotted(dec) or ""
         if name.split(".")[-1] in _DATACLASS_DECORATORS:
             return True
+    has_typed_base = False
+    for base in cls.bases:
+        name = _dotted(base) or ""
+        leaf = name.split(".")[-1]
+        if leaf == "TypedDict":
+            return False
+        if leaf == "BaseModel":
+            has_typed_base = True
+        elif leaf in classes and leaf not in seen and leaf != cls.name:
+            if _is_typed_class(classes[leaf], classes, imported, seen | {cls.name}):
+                has_typed_base = True
+        elif name.split(".")[0] in imported:
+            has_typed_base = True
+    if has_typed_base:
+        return True
     return any(isinstance(stmt, ast.AnnAssign) for stmt in cls.body)
 
 
@@ -181,19 +207,25 @@ def typed_io_problems(source: str, entry_func: str) -> list[str]:
             f"uipath.json registers it as the entrypoint"
         ]
     fn = funcs[0]
-    params = fn.args.posonlyargs + fn.args.args
+    params = fn.args.posonlyargs + fn.args.args + fn.args.kwonlyargs
     checks = [
         ("input", params[0].annotation if params else None),
         ("return", fn.returns),
     ]
     problems = []
     for role, ann in checks:
-        name = _annotation_name(ann)
         if role == "input" and not params:
             problems.append(f"`{entry_func}` takes no input parameter")
             continue
-        if name is None:
+        if ann is None:
             problems.append(f"`{entry_func}` {role} has no type annotation")
+            continue
+        name = _annotation_name(ann)
+        if name is None:
+            problems.append(
+                f"`{entry_func}` {role} has unsupported annotation "
+                f"`{ast.unparse(ann)}`; annotate it with the model class itself"
+            )
             continue
         leaf = name.split(".")[-1]
         if leaf in _UNTYPED:
@@ -202,7 +234,7 @@ def typed_io_problems(source: str, entry_func: str) -> list[str]:
                 f"(SKILL.md rule 4: BaseModel, dataclass, or a thin typed class)"
             )
         elif leaf in classes:
-            if not _is_typed_class(classes[leaf]):
+            if not _is_typed_class(classes[leaf], classes, imported):
                 problems.append(
                     f"`{entry_func}` {role} class `{leaf}` is not a BaseModel, a "
                     f"dataclass, or a class with annotated fields"

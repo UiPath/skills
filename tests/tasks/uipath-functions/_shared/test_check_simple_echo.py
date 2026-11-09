@@ -74,6 +74,31 @@ def main(input: EchoIn) -> EchoOut:
             "main",
             id="imported-models",
         ),
+        pytest.param(
+            "from pydantic import BaseModel\n"
+            "class Shared(BaseModel):\n    trace_id: str = ''\n"
+            "class Input(Shared):\n    pass\n"
+            "class Output(Shared):\n    pass\n"
+            "def main(input: Input) -> Output:\n    ...\n",
+            "main",
+            id="inherited-local-base",
+        ),
+        pytest.param(
+            "from base_models import Shared\n"
+            "class Input(Shared):\n    pass\n"
+            "class Output(Shared):\n    pass\n"
+            "def main(input: Input) -> Output:\n    ...\n",
+            "main",
+            id="inherited-imported-base",
+        ),
+        pytest.param(
+            "from pydantic import BaseModel\n"
+            "class Input(BaseModel):\n    message: str\n"
+            "class Output(BaseModel):\n    echoed: str\n"
+            "def main(*, input: Input) -> Output:\n    ...\n",
+            "main",
+            id="keyword-only-input",
+        ),
     ],
 )
 def test_typed_io_passes_whatever_the_class_names(source: str, entry: str) -> None:
@@ -116,6 +141,23 @@ def test_typed_io_passes_whatever_the_class_names(source: str, entry: str) -> No
             "def other(input: int) -> int:\n    ...\n",
             "does not define `def main`",
             id="entry-function-missing",
+        ),
+        pytest.param(
+            "from typing import Optional\n"
+            "from pydantic import BaseModel\n"
+            "class Input(BaseModel):\n    message: str\n"
+            "class Output(BaseModel):\n    echoed: str\n"
+            "def main(input: Optional[Input]) -> Output:\n    ...\n",
+            "unsupported annotation `Optional[Input]`",
+            id="optional-is-unsupported-not-missing",
+        ),
+        pytest.param(
+            "from typing import TypedDict\n"
+            "class Input(TypedDict):\n    message: str\n"
+            "class Output(TypedDict):\n    echoed: str\n"
+            "def main(input: Input) -> Output:\n    ...\n",
+            "is not a BaseModel, a dataclass, or a class with annotated fields",
+            id="typeddict-subclass-fails",
         ),
     ],
 )
