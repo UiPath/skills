@@ -401,6 +401,25 @@ def test_read_registry_cache_pulls_the_live_registry_when_the_agent_left_none(tm
     assert calls == [["uip", "maestro", "case", "registry", "pull", "--output", "json"]]
 
 
+def test_read_registry_cache_drops_an_orphaned_meta_so_its_pull_refetches(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    cache = tmp_path / ".uip" / "case-resources"
+    cache.mkdir(parents=True)
+    index, meta, other_meta = cache / "api-index.json", cache / "api-index.meta.json", cache / "agent-index.meta.json"
+    meta.write_text('{"lastSync": 0}', encoding="utf-8")
+    other_meta.write_text('{"lastSync": 0}', encoding="utf-8")
+
+    def pull(cmd, **kw):
+        assert not meta.exists()
+        index.write_text(json.dumps([{"name": "API Workflow"}]), encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(case_check.subprocess, "run", pull)
+    assert read_registry_cache("api-index.json") == [{"name": "API Workflow"}]
+    assert other_meta.exists()
+    assert "grading against the grader's own" in capsys.readouterr().err
+
+
 def test_read_registry_cache_fails_as_environment_when_its_own_pull_writes_nothing(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(case_check.subprocess, "run", _fake_pull([], returncode=1))

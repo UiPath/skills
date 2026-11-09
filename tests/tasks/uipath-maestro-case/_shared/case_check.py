@@ -262,9 +262,14 @@ def _pull_registry_cache(path: str) -> None:
 
     A harness whose `uip` runs outside this container leaves no cache here: Studio Web's
     browser CLI keeps it in the page's storage. The audit is graded against the tenant either way.
-    A plain pull keeps any index already cached and fetches only the missing ones.
+    A plain pull keeps any index already cached and fetches only the missing ones. It also
+    skips the fetch while `<type>-index.meta.json` is under 24h old, even with the index gone,
+    so an orphaned meta file is removed first.
     """
     what = "uip maestro case registry pull"
+    meta = os.path.splitext(path)[0] + ".meta.json"
+    if os.path.isfile(meta):
+        os.remove(meta)
     try:
         proc = _run(
             ["uip", "maestro", "case", "registry", "pull", "--output", "json"],
@@ -279,6 +284,7 @@ def _pull_registry_cache(path: str) -> None:
             f"(exit {proc.returncode}), so the audit cannot be checked against the tenant: an "
             f"environment failure, not the agent's\nstdout: {proc.stdout[-1500:]}\nstderr: {proc.stderr[-1500:]}"
         )
+    print(f"registry cache {path} was absent; grading against the grader's own `{what}`", file=sys.stderr)
 
 
 def read_registry_cache(cache_file: str) -> list:

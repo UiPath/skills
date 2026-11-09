@@ -62,7 +62,9 @@ success_criteria:
   - type: command_executed
     description: "Phase 1 refreshed the tenant registry before resolving the SDD"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+registry\s+pull\b'
+    # Command position only, so an echo or heredoc mention does not count; `--help` exits 0 without pulling.
+    command_pattern: '(^|[\n;&|(`{]|\b(?:then|do|else)\s)\s*"?(?:[^\s"]*/)?(?:uip|\$UIP)"?\s+maestro\s+case\s+registry\s+pull\b(?![^;&|\n]*\s(?:-h|--help)\b)'
+    require_success: true
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
