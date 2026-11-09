@@ -70,7 +70,13 @@ FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md --output plain)" \
 The four library verbs are `pull`, `search`, `path`, and `prepare`. They require prerelease `@uipath/cli` and delegate to the workspace's `@uipath/maestro-builder-sdk`; `uip` is the entry point and is present wherever this guidance is read. The package also exposes `flow-sdk` for the same commands; printed remedies use it when `FLOW_SDK_INVOKED_AS` is unset.
 <!--skill-flavor:library-discovery:end-->
 
-**`uip maestro registry` is not `uip maestro flow registry`.** The former is the connector library used by compilers; the latter (`uip maestro flow registry pull|search|get`) syncs tenant **node manifests** (`uipath.core.function`, `uipath.core.agent.<name>`). Connector operations are never node-registry entries, and node types are never library entries, so a miss in one is not evidence about the other.
+**`uip maestro registry` is not `uip maestro flow registry`.** The names are one
+word apart and the jobs are unrelated: this one is the connector library the
+compilers resolve operations against, while `uip maestro flow registry
+pull|search|get` syncs the tenant's **node manifests** — the node types other
+references reach for (`uipath.core.function`, `uipath.core.agent.<name>`). A
+connector operation is never in the node registry and a node type is never in
+the library, so a miss in one is not evidence about the other.
 
 <!--skill-flavor:library-search:start-->
 Search static contracts:
