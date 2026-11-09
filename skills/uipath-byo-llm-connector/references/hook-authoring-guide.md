@@ -34,8 +34,9 @@ Hooks are where a BYO LLM connector does its work: the **preRequest** hook turns
 | `response_body` | read/write | The vendor's answer (object, or a string — parse defensively). `response_body_map` and `response_body_raw_map` hold it too, read-only; read one name consistently |
 | `response_iserror` | read | `true` unless the vendor returned 200–207 |
 | `response_status_code`, `response_headers` | read/write | Correct a status the vendor got wrong |
-| `configuration` | read/write | Writable here: persist a token or a derived value with `done({ configuration: {...} })` |
-| `request_*` | read | What was sent to the vendor |
+| `configuration` | read/write | Writable here: persist a token or a derived value with `done({ configuration: {...configuration, …} })` |
+| `request_body`, `request_body_map` | read | The body **sent to the vendor** (what the preRequest hook wrote), not the caller's |
+| `request_body_raw` | read | The caller's original request, as a string — parse it to read what the caller asked for (`model`, `parallel_tool_calls`, `logprobs`, `n`) |
 
 ## Recipes
 
@@ -90,6 +91,14 @@ if (response_iserror) {
 
 Field-by-field mappings between the formats: [format-mapping-guide.md](format-mapping-guide.md). Always map `usage` — the gateway meters tokens from the response, and a missing usage block records the call as zero tokens.
 
+When the answer depends on what the caller asked for (the request's `model`, one tool call when `parallel_tool_calls` is `false`, `logprobs`), read it from `request_body_raw`: in a postRequest hook `request_body_map` is the body the preRequest hook sent to the vendor.
+
+```javascript
+let caller = {};
+try { caller = JSON.parse(request_body_raw || '{}') ?? {}; } catch (e) { caller = {}; }
+const oneCall = caller.parallel_tool_calls === false;
+```
+
 ### Errors: keep the vendor's status
 
 The gateway turns the status code into the probe's verdict (401 → auth failed, 404 → model not found, 429 → rate limited). Pass a vendor error through unchanged (`if (response_iserror) { done(); }`), and fix a vendor that reports an error with HTTP 200:
@@ -108,10 +117,35 @@ Never copy the vendor's message into `response_error_message` if it can echo the
 
 ### Custom token exchange
 
-Use the builder's `oauth2ClientCredentials` auth type when the vendor's token endpoint is standard. When it is not (extra body fields, an unusual response), use `auth set --auth-type custom`, add `onProvision` (and, for expiring tokens, `onRefresh`) system resources, and hang a hook pair on each:
+Use the builder's `oauth2ClientCredentials` auth type when the vendor's token endpoint is standard. When it is not (extra body fields, a JSON body, an unusual response), use `auth set --auth-type custom` and two lifecycle resources that run the exchange:
+
+| Resource | When Integration Service runs it | Entry it must be |
+|---|---|---|
+| `onProvision` | Once, when a connection is created | `"path": "/onProvision", "method": "GET", "vendorMethod": "POST"` |
+| `onRefresh` | On the first call after `expires_in` seconds have passed since `authentication.time`, before that call | `"path": "/onRefresh", "method": "POST", "vendorMethod": "POST"` |
+
+The builder does not write either of those: `auth system create --type onProvision` writes the method you pass for the vendor method too, and `--type onRefresh` insists on `/on-refresh`. Create both, then patch them, **before** registering their hooks (a hook file is named after the resource's method and path):
+
+```bash
+uip is connectors builder auth system create --type onProvision --method GET --vendor-path <TOKEN_PATH> --output json
+uip is connectors builder auth system create --type onRefresh --method POST --vendor-path <TOKEN_PATH> --output json
+uip is connectors builder state query 'element.json/resources/GET/%2FonProvision' --output json \
+  | jq '.Data.Value | .vendorMethod = "POST"' > provision.json
+uip is connectors builder state patch 'element.json/resources/GET/%2FonProvision' --value-file provision.json --output json
+uip is connectors builder state query 'element.json/resources/POST/%2Fon-refresh' --output json \
+  | jq '.Data.Value | .path = "/onRefresh"' > refresh.json
+uip is connectors builder state patch 'element.json/resources/POST/%2Fon-refresh' --op remove --output json
+uip is connectors builder state patch 'element.json/resources/POST/%2FonRefresh' --value-file refresh.json --output json
+```
+
+Then register the same hook pair on each: `activity hook create --resource-name onProvision --method GET --path /onProvision …` and `--resource-name onRefresh --method POST --path /onRefresh …`.
+
+- **No `provisionAuthValidation`.** Integration Service runs it before `onProvision`, so it reaches the vendor without a token and every connection fails with the vendor's 401. The exchange already rejects wrong credentials; `builder validate` then warns that the resource is missing, which is expected here.
+- **`custom.auth.header`.** `auth set --auth-type custom` adds this example entry as a required `pre` field defaulting to `Bearer mytoken`, and `validate` fails without it. If the vendor does not use it, keep the key and make it hidden: `required: false`, empty `defaultValue`, no `configScreenType`.
+- **Lifetime.** Write `expires_in` a few minutes below the token's real lifetime, so the refresh lands before the vendor starts answering 401. To test refresh on the draft, write a short one (`'120'`), make a call after it has passed, and check it succeeds on a new token; restore the real value before publishing.
 
 ```javascript
-// preRequest on onProvision / onRefresh — credentials in a header and the form body, never in the URL
+// preRequest on onProvision / onRefresh — credentials in a header or the body, never in the URL
 const { clientId, clientSecret, tokenUrl } = configuration;
 done({
     request_vendor_method: 'POST',
@@ -124,22 +158,30 @@ done({
 });
 ```
 
+A token service that takes JSON gets `'Content-Type': 'application/json'` and an object body with the credentials in it — still never the URL.
+
 ```javascript
-// postRequest on onProvision / onRefresh — persist the token on THIS connection
+// postRequest on onProvision / onRefresh — persist the token on THIS connection, keeping every other value
 if (response_iserror) {
     done();
-} else {
-    done({
-        configuration: {
-            accessToken: response_body?.access_token,
-            expires_in: response_body?.expires_in ?? 3600,
-            'authentication.time': Date.now(),
-        },
-    });
+    return;
 }
+const r = typeof response_body === 'string' ? JSON.parse(response_body || '{}') : (response_body ?? {});
+if (!r.access_token) {
+    done({ response_status_code: 502, response_error_message: 'The token service returned no token.' });
+    return;
+}
+done({
+    configuration: {
+        ...configuration,
+        accessToken: r.access_token,
+        expires_in: String(Math.max(60, (Number(r.expires_in) || 3600) - 300)),
+        'authentication.time': String(Date.now()),
+    },
+});
 ```
 
-The resource preRequest hook then sends `Authorization: Bearer ${configuration['accessToken']}`. `clientId` / `clientSecret` / `tokenUrl` are `pre` config entries the user fills in (the secret encrypted, as `PASSWORD`); `accessToken`, `expires_in` and `authentication.time` are hidden entries with **no** `configScreenType`.
+The resource preRequest hook then sends `Authorization: Bearer ${configuration['accessToken']}` (or the vendor's own token header). `clientId` / `clientSecret` / `tokenUrl` are `pre` config entries the user fills in (the secret encrypted, as `PASSWORD`); `accessToken` (encrypted), `expires_in` and `authentication.time` are hidden entries with **no** `configScreenType`.
 
 ### Model in the path
 
@@ -173,7 +215,7 @@ const [hookFile, varsFile] = process.argv.slice(2);
 const vars = JSON.parse(readFileSync(varsFile, 'utf8'));
 let result;
 // Every documented variable exists in Integration Service, so a hook may read one vars.json leaves out.
-const declared = Object.fromEntries(['request_body', 'request_body_map', 'request_path_variables', 'request_parameters',
+const declared = Object.fromEntries(['request_body', 'request_body_map', 'request_body_raw', 'request_path_variables', 'request_parameters',
     'request_headers', 'configuration', 'response_body', 'response_body_map', 'response_body_raw_map',
     'response_iserror', 'response_status_code', 'response_headers'].map((name) => [name, undefined]));
 const context = vm.createContext({ ...declared, ...vars, btoa, atob, done: (out = {}) => { result = out; } });
@@ -182,4 +224,4 @@ if (result === undefined) { console.error('done() was not called'); process.exit
 console.log(JSON.stringify(result, null, 2));
 ```
 
-`vars.json` holds the variables the hook reads, for example `{"request_body_map": {...}, "request_path_variables": {}, "configuration": {"base.url": "https://llm.example.com"}}` for a preRequest hook, or `{"response_iserror": false, "response_body": {...}}` for a postRequest hook. Feed it a realistic flavor body (messages with a system prompt, a tool definition, an image part) and check the output against [format-mapping-guide.md](format-mapping-guide.md). Use made-up content and no real credentials.
+`vars.json` holds the variables the hook reads, for example `{"request_body_map": {...}, "request_path_variables": {}, "configuration": {"base.url": "https://llm.example.com"}}` for a preRequest hook, or `{"response_iserror": false, "response_body": {...}, "request_body_raw": "<the caller's request as a JSON string>", "request_body_map": {<the body sent to the vendor>}}` for a postRequest hook. Feed it a realistic flavor body (messages with a system prompt, a tool definition, an image part) and check the output against [format-mapping-guide.md](format-mapping-guide.md). Use made-up content and no real credentials.

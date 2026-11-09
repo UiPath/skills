@@ -57,15 +57,15 @@ Pick the builder auth type that matches the vendor; the builder writes the confi
 | Several static headers (key + tenant id) | `auth set --auth-type customApiKey …` plus `--secret-auth-header <CONFIG>=<HEADER>` / `--auth-header <CONFIG>=<HEADER>` |
 | Standard OAuth2 client credentials | `auth set --auth-type oauth2ClientCredentials --token-url <TOKEN_URL> --scope '<SCOPES>'` |
 | AWS SigV4 (Bedrock-compatible endpoint) | `auth set --auth-type awsv4` |
-| A non-standard token exchange (custom body, extra fields, returned host) | `auth set --auth-type custom` + an `onProvision` system resource whose hooks fetch the token — recipe in [hook-authoring-guide.md](hook-authoring-guide.md) §"Custom token exchange" |
+| A non-standard token exchange (custom or JSON body, extra fields, returned host) | `auth set --auth-type custom` + `onProvision` and `onRefresh` system resources whose hooks fetch the token, patched to `GET /onProvision` and `POST /onRefresh`, and no `provisionAuthValidation` — recipe in [hook-authoring-guide.md](hook-authoring-guide.md) §"Custom token exchange" |
 | No auth (private network endpoint) | `init --auth none` |
 
 Rules that hold for every type:
 
 - Secrets are config entries with `encrypt: true` (usually `PASSWORD`). Never give one a non-empty `defaultValue` (the empty one `init` writes is fine).
 - A value the user must type has `configScreenType: "pre"` (or `"pre-optional"`) and a `hintText` with an example — for a secret, where to find it (`Your Acme API key, from the Acme console`), never a value. A value a hook writes back (`accessToken`, `expires_in`, `authentication.time`) has **no** `configScreenType` at all — any value, even `"post"`, puts it on a form.
-- Credentials travel in headers or a form-encoded token body only. Never as a `vendorType: "query"` or `"path"` parameter, never in `request_vendor_path` — full request URLs are written to telemetry in clear text. Query parameters are fine for non-secrets (`api-version`, `alt`).
-- Add a `provisionAuthValidation` system resource when the vendor has a cheap authenticated `GET` (for example `/models`), so a wrong key fails on the connection page instead of in the probe: `uip is connectors builder auth system create --type provisionAuthValidation --vendor-path /models --method GET`.
+- Credentials travel in headers or the token request's body (form-encoded or JSON) only. Never as a `vendorType: "query"` or `"path"` parameter, never in `request_vendor_path` — full request URLs are written to telemetry in clear text. Query parameters are fine for non-secrets (`api-version`, `alt`).
+- Add a `provisionAuthValidation` system resource when the vendor has a cheap authenticated `GET` (for example `/models`) and the connection's credentials are what that call sends, so a wrong key fails on the connection page instead of in the probe: `uip is connectors builder auth system create --type provisionAuthValidation --vendor-path /models --method GET`. Never add one beside a custom token exchange: it runs before `onProvision`, with no token yet, and fails every connection with the vendor's 401.
 
 ## Per-connection values
 
@@ -94,3 +94,4 @@ Run after `builder validate` passes, before the first `import` (the version chec
 6. **No secret defaults** — no encrypted or `PASSWORD` config entry has a non-empty `defaultValue`; `base.url` holds the vendor host, not a placeholder such as `https://example.com`.
 7. **Hook-written config** — every config entry a hook writes back has no `configScreenType`.
 8. **Hints** — every `pre` / `pre-optional` config entry has a `hintText`.
+9. **Token exchange** (custom auth only) — `GET /onProvision` with `vendorMethod: "POST"`, `POST /onRefresh` (not `/on-refresh`), each with its hook pair and no orphaned hook file from an earlier method or path; no `provisionAuthValidation`; `custom.auth.header` hidden with an empty default unless the vendor uses it.

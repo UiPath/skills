@@ -7,7 +7,7 @@ An Integration Service connection is one set of vendor credentials on a connecto
 | | Test connection | Runtime connection |
 |---|---|---|
 | Purpose | Call the unpublished draft through Integration Service while it is being built and fixed (SKILL.md step 7) | Run the product's probes when the configuration is saved, then serve the product once it is enabled |
-| Made with | `curl` on the Integration Service API — the Connector Builder's Add connection (SKILL.md step 6) | The Integration Service web UI, on the published connector |
+| Made with | `curl` on the Integration Service API — the Connector Builder's Add connection (SKILL.md step 6) | The Integration Service web UI, on the published connector — or the Connections API with the folder in a header (below) |
 | Connector | The draft (`design-…`); runs whatever was last imported | The published `custom-…` key; runs the published version |
 | Credentials | A sandbox key, or the builder's own | The credentials production must use — ask the user |
 | Who sees it | Only its creator; `uip is connections` never lists it, so no configuration can be saved on it | The shared folder the configuration names in `--folder-key`, so other admins can manage it |
@@ -53,6 +53,18 @@ To change the test connection's credentials, create a new one and delete the old
 ## Create the runtime connection
 
 After `publish` (`Data.PublishedKey`, `design-` swapped for `custom-`), the user creates the runtime connection from Integration Service in the web UI, on the published connector, in the shared folder the product will use. `uip is connections create <PUBLISHED_KEY>` has no folder option: it puts the connection in the creator's **Personal** workspace, where the gateway can still use it but only its creator can see, edit or rotate it. With the `design-…` key, `uip is connections create` fails.
+
+When the user cannot find the published connector in the web UI, open the connection session yourself with the call `uip is connections create` makes, plus the folder header the Connections API reads, and hand the user its `authUrl` exactly as for the test connection (they enter the credentials; you never do):
+
+```bash
+uip or folders list --output json                                   # Key of the shared folder (Type Standard)
+( set -o pipefail; source <WORK_DIR>/is-api.sh &&
+  api "$T/connections_/api/v1/Connections" -H 'x-uipath-folderkey: <SHARED_FOLDER_KEY>' \
+    --data-raw '{"connector":"<PUBLISHED_KEY>"}' | jq '{sessionId, authUrl, expiresAt}'
+)
+```
+
+`expiresAt` is in epoch milliseconds. Once the user has connected, the list below shows the connection with that `FolderKey`; if it shows the Personal workspace instead, the header was not applied — have the user create it in the web UI.
 
 Then locate it:
 
