@@ -547,6 +547,11 @@ workflow's release key and folder key, plus its request/response schemas,
 before the node is runnable — the served template is broken as-is; see the
 next section for the fix.
 
+The node's `result` is the workflow's output object itself. Map an output
+property as `source="=result.<property>"` (`=result.message`), never
+`=result.response.<property>`: `response` is the script-task wrapper, and on a
+job wrapper that path reads `null` while the node still completes.
+
 ## Job-wrapper v1 trap — `releaseKey` templates are unrunnable
 
 `Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`, and
