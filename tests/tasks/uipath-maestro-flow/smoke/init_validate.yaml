@@ -29,11 +29,12 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: command_executed
-    description: "Advisory: live-v1 agent created a solution"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+(init|new)'
-    min_count: 1
+  - type: run_command
+    description: "A solution manifest (.uipx) or a project.uiproj exists in the workspace"
+    command: |-
+      python3 -c "import glob, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) or glob.glob('**/project.uiproj', recursive=True) else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
