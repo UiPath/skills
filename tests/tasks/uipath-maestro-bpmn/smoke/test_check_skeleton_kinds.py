@@ -174,5 +174,34 @@ class DriftTests(unittest.TestCase):
         self.assertEqual(exact, kinds.CASE_ONLY_EXACT | kinds.OTHER_DROPPED_EXACT)
 
 
+V2_GUIDE = HERE.parents[3] / "preview" / "skills" / "uipath-maestro-bpmn" / "references" / "draft-skeleton.md"
+
+
+class GuideTests(unittest.TestCase):
+    """The v2 draft guide teaches box labels; every one it teaches must pass this grader."""
+
+    def setUp(self):
+        types = REGISTRY["Data"]["ExtensionTypes"] + [
+            {"ExtensionType": "Intsvc.UnifiedHttpRequest", "Label": "Execute HTTP request"}]
+        self.toolbox, self.dropped = kinds.kind_sets(types)
+        self.text = _read_or_skip(V2_GUIDE)
+
+    def test_kinds_table_labels_pass(self):
+        table = self.text.split("| Step | Kind |", 1)[1].split("\n\n", 1)[0]
+        labels = []
+        for row in table.splitlines()[2:]:
+            cell = row.strip().strip("|").split("|")[-1].strip()
+            if cell.startswith("`<"):
+                continue
+            labels += [k.strip() for k in cell.split(",")]
+        self.assertGreater(len(labels), 5)
+        self.assertEqual(kinds.check([f"Step [{k}]" for k in labels], self.toolbox, self.dropped), [])
+
+    def test_example_boxes_pass(self):
+        boxes = re.findall(r"\.task\('[^']+', \{ name: '([^']+)' \}\)", self.text)
+        self.assertGreaterEqual(len(boxes), 3)
+        self.assertEqual(kinds.check(boxes, self.toolbox, self.dropped), [])
+
+
 if __name__ == "__main__":
     unittest.main()

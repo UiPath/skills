@@ -38,6 +38,10 @@ changed. If a compile then stops on a node you did not change, stop: name the
 node and its code to the user.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
 
+<!--skill-flavor:check-baseline-uip-version:start-->
+
+<!--skill-flavor:check-baseline-uip-version:end-->
+
 <!--skill-flavor:install-agent-files:start-->
 `merge -o` into the target writes the `.flow` and every agent file merge
 carried. Fields the round trip does not reproduce (such as `maxIterations`, or a

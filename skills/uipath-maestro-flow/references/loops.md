@@ -71,7 +71,9 @@ Every `.loop()` emits the loop's 2.4 definition (inner `start`/`continue`/`break
 handles), the version the registry serves and the designer authors. The legacy
 1.0.0 shape (body from `output`, back-edge into `loopBack`, `currentIndex`) is
 emitted only for an explicit `{ version: '1.0.0' }`. On 1.0.0, `body.continue()`
-works; `completionCondition`, `breakEnabled` and `body.break()` fail `check` with
+works; `breakEnabled` and `body.break()` fail `check` with
+`LOOP_VERSION_UNSUPPORTED`. `completionCondition` passes `check` on 1.0.0 with
+`@uipath/maestro-builder-sdk` 6.86.25 or later; an older SDK fails `check` with
 `LOOP_VERSION_UNSUPPORTED`. `parallel: true` compiles on 1.0.0 only to
 round-trip a canvas 1.0.0 loop, and `check` warns `LOOP_PARALLEL_LEGACY`: that
 version is not confirmed to run iterations in parallel. For a new parallel loop,
@@ -81,9 +83,21 @@ drop `version` (2.4).
   Concurrent iterations' `{ updates }` writes overwrite each other, so a `.var()`
   they all update keeps only some of the writes, in no fixed order. Read the
   results after the loop from `$vars.<loop>.output` instead: one entry per item,
-  in collection order, each `{ <bodyStep>: { output } }`.
+  in collection order, each `{ <bodyStep>: { output } }`. Do not use it when a
+  body step reads `currentItem`: iterations do not isolate it (30 items gave 26
+  distinct values, run `Completed`, no warning). Run such a loop sequentially.
+  Entries omit HTTP steps, and a step that did not run in a pass carries the
+  previous pass's value, so do not read either from `$vars.<loop>.output`.
 - `completionCondition` — an expression checked after each iteration; the loop
-  stops early when it is true.
+  stops early when it is true. Needs `@uipath/maestro-builder-sdk` 6.87.2 or
+  later; an older SDK compiles it, but the loop ignores it and runs every item,
+  `Completed`, no warning,
+<!--skill-flavor:completion-condition-sdk-upgrade:start-->
+  so upgrade the copy `uip` uses:
+  `npm install -g @uipath/maestro-builder-sdk@latest`, or
+  `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a
+  workspace copy.
+<!--skill-flavor:completion-condition-sdk-upgrade:end-->
 - `body.break()` — exit the whole loop from inside an arm. Terminal on its
   path, like `.terminate()` but scoped to the loop; using it shows the loop's
   break handle automatically (`breakEnabled`).

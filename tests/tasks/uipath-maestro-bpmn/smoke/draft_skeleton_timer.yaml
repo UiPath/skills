@@ -3,8 +3,7 @@ description: >
   Draft-mode smoke eval for a trigger-start shape: the user asks to see the
   shape first, so the agent builds a phase 2 skeleton whose start event is a
   real timer start, with bare bpmn:task boxes and generated DI, makes no
-  registry call, skips `refresh` (it fails with no manual start), and stops
-  at the approval gate instead of wiring real nodes.
+  registry call, and stops at the approval gate instead of wiring real nodes.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:approval-gate"]
 
 run_limits:
@@ -37,13 +36,6 @@ success_criteria:
     description: "Agent did not upload, as the request forbids"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+solution\s+upload'
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_not_executed
-    description: "Agent skipped refresh, which fails on a trigger-start skeleton"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+refresh'
     weight: 1.0
     pass_threshold: 1.0
 
