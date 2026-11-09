@@ -162,6 +162,23 @@ test("the scheduled refresh lowers a ceiling but never raises one", () => {
   assert.deepEqual(withCeilings(ratchet, counts).s.ceiling, { login: 1, "rpa pack": 5, "solution pack": 4 });
 });
 
+test("the catalog refresh follows mentions to a deeper key but never lets a skill's total grow", () => {
+  const ratchet = {
+    moved: { allow: [], ceiling: { "maestro bpmn": 5, login: 2 } },
+    grew: { allow: [], ceiling: { "maestro flow": 3 } },
+  };
+  // `maestro bpmn eval` joined the catalog: 3 of the 5 mentions re-key, none are new.
+  // `grew` re-keyed too, but also gained a mention, so it only lowers.
+  const counts = {
+    moved: { "maestro bpmn": 2, "maestro bpmn eval": 3, login: 1 },
+    grew: { "maestro flow": 1, "maestro flow eval": 3 },
+  };
+
+  const out = withCeilings(ratchet, counts, { rekey: true });
+  assert.deepEqual(out.moved.ceiling, { login: 1, "maestro bpmn": 2, "maestro bpmn eval": 3 });
+  assert.deepEqual(out.grew.ceiling, { "maestro flow": 1 });
+});
+
 test("ceiling drift reports counts over and under their ceiling, not equal ones", () => {
   assert.deepEqual(ceilingDrift({ s: { a: 3, b: 1, c: 2 } }, { s: { ceiling: { a: 2, b: 1, d: 1 } } }), [
     { skill: "s", command: "a", count: 3, ceiling: 2 },

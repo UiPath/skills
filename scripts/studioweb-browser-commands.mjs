@@ -25,6 +25,9 @@
  *     debt, driven down per skill. Above it, the test fails. Below it, the
  *     test passes, so a flavor fix needs no edit to this root-owned file; the
  *     scheduled refresh (`--lower-ceiling`) lowers the ceiling to the count.
+ *     A Node catalog refresh re-keys instead (`--rekey`): a new deeper verb
+ *     (`maestro bpmn eval`) moves existing mentions off their old key
+ *     (`maestro bpmn`) onto one whose ceiling is 0, with no flavor change.
  *
  * Known limit: this reads what the flavor says, not what an agent executes.
  * Only `.md` files are scanned.
@@ -32,7 +35,8 @@
  * Usage:
  *   node scripts/studioweb-browser-commands.mjs                  # report
  *   node scripts/studioweb-browser-commands.mjs --write-ceiling  # reset ceilings to today's counts
- *   node scripts/studioweb-browser-commands.mjs --lower-ceiling  # only lower them (the scheduled refresh)
+ *   node scripts/studioweb-browser-commands.mjs --lower-ceiling  # only lower them (the browser-surface refresh)
+ *   node scripts/studioweb-browser-commands.mjs --rekey          # follow a Node catalog re-key (the catalog refresh)
  */
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -242,19 +246,24 @@ export function scanStudioweb() {
   }
 }
 
+const total = (byCommand = {}) => Object.values(byCommand).reduce((sum, n) => sum + n, 0);
+
 /**
  * Ceilings reset to `counts`, allowlists kept, skills sorted. With
  * `lowerOnly`, a ceiling never rises: a count above it stays a failure for a
- * human to look at.
+ * human to look at. With `rekey`, a skill whose total mentions did not grow
+ * is reset to `counts` (its mentions only moved between keys); a skill whose
+ * total grew is lowered only, so new debt still fails.
  */
-export function withCeilings(ratchet, counts, { lowerOnly = false } = {}) {
+export function withCeilings(ratchet, counts, { lowerOnly = false, rekey = false } = {}) {
   const skills = new Set([...Object.keys(ratchet), ...Object.keys(counts)]);
   const out = {};
   for (const skill of [...skills].sort()) {
     const previous = ratchet[skill]?.ceiling ?? {};
+    const lower = lowerOnly || (rekey && total(counts[skill]) > total(previous));
     const ceiling = {};
     for (const [command, count] of Object.entries(counts[skill] ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
-      const max = lowerOnly ? Math.min(count, previous[command] ?? 0) : count;
+      const max = lower ? Math.min(count, previous[command] ?? 0) : count;
       if (max > 0) ceiling[command] = max;
     }
     out[skill] = { allow: ratchet[skill]?.allow ?? [], ceiling };
@@ -267,8 +276,10 @@ function main(argv) {
   const ratchet = readJson(RATCHET);
   const counts = countUnallowed(mentions, ratchet);
   const write = argv.includes("--write-ceiling");
-  if (write || argv.includes("--lower-ceiling")) {
-    writeFileSync(RATCHET, `${JSON.stringify(withCeilings(ratchet, counts, { lowerOnly: !write }), null, 2)}\n`);
+  const rekey = argv.includes("--rekey");
+  if (write || rekey || argv.includes("--lower-ceiling")) {
+    const options = { lowerOnly: !write && !rekey, rekey };
+    writeFileSync(RATCHET, `${JSON.stringify(withCeilings(ratchet, counts, options), null, 2)}\n`);
     process.stdout.write(`Wrote ${RATCHET}.\n`);
     return;
   }

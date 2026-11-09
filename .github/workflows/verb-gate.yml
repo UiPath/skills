@@ -59,7 +59,9 @@ jobs:
           # like `skills/` ones, and a retired verb rots the same way in any
           # of them. (`classic/` ships inside the flavor that pins it.)
           if echo "$CHANGED" | grep -qE '^(assets/uip-catalog-snapshot\.json|scripts/check-skill-verbs\.py|\.github/workflows/verb-gate\.yml)$'; then
-            SKILLS=$(ls -d skills/*/ preview/skills/*/ classic/skills/*/ 2>/dev/null | sed 's|/$||' | sort -u)
+            # `ls` exits 2 when any tree is absent (`classic/` was deleted in
+            # #4193), and pipefail turned that into a failed detect job.
+            SKILLS=$({ ls -d skills/*/ preview/skills/*/ classic/skills/*/ 2>/dev/null || true; } | sed 's|/$||' | sort -u)
           else
             SKILLS=$(echo "$CHANGED" \
               | grep -E '^(skills|preview/skills|classic/skills)/[^/]+/.*\.md$' \
