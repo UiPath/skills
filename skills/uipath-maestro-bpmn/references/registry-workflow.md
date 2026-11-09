@@ -616,7 +616,10 @@ parameters (Data Fabric's `entityScope`, `folderEntityName`,
 `folderEntityName_folderKey`) go under `--input-details.queryParameters`, and
 the CLI refuses a name the event object does not list. See
 [v2-connector-nodes.md](v2-connector-nodes.md). The `queryParams` /
-`filters.expression` body below is the V1 shape.
+`filters.expression` body below is the V1 shape; a V2 element needs the same
+equality clause per event parameter, which `registry get` writes only when
+`--input-details.filter` carries it
+([how](v2-connector-nodes.md#--input-details-reference)).
 
 ```bash
 uip is activities list <connectorKey> --triggers --output json   # Name + ObjectName + IsCurated

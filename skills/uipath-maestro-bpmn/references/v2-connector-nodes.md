@@ -344,6 +344,20 @@ take the field names from `uip is resources describe` `ResponseFields` with
 `"And"` even for one condition, and never put a raw CEQL or JMESPath string in
 `queryParameters` for a field the connector filters with (`where`,
 `queryExpression`) — the designer re-renders the filter only from the tree.
-A `filter` of `{}` is refused. Connection identity (`connectionId`, `folderKey`, method,
+A `filter` of `{}` is refused.
+
+**A trigger or wait is scoped by its filter, not by `body.queryParams`.** The
+runtime subscribes with `body.filters.expression` and `body.parameters` only,
+and the CLI can compile the expression from the `filter` tree alone. So put
+every `eventParameters` entry in `filter` as well, as an `Equals` leaf with the
+same value (Outlook `EMAIL_RECEIVED`: `parentFolderId`, the folder's id from
+`uip is resources run list uipath-microsoft-outlook365 MailFolder
+--connection-id <id>`), next to the user's conditions. Then read the pasted
+body: `filters.expression` must hold one `<name> == '<value>'` clause per
+`queryParams` key, as in `{"filters":{"expression":"((parentFolderId ==
+'<INBOX_ID>') && (contains(subject,'Invoice')))"},"queryParams":{"parentFolderId":"<INBOX_ID>"}}`.
+Without the clause the wait fires for every folder.
+
+Connection identity (`connectionId`, `folderKey`, method,
 path) never goes in `--input-details`; it comes from `--connection-id` and the
 catalog, except for an HTTP request (above).
