@@ -101,7 +101,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 2. Test delivery: `uip admin smtp test --recipient "<TEST_EMAIL>" --output json`
 3. Branch on test result error message
 
-**Fix:** Update config with correct values: `uip admin smtp update --host "<HOST>" --port <PORT> --secure <true|false> --user "<USER>" --password "<PASS>" --output json`. Re-test after each change.
+**Fix:** Update config with correct values: `uip admin smtp update --host "<HOST>" --port <PORT> --enable-ssl <true|false> --username "<USER>" --password "<PASS>" --output json`. Re-test after each change.
 
 ---
 
