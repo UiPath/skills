@@ -74,7 +74,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The taxonomy on disk is well formed: uip maestro flow validate passes on InvoiceFields.flow with no warnings (a rejected last set or a hand edit fails here)"
+    description: "uip maestro flow validate passes with no warnings: the taxonomy went through nodes schema set (a hand edit leaves the fields without ids)"
     command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0

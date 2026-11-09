@@ -9,7 +9,8 @@ Usage (from a task's run_command, cwd = sandbox root):
 With no arguments the flows are discovered (below). Pass explicit paths when a
 brownfield fixture ships a second Flow project next to the one under test, which
 discovery would rightly refuse as ambiguous. ``--no-warnings`` also fails a flow
-that validates with ``Data.Warnings`` set.
+that validates with ``Data.Warnings`` set, except the canonical-layout warning on
+Studio Web's project naming of ``new.flow``.
 
 Why this exists — a hardcoded ``<Name>/<Name>/<Name>.flow`` path in a success
 criterion is brittle: ``uip maestro flow init <Name>`` scaffolds a
@@ -37,6 +38,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -119,11 +121,21 @@ def _attempt_cap(remaining: float, attempts_left: int) -> float:
     return max(_MIN_ATTEMPT_SECONDS, remaining / attempts_left)
 
 
-def _warnings(stdout: str) -> str:
+# `flow validate` reports its warnings as one string: a "N warning(s):" header,
+# then one "  - [<path>] <message>" line per warning.
+_WARNINGS_HEADER = re.compile(r"^\d+ warning\(s\):$")
+
+# The rule asking for <solution>/<projectName>/<projectName>.flow. Studio Web's
+# `new.flow` never satisfies it.
+_CANONICAL_LAYOUT_WARNING = "does not match canonical layout"
+
+
+def _warnings(stdout: str, flow: str = "") -> str:
     """``Data.Warnings`` of a ``flow validate --output json`` envelope, or ``""``.
 
     Output that is not a JSON envelope is reported as a warning, since a clean
-    result cannot be read from it.
+    result cannot be read from it. On a ``new.flow`` the canonical-layout
+    warning is dropped and every other warning is kept.
     """
     try:
         envelope = json.loads(stdout)
@@ -131,7 +143,19 @@ def _warnings(stdout: str) -> str:
         return f"no JSON envelope in stdout: {stdout.strip()[:500]!r}"
     data = envelope.get("Data") if isinstance(envelope, dict) else None
     warnings = data.get("Warnings") if isinstance(data, dict) else None
-    return json.dumps(warnings) if warnings else ""
+    if not warnings:
+        return ""
+    if not isinstance(warnings, str):
+        return json.dumps(warnings)
+    studio_web = os.path.basename(flow) == STUDIO_WEB_FLOW_FILE
+    kept = [
+        line
+        for line in warnings.splitlines()
+        if line.strip()
+        and not _WARNINGS_HEADER.match(line.strip())
+        and not (studio_web and _CANONICAL_LAYOUT_WARNING in line)
+    ]
+    return json.dumps("\n".join(kept)) if kept else ""
 
 
 def _validate(flow: str, deadline: float, budget: int, no_warnings: bool = False) -> int:
@@ -182,7 +206,7 @@ def _validate(flow: str, deadline: float, budget: int, no_warnings: bool = False
         sys.stdout.write(result.stdout)
         sys.stderr.write(result.stderr)
         if result.returncode == 0 and no_warnings:
-            warnings = _warnings(result.stdout)
+            warnings = _warnings(result.stdout, flow)
             if warnings:
                 print(f"FAIL: {flow} validated with warnings: {warnings}", file=sys.stderr)
                 return 1
