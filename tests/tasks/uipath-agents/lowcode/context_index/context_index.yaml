@@ -36,7 +36,7 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 0.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: run_command
     description: "The workspace has an Agent project (a project.uiproj with ProjectType Agent)"
