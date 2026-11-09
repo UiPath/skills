@@ -12,6 +12,7 @@ Usage:
   python3 check_dashboard.py
       [--min-metrics N] [--min-widgets N]
       [--require-substr S ...] [--forbid-substr S ...]
+      [--forbid-sourcetype-filter]
       [--require-starttime] [--require-state] [--tsc]
 
 Exit 0 = all checks pass. Exit 1 = failure with details on stdout.
@@ -46,6 +47,27 @@ UUID_RE = re.compile(
     r'["\']([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})["\']'
 )
 
+# String literals OR comments, in source order. Strings are kept: an OData
+# filter lives inside one. Comments are dropped, but newlines inside block
+# comments are kept so line numbers stay the same.
+TS_STRING_OR_COMMENT_RE = re.compile(
+    r"""("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|(/\*.*?\*/|//[^\n]*)""",
+    re.S,
+)
+
+# sourceType is the job's trigger origin, not the agent discriminator
+# (sdk/orchestrator.md). These patterns flag it only when it is USED to
+# classify jobs. Reading it into a row or showing it as a column is fine;
+# comments that warn against it are fine too.
+SOURCETYPE_DISCRIMINATOR_RES = (
+    # OData filter on the raw field: "SourceType eq 'Agent'", "Source ne 'Manual'"
+    re.compile(r"\bsource(?:type)?\s+(?:eq|ne)\s", re.I),
+    # job.sourceType === 'Agent', j?.sourceType !== x, row['sourceType'] == x (not a null check)
+    re.compile(r"""(?:\.|\[\s*['"`])sourcetype(?:['"`]\s*\])?\s*[!=]==?(?!\s*(?:null|undefined)\b)""", re.I),
+    # 'Agent' === job.sourceType
+    re.compile(r"""(?<![!=])[!=]==?\s*(?!null\b|undefined\b)[\w$?.]*?(?:\.|\[\s*['"`])sourcetype\b""", re.I),
+)
+
 
 def fail(msg: str) -> None:
     print(f"FAIL: {msg}", flush=True)
@@ -55,6 +77,26 @@ def fail(msg: str) -> None:
 def check(condition: bool, msg: str) -> None:
     if not condition:
         fail(msg)
+
+
+def strip_ts_comments(src: str) -> str:
+    """Drop // and /* */ comments from TS/TSX source, keeping string literals and line numbers."""
+    def repl(m):
+        if m.group(1) is not None:
+            return m.group(1)
+        return re.sub(r"[^\n]", " ", m.group(2))
+    return TS_STRING_OR_COMMENT_RE.sub(repl, src)
+
+
+def find_sourcetype_discriminator(files) -> list:
+    """Return 'path:line: code' for each place sourceType is used to classify jobs."""
+    hits = []
+    for p in files:
+        code = strip_ts_comments(p.read_text(encoding="utf-8", errors="ignore"))
+        for n, line in enumerate(code.splitlines(), 1):
+            if any(r.search(line) for r in SOURCETYPE_DISCRIMINATOR_RES):
+                hits.append(f"{p.as_posix()}:{n}: {line.strip()[:160]}")
+    return hits
 
 
 def find_project_root(start: Path) -> Path:
@@ -124,6 +166,9 @@ def main() -> None:
                         help="Substring that MUST appear across metric modules / generated code (repeatable)")
     parser.add_argument("--forbid-substr", action="append", default=[],
                         help="Substring that must NOT appear across metric modules / generated code (repeatable)")
+    parser.add_argument("--forbid-sourcetype-filter", action="store_true",
+                        help="Fail if metric modules / generated code classify jobs on sourceType "
+                             "(OData filter or ===/!== comparison). Comments and display columns are allowed.")
     parser.add_argument("--require-starttime", action="store_true",
                         help="A named time constant must appear in metric modules (not inline Date arithmetic)")
     parser.add_argument("--require-state", action="store_true",
@@ -211,6 +256,11 @@ def main() -> None:
     for s in args.forbid_substr:
         check(s not in code_surface,
               f"Forbidden substring present in metric modules / generated code: {s!r}")
+    if args.forbid_sourcetype_filter:
+        hits = find_sourcetype_discriminator(scan_files)
+        check(not hits,
+              "sourceType used to classify jobs (it is the trigger origin; "
+              "use packageType/ProcessType eq 'Agent'):\n  " + "\n  ".join(hits[:5]))
 
     # 7. startTime constants in metric modules
     if args.require_starttime:
