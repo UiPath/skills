@@ -89,8 +89,25 @@ Before writing `data.inputs[]`, reject values wrapped in backticks or an unprovi
 1. **SDD per-task tables** are primary: each task declares input/output names, types, and variable bindings.
 2. Run `uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json` to validate SDD names and discover additional fields (for example, standard `Error` output). The SDD per-task Outputs table uses two operators per v1 contract (see the case SDD template (`uipath-planner`) Section 2):
    - **`->` extract:** `<sdd-field-path> -> <case variable>`. The left side is the full runtime path relative to the task root; the right side is the target case variable, which MUST exist in the Case Variables table. Emit the source as `"=<sdd-field-path>"` verbatim; never infer, add, remove, or alter envelope prefixes. The target becomes `var` / `value` on `task.data.outputs[]`; allocate `id` / `originalVar` / `target` independently from the source leaf and global collision pool.
+
+   ```markdown
+   - outputs:
+     - response.status        -> sendStatus    # connector payload field → vars.sendStatus
+     - response.message.ts    -> messageTs     # nested connector field  → vars.messageTs
+     - Error                  -> error         # top-level error (connector or action) → vars.error
+     - Error.code             -> errorCode     # nested error sub-field   → vars.errorCode
+     - Action                 -> userDecision  # action task's top-level output → vars.userDecision
+   ```
+
    - Equal-name extracts remain extracts: `greeting -> greeting` keeps the arrow, points `var` / `value` to the existing Case variable, and emits `originalVar`. If the only collision is the matching root companion, source-side `id`, `originalVar`, and `target` remain `greeting`; an unrelated task/trigger/rule owner forces normal allocation (`greeting2`, `greeting3`, ...).
    - **`=` set/compute/copy:** `<case variable> = <expression>`. The target MUST already exist in Case Variables. Expressions may be a plain literal string/number/bool, `=js:` computation, or `=vars.X.Y` reference. **For `=` rows only, the emitted JSON carries `"target": ""` and `"body": ""` as present keys** — an empty value is not a reason to omit the key. This blank form is specific to `=`; `->` and bare outputs carry a real `target` (`"=<id>"`) and a real `value`, and must not be blanked. Full shape: [`impl-json.md` § Scenario E](impl-json.md).
+
+   ```markdown
+   - outputs:
+     - caseStatus  = "InReview"                            # literal
+     - reviewCount = =js:vars.reviewCount + 1              # computed expression
+     - summary     = =vars.response.message.text           # copy from another variable's sub-field
+   ```
 
    **Dot-path support** on the left side of `->`: full paths like `response.message.ts`, `response.data.user.email`, `Error.code` are emitted as-is. The first segment selects the top-level schema output; implementation then walks that output's nested schema one segment at a time and takes the emitted **`name` and `type` from the final leaf — never from the top-level parent, and never the dotted path itself**. `Error.Message -> errorMessage` emits `name: "Message"` (the leaf's display name, else its exact final segment) and the leaf's `type`; `name: "Error.Message"` and the parent's `type: "jsonSchema"` are both wrong. Full shape and worked example: [`impl-json.md` § Nested extract example](impl-json.md). A nested row references its top-level parent, so `Error.Message -> errorMessage` does NOT also auto-mint a bare `Error` output unless schema discovery independently adds `Error` as a bare output. Array indexing (`items[0]`) is NOT supported in v1 — fall back to consuming the array variable and using `=js:` expressions downstream.
 

@@ -11,8 +11,8 @@ Compose and write one complete `slaRules[]` array per target (root or stage), gr
 ## Input spec (from the SDD's SLA tables)
 
 - **Default SLA:** `target`, `count`, `unit`, `display-name`; one per target, emitted as the final `=js:true` entry.
-- **Conditional rule:** `target: "root"` or `"<stage-name>"`, `condition` (natural-language), `count`, `unit`, `display-name`; translate to `=js:<expr>` at execution and prepend in SDD order.
-- **Escalation:** `target`, `attach-to: T<m>` or `default`, `trigger-type`, optional `at-risk-percentage`, `recipients[]`, and `display-name`.
+- **Conditional rule:** `target: "root"` or `"<stage-name>"`, `condition` (natural-language), `count`, `unit`, `display-name`; translate to `=js:<expr>` at execution and prepend in SDD order; see Expression Translation below.
+- **Escalation:** `target`, `attach-to: T<m>` or `default`, `trigger-type`, optional `at-risk-percentage`, `recipients[]`, and `display-name`. `attach-to` points to the T-number of the parent rule (or the default).
 
 ## ID generation
 

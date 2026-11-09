@@ -20,7 +20,7 @@ For structural edits to an existing `caseplan.case` (add, change, or remove task
 
 1. Locate the stage by `id`; ensure `data.tasks` exists.
 2. Give the task its own inner array: `data.tasks.push([task])`. Share one only when explicitly requested as a parallel sibling of existing tasks; otherwise use its own.
-3. Use this shape; `data` contains only `timerType` and the duration:
+3. Use this shape; `data` contains only `timerType` and the duration; every other field is a top-level sibling:
 
    ```json
    {

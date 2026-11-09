@@ -25,13 +25,14 @@ Before every write:
 2. Generate CLI-format IDs with `prefixedId`; the frontend `generateNextId(prefix, count)` expects it.
 3. Every new Stage contains `data.parentElement: { id: "root", type: "case-management:root" }`, `data.isInvalidDropTarget: false`, and `data.isPendingParent: false`; never emit node `position`, `style`, `measured`, `width`, `height`, or `zIndex` (Rule 19).
 4. Primary and secondary nodes are both `case-management:Stage`; only secondary has `data.stageType: "secondary"`. Primary omits `entryConditions`/`exitConditions` at creation; secondary initializes both as empty arrays. Conditions are later added to primary by condition plugins; never initialize primary arrays.
-5. Keep `schema.edges` `[]`; construct no handles or edge objects. Edge type inference is RETIRED; reachability comes from conditions.
-6. Every regular Stage needs an entry condition: first uses `case-entered`; later uses `selected-stage-completed` or `selected-stage-exited` naming a reachable predecessor. Plan it when adding the Stage.
-7. Preserve task order/structure. `laneIndex` is structural: strict chains use `[[A], [B], [C]]`; explicitly parallel siblings may use `[[A, B], [C]]` or `[[A], [B, C], [D]]`. Sequencing comes from conditions and order, not lane sharing.
-8. Set every task's `elementId = ${stageId}-${taskId}`.
-9. Task `entryConditions[]` come only from the task-entry-conditions plugin (Step 10) and SDD-authored rows, including a connector's explicit `current-stage-entered` row. Never inject by task type; connector and non-connector tasks are identical here, and duplication corrupts 1-based `displayName` indexing.
-10. Before a `var bind`, verify source stage and task IDs exist.
-11. After each element-class section batch, run `uip maestro case validate <file> --output json`; section boundaries use the default profile. Phase 3 exit and Phase 4 use `--strict --sdd sdd.md`, or `--strict` for brownfield edits without an SDD. T01 skips validate: run cheap `JSON.parse` plus root/trigger shape check ([plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation)). The stages pilot also has a known-invalid stages-only caseplan; use its fixture validation parity.
+5. **Edges are not authored (Rule 21).** `schema.edges` stays `[]` — do not construct edge handles or append edge objects. Stage transitions derive from entry/exit conditions.
+6. **Edge type inference (RETIRED).** No edges are written (Rule 21), so there is no edge type to infer.
+7. Every regular Stage needs an entry condition: first uses `case-entered`; later uses `selected-stage-completed` or `selected-stage-exited` naming a reachable predecessor. Plan it when adding the Stage.
+8. Preserve task order/structure. `laneIndex` is structural: strict chains use `[[A], [B], [C]]`; explicitly parallel siblings may use `[[A, B], [C]]` or `[[A], [B, C], [D]]`. Sequencing comes from conditions and order, not lane sharing.
+9. Set every task's `elementId = ${stageId}-${taskId}`.
+10. Task `entryConditions[]` come only from the task-entry-conditions plugin (Step 10) and SDD-authored rows, including a connector's explicit `current-stage-entered` row. Never inject by task type; connector and non-connector tasks are identical here, and duplication corrupts 1-based `displayName` indexing.
+11. Before a `var bind`, verify source stage and task IDs exist.
+12. After each element-class section batch, run `uip maestro case validate <file> --output json`; section boundaries use the default profile. Phase 3 exit and Phase 4 use `--strict --sdd sdd.md`, or `--strict` for brownfield edits without an SDD. T01 skips validate: run cheap `JSON.parse` plus root/trigger shape check ([plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation)). The stages pilot also has a known-invalid stages-only caseplan; use its fixture validation parity.
 
 ## ID Generation
 
@@ -94,16 +95,16 @@ Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `c`, `r`, `b`, `
 The unit is one SDD element class (variables, triggers, stages, task-shapes, conditions, SLA):
 
 1. Read `caseplan.case` once at section entry.
-2. For `<10` elements, make N sequential Edits, one per element, targeting the smallest unique slice. For `≥10`, compose the complete post-section state and replace its container with one Edit or, only if necessary, one Write. A whole-file Write requires the complete snapshot and verbatim copying of every untouched root field, sibling, and node.
+2. For `<10` elements, make N sequential Edits, one per element, targeting the smallest unique slice. For `≥10`, compose the complete post-section state and replace its container with one Edit or, only if necessary, one Write. Whole-file Write rebuilds the file from agent reasoning and risks silently dropping fields the agent forgot; use it only when (a) the section has ≥10 elements AND (b) the agent has the complete file state in context from the Read at step 1 AND (c) every untouched root-level field, sibling section, and node not mutated by this section will be copied verbatim. When in doubt, fall back to N Edits — the 12-item Pre-flight Checklist exists because field drops have happened, and Edit is the structural defense.
 3. Do not re-Read between sibling Edits; each result confirms the preceding state. Anchor each Edit on a unique target stage/task `"id": "<Stage_… | t…>"`, extending until unique in the whole file; never use recurring bare keys (`tasks`, `data`, `entryConditions`, `exitConditions`). Order Edits so earlier removal does not overlap later `old_string`; re-Read if needed.
-4. Validate once at the boundary per Pre-flight item 11.
+4. **One `validate`** at section boundary (Pre-flight Item 12 above).
 5. Before a whole-file repair Write, record outside-target stage IDs, task IDs, root binding IDs, and selected-resource task IDs; immediately re-Read and verify all survive. Never replace unrelated topology, bindings, or resolved tasks; use targeted Edit for individual errors.
 
 Status before the first write must be in the same assistant turn as its tool use, ≤1 sentence/~20 tokens. Do not emit standalone text-only turns between Edits, planning monologues, or announcement text beginning `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Next step:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or equivalent. Outside kickoff, hard-stop AskUserQuestion preambles, Phase 5/6 reports, `Publish for review` DesignerUrl, and post-validate summaries, text blocks are ≤200 tokens; those exceptions are ≤500. Use TaskUpdate for audit: create T-number items, mark `in_progress` before composing and `completed` after success.
 
 For CLI-gated sections (Phase 2 non-connector `tasks describe`; Phase 3 Step 9.7 connector `case spec`), run all calls first, collect results, then Read → writes → validate. On interruption, re-Read `caseplan.case` and `sdd.md`, resume at the first in-progress item lacking matching stage `data.label`, task `displayName`, or variable `name`; rerun unapplied CLI calls. No checkpoint file.
 
-This contract applies to `caseplan.case`. Phase 1 `registry-resolved.json` follows [planning.md Step 4](planning.md): one Read per section and one-object Edit appends, never whole-section Write. Outside the initial scaffold, whole-file Write is permitted only at a `≥10` section boundary, never mid-section. Cap a single Write at ~15K tokens/~40KB; for ≥40 tasks or ≥8 stages, use Phase 2 sections then Phase 3 detail Edits. Phase 2 writes root, nodes, variables, task shapes, SLA/escalations, and canonical connector-rule stubs; Phase 3 fills connector context/input/output and upgrades stubs. Never write assembler scripts such as `/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, or any `.py`, `.js`, `.sh` artifact.
+This contract applies to `caseplan.case`. Phase 1 `registry-resolved.json` follows [planning.md Step 4](planning.md): one Read per section and one-object Edit appends, never whole-section Write. Outside the initial scaffold, whole-file Write is permitted only at a `≥10` section boundary, never mid-section. Cap a single Write at ~15K tokens/~40KB; for ≥40 tasks or ≥8 stages, use Phase 2 sections then Phase 3 detail Edits. Phase 2 writes root, nodes, variables, task shapes, SLA/escalations, and canonical connector-rule stubs; Phase 3 fills connector context/input/output and upgrades stubs. **Forbidden: build-assembler helper scripts.** Writing `/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, or any script that assembles a skill artifact and pipes/writes it to disk is a Rule 14 violation — regardless of `/tmp` placement, "mechanical copy" framing, or "avoid Read+Write churn" rationale. The script-write + script-run + script-output-to-file pattern bypasses the tool-call audit trail Rule 14 protects. If the artifact is too large for a single Write turn, apply the ~15K-token Write cap and Phase 2 → Phase 3 split above. There is no helper-script escape hatch.
 
 ### Generate a fresh ID
 
@@ -205,7 +206,7 @@ Follow [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md): edit `
 2. Read and locate by task ID.
 3. Edit `data` to match schema, including `taskTypeId`, `inputs`, and `outputs`; preserve `id` and `elementId = ${stageId}-${taskId}`.
 4. Re-bind added/renamed/retyped inputs and repoint/remove consumers of dropped outputs using [bindings-and-expressions.md](bindings-and-expressions.md): single lookup `=vars.X`/`=bindings.X`, otherwise `=js:...`.
-5. Prune unreferenced top-level bindings. If the resource binding set changed, regenerate [bindings-v2-sync.md](bindings-v2-sync.md) and run `uip solution resources refresh` before debug/publish (Rule 15), pruning dropped-resource orphans per [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources). Pure schema reshaping with no binding added/removed/repointed leaves `bindings_v2.json` and refresh unchanged.
+5. Prune unreferenced top-level bindings. If the resource binding set changed, regenerate [bindings-v2-sync.md](bindings-v2-sync.md) and run `uip solution resources refresh` before debug/publish (Rule 15). If the change repointed or dropped a binding, also prune the orphan ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)). Pure schema reshaping with no binding added/removed/repointed leaves `bindings_v2.json` and refresh unchanged.
 6. Edit narrow task/consumer/bindings slices and validate at the section boundary.
 
 ### Repoint a non-connector task at a different resource
@@ -283,7 +284,7 @@ A secondary Stage remains `type: "case-management:Stage"`; `data.stageType` enum
 
 1. Read and locate.
 2. Primary → secondary: add `data.stageType: "secondary"`; retain conditions and ensure ≥1 entry condition via [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md).
-3. Secondary → primary: remove `data.stageType`; do not set `"primary"`; ensure reachability (`case-entered` first, otherwise `selected-stage-completed`/`selected-stage-exited`).
+3. Secondary → primary: remove `data.stageType`; do not set `"primary"` explicitly unless the file already does; ensure reachability (`case-entered` first, otherwise `selected-stage-completed`/`selected-stage-exited`).
 4. Leave `isInterrupting` unchanged; it belongs to the entry rule.
 5. Edit the narrow field/condition slice and validate.
 

@@ -81,7 +81,18 @@ After `get-connection` succeeds (Step 1), connector plugins must populate the lo
 ]
 ```
 
-Populate fields from: `id` = `connection-id` from `registry-resolved.json` (Planning); `name` = `.Data.Connections[selected].Name`; `connectorKey` = `connector-key` from `registry-resolved.json` (Planning); `connectorName` = `.Data.Connections[selected].Connector.Name`; `folderKey` = `.Data.Connections[selected].Folder.Key`; `folderName` = `.Data.Connections[selected].Folder.Name` (the latter four from `get-connection`, Step 1).
+### Field sources
+
+| Field | Source | Plugin step |
+|---|---|---|
+| `id` | `connection-id` from `registry-resolved.json` | Planning |
+| `name` | `.Data.Connections[selected].Name` from `get-connection` | Step 1 |
+| `connectorKey` | `connector-key` from `registry-resolved.json` | Planning |
+| `connectorName` | `.Data.Connections[selected].Connector.Name` from `get-connection` | Step 1 |
+| `folderKey` | `.Data.Connections[selected].Folder.Key` from `get-connection` | Step 1 |
+| `folderName` | `.Data.Connections[selected].Folder.Name` from `get-connection` | Step 1 |
+
+### Procedure
 
 1. Read the cache; if absent, use `[]`.
 2. If an entry with the same `id` exists, skip it; otherwise append it.

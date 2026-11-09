@@ -39,7 +39,39 @@ A start trigger without `--trigger-kind start` is typed as a wait and never fire
 
 ### `bodyParameters` (activity only)
 
-Use field names as keys. `nestDottedKeys` nests dotted keys for grouping, not leaf typing; arrays are final leaf values, and `x[0]` syntax is unsupported. Before authoring, **always read `inputs.bodyFields[].dataType` AND `description` from `case spec --skip-case-shape`**. These connector-specific values are authoritative: do not infer paths or shapes from field names or examples. Paths may differ across connectors or operations; `dataType` determines scalar versus array.
+Object keyed by field name. Dotted keys (`message.body.contentType`) get nested into structured objects via `nestDottedKeys` — that nesting is purely about how the CLI groups keys, NOT about the leaf value type.
+
+> **Per-field leaf shape is connector-specific. Always read `inputs.bodyFields[].dataType` AND `description` from `case spec --skip-case-shape` before authoring a value.** Curated wrappers often expose a simplified leaf type (e.g. `string` with `description: "separated by comma(,)"`) where the underlying upstream API expects a structured object. Authoring the structured shape against a Curated wrapper produces a runtime failure even though the input JSON nests correctly through `nestDottedKeys`. The `dataType` + `description` returned by `case spec` are authoritative; the example below illustrates the dotted-key nesting mechanic only — different connectors and different operations on the same connector may type-narrow the same dotted-key path differently.
+
+> **Array values are leaves** — pass arrays as their final shape, not via index syntax (`x[0]` is NOT supported). Whether a given field WANTS an array or a scalar is determined by `bodyFields[].dataType`, not by whether the field name suggests plurality.
+
+**Example input** (Outlook 365 Send Email — the connector's curated contract declares every recipient leaf as `dataType: string` with `description: "separated by comma(,)"`, so the values below are plain comma-strings, not arrays of email-address objects):
+```json
+{
+    "bodyParameters": {
+        "message.subject": "Quarterly Review",
+        "message.body.contentType": "Text",
+        "message.body.content": "Please review the attached report.",
+        "message.toRecipients": "alice@example.com,bob@example.com",
+        "message.importance": "high"
+    }
+}
+```
+
+**What lands in `caseShape.inputs[name="body"].body`:**
+```json
+{
+    "message": {
+        "subject": "Quarterly Review",
+        "body": {
+            "contentType": "Text",
+            "content": "Please review the attached report."
+        },
+        "toRecipients": "alice@example.com,bob@example.com",
+        "importance": "high"
+    }
+}
+```
 
 A different Send Email-like operation (Microsoft Graph passthrough, Gmail API, custom connector) may declare its recipients via a different **field path** AND a different **leaf shape**. For example, the Graph passthrough POST `/messages` activity exposes `toRecipients[*].emailAddress.address` at the **top level** of `bodyParameters` (NOT under `message.`) with `dataType: string` per `[*]` array element; the wire result is `bodyParameters.toRecipients = [{"emailAddress":{"address":"…"}}]`. Always inspect `inputs.bodyFields[].name` AND `dataType` before authoring — do not assume path or shape from the field name alone.
 

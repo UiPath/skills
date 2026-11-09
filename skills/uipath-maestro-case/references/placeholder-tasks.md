@@ -4,7 +4,12 @@ This reference defines unresolved task resources: creation, preserved/omitted fi
 
 ## Why Placeholders Exist
 
-Registry pulls may lack processes, agents, RPA, action-apps, registered Custom Integration Service connectors, or IS connections. Studio Web TypeCache cannot serve a connector catalog; `registry pull` reports its `typecache-*` type in `Data.Errors`, so indexed resources do not resolve in that session ([connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx)).
+Registry pulls are often incomplete during early authoring:
+
+- The target tenant has not yet published the processes / agents / RPA / action-apps.
+- Custom Integration Service connectors have not been registered.
+- IS connections for registered connectors are not yet provisioned.
+- Studio Web TypeCache cannot serve a connector catalog — `registry pull` lists its `typecache-*` type in `Data.Errors` — so nothing that index serves resolves in that session ([connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx)).
 
 Do not halt. Generate the complete reviewable, validatable workflow in `caseplan.case`—stages, conditions, SLA, ordering, task names, and types—and defer only registry-dependent `task-type-id`, `connection-id`, and input/output schemas. The user reviews structure, then attaches resources.
 

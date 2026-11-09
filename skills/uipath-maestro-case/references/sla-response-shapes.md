@@ -53,7 +53,7 @@ A non-interrupting SLA lane remains a secondary stage: keep `stageType: "seconda
 
 1. **A task with no entry condition never starts.** `validate` accepts `entryConditions: []` and a missing key. Every task added for `start-task` carries its own entry condition (§3).
 2. **A non-interrupting lane emitted as a regular stage** (§4) silently changes the completion contract.
-3. **`escalationId: "any"` is repaired by repointing.** Remove the key; substituting a concrete escalation passes `validate` but converts Breached to at-risk. Do not add an escalation to a correct breach rule because a checklist appears to require one: a rule containing only `slaId` is complete.
+3. **`escalationId: "any"` repaired by repointing.** Removing the key is the fix; substituting a concrete escalation also turns `validate` green but converts a Breached rule into an at-risk rule — a behavior change the user never asked for. The same conversion happens when a correct breach rule is "completed" by adding an escalation because a checklist looked like it required one: a breach rule carrying only `slaId` is finished, not missing a field.
 4. **`start-task` authored as stage re-entry** (§3) reruns every `shouldRunOnlyOnce: false` task in the breached stage instead of only the follow-up.
 
 ## Verified

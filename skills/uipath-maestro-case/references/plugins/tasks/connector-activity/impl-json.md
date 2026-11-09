@@ -74,15 +74,21 @@ uip maestro case spec --type activity \
   --output json > tasks/spec-cache.<elementId>.json
 ```
 
+`--solution-folder` is the solution a picker's resource is added to. It defaults to the solution containing the current folder.
+
 `.Data.CaseShape.context` must resolve. If `null`, upgrade the CLI; never adapt the splice to an older response. Create the cache only through the redirect above: save the raw `Result` / `Code` / `Data` envelope byte-for-byte. Do not author, wrap `caseShape`, hand-write, copy from `/tmp`, or use a partial response. Responses can be tens of KB (68 KB for Slack `send_message_to_channel_v2`); incomplete caches silently drop subtrees while `validate` may stay green. The `>` is the one redirect [SKILL.md](../../../../SKILL.md) Rule 14 permits.
 
 **Save the whole response envelope verbatim** to `tasks/spec-cache.<elementId>.json` with the Write tool (Rule 14), not `cp` or a redirect. It is input to `uip maestro case splice`; do not unwrap, re-case, or edit it. The envelope key is `Data.CaseShape` (PascalCase); its shape is camelCase (`context` / `inputs` / `outputs`):
 
-- `spec.identity` ← `.Data.Identity`: connectorKey, connectorName, connectorVersion, objectName, objectDisplayName, full TypeCache entry.
-- `spec.connection.folderKey` ← `.Data.Connection.FolderKey`, needed for FolderKey binding.
-- `spec.caseShape.inputs[]` / `outputs[]` / `context[]` ← `.Data.CaseShape.inputs` / `.outputs` / `.context`; context is FE-canonical and `connection` / `folderKey` contain `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` sentinels for `splice`.
-- `spec.diagnostics.fallbacks[]` ← `.Data.Diagnostics.Fallbacks`; surface non-empty values to `build-issues.md`.
-- `spec.resourceBindings[]` ← `.Data.ResourceBindings`; resolved pickers only, with `resource`, `resourceKey`, and `rows[]` containing `name`, `propertyAttribute`, `default`, `bindingIdPlaceholder` (camelCase).
+| Variable | Source |
+|---|---|
+| `spec.identity` | `.Data.Identity` — connectorKey, connectorName, connectorVersion, objectName, objectDisplayName, full TypeCache entry |
+| `spec.connection.folderKey` | `.Data.Connection.FolderKey` — needed for the FolderKey binding |
+| `spec.caseShape.inputs[]` | `.Data.CaseShape.inputs` — pre-filled body / queryParameters / pathParameters / file inputs |
+| `spec.caseShape.outputs[]` | `.Data.CaseShape.outputs` — response (JSON Schema body) / curated / Error |
+| `spec.caseShape.context[]` | `.Data.CaseShape.context` — FE-canonical array; its `connection` / `folderKey` values are `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` sentinels that `splice` resolves |
+| `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty. |
+| `spec.resourceBindings[]` | `.Data.ResourceBindings` — only when a picker resolved: `resource`, `resourceKey`, and `rows[]` of `name`, `propertyAttribute`, `default`, `bindingIdPlaceholder` (kept camelCase, like `caseShape`). |
 
 Do not pass `--skip-case-shape` in Phase 3; it conflicts with `--input-details` ([case-spec-input-details.md § Validation rules](../../../case-spec-input-details.md#validation-rules-invalidinputdetailserror-on-violation)). The CLI returns the full populated `caseShape`.
 
@@ -128,7 +134,7 @@ Write an empty `data` block with only SDD-known fields:
 }
 ```
 
-For an external agent or automation, use `external-agent` or `external-workflow` ([planning § External agents and automations](planning.md#external-agents-and-automations)); `splice` writes `serviceType`. Copy the task’s `**Description:**` line word for word. Use `**Design Rationale:**` only when there is no `**Description:**`, then send it to `tasks/build-issues.md`.
+For an external agent or automation, use `external-agent` or `external-workflow` ([planning § External agents and automations](planning.md#external-agents-and-automations)); `splice` writes `serviceType`. The task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
 Append to the target stage’s `data.tasks` using `activation-mode` + `entry-rule`, never `lane` alone. Strict `sequential` tasks are new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned next inner array although their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks each get a single-task inner array. Share an inner array only for `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale. Add `runs-sequentially` when the frontend toggle or ordered task-set rule selects it; if `lane` conflicts with mode, mode wins.
 

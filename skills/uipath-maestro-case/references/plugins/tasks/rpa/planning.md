@@ -4,7 +4,7 @@ An RPA robot task: sdd.md component type `RPA`, task node `type` `"rpa"`, and a 
 
 ## When to Use
 
-Use only when sdd.md explicitly labels the task `RPA` (for example, “RPA robot does X”). Distinguish it semantically from `process` by sdd.md intent. If ambiguous between `PROCESS` and `RPA`, default to `process` unless sdd.md mentions UI automation, desktop apps, or robot-specific concerns.
+Pick this plugin when the sdd.md explicitly labels a task as `RPA` (e.g., "RPA robot does X"). The distinction from `process` is **semantic** (sdd.md intent) rather than structural (registry representation). If ambiguous between `PROCESS` and `RPA`, default to `process` unless sdd.md mentions UI automation, desktop apps, or robot-specific concerns.
 
 ## Required Fields from sdd.md
 
@@ -27,7 +27,7 @@ Same shape as [process/planning.md](../process/planning.md):
 3. Use the sdd.md `RPA` label to set the task node `type: "rpa"`. Record the cache `entityKey` in `registry-resolved.json`, not on the node; reference the resource through `data.name` / `data.folderPath` = `=bindings.<id>`.
 4. If `process-index.json` has no match, search all other cache files as a fallback.
 5. Set **`folder-path` to the SELECTED entry's `folders[0].fullyQualifiedName`**, not sdd.md `Folder`; use the sdd.md folder only when there is no registry match (Unresolved path).
-5a. Set **`name` to the SELECTED entry's `name`**, not the sdd.md name. Record it as the `name` binding default; `resourceKey = <folder-path>.<name>`.
+5a. **`name` = the SELECTED entry's `name`** (not the sdd.md name — the Orchestrator release name may differ from the project/package name; e.g. "ProjectEuler RPA" → release "RPA Workflow"). Record this as the `name` binding default; `resourceKey = <folder-path>.<name>`.
 6. Run `tasks describe` to discover inputs/outputs; see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
 ## Unresolved Fallback

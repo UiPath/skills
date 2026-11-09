@@ -122,7 +122,7 @@ Run after § 1/§ 1b and before § 2; scope is create-selected tasks only. Place
 1. Resolve cross-type collisions first: the name-only namespace permits one type to retain the name—the group whose earliest task is first in SDD order. Auto-rename the other with a stage-derived, uniqueness-checked suggestion.
 2. A single-task group is an ordinary build.
 3. For multi-task groups, compare each task's canonical pinned contract from [§ Step 1](plugins/tasks/create-inline-common.md#step-1--compute-the-pinned-io-contract): input type comes from the bound Case Variable's `Type`; extract outputs are typed from their Case Variable; `=` outputs are excluded; cross-task refs, literals, and `=metadata.*` are type-deferred. Do not re-derive types or read an input type from the Inputs row's `Type`. Greedily assign tasks in SDD order to the first sub-group whose known field types agree; field-name sets must match, known types must agree, deferred matches anything and is filled by a known type but cannot bridge different known types (`integer ↔ deferred ↔ string` does not collapse). The first-task sub-group is the anchor and keeps the name. Rename every other I/O-distinct sub-group once to a stage-derived `<Name><Stage>`, unique against selections, in-solution siblings of any kind, and tenant caches, bumping suffixes on collision.
-4. Within a same-I/O group of differing intent, ask with no recommendation, quoting descriptions: `Same resource — build once` / `Different — split off the task(s) that don't belong` / `Abort`. On Different, the user marks tasks to split; repeat until each result is singleton or user-confirmed same-intent. Non-interactive splits to singletons, gives each non-anchor task a unique name, and emits one `high` review item per automatic split. Never put divergent tasks behind one rename. Same-I/O, same-intent members share one resource.
+4. Within a same-I/O group of differing intent, ask with no recommendation, quoting descriptions: `Same resource — build once` / `Different — split off the task(s) that don't belong` / `Abort`. On Different, the user marks tasks to split; repeat until each result is singleton or user-confirmed same-intent. Non-interactive splits to singletons, gives each non-anchor task a unique name, and emits one `high` review item per automatic split. Never put divergent tasks behind one rename. Same-I/O, same-intent members share one resource. Note the shared build and its call sites in the completion report.
 5. For every resulting resource, run one § 2 sub-agent, not one per task. Purpose comes from the first task in SDD order among members ([create-inline-common.md § Step 1b](plugins/tasks/create-inline-common.md#step-1b--compose-the-purpose-from-the-sdd)); pinned contract comes from any member ([§ Step 1](plugins/tasks/create-inline-common.md#step-1--compute-the-pinned-io-contract)).
 
 Every rename gets one AskUserQuestion; never edit the SDD non-interactively:
@@ -244,13 +244,16 @@ Match priority: (1) exact name + exact folder; (2) exact name narrowed by sdd.md
 
 ### 3. Handle Empty Results
 
-The [§ MUST: Confirm Before Placeholder Fallback](#must-confirm-before-placeholder-fallback) gate must already have run. For `agent`, `api-workflow`, and `business-rule`, check an in-solution exact-name local sibling with `registry search "<name>" --type <agent|api|businessRule> --local --output json` per [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution), or [business-rule/planning.md § Registry Resolution](plugins/tasks/business-rule/planning.md#registry-resolution). A `Source: "local"` match resolves and binds via `solution_folder.<name>`; it is not empty, does not reach the gate, and does not Create. Only absence from tenant and local is empty.
+The [§ MUST: Confirm Before Placeholder Fallback](#must-confirm-before-placeholder-fallback) gate must already have run. If you have not yet run AskUserQuestion for the empty-result batch, do that first. Force pull and per-plugin Unresolved Fallback both flow through that gate. For `agent`, `api-workflow`, and `business-rule`, check an in-solution exact-name local sibling with `registry search "<name>" --type <agent|api|businessRule> --local --output json` per [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution), or [business-rule/planning.md § Registry Resolution](plugins/tasks/business-rule/planning.md#registry-resolution). A `Source: "local"` match resolves and binds via `solution_folder.<name>`; it is not empty, does not reach the gate, and does not Create. Only absence from tenant and local is empty.
 
-After Force pull and second-pass search, still-empty resources—or resources covered by Use placeholders, including unselected creatables—get `[REGISTRY LOOKUP FAILED: <name> in <folder>]` in `registry-resolved.json` and enter the per-plugin Unresolved Fallback. The already executed Force command is:
+If no match is found across all relevant cache files:
 
-```bash
-uip maestro case registry pull --force
-```
+1. **Already gated above.** AskUserQuestion confirmation already ran. If the user picked `Force pull and re-resolve`, the force pull has already executed; this step is reached for lookups that remained empty after the second-pass search.
+   ```bash
+   # already executed during the gate's Force-pull branch:
+   uip maestro case registry pull --force
+   ```
+2. If still no match (or the user picked `Use placeholders for all`, and any creatable resource was not selected for Create), mark it in `registry-resolved.json`: `[REGISTRY LOOKUP FAILED: <name> in <folder>]` and proceed to the per-plugin Unresolved Fallback path.
 
 ### 4. Return All Matches
 

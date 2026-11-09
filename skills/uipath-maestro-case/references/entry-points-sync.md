@@ -105,8 +105,46 @@ Non-HALT. For each entry, with `triggerId` equal to `filePath` after `#`:
 
 On a (1)/(2) mismatch, re-run the Procedure and re-check once. On a (3)/(4) finding or continuing (1)/(2) divergence, log it to `## Open Items for User` in `tasks/build-issues.md` and continue. Never HALT (build-with-best policy, [`implementation.md` § Step 12](implementation.md)).
 
+## Worked example
+
+`variables.inputs[]` (all `elementId: trigger_1`): `test_date` (datetime, default `"2029-10-12"`, `required:true`), `test_arrary` (jsonSchema, body `{"$schema":…,"type":"array","items":{"type":"string"}}`), `test_default` (float, default `"12.0"`), `test_date_time` (datetime, default `""`), `test_file` (file, `required:true`), `test_json` (jsonSchema, body `{"$schema":…,"type":"object","properties":{…},"required":[]}`, `required:true`). `variables.outputs[]`: `test_out` (double); its `inputOutputs[]` companion default `"1.3"`.
+
+Entry `/content/caseplan.case.bpmn#trigger_1`:
+
+```json
+"input": {
+    "type": "object",
+    "properties": {
+        "test_date": { "type": "string", "format": "date-time", "title": "test_date", "default": "2029-10-12" },
+        "test_arrary": { "type": "array", "items": { "type": "string" } },
+        "test_default": { "type": "number", "format": "float", "title": "test_default", "default": "12.0" },
+        "test_date_time": { "type": "string", "format": "date-time", "title": "test_date_time" },
+        "test_file": { "$ref": "#/definitions/job-attachment" },
+        "test_json": { "type": "object", "properties": { "test": { "type": "string" }, "newProperty2": { "type": "boolean" } }, "required": [] }
+    },
+    "required": ["test_date", "test_file", "test_json"],
+    "definitions": { "job-attachment": { "...": "constant block above" } }
+},
+"output": {
+    "type": "object",
+    "properties": {
+        "test_out": { "type": "number", "format": "double", "title": "test_out", "default": "1.3" }
+    },
+    "required": []
+}
+```
+
+Notes: `test_arrary`/`test_json` inline their body minus `$schema` (no `title`/`default`). `test_file` → `$ref`, and triggers the `input`-level `definitions` block. `test_date_time`'s empty default is omitted. `test_json` (jsonSchema, `required:true`) **is** included in `input.required` — confirmed against a re-saved `test_in_out` FE export (`["test_date","test_file","test_json"]`).
+
 ## Multi-trigger distribution (confirmed)
 
-Each entry receives only In-args whose `elementId` matches its trigger fragment; every entry receives all Out-args. Multiple triggers produce one existing entry per trigger with separately scoped `input.properties` and identical output projection. An In-arg bound to a trigger with no entry, including a leaked `preview-node-id` ghost node from an uncommitted canvas preview, is skipped and silently dropped; Check 6’s orphan guard catches it.
+A `test_in_out` re-saved with two triggers — `trigger_1` (primary) and `StartEvent_Trigger_OkGfLw` (Trigger 2) — produces **two** entries, confirming the scoping rule from a real FE export:
+
+| entry (`filePath#`) | `input.properties` (scoped by `elementId`) | `output.properties` (all) |
+|---|---|---|
+| `trigger_1` | trigger_1's In-args (`test_date` … `test_intput_t1_bool`) | `test_out`, `test_out_t2` |
+| `StartEvent_Trigger_OkGfLw` | **only `test_t2_in_var`** | `test_out`, `test_out_t2` |
+
+Each entry's `input` carries only the In-args whose `elementId` is that trigger; **every** entry carries **all** Out-args. An In-arg bound to a trigger with no entry — e.g. one still pointing at a `preview-node-id` ghost node (an uncommitted canvas preview that leaked into `caseplan.case`) — matches no entry and is silently dropped from the contract; the `elementId` filter skips it (Check 6's orphan guard catches it).
 
 <!-- END: entry-points-sync.md -->

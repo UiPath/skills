@@ -10,7 +10,7 @@ Use this journey when `caseplan.case` exists and the user requests a targeted ed
 
 ## Kickoff — set dev expectations first
 
-Before the first edit, present this flow once, including its decision points; do not repeat it. This is an allow-listed standalone text block (see [case-editing-operations.md § Hard token cap](case-editing-operations.md)).
+Before the first edit, present this flow once, including its decision points; do not repeat it. Emit verbatim in tone (adjust wording to fit; keep the checkpoint markers). This is an allow-listed standalone text block (see [case-editing-operations.md § Hard token cap](case-editing-operations.md)).
 
 > This is a targeted edit to an existing case (no full rebuild). Here's the flow:
 > - I confirm where the case lives and **pull the latest** if it's in Studio Web (so a re-publish can't clobber server changes).

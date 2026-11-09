@@ -26,7 +26,7 @@ Rules use DNF: outer arrays are OR; inner arrays are AND.
 2. Locate the target stage in `schema.nodes` by ID, then search every `stageNode.data.tasks[lane][index]` lane for the target task ID.
 3. Initialize `task.entryConditions = []` if absent.
 4. Read the rule type from the SDD's Entry Condition table and apply its recipe below.
-5. Set `displayName` to the SDD row's `Display Name`, if present; otherwise use `Entry rule {N}`. `N` is case-wide: scan the whole `caseplan.case` for existing `Entry rule <number>` names in every stage's `data.entryConditions[]` and task's `entryConditions[]`; use highest + 1, or `1` if none. Never use a per-task counter, blank, or omitted name: per-task `Entry rule 1` can fail `validate` — [case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness).
+5. Set `displayName` to the SDD row's `Display Name`, if present; otherwise use `Entry rule {N}`. `N` is case-wide: scan the whole `caseplan.case` for existing `Entry rule <number>` names in every stage's `data.entryConditions[]` and task's `entryConditions[]`; use highest + 1, or `1` if none. A per-task counter names every unnamed first condition `Entry rule 1` and fails `validate` — [case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness). Never emit a blank or omitted `displayName`.
 6. Append the condition object to `task.entryConditions[]`.
 
 ## Rule Types
@@ -69,7 +69,7 @@ Use bare `=js:<expr>` (no outer parentheses), per FE condition convention. Put o
 
 In Phase 2, always write the canonical stub from [connector-trigger-impl.md § Condition-rule phase contract](../../../connector-trigger-impl.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; final inputs/outputs use the owning stage's `elementId = <stageId>-<ruleId>`, not the task ID. Preserve optional `conditionExpression`.
 
-The source of truth is [connector-trigger-impl.md § Target: connector-bound condition rule](../../../connector-trigger-impl.md#target-connector-bound-condition-rule). `rule.uipath` always has `serviceType` and the four arrays; connector identity belongs in `context[]`, never as flat `uipath` fields (`typeId` / `connectorKey` / `operation`). A flat shape may pass `validate` but is not runnable.
+The source of truth is [connector-trigger-impl.md § Target: connector-bound condition rule](../../../connector-trigger-impl.md#target-connector-bound-condition-rule). `rule.uipath` always has `serviceType` and the four arrays; connector identity belongs in `context[]`, never as flat `uipath` fields (`typeId` / `connectorKey` / `operation`). A flat shape passes `validate` but is not runnable.
 
 Phase 2 stub (exact):
 

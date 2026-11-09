@@ -57,7 +57,7 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 <!--skill-flavor:cd-mandatory-note:end-->
 
 <!--skill-flavor:case-init-semantics:start-->
-Run `case init` inside the solution to create `<SolutionDir>/<ProjectName>/` and auto-register it in the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Outside one, it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to skip both, creating bare `<ProjectName>/` with `Status: OptedOut`. If a **non-empty** target exists, warn, leave it untouched, and still create `<ProjectName>Solution/<ProjectName>/`. Run `uip solution projects add ./<ProjectName>` only for status `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error); it is redundant for `Registered`/`AlreadyRegistered`, and intentional opt-out may be registered later. After seeding, the case plugin (`plugins/case/impl-json.md`) writes only unseeded scaffold files; see `implementation.md` § Step 6.
+Run `case init` inside the solution to create `<SolutionDir>/<ProjectName>/` and auto-register it in the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Outside one, it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to skip both, creating bare `<ProjectName>/` with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Run `uip solution projects add ./<ProjectName>` only for status `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error); it is redundant for `Registered`/`AlreadyRegistered`, and intentional opt-out may be registered later. After seeding, the case plugin (`plugins/case/impl-json.md`) writes only unseeded scaffold files; see `implementation.md` § Step 6.
 <!--skill-flavor:case-init-semantics:end-->
 
 ---
@@ -65,13 +65,21 @@ Run `case init` inside the solution to create `<SolutionDir>/<ProjectName>/` and
 <!--skill-flavor:projects-add-section:start-->
 ## uip solution projects add
 
-When `case init` is unavailable and T01 wrote `project.uiproj` by hand, or when `case init` returns `Skipped`/`Failed`, run:
+Register a project with an existing solution. Used in two scenarios in this skill:
+
+1. **`case init` unavailable** — when the case plugin (T01 in `impl-json.md`) wrote `project.uiproj` by hand, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
+2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered` (the normal outcome both inside a solution and when it auto-scaffolds one outside), this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), both auto-scaffold and registration were skipped intentionally — run this only if you later decide to register.
 
 ```bash
 uip solution projects add <ProjectName> <SolutionName>.uipx
 ```
 
-`<ProjectName>` and `<SolutionName>.uipx` are required; `project.uiproj` must exist. This adds the project to `.uipx.Projects[]`. For `OptedOut`, run only if later registration is desired; never run for `Registered`/`AlreadyRegistered`.
+| Flag | Description |
+|------|-------------|
+| `<ProjectName>` | **(required)** Project directory name (must already exist with `project.uiproj`) |
+| `<SolutionName>.uipx` | **(required)** Path to the solution `.uipx` |
+
+Adds the project to `.uipx.Projects[]`. Run after `project.uiproj` exists.
 <!--skill-flavor:projects-add-section:end-->
 
 ---
@@ -149,7 +157,7 @@ uip maestro case validate <file> --skeleton-v2 --output json
 uip maestro case validate <file> --skeleton --output json
 ```
 
-`<file>` is required. `--strict` is the authoritative Phase 3-exit/Phase 4 profile: default checks plus empty stage, surviving `$xref(`, hoisted `conditionExpression`, incomplete connector context, empty task `data`, output-shape and input-reference form; failures use `STRICT_*` in `Data.Issues[]`. `--sdd <path>` audits every SDD-declared stage, task/type, condition row, SLA, trigger, and case variable, implies `--strict`, and uses `STRICT_SDD_*`. `--strict`/`--sdd` are mutually exclusive with `--skeleton`/`--skeleton-v2`. `--skeleton-v2` is the preferred Phase 2 preview (structure, entry/exit, SLA, escalation; incomplete task values/schemas); `--skeleton` is the legacy Phase 2 fallback (structure only). Success is `{ File, Status: "Valid" }`; findings are inline.
+`<file>` is required. `--strict` is the authoritative Phase 3-exit/Phase 4 profile: default checks plus empty stage, surviving `$xref(`, hoisted `conditionExpression`, incomplete connector context, empty task `data`, output-shape and input-reference form; failures use `STRICT_*` in `Data.Issues[]`. `--sdd <path>` audits every SDD-declared stage, task/type, condition row, SLA, trigger, and case variable, implies `--strict`, and uses `STRICT_SDD_*`. Use whenever an `sdd.md` exists. `--strict`/`--sdd` are mutually exclusive with `--skeleton`/`--skeleton-v2`. `--skeleton-v2` is the preferred Phase 2 preview (structure, entry/exit, SLA, escalation; incomplete task values/schemas); `--skeleton` is the legacy Phase 2 fallback (structure only). Success is `{ File, Status: "Valid" }`; findings are inline.
 
 ### Phase 2 profile probe
 
@@ -281,7 +289,7 @@ uip maestro case registry search "<Name>" --type <agent|api|businessRule> --loca
 uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api|businessRule> --local --output json
 ```
 
-Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `businessRule`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`. `pull`: `-f, --force` (ignore 24-hour TTL), `-s, --solution-id <id>`. `search`: optional `[keyword]`, `-t, --type <type>`, `-f, --filter <filter>`; syntax is `field=value` or `field:operator=value`, fields `name`, `description`, `category`, `tags`, operators `equals`, `contains`, `in`, `startsWith`, `endsWith`; keyword or filter is required. `get` requires `<identifier>` (entityKey, id, or `uiPathActivityTypeId`), accepts `-t, --type <type>`, `--connection-id <id>` only for `typecache-activities`/`typecache-triggers`, and `--local`; local types also include `processOrchestration`, `caseManagement`, `function`.
+Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `businessRule`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`. `pull`: `-f, --force` (ignore 24-hour TTL), `-s, --solution-id <id>`. `search`: optional `[keyword]`, `-t, --type <type>`, `-f, --filter <filter>`; syntax is `field=value` or `field:operator=value`, fields `name`, `description`, `category`, `tags`, operators `equals`, `contains`, `in`, `startsWith`, `endsWith`; keyword or filter is required. `get` requires `<identifier>` (entityKey, id, or `uiPathActivityTypeId`), accepts `-t, --type <type>`, `--connection-id <id>` only for `typecache-activities`/`typecache-triggers`, and `--local`. `--local` resolves against in-solution sibling projects (offline; no login), on `list`/`search`/`get`. Local types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `function`, `businessRule`.
 
 `--local` walks cwd → parent → grandparent for an enclosing solution `.uipx`, with no tenant/login. `search`/`get` return matches under `Data.Resources[].Resource.{EntityKey,Name,Category,Folders[].FullyQualifiedName,Inputs,Outputs,Source}`; `list` returns flat `Data.Resources[].{EntityKey,Name,Category,Source}` without wrapper/I/O. `get --local` matches only `entityKey`/`.uipx` project Id, never display name; use `search "<Name>" --local` for names. A freshly built unpacked sibling's `EntityKey` equals its `.uipx` project Id. If no solution: `Result:"Failure"`, `Message:"No solution found for --local"`, exit 1. Normal output: `{ MatchCount, Resources: [{ ResourceType, Resource }] }`.
 
@@ -344,30 +352,43 @@ For `traces`, `<job-key>` is required GUID from `process run`; accept `-t, --ten
 
 ## uip maestro case instance
 
-Requires `uip login`.
+Manage live Case process instances. **Requires `uip login`.**
 
 ```bash
+# List instances
 uip maestro case instance list
 uip maestro case instance list --limit 20 --offset 0
 uip maestro case instance list --process-key <key> --folder-key <key>
 uip maestro case instance list --package-id <id> --error-code <code>
+
+# Get a specific instance
 uip maestro case instance get <instance-id>
 uip maestro case instance get <instance-id> --folder-key <key>
+
+# Lifecycle operations (all accept --folder-key and --comment)
 uip maestro case instance pause <instance-id>
 uip maestro case instance resume <instance-id>
 uip maestro case instance cancel <instance-id>
 uip maestro case instance retry <instance-id>
+
+# Variables
 uip maestro case instance variables <instance-id>
 uip maestro case instance variables <instance-id> --parent-element-id <id>
+
+# Incidents for a specific instance
 uip maestro case instance incidents <instance-id>
+
+# Get the Case definition (JSON) for a process instance
 uip maestro case instance asset <instance-id>
+
+# Migration: migrate instance to a different package version
 uip maestro case instance migrate <instance-id> <new-version>
+
+# Go-to: move execution cursor from one element to another
 uip maestro case instance goto <instance-id> '[{"sourceElementId":"A","targetElementId":"B"}]'
 uip maestro case instance cursors <instance-id>
 uip maestro case instance element-executions <instance-id>
 ```
-
-Lifecycle commands accept `--folder-key` and `--comment`; list/get and the listed variable/incident/migration/cursor commands retain the flags shown.
 
 ---
 

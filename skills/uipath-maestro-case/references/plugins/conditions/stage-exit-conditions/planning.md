@@ -4,7 +4,9 @@ Conditions controlling stage exit; attach one to a stage and fire it when its in
 
 ## When to Use
 
-Use only when sdd.md literally says “stage exit condition” or a close variant: “stage exit conditions”, “stage completion condition”, or “exit rule on <stage>”. For stage entry, use [stage-entry-conditions](../stage-entry-conditions/planning.md).
+Pick this plugin when the sdd.md **literally uses the phrase "stage exit condition"** (or close variants: "stage exit conditions", "stage completion condition", "exit rule on <stage>").
+
+For when a stage **enters**, use [stage-entry-conditions](../stage-entry-conditions/planning.md).
 
 ## No omission — one caseplan element per sdd.md Exit Condition row
 

@@ -33,7 +33,7 @@ Use this plugin when sdd.md describes a `HITL` task or manual interaction: appro
 ## Registry Resolution
 
 1. Use the primary cache file `action-apps-index.json`; always inspect it directly because **CLI search known to fail** for action-apps.
-2. Query its `id` field, **not** `entityKey`.
+2. **Identifier field:** `id` (NOT `entityKey` — action-apps use a different field).
 3. Use `deploymentTitle`, not `name`.
 4. Use `deploymentFolder.fullyQualifiedName` for the folder.
 5. Query the exact concrete `resource-name` from the SDD, then set `name` to the selected entry's canonical `deploymentTitle` and `folder-path` to its exact `deploymentFolder.fullyQualifiedName`; never use the task display name or a parent/truncated folder.

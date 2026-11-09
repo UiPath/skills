@@ -22,7 +22,7 @@ Write the timer task directly to `caseplan.case`; no CLI command is needed.
 }
 ```
 
-> **`description` is a copy.** Use the task's `**Description:**` line from sdd.md word for word; if absent, use `**Design Rationale:**` from `tasks/build-issues.md`.
+> **`description` is a copy.** The task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 >
 > **Envelope and data.** Take `isRequired` and `shouldRunOnlyOnce` from the SDD task envelope; default `shouldRunOnlyOnce` to `false` when omitted and never infer run-once from timer type. `data` contains ONLY `timerType` and its duration field; `skipCondition` and all other envelope fields are top-level siblings, never nested in `data` (misplacement passes `validate` silently but is never applied). The `repeat` exception is below. See [case-schema.md](../../../case-schema.md) §7 Tasks — BaseTask shape.
 

@@ -64,7 +64,7 @@ Under refactor B this plugin solely owns `variables.inputs[]`, `variables.output
 
 Every independently minted `var`/`id` is globally unique across the case, except the single root-companion alias for equal-name `->` extraction. On collision append a counter from 2 (`decision`, `decision2`, `decision3`; `error`, `error2`, `error3`). Preserve original `source` and `name`; suffix independently minted `var`/`id` and its `target`; on reassignment also suffix `originalVar` and mirror allocated `id`.
 
-A normal `field -> caseVar` owns an independently minted source-side `id` although `var` points to the existing Case variable. Deduplicate that `id` globally and set `target` and `originalVar` to it; never suffix pointer `var`. See [io-binding § Output Binding Shapes](../io-binding/impl-json.md#output-binding-shapes).
+A normal `field -> caseVar` owns an independently minted source-side `id` although `var` points to the existing Case variable. Deduplicate that `id` globally and set `target` and `originalVar` to it; never suffix pointer `var`. For example, if `aPIOutput1` already exists, `APIOutput1 -> renamedResult` emits `id: "aPIOutput12"`, `target: "=aPIOutput12"`, `var: "renamedResult"`, and `originalVar: "aPIOutput12"`. See [io-binding § Output Binding Shapes](../io-binding/impl-json.md#output-binding-shapes).
 
 For equal-name reassignment, when `baseId == target case-variable id`, exclude exactly the matching root companion (`variables.inputOutputs[]`, `id == target`, `elementId == "root"`) from source allocation. Exclude no task, trigger, rule, argument, or unrelated root entry. The first `greeting -> greeting` may use `id == var == originalVar == "greeting"`; with another owner use `id: "greeting2"`, `originalVar: "greeting2"`, `target: "=greeting2"`, while `var` and `value` remain `"greeting"`. Never suffix root companion or pointer `var`. `originalVar` marks reassignment so `mutateRootVariables` retains the companion.
 
@@ -113,12 +113,31 @@ For each cache trigger, resolve `triggerId` from `id-map.json[T<N>].id`, find it
 
 | State | Trigger `data.inputs.outputs[]` | Root `inputOutputs[]` |
 |---|---|---|
-| Unreferenced | `{name: <spec.name>, var: <spec.name>, type: <spec.type>, source: <spec.source>, value: <spec.name>}`; no `id`/`elementId`; spec `type`/`source` verbatim | `{id: <spec.name>, name: <spec.name>, type: <spec.type>, elementId: <triggerId>, body: <spec.body>}`; required for `jsonSchema` picker subfields |
+| Unreferenced | `{name: <spec.name>, var: <spec.name>, type: <spec.type>, source: <spec.source>, value: <spec.name>}`; no `id`/`elementId`; spec `type`/`source` verbatim | **Required** — `{id: <spec.name>, name: <spec.name>, type: <spec.type>, elementId: <triggerId>, body: <spec.body>}`. For `jsonSchema`-typed entries (e.g., `response`, `Error`), the companion holds the full body schema that the FE picker uses to discover sub-fields. Without it, sub-field picking is broken and the variable can't be selected in connector-task input bindings. |
 | `Category=Variable` reference | `{name: <last sourceField segment>, var: <sdd-name>, type: <sdd type>, source: "=<raw sourceField>", value: <sdd-name>}`; no `id`/`elementId`; SDD type wins | `{id: <sdd-name>, name: <sdd-name>, type: <sdd type>, elementId: "root", custom: true}` |
 | `Category=In` | Emit nothing here; Loop B only, even when name matches top-level spec | — |
 | `Category=Out` | **REJECT** direction mismatch | — |
 
 Top-level matching is exact, case-sensitive spec `name`; a matching SDD name replaces only that top-level auto-emit. Sub-field references add Pattern C and do not replace top-level auto-emit. Preserve connector casing verbatim; never re-case or alias. Multiple rows may write separate trigger entries but share one companion, first-write-wins on type/default; Phase 2 rejects conflicts.
+
+Worked example for SDD `calendarTitle ← response.Title` (Variable, type=string) on a trigger whose spec returns two top-level `jsonSchema` outputs `response` and `Error`:
+
+```jsonc
+triggerNode.outputs[]: [
+  { name: "Title",    var: "calendarTitle", type: "string",     source: "=response.Title", value: "calendarTitle" },  // Pattern C — SDD; name = spec sub-field segment
+  { name: "response", var: "response",      type: "jsonSchema", source: "=response",       value: "response" },        // auto-emit — coexists
+  { name: "Error",    var: "Error",         type: "jsonSchema", source: "=Error",          value: "Error" }            // auto-emit — unreferenced
+]
+// No `id`, no `elementId` on trigger output entries — FE auto-emit convention.
+
+root.inputOutputs[]: [
+  { id: "calendarTitle", name: "calendarTitle", type: "string",     elementId: "root", custom: true },                    // Pattern C companion → Case Variables panel
+  { id: "response",      name: "response",      type: "jsonSchema", elementId: "<triggerId>", body: <full schema from spec> },  // auto-emit companion (REQUIRED — body drives sub-field picker)
+  { id: "Error",         name: "Error",         type: "jsonSchema", elementId: "<triggerId>", body: <error schema from spec> }
+]
+```
+
+Six entries total: 3 trigger outputs (no id) + 3 companions (with id — resolution surface). The auto-emit companions carry the full body schemas so the FE picker can navigate sub-fields. The Pattern C companion has no body (its type is the primitive `string`).
 
 For spec `type: "file"` or `"octet-stream"` (normalize to `"file"`), add `target: "=orchestrator.JobAttachments"` to trigger output and `body: <FILE_TYPE_JSON_SCHEMA verbatim>` to companion; see [`## file type`](#file-type).
 
@@ -147,7 +166,7 @@ Write only root companion, with `custom: true`, `elementId: "root"`; no trigger 
 
 `default` is always a JSON string, regardless of `type`; never object, array, number, or boolean. Encode JSON-schema values as strings (`"{\"amount\":125.5}"`), integer as `"5"`, boolean as `"true"`, date as `"2029-10-12"`, and file/no default as `""`.
 
-A non-primitive default is silently deleted by the caseplan→BPMN converter, which retains only primitive fields ([`bpmn-moddle.ts` `onlyPrimitiveVariableFields`](https://github.com/UiPath/PO.Frontend/blob/develop/src/services/serialization/bpmn-moddle.ts#L323-L331)). The variable is then null at runtime while adjacent string-defaulted variables retain `default=""`; a first task read can fail `AGENT_STARTUP.INPUT_VALIDATION_ERROR / <input> Field required`. `uip maestro case validate` returns `Valid`, FE Zod uses `z.any()`, and serialization reports nothing. Step 12 Check 14 is the enforcement/backstop.
+A non-primitive default is silently deleted by the caseplan→BPMN converter, which retains only primitive fields ([`bpmn-moddle.ts` `onlyPrimitiveVariableFields`](https://github.com/UiPath/PO.Frontend/blob/develop/src/services/serialization/bpmn-moddle.ts#L323-L331)). The variable is then null at runtime while adjacent string-defaulted variables retain `default=""`; a first task read can fail `AGENT_STARTUP.INPUT_VALIDATION_ERROR / <input> Field required`. `uip maestro case validate` returns `Valid`, FE Zod uses `z.any()`, and serialization reports nothing. **This recipe is the enforcement point** — Step 12 Check 14 is the backstop.
 
 ### Trigger-sourced Variable (Pattern C)
 
@@ -182,7 +201,26 @@ No `custom` on argument companion. A producer that fires overwrites the default;
 
 ### InOut argument
 
-**NOT supported in v1.** SDD enum is `In | Out | Variable`; validators reject `Category=InOut` (Phase 2). If revived, trigger resolution is `id-map[<sourceTriggers T-number>].id`, blank `id-map["T02"].id`, and FE-canonical shape is formal In `{id: "v<random8-in>", name, type, default: "", elementId}`, shared companion `{id: <name>, name, type, elementId}`, formal Out `{id: "v<random8-out>", name, type, var: <name>}`, and bridge `{name, type, source: "=vars.v<random8-in>", var: <name>`.
+> **NOT supported in v1.** The SDD template's Category enum is `In | Out | Variable` only. If real customer cases require InOut, this section documents the FE-canonical shape for future re-introduction. Skill validators reject `Category=InOut` in v1 (Phase 2 — invalid Category value). If revived, `<triggerId>` resolves per § In argument (`id-map[<sourceTriggers T-number>].id`; blank → `id-map["T02"].id`).
+
+Combines In + Out. One shared companion serves both:
+
+```json
+// 1. root.inputs[]  — formal In slot
+{ "id": "v<random8-in>", "name": "claimId", "type": "string",
+  "default": "", "elementId": "<triggerId>" }
+
+// 2. root.inputOutputs[]  — shared companion
+{ "id": "claimId", "name": "claimId", "type": "string", "elementId": "<triggerId>" }
+
+// 3. root.outputs[]  — formal Out slot pointing at same companion
+{ "id": "v<random8-out>", "name": "claimId", "type": "string", "var": "claimId" }
+
+// 4. triggerNode.outputs[]  — bridge from In formal slot to shared companion
+{ "name": "claimId", "type": "string", "source": "=vars.v<random8-in>", "var": "claimId" }
+```
+
+Caller writes value; bridge copies to companion at trigger fire; task body updates `vars.claimId`; case end returns updated value to caller.
 
 ## Phase 3 Spec-dependent Validation
 
@@ -211,8 +249,6 @@ For SDD `=` rows (set/compute/copy; see [`../io-binding/planning.md`](../io-bind
 
 ## jsonSchema type
 
-### `jsonSchema` type
-
 A `jsonSchema` variable MUST carry `body` and `_jsonSchema`, the same schema object from the SDD Description (for example `Body schema: {"type": "object"}`). `body: null` leaves it untyped: FE cannot pick subfields, `=vars.<id>.<field>` cannot be selected, and `validate` still reports `Valid`.
 
 `sdd convert` emits companions with `body: null` and omits them from `Data.Unresolved[]`; fill both fields after conversion. This is the named exception to SKILL.md Rule 4's settled-shape clause. `default` remains a string; `body` and `_jsonSchema` are objects:
@@ -225,24 +261,31 @@ Empty default is `""` or `"{}"`; `sdd convert` uses `""`. Never object `{}`.
 
 ## file type
 
-File Variables hold a JobAttachment record `{ID, FullName, MimeType, Metadata}`, not path/bytes; runtime writes it when producer completes. Normalize `"octet-stream"` to `"file"`; only `"file"` round-trips through CLI emission. `body` MUST equal FILE_TYPE_JSON_SCHEMA byte-for-byte, including `x-uipath-resource-kind: "JobAttachment"`, `description`, and `additionalProperties`:
+File Variables hold a JobAttachment record (`{ID, FullName, MimeType, Metadata}`), not a path or bytes. Runtime writes the record when the producing task completes.
+
+`body` MUST be the FILE_TYPE_JSON_SCHEMA constant **byte-for-byte** (matches FE `VariableConstants.ts:10-36`). The `x-uipath-resource-kind: "JobAttachment"` marker activates the FE picker; missing `description` / `additionalProperties` fields cause round-trip drift on FE re-save.
+
+Normalize `"octet-stream"` → `"file"` before emitting. The FE's `isFileType` accepts both, but only `"file"` round-trips through CLI emission.
 
 ```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "ID": { "type": "string", "description": "Orchestrator attachment key" },
-    "FullName": { "type": "string", "description": "File name" },
-    "MimeType": { "type": "string", "description": "The MIME type of the content, such as application/json or image/png" },
-    "Metadata": { "type": "object", "description": "Dictionary<string, string> of metadata", "additionalProperties": { "type": "string" } }
+{ "id": "evidenceDoc", "name": "evidenceDoc", "type": "file",
+  "body": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "ID":       { "type": "string", "description": "Orchestrator attachment key" },
+      "FullName": { "type": "string", "description": "File name" },
+      "MimeType": { "type": "string", "description": "The MIME type of the content, such as application/json or image/png" },
+      "Metadata": { "type": "object",
+                    "description": "Dictionary<string, string> of metadata",
+                    "additionalProperties": { "type": "string" } }
+    },
+    "required": ["ID"],
+    "x-uipath-resource-kind": "JobAttachment"
   },
-  "required": ["ID"],
-  "x-uipath-resource-kind": "JobAttachment"
-}
+  // Case-root Variable only. An In argument's companion keeps its trigger elementId and carries neither default nor custom (Loop B table).
+  "default": "", "custom": true, "elementId": "root" }
 ```
-
-Case-root file Variable also has `default: ""`, `custom: true`, `elementId: "root"`; In formal/companion use their required trigger `elementId`, and In companion has neither `default` nor `custom` except the file carve-out body requirements. The schema activates FE picker and JobAttachment widget.
 
 ## date / datetime types
 

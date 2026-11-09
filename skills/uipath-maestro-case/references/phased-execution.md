@@ -72,6 +72,8 @@ Convert emits root `bindings[]` (two entries per resource, `name` and `folderPat
 
 **Verify task entry rules before leaving Phase 2, whatever convert emitted** — this check is not optional and nothing upstream covers it. Walk every task in every stage and verify its own `entryConditions`. Empty rules produce only `Task has no entry rules` under plain validate, are absent from `Unresolved[]`, and hang `uip maestro case debug` indefinitely (SKILL.md Rule 7). Write missing rules from SDD §4.6 **Entry Condition** and **Activation Mode** cells, per task, never once per group.
 
+The sections below define what Phase 2 must contain either way. With convert, read the emitted plan against them and fill only the gaps. Without it, they are the authoring instructions.
+
 ### Structural nodes (full detail)
 
 <!--skill-flavor:structural-scaffolding:start-->
@@ -107,7 +109,7 @@ uip maestro case validate "<caseplan.case path>" --skeleton-v2 --output json
 
 If the response names `--skeleton-v2` unknown/unsupported (typically `ErrorCode: "invalid_argument"`, exit 3), run once with `--skeleton`. Exit 3 without that flag-specific message is insufficient. Do not fall back after genuine v2 findings. Legacy `--skeleton` checks structure only and skips preview conditions/SLA; Phase 4 is authoritative. Do not halt for errors/warnings; capture profile and counts, optionally a few messages. `CONNECTOR_ACTIVITY_MISSING` errors in `skeleton-v2` are expected; do not repair them.
 
-## Phase 2 hard stop
+### Phase 2 hard stop
 
 **Use the up-front build-review preference (SKILL.md Rule 12); never introduce a mid-build surprise.** It comes from greenfield design-handoff Case Review Build options or the provided-SDD post-roadmap question.
 
@@ -129,7 +131,7 @@ Use **AskUserQuestion**: `Publish for review` (upload skeleton to Studio Web), `
 2. Parse `DesignerUrl`.
 3. **Before AskUserQuestion, emit plain text on its own line:** `Skeleton published. Review at: <DesignerUrl>`. Never put the URL only in the question.
 4. Print `Suggested next steps: inspect the skeleton in Studio Web, then continue implementation here or abort and keep the artifacts for manual review.`
-5. Ask **AskUserQuestion**: `Continue to implementation` / `Abort`.
+5. Only after URL line and suggested next steps are emitted, invoke **AskUserQuestion** (second prompt): `Continue to implementation` / `Abort`.
 
 If `DesignerUrl` is absent, rerun once without `--output-filter`, dump the response to `tasks/upload-response.json`, print its path, and continue prompting. This is a second upload and the maximum allowed within consent. Mention once with the URL that Phase 5 re-publish overwrites review-time Studio Web edits with final local state and records replaced contents as a restorable version; Phase 6 fix→re-publish has its own confirmation. Users may compare Studio Web before/after Phase 3.
 
@@ -266,7 +268,7 @@ uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json
 uip solution publish "<packagePath>" --wait --output json
 ```
 
-Run `resources refresh` first to sync artefacts/debug overwrites from `bindings_v2.json` (Rule 15). Run `case pack` every time, without exception: it recompiles `caseplan.case` to `caseplan.case.bpmn` in the case project; its `.nupkg` is throwaway. Output must be `<SolutionDir>/dist`, a sibling of the project; never put it inside the project. `case pack` is mandatory per [§ Why `case pack` is mandatory](#why-case-pack-is-mandatory). Run `solution pack` on the solution directory containing `.uipx`, not the case project; it bundles project `.nupkg`s into one `.zip` under `<SolutionDir>/dist`. Add `--version <version>` when user names one; default `1.0.0`. Existing `name+version` is rejected; bump on republish. Run `solution publish` on the `.zip`; add `--personal-workspace` only when requested. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
+Run `resources refresh` first to sync artefacts/debug overwrites from `bindings_v2.json` (Rule 15). Run `case pack` every time, without exception: it recompiles `caseplan.case` to `caseplan.case.bpmn` in the case project; its `.nupkg` is throwaway. Output must be `<SolutionDir>/dist`, a sibling of the project; never put it inside the project. `case pack` is mandatory per [§ Why `case pack` is mandatory](#why-case-pack-is-mandatory). Run `solution pack` on the solution directory containing `.uipx`, not the case project; it bundles project `.nupkg`s into one `.zip` under `<SolutionDir>/dist`. Add `--version <version>` when user names one; default `1.0.0`. Existing `name+version` is rejected; bump on republish. Run `solution publish` on the `.zip`; `--wait` blocks until the package reaches `Ready`/`Active`. Add `--personal-workspace` only when requested. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
 
 Read `<packagePath>` from `solution pack` response `Data.Packages` or list `<SolutionDir>/dist`; never guess. The zip is `<name>_<version>.zip` (underscore); `case pack` emits `<Name>.case.Case.<version>.nupkg`. Never publish the case `.nupkg`.
 <!--skill-flavor:phase-seven-commands:end-->

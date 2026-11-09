@@ -79,7 +79,7 @@ do not ask for approval; do not publish/upload/deploy.
 Return JSON: { built: bool, path, finalInputs:[{name,type}], finalOutputs:[{name,type}], error? }
 ```
 
-Include only the Step-1b Purpose and pinned I/O, not `caseplan.case` or sibling tasks. Build in a sub-agent; follow [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery) for orchestration/parallelism. Because either kind is built without self-registration, register each sibling into the solution `.uipx` with sequential `uip solution projects add`, then `resources refresh`, before rediscovery (§4), which reads `.uipx` `Projects[]`; see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery).
+The brief is self-contained — it carries the Step-1b Purpose and the pinned I/O, and no other case context (do not dump `caseplan.case` or sibling tasks). Quote `<AgentName>` and paths (SDD-derived). Build in a sub-agent; follow [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery) for orchestration/parallelism. Because either kind is built without self-registration, register each sibling into the solution `.uipx` with sequential `uip solution projects add`, then `resources refresh`, before rediscovery (§4), which reads `.uipx` `Projects[]`; see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery).
 
 ### Step 3 — Binding (no new field)
 

@@ -12,7 +12,7 @@ Emit one caseplan element for every case-exit condition in sdd.md, including `re
 
 ## Required Fields from sdd.md
 
-- `display-name`: Copy a semantic SDD Display Name verbatim (for example “Case resolved” or “Closed — escalation path”); omit blank / `—` and never invent one. Otherwise omit; implementation defaults it to `Completion rule {N}` (`marks-case-complete: true`) or `Exit rule {N}` (`false`). Echo that pattern if already present; implementation renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)).
+- `display-name` (sdd.md Display Name column, optional): Carry a semantic SDD value verbatim, e.g. "Case resolved", "Closed — escalation path". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Completion rule {N}` (marks-case-complete `true`) / `Exit rule {N}` (`false`). A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)).
 - `marks-case-complete`: sdd.md `true` for normal completion; `false` for non-completing exits.
 - `rule-type`: Use the catalog below.
 - `selected-stage-id`: Required for `selected-stage-*` rule-types; resolve from the stage capture map.
@@ -41,7 +41,7 @@ Choose `marksCaseComplete` by objective achievement, not merely case termination
 | Work not done — rejected, withdrawn, cancelled, abandoned, timed out | `false` |
 | Handed off, escalated out, or closed by exception | `false` |
 
-“Closed”, “ends”, or “complete” in prose is not the signal. An outcome described as *not the same as* normal completion or alongside a separate completion path is non-completing regardless of wording: “closed as escalated” ends the case but does not complete it. Rejection and escalation paths therefore require such exits.
+**A word like "closed", "ends", or "complete" in the prose is not the signal — the signal is whether the objective was met.** An SDD that says an outcome is *not the same as* normal completion, or names it alongside a separate completion path, is describing a non-completing exit however it phrases the ending: "closed as escalated" ends the case and does not complete it. These are not rare — any case with a rejection or escalation path has one.
 
 ## Ordering
 

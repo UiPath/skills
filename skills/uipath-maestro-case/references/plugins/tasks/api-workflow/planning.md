@@ -22,7 +22,7 @@ Use this plugin when sdd.md labels a task `API_WORKFLOW`, typically a TypeScript
 ## Registry Resolution
 
 1. Use `api-index.json` and identify entries by `entityKey`.
-2. Match in order: exact name + exact folder > exact name with multiple folders (pick matching) > exact name only > **no match**. An exact-name entry in another folder, including an sdd.md-folder child, is exact-name-only: **resolve it**, bind `folder-path` to its full path, and do not treat the folder difference as no-match or enter Create. The sdd.md folder may be parent/truncated and only seeds lookup.
+2. Match in order: exact name + exact folder > exact name with multiple folders (pick matching) > exact name only > **no match**. An exact-name entry in another folder, including an sdd.md-folder child, is exact-name-only: **resolve it**, bind `folder-path` to its full path, and do not treat the folder difference as no-match or enter Create. The sdd.md folder may be parent/truncated and only seeds lookup. A true no-match runs the [§ in-solution check](#no-tenant-index-match--check-in-solution-siblings-before-the-gate) first, then the Rule 18 gate; only a task left unresolved after the gate falls back to the sdd.md folder (step 3).
 3. Take BOTH `name` and `folder-path` from the selected entry, never sdd.md: `folder-path` = `folders[0].fullyQualifiedName`; `name` = entry `name`, verbatim. Do not assume `"API Workflow"`; an incorrect value can pass `validate` but fault at `resources refresh` / `case debug` (`process "<name>" not found`). On no registry match, fall back to the sdd.md folder/name (Unresolved path).
 4. Discover inputs/outputs via `tasks describe`; see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 

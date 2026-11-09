@@ -46,7 +46,7 @@ Login is required before registry discovery on every Phase 1 build run, includin
 
 **Design-only exception:** when explicitly asked to stop at design and not create `caseplan.case`, do not run login, registry, connection, schema, or user-discovery commands. Deliver only `sdd.md`, leave tenant identities `<UNRESOLVED>`, state that the later build must run this gate, and do not author a substitute plan.
 
-**Negative trigger — tenant work overrides it.** If the request also asks to resolve identities/resources, pull/refresh the registry, replace a stale registry audit, or produce `tasks/registry-resolved.json` / `tasks/recipients-resolved.json`, run the normal gate even if it says to stop before `caseplan.case`, a solution, or Phase 2.
+**Negative trigger — tenant work overrides it.** The exception defers tenant lookup; it does not describe where a run stops. It does NOT fire when the same request asks to resolve resources or identities, pull or refresh the registry, replace a stale registry audit, or produce `tasks/registry-resolved.json` / `tasks/recipients-resolved.json` — even when that request also says to stop before `caseplan.case`, a solution, or Phase 2. Such a run is a normal resolution run: run this gate in full, resolve every identity, write the ledger, and stop before Phase 2.
 
 ```bash
 <!--skill-flavor:planning-login-command:start-->
@@ -55,7 +55,7 @@ uip login status --output json
 uip maestro case registry pull
 ```
 
-Outside the fast path, decide to pull before inspecting `~/.uip/case-resources/`. Do not continue or write `registry-resolved.json` unless pull succeeds. If not logged in, prompt login and stop Phase 1; if pull fails, surface its error and stop. Exit 0 with `Warning` is partial: read `Data.Errors[]`. A 5xx `typecache-*` row routes its indexed elements to [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx); do not re-run pull. A 401/403 `typecache-*` row is login/permission failure: surface and stop. Other rows mean indexes were not pulled; `sdd resolve` reports them in `Data.Scope.missingIndexes` and, when recorded, `Data.Scope.unavailableIndexes`. After successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. Pull caches resources at `~/.uip/case-resources/`; later searches are local.
+Outside the fast path, do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue or write `registry-resolved.json` unless pull succeeds. If not logged in, prompt login and stop Phase 1; if pull fails, surface its error and stop. Exit 0 with `Warning` is partial: read `Data.Errors[]`. A 5xx `typecache-*` row routes its indexed elements to [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx); do not re-run pull. A 401/403 `typecache-*` row is login/permission failure: surface and stop. Other rows mean indexes were not pulled; `sdd resolve` reports them in `Data.Scope.missingIndexes` and, when recorded, `Data.Scope.unavailableIndexes`. After successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. Pull caches resources at `~/.uip/case-resources/`; later searches are local.
 
 ## Step 2 — Locate and parse the design document
 
@@ -71,7 +71,7 @@ If the path has no `sdd.md`, the skill hands design to the `uipath-planner` Case
 >
 > Canonical selected fields: action uses `deploymentTitle` / `deploymentFolder.fullyQualifiedName` / `id`; other non-connectors use `name` / `folders[0].fullyQualifiedName` / `entityKey`. Normalize labeled identities (for example, `agentId <uuid> (v1.0.6)`): ID token must equal `entityKey`, and SDD version must equal selected version metadata (for example, `customData.ProcessVersion`) when present. Missing, `<UNRESOLVED>`, or mismatched fields make the entry stale: ignore it, rediscover from the SDD, and replace its audit entry. Never let cache upgrade or override unresolved/edited SDD fields. If absent, rediscover each portable name and write a fresh file. This applies to portable-resource task types; connector resolution remains [connector-integration.md](connector-integration.md).
 
-### Step 3 — Resolve resources
+## Step 3 — Resolve resources
 
 Seed TodoWrite before resolution; mark each item `in_progress` on entry and `completed` on exit, one item per class, never per SDD row:
 
@@ -81,16 +81,20 @@ Seed TodoWrite before resolution; mark each item `in_progress` on entry and `com
 4. Resolve SLA escalation recipients (`recipients-resolved.json`).
 5. Complete `registry-resolved.json` (Step 4 additions), then auto-proceed to Phase 2 (Step 5).
 
-For every task, trigger, and condition, apply Step 1’s Design-only exception exactly: skip registry/schema discovery and plugin fan-out, leave identities `<UNRESOLVED>`, report what the later build must resolve, end with suggested next steps (review SDD, then run a build), and stop without a plan file.
+For every task, trigger, and condition in the sdd.md:
 
-Otherwise:
+If the design-only exception is active — per Step 1, including its negative trigger, and not merely because the request stops before `caseplan.case` — skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. The SDD already carries the design; leave its tenant identities `<UNRESOLVED>`, report which resources the later build run must resolve, and stop. Do not write a plan file in its place.
+
+End the response with suggested next steps: review the SDD, then run a build to resolve tenant resources and create `caseplan.case`.
+
+Otherwise, continue with the normal resolution path:
 
 1. Match each SDD component to the catalogs in §§3.1–3.3.
 2. Group by plugin type and read each `planning.md` once, resolving/emitting every component from that read. Re-reading per element is a read-budget defect (observed `planning.md` 10–16× and `impl-json.md` up to 26× per build); after compaction reread only the plugin for the section in progress.
 3. Resolve all tasks in one call: `uip maestro case sdd resolve "<SDD_PATH>" --out tasks/registry-resolved.json --output json` (SKILL.md Rule 3), from the solution directory when present so in-solution siblings are found ([registry-discovery.md § Resolve with the CLI first](registry-discovery.md#resolve-with-the-cli-first)). It reads each type-specific portable name, searches its index, narrows by folder, and writes the whole Rule 10 ledger. `Data.Counts` reports selected count; `Data.Unresolved[]` reports the rest. Missing/`<UNRESOLVED>` portable name violates the SDD contract and must be surfaced; never fall back to `Task Name`.
 4. Work only `Data.Unresolved[]` manually under [registry-discovery.md](registry-discovery.md) and the plugin Registry Resolution section. `absent` runs cross-type fallback and in-solution sibling check unless `Data.Scope.siblingsChecked: true`, before Rule 18 gate; `ambiguous` follows match priority. Never re-search selected tasks or rewrite their entries.
 
-#### 3.1 Task Type catalog
+### 3.1 Task Type catalog
 
 > **Closed enum — 16 values.** SDD `Type:` and caseplan.case `type` use column-1 schema-kebab values; column 2 is the planning/execution plugin folder, not JSON. See SKILL.md Rule 17 and Plugin Index naming-asymmetry note. Any other value (`connector-activity`, `wait-for-event`, etc.) is invalid; write `<UNRESOLVED>`.
 
@@ -115,7 +119,7 @@ Otherwise:
 
 > **Create-on-missing:** `agent`, `api-workflow`, and `business-rule` may be built inline at Rule 18; see [§ 3.4](#34-unresolved-resources), [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline), [api-workflow](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline), and [business-rule](plugins/tasks/business-rule/planning.md#creating-a-business-rule-inline). All others, including regular RPA `process`, action, function, connectors, and agentic process, use §3.4 placeholder flow.
 
-#### 3.2 Trigger Type catalog (case-level)
+### 3.2 Trigger Type catalog (case-level)
 
 | sdd.md description | Plugin |
 |---|---|
@@ -123,7 +127,7 @@ Otherwise:
 | "Every N hours/days" / scheduled / cron-like | `plugins/triggers/timer/` |
 | Event from external system (connector-based) | `plugins/triggers/event/` |
 
-#### 3.3 Condition Scope catalog
+### 3.3 Condition Scope catalog
 
 | Where condition attaches | Plugin |
 |---|---|
@@ -154,7 +158,7 @@ At execution, unresolved tasks become **placeholder tasks** in `caseplan.case` (
 
 ## Step 4 — Complete `registry-resolved.json`
 
-`sdd resolve` creates `tasks/` and writes one task entry under `resolved` with exact Rule 10 keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`. Do not rewrite it. With Edit, add only:
+Step 3's `sdd resolve` already wrote `tasks/registry-resolved.json` (creating `tasks/`) with one entry per task under `resolved`, using Rule 10's exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`. Do not rewrite it. This step only **adds**, with Edit, what resolve cannot know:
 
 - one entry per case trigger and connector-bound condition from the connector pipeline;
 - `gateDecision` for Rule 18 answers;
@@ -162,7 +166,9 @@ At execution, unresolved tasks become **placeholder tasks** in `caseplan.case` (
 
 `rationale` explains selection (for example, `"exact name match in caseManagement folder"`); never use it for verify-text, SDD/spec field translation, or downstream-plugin claims.
 
-The ledger contains only registry lookup output, not SDD structure, activation modes, entry rules, inputs, outputs, or rationale. Phase 2/3 read those from `sdd.md`. Use case-style section-batched writes: one Read per section (tasks → triggers → conditions → SLA recipients), N Edit-appends, no re-Read between siblings. See [case-editing-operations.md](case-editing-operations.md).
+This ledger holds **only what registry lookups produced**. It is not a copy of the SDD: do not restate stage/task structure, activation modes, entry rules, inputs, outputs, or design rationale in it. Phase 2 and Phase 3 read those straight from `sdd.md`, which stays the single source of the design contract. Duplicating the contract here re-creates the drift the retired `tasks.md` caused.
+
+Use the same section-batched write discipline the caseplan uses — one Read per section (tasks → triggers → conditions → SLA recipients), N Edit-appends, no re-Read between siblings. See [case-editing-operations.md](case-editing-operations.md).
 
 > **Registry handoff labels.** Phase 2 reads resolved `action`/`case-management` identities from `selected`; nothing is copied:
 >
