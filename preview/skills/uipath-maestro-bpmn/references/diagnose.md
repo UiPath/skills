@@ -34,7 +34,7 @@ rejected, and the mocked harness answers them with an error too.
 Collect the public-safe identifiers: process or package name, job key, instance
 id, folder key, approximate run time, and whether the run came from
 `uip maestro bpmn debug` or a deployed `process run`. Do not record secrets,
-tenant URLs, connection ids or payload data in notes ([Public safety](public-safety.md)).
+tenant URLs, connection ids or payload data in notes.
 
 From a deployed job key, start here and parse the instance id, folder, process
 key and final status from the JSON:
