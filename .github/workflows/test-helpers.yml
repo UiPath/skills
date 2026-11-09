@@ -408,12 +408,14 @@ jobs:
 
       # Guards both gates in scripts/check-task-driver.py; the headline case
       # replays the 2026-09-04 multi-line pre_run that ERRORed the Windows split.
+      # Also runs the behaviour tests of scripts/check-task-doc-citations.py.
       - name: Run task gate tests
         run: pytest tests/scripts/test_check_task_driver.py tests/scripts/test_check_task_doc_citations.py -v
 
-      # A task prompt that cites a renamed or retired skill doc sends the agent
-      # to a file it cannot open; nothing else re-reads tasks when a doc moves
-      # (#4531). Full-corpus scan: the corpus is clean, so any hit is new.
+      # A task prompt that cites a renamed or retired skill doc (or section)
+      # sends the agent to a file its catalog does not ship; nothing else
+      # re-reads tasks when a doc moves (#4531). Full-corpus scan: the corpus
+      # is clean, so any hit is new.
       - name: Every skill reference a task cites exists
         run: python3 scripts/check-task-doc-citations.py
 
