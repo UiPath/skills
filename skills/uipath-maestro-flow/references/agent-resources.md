@@ -72,11 +72,12 @@ a pinned one still stays in the tool's schema.
 **A `variable` is ONE reference** (`input()`, `out()`, `v()`): compute anything
 else in a `script()` step and bind its `out(...)`. **A `value` is plain JSON in
 its own type** (`10`, not `'10'`), never an expression. `clientside` tools take
-bare types only.
+bare types only. **A `voiceAgent` or `conversationalAgent` tool takes no
+`variable`**: use a `value` or a `prompt`, or attach the tool to an `inlineAgent`.
 
 `check` reports these as `FLOW_AGENT_TOOL_ARGUMENT_*`: `_SOURCE`,
-`_COMPOSITE` and `_EXPRESSION` refuse compile, `_EMPTY_PROMPT` and `_TYPE` are
-warnings. It reports one refusal per agent, so fix it and rerun.
+`_COMPOSITE`, `_EXPRESSION` and `_VARIABLE` refuse compile, `_EMPTY_PROMPT` and
+`_TYPE` are warnings. It reports one refusal per agent, so fix it and rerun.
 
 **Brownfield.** Decompile reads the sources back, including from a
 canvas-saved tool node. Leave arguments the request does not touch as
