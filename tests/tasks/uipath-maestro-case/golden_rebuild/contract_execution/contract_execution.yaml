@@ -97,13 +97,23 @@ initial_prompt: |
   - Do NOT call AskUserQuestion - it is not available in this harness.
   - Do NOT publish the solution and do NOT run `uip maestro case debug`
     (the case suspends on HITL actions, SLA clocks, and two webhook events).
-  - Finish with `uip maestro case validate <case plan file in ContractExecution/ContractExecution/> --output json`
+  - Finish with `uip maestro case validate <case plan file in ContractExecution/ContractExecution/> --strict --sdd sdd.md --output json`
     passing on the resulting case plan.
 
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated ContractExecution caseplan.json"
     command: "p=$(ls ContractExecution/ContractExecution/caseplan.case ContractExecution/ContractExecution/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — a plain-profile Valid does not close the golden"
+    command: >-
+      p=$(ls ContractExecution/ContractExecution/caseplan.case ContractExecution/ContractExecution/caseplan.json 2>/dev/null | head -1); uip maestro case validate "$p"
+      --strict --sdd ./sdd.md --output json
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
