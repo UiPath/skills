@@ -74,7 +74,7 @@ else in a `script()` step and bind its `out(...)`. **A `value` is plain JSON in
 its own type** (`10`, not `'10'`), never an expression. `clientside` tools take
 bare types only.
 
-`check` reports these as `INLINE_AGENT_TOOL_ARGUMENT_*`: `_SOURCE`,
+`check` reports these as `FLOW_AGENT_TOOL_ARGUMENT_*`: `_SOURCE`,
 `_COMPOSITE` and `_EXPRESSION` refuse compile, `_EMPTY_PROMPT` and `_TYPE` are
 warnings. It reports one refusal per agent, so fix it and rerun.
 
