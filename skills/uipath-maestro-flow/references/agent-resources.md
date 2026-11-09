@@ -72,8 +72,10 @@ a pinned one still stays in the tool's schema.
 **A `variable` is ONE reference** (`input()`, `out()`, `v()`): compute anything
 else in a `script()` step and bind its `out(...)`. **A `value` is plain JSON in
 its own type** (`10`, not `'10'`), never an expression. `clientside` tools take
-bare types only. **A `voiceAgent` or `conversationalAgent` tool takes no
-`variable`**: use a `value` or a `prompt`, or attach the tool to an `inlineAgent`.
+bare types only. **A `voiceAgent` or `conversationalAgent` tool takes a Prompt
+and a Fixed value, but not a Variable**: compile refuses one
+(`FLOW_AGENT_TOOL_ARGUMENT_VARIABLE`). Give the argument a `value` or a
+`prompt`, or attach the tool to an `inlineAgent`.
 
 `check` reports these as `FLOW_AGENT_TOOL_ARGUMENT_*`: `_SOURCE`,
 `_COMPOSITE`, `_EXPRESSION` and `_VARIABLE` refuse compile, `_EMPTY_PROMPT` and
@@ -144,6 +146,9 @@ escalation nodes. Upgrade the copy in use: `npm install
   "a" …`). An SDK older than 6.88.2 prints the same rules for an inline agent
   as `INLINE_AGENT_TOOL_*`, `INLINE_AGENT_ESCALATION_*`, `INLINE_AGENT_RESOURCE_*`
   and `AGENT_CONTEXT_*`.
+- **No Variable tool argument.** A process tool's argument takes a Prompt or a
+  Fixed value, not a Variable (`FLOW_AGENT_TOOL_ARGUMENT_VARIABLE`):
+  [Process tool arguments](#process-tool-arguments).
 - **Voice agent definitions.** Compile writes each resource's definition with
   the voice agent as an allowed source, as the designer does; the built-in
   tools and the app escalation go out at 1.2 for that reason.
