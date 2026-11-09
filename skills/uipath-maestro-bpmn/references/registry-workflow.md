@@ -355,6 +355,25 @@ reverse map accepts only those plus raw HTTP verbs, which is also exactly what
 `uip is resources run` exposes as subcommands. `--operation` takes the same
 value, so pass `--operation Create`.
 
+`path` is the object's route under the connector: `/<objectName>`, then one
+`{placeholder}` per path parameter (`/curated_create_issue`,
+`/curated_get_issue/{issueId}`). `uip is resources list <connectorKey>` prints
+it as `Path` and describe prints it as `Operation.Path`; neither call needs
+`--connection-id`. Never put the provider's own REST route there. The runtime
+prefixes the connector's base itself, so a `path` of `/rest/api/2/issue` goes
+out as `/rest/api/2/rest/api/2/issue`: `validate` accepts it, and the debug run
+faults with incident `102001 Integration Services resource not found`
+(`No endpoint POST /rest/api/2/rest/api/2/issue`).
+
+Some tenants refuse the connection-scoped calls: `describe --connection-id`
+answers `400 A provided parameter was of an invalid type`, `resources list
+--connection-id` answers `404`, and `registry get --connection-id` reports
+`IS enrichment returned no data` (Automation Suite 2026.10). The connector-level
+calls still answer there. Take `objectName`, `Operation.Name` and `path` from
+the connector-level describe and hand-author the node by this section. Field
+discovery (`--field`) has no such fallback: stop on a field you cannot resolve
+rather than invent one.
+
 ### Set every required `RequestFields` entry
 
 Put every `RequestFields` entry marked `Required: true` in the body under its
