@@ -45,6 +45,19 @@ def assert_script_task(root, source_must_match, label):
         fail(f"script uses non-Jint runtime APIs: {bad}")
 
     version = task.find("bpmn:extensionElements/uipath:scriptVersion", NS)
+    if version is None:
+        foreign = sorted(
+            {
+                el.tag[1:].split("}")[0]
+                for el in task.iterfind("bpmn:extensionElements/*", NS)
+                if el.tag.endswith("}scriptVersion")
+            }
+        )
+        if foreign:
+            fail(
+                f"scriptVersion is in namespace {foreign[0]!r}; the uipath prefix "
+                f"must be bound to {NS['uipath']!r}"
+            )
     if version is None or version.attrib.get("value") != "v3":
         fail('scriptTask must declare uipath:scriptVersion value="v3"')
 

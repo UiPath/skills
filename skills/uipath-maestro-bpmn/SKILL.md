@@ -141,7 +141,11 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    [references/registry-workflow.md](references/registry-workflow.md#a-reference-entry-takes-a-looked-up-value-never-the-display-name).
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
-   flag honestly what the registry does not expose.
+   flag honestly what the registry does not expose. Copy the
+   `<bpmn:definitions>` root from that file or from `uip maestro bpmn init`,
+   never from memory: the `uipath` prefix is bound to exactly
+   `xmlns:uipath="http://uipath.org/schema/bpmn"`. `validate` reports `Valid`
+   on any other URI, and no `uipath:*` element under it is a UiPath extension.
 4. **One clarifying round, then author.** Ask (AskUserQuestion, except at the 3c gate, which is a plain message) only for a
    choice that the request and the CLI evidence leave undecidable and whose
    wrong answer is unrecoverable or forces an invented identifier; batch those
@@ -832,6 +836,10 @@ full, then end the turn with the reply exactly as it shows.
      uip maestro bpmn validate <file.bpmn> --output json
    ```
 <!--skill-flavor:wellformed-check:end-->
+
+   `validate` does not check the `uipath` namespace URI either: in a file
+   you wrote by hand, `grep -c 'xmlns:uipath="http://uipath.org/schema/bpmn"'
+   <file.bpmn>` must print `1` (rule 3).
 
    `validate` ignores tag case; a line the `grep` prints is a tag to lowercase
    (4b).
