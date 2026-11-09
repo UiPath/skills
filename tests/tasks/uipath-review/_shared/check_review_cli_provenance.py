@@ -54,7 +54,7 @@ GRADE_PROXIMITY = 240
 # A validation-table row (review-workflow-guide.md, Automated Validation section)
 # that reports the review CLI with all-zero counts.
 CLEAN_CLI_ROW = re.compile(
-    r"^\s*\|.*`?uip\s+(?:agent|codedagent)\s+review`?\s*\|(?:\s*0\s*\|){3}\s*$",
+    r"^\s*\|.*`?uip\s+(?:agent|codedagent)\s+review\b[^|\n]*\|(?:\s*0\s*\|){3}\s*$",
     re.IGNORECASE | re.MULTILINE,
 )
 

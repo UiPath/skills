@@ -122,7 +122,7 @@ def write_clean_triage_agent(solution_root: Path, *, with_evals: bool = True) ->
         write_evals(
             project,
             [
-                equality_evaluator("Priority exact match"),
+                {**equality_evaluator("Priority exact match"), "targetOutputKey": "priority"},
                 trajectory_evaluator(
                     "Asset lookup trajectory",
                     "Pass when the agent calls get_asset_status if and only if the ticket names an asset tag.",

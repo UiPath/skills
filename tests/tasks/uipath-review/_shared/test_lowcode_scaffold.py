@@ -100,5 +100,19 @@ def test_builtin_guardrail_shape():
     assert g["selector"] == {"scopes": ["Tool"], "matchNames": ["send_email"]}
 
 
+def test_clean_triage_evaluator_targets_the_expected_output_field(tmp_path):
+    from lowcode_clean_agent import write_clean_triage_agent
+
+    project = write_clean_triage_agent(tmp_path / "ReviewSol")
+    evaluator = _load(project / "evals" / "evaluators" / "evaluator-priority-exact-match.json")
+    target = evaluator["targetOutputKey"]
+    schema = _load(project / "agent.json")["outputSchema"]
+    eval_set = _load(project / "evals" / "eval-sets" / "evaluation-set-default.json")
+    assert target == "priority"
+    assert target in schema["required"]
+    for datapoint in eval_set["evaluations"]:
+        assert target in datapoint["expectedOutput"]
+
+
 def test_scaffold_imports_on_python_without_pep604_runtime():
     assert isinstance(s.apply_agent.__annotations__["settings"], str)
