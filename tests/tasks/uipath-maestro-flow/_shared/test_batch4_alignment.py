@@ -210,9 +210,11 @@ def test_batch_transform_checker_accepts_equivalent_expression_shapes(
     assert result.returncode == 0, result.stderr or result.stdout
 
 
-@pytest.mark.parametrize("typed_envelopes", [False, True])
-def test_summarize_checker_accepts_equivalent_expression_shapes(
-    tmp_path: Path, typed_envelopes: bool
+def _write_summarize_flow(
+    path: Path,
+    typed_envelopes: bool = False,
+    type_version: str = "1.0",
+    carried_versions: tuple[str, ...] = ("1.0",),
 ) -> None:
     attachment = (
         {
@@ -240,13 +242,13 @@ def test_summarize_checker_accepts_equivalent_expression_shapes(
         return f"=js:{expression}"
 
     _write_flow(
-        tmp_path / "SummarizeDemo.flow",
+        path,
         [
             {"id": "trigger", "type": "core.trigger.manual"},
             {
                 "id": "summary_node",
                 "type": "uipath.pattern.deep-rag",
-                "typeVersion": "1.0",
+                "typeVersion": type_version,
                 "inputs": {
                     "attachment": attachment,
                     "prompt": "Summarize the document",
@@ -275,11 +277,56 @@ def test_summarize_checker_accepts_equivalent_expression_shapes(
                 {"id": "citations", "direction": "out", "type": "array"},
             ]
         },
+        definitions=[
+            {"nodeType": "uipath.pattern.deep-rag", "version": v}
+            for v in carried_versions
+        ],
     )
 
-    result = _run(
-        "context-grounding/summarize/check_summarize_flow.py",
-        cwd=tmp_path,
-    )
 
+def _run_summarize(tmp_path: Path) -> subprocess.CompletedProcess[str]:
+    return _run("context-grounding/summarize/check_summarize_flow.py", cwd=tmp_path)
+
+
+@pytest.mark.parametrize("typed_envelopes", [False, True])
+def test_summarize_checker_accepts_equivalent_expression_shapes(
+    tmp_path: Path, typed_envelopes: bool
+) -> None:
+    _write_summarize_flow(tmp_path / "SummarizeDemo.flow", typed_envelopes)
+    result = _run_summarize(tmp_path)
     assert result.returncode == 0, result.stderr or result.stdout
+
+
+@pytest.mark.parametrize("version", ["1.0", "1.1"])
+def test_summarize_checker_reads_version_from_carried_definition(
+    tmp_path: Path, version: str
+) -> None:
+    _write_summarize_flow(
+        tmp_path / "SummarizeDemo.flow",
+        type_version=version,
+        carried_versions=(version,),
+    )
+    result = _run_summarize(tmp_path)
+    assert result.returncode == 0, result.stderr or result.stdout
+
+
+@pytest.mark.parametrize(
+    ("type_version", "carried", "message"),
+    [
+        ("1.1", ("1.0",), "must equal"),
+        ("1.0", (), "carries no"),
+        ("1.0.0", ("1.0.0",), "MAJOR.MINOR"),
+        ("0.9", ("0.9",), ">= 1.0"),
+    ],
+)
+def test_summarize_checker_rejects_bad_type_version(
+    tmp_path: Path, type_version: str, carried: tuple[str, ...], message: str
+) -> None:
+    _write_summarize_flow(
+        tmp_path / "SummarizeDemo.flow",
+        type_version=type_version,
+        carried_versions=carried,
+    )
+    result = _run_summarize(tmp_path)
+    assert result.returncode != 0
+    assert message in (result.stderr + result.stdout)
