@@ -549,7 +549,7 @@ next section for the fix.
 
 ## Job-wrapper v1 trap — `releaseKey` templates are unrunnable
 
-`Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`, and
+`Orchestrator.ExecuteApiWorkflowAsync` and
 `Orchestrator.StartAgenticProcess[Async]` / `StartCaseMgmtProcess[Async]` all
 serve the same **v1** `xmlTemplate`:
 `<uipath:activity version="v1">` with a hidden, unbound `releaseKey` /

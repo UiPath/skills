@@ -59,7 +59,7 @@ do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
 neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
 Exception: `validate` errors on a payload with a `type` attribute or outside
-`<bpmn:extensionElements>`, and on an `Orchestrator.StartAgentJob` whose type
+`<bpmn:extensionElements>`, and on an `Orchestrator.StartAgentJob` or `Orchestrator.StartJob` whose type
 version is not `v2` and whose `releaseKey` or `folderId` has no value. Rewrite
 those payloads per rule 6 and name each in the summary.
 
@@ -267,17 +267,23 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    as unverified. A business rule maps its whole result as one `output` from
    `=result`, never one output per decision or column.
 <!--skill-flavor:debug-node-output:end-->
-18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
-   `ExecuteApiWorkflowAsync`, `StartAgenticProcess[Async]`,
-   `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that
-   validates but faults at runtime. This overrides paste-as-is in 4b
-   and 4c.** For all of them, bind `releaseKey` via
+18. **Job-wrapper registry templates (`ExecuteApiWorkflowAsync`,
+   `StartAgenticProcess[Async]`, `StartCaseMgmtProcess[Async]`) serve an
+   unresolved `releaseKey` that validates but faults at runtime. This overrides
+   paste-as-is in 4b and 4c.** For all of them, bind `releaseKey` via
    `=bindings.<id>` to the resource's `Key`. For `ExecuteApiWorkflowAsync`
    only, also add a literal `folderKey` with the folder's `FolderKey` and
    drop `folderId`, `folderPath`, and `name`. For the others, keep the
    template's remaining fields and make that swap only after a live run
    faults with `key:FolderKey`; without a run, report the node unverified. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
+   `Orchestrator.StartJob` and `Actions.HITL` (app task) serve `v2`: paste as
+   is, and point `name` and `folderPath` at `=bindings.<id>` bindings of
+   resource `process` (StartJob) or `app` (HITL), `propertyAttribute` `name` and
+   `folderPath`. A `v2` node with other bindings fails `validate`. A `v1`
+   StartJob needs `releaseKey` and `folderId`, else `validate` fails. A `v1`
+   HITL only warns, but the runtime ignores its `appId`: rebuild it from
+   `registry get`.
 19. **Fill every placeholder (`{name}`, `<name>`) in an HTTP request's `url` before `registry
    get`, with a discovered or given value or a `=js:` expression; never invent
    one.** To change the url, run `registry get` again, never edit it in the

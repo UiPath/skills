@@ -95,7 +95,7 @@ simulation is scoped to one **data point inside one set**, not to the project,
 so all three commands require `--set` and `--data-point`. `add` also requires
 `--strategy`: `Static` returns `--mock-value` verbatim, `Llm` generates a
 response from `--simulation-instructions`. And it requires `--component-type`
-naming what the component is — `connector`, `agent`, `subflow`, `hitl` — unless
+naming what the component is — `connector`, `agent`, `hitl`, `Node` — unless
 `--parent <agent-id>` adds a child tool simulation, which defaults it to `Node`.
 
 ```bash
