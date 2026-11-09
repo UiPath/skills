@@ -82,7 +82,7 @@ export default casePlan('loan-approval')
       .required()
       .entryWhen(rule('current-stage-entered')))
     .task('Manager Approval', t => t
-      .action({ title: 'Approve loan', priority: 'High', recipient: 'manager@corp.com' })
+      .action({ title: 'Approve loan', priority: 'High', recipient: 'manager@corp.com', app: { name: 'LoanApproval', folder: 'Shared' } })
       .entryWhen(rule('selected-tasks-completed', { tasks: ['Check Policy'] }))))
   .stage('Decision', s => s
     .required()
