@@ -14,8 +14,17 @@ An older SDK's `HTTP_V1_RETIRED` text saying to "keep managed: false" for a URL 
 
 Managed HTTP routes non-2xx responses through its error port and exposes a JSON
 response body as a parsed value. Its success `output` is `{ code, headers, body }`
-with `code` a number; there is no `statusCode`. A status check is an `.onError()`
-handler reading `err(step, 'status')`, not a `branches` condition on `statusCode`.
+with `code` a number; there is no `statusCode`. Reading `output.code` needs
+`@uipath/maestro-builder-sdk` 6.90.1 or later; an older SDK's `check` rejects it
+(`HTTP_READ_UNKNOWN_FIELD`), so on it read neither field and route a status with
+`.onError()` + `err(step, 'status')`,
+<!--skill-flavor:http-code-sdk-upgrade:start-->
+or upgrade the copy `uip` uses:
+`npm install -g @uipath/maestro-builder-sdk@latest`, or
+`npm install --save-dev @uipath/maestro-builder-sdk@latest` for a workspace copy.
+<!--skill-flavor:http-code-sdk-upgrade:end-->
+A status check is an `.onError()` handler reading `err(step, 'status')`, not a
+`branches` condition on `statusCode`.
 
 Signature: `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
 
@@ -114,9 +123,10 @@ non-2xx raises incident `102001` (observed for 404).
 ## Response branches
 
 `branches: [{ name, condition }]` declares extra `branch-<name>` exits routed
-with `.stepToList('branch-<name>', …)`. Don't author managed `branches`; route
-with `.onError()` + `err(step, 'status')`. A non-2xx never reaches a branch, and
-in a debug run no condition fired, not even on a 200. Names must be unique and
+with `.stepToList('branch-<name>', …)`. A managed branch fires only with SDK
+6.90.1 or later; an older SDK writes the condition without `=js:` and no branch
+fires, not even on a 200. A non-2xx fails the step and never reaches a branch:
+route it with `.onError()` + `err(step, 'status')`. Names must be unique and
 constant conditions are rejected by `check`.
 
 ## Evidence
