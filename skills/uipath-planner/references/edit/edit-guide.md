@@ -54,4 +54,4 @@ After every edit, review what changed, and every component genome a process geno
 
 ## Back to the Build
 
-An edit `uipath-genome` requested, or a request that also asks to build, ends by invoking `uipath-genome` with `build "<GENOME_MD>"` and the user's build request quoted, after § Review after every edit. A finding the edit could not apply is named in that hand-off; the build reports it instead of handing it back again. `uipath-genome` not installed → end at the summary and say the build needs it. Any other edit ends at its summary.
+An edit `uipath-genome` requested, or a request that also asks to build, ends by invoking `uipath-genome` with `build "<GENOME_MD>"` and the user's build request quoted verbatim, after § Review after every edit. A finding the edit could not apply is named in that hand-off; the build reports it instead of handing it back again. `uipath-genome` not installed → end at the summary and say the build needs it. Any other edit ends at its summary.
