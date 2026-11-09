@@ -120,7 +120,7 @@ Both chains can share the approver variables because only one runs per instance.
 
 ## What to bind
 
-- **Approver tasks**: `.humanTask()`, an inline form unless a deployed Action App is named.
+- **Approver tasks**: `.humanTask()`, an inline form (the SDK cannot yet write an app-backed task).
   Map `=Action` and each form field into that approver's own variables.
   Resolving *who* approves is a lookup against your directory; the process holds the task, not the roster.
 - **Per-step reminders and SLA**: a non-interrupting `t.onTimer()` in the task's body; see [Human tasks](../bpmn-runtime.md#human-task-outcomes).

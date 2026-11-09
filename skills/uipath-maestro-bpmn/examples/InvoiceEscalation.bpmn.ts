@@ -134,10 +134,11 @@ export default bpmn('invoice-escalation')
       body: (b) => b.task('markRejected', { name: 'Mark rejected', set: { outcome: '=js:vars.decision == "Reject" ? "REJECTED" : vars.outcome' } }).endEvent('rejected', { name: 'Rejected' }),
     },
   ])
+  // A script reads process data as `vars.<id>`: the runtime injects `vars`, `metadata`
+  // and (in a loop body) `iterator`, and nothing else — no `inputs` row is needed.
   .scriptTask('post', {
     name: 'Post to ledger',
-    script: 'return { response: { posted: true, invoiceId: invoiceId } };',
-    inputs: { invoiceId: '=vars.invoiceId' },
+    script: 'return { response: { posted: true, invoiceId: vars.invoiceId } };',
   })
   .endEvent('done', { name: 'Posted' })
   // The safety net. An event sub-process has no incoming flow; it starts when an error

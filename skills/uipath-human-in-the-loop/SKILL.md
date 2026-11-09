@@ -111,7 +111,7 @@ find . -maxdepth 4 \( -name "*.bpmn" -o -name "*.bpmn.ts" \) | head -3
 
 <!--skill-flavor:case-sdk-hitl-stop:end-->
 <!--skill-flavor:bpmn-sdk-hitl-stop:start-->
-**Maestro surface (a `<Name>.bpmn.ts`, a `.bpmn`, or a new Maestro process) — the default: stop here too.** Hand the HITL request to the `uipath-maestro-bpmn` skill: it authors `.humanTask(...)` in `<Name>.bpmn.ts` — decompiling an existing `.bpmn` first — and compiles (that skill's *Human task outcomes* section in `references/bpmn-runtime.md`). A task is an inline form unless the request names a deployed Action App. Never hand-edit the compiled `.bpmn`; the next `compile` overwrites it. In this package, the Maestro sections of Steps 2–6 below do not apply.
+**Maestro surface (a `<Name>.bpmn.ts`, a `.bpmn`, or a new Maestro process) — the default: stop here too.** Hand the HITL request to the `uipath-maestro-bpmn` skill: it authors `.humanTask(...)` in `<Name>.bpmn.ts` — decompiling an existing `.bpmn` first — and compiles (that skill's *Human task outcomes* section in `references/bpmn-runtime.md`). It writes every task as an inline form: the SDK cannot yet bind a deployed Action App, so when the request names one, it says so and points the user to the Studio Web designer. Never hand-edit the compiled `.bpmn`; the next `compile` overwrites it. In this package, the Maestro sections of Steps 2–6 below do not apply.
 
 <!--skill-flavor:bpmn-sdk-hitl-stop:end-->
 **If the user mentioned a specific file path**, use that directly.

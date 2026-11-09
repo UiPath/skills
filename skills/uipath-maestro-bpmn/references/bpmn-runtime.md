@@ -104,8 +104,10 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Human task outcomes
 
 <!-- RULE:bpmn.hitl.inline-form-default -->
-- Unless the request names a deployed Action App, write a human task as an inline form: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`.
-  The form travels in the `.bpmn`, so nothing on the tenant has to exist; `app` is for a named, deployed app, and an app id the tenant does not have fails `uip maestro bpmn validate` with `MISSING_BINDING` / `MISSING_RESOURCE`.
+- Write every human task as an inline form: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`.
+  The form travels in the `.bpmn`, so nothing on the tenant has to exist.
+  The SDK cannot yet write a working app-backed task: `.humanTask(id, { app })` writes a v1 `Actions.HITL` task with only an `appId`, which `uip maestro bpmn validate` rejects with `MISSING_BINDING` / `MISSING_RESOURCE` and which the engine does not read.
+  When the request names a deployed Action App, author the inline form anyway, tell the user the task is not bound to their app, and point them to the Studio Web designer to switch it to the app.
   Never swap a human task for a plain `.task()` to get past that — use the form.
 - A field is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back).
   The call refuses a form that breaks any of these:
@@ -116,7 +118,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   - A picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) has `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
 - The cloud engine takes the inline-form path only on a tenant with its quick-form flag on.
   With the flag off, the run fails at the human task with a HITL incident: `170004` "Invalid input for the HITL task" on current engines, or `170015` "No app … found" on engines from before mid-September 2026.
-  Then tell the user to enable the quick-form flag on the tenant, or to name a deployed Action App for `app`; do not fall back to `.task()`.
+  Then tell the user to enable the quick-form flag on the tenant; do not fall back to `.task()` or to `app`.
 - Studio Web's "Edit Schema" canvas does not open for an inline form.
 
 <!-- RULE:bpmn.hitl.output-map -->

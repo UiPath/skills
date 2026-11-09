@@ -27,7 +27,7 @@ Which you author depends on which side of the queue Maestro is on; author both, 
 `start` → `fetchSource` → the enqueue → `endQueued`, with no conditions.
 One item at a time is `.queueItem(id, { queue, folder, item })`; `folder` is required.
 A batch is `.activity(id, 'Orchestrator.BulkAddQueueItems', { inputs })`, since it has no typed method; read its fields with `uip maestro bpmn registry get Orchestrator.BulkAddQueueItems --output json`.
-One variable, `sourceItems` (jsonSchema), is the bulk input.
+One variable, `sourceItems`, is the bulk input: declare it `object` if it is a process `.input`, because `refresh` refuses a `jsonSchema` process input or output; a `.var(…, 'jsonSchema')` is fine.
 
 ### Performer: Maestro processes the items
 
@@ -41,7 +41,7 @@ import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 export default bpmn('claim-worker')
   .name('ClaimWorker')
   .flowMode('sequence')
-  .input('queueItem', 'jsonSchema', { name: 'Queue item' })
+  .input('queueItem', 'object', { name: 'Queue item' })
   .var('itemOutcome', 'string', { default: 'success' })
   .var('failureReason', 'string')
   // The queue trigger is configured outside the BPMN; the start stays plain.
@@ -72,7 +72,7 @@ Neither needs discovery.
 
 | Variable | Type | Holds |
 | --- | --- | --- |
-| `queueItem` | jsonSchema | The triggering item, the `QueueItem` each marking step names |
+| `queueItem` | object | The triggering item, the `QueueItem` each marking step names |
 | `itemOutcome` | string | `success`, `failure`, or `defer` |
 | `failureReason` | string | Why it failed, for `setFailed` |
 
