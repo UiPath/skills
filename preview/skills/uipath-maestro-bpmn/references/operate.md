@@ -213,4 +213,4 @@ When the action reveals a modeling or binding problem, the fix is in the
 - **Never treat package generation as authoring** — the four files are derived from the compiled BPMN.
 - **Never retry a faulted instance before reading its incidents and deployed asset.**
 - **Never omit the folder key** on `process list`/`get`/`run`, `instance …` and `incident get`.
-- **Never put tenant, folder, feed, connection or payload values in examples or summaries.**
+- **Never put tenant, folder, feed, connection or payload values in examples or summaries.** See [Public safety](public-safety.md).
