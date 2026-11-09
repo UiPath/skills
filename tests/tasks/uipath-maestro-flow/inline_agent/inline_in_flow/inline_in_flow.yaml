@@ -58,9 +58,12 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Flow file was created"
-    path: "GreetingSol/GreetingFlow/GreetingFlow.flow"
+    # Studio Web names the main file new.flow; the Node CLI names it after the project.
+    command: "test -f GreetingSol/GreetingFlow/GreetingFlow.flow || test -f GreetingSol/GreetingFlow/new.flow"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
