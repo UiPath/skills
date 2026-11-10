@@ -41,7 +41,9 @@ npx rpa-sdk merge Main.xaml Main.edited.xaml --in-place
 - `compile` writes the XAML. A file in a subfolder compiles the same way: `npx rpa-sdk compile Workflows/ValidateInvoice.rpa.ts -o Workflows/ValidateInvoice.xaml`.
 - **Editing an existing workflow:** `decompile` it to a `.rpa.ts`, edit that, compile it to a new file, and `merge` the new file into the original, which keeps the original's layout and ids for everything you did not change.
   The decompiled source keeps the file's activity ids as step ids and its annotations as `.note(…)`; a state or flowchart node Studio named `__ReferenceID<n>` gets a readable key with its old name as `xName`, and each type it names is declared once at the top (`const QueueItemType = clrType(…)`).
-  Leave `xName`, `.root(…)` and `.namespaces(…)` as they are: they are what makes the compiled file match the original.
+  Leave `xName` as it is.
+  The source carries no namespaces and no root: compile derives them, and `merge` puts the original's own spelling back (its prefixes, `mc:Ignorable`, `VisualBasic.Settings`, its references).
+  `.imports([…])` lists the namespaces the file imports beyond the ones compile adds; add one there when a `vb(…)` expression needs it.
   What decompile could not read stays as XML: a whole element as `rawActivity(…)`, or one property of an otherwise typed activity as `rawProperty(…)`; edit around them, or replace one with typed code when you change it.
 - **Running it:** where the host serves `uip rpa run` (Studio Web does), run the compiled workflow to test what it does: `uip rpa run --file-path Main.xaml --input-arguments name=value --output json` (`name:=<json>` for a typed value). It prints the workflow's log lines, then `{Result, Code, Data}`; `Data.output` holds the output arguments, and `Data.errorMessage` a fault.
 - Neither `check` nor `compile` compiles the VB expressions: an expression is checked for its surface only (names in scope, the language), not for types.
@@ -62,6 +64,7 @@ import { Assign, DataTable, Decimal, Int32, LogMessage, rpa, String, vb } from '
 
 export default rpa('Main')                      // the x:Class; the project is VB, the default
   .argument('in_Amount', Decimal, 'In')         // x:Members: 'In', 'Out' or 'InOut'
+  .argument('in_Region', String, 'In', { default: 'EMEA' })  // the value when the caller passes none
   .argument('in_Orders', DataTable, 'In')
   .argument('out_Route', String, 'Out')
   .variable('count', Int32, 0)                  // a variable on the root Sequence, with a default
@@ -71,13 +74,14 @@ export default rpa('Main')                      // the x:Class; the project is V
       then: (t) => t.step('warn', LogMessage({ Level: 'Warn', Message: (v) => `large: ${v.in_Amount}` })),
       else: (e) => e.step('ok', LogMessage({ Level: 'Info', Message: 'small' })),
     })
-    .step('rows', Assign({ to: (v) => v.count, value: vb('in_Orders.Rows.Count') })));
+    .step('rows', Assign({ to: (v) => v.count, value: vb('in_Orders.Rows.Count') })))
+  .build();                                     // the finished workflow, the file's default export
 ```
 
 - A slot with several steps, or with variables, becomes a Sequence; a single step is written alone. `Sequence({ DisplayName }, (t) => t…)` keeps an explicit one; `.variable(…)` inside any slot scopes a variable to it.
 - The first argument of `.step` and `.if` is the step's id (`IdRef`); `undefined` lets compile number it.
 - `.note(text)` after a step adds Studio's annotation to it.
-- Types: `String`, `Int32`, `Int64`, `Boolean`, `Double`, `Decimal`, `Object`, `DateTime`, `TimeSpan`, `Exception`, `BusinessRuleException`, `DataTable`, `DataRow`, `arrayOf(String)` (`String[]`), and `clrType({ name, xmlns, local, prefix, clrNamespace, assembly })` for any other.
+- Types: `String`, `Int32`, `Int64`, `Boolean`, `Double`, `Decimal`, `Object`, `DateTime`, `TimeSpan`, `Exception`, `BusinessRuleException`, `DataTable`, `DataRow`, `arrayOf(String)` (`String[]`), and `clrType({ name, local, clrNamespace, assembly })` for any other (`xmlns` too for a type under a URI, `ui:QueueItem`; `args: [String]` for a generic one).
 - Factories: `Assign({ to, value, type? })`, `LogMessage({ Level, Message })` (levels `Trace`, `Info`, `Warn`, `Error`, `Fatal`), `WriteLine({ Text })`, `Delay({ Duration })`, `Throw({ Exception })`, `If({ Condition, Then, Else })`, `Sequence`, and the loops and `TryCatch` below.
 
 ## Loops and Try Catch

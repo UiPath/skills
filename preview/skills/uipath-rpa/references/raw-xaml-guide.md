@@ -18,7 +18,8 @@ rpa('Main')
 </Pick>`))
 ```
 
-- The XML uses the workflow's prefixes: the default namespace is CoreWF's activities, `x:` is XAML's, and any other prefix it uses (`ui:`, `sd:`, `s:`, `scg:`) must be declared with `.namespaces({…})`; declaring one compile also declares is harmless.
+- The XML may use, undeclared, the prefixes compile always declares: the default namespace (CoreWF's activities), `x:`, `ui:`, `scg:`, `mc:`, `sap:` and `sap2010:`.
+  Declare any other on the element itself, as decompile writes it: `<sd:DataTable xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" …>`; `check` refuses an undeclared one (`RAW_PREFIX_UNDECLARED`).
 - Its expressions are VB, as written; arrows cannot reach inside it. It can read the workflow's arguments and variables.
 - Keep everything around the raw element in the SDK: variables, assignments, logging, and invocations before and after it.
 - When only one property of a catalog activity is beyond the SDK (`check` refuses it as a type the SDK cannot write), carry just that property with `rawProperty('<ui:Activity.Prop>…</ui:Activity.Prop>')` and keep the activity typed.
