@@ -49,7 +49,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-maestro-flow** | Maestro Flow (`.flow`) — author, connect nodes, validate, run, publish; triggers, schedules, evals, incidents. |
 | **uipath-agents** | UiPath agents end-to-end — coded (Python: LangGraph, LlamaIndex, OpenAI Agents) and low-code (`agent.json`); scaffold, run, evaluate, deploy. |
 | **uipath-maestro-bpmn** | Maestro BPMN process orchestration (`.bpmn`) — author XML, validate, package, operate, diagnose. |
-| **uipath-maestro-case** | Case Management (`caseplan.json`) authoring from SDD with phased build and validation. |
+| **uipath-maestro-case** | Case Management (`<Name>.case.ts` → `caseplan.case`) — author with the TypeScript builder SDK, compile, validate; edit existing plans by decompiling them. |
 | **uipath-coded-apps** | Coded Web Apps and Coded Action Apps — scaffold, build, debug, pack, publish, deploy via `uip codedapp`. |
 | **uipath-api-workflow** | API Workflow JSON DSL — author, run, package, publish; HTTP and Integration Service connector activities. |
 | **uipath-human-in-the-loop** | Human task authoring and operations — design approval gates, escalations, and validation forms in Flow, Maestro, or coded agents; list, assign, complete, and reassign the resulting Action Center tasks. |
@@ -103,7 +103,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-ixp` | Stable |
 | `uipath-knowledge-bundles` | Preview |
 | `uipath-maestro-bpmn` | In-development |
-| `uipath-maestro-case` | Preview |
+| `uipath-maestro-case` | Stable |
 | `uipath-maestro-flow` | Stable |
 | `uipath-mcp-servers` | Preview |
 | `uipath-planner` | Stable |

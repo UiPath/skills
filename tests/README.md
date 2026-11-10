@@ -193,7 +193,7 @@ criteria that passed.
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
-| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
+| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow and Case promoted; BPMN preview) | 200 | 1200s | 900s |
 | `use-case-tiers.yaml` | docker | Opt-in A/B for the `uipath-agents` use-case tasks: `assisted` vs `unassisted` (lower-tier helper text stripped) | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
@@ -223,14 +223,15 @@ SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run \
 
 `flow-v2-preview.yaml` runs the three builder-SDK skills
 `uipath-maestro-{flow,case,bpmn}` as the ONLY skill catalog, so a run measures the
-Flow v2 authoring path rather than a mix of both generations. Flow has been
-promoted: its tree lives in `skills/uipath-maestro-flow` (the default catalog, so
-`nightly.yaml` runs it too), and `preview/skills/uipath-maestro-flow` is a relative
-symlink to it so this arm keeps loading all three. Case and BPMN are still
-`preview/`-only. The previous Flow generation lives in
-`classic/skills/uipath-maestro-flow` (shipped only in the Studio Web flavor). It is
-in no plugin catalog, but the read-only repo mount leaves it readable from inside
-eval containers, so a prompt must not name a v1 Flow reference file. `preview/` is a Claude Code
+Flow v2 authoring path rather than a mix of both generations. Flow and Case have
+been promoted: their trees live in `skills/uipath-maestro-flow` and
+`skills/uipath-maestro-case` (the default catalog, so `nightly.yaml` runs them too),
+and `preview/skills/uipath-maestro-{flow,case}` are relative symlinks to them so this
+arm keeps loading all three. BPMN is still `preview/`-only. The previous Case
+generation lives in `classic/skills/uipath-maestro-case` (shipped only in the Studio
+Web flavor). It is in no plugin catalog, but the read-only repo mount leaves it
+readable from inside eval containers, so a prompt must not name a v1 Case reference
+file. `preview/` is a Claude Code
 **plugin root** (`preview/.claude-plugin/plugin.json` + `preview/skills/<name>/SKILL.md`),
 which is the one layout every harness loads: Claude Code requires it, the
 Delegate SDK appends `/skills` to it, Codex and Antigravity accept it. Skills load

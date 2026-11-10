@@ -24,7 +24,12 @@ export default casePlan('notify-on-approval')
       .exitWhen(rule('required-tasks-completed'), { marksStageComplete: true })
       .task('Manager approval', (t) =>
         t
-          .action({ title: 'Approve the request', priority: 'High', recipient: 'manager@corp.com' })
+          .action({
+            title: 'Approve the request',
+            priority: 'High',
+            recipient: 'manager@corp.com',
+            app: { name: 'RequestApproval', folder: 'Shared' },
+          })
           .required()
           .entryWhen(rule('current-stage-entered')),
       ),
