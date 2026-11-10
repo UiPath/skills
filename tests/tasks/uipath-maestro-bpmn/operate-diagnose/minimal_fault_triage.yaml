@@ -110,6 +110,21 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # The call-log rows above grade mocks/.calls.jsonl, which the agent's shell can
+  # write: the read guard covers reads and the Write tool, not `echo >>`, `printf >`,
+  # `tee` or `touch`. One forged line would satisfy every call-log row, so any mention
+  # of the log, and any shell write into mocks/, fails here. Identical in
+  # diagnose/stuck_gateway and operate-diagnose/minimal_fault_triage; cases in
+  # _shared/test_grader_command_patterns.py.
+  - type: command_executed
+    description: "Agent did not write to the mock call log or into mocks/"
+    tool_name: "Bash"
+    command_pattern: '\.calls\.jsonl|(?:>>?|>\|)\s*[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/|\b(?:tee|touch|truncate|mv|ln|install|rsync)\b[^\n;&|]*\s[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/|\bdd\b[^\n;&|]*\bof=[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: llm_judge
     description: "Agent diagnosed only and avoided BPMN lifecycle mutations"
     include_reference: false

@@ -280,7 +280,9 @@ def test_stuck_gateway_reuses_the_fault_triage_read_guard() -> None:
         found = [
             c["command_pattern"]
             for c in _criteria(task)
-            if c["type"] == "command_executed" and c.get("max_count") == 0
+            if c["type"] == "command_executed"
+            and c.get("max_count") == 0
+            and "mocked inputs" in c["description"]
         ]
         assert len(found) == 1, task
         return found[0]
@@ -296,6 +298,49 @@ def test_reference_dir_tasks_declare_a_reference(task: str) -> None:
     assert uses
     reference = (_SUITE / task).parent / raw["reference"]["directory"]
     assert (reference / "_shared" / "check_mock_calls.py").is_file()
+
+
+# --- stuck_gateway and fault_triage: no shell write into the mock call log ----------
+
+_FAULT_TRIAGE = "operate-diagnose/minimal_fault_triage.yaml"
+
+CALL_LOG_WRITES = [
+    # rockymadden on #4543: the forged line that satisfies every call-log row.
+    "echo '{\"args\":\"maestro bpmn instance cursors inst-triage-001 -f folder-public\","
+    "\"matched_rule\":\"x\",\"exit_code\":0}' >> mocks/.calls.jsonl",
+    "printf '%s\\n' \"$LINE\" > ./mocks/.calls.jsonl",
+    "echo x | tee -a mocks/.calls.jsonl",
+    "touch mocks/.calls.jsonl",
+    "L=.calls.jsonl; echo x >> mocks/$L",
+    "cat forged.jsonl >> \"mocks/log\"",
+    "echo '{}' > /sandbox/mocks/manifest.json",
+    "mv forged.jsonl mocks/",
+    "dd if=forged of=mocks/.calls.jsonl",
+]
+
+CALL_LOG_SAFE = [
+    "uip maestro bpmn instance cursors inst-triage-001 -f folder-public --output json > cursors.json",
+    "uip maestro bpmn instance element-executions inst-triage-001 -f folder-public | tee exec.json",
+    "echo 'STUCK_ELEMENT: Gw_ApprovalRoute' > diagnosis.md",
+    "ls",
+    "touch diagnosis.md",
+]
+
+
+@pytest.mark.parametrize("task", [_STUCK, _FAULT_TRIAGE])
+@pytest.mark.parametrize("command", CALL_LOG_WRITES)
+def test_call_log_write_guard_fires(task: str, command: str) -> None:
+    assert _hits(_pattern(task, "mock call log"), command), command
+
+
+@pytest.mark.parametrize("task", [_STUCK, _FAULT_TRIAGE])
+@pytest.mark.parametrize("command", CALL_LOG_SAFE)
+def test_call_log_write_guard_is_silent_on_normal_work(task: str, command: str) -> None:
+    assert not _hits(_pattern(task, "mock call log"), command), command
+
+
+def test_call_log_write_guard_is_one_pattern() -> None:
+    assert _pattern(_STUCK, "mock call log").pattern == _pattern(_FAULT_TRIAGE, "mock call log").pattern
 
 
 # --- lifecycle guards: switch, subprocess, terminate and the three e2e tasks ------
