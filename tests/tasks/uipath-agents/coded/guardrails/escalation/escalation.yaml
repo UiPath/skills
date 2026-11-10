@@ -5,7 +5,7 @@ description: >
   (custom rule) validator + EscalateAction as the simplest scenario — no ML
   backend required — so it exercises the escalation wiring (EscalateAction +
   Action App + recipient + bindings.json) structurally, without tenant connectivity.
-tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, guardrail, feature:escalation]
+tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, guardrail, feature:escalation, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   type: claude-code

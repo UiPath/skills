@@ -4,7 +4,7 @@ description: >
   coded LangGraph agent. Verifies the skill checks LLM Gateway model availability for
   the llm-as-judge-validator feature, then adds the middleware with guardrail_text and
   model parameters at Agent scope with BlockAction.
-tags: [uipath-agents, smoke, coded, mode:build, guardrail]
+tags: [uipath-agents, smoke, coded, mode:build, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
