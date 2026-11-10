@@ -80,10 +80,22 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!--skill-flavor:orphan-cleanup:start-->
 - Resource refresh is additive. After removing or repointing a resource-bound
-  task, list local solution resources and remove each orphaned process or app by
-  its listed key with `uip solution resources remove {key} --solution-folder
-  {solution} --output json`, then refresh again. Never remove the Case project's
-  own process/package pair, and never target package entries directly.
+  task, prune orphans before refreshing:
+
+  1. Recompile. `compile` (SDK 6.86.23+) emits `ORPHANED_SOLUTION_RESOURCE`
+     for each process or app declaration no binding still references. An
+     older SDK emits nothing, so step 2 removes nothing and the orphan ships.
+  2. For each reported orphan:
+     `uip solution resources remove {key} --solution-folder {solution} --output json`
+  3. Connection declarations are not covered by the warning. Remove one
+     only when no project in the solution still binds it. Search both
+     binding files, because a coded agent binds a connection in
+     `bindings.json`, not `bindings_v2.json`:
+     `grep -rl --include=bindings_v2.json --include=bindings.json --exclude-dir=resources --exclude-dir=.venv '<connection-key>' {solution}`
+     No match means safe to remove with `resources remove`.
+  4. Never remove the Case project's own process/package pair, and never
+     target package entries directly.
+  5. `uip solution resources refresh --solution-folder {solution} --output json`
 <!--skill-flavor:orphan-cleanup:end-->
 
 ## SLA and runtime semantics
@@ -132,6 +144,14 @@ make from syntax alone. Exact signatures remain in the generated API.
   and never replaces it: folding both readings into one `true` rule ("Case
   resolved or escalated") loses the distinction the plan was asked to make.
 
+  Three-exit pattern (completing + rejected + withdrawn):
+
+  ```ts
+  .completeWhen(rule('required-stages-completed'), { marksCaseComplete: true })
+  .completeWhen(rule('selected-stage-completed', { stage: 'Rejection' }), { marksCaseComplete: false })
+  .completeWhen(rule('selected-stage-completed', { stage: 'Withdrawal' }), { marksCaseComplete: false })
+  ```
+
 <!-- RULE:case.optionality.explicit -->
 - Declare optionality when something consumes it. `.required(false)` and
   omitting `.required()` are different statements in the emitted plan — the
@@ -153,6 +173,26 @@ make from syntax alone. Exact signatures remain in the generated API.
   static check can see it because both spellings validate. Where the SDD is
   genuinely unresolvable, use `.unresolved('<kind>')` — which preserves the
   declared kind — rather than picking a different one.
+
+<!-- RULE:case.sdd.output-contract -->
+- The SDD's Out-variable table is a three-part contract:
+
+  1. **Declaration.** Every SDD Out-variable needs a case-level `.output()`
+     that reserves the variable.
+  2. **Production.** At least one task must write the variable. For a
+     non-action task, use `.outputs({ name: <source> })`. For an action
+     task, map a form field to the case variable through the field's
+     `value` in `.action({ outputs: [{ name, value }] })` — do not add a
+     custom `.outputs()` entry, which creates a duplicate row that
+     `validate --sdd` reports.
+  3. **Casing and paths.** Output keys and extract paths must match the
+     SDD's field names character-for-character, including casing. When
+     the SDD declares a sub-property dereference, extract it from the
+     producing task's own output root: `=response.<field>` on a connector
+     or wait-for-connector task, `=<OutputName>.<field>` on other types.
+     When the SDD dereferences in place (e.g. inside a `$xref`
+     expression), keep the SDD's casing and null-guard it:
+     `vars.analysisResult?.unusualClauses`.
 
 ## Brownfield editing
 
