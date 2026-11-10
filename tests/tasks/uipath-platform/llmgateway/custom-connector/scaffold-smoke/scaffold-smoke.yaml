@@ -1,4 +1,4 @@
-task_id: skill-byo-llm-connector-scaffold
+task_id: skill-platform-llmgateway-custom-connector-scaffold
 description: >
   Smoke: scaffold the shell of a BYO LLM custom connector offline for the
   OpenAiChatCompletions flavor and validate it. Guards the contract rules a

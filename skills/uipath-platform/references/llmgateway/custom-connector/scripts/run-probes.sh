@@ -15,7 +15,8 @@
 #
 # --list prints the probes that apply and sends nothing. Otherwise every request is sent with
 # the `api` function of the step 6 helper, which holds the token; this script never reads it.
-# Exit 0 when every probe passes, 1 when one fails, 2 on a usage error.
+# Exit 0 when every probe passes, 1 when one fails, 2 when none was sent (a usage error, an
+# unknown flavor, or no probe for that product, feature and flavor; --list exits 0 then).
 set -o pipefail
 
 usage() { sed -n '2,/^[^#]/p' "$0" | sed '$d; s/^# \{0,1\}//' >&2; exit 2; }
@@ -47,6 +48,11 @@ fi
 
 PROBES_DIR="$(cd "$(dirname "$0")/../assets/probes" && pwd)" || exit 2
 shopt -s nullglob
+KNOWN_FLAVORS=$(jq -r '.apiFlavor' "$PROBES_DIR"/*/*.json | tr -d '\r' | sort -u)
+grep -qxF -- "$FLAVOR" <<<"$KNOWN_FLAVORS" || {
+    echo "run-probes: no probe has the flavor '$FLAVOR'. Known: $(tr '\n' ' ' <<<"$KNOWN_FLAVORS")" >&2
+    exit 2
+}
 FILES=("$PROBES_DIR"/default/*.json)
 if [[ "$PRODUCT" =~ ^[A-Za-z0-9_-]+$ ]] && [ "$PRODUCT" != default ] && [ -d "$PROBES_DIR/$PRODUCT" ]; then
     FILES+=("$PROBES_DIR/$PRODUCT"/*.json)
@@ -87,7 +93,9 @@ done
 COUNT=$(jq 'length' <<<"$SELECTED" | tr -d '\r')
 if [ "$COUNT" = 0 ]; then
     echo "No probe applies to ${PRODUCT:-any product} / ${FEATURE:-any feature} / $FLAVOR." >&2
-    exit 0
+    # Nothing was tested: only a listing may call that a success.
+    [ -n "$LIST" ] && exit 0
+    exit 2
 fi
 
 if [ -n "$LIST" ]; then

@@ -1,4 +1,4 @@
-task_id: skill-byo-llm-connector-chat-bridge-e2e
+task_id: skill-platform-llmgateway-custom-connector-chat-bridge-e2e
 description: >
   E2E: build a BYO LLM custom connector that lets a product speaking OpenAI
   chat-completions use a vendor with its own request/response format (the
@@ -106,7 +106,7 @@ success_criteria:
   - type: command_executed
     description: "Agent opened the builder's connection session on the draft through the API"
     tool_name: Bash
-    command_pattern: 'normalized-instances/applications/default/sessions'
+    command_pattern: '(normalized-instances|\$NI|\$\{NI\})/applications/default/sessions'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

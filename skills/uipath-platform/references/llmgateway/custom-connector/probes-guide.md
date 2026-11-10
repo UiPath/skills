@@ -58,7 +58,7 @@ Only a probe the gateway itself has — never a request of this guide's own:
 
 Set `path` to the flavor's resource path ([connector-contract-guide.md](connector-contract-guide.md)), add `model: "{{model}}"` to the body for the OpenAI and Anthropic flavors, and check the selection offline with `--list`.
 
-The files mirror the gateway (UiPath/Arima `develop`, November 2026) and carry the request the flags in production select: Agents sends `tool2` and accepts one or two calls. When a probe's verdict in step 9 names a request the runner did not send, the feature lists a probe you did not name: get its `ProbeId` and run it with `--probe`.
+The files mirror the gateway's probes (each file's `source` names the class or payload file it comes from) and carry the request the flags in production select: Agents sends `tool2` and accepts one or two calls. When a probe's verdict in step 9 names a request the runner did not send, the feature lists a probe you did not name: get its `ProbeId` and run it with `--probe`.
 
 A call the vendor cannot serve, refused by the hook's own `continue: false`, fails the matching probe too. Do not work around it: tell the user which product feature needs it (custom-connector-guide.md step 1).
 
@@ -71,14 +71,7 @@ A call the vendor cannot serve, refused by the hook's own `continue: false`, fai
 3. send the configuration to the gateway's validate endpoint, which runs every probe for each mapped model through the connection — the real path: gateway → Integration Service → your hooks → vendor;
 4. save the configuration only if every model passes. There is no validate-only command and no skip flag.
 
-So probing means creating (first time) or updating (after a fix) a configuration, on the runtime connection of the published connector (custom-connector-guide.md step 9). Create with `--enabled` (a configuration that fails is never saved); use `--no-enabled` only when the user asks to keep it off, and switch it on later with `update … --enabled`.
-
-```bash
-uip llm-configuration byo-connections create --product <PRODUCT> --feature <FEATURE> \
-  --folder-key <SHARED_FOLDER_KEY> --name '<CONFIG_NAME>' --enabled \
-  --connector-type Custom --connection-id <RUNTIME_CONNECTION_ID> --api-flavor <API_FLAVOR> \
-  --llm-name <CATALOG_MODEL> --llm-identifier <VENDOR_MODEL_ID> --output json
-```
+So probing means creating (first time) or updating (after a fix) a configuration, on the runtime connection of the published connector: the command, and when to pass `--enabled`, are in custom-connector-guide.md step 9 and Rule 10.
 
 A failed `create` saves nothing — re-run `create` after the fix. A failed `update` leaves the saved record as it was — re-run the same `update`.
 
@@ -93,7 +86,12 @@ The CLI stops a `Custom` mapping, before any probe, when it cannot read the temp
 
 ## Reading the verdict
 
-The verdict is keyed by catalog model (on success `Data.Validation.<Model>`, the model name PascalCased — `gemini-3.8-flash` → `Gemini3.8Flash` — with PascalCase fields `IsAvailable`, `IsCompatible`, `IsModelNameSimilar`; in the failure message otherwise):
+The verdict is keyed by catalog model, and its casing depends on where you read it:
+
+- **On success**, the CLI's envelope: `Data.Validation.<Model>`, the model name PascalCased (`gemini-3.8-flash` → `Gemini3.8Flash`), with PascalCase fields `IsAvailable`, `IsCompatible`, `IsModelNameSimilar`.
+- **On failure**, the CLI's `Message`, which quotes the gateway's own answer: `isAvailable`, `isCompatible`, `unavailabilityReason`, `incompatibilityReason`, `vendorRawResponse`. Read these names without regard to case (in jq, compare `ascii_downcase` keys); do not rely on one casing.
+
+The table and the sections below use the gateway's camelCase names; on success, read the PascalCase twin:
 
 | Field | Meaning |
 |---|---|
