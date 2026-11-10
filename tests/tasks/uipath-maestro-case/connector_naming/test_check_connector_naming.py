@@ -186,6 +186,49 @@ def payload(props: dict, name: str = "response") -> dict:
     return {"name": name, "body": {"type": "object", "properties": props}}
 
 
+# --- check_input_containers ---------------------------------------------------
+
+SLACK_INPUTS = {
+    "Inputs": {
+        "PathParameters": [],
+        "QueryParameters": [{"Name": "send_as"}],
+        "BodyFields": [{"Name": "channel"}, {"Name": "attachment.title"}],
+    }
+}
+
+
+def test_a_query_parameter_written_into_the_body_is_reported():
+    chk.check_input_containers(
+        "T",
+        block(inputs=[
+            {"name": "queryParameters", "body": {}},
+            {"name": "body", "body": {"channel": "C1", "send_as": "bot"}},
+        ]),
+        SLACK_INPUTS,
+    )
+    assert "'send_as' is in body, but the connector contract declares it under queryParameters" in only()
+
+
+def test_each_input_key_in_its_declared_container_passes():
+    chk.check_input_containers(
+        "T",
+        block(inputs=[
+            {"name": "pathParameters", "body": {}},
+            {"name": "queryParameters", "body": {"send_as": "bot"}},
+            {"name": "body", "body": {"channel": "C1", "attachment": {"title": "t"}}},
+        ]),
+        SLACK_INPUTS,
+    )
+    assert chk.FAILURES == []
+
+
+def test_a_key_no_section_declares_is_left_to_check_inputs():
+    chk.check_input_containers(
+        "T", block(inputs=[{"name": "body", "body": {"nope": 1}}]), SLACK_INPUTS
+    )
+    assert chk.FAILURES == []
+
+
 def test_a_payload_property_set_that_differs_from_the_contract_is_reported():
     chk.check_outputs("T", block(outputs=[payload({"status": {"type": "string"}})]),
                       ["status", "id"])
