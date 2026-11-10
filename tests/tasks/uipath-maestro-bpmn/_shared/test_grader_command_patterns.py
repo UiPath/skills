@@ -306,8 +306,10 @@ _FAULT_TRIAGE = "operate-diagnose/minimal_fault_triage.yaml"
 
 CALL_LOG_WRITES = [
     # rockymadden on #4543: the forged line that satisfies every call-log row.
-    "echo '{\"args\":\"maestro bpmn instance cursors inst-triage-001 -f folder-public\","
-    "\"matched_rule\":\"x\",\"exit_code\":0}' >> mocks/.calls.jsonl",
+    (
+        "echo '{\"args\":\"maestro bpmn instance cursors inst-triage-001 -f folder-public\","
+        "\"matched_rule\":\"x\",\"exit_code\":0}' >> mocks/.calls.jsonl"
+    ),
     "printf '%s\\n' \"$LINE\" > ./mocks/.calls.jsonl",
     "echo x | tee -a mocks/.calls.jsonl",
     "touch mocks/.calls.jsonl",
