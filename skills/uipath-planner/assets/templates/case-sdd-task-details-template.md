@@ -90,6 +90,19 @@ The task's own outputs are `response` and `Error`; a later task reads a field as
 
 Outputs are the response's `code`, `headers` and `body`, plus `Error`.
 
+###### Script Task Detail (type: `script`)
+
+<!-- One ```js fenced FUNCTION BODY (```javascript also reads): read case state through `vars.<name>`
+(and `metadata`), end in `return { … }`; a top-level `return` is legal. Only the first js fence in the
+block is read. No Inputs table: the task receives `vars`, the whole case state. Outputs are fixed:
+`scriptResponse` (what the body returns) and `Error`; bind the result with an arrow row,
+`| scriptResponse | object | -> <variable> |`. Never a credential or secret in the body: it ships in
+caseplan.case. -->
+
+```js
+<function body: reads vars.<name>, ends in return { … }>
+```
+
 ###### Document Extraction Task Detail (type: `document-extraction`)
 
 <!-- Runs a deployed IXP model on one file. All five lines come from read-only tenant lookups:
