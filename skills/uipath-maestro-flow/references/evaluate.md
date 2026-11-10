@@ -101,7 +101,7 @@ naming what the component is — `connector`, `agent`, `subflow`, `hitl` — unl
 ```bash
 uip maestro flow eval simulation add <component-id> \
   --set "Smoke Tests" --data-point <id> \
-  --strategy Static --component-type connector --mock-value '{"ok":true}' \
+  --strategy Static --component-type connector --mock-value '{"response":{"ok":true}}' \
   --path ./MySolution/MyFlow --output json
 
 uip maestro flow eval simulation list \
@@ -110,8 +110,16 @@ uip maestro flow eval simulation remove <component-id> \
   --set "Smoke Tests" --data-point <id> --path ./MySolution/MyFlow --output json
 ```
 
-A `hitl` component's `--mock-value` is `{"Action":"<outcome>", <fields>}`: `Action`
-names the outcome to take, and the other keys are the task's output fields.
+`--mock-value` is the component's raw `result`, so its top-level keys are the
+ones the node's `outputs` read as `=result.<key>`. Open the node and match them:
+
+- Connector and inline-agent nodes read `=result.response`. Pass `{"response": <value>}`.
+- A `hitl` quick form maps `output` to `=result` and `status` to `=result.Action`.
+  Pass `{"Action":"<outcome name>", "<fieldId>": <value>}`; `Action` is the
+  outcome's `name`, not its id.
+
+`{"status":"Approve","output":{…}}` is wrong for a quick form: `status` and
+`output` both come back null.
 
 Simulate every side-effecting component before running a set more than once. An
 unsimulated connector step really sends — once per eval, every run.
@@ -141,8 +149,11 @@ have.
 `eval run start` needs the solution in Studio Web, and when it cannot resolve
 one it fails with `solution-id could not be resolved` or a variant. That error
 is not licence to upload. `eval run start` itself re-uploads, overwriting the matching Studio
-Web solution and rewriting the local `.uipx`, unless `--solution-id` and
-`--project-id` are passed, so ask before it too.
+Web solution, unless `--solution-id` and `--project-id` are passed, so ask before
+it too. When Studio Web assigns the solution another id, `eval run start` and
+`flow debug` repoint the local `.uipx` `SolutionId` and report
+`Data.LocalSolutionIdUpdated` (`Path`, `From`, `To`). Keep that change and commit
+it; reverting it makes the next upload create a second solution.
 
 `uip solution upload` writes to Studio Web: it creates, or **overwrites**, the
 solution matching the local `.uipx` `SolutionId`. No flag is needed and no
