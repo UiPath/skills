@@ -82,13 +82,28 @@ success_criteria:
   # (non-GUID) binding default — a fabricated connection id still fails — and the
   # judge below separately requires the final answer to name the connection as the
   # blocker. Any other failure still fails.
+  #
+  # The refusal earns half the validate weight, not all of it: the clean row
+  # below passes only when validate does (score only, pass_threshold 0.0, so the
+  # documented refusal still passes the task), so a process left unbound scores
+  # 1.0 of 2.0 here whether or not the agent looked for a connection, and the judge
+  # (which requires the lookup) carries the rest. Before the split an unbound
+  # placeholder earned the full 2.0 with no gate on the lookup (#4543 review).
   - type: run_command
     description: "The completed process validates (an unbound HTTP connection placeholder is accepted as the documented refusal)"
     command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py --accept-unbound-connection uipath-uipath-http"
     timeout: 180
     expected_exit_code: 0
-    weight: 2.0
+    weight: 1.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "The completed process validates cleanly (connection bound)"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
 
   # Advisory: did the agent look for a connection at all? An unbound placeholder
   # passes the validate criterion above whether or not one existed, so this row
