@@ -65,6 +65,47 @@ make from syntax alone. Exact signatures remain in the generated API.
   `VARIABLE_ORDER_INCOMPLETE` / `VARIABLE_ORDER_UNKNOWN_ID` /
   `VARIABLE_ORDER_DUPLICATE_ID`, because a PARTIAL list silently reorders the block.
 
+## Script tasks
+
+<!-- RULE:bpmn.script.result-response -->
+- A script task (`scriptVersion` v3, what `.scriptTask()` writes) returns its value and the runtime wraps it as `result.response`.
+  Read it as `=result.response` for a scalar, or `=result.response.<field>` for one field of a returned object; never `=result.<field>`, which reads nothing.
+  Write `return value;`, not `return { response: value };`, which double-wraps to `result.response.response`.
+  `check` reports `=result.<field>` on a v2-or-later script as `SCRIPT_RESULT_NOT_RESPONSE` and names the corrected expression; `compile` and `validate` accept it, and the run then completes with the output empty.
+
+  ```ts
+  .scriptTask('score', { script: 'return vars.amount * 0.01;', outputs: { riskScore: '=result.response' } })
+  ```
+
+  Returning an object: `script: 'return { severity: s, nextSteps: n };'` with `outputs: { severity: '=result.response.severity', nextSteps: '=result.response.nextSteps' }`.
+
+<!-- RULE:bpmn.script.mapping-type -->
+- Do not pass `type` to `.scriptTask()`.
+  Its mapping type is always `BPMN.Variables`, the default; any other value replaces the script's extension type, so the script never runs and its outputs read back null.
+  `registry get BPMN.ScriptTask` lists `BPMN.ScriptTask`, and that listing is not a value to pass.
+  The builder refuses any other value with `BPMN_SCRIPT_TASK_TYPE_INVALID`; drop `type`.
+
+<!-- RULE:bpmn.script.error-row -->
+- "Typed error handling" on a script task means the task-scoped `Error` output row: `source: '=Error'`, type `jsonSchema`, writing a variable whose schema is the platform error envelope.
+  It is not an error boundary or a second end event, which change the graph.
+  `.scriptTask()` has no `errorVar`, so spell both rows with `outputRows`, which replaces `outputs`:
+
+  ```ts
+  const errorEnvelope = { type: 'object', properties: {
+    code: { type: 'string' }, message: { type: 'string' }, detail: { type: 'string' },
+    category: { type: 'string' }, status: { type: 'number' }, element: { type: 'string' } } };
+
+  .scriptTask('score', {
+    script: 'return vars.amount * 0.01;',
+    outputRows: [
+      { name: 'scriptResponse', type: 'double', var: 'riskScore', source: '=result.response' },
+      { name: 'Error', type: 'jsonSchema', var: 'score_Error', source: '=Error', varSchema: errorEnvelope },
+    ],
+  })
+  ```
+
+  Each row declares its own variable (`score_Error` is scoped to the task), so add no `.var()` for either.
+
 ## Events and timers
 
 <!-- RULE:bpmn.event.payload-live -->
@@ -98,6 +139,18 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.orchestrator.names -->
 - Published work is addressed by name and folder. Queue items require a folder;
   live execution is the evidence that the resource exists and is runnable.
+
+<!-- RULE:bpmn.orchestrator.job-outputs -->
+- A job's output arguments are fields of `result`: map each one with `outputs` on the job node, as in `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`.
+  The same `outputs` option reads an RPA process's (`.startProcess()`), an agent's (`.startAgent()`) and a waited-for agentic or case process's (`.startAgenticProcess()`, `.startCaseProcess()` without `async`) output arguments.
+  `outputVar` (default `<id>_processResponse`) holds the job envelope, not the arguments; do not read an argument out of it with a `=js:` chain.
+  The argument name is the workflow's own output argument, as the deployed process declares it; when no live run has shown it, say the mapping is unverified.
+
+<!-- RULE:bpmn.http.manual -->
+- A plain HTTP call with no connection is `.http(id, { url, method, parameters, headers, body })` with no `connection`.
+  It writes the request in manual mode with the `ImplicitConnection` binding Studio Web uses, so nothing on the tenant has to exist.
+  `outputVar` (default `<id>_response`) holds the response body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
+  `check` warns `HTTP_MANUAL_V1` on the old manual form (`mode="manual"` with the request as context rows), which the runtime faults with 102018 "Body cannot be null"; rewrite it as `.http()` and compile.
 
 <!-- RULE:bpmn.orchestrator.business-rule -->
 - A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.

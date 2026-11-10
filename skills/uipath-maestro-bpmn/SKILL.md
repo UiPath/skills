@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration (`.bpmn`, `.bpmn.ts`): author, validate, package, operate and diagnose, including a BPMN process the user wants to see or sketch before it is built. Author `.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and run the `uip maestro bpmn` check/compile/format/validate loop; edit an existing `.bpmn` by decompiling it. Operate: refresh package metadata, pack, upload to Studio Web, publish, debug, run a deployed process, inspect jobs and instances, pause/resume/cancel/retry/migrate. Diagnose a failed or stuck run: incidents, runtime variables, the deployed asset, element executions, cursors, traces. Covers events, gateways, tasks, sub-processes, sequence flows, the diagram, bindings, boundary handlers, event sub-processes, human tasks, Integration Service connectors, Data Fabric records and files, and any registry-backed extension type. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration (`.bpmn`, `.bpmn.ts`): author, validate, package, operate, diagnose and evaluate, including a process the user wants to see or sketch before it is built. Author `.bpmn.ts` with the builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and run the `uip maestro bpmn` check/compile/format/validate loop; edit an existing `.bpmn` by decompiling it. Operate: refresh package metadata, pack, upload to Studio Web, publish, debug, run a deployed process, inspect jobs and instances, pause/resume/cancel/retry/migrate. Diagnose a failed or stuck run: incidents, runtime variables, deployed asset, element executions, traces. Evaluate: eval sets, evaluators, simulations, eval runs. Covers events, gateways, tasks, sub-processes, sequence flows, the diagram, bindings, boundary handlers, event sub-processes, human tasks, Integration Service connectors, Data Fabric records and files, and any registry-backed extension type. For .flow→uipath-maestro-flow; for case plans→uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
@@ -126,7 +126,7 @@ Match one name — do not read either end to end — then read the span it gives
 | Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Decision, parallel split, or wait-for-first, written in place | `choose`, `fork`, `race`, `goto` | [ChooseArm](#api-index) | `examples/InvoiceEscalation.bpmn.ts` |
 | Safety net for a whole scope | `eventSubProcess` | [Event sub-process scope](references/bpmn-runtime.md#events-and-timers) | `examples/InvoiceEscalation.bpmn.ts` |
-| Script and assignment tasks | `scriptTask`, `task` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
+| Script and assignment tasks | `scriptTask`, `task` | [Script tasks](references/bpmn-runtime.md#script-tasks) | `examples/NotifyChannel.bpmn.ts` |
 | HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | A deployed business rule | `businessRule` | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | — |
@@ -139,6 +139,7 @@ Match one name — do not read either end to end — then read the span it gives
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 | Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
+| Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | `uip maestro bpmn eval` | [Evaluate](references/evaluate.md) | — |
 | A run failed or is stuck | `uip maestro bpmn job status` / `instance incidents` / `instance variables` / `instance asset` | [Diagnose](references/diagnose.md) | — |
 | Sanitize a file to share or commit; what notes and examples may contain | placeholders in the `.bpmn.ts`, then `decompile` / `merge` for an export | [Public safety](references/public-safety.md) | — |
 | A recurring process shape: review gate, approval chain, triage, external wait, batch, failure net, queue | `choose`, `race`, `subProcess` with `loop`, `eventSubProcess` | [Patterns](#patterns) | — |
@@ -266,6 +267,15 @@ inspect a job, and drive an instance's lifecycle. All of it needs `uip login`;
 user's decision for that action. Read
 **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:operating:end-->
+
+## Evaluating a process
+
+<!--skill-flavor:evaluating:start-->
+Evaluators, eval sets, data points and simulations are project files that `uip maestro bpmn eval` writes; nothing in `<Name>.bpmn.ts` creates them.
+Adding and listing them is local and needs no login.
+Every `eval run` verb needs `uip login`, and `eval run start` packages the solution and **uploads it to Studio Web** before it runs, so it also needs the user's decision, like an upload.
+Read **[`references/evaluate.md`](references/evaluate.md)**.
+<!--skill-flavor:evaluating:end-->
 
 ## Diagnosing a failed run
 
