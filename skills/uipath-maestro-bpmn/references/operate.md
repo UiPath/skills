@@ -109,14 +109,16 @@ uip solution download <SOLUTION_ID> --extract -d "$(mktemp -d)" --output json
 ```
 
 - A failure whose `Instructions` say "Studio Web API returned 404" means there is no cloud copy yet (`init` writes a `SolutionId` before any upload): upload.
-- A failure for another reason (offline, not logged in): skip the check, and say so in the reply.
+- A failure for another reason (offline, not logged in, a timeout): the cloud copy is unchecked, and an upload would replace whatever is there.
+  You may keep working on the local files, but do not upload until a download and comparison succeed, or until the user, told that the check failed and that the upload would replace the Studio Web copy unseen, says to replace it.
+  Retry the download before the upload; when it still fails, ask, and say in the reply that nothing was uploaded.
 - Otherwise compare each project's `.bpmn` in the download with the local one.
   Studio Web reformats the `.uipx` and `project.uiproj` and adds `SolutionStorage.json`, so only the `.bpmn` files tell real edits apart.
   When they match, carry on.
 
 When they differ, ask which copy to keep, unless the user is answering a draft gate this run showed: then they edited the outline you uploaded, so build on their copy without asking, and say so in the reply.
 To build on the Studio Web copy, treat it as the original of a [brownfield edit](bpmn-runtime.md#brownfield-editing): copy its `.bpmn` over `<Project>/<Name>.bpmn`, seed `<Name>.bpmn.ts` from it with `uip maestro bpmn decompile --style nested`, compile that source as the baseline before editing, and merge the compiled edit back with `uip maestro bpmn merge <edited.bpmn> --original <Project>/<Name>.bpmn --baseline <baseline.bpmn> -o <Project>/<Name>.bpmn`, so the user's layout and the elements you did not touch stay as they drew them.
-Compile the baseline and the edit into a scratch directory outside the project, so the project keeps exactly one `<Name>.bpmn`.
+Compile the baseline and the edit into a `mktemp -d` directory outside the workspace, as the download above does, so the workspace keeps exactly one `<Name>.bpmn`: a scratch folder elsewhere in the workspace leaves a second `.bpmn` for the next reader, and tools that search the workspace for `*.bpmn` find it.
 
 ## Orchestrator deployment
 
