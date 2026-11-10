@@ -62,3 +62,7 @@ Output is plain text, not JSON: status, `Trace ID: <id>` when one was found, run
 <!--skill-flavor:refresh-before-debug:start-->
 Not run in Studio Web, including before `uip maestro case debug` and where Rule 15 or an edit recipe says to run it before debug or publish: the host keeps solution resources in sync.
 <!--skill-flavor:refresh-before-debug:end-->
+
+<!--skill-flavor:case-pack-required:start-->
+> **Not run in Studio Web.** `case pack` is Node-CLI-only. Studio Web packages the open solution itself when you run `uip solution publish` (see [phased-execution.md § Publish commands](phased-execution.md#publish-commands)).
+<!--skill-flavor:case-pack-required:end-->
