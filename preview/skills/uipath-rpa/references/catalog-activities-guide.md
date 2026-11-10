@@ -22,7 +22,6 @@ s.ReadTextFile('read', {
 })
   .InvokeWorkflowFile('validate', {
     WorkflowFileName: 'Workflows\\ValidateInvoice.xaml',
-    ArgumentsVariable: null,
     Arguments: invokeArguments([
       { key: 'in_Amount', direction: 'In', type: Decimal, value: vb('CDec(row("Amount"))') },
       { key: 'out_AmountEur', direction: 'Out', type: Decimal, value: (v) => v.amountEur },
@@ -33,6 +32,7 @@ s.ReadTextFile('read', {
 
 - Importing a module adds its activity to the chain (`s.ReadTextFile(…)`); import its factory by name to use it as a slot's one activity (`Then: GetRobotAsset(…)`).
 - The module types every property from the catalog, so the editor rejects a misspelled property, an enum value that is not a member, and a value of the wrong type; `check` refuses them too.
+- Leave out a property to keep the value a new activity has; the module's doc comment names it (`default null`, `default None`), and `decompile` leaves out a value equal to it, so `TimeoutMS: null` or `CacheStrategy: 'None'` is never needed.
 - A module is generated: regenerate it with `rpa-sdk catalog <className>` rather than edit it. `decompile` writes the ones a file uses beside it.
 - `s.activity(id, catalogActivity(className), props, slots)` is the same activity without a module.
 
