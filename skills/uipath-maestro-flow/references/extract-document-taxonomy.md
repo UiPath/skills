@@ -95,7 +95,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.
 5. **Fix what it rejects.** Exit 3 means the document is a schema but breaks a rule; `Data.Issues` lists each problem with the path it is at. Correct those and run the same command again.
 6. **Validate the flow:** `uip maestro flow validate <file> --output json` must come back `Valid`.
-7. **Report** what was created, and pass on `Data.ProcessorSync`: it says whether this schema reaches the node's processor when the solution next packs or publishes. Taking the node live is the user's step.
+7. **Report** what was created, and pass on `Data.ProcessorSync`: it says whether this schema reaches the node's processor when the solution next packs or publishes. Where `Data.ResourceFile` names a file the write created for a node that had no processor, say so — it is part of the change and has to be kept with the `.flow`. Taking the node live is the user's step.
 
 ## The document
 
@@ -266,6 +266,8 @@ Never write a replacement from scratch over a taxonomy that already has content.
 | `DraftDiscarded` | an unsaved editor draft was thrown away |
 | `ReplacedLegacyDocument` | the node had been carrying the superseded `{taxonomy, fieldTypes}` form, so nothing kept an id |
 | `ProcessorKey` | the processor this node's schema deploys through |
+| `ResourceFile` | the processor's own file under the solution, holding the copy of the schema that deploys. A node that had no processor gets one here, and the new file belongs in the same commit as the `.flow` |
+| `ResourcePending` | why the node gained a processor but no file was written — the project sits outside a solution, or the write failed. Packing inside a solution creates it |
 | `ProcessorSync` | whether packing the solution rebuilds that processor from this node — it does not for a read-only mirror (`inputs.processorReadOnly`) or a processor published to the tenant (`inputs.processorFolderPath`), whose deployed schema this write never reaches |
 
 On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting success. A minted id where a rename was intended means the id was dropped, so the annotations stored against it no longer point at the field; business checks hang off those same ids, so a dropped id takes its checks with it.
