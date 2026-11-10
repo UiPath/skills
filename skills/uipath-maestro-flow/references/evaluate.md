@@ -118,8 +118,8 @@ ones the node's `outputs` read as `=result.<key>`. Open the node and match them:
   Pass `{"Action":"<outcome name>", "<fieldId>": <value>}`; `Action` is the
   outcome's `name`, not its id.
 
-`{"status":"Approve","output":{…}}` is wrong for a quick form: `status` ends up
-undefined and `output` holds that whole object.
+`{"status":"Approve","output":{…}}` is wrong for a quick form: `status` and
+`output` both come back null.
 
 Simulate every side-effecting component before running a set more than once. An
 unsimulated connector step really sends — once per eval, every run.
