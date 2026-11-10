@@ -1,32 +1,30 @@
 # task-entry-conditions — Planning
 
-Conditions that control **when a specific task within a stage starts**. Attach to a task.
+Conditions controlling when a task within a stage starts. Attach to a task.
 
 ## When to Use
 
-Pick this plugin when the sdd.md **literally uses the phrase "task entry condition"** (or close variants: "task entry conditions", "entry rule on task", "task gate", "task precondition").
-
-For **stage-level** conditions (entire stage enters/exits), use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md).
+Use this plugin only when sdd.md literally uses "task entry condition" or a close variant: "task entry conditions", "entry rule on task", "task gate", or "task precondition". For whole-stage entry/exit conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md).
 
 ## No omission — one caseplan element per sdd.md Entry Condition row
 
-Every task in sdd.md that declares an **Entry Condition** row gets its own task-entry condition — **including rule-type `current-stage-entered`**. Do NOT skip, collapse, or omit a condition because the rule-type looks like a default. If sdd.md wrote the row, the build emits the element. "The default behavior would already cover it" is not a valid reason to omit.
+Every task with an **Entry Condition** row gets its own task-entry condition, including `current-stage-entered`. Never skip, collapse, or omit it because the rule appears default; if sdd.md wrote the row, the build emits the element.
 
 ## Required Fields from sdd.md
 
-| Field | Source | Notes |
-|-------|--------|-------|
-| `<stage-id>`, `<task-id>` | Captured from prior steps | |
-| `rationale` | sdd.md task Design Rationale | Required reviewer context for the activation/sequencing choice. Not emitted into caseplan JSON. |
-| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim. Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Entry rule {N}`. A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
-| `rule-type` | From catalog below | |
-| `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs |
-| `sla-target` | `sla-status-change` arg 1 | `"root"` (case-level SLA) or the SLA-owning stage name — normally the stage containing this task. Scopes the lookups below to that one SLA table. Required for `sla-status-change` |
-| `sla-display-name` | `sla-status-change` arg 2 — the target's SDD `SLA Title` (or a Variable SLA Rules `Display Name`) | Target-unique SLA rule title; resolves to the SLA rule ID emitted from §4.8 during Phase 2. Required |
-| `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table | Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response, which references the SLA alone ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
-| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
-| `condition-expression` | Optional | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
+| Field | Source / requirements |
+|---|---|
+| `<stage-id>`, `<task-id>` | Captured from prior steps |
+| `rationale` | sdd.md task Design Rationale; required reviewer context for activation/sequencing, not emitted into caseplan JSON |
+| `display-name` | SDD Display Name verbatim when nonblank; omit blank / `—`, never invent. The implementation defaults to `Entry rule {N}`. If the SDD already contains that pattern, implementation renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
+| `rule-type` | Rule-Type Catalog below |
+| `selected-tasks-ids` | Required for `selected-tasks-completed`; comma-separated task IDs |
+| `sla-target` | `sla-status-change` arg 1: `"root"` (case-level SLA) or the SLA-owning stage name — normally the stage containing this task. Scopes the lookups below to that one SLA table. Required for `sla-status-change` |
+| `sla-display-name` | `sla-status-change` arg 2 — the target's SDD `SLA Title` (or a Variable SLA Rules `Display Name`). Target-unique SLA rule title; resolves to the SLA rule ID emitted from §4.8 during Phase 2. Required |
+| `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table. Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response, which references the SLA alone ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
+| `connector fields` | SDD **Connector Rule Detail** block: `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
+| `condition-expression` | Optional. Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
+| `outputs` | SDD **Connector Rule Outputs** block. Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
 
 ## Rule-Type Catalog (task-entry scope)
 
@@ -45,7 +43,7 @@ The Case App selector has three distinct modes:
 
 | UI mode | JSON/task-entry meaning | Required behavior |
 |---|---|---|
-| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. A strict chain is consecutive single-task sets (`[[A], [B], [C]]`); explicit parallel siblings after the same predecessor share one later set (`[[A], [B, C], [D]]`) and each member of that set also uses `runs-sequentially` so it starts when the previous task set completes. The first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task-set completion trigger represented by the preserved task-set/order structure. |
+| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. A strict chain is consecutive single-task sets (`[[A], [B], [C]]`); explicit parallel siblings after the same predecessor share one later set (`[[A], [B, C], [D]]`) and each member of that set also uses `runs-sequentially` so it starts when the previous `runs-sequentially` task set completes (the predecessor must be `runs-sequentially` too). The first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task-set completion trigger represented by the preserved task-set/order structure. |
 | Event-triggered | An authored event/condition, normally `wait-for-connector` for an external event | Do not add `runs-sequentially`. A stage-entered task is not automatically an event-triggered task; retain the explicit event rule and its connector configuration. |
 | Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. Do not change the task type merely because it is manual. |
 
@@ -71,8 +69,8 @@ For every task-entry-condition element, verify the task's `activation-mode` and 
 | activation-mode | Allowed rule-type |
 |---|---|
 | `sequential` | `runs-sequentially` |
-| `parallel` | `current-stage-entered` |
-| `parallel-after-predecessor` | `runs-sequentially`, with the siblings sharing the next task set after one predecessor |
+| `parallel` | `current-stage-entered`, each task in its own single-task set |
+| `parallel-after-predecessor` | `runs-sequentially`, with the siblings sharing the next task set after one `runs-sequentially` predecessor |
 | `event-triggered` | `wait-for-connector` or another explicitly authored event/condition rule |
 | `adhoc` | `adhoc` |
 | `fan-in` | `selected-tasks-completed` with multiple selected tasks or an explicit convergence rationale |
@@ -84,7 +82,7 @@ During design-lane authoring (`uipath-planner`), a plain immediate ordered run w
 
 Task entry conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve).
 
-For sequential tasks, preserve the frontend's ordered `data.tasks` structure, including any explicitly parallel sibling sets; do not flatten the stage into one global chain and do not group a strict chain into one inner array. Add one `runs-sequentially` entry condition to each sequential task. The first task uses the rule as its stage-entry trigger; later tasks use it as the upstream-task-set-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the sequential intent.
+For sequential tasks, preserve the frontend's ordered `data.tasks` structure, including any `parallel-after-predecessor` sibling sets; do not flatten the stage into one global chain and do not group a strict chain into one inner array. Add one `runs-sequentially` entry condition to each sequential task. The first task uses the rule as its stage-entry trigger; later tasks use it as the upstream-task-set-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the sequential intent.
 
 ## Fields to Resolve
 

@@ -133,7 +133,9 @@ Match one name — do not read either end to end — then read the span it gives
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 | Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
+| Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | `uip maestro bpmn eval` | [Evaluate](references/evaluate.md) | — |
 | A run failed or is stuck | `uip maestro bpmn job status` / `instance incidents` / `instance variables` / `instance asset` | [Diagnose](references/diagnose.md) | — |
+| Sanitize a file to share or commit; what notes and examples may contain | placeholders in the `.bpmn.ts`, then `decompile` / `merge` for an export | [Public safety](references/public-safety.md) | — |
 | A recurring process shape: review gate, approval chain, triage, external wait, batch, failure net, queue | `choose`, `race`, `subProcess` with `loop`, `eventSubProcess` | [Patterns](#patterns) | — |
 
 ## Minimal shape
@@ -256,6 +258,15 @@ All of it needs `uip login`; `uip maestro bpmn refresh <project-path>` comes bef
 Every mutation needs the user's decision for that action, except the Studio Web upload of a project this run created, which a request to build or draft the process authorizes.
 Read **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:operating:end-->
+
+## Evaluating a process
+
+<!--skill-flavor:evaluating:start-->
+Evaluators, eval sets, data points and simulations are project files that `uip maestro bpmn eval` writes; nothing in `<Name>.bpmn.ts` creates them.
+Adding and listing them is local and needs no login.
+Every `eval run` verb needs `uip login`, and `eval run start` packages the solution and **uploads it to Studio Web** before it runs, so it also needs the user's decision, like an upload.
+Read **[`references/evaluate.md`](references/evaluate.md)**.
+<!--skill-flavor:evaluating:end-->
 
 ## Diagnosing a failed run
 

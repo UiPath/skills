@@ -21,9 +21,9 @@ def _write_flow(path: Path, nodes: list[dict], **extra) -> None:
     )
 
 
-def _run(relative: str, cwd: Path) -> subprocess.CompletedProcess[str]:
+def _run(relative: str, cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, str(TASK_ROOT / relative)],
+        [sys.executable, str(TASK_ROOT / relative), *args],
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -99,6 +99,44 @@ def test_ixp_project_selection_rejects_mismatched_model(tmp_path: Path) -> None:
     result = _run("ixp/check_project_selection.py", cwd=row)
 
     assert result.returncode == 1
+
+
+# coder-eval 1.x runs graders from the bare workspace (/work), so e2e_02 passes
+# the row id as argv[1]; these run from a cwd that names no row.
+def _ixp_flow(path: Path, model: str, type_slug: str) -> None:
+    _write_flow(
+        path,
+        [{"id": "extract", "type": f"uipath.ixp.{type_slug}.extract", "inputs": {"modelName": model}}],
+    )
+
+
+def test_ixp_project_selection_argv_accepts_matching_row(tmp_path: Path) -> None:
+    model = "aviation-investigation-final-report-demo-a42b1d4d-ixp"
+    _ixp_flow(tmp_path / "Aviation.flow", model, model)
+
+    result = _run("ixp/check_project_selection.py", tmp_path, "aviation")
+
+    assert result.returncode == 0, result.stderr or result.stdout
+
+
+def test_ixp_project_selection_argv_rejects_mismatched_model(tmp_path: Path) -> None:
+    _ixp_flow(tmp_path / "Birth.flow", "wrong-model", "wrong-model")
+
+    result = _run("ixp/check_project_selection.py", tmp_path, "birth-certificate")
+
+    assert result.returncode == 1
+
+
+def test_ixp_project_selection_unknown_argv_does_not_fall_back_to_cwd(tmp_path: Path) -> None:
+    row = tmp_path / "aviation"
+    row.mkdir()
+    model = "aviation-investigation-final-report-demo-a42b1d4d-ixp"
+    _ixp_flow(row / "Aviation.flow", model, model)
+
+    result = _run("ixp/check_project_selection.py", row, "bogus")
+
+    assert result.returncode == 2
+    assert "unknown dataset row" in result.stderr
 
 
 @pytest.mark.parametrize("typed_envelopes", [False, True])

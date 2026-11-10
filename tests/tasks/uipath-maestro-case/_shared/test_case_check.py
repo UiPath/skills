@@ -381,10 +381,60 @@ def test_timeout_reports_fail_not_traceback(monkeypatch):
     assert "half a payload" in msg
 
 
-def test_read_registry_cache_fails_with_the_skipped_pull_not_a_traceback(tmp_path, monkeypatch):
+def _fake_pull(calls, writes=None, returncode=0):
+    def run(cmd, **kw):
+        calls.append(cmd)
+        for path, payload in (writes or {}).items():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, returncode, stdout='{"Result": "Success"}', stderr="")
+
+    return run
+
+
+def test_read_registry_cache_pulls_the_live_registry_when_the_agent_left_none(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
-    with pytest.raises(SystemExit, match=r"FAIL: registry cache .*action-apps-index.json is absent.*registry pull"):
+    index = tmp_path / ".uip" / "case-resources" / "api-index.json"
+    calls = []
+    monkeypatch.setattr(case_check.subprocess, "run", _fake_pull(calls, {index: [{"name": "API Workflow"}]}))
+    assert read_registry_cache("api-index.json") == [{"name": "API Workflow"}]
+    assert calls == [["uip", "maestro", "case", "registry", "pull", "--output", "json"]]
+
+
+def test_read_registry_cache_drops_an_orphaned_meta_so_its_pull_refetches(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    cache = tmp_path / ".uip" / "case-resources"
+    cache.mkdir(parents=True)
+    index, meta, other_meta = cache / "api-index.json", cache / "api-index.meta.json", cache / "agent-index.meta.json"
+    meta.write_text('{"lastSync": 0}', encoding="utf-8")
+    other_meta.write_text('{"lastSync": 0}', encoding="utf-8")
+
+    def pull(cmd, **kw):
+        assert not meta.exists()
+        index.write_text(json.dumps([{"name": "API Workflow"}]), encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(case_check.subprocess, "run", pull)
+    assert read_registry_cache("api-index.json") == [{"name": "API Workflow"}]
+    assert other_meta.exists()
+    assert "grading against the grader's own" in capsys.readouterr().err
+
+
+def test_read_registry_cache_fails_as_environment_when_its_own_pull_writes_nothing(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setattr(case_check.subprocess, "run", _fake_pull([], returncode=1))
+    with pytest.raises(SystemExit, match=r"FAIL: registry cache .*action-apps-index.json is absent, and the grader's own .*registry pull.* did not write it \(exit 1\).*environment failure"):
         read_registry_cache("action-apps-index.json")
+
+
+def test_read_registry_cache_fails_not_a_traceback_without_uip(tmp_path, monkeypatch):
+    def missing(cmd, **kw):
+        raise FileNotFoundError(2, "No such file or directory", "uip")
+
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setattr(case_check.subprocess, "run", missing)
+    with pytest.raises(SystemExit, match=r"FAIL: registry cache .*api-index.json is absent and the grader could not run"):
+        read_registry_cache("api-index.json")
 
 
 def test_read_registry_cache_loads_a_pulled_index(tmp_path, monkeypatch):
@@ -392,7 +442,10 @@ def test_read_registry_cache_loads_a_pulled_index(tmp_path, monkeypatch):
     cache = tmp_path / ".uip" / "case-resources"
     cache.mkdir(parents=True)
     (cache / "api-index.json").write_text(json.dumps([{"name": "API Workflow"}]), encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(case_check.subprocess, "run", _fake_pull(calls))
     assert read_registry_cache("api-index.json") == [{"name": "API Workflow"}]
+    assert calls == []
     (cache / "api-index.json").write_text("{}", encoding="utf-8")
     with pytest.raises(SystemExit, match="not a JSON array"):
         read_registry_cache("api-index.json")

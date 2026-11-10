@@ -1,32 +1,17 @@
 # action task — Implementation (Direct JSON Write)
 
-> **Shared shape.** The rules every resource task follows — id/elementId format, `=bindings.` references, the Phase 2/3 split, binding dedup, output binding, and the placeholder fallback — are in [resource-task-common.md](../resource-task-common.md). This file states only what is specific to this type.
-
+> **Shared shape.** Common resource-task rules—id/elementId format, `=bindings.` references, Phase 2/3 split, binding dedup, output binding, and placeholder fallback—are in [resource-task-common.md](../resource-task-common.md). This file covers action-specific rules.
 
 ## Task JSON Shape
 
 ```json
 {
-  "id": "ty5UcykfU",
-  "type": "action",
-  "displayName": "Review Purchase Order",
-  "elementId": "Stage_aB3kL9-ty5UcykfU",
-  "isRequired": true,
-  "shouldRunOnlyOnce": false,
-  "description": "An approver reads the purchase order and either approves it or rejects it with a reason.",
-  "data": {
-    "taskTitle": "Please review this PO and approve or reject",
-    "priority": "High",
-    "recipient": { "Type": 2, "Value": "approver@corp.com" },
-    "labels": "<labels string>",
-    "name": "=bindings.bG0SraLpg",
-    "folderPath": "=bindings.bH1iJK2lm",
-    "inputs": [],
-    "outputs": []
-  }
+  "id":"ty5UcykfU","type":"action","displayName":"Review Purchase Order",
+  "elementId":"Stage_aB3kL9-ty5UcykfU","isRequired":true,"shouldRunOnlyOnce":false,
+  "description":"An approver reads the purchase order and either approves it or rejects it with a reason.",
+  "data":{"taskTitle":"Please review this PO and approve or reject","priority":"High","recipient":{"Type":2,"Value":"approver@corp.com"},"labels":"<labels string>","name":"=bindings.bG0SraLpg","folderPath":"=bindings.bH1iJK2lm","inputs":[],"outputs":[]}
 }
 ```
-
 
 ## Action-Specific Fields
 
@@ -52,14 +37,11 @@
 uip maestro case tasks describe --type action --id "<action-app-id>" --output json
 ```
 
-
 **Step 1 — Root-level bindings:**
-
 
 - `resource`: `"app"`
 - `resourceSubType`: omit (no resourceSubType for action tasks)
 - `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields
-
 
 **Step 2 — Write task:**
 
@@ -67,7 +49,7 @@ uip maestro case tasks describe --type action --id "<action-app-id>" --output js
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
-5. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
+5. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. `activation-mode: parallel` (`current-stage-entered`) tasks get their own single-task inner array; only `parallel-after-predecessor` siblings (`runs-sequentially`) may share `tasks[laneIndex][]`. If `lane` conflicts with mode, mode wins.
 
 > Entry conditions added in Step 10. Only `data.inputs[].value` is deferred to Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md); the scalar `data.*` fields above are final at Step 2.
 

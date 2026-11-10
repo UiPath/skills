@@ -212,6 +212,25 @@ jobs:
       - name: Run pytest
         run: pytest tests/tasks/uipath-rules/ -v
 
+  pytest-functions-check:
+    runs-on: uipath-ubuntu-latest
+    name: uipath-functions checker unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Pins the simple-echo grader to SKILL.md rule 4: typed I/O passes
+      # whatever the classes are named (Input/Output or EchoIn/EchoOut), and
+      # an unannotated or dict-typed entry function fails (#4585).
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-functions/_shared/ -v
+
   pytest-genome-check:
     runs-on: uipath-ubuntu-latest
     name: uipath-genome checker unit tests
@@ -409,7 +428,7 @@ jobs:
       # The nightly SonarCloud run (.pipelines/jobs/ci.quality.sonar.yml)
       # measures their coverage; this job keeps them passing on every PR.
       - name: Run repo script tests
-        run: pytest tests/scripts/test_build_uip_catalog.py tests/scripts/test_check_cli_verbs.py tests/scripts/test_check_connection_parity.py tests/scripts/test_check_skill_status.py tests/scripts/test_check_skill_verbs.py tests/scripts/test_check_skills_sh_findings.py tests/scripts/test_check_task_driver_edges.py tests/scripts/test_check_task_host_paths.py tests/scripts/test_parse_required_checks.py tests/scripts/test_prune_task_defaults.py tests/scripts/test_script_tests_run_in_ci.py -v
+        run: pytest tests/scripts/test_build_uip_catalog.py tests/scripts/test_check_cli_verbs.py tests/scripts/test_check_connection_parity.py tests/scripts/test_check_skill_status.py tests/scripts/test_check_skill_verbs.py tests/scripts/test_check_skills_sh_findings.py tests/scripts/test_check_task_driver_edges.py tests/scripts/test_check_task_host_paths.py tests/scripts/test_parse_required_checks.py tests/scripts/test_prune_task_defaults.py tests/scripts/test_script_tests_run_in_ci.py tests/scripts/test_dockerfile_connectors_library_pin.py tests/scripts/test_task_command_patterns.py -v
 
   required-checks-contract:
     runs-on: uipath-ubuntu-latest

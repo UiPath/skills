@@ -6,35 +6,30 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 
 ## Purpose
 
-Compose the `slaRules[]` array for each target (root or stage) in one write. Group all SLA rows by target and emit the full array in a single mutation.
+Compose and write one complete `slaRules[]` array per target (root or stage), grouping all SLA rows by target.
 
 ## Input spec (from the SDD's SLA tables)
 
-| element kind | Required fields | Notes |
-|---|---|---|
-| Default SLA | `target`, `count`, `unit`, `display-name` | One per target. Emitted as the `=js:true` entry, always last. |
-| Conditional rule | `target: "root"` \| `"<stage-name>"`, `condition` (natural-language), `count`, `unit`, `display-name` | Translated to `=js:<expr>` at execution and prepended to the target's default; see Expression Translation below. |
-| Escalation | `target`, `attach-to: T<m>` \| `default`, `trigger-type`, `at-risk-percentage?`, `recipients[]`, `display-name` | `attach-to` points to the T-number of the parent rule (or the default). |
+- **Default SLA:** `target`, `count`, `unit`, `display-name`; one per target, emitted as the final `=js:true` entry.
+- **Conditional rule:** `target: "root"` or `"<stage-name>"`, `condition` (natural-language), `count`, `unit`, `display-name`; translate to `=js:<expr>` at execution and prepend in SDD order; see Expression Translation below.
+- **Escalation:** `target`, `attach-to: T<m>` or `default`, `trigger-type`, optional `at-risk-percentage`, `recipients[]`, and `display-name`. `attach-to` points to the T-number of the parent rule (or the default).
 
 ## ID generation
 
-- SLA rule (default and conditional): `sla_` + 8 chars. **Required** on every entry.
-- Escalation: `esc_` + 6 chars. Per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation).
-
-Mint these IDs while composing the Phase 2 objects, check them against existing caseplan/id-map IDs, and record them immediately: every SLA element under `{kind: "sla-rule", displayName: "<title>", target: "root" | "<stageId>"}` and every escalation under `{kind: "escalation", displayName: "<title>", parentSlaTask: "T<m>", target: "root" | "<stageId>"}`. Write the object and its `id-map.json` entry in the same section. There is no preallocation-only pass.
+Default and conditional rules require `sla_` + 8 chars; escalations require `esc_` + 6 chars, per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation). Mint IDs while composing Phase 2 objects, check existing caseplan/id-map IDs, record each immediately beside its object, and do not preallocate IDs without writing their objects. Use `{kind: "sla-rule", displayName: "<title>", target: "root" | "<stageId>"}` for SLA entries and `{kind: "escalation", displayName: "<title>", parentSlaTask: "T<m>", target: "root" | "<stageId>"}` for escalations.
 
 ## Target resolution
 
-- `target: "root"` → **`metadata.slaRules`** (top-level `metadata` block — there is no `root` key on disk)
-- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules`
-- Accepted node types: `case-management:Stage` (a secondary/exception stage is the same node with `data.stageType === "secondary"`).
-- If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
+- `target: "root"` writes top-level **`metadata.slaRules`**; no `root` key exists on disk.
+- `target: "<stage-name>"` finds `data.label === <stage-name>` and writes `node.data.slaRules`.
+- Accept only `case-management:Stage`; a secondary/exception stage is the same node with `data.stageType === "secondary"`.
+- If the stage is absent, halt and AskUserQuestion with candidate stage labels plus "Something else".
 
-> **Stage conditional rules are direct JSON only.** `uip maestro case sla rules add` exposes a root-only CLI surface; do not use it for a stage target. Compose the stage's complete conditional + default array here and write `node.data.slaRules`.
+> **Stage conditional rules are direct JSON only.** `uip maestro case sla rules add` exposes a root-only CLI surface; do not use it for a stage target. Compose and write the stage's complete conditional + default array at `node.data.slaRules`.
 
 ## Recipe — one target
 
-After grouping elements by target, compose the `slaRules` array and write it into the target's location per the rules above.
+Group by target, resolve its location, compose one complete array, and write it there. Put conditional entries first in SDD element order (top-most wins) and the default `=js:true` entry last. Emit that default whenever any SLA element targets the node, including escalation-only targets; omit `slaRules` when the target has no SLA elements. Every rule has a unique required `id` (`sla_` + 8 chars), `displayName` as applicable, and its expression.
 
 ### Composed array
 
