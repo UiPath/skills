@@ -100,10 +100,10 @@ success_criteria:
     stop_early: {}
 
   # Inspect the actual .flow artifact rather than the command stream. Per
-  # references/plugins/ixp/impl.md, the agent must land either an
+  # references/ixp.md, the agent must land either an
   # `uipath.ixp.*` node or a `core.logic.mock` placeholder.
   - type: run_command
-    description: "Agent added an IxP or core.logic.mock placeholder node to a .flow file (per references/plugins/ixp/impl.md)"
+    description: "Agent added an IxP or core.logic.mock placeholder node to a .flow file (per references/ixp.md)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
     expected_exit_code: 0
     suite_thresholds: {mean: 0.85}
