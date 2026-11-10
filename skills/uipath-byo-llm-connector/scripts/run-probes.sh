@@ -3,8 +3,8 @@
 # answer the way the LLM Gateway does (file format: references/probes-guide.md). What runs:
 #   ../assets/probes/default/    the gateway's own base probe for the flavor: the default, every product
 #   ../assets/probes/<product>/  a probe the gateway's code builds for that product, in place of the default
-#   ../assets/probes/product-defined/<PROBE_ID>.json, only when named with --probe (opt in): the probes
-#                                a product's Model Hub configuration lists for the feature
+#   ../assets/probes/product-defined/[<product>/]<PROBE_ID>.json, only when named with --probe (opt in):
+#                                the probes a product's Model Hub configuration lists for the feature
 #
 #   bash run-probes.sh --flavor <API_FLAVOR> [--product <PRODUCT>] [--feature <FEATURE>] \
 #     [--llm-name <CATALOG_MODEL>] [--probe <PROBE_ID>]... --list
@@ -50,11 +50,17 @@ if [ -n "$PRODUCT" ] && [ "$PRODUCT" != default ] && [ "$PRODUCT" != product-def
     FILES+=("$PROBES_DIR/$PRODUCT"/*.json)
 fi
 for id in "${PROBE_IDS[@]}"; do
-    if ! [[ "$id" =~ ^[A-Za-z0-9_.-]+$ ]] || [ ! -f "$PROBES_DIR/product-defined/$id.json" ]; then
-        echo "run-probes: no product-defined probe '$id'. Known: $(ls "$PROBES_DIR/product-defined" | sed 's/\.json$//' | tr '\n' ' ')" >&2
+    found=()
+    if [[ "$id" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+        for candidate in "$PROBES_DIR"/product-defined/"$id".json "$PROBES_DIR"/product-defined/*/"$id".json; do
+            [ -f "$candidate" ] && found+=("$candidate")
+        done
+    fi
+    if [ "${#found[@]}" -ne 1 ]; then
+        echo "run-probes: no single product-defined probe '$id'. Known: $(find "$PROBES_DIR/product-defined" -name '*.json' -exec basename {} .json \; | sort | tr '\n' ' ')" >&2
         exit 2
     fi
-    FILES+=("$PROBES_DIR/product-defined/$id.json")
+    FILES+=("${found[0]}")
 done
 
 RESULT=$(jq -n --arg flavor "$FLAVOR" --arg feature "$FEATURE" --arg llm "$LLM_NAME" '

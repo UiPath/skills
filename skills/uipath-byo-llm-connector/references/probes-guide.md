@@ -10,13 +10,13 @@ The gateway's probes are fixed requests with fixed checks. `assets/probes/` hold
 |---|---|---|
 | **Default**: the gateway's base probe for the flavor | `default/`: `base-chat` (one per chat flavor), `base-responses`, `base-embeddings` | Always, unless a code-built probe takes its place |
 | **Code-built**: a probe the gateway's code builds for one product | `<product>/`: `agents/agents-tool-call.*` (Agents' forced `tool2` call, every feature but `agents-autopilot`), `uia/uia-screenplay.*` (UIA on its computer-use model) | Automatically for that product, in place of the default it `replaces` |
-| **Product-defined**: a payload in the gateway's code that a product's Model Hub configuration lists for a feature | `product-defined/<ProbeId>.json` | Only when named with `--probe <ProbeId>` |
+| **Product-defined**: a payload in the gateway's code that a product's Model Hub configuration lists for a feature | `product-defined/<ProbeId>.json` for a payload any product can list (the `*_basic_probe`s); `product-defined/<product>/<ProbeId>.json` for a product's own, with a validator of its own in the gateway (`uipath-ecs/`: ECS's tool-calling, multimodal, several-choices, embeddings and grounding probes) | Only when named with `--probe <ProbeId>` |
 
 Product-defined probes are opt in. The skill holds no product's list of them: the list is the product's own configuration, and it varies by feature, model and environment. A product comes with its probes — ask the user or the product team which `ProbeId`s the feature lists, and pass each with `--probe`. With none, the default and any code-built probe run, which is what the gateway runs for a feature that lists none. A named probe written for another flavor is reported as skipped: the gateway runs only those of the configuration's flavor.
 
 ### Which files run
 
-For `--flavor X [--product P] [--feature F] [--llm-name M] [--probe ID]…` the runner reads `default/*.json`, `P/*.json` and `product-defined/ID.json` for each `--probe`, and keeps a file when:
+For `--flavor X [--product P] [--feature F] [--llm-name M] [--probe ID]…` the runner reads `default/*.json`, `P/*.json` and, for each `--probe`, the one `product-defined/ID.json` or `product-defined/*/ID.json` (a `ProbeId` is unique across the gateway, so a product may list another product's), and keeps a file when:
 
 - its `apiFlavor` is `X`;
 - it has no `match`, or one `match` entry fits: `feature` is `F` and `llmName` is `M`; a key left out fits anything;
@@ -53,7 +53,7 @@ A kept file's `replaces` then drops the kept files with those ids: Agents' `agen
 Only a probe the gateway itself has — never a request of the skill's own:
 
 - **code-built** (a class under the gateway's `CompatibilityProbes/ProgrammaticProbes/`): `<product>/<id>.<flavor-slug>.json`, one per flavor the gateway's mappers send it in, with `replaces` naming the default it takes the place of and the `match` / `excludeFeatures` the class selects by;
-- **product-defined** (a payload under `CompatibilityProbes/ProductDefinedProbes/Payloads/` and its validator): `product-defined/<ProbeId>.json`, with the payload as `body`, the validator's checks in order, and no `match`: it runs when named.
+- **product-defined** (a payload under `CompatibilityProbes/ProductDefinedProbes/Payloads/` and its validator): `product-defined/<ProbeId>.json`, or `product-defined/<product>/<ProbeId>.json` when the payload and its validator are that product's own, with the payload as `body`, the validator's checks in order, and no `match`: it runs when named.
 
 Set `path` to the flavor's resource path ([connector-contract-guide.md](connector-contract-guide.md)), add `model: "{{model}}"` to the body for the OpenAI and Anthropic flavors, and check the selection offline with `--list`.
 
