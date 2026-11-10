@@ -33,7 +33,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 | --- | --- |
 | `uip maestro case check`, `compile`, `decompile` | Work, inside the page. |
 | `uip maestro case validate` | Works, with `--strict` and `--sdd`. |
-| `uip maestro case sdd convert` | Works, but produces a DRAFT — connector inputs are flat, cross-task references are unresolved, and `registry prepare` has not run. Always follow with decompile → check → compile; never hand-edit the plan `convert` wrote. |
+| `uip maestro case sdd convert` | **Do not use as a build path.** Output has flat connector inputs (`CASE_MGMT_CONNECTOR_INPUT_FLATTENED`), unresolved cross-task references, and no `registry prepare` — `validate` will reject it. If used as a seed, decompile its output, author the TypeScript source, then check → compile → validate. Never submit the convert output directly. |
 | `uip maestro case registry pull` | Works: the tenant resource indexes ([`references/registry-resolution.md`](references/registry-resolution.md)). |
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
 | `uip maestro registry pull` | Answered by the CLI, with no effect: the library of the session is always loaded. |
