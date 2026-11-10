@@ -1,6 +1,6 @@
 # Solution Design Document — <APP_NAME>
 
-> **Template:** Coded Apps (web applications). If chosen when the PDD lacked UI details, gap-filling Q&A in Phase 1 should have filled: framework, app type, pages/routes, state management.
+> **Template:** Coded Apps (web applications). If chosen when the PDD lacked UI details, Phase 1 gap-filling Q&A fills: framework, app type, pages/routes, state management.
 > **Phase 2 sections:** §2, §3, §4, §5, §6, §10. **Phase 3 sections:** all others.
 
 ---

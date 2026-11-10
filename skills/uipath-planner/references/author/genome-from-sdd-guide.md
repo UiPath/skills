@@ -14,8 +14,10 @@ These rows add to the rows of [author-guide.md § Read Plan](author-guide.md) th
 
 ## Author from an agreed SDD
 
-1. **Read the SDD whole**, with its Planner Handoff, and for a solution SDD (the root `*-solution-sdd.md`) every child SDD it lists. Then stop without writing when this holds:
+1. **Read the SDD whole**, with its Planner Handoff, and for a solution SDD (the root `*-solution-sdd.md`, `Project SDD role: root`) every child SDD it lists. A child SDD given as input (`Project SDD role: child`) resolves to the root its `Solution root SDD` row names: read that root and write the genome for the whole solution from it, saying so in one line ("<CHILD> is part of <ROOT>; writing the solution's genome from the root."). Then stop without writing when any of these holds:
    - **A `draft` SDD** — `Status: draft`, with blocking SME items. Name the blocking items; the genome is written once the SDD is `ready`.
+   - **A missing root** — the `Solution root SDD` row names a path that does not exist. Name the path and ask for the root SDD.
+   - **A missing or `draft` child** — a child SDD the root lists does not exist, or is not `Status: ready`. Name the child and, for a draft, its blocking SME items; the genome is written once every child is `ready`.
 2. **Read `Execution autonomy` from the Planner Handoff.** It decides how the genome is finished:
    - **`autonomous`** — no follow-up rounds ([author-guide.md](author-guide.md) Step 6): every gap is written with `*[Inferred]*`, or carried as a Configuration Question with its default. After the review ([author-guide.md](author-guide.md) Step 8), the edits are offered in the closing summary, and the run does not wait for them.
    - **`interactive`, or no row** — [author-guide.md](author-guide.md) Steps 6 and 8 as written.
@@ -28,7 +30,7 @@ These rows add to the rows of [author-guide.md § Read Plan](author-guide.md) th
    - **A single-product SDD:** `<PROCESS_NAME_KEBAB>-genome.md` beside the SDD.
    - **A solution SDD** (a root `<SOLUTION_NAME_KEBAB>-solution-sdd.md` and its child SDDs): ONE genome for the whole solution, named after the root — `<SOLUTION_NAME_KEBAB>-genome.md` beside the root SDD. It is a process genome with its component genomes in `<SOLUTION_NAME_KEBAB>-genome/` when Step 2 counts two or more projects, and a component genome otherwise ([genome-format-guide.md § File Naming and Location](../shared/genome-format-guide.md)). Never write one genome per child SDD.
 
-   Write the `Designed in:` line, linking the SDD the genome is named after and carrying its fingerprint ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)), and record the genome as `| **Genome** | <path> |`, the last row of that SDD's Planner Handoff table — for a solution, the ROOT SDD's handoff only; the child SDDs are not edited.
+   Write the `Designed in:` line, linking the SDD the genome is named after and carrying its fingerprint — for a solution, `sdd-fingerprint.mjs` run on the root, which covers the root and every child it lists ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)) — and record the genome as `| **Genome** | <path> |`, the last row of that SDD's Planner Handoff table — for a solution, the ROOT SDD's handoff only; the child SDDs are not edited.
 8. **The genome write is a turn boundary.** What follows it: [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Step 3 item 4 when `design` ran; otherwise [SKILL.md](../../SKILL.md) § Chaining.
 
 Continue at [author-guide.md](author-guide.md) Step 2.

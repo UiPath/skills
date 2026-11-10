@@ -72,10 +72,12 @@ Every task uses this exact structure. The fields below are load-bearing for the 
 | Field | Required | Notes |
 |---|---|---|
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
-<!--skill-flavor:task-row-tool-fields:start-->
+<!--skill-flavor:task-row-skill-field:start-->
 | `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The planner names this skill in the live task it creates with the task-list tool. |
+<!--skill-flavor:task-row-skill-field:end-->
 | `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
+<!--skill-flavor:task-row-tool-fields:start-->
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its task status update flips the checkbox; `human` only when the user manually edits the file. |
 | `Blocked by` | yes | Comma-separated task IDs, or `none`. Drives the live blocked-by links. |
 | `Skill prompt` | yes | Imperative prompt the planner pastes into the live task's description. Must end with the anti-hallucination rule (below). |
@@ -212,3 +214,4 @@ The planner creates live tasks with the task-list tool that mirror the file. Map
 10. **Autonomous plans MUST include a populated Stop conditions section.** Without concrete stop items, downstream specialists have no way to distinguish "keep going" from "ask the user" and will default to asking — defeating autonomous mode. Populate with hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources); never leave a generic placeholder.
 11. **Authoring surfaces are never plan fields.** Studio, Studio Web, VS Code are presentation layers — no plan-header field, task condition, or routing decision references them; each specialist owns its surface. A user-stated surface preference travels as ordinary requirement prose inside the relevant task prompt.
 12. **Coverage.** Every requirement of the request appears in at least one task.
+13. **Gap markers.** A gap the request leaves open is `[DEFAULT]` or `[SME REVIEW]`, written per [sdd-writing-guide.md § Gap Markers](../design/sdd-writing-guide.md#gap-markers).

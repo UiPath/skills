@@ -185,7 +185,7 @@ Configuration cell = user intent in business terms (`Record created`, `Email rec
 
 | Field | Operator | Value | Literal? |
 |-------|----------|-------|----------|
-| <payload field> | <one of, PascalCase and case-sensitive: Equals \| NotEquals \| Contains \| NotContains \| StartsWith \| EndsWith \| GreaterThan \| GreaterThanOrEqual \| LessThan \| LessThanOrEqual \| In \| NotIn \| IsNull \| IsNotNull> | <value> | <Yes — prefer a literal; No is a lossy fallback, so pair it with a review item> |
+| <payload field> | <one of, PascalCase and case-sensitive: Equals \| NotEquals \| Contains \| NotContains \| StartsWith \| EndsWith \| GreaterThan \| GreaterThanOrEqual \| LessThan \| LessThanOrEqual \| In \| NotIn \| IsNull \| IsNotNull> | <value> | <Yes — use a literal; No is a lossy fallback, so pair it with a review item> |
 
 <!-- Section only when ≥1 trigger declares a filter; omit otherwise. AND/OR tree; nested
 {op, clauses} groups flatten into rows. -->

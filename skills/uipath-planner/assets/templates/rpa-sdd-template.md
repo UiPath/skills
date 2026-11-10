@@ -235,7 +235,7 @@ flowchart TD
 
 > **Universal constraints — apply to both Option A and Option B:**
 > 1. Keep types flat — no inheritance, no nesting more than one level deep.
-> 2. Prefer small entities — ~15 properties (Option A) or keys/columns (Option B) as a working guideline, not a hard cap. Split along a domain boundary when an entity accumulates unrelated concerns; keep a cohesive entity whole even past the guideline (e.g., a 20-column source record mapping 1:1 to one system) `[DEFAULT]`.
+> 2. Use small entities — ~15 properties (Option A) or keys/columns (Option B) as a working guideline, not a hard cap. Split along a domain boundary when an entity accumulates unrelated concerns; keep a cohesive entity whole even past the guideline (e.g., a 20-column source record mapping 1:1 to one system) `[DEFAULT]`.
 > 3. Default every property / key to `string` unless the PDD specifies a numeric, date, or boolean operation on it. Converting later is cheaper than guessing wrong.
 > 4. Name properties / keys in the PDD's vocabulary (e.g., `InvoiceNumber`, not `doc_id`).
 >
@@ -245,7 +245,7 @@ flowchart TD
 
 ### Option A — Coded C# / Hybrid Mode
 
-> **Option A-specific rule:** use `record` for immutable transaction/output data, `class` for mutable working state. Prefer `record` unless mutation is required mid-workflow.
+> **Option A-specific rule:** use `record` for immutable transaction/output data, `class` for mutable working state. Use `record` unless mutation is required mid-workflow.
 
 
 #### Transaction Data

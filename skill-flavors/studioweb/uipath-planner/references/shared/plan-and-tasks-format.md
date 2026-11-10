@@ -1,7 +1,8 @@
-<!--skill-flavor:task-row-tool-fields:start-->
+<!--skill-flavor:task-row-skill-field:start-->
 | `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The specialist the task loads; it also opens the task's title in the host plan. |
-| `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
-| `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
+<!--skill-flavor:task-row-skill-field:end-->
+
+<!--skill-flavor:task-row-tool-fields:start-->
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. `agent` when the agent flips the checkbox after finishing the task; `human` only when the user manually edits the file. |
 | `Blocked by` | yes | Comma-separated task IDs, or `none`. In the host plan, a wait that is not the previous step becomes the step's `depends_on`. |
 | `Skill prompt` | yes | Imperative prompt the specialist works from; in the host plan it is carried verbatim in the step's detail. Must end with the anti-hallucination rule (below). |

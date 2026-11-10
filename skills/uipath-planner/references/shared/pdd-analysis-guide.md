@@ -8,7 +8,7 @@ The input need not be a formal PDD. **Any artifact that describes a business pro
 
 | Source | How to ingest | Notes |
 |---|---|---|
-| **PDD** (`.pdf` / `.md` / `.txt`) | per Supported Input Formats below | richest, most structured source |
+| **PDD** (`.pdf` / `.docx` / `.md` / `.txt`) | per Supported Input Formats below | richest, most structured source |
 | **Confluence / wiki / SharePoint page** | user exports (→ md/pdf) or pastes it; or web-fetch a reachable page; a session-connected Atlassian / Glean / Microsoft-365 connector also works (best-effort) | often an SOP or process write-up |
 | **BPMN model** (`.bpmn` XML, Signavio/Camunda export, or a diagram image) | read the XML/text directly, or read the diagram image | already a process map — mine its tasks, gateways, events, lanes; it often encodes the *to-be* |
 | **Meeting / Zoom transcript** | read the text file or pasted content; or a session-connected transcript connector (best-effort) | least structured — expect heavy gaps |
@@ -23,6 +23,7 @@ The input need not be a formal PDD. **Any artifact that describes a business pro
 | Markdown (`.md`) | file-read tool | Read the file directly. | Easiest — structure already parseable. |
 | Plain text (`.txt`) | file-read tool | Read the file directly (same as Markdown). | No conversion. For a very large file, read it by line range or use the size strategy in [design-guide.md Step 1](../design/design-guide.md#step-1-read-the-pdd). |
 | PDF (`.pdf`) | file-read tool | Read it by page range, in chunks of up to 20 pages. | Text is extracted; screenshots and scanned/image-only pages render as images — Read them visually (see "Handling Screenshots"). When pages do not render, or a render is too small to read a value, extract the embedded images and text with any tool the machine has, in a scratch folder — a PDD is unreadable only when nothing can extract it. |
+| Word (`.docx`) | any converter on the machine | The file-read tool cannot open it. Convert it to Markdown with any tool the machine has (pandoc `--extract-media` when present), into a scratch folder, keeping the embedded images as files; then Read the Markdown and the images. | Complex tables may come out as HTML — parse them. `.emf`/`.wmf` images do not render: ask for a PNG, or mark what depended on them `[SME REVIEW]`. |
 | Pasted text | (conversation) | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
 
 File-based ingestion needs only a **file-read tool** (Markdown, `.txt`, PDF, images/media); remote pages need **web fetch**. Session-connected MCP connectors (Atlassian / Glean / Microsoft 365 / transcript) are best-effort extras — when absent, ask the user to export or paste the content.

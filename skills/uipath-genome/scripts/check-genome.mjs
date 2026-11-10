@@ -24,7 +24,9 @@
 //                                           designed_in_fingerprint (the `sdd-sha256` the line records, null
 //                                           without one) and designed_in_current (true when the SDD on disk
 //                                           still has that fingerprint, false when it changed, null without a
-//                                           recorded fingerprint or a readable SDD), and the strict check result
+//                                           recorded fingerprint or when the SDD or a child SDD it lists cannot
+//                                           be read; a solution root's fingerprint covers every child SDD it
+//                                           lists), and the strict check result
 //   check-genome.mjs skills                 JSON of the skill names a genome may cite: build and operate
 //   check-genome.mjs -h | --help
 //   component and process also take: [--shape transactional|stub [--flows N] [--unit TOKEN ...]]
@@ -41,13 +43,14 @@
 //           steps and criteria present, a Transactional Shape that is the stub or has flows that each name their
 //           unit of work, Source Map tokens, expected facts; in an extracted genome (one with a Source Map), a
 //           `### Steps` table with exactly one row per Workflow step.
-//   strict  core plus every mechanical format rule of uipath-planner's genome-format-guide.md,
-//           transactional-shape-guide.md and extracted-genome-guide.md: behavioural wording (no code-level tokens), configuration question kind
+//   strict  core plus every mechanical rule of the genome format, the transactional shape and the extracted
+//           genome's Source Map: behavioural wording (no code-level tokens), configuration question kind
 //           and default, bold step names, numbered acceptance criteria, the As-is table, exactly the outcome
-//           rows rule 4 allows, split options named by letter with only their Requires and Changes cells,
+//           rows the transactional shape allows, split options named by letter with only their Requires and Changes cells,
 //           complete for every unit and alternative unit, retry and consecutive-failure stop; step table cells
 //           holding references only; no H2 heading twice; no component genome linked twice; the `Source framework`
-//           row in the Source Map of a process or standalone component genome.
+//           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
+//           `sdd-sha256` fingerprint.
 //
 // Export check (--processes and --recordsets, both required together):
 //   --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
@@ -109,7 +112,7 @@ const BANNED_BODY_TOKENS = [
   "uipath.core.", "activityType", "JsInvoke",
 ];
 export const OUTCOME_ROWS = new Set(["Success", "Business exception", "System exception", "Postponed"]);
-// format guide § Population Matrix: minimum Workflow steps and Acceptance Criteria per complexity.
+// the genome format's minimum Workflow steps and Acceptance Criteria per complexity.
 // core gates only on the floor every genome meets (the simple minimum); the per-complexity minimum is strict.
 const CORE_FLOOR = 3;
 const MIN_STEPS_BY_COMPLEXITY = { simple: 3, medium: 5, complex: 8 };
@@ -117,13 +120,12 @@ const MIN_CRITERIA_BY_COMPLEXITY = { simple: 3, medium: 5, complex: 7 };
 const SPLIT_OPTIONS = ["A", "B", "C"];
 export const SPLIT_COLUMNS = ["unit of work", "option", "requires", "changes against as-is"];
 export const STUB = "Not transactional";
-// transactional shape guide rule 9: a flow with one side outside the genome names it instead of the table
+// a flow with one side outside the genome names it instead of the table
 const EXTERNAL_SIDE = /Split options:(?:\*\*)? none\s*[—–-]+\s*the (consumer|producer) is outside this genome/i;
-// extracted genome guide § Source Map: the step table
+// an extracted genome's Source Map step table
 export const STEPS_COLUMNS = ["step", "source objects", "data sets", "captures", "notes"];
 const REFERENCE = /^`([^`]+)`(?:\s*\(((?:[^()`]|`[^`]*`)*)\))?$/; // `Name`, `Name` (id), `Name` (id, locator)
-// The `{…}` placeholders of the genome templates' Transactional Shape sections (uipath-planner's
-// assets/templates/), a one-word one with the word before it (`with {result}`, `retried {n}`). A genome's own
+// The `{…}` placeholders of the genome templates' Transactional Shape sections, a one-word one with the word before it (`with {result}`, `retried {n}`). A genome's own
 // braces — a value built from parts, such as `{item}_{date}` or `INV-{n}` — are content, not a placeholder left
 // unfilled. tests/tasks/uipath-planner/_shared/test_genome_contract.py keeps this list equal to the templates.
 export const TEMPLATE_PLACEHOLDERS = [
@@ -324,11 +326,13 @@ function checkCommon(text, level, sections, r, minCriteria) {
   else if (!text.includes(`UIPATH-AUTOMATION-GENOME: ${level}`)) r.strict(`preamble comment not written exactly 'UIPATH-AUTOMATION-GENOME: ${level}'`);
   if (!/UiPath automation blueprint/i.test(text)) r.core("missing blueprint blockquote");
   else if (!text.includes("This is a UiPath automation blueprint")) r.strict("blueprint blockquote not written as the template words it");
-  // format guide rule 5: the preamble routes the agent to the skill that builds the genome, not to the Build With skills
+  // the preamble routes the agent to the skill that builds the genome, not to the Build With skills
   const comment = text.match(/<!--\s*UIPATH-AUTOMATION-GENOME[\s\S]*?-->/i);
   if (comment && !routesToBuilder(comment[0])) r.strict(`preamble comment does not name ${BUILDER} as the skill that builds the genome`);
   const blockquote = text.match(/^>.*UiPath automation blueprint.*$/im);
   if (blockquote && !routesToBuilder(blockquote[0])) r.strict(`blueprint blockquote does not name ${BUILDER} as the skill that builds the genome`);
+  const designedIn = text.match(/^>\s*Designed in:[^\n]*/m);
+  if (designedIn && !/\bsdd-sha256\s+[0-9a-f]{64}\b/.test(designedIn[0])) r.strict("Designed in: line has no sdd-sha256 fingerprint");
   const pos = h2Positions(text);
   const headings = [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim());
   for (const h of new Set(headings.filter((h, i) => headings.indexOf(h) !== i))) r.strict(`heading '## ${h}' appears more than once`);
@@ -346,12 +350,12 @@ function checkCommon(text, level, sections, r, minCriteria) {
   }
   for (const heading of ["Build With", "Components"]) {
     for (const name of skillNames(sectionBody(text, heading))) {
-      // skill-mapping guide rule 2; advisory: a platform row in Build With does no harm — the
+      // advisory: a platform row in Build With does no harm — the
       // resources still reach the target through the solution and the open-items files
       if (OPERATE_SKILLS.has(name)) r.strict(`operate-only skill '${name}' in ${heading}; it belongs under Platform Dependencies`);
     }
   }
-  // a criterion is a list item in any form: '- ', '- [ ] ', '* ' or '1. '; the format guide numbers them
+  // a criterion is a list item in any form: '- ', '- [ ] ', '* ' or '1. '; the genome format numbers them
   const criteria = lines(sectionBody(text, "Acceptance Criteria")).filter((l) => /^(?:[-*]|\d+\.) \S/.test(l));
   if (criteria.length < CORE_FLOOR) r.core(`acceptance criteria: ${criteria.length} found, expected >= ${CORE_FLOOR}`);
   else if (criteria.length < minCriteria) r.strict(`acceptance criteria: ${criteria.length} found, expected >= ${minCriteria} for the stated complexity`);
@@ -378,7 +382,7 @@ function effectiveFlows(ts) {
   return [[], false];
 }
 
-/** Transactional Shape: the stub, or flow blocks the transactional shape guide describes. */
+/** Transactional Shape: the stub, or flow blocks of the transactional shape format. */
 function checkTransactional(text, level, r, partOf = false) {
   const ts = sectionBody(text, "Transactional Shape");
   if (!ts.trim() || ts.trim().startsWith(STUB)) return;
@@ -411,7 +415,7 @@ function checkTransactional(text, level, r, partOf = false) {
       const rows = tableRows(body, "| Outcome |").filter((row) => row.length).map((row) => row[0]);
       for (const needed of ["Success", "Business exception", "System exception"]) if (!rows.includes(needed)) r.strict(`Transactional Shape ${name}: no '${needed}' outcome row`);
       for (const extra of rows.filter((x) => !OUTCOME_ROWS.has(x))) r.strict(`Transactional Shape ${name}: outcome row '${extra}' — a source's own results map to Success or a Business exception`);
-      // the consumer owes the item retry and the consecutive-failure stop (transactional shape guide rule 4)
+      // the consumer owes the item retry and the consecutive-failure stop
       if (!/retr(y|ie)/i.test(body) || !/consecutive|stops? after \d/i.test(body)) r.strict(`Transactional Shape ${name}: outcomes do not state the item retry and the consecutive-failure stop`);
     }
     if (external) continue;
@@ -517,7 +521,7 @@ function checkComponent(path, a, partOf, shape = true, library = false) {
   if (!/uipath-[a-z-]+/.test(sectionBody(text, "Build With"))) r.core("Build With names no skill");
   const workflow = sectionBody(text, "Workflow");
   const steps = (workflow.match(/^(?:\d+\.|[-*]) \S/gm) ?? []).length; // top-level numbered or bulleted steps
-  // a test component's steps are its cases and a library's its public workflows (format guide § Population Matrix)
+  // a test component's steps are its cases and a library's its public workflows
   const exempt = library || /^\d+\. \*\*Test case:/m.test(workflow);
   if (steps < CORE_FLOOR && !exempt) r.core(`workflow: ${steps} numbered steps, expected >= ${CORE_FLOOR}`);
   else if (steps < minSteps && !exempt) r.strict(`workflow: ${steps} numbered steps, expected >= ${minSteps} for complexity ${level || "not stated"}`);
@@ -688,16 +692,31 @@ function loadInventory(path, what) {
 // the preamble marker, matched anywhere in the file as checkCommon matches it; the first match decides the level
 const MARKER = /UIPATH-AUTOMATION-GENOME:\s*(component|process)\b/i;
 const DESIGNED_IN = /^>\s*Designed in:\s*\[[^\]]*\]\(([^)]+)\)(?:[^\n]*?\bsdd-sha256\s+([0-9a-f]{64})\b)?/m;
-// the SDD's `Genome` handoff row (and an older SDD's `Tasks file` row) is written after the genome's fingerprint; uipath-planner's
-// sdd-fingerprint.mjs computes the same value
+// the SDD's `Genome` handoff row (and an older SDD's `Tasks file` row) is written after the genome's fingerprint;
+// uipath-planner computes the same value (tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py)
 const LATE_ROWS = /^\|\s*\*\*(Tasks file|Genome)\*\*\s*\|.*\n?/gm;
+const ROOT_ROLE = /^\|\s*\*\*Project SDD role\*\*\s*\|\s*root\s*\|/im;
+// children: every `*-sdd.md` link target or backticked path in the root, resolved against its folder, in order, once each, the root excluded
+const CHILD_REF = /\]\(([^)\s#]+-sdd\.md)(?:#[^)\s]*)?\)|`([^`\s]+-sdd\.md)`/g;
+const normalizeSdd = (text) => text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").replace(LATE_ROWS, "");
 
-/** The fingerprint uipath-planner records for an SDD; null when the file cannot be read. */
+/** The fingerprint uipath-planner records for an SDD, a solution root's covering every child it lists; null when
+ * the SDD or a child cannot be read. */
 export function sddFingerprint(path) {
-  let text;
-  try { text = readFileSync(path, "utf8"); } catch { return null; }
-  const normalized = text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").replace(LATE_ROWS, "");
-  return createHash("sha256").update(normalized).digest("hex");
+  const readSdd = (p) => { try { return normalizeSdd(readFileSync(p, "utf8")); } catch { return null; } };
+  const root = readSdd(path);
+  if (root === null) return null;
+  const hash = createHash("sha256").update(root);
+  if (ROOT_ROLE.test(root)) {
+    const self = resolvePath(path);
+    const children = [...new Set([...root.matchAll(CHILD_REF)].map((m) => resolvePath(dirname(self), m[1] ?? m[2])))].filter((p) => p !== self);
+    for (const child of children) {
+      const text = readSdd(child);
+      if (text === null) return null;
+      hash.update(text);
+    }
+  }
+  return hash.digest("hex");
 }
 const PART_OF = /^>\s*Part of:[^\n]*?\]\(([^)]+-genome\.md)\)/m;
 const TEST_GROUP = /\btest[- ]case group\b/i;

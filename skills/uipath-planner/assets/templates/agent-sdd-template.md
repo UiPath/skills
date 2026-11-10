@@ -1,6 +1,6 @@
 # Solution Design Document — <AGENT_NAME>
 
-> **Template:** UiPath Agents (Python/coded or low-code). If chosen when the PDD lacked AI-specific details, gap-filling Q&A in Phase 1 should have filled: framework choice, tools, memory/RAG, evaluation criteria.
+> **Template:** UiPath Agents (Python/coded or low-code). If chosen when the PDD lacked AI-specific details, Phase 1 gap-filling Q&A fills: framework choice, tools, memory/RAG, evaluation criteria.
 > **Phase 2 sections:** §2, §3, §4, §6, §9. **Phase 3 sections:** all others.
 
 ---

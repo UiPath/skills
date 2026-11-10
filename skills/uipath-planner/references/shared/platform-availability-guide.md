@@ -11,7 +11,7 @@ Product × delivery-model availability matrix. Consulted by the [Constraint Gate
 
 Shared by every verb that chooses a product: `design` asks it as Question 2 of its entry prompt, `decompose` in its Step 3 batch, `author` (without an SDD) in its follow-ups.
 
-**Delivery-model CLI preflight — run first, best-effort.** Before composing the questions, try to resolve the delivery model from the active CLI session:
+**Delivery-model CLI preflight — run first, best-effort.** Before composing the questions, resolve the delivery model from the active CLI session:
 
 ```bash
 uip login status --output json
