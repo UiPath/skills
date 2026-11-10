@@ -218,6 +218,8 @@ Probes never stream. If the product streams, also send one streamed request with
 )
 ```
 
+A connector whose hook refuses streams ([references/hook-authoring-guide.md](references/hook-authoring-guide.md) §"Streaming") answers this call with that same message alone, as a `404`: it is Integration Service's answer to the refusal, not a missing resource. Repeat the call with `Accept: application/json` to see the hook's own refusal.
+
 When a probe fails, read its answer in `<WORK_DIR>/probes/`, fix the hook or the config entry it points at, `builder validate`, `import` (the test connection runs the new import at once) and run the probes again. Integration Service answers two failures itself, both `404`: "No API found at that URL for the given token and credentials" (no resource at that path, Rule 1) and "Invalid Element Instance Id provided." (the test connection is gone). Every other answer comes from the vendor through your hooks. A vendor error keeps the vendor's status, but its body reaches you inside Integration Service's own envelope, flattened into `providerMessage` (`error - {message=…}`): read the vendor's reason there.
 
 ### 8. Publish

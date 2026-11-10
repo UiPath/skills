@@ -201,7 +201,8 @@ On a streaming call (`"stream": true`, or a stream path such as `:streamGenerate
 
 - The preRequest hook can still rewrite the URL, headers, model and body — so a vendor that streams **in the flavor's own event format** works.
 - A vendor that streams in a different format, or cannot stream, cannot be fixed in the connector. Tell the user which product calls will not work, and prefer a flavor the vendor streams natively.
-- Do not switch a streamed call to `"stream": false` in the preRequest hook: the caller expects an event stream and gets a JSON body. For a vendor that cannot stream at all, refuse the streamed call instead: `done({ continue: false, response_status_code: 400, response_body: { error: { message: 'Streaming is not supported by this model.' } } })`.
+- Do not switch a streamed call to `"stream": false` in the preRequest hook: the caller expects an event stream and gets a JSON body. For a vendor that cannot stream in the flavor's format, refuse the streamed call instead, so it never reaches the vendor: `done({ continue: false, response_status_code: 400, response_body: { error: { message: 'Streaming is not supported by this connector.' } } })`.
+- That refusal reaches only a caller that did not ask for an event stream. On a streamed call (`Accept: text/event-stream`, which the gateway sends with every stream) Integration Service drops it and answers `404` `{"message":"Published Connector not found with key <CONNECTOR_KEY>"}` itself, on the draft and on the published connector alike, still without calling the vendor. Tell the user that a streamed call fails with that 404, not with your message. To see the refusal itself, send the same call with `Accept: application/json`: it answers your `400`, its body flattened into `providerMessage`.
 
 ## Testing a hook offline
 
