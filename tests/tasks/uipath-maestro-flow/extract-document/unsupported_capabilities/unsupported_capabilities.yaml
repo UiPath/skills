@@ -1,0 +1,124 @@
+task_id: skill-flow-extract-document-unsupported-capabilities
+description: >
+  Smoke: the user asks for an Extract document node setting or action that the
+  skill cannot reach, one per row of the guide's Unsupported Capabilities
+  table. Tests that the agent declines and routes the user to the page that
+  covers it, and that it leaves the flow as it was rather than reaching the
+  setting by editing the `.flow` or running the flow to show what it extracts.
+
+  The reply is graded by a judge against each row's page; the untouched flow is
+  graded deterministically, since a judge reading the reply cannot see an edit
+  that was made anyway.
+
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/InvoiceReader
+      mount_point: InvoiceReader
+reference:
+  directory: ../..
+
+dataset:
+  rows:
+    - id: change-model
+      prompt: In my InvoiceReader flow, switch the Extract Invoice node to the Gemini Pro model.
+      topic: changing the node's extraction model
+      link: https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#choosing-the-most-suitable-model
+
+    - id: language
+      prompt: In my InvoiceReader flow, set the Extract Invoice node's language support to Japanese.
+      topic: the node's language support
+      link: https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#language-support
+
+    - id: layout-parsing
+      prompt: In my InvoiceReader flow, turn layout parsing on for the Extract Invoice node.
+      topic: the node's layout parsing
+      link: https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#layout-parsing
+
+    - id: import-ixp-taxonomy
+      prompt: >-
+        Import the taxonomy from our IXP project export (the JSON file with
+        entity_defs and label_groups) into the Extract Invoice node of my
+        InvoiceReader flow.
+      topic: importing an IXP taxonomy file
+      link: https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/importing-and-exporting-taxonomies
+
+    - id: upload-documents
+      prompt: Upload our sample invoices to the Extract Invoice node in my InvoiceReader flow so I can test it.
+      topic: managing the node's test documents
+      link: https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/uploading-sample-documents
+
+    - id: predictions
+      prompt: What would the Extract Invoice node in my InvoiceReader flow extract from our invoices? Show me its predictions.
+      topic: running or reviewing the node's predictions
+      link: https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/generating-and-reviewing-predictions
+
+    - id: run-eval
+      prompt: Run an evaluation of the Extract Invoice node in my InvoiceReader flow and tell me its score.
+      topic: running or reading the node's evaluations
+      link: https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/running-an-evaluation
+
+initial_prompt: |
+  ${row.prompt}
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: llm_judge
+    description: "The reply says this cannot be done from here and points to the page that covers it"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The user asked: "${row.prompt}"
+
+      Ground truth: for an Extract document node in a UiPath Flow, ${row.topic}
+      is not available from the CLI or by editing the `.flow` file; it is done
+      in the flow designer in Studio Web. The expected reply says it cannot do
+      this from here and points the user to ${row.link}.
+
+      Score 1.0 if the reply clearly says this cannot be done from here and
+      gives that page (the same page without the `#` anchor also counts).
+      Score 0.5 if it declines correctly and sends the user to Studio Web or the
+      documentation, but not to that page.
+      Score 0.0 if it says it did this or that it will take effect, presents an
+      edit to the flow as the way to do it, or does not answer the request.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: run_command
+    description: "The flow is unchanged: every node, the Extract Invoice node included, and every edge, variable and definition"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader --project InvoiceReader/InvoiceReader"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the flow to show what the node extracts"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+debug\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Advisory: agent did not go looking for a CLI path with --help"
+    tool_name: "Bash"
+    command_pattern: 'uip\s[^\n|;&]*--help'
+    weight: 1.0
+    pass_threshold: 0.0
+
+run_limits:
+  expected_turns: 6
+  max_turns: 15
+  task_timeout: 600
