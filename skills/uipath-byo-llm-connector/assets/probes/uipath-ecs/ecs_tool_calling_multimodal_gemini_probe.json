@@ -3,6 +3,7 @@
   "description": "A forced call (mode ANY) to ExtractedContent describing an inline PNG image.",
   "source": "ProductDefinedProbes/Payloads/ecs_tool_calling_multimodal_gemini_probe.json",
   "apiFlavor": "GeminiGenerateContent",
+  "optIn": true,
   "order": 10,
   "path": "/models/{{model}}:generateContent",
   "body": {

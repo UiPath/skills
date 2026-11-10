@@ -3,6 +3,7 @@
   "description": "One user message; the answer must hold exactly one choice with a message.",
   "source": "ProductDefinedProbes/Payloads/openai_chat_basic_probe.json",
   "apiFlavor": "OpenAiChatCompletions",
+  "optIn": true,
   "order": 10,
   "path": "/v1/chat/completions",
   "body": {

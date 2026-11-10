@@ -57,7 +57,7 @@ uip llm-configuration byo-connections list-product-configs \
 
 From the row read (the CLI returns these keys PascalCase): `ModelsConfigurationOption` (multi-mapping needed for `AllModels`/`AnyModel`), each entry of `Models` with its `AllowedApiFlavors` and `AllowedConnectors`, and `AddYourOwn`. `Custom` must appear in `AllowedConnectors` (or as a key of `AddYourOwn` for a customer-added model). If it does not, custom connectors are not enabled for this organization or feature — stop and tell the user; do not build a connector the gateway will refuse.
 
-A model missing from `Models` on an `AnyModelWithOwnAdditions` feature is a customer-added model: its flavors are the ones `AddYourOwn.Custom` lists, it goes to `--llm-name` as-is (step 9), and the gateway runs the default and code-built probes for it plus the product-defined ones the feature itself lists (step 1).
+A model missing from `Models` on an `AnyModelWithOwnAdditions` feature is a customer-added model: its flavors are the ones `AddYourOwn.Custom` lists, it goes to `--llm-name` as-is (step 9), and the gateway runs the default and code-built probes for it plus the ones the feature itself lists (step 1).
 
 ### 1. Agree the contract with the user
 
@@ -70,7 +70,7 @@ bash <SKILL_DIR>/scripts/run-probes.sh --product <PRODUCT> --feature <FEATURE> -
   --llm-name <CATALOG_MODEL> [--probe <PROBE_ID>]... --list
 ```
 
-Each line names a file under `<SKILL_DIR>/assets/probes/` holding the request body and what the answer must show ([references/probes-guide.md](references/probes-guide.md)). Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); product-defined probes can send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
+Each line names a file under `<SKILL_DIR>/assets/probes/` holding the request body and what the answer must show ([references/probes-guide.md](references/probes-guide.md)). Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); the probes a product lists can send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
 
 ### 2. Scaffold the connector
 

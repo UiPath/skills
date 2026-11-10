@@ -3,6 +3,7 @@
   "description": "A forced call to ClaimCitationExtraction with candidateCount 4; the answer must hold more than one candidate and a function call.",
   "source": "ProductDefinedProbes/Payloads/ecs_tool_calling_n_choices_gemini_probe.json",
   "apiFlavor": "GeminiGenerateContent",
+  "optIn": true,
   "order": 10,
   "path": "/models/{{model}}:generateContent",
   "body": {

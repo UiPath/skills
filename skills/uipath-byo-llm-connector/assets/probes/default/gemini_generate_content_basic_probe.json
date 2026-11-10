@@ -3,6 +3,7 @@
   "description": "A three-turn conversation; the answer must hold exactly one candidate whose first non-thought part carries text.",
   "source": "ProductDefinedProbes/Payloads/gemini_generate_content_basic_probe.json",
   "apiFlavor": "GeminiGenerateContent",
+  "optIn": true,
   "order": 10,
   "path": "/models/{{model}}:generateContent",
   "body": {

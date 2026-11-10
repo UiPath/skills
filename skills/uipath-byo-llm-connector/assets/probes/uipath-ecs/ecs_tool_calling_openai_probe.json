@@ -3,6 +3,7 @@
   "description": "A forced call to TransformOutput on one row of data.",
   "source": "ProductDefinedProbes/Payloads/ecs_tool_calling_openai_probe.json",
   "apiFlavor": "OpenAiChatCompletions",
+  "optIn": true,
   "order": 10,
   "path": "/v1/chat/completions",
   "body": {

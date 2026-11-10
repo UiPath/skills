@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Sends compatibility-probe requests to a connection through Integration Service and checks each
 # answer the way the LLM Gateway does (file format: references/probes-guide.md). What runs:
-#   ../assets/probes/default/    the gateway's own base probe for the flavor: the default, every product
-#   ../assets/probes/<product>/  a probe the gateway's code builds for that product, in place of the default
-#   ../assets/probes/product-defined/[<product>/]<PROBE_ID>.json, only when named with --probe (opt in):
-#                                the probes a product's Model Hub configuration lists for the feature
+#   ../assets/probes/default/    every product's probes: the gateway's base probe for the flavor, and
+#                                the basic probes any product's configuration can list
+#   ../assets/probes/<product>/  that product's own: a probe the gateway's code builds for it, in place
+#                                of the base probe, and the probes only that product lists
+# A file marked "optIn": true runs only when named with --probe <PROBE_ID>, because the feature's Model
+# Hub configuration lists it; a ProbeId is unique, so it is found in any folder.
 #
 #   bash run-probes.sh --flavor <API_FLAVOR> [--product <PRODUCT>] [--feature <FEATURE>] \
 #     [--llm-name <CATALOG_MODEL>] [--probe <PROBE_ID>]... --list
@@ -16,7 +18,7 @@
 # Exit 0 when every probe passes, 1 when one fails, 2 on a usage error.
 set -o pipefail
 
-usage() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '2,/^[^#]/p' "$0" | sed '$d; s/^# \{0,1\}//' >&2; exit 2; }
 
 PRODUCT= FEATURE= FLAVOR= LLM_NAME= MODEL= CONNECTION= HELPER= OUT= LIST=
 PROBE_IDS=()
@@ -46,34 +48,36 @@ fi
 PROBES_DIR="$(cd "$(dirname "$0")/../assets/probes" && pwd)" || exit 2
 shopt -s nullglob
 FILES=("$PROBES_DIR"/default/*.json)
-if [ -n "$PRODUCT" ] && [ "$PRODUCT" != default ] && [ "$PRODUCT" != product-defined ] && [ -d "$PROBES_DIR/$PRODUCT" ]; then
+if [[ "$PRODUCT" =~ ^[A-Za-z0-9_-]+$ ]] && [ "$PRODUCT" != default ] && [ -d "$PROBES_DIR/$PRODUCT" ]; then
     FILES+=("$PROBES_DIR/$PRODUCT"/*.json)
 fi
 for id in "${PROBE_IDS[@]}"; do
     found=()
     if [[ "$id" =~ ^[A-Za-z0-9_.-]+$ ]]; then
-        for candidate in "$PROBES_DIR"/product-defined/"$id".json "$PROBES_DIR"/product-defined/*/"$id".json; do
-            [ -f "$candidate" ] && found+=("$candidate")
+        for candidate in "$PROBES_DIR"/*/"$id".json; do
+            jq -e '.optIn == true' "$candidate" >/dev/null 2>&1 && found+=("$candidate")
         done
     fi
     if [ "${#found[@]}" -ne 1 ]; then
-        echo "run-probes: no single product-defined probe '$id'. Known: $(find "$PROBES_DIR/product-defined" -name '*.json' -exec basename {} .json \; | sort | tr '\n' ' ')" >&2
+        echo "run-probes: no single probe a product lists with the id '$id'. Known: $(jq -r 'select(.optIn == true) | .id' "$PROBES_DIR"/*/*.json | tr -d '\r' | sort | tr '\n' ' ')" >&2
         exit 2
     fi
     FILES+=("${found[0]}")
 done
+NAMED=$(jq -nc '$ARGS.positional' --args "${PROBE_IDS[@]}")
 
-RESULT=$(jq -n --arg flavor "$FLAVOR" --arg feature "$FEATURE" --arg llm "$LLM_NAME" '
+RESULT=$(jq -n --arg flavor "$FLAVOR" --arg feature "$FEATURE" --arg llm "$LLM_NAME" --argjson named "$NAMED" '
     def applies:
         (.match // []) as $m
         | (($m | length) == 0 or any($m[];
               (.feature == null or .feature == $feature) and (.llmName == null or .llmName == $llm)))
           and (((.excludeFeatures // []) | index($feature)) == null);
-    [inputs | . + {file: input_filename}] as $all
-    | ($all | map(select(.apiFlavor == $flavor and applies))) as $kept
+    def wanted: .optIn != true or (.id | IN($named[]));
+    [inputs | . + {file: input_filename}] | unique_by(.file) as $all
+    | ($all | map(select(.apiFlavor == $flavor and applies and wanted))) as $kept
     | ([$kept[].replaces // [] | .[]]) as $gone
     | {selected: ($kept | map(select(.id as $id | ($gone | index($id)) == null)) | sort_by(.order // 50, .file)),
-       skipped: [$all[] | select((.file | test("/product-defined/")) and .apiFlavor != $flavor) | "\(.id) (\(.apiFlavor))"]}' \
+       skipped: [$all[] | select(.optIn == true and (.id | IN($named[])) and .apiFlavor != $flavor) | "\(.id) (\(.apiFlavor))"]}' \
     "${FILES[@]}") || { echo 'run-probes: a probe file is not valid JSON.' >&2; exit 2; }
 SELECTED=$(jq -c '.selected' <<<"$RESULT")
 jq -r '.skipped[]' <<<"$RESULT" | tr -d '\r' | while read -r skipped; do

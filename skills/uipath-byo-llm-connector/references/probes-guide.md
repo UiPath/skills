@@ -4,25 +4,25 @@ The product's compatibility probes are the acceptance test for a BYO LLM connect
 
 ## The probe requests (`assets/probes/`)
 
-The gateway's probes are fixed requests with fixed checks. `assets/probes/` holds them as one JSON file per request, and `scripts/run-probes.sh` sends them to any connection (SKILL.md steps 1 and 7), so the draft meets the same requests and checks before it is published. A configuration gets up to three kinds, as in the gateway:
+The gateway's probes are fixed requests with fixed checks. `assets/probes/` holds them as one JSON file per request, and `scripts/run-probes.sh` sends them to any connection (SKILL.md steps 1 and 7), so the draft meets the same requests and checks before it is published. There are two kinds of folder:
 
-| Kind | Folder | When it runs |
+| Folder | What it holds | When each runs |
 |---|---|---|
-| **Default**: the gateway's base probe for the flavor | `default/`: `base-chat` (one per chat flavor), `base-responses`, `base-embeddings` | Always, unless a code-built probe takes its place |
-| **Code-built**: a probe the gateway's code builds for one product | `<product>/`: `agents/agents-tool-call.*` (Agents' forced `tool2` call, every feature but `agents-autopilot`), `uia/uia-screenplay.*` (UIA on its computer-use model) | Automatically for that product, in place of the default it `replaces` |
-| **Product-defined**: a payload in the gateway's code that a product's Model Hub configuration lists for a feature | `product-defined/<ProbeId>.json` for a payload any product can list (the `*_basic_probe`s); `product-defined/<product>/<ProbeId>.json` for a product's own, with a validator of its own in the gateway (`uipath-ecs/`: ECS's tool-calling, multimodal, several-choices, embeddings and grounding probes) | Only when named with `--probe <ProbeId>` |
+| `default/` | Every product's probes: the gateway's base probe for the flavor (`base-chat`, one per chat flavor; `base-responses`; `base-embeddings`), and the basic payloads any product's configuration can list (the `*_basic_probe`s, `"optIn": true`) | A base probe always, unless a product's code-built probe takes its place; a basic payload only when named with `--probe <ProbeId>` |
+| `<product>/` | One product's own: the probe the gateway's code builds for it (`agents/agents-tool-call.*`, Agents' forced `tool2` call on every feature but `agents-autopilot`; `uia/uia-screenplay.*`, UIA on its computer-use model), and the payloads only that product lists, each with a validator of its own in the gateway (`uipath-ecs/`: ECS's tool-calling, multimodal, several-choices, embeddings and grounding probes, `"optIn": true`) | A code-built probe automatically for that product, in place of the base probe it `replaces`; a listed payload only when named with `--probe <ProbeId>` |
 
-Product-defined probes are opt in. The skill holds no product's list of them: the list is the product's own configuration, and it varies by feature, model and environment. A product comes with its probes — ask the user or the product team which `ProbeId`s the feature lists, and pass each with `--probe`. With none, the default and any code-built probe run, which is what the gateway runs for a feature that lists none. A named probe written for another flavor is reported as skipped: the gateway runs only those of the configuration's flavor.
+A file marked `"optIn": true` is a payload a product's Model Hub configuration lists for a feature, and it is opt in. The skill holds no product's list of them: the list is the product's own configuration, and it varies by feature, model and environment. A product comes with its probes — ask the user or the product team which `ProbeId`s the feature lists, and pass each with `--probe`. With none, the default and any code-built probe run, which is what the gateway runs for a feature that lists none. A named probe written for another flavor is reported as skipped: the gateway runs only those of the configuration's flavor.
 
 ### Which files run
 
-For `--flavor X [--product P] [--feature F] [--llm-name M] [--probe ID]…` the runner reads `default/*.json`, `P/*.json` and, for each `--probe`, the one `product-defined/ID.json` or `product-defined/*/ID.json` (a `ProbeId` is unique across the gateway, so a product may list another product's), and keeps a file when:
+For `--flavor X [--product P] [--feature F] [--llm-name M] [--probe ID]…` the runner reads `default/*.json`, `P/*.json` and, for each `--probe ID`, the one `"optIn": true` file named `ID.json` in any folder (a `ProbeId` is unique across the gateway, so a product may list another product's), and keeps a file when:
 
 - its `apiFlavor` is `X`;
+- it is not `"optIn": true`, or `--probe` names it;
 - it has no `match`, or one `match` entry fits: `feature` is `F` and `llmName` is `M`; a key left out fits anything;
 - `F` is not in its `excludeFeatures`.
 
-A kept file's `replaces` then drops the kept files with those ids: Agents' `agents-tool-call` replaces `default/`'s `base-chat`, as the gateway's code does. The rest run in `order` (product-defined `10`, default and code-built `90`), and every one is reported. The gateway stops at the first failure; the runner goes on so you see them all.
+A kept file's `replaces` then drops the kept files with those ids: Agents' `agents-tool-call` replaces `default/`'s `base-chat`, as the gateway's code does. The rest run in `order` (listed payloads `10`, base and code-built probes `90`), and every one is reported. The gateway stops at the first failure; the runner goes on so you see them all.
 
 ### File format
 
@@ -46,6 +46,7 @@ A kept file's `replaces` then drops the kept files with those ids: Agents' `agen
 - `path` and `body` are what the gateway sends to the connection. `{{model}}` anywhere in either becomes `--model`, the vendor's model id: the gateway puts it in the body for the OpenAI and Anthropic flavors and in the path for Gemini and Bedrock.
 - `checks` run in order on the answer to a 2xx call, each a jq condition that is true when the answer is fine. The first false one is the verdict, with the gateway's reason. With no checks, any 2xx passes; with checks, an answer that is not JSON is `MALFORMED_RESPONSE`. A non-2xx answer is `UNAVAILABLE`.
 - `retries`: when the answer has that status and contains every string listed, the runner applies the jq `edit` to the body and sends it once more, as the gateway does (`max_completion_tokens` instead of `max_tokens`; tool choice `auto` when a model refuses a forced one).
+- `optIn: true` marks a payload a product's configuration lists: it runs only when named with `--probe`, and its file is named `<ProbeId>.json`. The base and code-built probes leave it out.
 - `id`, `apiFlavor`, `path`, `body` are required; the rest are optional.
 
 ### Adding a probe
@@ -53,11 +54,11 @@ A kept file's `replaces` then drops the kept files with those ids: Agents' `agen
 Only a probe the gateway itself has — never a request of the skill's own:
 
 - **code-built** (a class under the gateway's `CompatibilityProbes/ProgrammaticProbes/`): `<product>/<id>.<flavor-slug>.json`, one per flavor the gateway's mappers send it in, with `replaces` naming the default it takes the place of and the `match` / `excludeFeatures` the class selects by;
-- **product-defined** (a payload under `CompatibilityProbes/ProductDefinedProbes/Payloads/` and its validator): `product-defined/<ProbeId>.json`, or `product-defined/<product>/<ProbeId>.json` when the payload and its validator are that product's own, with the payload as `body`, the validator's checks in order, and no `match`: it runs when named.
+- **a payload a product lists** (under the gateway's `CompatibilityProbes/ProductDefinedProbes/Payloads/`, with its validator): `default/<ProbeId>.json` when any product can list it, `<product>/<ProbeId>.json` when the payload and its validator are that product's own; `"optIn": true`, the payload as `body`, the validator's checks in order, and no `match`: it runs when named.
 
 Set `path` to the flavor's resource path ([connector-contract-guide.md](connector-contract-guide.md)), add `model: "{{model}}"` to the body for the OpenAI and Anthropic flavors, and check the selection offline with `--list`.
 
-The files mirror the gateway (UiPath/Arima `develop`, November 2026) and carry the request the flags in production select: Agents sends `tool2` and accepts one or two calls. When a probe's verdict in step 9 names a request the runner did not send, the feature lists a product-defined probe you did not name: get its `ProbeId` and run it with `--probe`.
+The files mirror the gateway (UiPath/Arima `develop`, November 2026) and carry the request the flags in production select: Agents sends `tool2` and accepts one or two calls. When a probe's verdict in step 9 names a request the runner did not send, the feature lists a probe you did not name: get its `ProbeId` and run it with `--probe`.
 
 A call the vendor cannot serve, refused by the hook's own `continue: false`, fails the matching probe too. Do not work around it: tell the user which product feature needs it (SKILL.md step 1).
 

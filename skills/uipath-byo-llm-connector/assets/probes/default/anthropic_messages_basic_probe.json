@@ -3,6 +3,7 @@
   "description": "A system prompt and a three-turn conversation in Anthropic Messages format; the answer must hold one text block.",
   "source": "ProductDefinedProbes/Payloads/anthropic_messages_basic_probe.json",
   "apiFlavor": "AnthropicMessages",
+  "optIn": true,
   "order": 10,
   "path": "/v1/messages",
   "body": {

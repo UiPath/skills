@@ -3,6 +3,7 @@
   "description": "One input string; the answer must hold exactly one non-empty embedding.",
   "source": "ProductDefinedProbes/Payloads/openai_embeddings_basic_probe.json",
   "apiFlavor": "OpenAiEmbeddings",
+  "optIn": true,
   "order": 10,
   "path": "/v1/embeddings",
   "body": {

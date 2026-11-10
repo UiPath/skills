@@ -3,6 +3,7 @@
   "description": "A forced call to ExtractedContent describing an inline PNG image.",
   "source": "ProductDefinedProbes/Payloads/ecs_tool_calling_multimodal_openai_probe.json",
   "apiFlavor": "OpenAiChatCompletions",
+  "optIn": true,
   "order": 10,
   "path": "/v1/chat/completions",
   "body": {

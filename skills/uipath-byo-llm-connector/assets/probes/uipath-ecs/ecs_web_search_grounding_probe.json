@@ -3,6 +3,7 @@
   "description": "A question answered with the google_search tool; the answer must hold a candidate with parts.",
   "source": "ProductDefinedProbes/Payloads/ecs_web_search_grounding_probe.json",
   "apiFlavor": "GeminiGenerateContent",
+  "optIn": true,
   "order": 10,
   "path": "/models/{{model}}:generateContent",
   "body": {

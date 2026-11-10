@@ -3,6 +3,7 @@
   "description": "A forced call to ClaimCitationExtraction with n=4; the answer must hold more than one choice and a tool call.",
   "source": "ProductDefinedProbes/Payloads/ecs_tool_calling_n_choices_openai_probe.json",
   "apiFlavor": "OpenAiChatCompletions",
+  "optIn": true,
   "order": 10,
   "path": "/v1/chat/completions",
   "body": {

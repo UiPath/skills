@@ -3,6 +3,7 @@
   "description": "One document instance; the answer must hold exactly one non-empty embedding.",
   "source": "ProductDefinedProbes/Payloads/gemini_embeddings_basic_probe.json",
   "apiFlavor": "GeminiEmbeddings",
+  "optIn": true,
   "order": 10,
   "path": "/models/{{model}}:predict",
   "body": {
