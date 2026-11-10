@@ -7,9 +7,7 @@ description: >
   connector node is modeled as a bpmn:sendTask carrying the registry
   Intsvc.ActivityExecution wrapper instead of a Flow connector node, and the
   request body is graded as the one JSON target="body" input the runtime
-  consumes (the classic skill's
-  classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3
-  "Body shape").
+  consumes (the runtime's request-body contract).
   Validate-only, matching Flow's own scope — the Flow source never called
   `flow debug` either, only `flow validate`.
 tags:

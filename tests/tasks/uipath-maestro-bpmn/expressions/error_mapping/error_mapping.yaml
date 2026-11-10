@@ -3,7 +3,7 @@ description: >
   Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author
   a uipath:errorMapping block whose condition branches on the runtime error
   object via `=vars.Error.code == "..."` after a failed activity. Grades the
-  error-mapping expression shape from references/expression-authoring.md.
+  error-mapping expression shape (`=vars.Error.code`).
   Authoring only — no cloud effects.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
 

@@ -25,7 +25,7 @@ description: >
   explicit greenfield rule (SKILL.md rule 6 / `references/author/
   greenfield.md` -- "Discover the target solution before scaffolding...
   stop and ask which to use"). uipath-maestro-bpmn has NO equivalent rule:
-  SKILL.md and `references/shared/project-layout.md` document
+  SKILL.md and `references/operate.md` document
   `uip maestro bpmn init` auto-scaffolding a `<ProjectName>Solution/`
   wrapper when run outside an existing solution, with no instruction to
   search for `*.uipx` files or ask the user which solution to use first.
