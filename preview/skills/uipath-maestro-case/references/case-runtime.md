@@ -40,8 +40,11 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:case.connector.bindings -->
 - Source connection and folder ids from `bindings.json`; TypeScript uses symbolic
   names. Compiling into a scaffolded project regenerates its existing
+<!--skill-flavor:bindings-refresh:start-->
   `bindings_v2.json`; then run `uip solution resources refresh --solution-folder
-  {solution} --output json`. A live run is the evidence that those environment
+  {solution} --output json`.
+<!--skill-flavor:bindings-refresh:end-->
+  A live run is the evidence that those environment
   resources resolve. A `CONNECTION_STUB` warning from `case check` or `case
   compile` means a connection or folder label compiles to a value that is not
   a real id; it still compiles (fine for an offline or validate-only task), but
@@ -52,11 +55,13 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Published process, agent, RPA, API workflow, sub-case, connector, and folder
   references are tenant facts. Static validation cannot prove they exist.
 
+<!--skill-flavor:orphan-cleanup:start-->
 - Resource refresh is additive. After removing or repointing a resource-bound
   task, list local solution resources and remove each orphaned process or app by
   its listed key with `uip solution resources remove {key} --solution-folder
   {solution} --output json`, then refresh again. Never remove the Case project's
   own process/package pair, and never target package entries directly.
+<!--skill-flavor:orphan-cleanup:end-->
 
 ## SLA and runtime semantics
 
@@ -132,10 +137,13 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Start with `uip maestro case decompile <plan> -o <Name>.case.ts --no-pipeline`.
   Edit the generated `.case.ts` and retain `preserveCaseJson(...)`: it keeps
   the foreign metadata the typed surface does not own. Compile back into the
-  same plan: `uip maestro case compile <Name>.case.ts -o <plan>`. Needs
-  `@uipath/maestro-builder-sdk` 6.50.1 or later, which resolves the decompiled
+  same plan: `uip maestro case compile <Name>.case.ts -o <plan>`.
+<!--skill-flavor:sdk-upgrade:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.50.1 or later, which resolves the decompiled
   labels (for example `bOC1`) against that plan's own `bindings` array; an
-  older SDK writes the label in as the key, so upgrade first. Do not pass
+  older SDK writes the label in as the key, so upgrade first.
+<!--skill-flavor:sdk-upgrade:end-->
+  Do not pass
   `--bindings <plan>`: it replaces `bindings.json`, so a connector the edit
   adds loses its mapping. Do not run `<Name>.pipeline.mjs`: it writes a plan
   pack and debug never read. Strict decompile fails closed on unresolved
