@@ -351,9 +351,9 @@ binding half, which is the same for every connector-backed node.
   ```
 
   `merge` writes the result over `--original`, so pass no `-o`.
-  `decompile` writes a header at the top of the `.bpmn.ts` that records the original's sha256 and the decompile options, and `merge` reads the options from it: pass `merge` no decompile options, and leave the header intact when you edit.
-  When `merge` refuses because the original changed since the decompile, it writes nothing: decompile the original again and reapply the edit.
-  To fix the source after a merge, decompile the merged target again and make the fix there.
+  Line 1 of the `.bpmn.ts` is the stamp `decompile` writes (`// @decompiled-from … sha256:…`): it records the original's hash and the decompile options, and `merge` reads them, so do not edit or remove that line and pass `merge` no decompile options.
+  To fix the source after a merge, edit the same `.bpmn.ts` and merge again: `merge` restamps it with the merged file's hash.
+  When `merge` refuses with `MERGE_ORIGINAL_CHANGED` or `MERGE_SOURCE_NOT_STAMPED`, it writes nothing: decompile the original again and reapply the edit.
   Needs the `@uipath/maestro-builder-sdk` release that ships source-form merge (UiPath/builder-sdk#1889); on an older SDK `merge` stops with a ConfigError asking for an upgrade, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:brownfield-merge-form:end-->
   Then `format` (only when the edit added elements; see `bpmn.brownfield.format`), `refresh` and `validate` the target as in the validation loop.
