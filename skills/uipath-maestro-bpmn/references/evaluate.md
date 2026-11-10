@@ -88,7 +88,8 @@ Build expected outputs from real records, not invented ones: an invented key mat
 
 A simulation stands in for a component during a run, keyed by component id: the element id from the `.bpmn` (the id passed to the builder method, such as `sendEmail` for `.connector('sendEmail', …)`), or the tool name for an agent's tool.
 A simulation is scoped to one **data point inside one set**, so all three commands require `--set` and `--data-point`.
-`add` also requires `--strategy` and `--component-type` (`connector`, `agent`, `subprocess`).
+`add` also requires `--strategy` and `--component-type`: `agent`, `connector`, `hitl`, `process`, or `Node` (the type Studio Web writes), matched exactly, case included.
+A `uip` with cli#5928 rejects any other value, such as `subprocess`, with exit 3; an older one accepted any text.
 
 Always use the BPMN simulation commands shown below, **never the `maestro flow eval` verb** on a BPMN project.
 The flow verb skips the `--output-schema` requirement described below, so a flow-verb `Llm` simulation silently bypasses the one behavior that makes BPMN simulations correct.
