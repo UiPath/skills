@@ -49,11 +49,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN uses a multi-instance loop marker"
-    path: "LoopMultiplyBpmn/LoopMultiplyBpmn.bpmn"
-    includes:
-      - "multiInstanceLoopCharacteristics"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py LoopMultiplyBpmn --contains 'multiInstanceLoopCharacteristics'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

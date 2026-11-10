@@ -46,12 +46,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN file contains a diagram and an exclusive gateway"
-    path: "CalculatorBpmn/CalculatorBpmn.bpmn"
-    includes:
-      - "bpmndi:BPMNDiagram"
-      - "exclusiveGateway"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py CalculatorBpmn --contains 'bpmndi:BPMNDiagram' --contains 'exclusiveGateway'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

@@ -47,11 +47,11 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL modeled with the documented Actions.HITL activity type"
-    path: "ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn"
-    includes:
-      - "Actions.HITL"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ExpenseApprovalBpmn --contains 'Actions.HITL'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
