@@ -113,7 +113,7 @@ uip maestro flow eval simulation remove <component-id> \
 `--mock-value` is the component's raw `result`, so its top-level keys are the
 ones the node's `outputs` read as `=result.<key>`. Open the node and match them:
 
-- `connector` and `agent` nodes read `=result.response`. Pass `{"response": <value>}`.
+- Connector and inline-agent nodes read `=result.response`. Pass `{"response": <value>}`.
 - A `hitl` quick form maps `output` to `=result` and `status` to `=result.Action`.
   Pass `{"Action":"<outcome name>", "<fieldId>": <value>}`; `Action` is the
   outcome's `name`, not its id.
