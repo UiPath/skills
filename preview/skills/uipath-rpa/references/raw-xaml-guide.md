@@ -6,17 +6,17 @@ Write such an element as XAML inside `rawActivity(xml)`, which carries it verbat
 ```ts
 import { rawActivity } from '@uipath/rpa-builder-sdk';
 
-rpa('Main')
-  …
-  .step('wait', rawActivity(`<Pick DisplayName="Wait">
+s.rawActivity(`<Pick DisplayName="Wait">
   <PickBranch DisplayName="Soon">
     <PickBranch.Trigger>
       <Delay Duration="00:00:01" />
     </PickBranch.Trigger>
     <WriteLine Text="[&quot;reviewing &quot; &amp; in_Path]" />
   </PickBranch>
-</Pick>`))
+</Pick>`)
 ```
+
+`rawActivity(xml)` is the same as a slot's one activity: `Then: rawActivity(…)`.
 
 - The XML may use, undeclared, the prefixes compile always declares: the default namespace (CoreWF's activities), `x:`, `ui:`, `scg:`, `mc:`, `sap:` and `sap2010:`.
   Declare any other on the element itself, as decompile writes it: `<sd:DataTable xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" …>`; `check` refuses an undeclared one (`RAW_PREFIX_UNDECLARED`).

@@ -60,56 +60,57 @@ npx rpa-sdk merge Main.xaml Main.edited.xaml --in-place
 ## A workflow
 
 ```ts
-import { Assign, DataTable, Decimal, Int32, LogMessage, rpa, String, vb } from '@uipath/rpa-builder-sdk';
+import { DataTable, Decimal, Int32, LogMessage, rpa, String, vb } from '@uipath/rpa-builder-sdk';
 
 export default rpa('Main')                      // the x:Class; the project is VB, the default
   .argument('in_Amount', Decimal, 'In')         // x:Members: 'In', 'Out' or 'InOut'
   .argument('in_Region', String, 'In', { default: 'EMEA' })  // the value when the caller passes none
   .argument('in_Orders', DataTable, 'In')
   .argument('out_Route', String, 'Out')
-  .variable('count', Int32, 0)                  // a variable on the root Sequence, with a default
-  .steps((s) => s
-    .step('route', Assign({ to: (v) => v.out_Route, value: 'Manager' }))
-    .if('big', (v) => v.in_Amount > 10000, {
-      then: (t) => t.step('warn', LogMessage({ Level: 'Warn', Message: (v) => `large: ${v.in_Amount}` })),
-      else: (e) => e.step('ok', LogMessage({ Level: 'Info', Message: 'small' })),
+  .Sequence('Sequence_1', 'Main', (s) => s      // the root activity: one, usually a Sequence
+    .variable('count', Int32, 0)                // a variable on this Sequence, with a default
+    .Assign('route', { to: (v) => v.out_Route, value: 'Manager' })
+    .If('big', {
+      Condition: (v) => v.in_Amount > 10000,
+      Then: LogMessage('warn', { Level: 'Warn', Message: (v) => `large: ${v.in_Amount}` }),
+      Else: LogMessage('ok', { Level: 'Info', Message: 'small' }),
     })
-    .step('rows', Assign({ to: (v) => v.count, value: vb('in_Orders.Rows.Count') })))
+    .Assign('rows', { to: (v) => v.count, value: vb('in_Orders.Rows.Count') }))
   .build();                                     // the finished workflow, the file's default export
 ```
 
-- A slot with several steps, or with variables, becomes a Sequence; a single step is written alone. `Sequence({ DisplayName }, (t) => t…)` keeps an explicit one; `.variable(…)` inside any slot scopes a variable to it.
-- The first argument of `.step` and `.if` is the step's id (`IdRef`); `undefined` lets compile number it.
-- `.note(text)` after a step adds Studio's annotation to it.
+- Every activity is one call with its id first (`IdRef`; `undefined` lets compile number it): a method in a Sequence's chain (`s.LogMessage('warn', { … })`), or the function of the same name where a slot holds one activity (`Then: LogMessage('warn', { … })`).
+- A slot (`Then`, `Else`, `Body`, `Try`, `Finally`, a state's `Entry`, a case, a branch) holds exactly one activity. Several steps are a `Sequence(id, displayName?, (s) => s…)`, as Studio writes them, with an id of their own; `.variable(…)` scopes a variable to that Sequence.
+- The workflow's root is one activity too, as the workflow's own method: `rpa('Main').Sequence(…)`, `.StateMachine(…)`.
+- `.note(text)` after a chain call adds Studio's annotation to it; a slot's activity takes it as `Then: note('why', LogMessage(…))`.
 - Types: `String`, `Int32`, `Int64`, `Boolean`, `Double`, `Decimal`, `Object`, `DateTime`, `TimeSpan`, `Exception`, `BusinessRuleException`, `DataTable`, `DataRow`, `arrayOf(String)` (`String[]`), and `clrType({ name, local, clrNamespace, assembly })` for any other (`xmlns` too for a type under a URI, `ui:QueueItem`; `args: [String]` for a generic one).
-- Factories: `Assign({ to, value, type? })`, `LogMessage({ Level, Message })` (levels `Trace`, `Info`, `Warn`, `Error`, `Fatal`), `WriteLine({ Text })`, `Delay({ Duration })`, `Throw({ Exception })`, `If({ Condition, Then, Else })`, `Sequence`, and the loops and `TryCatch` below.
+- Activities: `Assign(id, { to, value, type? })`, `LogMessage(id, { Level, Message })` (levels `Trace`, `Info`, `Warn`, `Error`, `Fatal`), `WriteLine(id, { Text })`, `Delay(id, { Duration })`, `Throw(id, { Exception })`, `If(id, { Condition, Then, Else })`, `Sequence`, and the loops and `TryCatch` below.
 
 ## Loops and Try Catch
 
-A loop's body is a slot whose arrows read the item by the name given as `item`; the item is in scope only inside the body.
+A loop's body is one activity whose arrows read the item by the name given after the id; the item is in scope only inside the body.
 
 ```ts
-import { BusinessRuleException, Catch, DataTable, Exception, ForEach, ForEachRow, Int32, String, TryCatch, vb, While } from '@uipath/rpa-builder-sdk';
+import { Assign, BusinessRuleException, Catch, Exception, Int32, LogMessage, Sequence, String, Throw, vb } from '@uipath/rpa-builder-sdk';
 
-s.step('rows', ForEachRow({ item: 'row', DataTable: (v) => v.in_Orders, Body: (b) => b
-    .step('add', Assign({ to: (v) => v.total, value: vb('total + CDec(row("Amount"))') })) }))
-  .step('each', ForEach({ item: 'name', type: String, Values: (v) => v.in_Names, Body: (b) => b
-    .step('log', LogMessage({ Message: (v) => `name ${v.name}` })) }))
-  .step('retry', While({ Condition: (v) => v.attempt < 3, Body: (b) => b.step('inc', Assign({ to: (v) => v.attempt, value: (v) => v.attempt + 1 })) }))
-  .step('guard', TryCatch({
-    Try: (t) => t.step('validate', …),
+s.ForEachRow('rows', 'row', { DataTable: (v) => v.in_Orders, Body: Assign('add', { to: (v) => v.total, value: vb('total + CDec(row("Amount"))') }) })
+  .ForEach('each', 'name', String, { Values: (v) => v.in_Names, Body: LogMessage('log', { Message: (v) => `name ${v.name}` }) })
+  .While('retry', { attempt: [Int32, 0] }, { Condition: (v) => v.attempt < 3, Body: Assign('inc', { to: (v) => v.attempt, value: (v) => v.attempt + 1 }) })
+  .TryCatch('guard', {
+    Try: Sequence('Sequence_2', 'Validate', (t) => t…),
     Catches: [
-      Catch(BusinessRuleException, 'rule', (c) => c.step('warn', LogMessage({ Level: 'Warn', Message: vb('rule.Message') }))),
-      Catch(Exception, 'fault', (c) => c.step('rethrow', Throw({ Exception: vb('fault') }))),
+      Catch(BusinessRuleException, 'rule', LogMessage('warn', { Level: 'Warn', Message: vb('rule.Message') })),
+      Catch(Exception, 'fault', Throw('rethrow', { Exception: vb('fault') })),
     ],
-    Finally: (f) => f…,
-  }))
+    Finally: …,
+  })
 ```
 
-- `ForEach({ item, type, Values, Body, CurrentIndex?, MaxIterations? })` is Studio's For Each; `kind: 'CoreWF'` makes it CoreWF's plain `ForEach<T>`.
-- `ParallelForEach({ item, type, Values, Body })`, `ForEachRow({ item, DataTable, Body, CurrentIndex? })` (the item is a `DataRow`), `While({ Condition, Body })`, `DoWhile({ Body, Condition })`.
-- `TryCatch({ Try, Catches, Finally })`: the first `Catch(type, name, fill)` whose type matches handles the exception, which its steps read by `name`. `BusinessRuleException` is UiPath's business exception (`New BusinessRuleException("…")` in VB).
-- `While` and `DoWhile` can declare variables of their own, in scope for the condition and the body: `While({ Variables: { attempt: [Int32, 0] }, Condition: (v) => v.attempt < 3, Body: … })`.
+- `ForEach(id, item, type, { Values, Body, CurrentIndex?, MaxIterations? })` is Studio's For Each; `kind: 'CoreWF'` makes it CoreWF's plain `ForEach<T>`.
+- `ParallelForEach(id, item, type, { Values, Body })`, `ForEachRow(id, item, { DataTable, Body, CurrentIndex? })` (the item is a `DataRow`), `While(id, { Condition, Body })`, `DoWhile(id, { Body, Condition })`.
+- `TryCatch(id, { Try, Catches, Finally })`: the first `Catch(type, name, activity)` whose type matches handles the exception, which its activity reads by `name`. `BusinessRuleException` is UiPath's business exception (`New BusinessRuleException("…")` in VB).
+- `While`, `DoWhile`, `Parallel`, `StateMachine` and `Flowchart` can declare variables of their own, after the id and before the props, in scope for all of it: `While('retry', { attempt: [Int32, 0] }, { … })`.
+- A type the activity takes (`Switch`, the collection activities) comes after the id too: `Switch('route', String, { Expression, Cases, Default })`.
 
 ## Expressions
 
