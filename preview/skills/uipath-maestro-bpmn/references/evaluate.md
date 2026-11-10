@@ -7,8 +7,7 @@ Every `eval` command takes `--path <path>`: a Maestro BPMN project directory (`<
 It defaults to `.`.
 
 **Local `add` / `list` / `remove` edit project files and need no login.**
-Starting a run does: `uip login` first.
-`run start` then packages the local solution and **deploys it to Studio Web** (see [Running a set deploys your solution](#running-a-set-deploys-your-solution--know-what-it-overwrites)) before executing.
+Every `run` verb (`start`, `status`, `results`, `list`, `compare`) needs `uip login`; `run start` also deploys (see [Running a set deploys your solution](#running-a-set-deploys-your-solution--know-what-it-overwrites)).
 
 **Spellings.** `--help` lists each group by its plural name and `create` / `delete` (`evaluators create`, `sets delete`, `simulations create`, `runs start`).
 The singular names and `add` / `remove` used below (`evaluator add`, `set remove`, `simulation add`, `run start`) are aliases of the same commands; use them as written here.
@@ -139,6 +138,7 @@ uip maestro bpmn eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 
 `run start` returns an `evalSetRunId` and does not block.
 Poll `run status` until it settles, then read `run results`.
+`run list` reads the run records this checkout wrote; on a fresh checkout or another machine it fails (`No local run records for eval set ... and no --project-id given`) unless you pass `--project-id <workloadId>`, which `run start` prints.
 `run start` resolves the BPMN project (workload) id and solution from the parent `.uipx` or `SolutionStorage.json` and deploys from there; a project scaffolded with `--skip-solution-registration` has neither, and `run start` refuses it (`No solution to package`) unless both ids below are passed.
 Pass **both** `--solution-id` and `--project-id` to run against a solution already provisioned in Studio Web, which skips the package and upload (see below); `--folder-key` to run outside the personal workspace; and `--entry-point` to override the set's pinned start event for one run.
 

@@ -262,7 +262,7 @@ user's decision for that action. Read
 <!--skill-flavor:evaluating:start-->
 Evaluators, eval sets, data points and simulations are project files that `uip maestro bpmn eval` writes; nothing in `<Name>.bpmn.ts` creates them.
 Adding and listing them is local and needs no login.
-`eval run start` packages the solution and **uploads it to Studio Web** before it runs, so it needs `uip login` and the user's decision, like an upload.
+Every `eval run` verb needs `uip login`, and `eval run start` packages the solution and **uploads it to Studio Web** before it runs, so it also needs the user's decision, like an upload.
 Read **[`references/evaluate.md`](references/evaluate.md)**.
 <!--skill-flavor:evaluating:end-->
 
