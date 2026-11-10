@@ -46,17 +46,19 @@ initial_prompt: |
     do NOT pause for approval — build the complete local project in one pass.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was authored"
-    path: "ComputedJsBpmn/ComputedJsBpmn.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ComputedJsBpmn"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN uses the exact =js: computed prefix"
-    path: "ComputedJsBpmn/ComputedJsBpmn.bpmn"
-    includes:
-      - "=js:"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ComputedJsBpmn --contains '=js:'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
