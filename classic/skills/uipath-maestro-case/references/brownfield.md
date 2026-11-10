@@ -6,7 +6,7 @@ Edit an existing `caseplan.case` in place. Skip design handoff and Phase 1–7 b
 
 ## When this journey applies
 
-Use this journey when `caseplan.case` exists and the user requests a targeted edit (adding a stage, removing a task, changing a condition, swapping a trigger, etc.). Do not use `sdd.md`, resolution, planning, or prototyping hard stops. Route via [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
+Use this journey when `caseplan.case` exists and the user requests a targeted edit (adding a stage, removing a task, changing a condition, swapping a trigger, etc.). Do not use `sdd.md`, resolution, planning, or prototyping hard stops. Route via [SKILL.md](../SKILL.md#routing).
 
 ## Kickoff — set dev expectations first
 
