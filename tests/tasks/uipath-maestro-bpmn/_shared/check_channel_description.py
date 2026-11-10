@@ -6,7 +6,7 @@ same scenario (a manual-start process retrieves the channel description of
 #office-bellevue via the Slack Integration Service connector and outputs it),
 translated from a JSON node walk + inline `flow debug` payload to an XML walk
 over the registry-driven `Intsvc.ActivityExecution` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
 BPMN live-debug surface (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's canonical
 pattern: ephemeral solution import, `bpmn debug`, `debug-instance
 variables-all`/`incidents`).

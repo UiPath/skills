@@ -7,8 +7,8 @@ details, an Actions.HITL user task lets a manager approve/reject with an
 optional reason, a downstream script logs the outcome), translated from a
 JSON node/edge walk to an XML walk over the registry-driven Actions.HITL
 ``uipath:activity`` shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md and
-skills/uipath-maestro-bpmn/SKILL.md's Actions.HITL routing rule).
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md and
+classic/skills/uipath-maestro-bpmn/SKILL.md's Actions.HITL routing rule).
 
 Assertion map (Flow -> BPMN). One row per Flow assertion: the head line names the
 Flow-side assertion, the `->` line its BPMN re-homing, and any further indented line
@@ -35,7 +35,7 @@ continues the row above.
          (T1, per-field form) a context input naming/presenting "amount" references a declared
             vars.<id> whose <uipath:variables> type is numeric
          (T2, real Actions.HITL registry-template form --
-            skills/uipath-maestro-bpmn/validator/bpmn-spec.json extensionTypes["Actions.HITL"]) the
+            classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json extensionTypes["Actions.HITL"]) the
             single <uipath:input name="HitlTaskArguments" type="json" target="bodyField"> JSON body
             has a key naming "amount" whose value is an `=vars.<V>.<field>` (or bare `=vars.<V>`)
             expression, resolved against either a numeric-typed declared variable V, or V's declared
@@ -82,7 +82,7 @@ run 35501830119 (ExpenseApproval/ExpenseApproval/ExpenseApproval.bpmn -- grade
 that copy, not the stray ExpenseApprovalSolution/ scaffold alongside it in
 that artifact -- form fields nested one level down under `fields`, decision
 and reason expressed as boolean/string literal defaults instead of pointer
-keys). Both match skills/uipath-maestro-bpmn/validator/bpmn-spec.json's
+keys). Both match classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json's
 Actions.HITL extensionType: `contextFields` are fixed app-identity metadata
 (app `name` and `folderPath` bindings, taskTitle) -- NOT the reviewer-facing form
 fields. Form fields live at any depth inside the ONE `HitlTaskArguments` JSON
@@ -351,7 +351,7 @@ def main() -> None:
         # -- T2: real Actions.HITL registry-template form -------------------
         # Form fields live as keys of the single merged HitlTaskArguments
         # JSON body, not as separate context inputs / typed outputs (see
-        # skills/uipath-maestro-bpmn/validator/bpmn-spec.json). Walked
+        # classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json). Walked
         # recursively: CI run 35501830119 nested them one level down under a
         # "fields" object instead of putting them at the top level.
         body = parse_body_json(body_input)

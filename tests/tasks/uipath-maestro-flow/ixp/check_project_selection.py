@@ -34,10 +34,21 @@ def _nested_values(value, key: str):
             yield from _nested_values(item, key)
 
 
+def _row() -> str | None:
+    """The dataset row: the argument the task passes, else a part of the cwd.
+
+    The cwd fallback keeps a task that passes no argument working where the cwd
+    names the row; a coder-eval whose cwd is the bare workspace needs the argument.
+    """
+    if len(sys.argv) > 1:
+        return sys.argv[1] if sys.argv[1] in EXPECTED else None
+    return next((part for part in os.getcwd().split(os.sep) if part in EXPECTED), None)
+
+
 def main() -> int:
-    row = next((part for part in os.getcwd().split(os.sep) if part in EXPECTED), None)
+    row = _row()
     if row is None:
-        print(f"FAIL: unknown dataset row in cwd: {os.getcwd()}", file=sys.stderr)
+        print(f"FAIL: unknown dataset row (argv: {sys.argv[1:]}, cwd: {os.getcwd()})", file=sys.stderr)
         return 2
 
     path = find_flow_file()

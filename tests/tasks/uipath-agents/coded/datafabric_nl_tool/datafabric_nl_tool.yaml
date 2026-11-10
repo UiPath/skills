@@ -4,7 +4,7 @@ description: >
   entities from the tenant, selects the right one, and wires
   create_datafabric_tool with entity config, prompt forwarding, and
   lazy init.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities, studio-web-unsupported, studio-web-unsupported:coded-agent]
 sandbox:
   template_sources:
     - type: template_dir

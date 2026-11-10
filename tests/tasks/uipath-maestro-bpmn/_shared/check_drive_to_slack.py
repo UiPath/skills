@@ -5,7 +5,7 @@ Ported from Flow `connector_features/drive_to_slack.yaml`'s
 ``check_drive_to_slack.py``: same scenario (download a file from Google Drive,
 send it into a Slack channel), translated from a JSON node/edge walk to an XML
 walk over the registry-driven ``Intsvc.ActivityExecution`` connector shell
-(see skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
+(see classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
 
 Assertion map (Flow → BPMN):
   F check_drive_to_slack.py:51-53  uipath-google-drive connector key referenced → connector_task(root, DRIVE_KEY) present
