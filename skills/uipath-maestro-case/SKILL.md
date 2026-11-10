@@ -110,7 +110,11 @@ uip solution resources refresh --solution-folder <solution> --output json
 
 `check` owns source-level invariants and emits teaching diagnostics. Product
 validation owns the compiled Case contract. Do not repair emitted JSON by hand;
-change the TypeScript source and rebuild.
+change the TypeScript source and rebuild. `uip maestro case sdd convert`
+produces a draft plan — connector inputs are flat, cross-task references
+unresolved, and `registry prepare` has not run. It is a seed, not a finished
+artifact: always decompile its output, author the TypeScript source, then
+check → compile. Never submit a convert-only plan to `validate`.
 
 The build is complete only when `validate --strict` passes. When the request
 supplies an `sdd.md`, add `--sdd <path>`: it audits the plan against the SDD.
