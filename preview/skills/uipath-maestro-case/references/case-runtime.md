@@ -35,6 +35,29 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+## Script tasks
+
+<!-- RULE:case.script.positional-rename -->
+- The function form's parameters are positional: first parameter becomes
+  `vars`, second becomes `metadata`. The mapping is by position, not by
+  name. Any names work, except `metadata` first or `vars` second, which
+  compile refuses. A function-local `const` is fine;
+  a module-scope constant or an `import` is refused at compile.
+  Compile also refuses destructured parameters (`({ amount }) =>`),
+  aliasing (`const v = vars`), bracket access (`vars['x']`), optional
+  chaining on `vars`, and passing `vars` to another function.
+
+<!-- RULE:case.script.body-and-refs -->
+- A string body compiles as authored. Declare every `vars.x` read
+  with `.var()` or `.input()` before referencing it.
+
+<!-- RULE:case.script.outputs -->
+- `.outputs({ scriptResult: '=result.response' })` maps the whole return value
+  to a case variable. Compile refuses any source except `=result.response` and
+  `=Error` (code `SCRIPT_OUTPUT`). To reach a single field, read
+  `vars.scriptResult.<field>` downstream. The compiled output row is named
+  `scriptResponse`.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
