@@ -53,6 +53,27 @@ def require_uipath_attr_value(
         fail(f"missing {description}: {expected_value}")
 
 
+MIGRATION_VERSIONS = {"5", "11", "11.5"}
+
+
+def require_process_migration_version(root: ET.Element) -> None:
+    """One numeric `uipath:migrationVersion` generation on the process itself.
+
+    A copy on a task does not count: the version is the process's schema version.
+    """
+    process_versions = {
+        elem.attrib.get("version")
+        for elem in root.findall(
+            "bpmn:process/bpmn:extensionElements/uipath:migrationVersion", NS
+        )
+    }
+    if not process_versions & MIGRATION_VERSIONS:
+        fail(
+            "missing process-level uipath:migrationVersion of 5, 11 or 11.5; "
+            f"found {sorted(v for v in process_versions if v)}"
+        )
+
+
 def main() -> None:
     path, root = parse_bpmn("Contract")
 
@@ -87,17 +108,7 @@ def main() -> None:
     # onto unrelated tasks, while the builder SDK writes the one process-level value
     # (`.schemaVersion(v)`) and failed (R14 and R15 v2, builder-sdk#1884). Any of the
     # three numeric generations at process level passes.
-    process_versions = {
-        elem.attrib.get("version")
-        for elem in root.findall(
-            "bpmn:process/bpmn:extensionElements/uipath:migrationVersion", NS
-        )
-    }
-    if not process_versions & {"5", "11", "11.5"}:
-        fail(
-            "missing process-level uipath:migrationVersion of 5, 11 or 11.5; "
-            f"found {sorted(v for v in process_versions if v)}"
-        )
+    require_process_migration_version(root)
 
     require_uipath_attr_value(
         root, "scriptVersion", "value", "v2", "preserved legacy scriptVersion"
