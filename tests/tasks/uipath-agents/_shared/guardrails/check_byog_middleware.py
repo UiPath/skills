@@ -19,8 +19,8 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.guardrail_middleware import (  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.guardrails.guardrail_middleware import (  # noqa: E402
     call_kwarg,
     call_name,
     spread_middleware_calls,
