@@ -10,7 +10,7 @@
 
 > **This is a UiPath automation blueprint.** Do not execute these steps directly. Build it with the **uipath-genome** skill, which builds each component with the skill named in **Components**, then wires them per **Handoffs** and **Deployment**.
 
-> Designed in: [{SDD title}]({relative path to the SDD}) *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
+> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT} *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 
 ## Overview
 
@@ -174,9 +174,10 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 |-----------|-----------------|-------|
 | Source framework | {`UiPath` for a UiPath source, else the framework name as the migration pack's README spells it} {version the source states} | |
 | Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
+| Requested change | {only when the request asks for a change: the user's words} | {each decision by builder topic — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
 | {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {ambiguity or unresolved reference} |
-| Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because nothing reaches it and the Unused parts answer kept to what runs, or the request named others} |
-| Unused | {workflows, pages and helpers no caller invokes that the Unused parts answer left out — `{Name}` ({id})} | {what each does} |
+| Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because nothing reaches it and the Unused parts answer kept to what runs or it only works a technology UiPath's activities cover, or the request named others} |
+| Unused | {workflows, pages and helpers no caller invokes that extraction left out — `{Name}` ({id})} | {what each does} |
 | Excluded / unreachable | {objects the source guide excludes; dead code, superseded copies, objects reached only through disabled calls — by name} | {why} |
 | Inventory | {processes, windows, controls (n without a locator), recordsets, rows, credential accounts} | {counts the inventory script reported; execution re-derives the catalogs from the export} |
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |

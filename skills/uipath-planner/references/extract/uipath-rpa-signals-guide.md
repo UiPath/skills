@@ -1,6 +1,6 @@
 # UiPath Source Guide — RPA Signals
 
-Split out of [uipath-source-guide.md](uipath-source-guide.md), which is read first and whole; read the § Signals sections below whose artifact type the inventory holds.
+Read after [uipath-source-guide.md](uipath-source-guide.md); read the § Signals sections below whose artifact type the inventory holds.
 
 ## Signals — XAML
 

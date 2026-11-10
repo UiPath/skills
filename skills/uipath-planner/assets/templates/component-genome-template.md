@@ -11,7 +11,7 @@
 
 > Part of: {Process name} — {one line on this component's role in the process}. *(Write the process name as a markdown link to `../{process-slug}-genome.md`. Omit this line for a standalone automation.)*
 
-> Designed in: [{SDD title}]({relative path to the SDD}) *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
+> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT} *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 
 ## Overview
 
@@ -153,10 +153,11 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Row | Source artifact | Notes |
 |-----|-----------------|-------|
 | {Dead code / Unresolved invocation / Inferred / a finding} | {Source framework}: `{Name}` ({id}) | {what it is, the lines that show it} |
+| Requested change | {only when the request asks for a change: the user's words} | {each decision by builder topic — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
-*A component of a process genome inherits the Source framework, Source export, Inventory, Not covered, Unused and Related resources rows from the process genome; a standalone component genome carries them itself.*
+*A component of a process genome inherits the Source framework, Source export, Requested change, Inventory, Not covered, Unused and Related resources rows from the process genome; a standalone component genome carries them itself.*
 
 ### Steps
 
