@@ -157,9 +157,9 @@ make from syntax alone. Exact signatures remain in the generated API.
   It writes the request in manual mode with the `ImplicitConnection` binding Studio Web uses, so nothing on the tenant has to exist.
   `outputVar` (default `<id>_response`) holds the response body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
   `check` warns `HTTP_MANUAL_V1` on the old manual form (`mode="manual"` with the request as context rows), which the runtime faults with 102018 "Body cannot be null"; rewrite it as `.http()` and compile.
-  A read written for the old form's whole response, `vars.<id>_response.body.x`, now gets `undefined`; read `vars.<id>_response.x`.
 <!--skill-flavor:sdk-http-manual:start-->
   Needs `@uipath/maestro-builder-sdk` 6.93.9 or later; an older SDK still writes the old manual form, with `outputVar` holding the whole response and no `HTTP_MANUAL_V1` warning, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again.
+  From 6.93.9, `outputVar` is the body, so read `vars.<id>_response.x`, not `vars.<id>_response.body.x`, which read the old form's whole response.
 <!--skill-flavor:sdk-http-manual:end-->
 
 <!-- RULE:bpmn.orchestrator.business-rule -->
