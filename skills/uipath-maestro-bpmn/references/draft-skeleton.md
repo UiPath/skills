@@ -91,6 +91,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 
 1. Run `uip maestro bpmn init <Name> --output json` and take the project directory from its `Data.Path`; the commands below write it as `<Project>`.
    It is not always `<Name>/`: outside a solution, `init` scaffolds one and the project lands at `<Name>Solution/<Name>/`.
+   When the user named where the `.bpmn` goes, run the `init` command that step 1 of [SKILL.md](../SKILL.md#workflow) gives for that path instead.
    Then seed `<Name>.bpmn.ts` from the stub with `uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested`, as in [SKILL.md](../SKILL.md#workflow).
 2. Rewrite the chain as the skeleton, in one write, keeping the seeded process id, `entryPointId` and start event id.
 3. Run the loop:

@@ -51,7 +51,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    It scaffolds no `<Name>Solution`: the project is registered in a solution only when a parent directory already holds a `.uipx`, and `--skip-solution-registration` stops even that when the project does not belong in it.
    The directory may already hold unrelated files (`package.json`, `.git`, notes), but `init` refuses one that holds a project file (`project.uiproj`, `project.json`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json` or `<Name>.bpmn`, matched case-insensitively).
    That refusal means a project is already there: if it is the process the user means, edit it as an existing process (step 8), and ask before passing `--force`, which overwrites those files.
-   `init` refuses a directory holding a `.uipx` even with `--force`, because a project goes in a folder below its solution file, not beside it.
+   `init` refuses a directory holding a `.uipx` even with `--force`.
    Check that `Data.Path` is the requested project directory before writing anything, and compile to `<Project>/<Name>.bpmn`, not to a copy elsewhere.
    A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.88.1 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version).
