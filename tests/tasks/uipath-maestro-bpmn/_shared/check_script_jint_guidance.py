@@ -248,8 +248,63 @@ def strip_js_comments(script: str) -> str:
 
 
 # The script's result: `=result.response`, or one field of it. A v2+ script task
-# returns `{ response: <value> }`, so both read what the script returned.
-RESPONSE_SOURCE = re.compile(r"=result\.response(?:\.[A-Za-z_$][\w$]*)*")
+# returns `{ response: <value> }`, so both read what the script returned. Group 1 is
+# the first field a field path reads (`riskScore` in `=result.response.riskScore.x`).
+RESPONSE_SOURCE = re.compile(r"=result\.response(?:\.([A-Za-z_$][\w$]*)(?:\.[A-Za-z_$][\w$]*)*)?")
+JS_KEY = re.compile(r"([A-Za-z_$][\w$]*)\s*(?=[:,}(])")
+
+
+def returned_object_keys(body: str) -> list[set[str]]:
+    """The top-level keys of each object literal the script returns (`return { ... }`).
+
+    `body` is comment-free (`strip_js_comments`); strings are kept, so they are
+    skipped here. A key is `name:`, shorthand `name`, a method `name(`, or a quoted
+    `'name':`. A spread (`...x`) or a computed key names nothing.
+    """
+    returns: list[set[str]] = []
+    for match in re.finditer(r"(?<![\w$.])return\s*\{", body):
+        keys: set[str] = set()
+        depth = 1
+        expecting_key = True
+        in_string: str | None = None
+        index = match.end()
+        while index < len(body) and depth:
+            char = body[index]
+            if in_string:
+                if char == "\\":
+                    index += 2
+                    continue
+                if char == in_string:
+                    in_string = None
+                index += 1
+                continue
+            if char in {'"', "'"} and depth == 1 and expecting_key:
+                quoted = re.match(rf"{char}([^{char}\\]*){char}\s*:", body[index:])
+                if quoted:
+                    keys.add(quoted.group(1))
+                    expecting_key = False
+                    index += quoted.end()
+                    continue
+            if char in {'"', "'", "`"}:
+                in_string = char
+                expecting_key = False
+            elif char in "{[(":
+                depth += 1
+                expecting_key = False
+            elif char in "}])":
+                depth -= 1
+            elif depth == 1 and char == ",":
+                expecting_key = True
+            elif depth == 1 and expecting_key and not char.isspace():
+                expecting_key = False
+                key = JS_KEY.match(body, index)
+                if key:
+                    keys.add(key.group(1))
+                    index = key.end()
+                    continue
+            index += 1
+        returns.append(keys)
+    return returns
 
 
 def require_error_envelope(
@@ -728,6 +783,19 @@ def main() -> None:
         fail(f"script uses APIs outside the Jint boundary: {forbidden}")
     if re.search(r"return\s*\{\s*response\s*:", body):
         fail("ScriptTask must return the intended value without a response wrapper")
+    # A row reading `=result.response.<field>` reads a key of the returned object, so
+    # the script must return an object literal that has it; otherwise the row reads
+    # `undefined` at runtime while `bpmn validate` still says Valid. A bare
+    # `=result.response` reads whatever the script returns.
+    returned_keys = returned_object_keys(body)
+    for output in result_rows:
+        field = RESPONSE_SOURCE.fullmatch(output.attrib.get("source", "")).group(1)
+        if field and not any(field in keys for keys in returned_keys):
+            fail(
+                f"the output row {output.attrib.get('name')!r} reads "
+                f"{output.attrib.get('source')}, but the script returns no object "
+                f"literal with a top-level {field!r} key (return {{ {field}: ... }})"
+            )
     if not re.search(r"(^|[;{}]\s*)return\b", body, re.MULTILINE):
         fail("script must contain an executable return statement")
     for variable_id in (internal_amount_id, internal_days_id):

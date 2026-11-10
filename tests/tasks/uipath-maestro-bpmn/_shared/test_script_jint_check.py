@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 CHECK = Path(__file__).resolve().parent / "check_script_jint_guidance.py"
 
 PROJECT_JSON = '{"Name": "RiskScoreScriptBpmn", "ProjectType": "ProcessOrchestration"}'
@@ -311,6 +313,66 @@ def test_a_field_of_the_response_passes(tmp_path: Path) -> None:
     )
     assert bpmn != SDK_BOUNDARY_BPMN
     result = run_check(tmp_path, bpmn)
+    assert result.returncode == 0, result.stderr
+
+
+GOLDEN_RETURN = "return score;"
+GOLDEN_RESPONSE_ROW = 'var="Var_ScriptResponse" source="=result.response"'
+
+
+def golden_reading(source: str, script_return: str = GOLDEN_RETURN) -> str:
+    """The golden artifact with its response row reading `source` and returning `script_return`."""
+    bpmn = GOLDEN_BPMN.replace(
+        GOLDEN_RESPONSE_ROW, f'var="Var_ScriptResponse" source="{source}"'
+    ).replace(GOLDEN_RETURN, script_return)
+    assert GOLDEN_RESPONSE_ROW in GOLDEN_BPMN and GOLDEN_RETURN in GOLDEN_BPMN
+    return bpmn
+
+
+@pytest.mark.parametrize(
+    "source",
+    ["=result.response.riskScore", "=result.response.a.b.c"],
+)
+def test_a_field_of_a_bare_return_fails(tmp_path: Path, source: str) -> None:
+    # tmatup's repro on #4543: `return score;` read through a field is `undefined`
+    # at runtime, though `bpmn validate` says Valid.
+    result = run_check(tmp_path, golden_reading(source))
+    assert result.returncode != 0
+    assert "top-level" in result.stderr + result.stdout
+
+
+@pytest.mark.parametrize(
+    "script_return",
+    [
+        "return { other: score };",
+        "return { nested: { riskScore: score } };",
+        "return { label: 'riskScore', value: score };",
+        "return [score];",
+    ],
+)
+def test_a_field_the_returned_object_lacks_fails(tmp_path: Path, script_return: str) -> None:
+    result = run_check(tmp_path, golden_reading("=result.response.riskScore", script_return))
+    assert result.returncode != 0
+    assert "top-level" in result.stderr + result.stdout
+
+
+@pytest.mark.parametrize(
+    "script_return",
+    [
+        "return { riskScore: score };",
+        "var riskScore = score;\nreturn {\n  riskScore\n};",
+        "var riskScore = score;\nreturn { riskScore };",
+        "return {\n  band: score > 50 ? 'high' : 'low',\n  riskScore: score\n};",
+        "return { 'riskScore': score };",
+    ],
+)
+def test_a_field_the_returned_object_has_passes(tmp_path: Path, script_return: str) -> None:
+    result = run_check(tmp_path, golden_reading("=result.response.riskScore", script_return))
+    assert result.returncode == 0, result.stderr
+
+
+def test_a_bare_response_accepts_any_return(tmp_path: Path) -> None:
+    result = run_check(tmp_path, golden_reading("=result.response", "return score;"))
     assert result.returncode == 0, result.stderr
 
 
