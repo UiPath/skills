@@ -7,7 +7,7 @@ Channel" node targets a channel whose id can only be resolved by paging past
 page 1 of the Slack channel resources, or by the SDK's lookup resolver),
 translated from a JSON node/edge substring search to an XML walk over the
 registry-driven ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3). The two
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3). The two
 ``command_executed`` criteria that grade the CLI discovery/pagination
 transcript (paged resource-list loop, `flow validate`→`bpmn validate`) stay in
 the task YAML unchanged/verb-swapped; they are not this script's concern.

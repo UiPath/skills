@@ -18,9 +18,10 @@ import re
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..")
 CANONICAL = os.path.join(ROOT, "skills", "uipath-planner", "references", "case", "case-design-layers-guide.md")
-TWIN = os.path.join(ROOT, "skills", "uipath-maestro-case", "references", "sla-response-shapes.md")
+# The twin is the classic (JSON-authoring) case skill, which Studio Web pins.
+TWIN = os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "references", "sla-response-shapes.md")
 CANONICAL_FIELDS = CANONICAL
-TWIN_FIELDS = os.path.join(ROOT, "skills", "uipath-maestro-case", "references", "registry-discovery.md")
+TWIN_FIELDS = os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "references", "registry-discovery.md")
 
 
 def read(path: str) -> str:
@@ -115,7 +116,7 @@ def test_neither_side_links_into_the_other_skills_files():
     """Self-containment: sibling references are by skill NAME, never by file path."""
     for path in (CANONICAL, TWIN, TWIN_FIELDS,
                  os.path.join(ROOT, "skills", "uipath-planner", "references", "case", "case-design-lane-guide.md"),
-                 os.path.join(ROOT, "skills", "uipath-maestro-case", "SKILL.md")):
+                 os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "SKILL.md")):
         text = read(path)
         offenders = re.findall(r"\]\((?:\.\./)+uipath-[a-z-]+/[^)]+\)", text)
         assert not offenders, f"{os.path.basename(path)} links into another skill's files: {offenders}"

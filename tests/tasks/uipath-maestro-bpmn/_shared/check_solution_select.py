@@ -22,7 +22,7 @@ Assertion map (Flow -> BPMN):
 Ground truth for the `.uipx` `Projects[].Type` value a Maestro BPMN project
 registers as ("ProcessOrchestration", not "Bpmn" or "Flow"): the
 `ProjectType`/`contentType` value documented throughout
-skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md
+classic/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md
 and mirrored in an existing `.uipx` fixture elsewhere in this repo
 (tests/tasks/uipath-maestro-flow/inline_agent/inline_solution_maestro_tool/_fixtures/
 OnboardingFlowSol/OnboardingFlowSol.uipx has `"Type": "ProcessOrchestration"`
