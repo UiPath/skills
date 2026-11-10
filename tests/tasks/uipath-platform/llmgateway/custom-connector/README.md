@@ -1,6 +1,6 @@
-# uipath-byo-llm-connector task tests
+# BYO LLM custom connector task tests
 
-Task-tier coverage for the `uipath-byo-llm-connector` skill.
+Task-tier coverage for the BYO LLM custom connector guide of the `uipath-platform` skill (`skills/uipath-platform/references/llmgateway/custom-connector/`).
 
 Both tasks build the connector **offline** (`builder init --organization`), so they are hermetic. The tenant steps of the lifecycle (import, publish, connections, the probe run through `uip llm-configuration byo-connections`) need a tenant with BYO custom connectors enabled and a person to enter credentials on the connection page; the e2e task runs them against a disconnected CLI and grades the command shape only.
 
@@ -14,5 +14,5 @@ The build is graded on outcome by `chat-bridge-e2e/check_byo_connector.py`: it r
 Run the grader by hand against a connector directory:
 
 ```bash
-python3 tests/tasks/uipath-byo-llm-connector/chat-bridge-e2e/check_byo_connector.py <CONNECTOR_DIR> --hooks
+python3 tests/tasks/uipath-platform/llmgateway/custom-connector/chat-bridge-e2e/check_byo_connector.py <CONNECTOR_DIR> --hooks
 ```

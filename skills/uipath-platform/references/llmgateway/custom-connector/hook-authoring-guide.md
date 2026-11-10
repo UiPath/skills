@@ -206,7 +206,7 @@ On a streaming call (`"stream": true`, or a stream path such as `:streamGenerate
 
 ## Testing a hook offline
 
-There is no hook log. Before publishing, run the hook against a sample body with a small harness (write it to a scratch directory, not into the connector). It needs a full Node.js runtime; where there is none, skip it and let the test calls in SKILL.md step 7 test the hooks:
+There is no hook log. Before publishing, run the hook against a sample body with a small harness (write it to a scratch directory, not into the connector). It needs a full Node.js runtime; where there is none, skip it and let the test calls in custom-connector-guide.md step 7 test the hooks:
 
 ```javascript
 // run-hook.mjs — node run-hook.mjs <hook.js> <vars.json>

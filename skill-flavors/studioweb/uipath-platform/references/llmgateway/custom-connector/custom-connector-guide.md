@@ -7,7 +7,7 @@ The unpublished draft is tested with `uip` too: the user adds its test connectio
 <!--skill-flavor:draft-intro:end-->
 
 <!--skill-flavor:probe-list:start-->
-List what will run by the rules in [references/probes-guide.md](references/probes-guide.md) §"Which files run" (`<SKILL_DIR>` is the folder holding this SKILL.md): read every file in `<SKILL_DIR>/assets/probes/default/` and in `<SKILL_DIR>/assets/probes/<PRODUCT>/`, plus the one `<PROBE_ID>.json` each named probe is, in any folder. Keep a file whose `apiFlavor` is the flavor and whose `match` and `excludeFeatures` fit the feature and the catalog model, drop an `"optIn": true` file no one named, then drop every file a kept file's `replaces` names. Each kept file holds the request body and what the answer must show.
+List what will run by the rules in [probes-guide.md](probes-guide.md) §"Which files run" (`<GUIDE_DIR>` is the folder holding this guide: `references/llmgateway/custom-connector/` in the uipath-platform skill): read every file in `<GUIDE_DIR>/assets/probes/default/` and in `<GUIDE_DIR>/assets/probes/<PRODUCT>/`, plus the one `<PROBE_ID>.json` each named probe is, in any folder. Keep a file whose `apiFlavor` is the flavor and whose `match` and `excludeFeatures` fit the feature and the catalog model, drop an `"optIn": true` file no one named, then drop every file a kept file's `replaces` names. Each kept file holds the request body and what the answer must show.
 <!--skill-flavor:probe-list:end-->
 
 <!--skill-flavor:draft-test-connection:start-->

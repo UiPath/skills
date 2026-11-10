@@ -4,14 +4,14 @@ The product's compatibility probes are the acceptance test for a BYO LLM connect
 
 ## The probe requests (`assets/probes/`)
 
-The gateway's probes are fixed requests with fixed checks. `assets/probes/` holds them as one JSON file per request, and `scripts/run-probes.sh` sends them to any connection (SKILL.md steps 1 and 7), so the draft meets the same requests and checks before it is published. There are two kinds of folder:
+The gateway's probes are fixed requests with fixed checks. `assets/probes/` holds them as one JSON file per request, and `scripts/run-probes.sh` sends them to any connection (custom-connector-guide.md steps 1 and 7), so the draft meets the same requests and checks before it is published. There are two kinds of folder:
 
 | Folder | What it holds | When each runs |
 |---|---|---|
 | `default/` | Every product's probes: the gateway's base probe for the flavor (`base-chat`, one per chat flavor; `base-responses`; `base-embeddings`), and the basic payloads any product's configuration can list (the `*_basic_probe`s, `"optIn": true`) | A base probe always, unless a product's code-built probe takes its place; a basic payload only when named with `--probe <ProbeId>` |
 | `<product>/` | One product's own: the probe the gateway's code builds for it (`agents/agents-tool-call.*`, Agents' forced `tool2` call on every feature but `agents-autopilot`; `uia/uia-screenplay.*`, UIA on its computer-use model), and the payloads only that product lists, each with a validator of its own in the gateway (`uipath-ecs/`: ECS's tool-calling, multimodal, several-choices, embeddings and grounding probes, `"optIn": true`) | A code-built probe automatically for that product, in place of the base probe it `replaces`; a listed payload only when named with `--probe <ProbeId>` |
 
-A file marked `"optIn": true` is a payload a product's Model Hub configuration lists for a feature, and it is opt in. The skill holds no product's list of them: the list is the product's own configuration, and it varies by feature, model and environment. A product comes with its probes — ask the user or the product team which `ProbeId`s the feature lists, and pass each with `--probe`. With none, the default and any code-built probe run, which is what the gateway runs for a feature that lists none. A named probe written for another flavor is reported as skipped: the gateway runs only those of the configuration's flavor.
+A file marked `"optIn": true` is a payload a product's Model Hub configuration lists for a feature, and it is opt in. This guide holds no product's list of them: the list is the product's own configuration, and it varies by feature, model and environment. A product comes with its probes — ask the user or the product team which `ProbeId`s the feature lists, and pass each with `--probe`. With none, the default and any code-built probe run, which is what the gateway runs for a feature that lists none. A named probe written for another flavor is reported as skipped: the gateway runs only those of the configuration's flavor.
 
 ### Which files run
 
@@ -51,7 +51,7 @@ A kept file's `replaces` then drops the kept files with those ids: Agents' `agen
 
 ### Adding a probe
 
-Only a probe the gateway itself has — never a request of the skill's own:
+Only a probe the gateway itself has — never a request of this guide's own:
 
 - **code-built** (a class under the gateway's `CompatibilityProbes/ProgrammaticProbes/`): `<product>/<id>.<flavor-slug>.json`, one per flavor the gateway's mappers send it in, with `replaces` naming the default it takes the place of and the `match` / `excludeFeatures` the class selects by;
 - **a payload a product lists** (under the gateway's `CompatibilityProbes/ProductDefinedProbes/Payloads/`, with its validator): `default/<ProbeId>.json` when any product can list it, `<product>/<ProbeId>.json` when the payload and its validator are that product's own; `"optIn": true`, the payload as `body`, the validator's checks in order, and no `match`: it runs when named.
@@ -60,7 +60,7 @@ Set `path` to the flavor's resource path ([connector-contract-guide.md](connecto
 
 The files mirror the gateway (UiPath/Arima `develop`, November 2026) and carry the request the flags in production select: Agents sends `tool2` and accepts one or two calls. When a probe's verdict in step 9 names a request the runner did not send, the feature lists a probe you did not name: get its `ProbeId` and run it with `--probe`.
 
-A call the vendor cannot serve, refused by the hook's own `continue: false`, fails the matching probe too. Do not work around it: tell the user which product feature needs it (SKILL.md step 1).
+A call the vendor cannot serve, refused by the hook's own `continue: false`, fails the matching probe too. Do not work around it: tell the user which product feature needs it (custom-connector-guide.md step 1).
 
 ## How the probes run
 
@@ -71,11 +71,11 @@ A call the vendor cannot serve, refused by the hook's own `continue: false`, fai
 3. send the configuration to the gateway's validate endpoint, which runs every probe for each mapped model through the connection — the real path: gateway → Integration Service → your hooks → vendor;
 4. save the configuration only if every model passes. There is no validate-only command and no skip flag.
 
-So probing means creating (first time) or updating (after a fix) a configuration, on the runtime connection of the published connector (SKILL.md step 9). Create with `--no-enabled`; enable with `update … --enabled` once the user says the product should use it.
+So probing means creating (first time) or updating (after a fix) a configuration, on the runtime connection of the published connector (custom-connector-guide.md step 9). Create with `--enabled` (a configuration that fails is never saved); use `--no-enabled` only when the user asks to keep it off, and switch it on later with `update … --enabled`.
 
 ```bash
 uip llm-configuration byo-connections create --product <PRODUCT> --feature <FEATURE> \
-  --folder-key <SHARED_FOLDER_KEY> --name '<CONFIG_NAME>' --no-enabled \
+  --folder-key <SHARED_FOLDER_KEY> --name '<CONFIG_NAME>' --enabled \
   --connector-type Custom --connection-id <RUNTIME_CONNECTION_ID> --api-flavor <API_FLAVOR> \
   --llm-name <CATALOG_MODEL> --llm-identifier <VENDOR_MODEL_ID> --output json
 ```
@@ -113,11 +113,11 @@ The verdict is keyed by catalog model (on success `Data.Validation.<Model>`, the
 | `VendorAuthFailed` (401) | Wrong key, wrong header name, missing `Bearer ` prefix, expired token | Fix the auth config or the token-exchange hooks; re-enter the key |
 | `VendorPermissionDenied` (403) | Key valid but not allowed this model or endpoint | The customer grants access; nothing to fix in the connector |
 | `VendorModelNotFound` (404) | **The resource path does not match the flavor** (Integration Service answers 404 for an unknown path) — or the vendor does not know `--llm-identifier` | Check the paths against [connector-contract-guide.md](connector-contract-guide.md) first, then the model id and the hook's model mapping |
-| `VendorInvalidRequest` (400) | The preRequest hook sends a body the vendor rejects (unknown field, wrong types, missing required field such as Anthropic `max_tokens`) — or the hook's own `continue: false` refusal of a feature the vendor lacks | Read `vendorRawResponse`; fix the request mapping; test it with the harness or a test call. If it is the hook's own refusal, the connector cannot fix it: stop and tell the user which probe needs the feature (SKILL.md step 1) |
+| `VendorInvalidRequest` (400) | The preRequest hook sends a body the vendor rejects (unknown field, wrong types, missing required field such as Anthropic `max_tokens`) — or the hook's own `continue: false` refusal of a feature the vendor lacks | Read `vendorRawResponse`; fix the request mapping; test it with the harness or a test call. If it is the hook's own refusal, the connector cannot fix it: stop and tell the user which probe needs the feature (custom-connector-guide.md step 1) |
 | `VendorRateLimitExceeded` (429) | Vendor quota | Wait and re-probe; not a connector defect |
 | `VendorInternalFailure`, `VendorGatewayFailure`, `VendorServiceUnavailable`, `VendorDefault5xxFailure` | Vendor outage — or a hook that throws (an exception in a hook surfaces as a 5xx) | Run both hooks through the harness, or a test call, on the probe's body shape; then retry |
 | `VendorDefault4xxFailure` | Another 4xx from the vendor | Read `vendorRawResponse` |
-| *(no reason)* | The gateway failed before calling out — most often a CLI too old to send the connector template (SKILL.md Rule 2), or an unparseable answer | Check `byo-connections create --help` (SKILL.md Rule 2); check the postRequest output is valid JSON |
+| *(no reason)* | The gateway failed before calling out — most often a CLI too old to send the connector template (custom-connector-guide.md Rule 2), or an unparseable answer | Check `byo-connections create --help` (custom-connector-guide.md Rule 2); check the postRequest output is valid JSON |
 
 ## Incompatible (`isAvailable: true`, `isCompatible: false`)
 

@@ -6,7 +6,7 @@ description: >
   flavor's path (/v1/chat/completions, not the vendor's), the template tag is
   set, the key travels in the vendor's header, and no secret has a default —
   graded by the e2e task's check_byo_connector.py without its hook checks.
-tags: [uipath-byo-llm-connector, smoke, 'mode:build', 'lifecycle:generate', connector]
+tags: [uipath-platform, smoke, 'mode:build', 'lifecycle:generate', connector]
 
 sandbox:
   template_sources:
@@ -27,7 +27,7 @@ initial_prompt: |
   This is an OFFLINE build — the `uip` CLI is not logged in; pass the
   organization explicitly and do not import or publish.
 
-  Before starting, load the uipath-byo-llm-connector skill and follow its
+  Before starting, load the uipath-platform skill and follow its BYO LLM custom connector
   workflow. Do NOT ask for approval, confirmation, or feedback. The task is not
   complete until `uip is connectors builder validate` passes.
 

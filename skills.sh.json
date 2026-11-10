@@ -18,7 +18,6 @@
         "uipath-human-in-the-loop",
         "uipath-ixp",
         "uipath-connector-builder",
-        "uipath-byo-llm-connector",
         "uipath-functions"
       ]
     },
