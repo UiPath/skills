@@ -45,6 +45,10 @@ cannot make: which node, which topology, what an output means, and what to ask.
    `entry-points.json`, `operate.json` or `package-descriptor.json` — the CLI
    regenerates them, and the next compile silently undoes a hand edit.
    Brownfield JSON goes through `decompile` ([`brownfield.md`](brownfield.md)).
+   Non-interactive runs take the same route: nobody can approve a script over the
+   `.flow`, so write a large node definition into the source. A node the builder
+   cannot express is an SDK gap to report, not JSON to splice, unless its
+   reference names a CLI route.
 5. **Run the loop once the source is complete.** `check --source` is cheap, so
    use it freely while writing; `compile` and `validate` run on the finished
    source, and again after the last edit. `compile` does not run `check`, so a
