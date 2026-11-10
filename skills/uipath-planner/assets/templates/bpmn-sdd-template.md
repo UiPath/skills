@@ -344,8 +344,8 @@ flowchart LR
 
 <!--skill-flavor:bpmn-project-structure:start-->
 <!-- Editable source layout per the owning skill: `uip maestro bpmn init` scaffolds the project, and the .bpmn
-     basename matches the project directory exactly. The `.bpmn.ts` source sits in the directory where `init`
-     ran, not inside the project folder; the compiled .bpmn is never hand-edited. bindings_v2.json, entry-points.json, operate.json,
+     basename matches the project directory exactly. The `.bpmn.ts` source sits in the workspace root,
+     not inside the solution or project folder; the compiled .bpmn is never hand-edited. bindings_v2.json, entry-points.json, operate.json,
      package-descriptor.json are generated/CLI-managed package metadata — never scaffolded by hand. -->
 
 ```text

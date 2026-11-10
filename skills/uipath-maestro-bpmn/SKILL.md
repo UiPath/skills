@@ -41,7 +41,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    Check `Data.Path` against the requested path before writing anything, and compile to that path, not to a copy elsewhere.
    A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.88.1 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version).
-   Write `<Name>.bpmn.ts` in the working directory where you ran `init`, not inside the project folder.
+   Write `<Name>.bpmn.ts` in the workspace root (the directory you started in), not inside the solution or project folder, even when you ran `init` from the solution folder.
    No `package.json` is needed; do not add one (with one, `check` can fail with `Cannot use import statement outside a module`).
 <!--skill-flavor:workflow-scaffold:end-->
 3. Import from `@uipath/maestro-builder-sdk/bpmn` and default-export a chain ending in `.build()`.
