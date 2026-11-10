@@ -70,6 +70,21 @@ STUDIO_WEB_MAIN_FILE = "Process.bpmn"
 """The main file Studio Web gives every BPMN project; the Node CLI names it ``<Project>.bpmn``."""
 
 
+def _entry_point_beside(path: str) -> str:
+    """``path``, or the one entry point beside it when ``path`` is not an entry point.
+
+    The project runs only its entry points. A Studio Web project's is
+    ``Process.bpmn``, so a ``<Name>.bpmn`` an agent wrote beside it never runs
+    and must not be graded in its place.
+    """
+    file = Path(path)
+    entries = entry_point_files(file.parent)
+    if not entries or file.name in {e.name for e in entries}:
+        return path
+    existing = [e for e in entries if e.is_file()]
+    return str(existing[0]) if len(existing) == 1 else path
+
+
 def bpmn_file_is_named(path: _PathLike, name: str) -> bool:
     """True for ``<name>.bpmn``, or for Studio Web's ``Process.bpmn`` in a project directory named ``<name>``."""
     file = Path(path)
@@ -96,7 +111,7 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
             # resolve_project's rule here as well so the draft is never graded.
             hinted = _project_files(matches)
-            return hinted[0] if len(hinted) == 1 else matches[0]
+            return _entry_point_beside(hinted[0] if len(hinted) == 1 else matches[0])
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
