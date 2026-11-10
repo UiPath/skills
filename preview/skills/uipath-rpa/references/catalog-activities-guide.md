@@ -25,10 +25,12 @@ s.activity('validate', catalogActivity('UiPath.Core.Activities.InvokeWorkflowFil
 Property names and kinds come from that listing: `InArgument` takes an expression or literal, `OutArgument` a reference, `Literal` a plain value or enum member, `Activity` a slot (in the fourth argument, `{ Then: (t) => t… }`), `Object` an `objectValue({…})`, `Arguments` an `invokeArguments([…])`.
 Invoke Workflow File's `WorkflowFileName` is relative to the project root (the folder with `project.json`), wherever the invoking workflow is; `check` reports a file the project has in neither its `.xaml` nor its `.rpa.ts` form (`INVOKE_FILE_MISSING`).
 `Condition` is an `Activity<T>`: an expression, or for a value an activity computes (UI Automation's `AnchorProvider`), that one activity, `activityValue((t) => t.step('find', …))`.
+`ActivityFunc` is a delegate whose one activity computes the value, as `RetryScope`'s `Condition`: a slot of at most one step in the fourth argument, `(c) => c` for none.
+`ArgumentList` is a list of arguments of one type, as `RemoveLogFields`' `Fields`: a plain array, `['logF_TransactionID', (v) => v.name]`.
 `Unsupported` properties can only be `null`.
 
 - A generic activity (its class name ends in `` `1 `` and `rpa-sdk catalog` lists properties of type `T`, as `DeserializeJson`, `AddDataColumn`) takes its type argument as the fifth argument of `.activity`, after the slots: `.activity('column', catalogActivity('UiPath.Core.Activities.AddDataColumn`1'), { DataTable: (v) => v.table, ColumnName: 'Count', DefaultValue: 0 }, {}, Int32)`.
-- A catalog activity with a body (`TimeoutScope`, `RepeatNumberOfTimesX`) takes `body('item', Type, (t) => t…)`, or `body((t) => t…)` when it hands its body no item, in the fourth argument of `.activity`.
+- A catalog activity with a body (`TimeoutScope`, `RepeatNumberOfTimesX`, `RetryScope`'s `ActivityBody`) takes `body('item', Type, (t) => t…)`, or `body((t) => t…)` when it hands its body no item, in the fourth argument of `.activity`.
 
 ## Collections, Invoke Method, Switch
 
