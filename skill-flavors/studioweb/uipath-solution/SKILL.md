@@ -31,7 +31,7 @@
 <!--skill-flavor:when-to-use-detected-uipx:end-->
 
 <!--skill-flavor:when-to-use-create:start-->
-- User wants to inspect or edit the open Studio Web solution's resources (`uip solution resources list / get / add / edit`). Studio Web works on one open solution — projects are created inside it with `uip <family> init <Name>` (families: flow, case, agent, api-workflow, bpmn, rpa — Studio Web cannot create function or coded-app projects), never with `solution init` or `projects add`
+- User wants to inspect or edit the open Studio Web solution's resources (`uip solution resources list / get / add / edit`). Studio Web works on one open solution — projects are created inside it with `uip <family> init <Name>` (families: flow, case, agent, api-workflow, bpmn, rpa — Studio Web cannot create function projects) or, for a coded app, with the `CreateProjects` tool (`AppV2` with `projectSubType` `Coded` or `CodedAction`), never with `solution init` or `projects add`
 <!--skill-flavor:when-to-use-create:end-->
 
 <!--skill-flavor:cli-surface-probe:start-->
@@ -48,8 +48,12 @@ Studio Web runs the post-rename CLI — use the commands and flags as documented
 1. **Studio Web runs the post-rename CLI.** Use the documented commands directly; there is no pre-rename fallback.
 <!--skill-flavor:probe-rule:end-->
 
+<!--skill-flavor:appv2-registration-rule:start-->
+7. **AppV2 coded apps are created in the open solution with the `CreateProjects` tool.** Studio Web has no `uip codedapp` and no `create-vite`: create the project with `CreateProjects` (`AppV2` with `projectSubType` `Coded` or `CodedAction`). The host writes `project.uiproj` + `webAppManifest.json` and registers the app under `resources/solution_folder/app/{Coded,CodedAction}/`; the app's sources go under `source/`. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
+<!--skill-flavor:appv2-registration-rule:end-->
+
 <!--skill-flavor:develop-solution-row:start-->
-| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created with `uip <family> init` — flow, case, agent, api-workflow, bpmn, rpa only; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
+| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created with `uip <family> init` — flow, case, agent, api-workflow, bpmn, rpa — and coded apps with the `CreateProjects` tool; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
 
 <!--skill-flavor:when-to-use-existing:start-->
