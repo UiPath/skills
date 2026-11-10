@@ -57,6 +57,12 @@ ARG FLOW_SDK_PKG_NAME=@uipath/maestro-builder-sdk
 # misses are tolerated — but a collapse below this floor (feed outage, wrong
 # dist-tag) fails the build loudly instead of silently scoring agents 0.
 ARG MIN_TOOLS=25
+# Tools allowed to lag the CLI's line. A brand-new tool publishes its first builds on the
+# line it was branched from: @uipath/explorer-engine-tool appeared on 2026-11-09 at 1.206.x
+# while the CLI was on 1.207.x, and no task in this image calls it yet. Such a tool is
+# skipped with a warning instead of failing the build; remove it here once it ships on the
+# CLI's line.
+ARG LAGGING_TOOLS_OK="@uipath/explorer-engine-tool"
 
 # Turn OFF the CLI's startup version-sync inside the eval container. On a `-dev`
 # CLI, sync would try to re-align tools through the release-channel path (which
@@ -174,8 +180,11 @@ RUN --mount=type=secret,id=npm_auth_token \
              { echo "Error: ${tool}@${tool_version} failed to install"; exit 1; }; \
            installed=$((installed + 1)) ;; \
         3) echo "WARN: ${tool} has nothing to install on the @${tool_tag} train at or below ${cli_line}x — skipping" ;; \
-        4) echo "Error: ${tool} has @${tool_tag} builds, but none on the CLI's ${cli_line}x line yet"; \
-           lagging="${lagging} ${tool}" ;; \
+        4) case " ${LAGGING_TOOLS_OK} " in \
+             *" ${tool} "*) echo "WARN: ${tool} has @${tool_tag} builds, but none on the CLI's ${cli_line}x line yet — allowed to lag, skipping" ;; \
+             *) echo "Error: ${tool} has @${tool_tag} builds, but none on the CLI's ${cli_line}x line yet"; \
+                lagging="${lagging} ${tool}" ;; \
+           esac ;; \
         *) echo "Error: could not look up ${tool} (tool-line.mjs pick exit ${pick_rc})"; exit 1 ;; \
       esac; \
     done && \
