@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Sends a product's compatibility-probe requests to a connection through Integration Service
-# and checks each answer the way the LLM Gateway does. The probes are the JSON files in
-# ../assets/probes/_all/ and ../assets/probes/<product>/ (format: references/probes-guide.md).
+# Sends compatibility-probe requests to a connection through Integration Service and checks each
+# answer the way the LLM Gateway does (file format: references/probes-guide.md). What runs:
+#   ../assets/probes/default/    the gateway's own base probe for the flavor: the default, every product
+#   ../assets/probes/<product>/  a probe the gateway's code builds for that product, in place of the default
+#   ../assets/probes/product-defined/<PROBE_ID>.json, only when named with --probe (opt in): the probes
+#                                a product's Model Hub configuration lists for the feature
 #
-#   bash run-probes.sh --product <PRODUCT> --feature <FEATURE> --flavor <API_FLAVOR> \
-#     --llm-name <CATALOG_MODEL> [--default-model <CATALOG_MODEL>] --list
-#   bash run-probes.sh --product … --feature … --flavor … --llm-name … [--default-model …] \
+#   bash run-probes.sh --flavor <API_FLAVOR> [--product <PRODUCT>] [--feature <FEATURE>] \
+#     [--llm-name <CATALOG_MODEL>] [--probe <PROBE_ID>]... --list
+#   bash run-probes.sh --flavor … [--product …] [--feature …] [--llm-name …] [--probe …]... \
 #     --model <VENDOR_MODEL_ID> --connection <CONNECTION_ID> --helper <WORK_DIR>/is-api.sh --out <DIR>
 #
 # --list prints the probes that apply and sends nothing. Otherwise every request is sent with
@@ -13,16 +16,17 @@
 # Exit 0 when every probe passes, 1 when one fails, 2 on a usage error.
 set -o pipefail
 
-usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
-PRODUCT= FEATURE= FLAVOR= LLM_NAME= DEFAULT_MODEL= MODEL= CONNECTION= HELPER= OUT= LIST=
+PRODUCT= FEATURE= FLAVOR= LLM_NAME= MODEL= CONNECTION= HELPER= OUT= LIST=
+PROBE_IDS=()
 while [ $# -gt 0 ]; do
     case "$1" in
         --product) PRODUCT=$2; shift 2 ;;
         --feature) FEATURE=$2; shift 2 ;;
         --flavor) FLAVOR=$2; shift 2 ;;
         --llm-name) LLM_NAME=$2; shift 2 ;;
-        --default-model) DEFAULT_MODEL=$2; shift 2 ;;
+        --probe) PROBE_IDS+=("$2"); shift 2 ;;
         --model) MODEL=$2; shift 2 ;;
         --connection) CONNECTION=$2; shift 2 ;;
         --helper) HELPER=$2; shift 2 ;;
@@ -31,9 +35,8 @@ while [ $# -gt 0 ]; do
         *) usage ;;
     esac
 done
-[ -n "$PRODUCT" ] && [ -n "$FEATURE" ] && [ -n "$FLAVOR" ] && [ -n "$LLM_NAME" ] || usage
+[ -n "$FLAVOR" ] || usage
 [ -n "$LIST" ] || { [ -n "$MODEL" ] && [ -n "$CONNECTION" ] && [ -n "$HELPER" ] && [ -n "$OUT" ] || usage; }
-DEFAULT_MODEL=${DEFAULT_MODEL:-$LLM_NAME}
 command -v jq >/dev/null || { echo 'run-probes: jq is required.' >&2; exit 2; }
 if [ -z "$LIST" ]; then
     [[ "$CONNECTION" =~ ^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$ ]] || { echo 'run-probes: --connection must be a connection id (a UUID).' >&2; exit 2; }
@@ -42,26 +45,38 @@ fi
 
 PROBES_DIR="$(cd "$(dirname "$0")/../assets/probes" && pwd)" || exit 2
 shopt -s nullglob
-FILES=("$PROBES_DIR"/_all/*.json)
-[ -d "$PROBES_DIR/$PRODUCT" ] && FILES+=("$PROBES_DIR/$PRODUCT"/*.json)
+FILES=("$PROBES_DIR"/default/*.json)
+if [ -n "$PRODUCT" ] && [ "$PRODUCT" != default ] && [ "$PRODUCT" != product-defined ] && [ -d "$PROBES_DIR/$PRODUCT" ]; then
+    FILES+=("$PROBES_DIR/$PRODUCT"/*.json)
+fi
+for id in "${PROBE_IDS[@]}"; do
+    if ! [[ "$id" =~ ^[A-Za-z0-9_.-]+$ ]] || [ ! -f "$PROBES_DIR/product-defined/$id.json" ]; then
+        echo "run-probes: no product-defined probe '$id'. Known: $(ls "$PROBES_DIR/product-defined" | sed 's/\.json$//' | tr '\n' ' ')" >&2
+        exit 2
+    fi
+    FILES+=("$PROBES_DIR/product-defined/$id.json")
+done
 
-SELECTED=$(jq -n --arg flavor "$FLAVOR" --arg feature "$FEATURE" --arg llm "$LLM_NAME" --arg default "$DEFAULT_MODEL" '
+RESULT=$(jq -n --arg flavor "$FLAVOR" --arg feature "$FEATURE" --arg llm "$LLM_NAME" '
     def applies:
         (.match // []) as $m
         | (($m | length) == 0 or any($m[];
-              (.feature == null or .feature == $feature)
-              and (.llmName == null or .llmName == $llm)
-              and (.replacing == null or (.replacing == $default and $llm != $default))))
+              (.feature == null or .feature == $feature) and (.llmName == null or .llmName == $llm)))
           and (((.excludeFeatures // []) | index($feature)) == null);
-    [inputs | . + {file: input_filename}]
-    | map(select(.apiFlavor == $flavor and applies))
-    | ([.[].replaces // [] | .[]]) as $gone
-    | map(select(.id as $id | ($gone | index($id)) == null))
-    | sort_by(.order // 50, .file)' "${FILES[@]}") || { echo 'run-probes: a probe file is not valid JSON.' >&2; exit 2; }
+    [inputs | . + {file: input_filename}] as $all
+    | ($all | map(select(.apiFlavor == $flavor and applies))) as $kept
+    | ([$kept[].replaces // [] | .[]]) as $gone
+    | {selected: ($kept | map(select(.id as $id | ($gone | index($id)) == null)) | sort_by(.order // 50, .file)),
+       skipped: [$all[] | select((.file | test("/product-defined/")) and .apiFlavor != $flavor) | "\(.id) (\(.apiFlavor))"]}' \
+    "${FILES[@]}") || { echo 'run-probes: a probe file is not valid JSON.' >&2; exit 2; }
+SELECTED=$(jq -c '.selected' <<<"$RESULT")
+jq -r '.skipped[]' <<<"$RESULT" | tr -d '\r' | while read -r skipped; do
+    echo "SKIPPED $skipped: not $FLAVOR, and the gateway runs only a product's probes of the configuration's flavor" >&2
+done
 
 COUNT=$(jq 'length' <<<"$SELECTED" | tr -d '\r')
 if [ "$COUNT" = 0 ]; then
-    echo "No probe applies to $PRODUCT / $FEATURE / $FLAVOR / $LLM_NAME." >&2
+    echo "No probe applies to ${PRODUCT:-any product} / ${FEATURE:-any feature} / $FLAVOR." >&2
     exit 0
 fi
 

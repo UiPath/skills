@@ -1,0 +1,18 @@
+{
+  "id": "openai_responses_api_basic_probe",
+  "description": "One user message to the Responses API; any 2xx answer passes.",
+  "source": "ProductDefinedProbes/Payloads/openai_responses_api_basic_probe.json",
+  "apiFlavor": "OpenAiResponses",
+  "order": 10,
+  "path": "/v1/responses",
+  "body": {
+    "input": [
+      {
+        "role": "user",
+        "content": "Check the latest AI news on google.com."
+      }
+    ],
+    "truncation": "auto",
+    "model": "{{model}}"
+  }
+}

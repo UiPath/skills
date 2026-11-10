@@ -57,20 +57,20 @@ uip llm-configuration byo-connections list-product-configs \
 
 From the row read (the CLI returns these keys PascalCase): `ModelsConfigurationOption` (multi-mapping needed for `AllModels`/`AnyModel`), each entry of `Models` with its `AllowedApiFlavors` and `AllowedConnectors`, and `AddYourOwn`. `Custom` must appear in `AllowedConnectors` (or as a key of `AddYourOwn` for a customer-added model). If it does not, custom connectors are not enabled for this organization or feature — stop and tell the user; do not build a connector the gateway will refuse.
 
-A model missing from `Models` on an `AnyModelWithOwnAdditions` feature is a customer-added model: its flavors are the ones `AddYourOwn.Custom` lists, it goes to `--llm-name` as-is (step 9), and the gateway runs the feature's own probes for it (the same files `run-probes.sh` selects for that `--llm-name`).
+A model missing from `Models` on an `AnyModelWithOwnAdditions` feature is a customer-added model: its flavors are the ones `AddYourOwn.Custom` lists, it goes to `--llm-name` as-is (step 9), and the gateway runs the default and code-built probes for it plus the product-defined ones the feature itself lists (step 1).
 
 ### 1. Agree the contract with the user
 
 Ask for (unless already given): the vendor base URL; how it authenticates (API key header, bearer token, OAuth2 client credentials, AWS SigV4, custom token exchange); its request and response format, or one sample of each; whether the product's calls stream; the model identifier the vendor expects (becomes `--llm-identifier`). Pick the flavor from the model's `AllowedApiFlavors` that is closest to the vendor's own format — the closer it is, the less the hooks translate. Then read the flavor's resource paths, tag and template in [references/connector-contract-guide.md](references/connector-contract-guide.md).
 
-Check the vendor can do what the product's probes ask before building. List the requests they send for this mapping, offline (`<SKILL_DIR>` is the folder holding this SKILL.md; `--default-model` only when the model replaces another, as a generic alternative):
+Check the vendor can do what the product's probes ask before building. Every configuration gets the gateway's default probe for its flavor, or the probe the gateway's code builds for that product in its place (Agents and UIA have one). On top of those, a product's Model Hub configuration can list its own probes for a feature. Those are opt in: ask the user, or the product team, which `ProbeId`s the feature lists, and name each with `--probe` (none named: the default and code-built probes only). List what will run, offline (`<SKILL_DIR>` is the folder holding this SKILL.md):
 
 ```bash
 bash <SKILL_DIR>/scripts/run-probes.sh --product <PRODUCT> --feature <FEATURE> --flavor <API_FLAVOR> \
-  --llm-name <CATALOG_MODEL> [--default-model <REPLACED_MODEL>] --list
+  --llm-name <CATALOG_MODEL> [--probe <PROBE_ID>]... --list
 ```
 
-Each line names a file under `<SKILL_DIR>/assets/probes/` holding the request body and what the answer must show. Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); other products' probes send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
+Each line names a file under `<SKILL_DIR>/assets/probes/` holding the request body and what the answer must show ([references/probes-guide.md](references/probes-guide.md)). Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); product-defined probes can send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
 
 ### 2. Scaffold the connector
 
@@ -202,7 +202,7 @@ Send the product's probe requests to the test connection, the way the gateway se
 
 ```bash
 bash <SKILL_DIR>/scripts/run-probes.sh --product <PRODUCT> --feature <FEATURE> --flavor <API_FLAVOR> \
-  --llm-name <CATALOG_MODEL> [--default-model <REPLACED_MODEL>] --model <VENDOR_MODEL_ID> \
+  --llm-name <CATALOG_MODEL> [--probe <PROBE_ID>]... --model <VENDOR_MODEL_ID> \
   --connection <TEST_CONNECTION_ID> --helper <WORK_DIR>/is-api.sh --out <WORK_DIR>/probes
 ```
 
@@ -270,7 +270,7 @@ uip login refresh                                        # token for the curl ca
 curl … elements_/v1/elements/normalized-instances        # the draft's test connection (Workflow 6)
   POST applications/default/sessions | GET applications/sessions/<id> | POST authenticate
 curl … elements_/elements/api-v2/elements/<element-id>/instances   # list | DELETE …/<instance-id>
-bash <SKILL_DIR>/scripts/run-probes.sh … --list | --connection <id> --helper …  # the product's probes (Workflow 1, 7)
+bash <SKILL_DIR>/scripts/run-probes.sh … [--probe <id>]… --list | --connection <id> --helper …  # default + code-built + named probes (Workflow 1, 7)
 curl … elements_/v3/element/instances/<connection-id><flavor-path>  # what run-probes sends; a streamed call (Workflow 7)
 curl … connections_/api/v1/Connections -H 'x-uipath-folderkey: <folder>'   # runtime connection session in a shared folder (Workflow 9)
 uip is connections list <custom-key> --all-folders | ping <id> | edit <id> --no-wait | delete <id> --yes
