@@ -78,9 +78,12 @@ success_criteria:
       # (cursors.json: "No outgoing sequence-flow condition evaluated true and no
       # default flow is defined"): a condition that did not match or evaluate
       # true, and a default flow that is missing. A bare "default" anywhere in
-      # the file matched almost any prose. Cases in
+      # the file matched almost any prose. The negation must bind to the
+      # condition ("no ... condition ... matched", "condition ... did not match",
+      # "conditions evaluated false") and never reach across a "default", so the
+      # "no" of "no default flow" cannot stand in for it. Cases in
       # _shared/test_grader_command_patterns.py.
-      - pattern: '(?i)STUCK_REASON:(?=[^\n]*\bconditions?\b)(?=[^\n]*(?:match|\btrue\b|\bfalse\b|satisf|\bpass))(?=[^\n]*\b(?:no|none|neither|nor|not|never|false)\b[^\n]*\bconditions?\b|[^\n]*\bconditions?\b[^\n]*\b(?:no|none|neither|nor|not|never|false)\b)(?=[^\n]*(?:\b(?:no|without|missing|lacks?|lacking|absent)\b[^\n]{0,24}\bdefault\b|\bdefault\b[^\n]{0,40}\b(?:missing|absent|undefined|not\s+(?:defined|set|configured|present)|none)\b))'
+      - pattern: '(?i)STUCK_REASON:(?=[^\n]*(?:\b(?:no|none|neither)\b(?:(?!default)[^\n]){0,40}?\bconditions?\b(?:(?!default)[^\n]){0,40}?(?:match|\btrue\b|satisf|\bpass|\bhold)|\bconditions?\b(?:(?!default)[^\n]){0,60}?(?:(?:\bnot|\bnever|n''t|\bfailed\s+to)\s+(?:\w+\s+)?(?:match|evaluat|satisf|pass|hold|true)|\b(?:evaluated|evaluates|evaluate|were|was|are|is|returned|returns)\s+(?:to\s+)?false\b|\b(?:unmatched|unsatisfied)\b)))(?=[^\n]*(?:\b(?:no|without|missing|lacks?|lacking|absent)\b[^\n]{0,24}\bdefault\b|\bdefault\b[^\n]{0,40}\b(?:missing|absent|undefined|not\s+(?:defined|set|configured|present)|none)\b))'
     weight: 3.0
     pass_threshold: 1.0
 

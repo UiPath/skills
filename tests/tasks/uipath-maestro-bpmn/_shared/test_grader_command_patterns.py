@@ -211,6 +211,14 @@ GOOD_DIAGNOSES = {
         "STUCK_ELEMENT: Gw_ApprovalRoute\n"
         "STUCK_REASON: Both outgoing conditions evaluated false and the default flow is missing.\n"
     ),
+    "condition did not match": (
+        "STUCK_ELEMENT: Gw_ApprovalRoute\n"
+        "STUCK_REASON: Each outgoing condition did not match the score, and the gateway lacks a default flow.\n"
+    ),
+    "conditions didn't evaluate true": (
+        "STUCK_ELEMENT: Gw_ApprovalRoute\n"
+        "STUCK_REASON: The gateway's conditions didn't evaluate to true and there is no default sequence flow.\n"
+    ),
     "without a default": (
         "STUCK_ELEMENT: Gw_ApprovalRoute\n"
         "STUCK_REASON: none of the gateway's conditions matched, and it was modeled without a default sequence flow\n"
@@ -238,6 +246,19 @@ BAD_DIAGNOSES = {
     "wrong element": (
         "STUCK_ELEMENT: ServiceTask_Score\n"
         "STUCK_REASON: No outgoing condition matched and the gateway has no default flow.\n"
+    ),    # rockymadden on #4543: the "no" of "no default flow" stood in for the
+    # condition's negation, so a reason saying a condition DID match passed.
+    "a condition matched, default missing": (
+        "STUCK_ELEMENT: Gw_ApprovalRoute\n"
+        "STUCK_REASON: The condition riskScore > 80 is true but the token waits; there is no default flow.\n"
+    ),
+    "a condition matched, no default": (
+        "STUCK_ELEMENT: Gw_ApprovalRoute\n"
+        "STUCK_REASON: There is no default flow, and the outgoing condition matched.\n"
+    ),
+    "conditions named without a verdict": (
+        "STUCK_ELEMENT: Gw_ApprovalRoute\n"
+        "STUCK_REASON: The gateway has two conditions and no default flow.\n"
     ),
 }
 
