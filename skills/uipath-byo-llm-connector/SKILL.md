@@ -14,7 +14,11 @@ UiPath product ──(API flavor body)──▶ LLM Gateway ──▶ Integratio
         └─ your connector: preRequest hook → vendor endpoint → postRequest hook
 ```
 
-Everything here runs through `uip`: `uip is connectors builder` (author on disk), `uip is connectors import` and `publish` (tenant), `uip is connections` (the runtime connection), `uip llm-configuration byo-connections` (probe + save). The one exception is the unpublished draft: `curl` creates its test connection and calls the connector through it, on the Integration Service API, with the token from `uip login refresh`. The draft is tested that way and stays unpublished until those calls pass; the product's probes run once, on the published connector's runtime connection, when the configuration is saved.
+Everything here runs through `uip`: `uip is connectors builder` (author on disk), `uip is connectors import` and `publish` (tenant), `uip is connections` (the runtime connection), `uip llm-configuration byo-connections` (probe + save).
+
+<!--skill-flavor:draft-intro:start-->
+The one exception is the unpublished draft: `curl` creates its test connection and calls the connector through it, on the Integration Service API, with the token from `uip login refresh`. The draft is tested that way and stays unpublished until those calls pass; the product's probes run once, on the published connector's runtime connection, when the configuration is saved.
+<!--skill-flavor:draft-intro:end-->
 
 <!--skill-flavor:host-availability-extra:start-->
 
@@ -47,15 +51,26 @@ Everything here runs through `uip`: `uip is connectors builder` (author on disk)
 
 Use placeholders for every tenant value. Pass `--output json` whenever you read the result.
 
-### 0. Preflight — is a custom connector allowed here?
+### 0. Preflight — which products, and is a custom connector allowed there?
 
 ```bash
 uip login status --output json                 # Data.Status == "Logged in"
+```
+
+Ask the customer which UiPath products the connector is for, and which features of each — for example Agents' design and evaluation, or ECS search. Do not assume one: each product feature is a configuration of its own, and the probes that decide whether it can be saved are that product's and that feature's (step 1), so a connector that passes for one can fail for another. When they cannot name them, list every product and feature this tenant offers and let them choose:
+
+```bash
+uip llm-configuration byo-connections list-product-configs --output json    # one row per Product + Feature
+```
+
+Then, for each feature they chose:
+
+```bash
 uip llm-configuration byo-connections list-product-configs \
   --product <PRODUCT> --feature <FEATURE> --output json
 ```
 
-From the row read (the CLI returns these keys PascalCase): `ModelsConfigurationOption` (multi-mapping needed for `AllModels`/`AnyModel`), each entry of `Models` with its `AllowedApiFlavors` and `AllowedConnectors`, and `AddYourOwn`. `Custom` must appear in `AllowedConnectors` (or as a key of `AddYourOwn` for a customer-added model). If it does not, custom connectors are not enabled for this organization or feature — stop and tell the user; do not build a connector the gateway will refuse.
+From the row read (the CLI returns these keys PascalCase): `ModelsConfigurationOption` (multi-mapping needed for `AllModels`/`AnyModel`), each entry of `Models` with its `AllowedApiFlavors` and `AllowedConnectors`, and `AddYourOwn`. `Custom` must appear in `AllowedConnectors` (or as a key of `AddYourOwn` for a customer-added model). If it does not, custom connectors are not enabled for this organization or feature — stop and tell the user; do not build a connector the gateway will refuse. With several features, build for the API flavors they share, and run steps 1, 7 and 9 once per feature: its own probes, its own configuration.
 
 A model missing from `Models` on an `AnyModelWithOwnAdditions` feature is a customer-added model: its flavors are the ones `AddYourOwn.Custom` lists, it goes to `--llm-name` as-is (step 9), and the gateway runs the default and code-built probes for it plus the ones the feature itself lists (step 1).
 
@@ -63,14 +78,20 @@ A model missing from `Models` on an `AnyModelWithOwnAdditions` feature is a cust
 
 Ask for (unless already given): the vendor base URL; how it authenticates (API key header, bearer token, OAuth2 client credentials, AWS SigV4, custom token exchange); its request and response format, or one sample of each; whether the product's calls stream; the model identifier the vendor expects (becomes `--llm-identifier`). Pick the flavor from the model's `AllowedApiFlavors` that is closest to the vendor's own format — the closer it is, the less the hooks translate. Then read the flavor's resource paths, tag and template in [references/connector-contract-guide.md](references/connector-contract-guide.md).
 
-Check the vendor can do what the product's probes ask before building. Every configuration gets the gateway's default probe for its flavor, or the probe the gateway's code builds for that product in its place (Agents and UIA have one). On top of those, a product's Model Hub configuration can list its own probes for a feature. Those are opt in: ask the user, or the product team, which `ProbeId`s the feature lists, and name each with `--probe` (none named: the default and code-built probes only). List what will run, offline (`<SKILL_DIR>` is the folder holding this SKILL.md):
+Check the vendor can do what the product's probes ask before building. Every configuration gets the gateway's default probe for its flavor, or the probe the gateway's code builds for that product in its place (Agents and UIA have one). On top of those, a product's Model Hub configuration can list its own probes for a feature. Those are opt in: ask the user, or the product team, which `ProbeId`s the feature lists, and name each with `--probe` (none named: the default and code-built probes only).
+
+<!--skill-flavor:probe-list:start-->
+List what will run, offline (`<SKILL_DIR>` is the folder holding this SKILL.md):
 
 ```bash
 bash <SKILL_DIR>/scripts/run-probes.sh --product <PRODUCT> --feature <FEATURE> --flavor <API_FLAVOR> \
   --llm-name <CATALOG_MODEL> [--probe <PROBE_ID>]... --list
 ```
 
-Each line names a file under `<SKILL_DIR>/assets/probes/` holding the request body and what the answer must show ([references/probes-guide.md](references/probes-guide.md)). Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); the probes a product lists can send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
+Each line names a file under `<SKILL_DIR>/assets/probes/` holding the request body and what the answer must show ([references/probes-guide.md](references/probes-guide.md)).
+<!--skill-flavor:probe-list:end-->
+
+Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); the probes a product lists can send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
 
 ### 2. Scaffold the connector
 
@@ -135,6 +156,7 @@ The `builder` commands find the connector from `<WORK_DIR>`; `import` and `publi
 
 ### 6. Create the test connection on the draft
 
+<!--skill-flavor:draft-test-connection:start-->
 This is the Connector Builder's **Add connection**, called with `curl` (it needs `curl`, `jq` and `node`). Shell variables do not survive between commands, so write a helper once, outside the connector folder, and source it in every call. It reads a fresh token from `uip login refresh` and hands it to `curl` on stdin, so the token never reaches a command line, a file or the output:
 
 ```bash
@@ -195,9 +217,11 @@ Either way `connectionId` is the test connection (the connection step 7 calls), 
 ```
 
 The connection belongs to the draft, so `uip is connections list` and `ping` do not see it; the step 7 calls are its test. Errors, delete and credential changes: [references/connections-guide.md](references/connections-guide.md).
+<!--skill-flavor:draft-test-connection:end-->
 
 ### 7. Call the draft through Integration Service
 
+<!--skill-flavor:draft-calls:start-->
 Send the product's probe requests to the test connection, the way the gateway sends them when the configuration is saved: the same bodies, at the flavor's resource path (`POST …/v3/element/instances/{connectionId}{flavor path}`), with the model the vendor expects in the body or the path, and the same checks on each answer. `run-probes.sh` does it with the step 6 helper, so the token stays in `api`:
 
 ```bash
@@ -219,8 +243,9 @@ Probes never stream. If the product streams, also send one streamed request with
 ```
 
 A connector whose hook refuses streams ([references/hook-authoring-guide.md](references/hook-authoring-guide.md) §"Streaming") answers this call with that same message alone, as a `404`: it is Integration Service's answer to the refusal, not a missing resource. Repeat the call with `Accept: application/json` to see the hook's own refusal.
+<!--skill-flavor:draft-calls:end-->
 
-When a probe fails, read its answer in `<WORK_DIR>/probes/`, fix the hook or the config entry it points at, `builder validate`, `import` (the test connection runs the new import at once) and run the probes again. Integration Service answers two failures itself, both `404`: "No API found at that URL for the given token and credentials" (no resource at that path, Rule 1) and "Invalid Element Instance Id provided." (the test connection is gone). Every other answer comes from the vendor through your hooks. A vendor error keeps the vendor's status, but its body reaches you inside Integration Service's own envelope, flattened into `providerMessage` (`error - {message=…}`): read the vendor's reason there.
+When a probe fails, read its answer, fix the hook or the config entry it points at, `builder validate`, `import` (the test connection runs the new import at once) and run the probes again. Integration Service answers two failures itself, both `404`: "No API found at that URL for the given token and credentials" (no resource at that path, Rule 1) and "Invalid Element Instance Id provided." (the test connection is gone). Every other answer comes from the vendor through your hooks. A vendor error keeps the vendor's status, but its body reaches you inside Integration Service's own envelope, flattened into `providerMessage` (`error - {message=…}`): read the vendor's reason there.
 
 ### 8. Publish
 
@@ -234,7 +259,9 @@ A `FAILURE` status or a non-zero exit stops the workflow: read the message, fix,
 
 ### 9. Runtime connection and the configuration
 
+<!--skill-flavor:runtime-connection:start-->
 The test connection usually holds the builder's own or a sandbox key. Ask the user which credentials production uses, then open the runtime connection's page for them: start the session on the published connector (`<PUBLISHED_KEY>`) in the shared folder the product will use with the Connections API call in [references/connections-guide.md](references/connections-guide.md) §"Create the runtime connection" (`uip is connections create` cannot pick a folder), and open its `authUrl` in their browser as in step 6. If the connection lands in the Personal workspace, have them create it from Integration Service in the web UI instead. Find its id:
+<!--skill-flavor:runtime-connection:end-->
 
 ```bash
 uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json    # Id, State, FolderKey
@@ -250,7 +277,7 @@ uip llm-configuration byo-connections create --product <PRODUCT> --feature <FEAT
 ```
 
 Use repeated `--mapping '…,connector-type=Custom'` for `AllModels` / `AnyModel` features. The CLI first reads the connector template from the connection's connector tags and stops, before any probe, on a connection Integration Service does not list or a connector whose tags name no template. Exit 0 with every model `IsAvailable: true` and `IsCompatible: true` is a pass: the CLI answers in PascalCase, the verdict under `Data.Validation` keyed by the model name PascalCased (`gemini-3.8-flash` → `Gemini3.8Flash`), and the saved configuration's id at `Data.Configuration.Id` — the `<CONFIG_ID>` for `update` and `get`. Otherwise read `unavailabilityReason` / `incompatibilityReason` / `vendorRawResponse` per [references/probes-guide.md](references/probes-guide.md). To fix:
-- reproduce it with step 7's `run-probes.sh` on the test connection, which sends the same requests;
+- reproduce it with step 7 on the test connection, which sends the same requests;
 - fix the hook and re-import until that probe passes;
 - bump `latestVersion`, then `import` and `publish --wait`;
 - run the probes again: `create` again (a failed one saved nothing) or `update <CONFIG_ID>` with the same mapping.
@@ -265,20 +292,16 @@ The reader is usually the customer's administrator, not a UiPath engineer. Write
 2. **A short status table**: the connector (name, version, published), the connection (name, folder), the configuration (name, checks passed, enabled or not).
 3. **What works and what does not**: what the checks covered (text answers, tool calls, images), then each limitation once, with what to do instead — a stream the connector cannot serve, request options it refuses (structured output, several choices, built-in tools such as search grounding), settings it ignores.
 4. **The next step**, when one is left: for example, editing the connection to the production host and credentials, or enabling the configuration.
-5. **End with one link, the configuration in AI Trust Layer**, and open it in the user's browser as in step 6:
+5. **End with the link to the configuration in AI Trust Layer** — one per configuration when the connector serves several features — and open it for the user where you can, as in step 6:
 
 ```text
 <BaseUrl>/<Organization>/portal_/admin/ai-trust-layer/llm-configurations/<TenantId>/<FOLDER_ID>/edit/<CONFIG_ID>
 ```
 
-`BaseUrl`, `Organization` and `TenantId` come from `uip login status --output json`. `<FOLDER_ID>` is the shared folder's **numeric** id, not its key, and `uip or folders list` does not print it. Read it from Orchestrator with the step 6 helper:
-
-```bash
-( set -o pipefail; source <WORK_DIR>/is-api.sh &&
-  api -G "$T/orchestrator_/odata/Folders" --data-urlencode "\$filter=Key eq <SHARED_FOLDER_KEY>" \
-    --data-urlencode '$select=Id' | jq '.value[0].Id'
-)
-```
+<!--skill-flavor:config-link-values:start-->
+`BaseUrl`, `Organization` and `TenantId` come from `uip login status --output json`.
+<!--skill-flavor:config-link-values:end-->
+`<FOLDER_ID>` is the shared folder's **numeric** id, not its key: `uip or folders get <SHARED_FOLDER_KEY> --output json` prints it as `Data.Id` (`uip or folders list` does not).
 
 ## Command Map
 
@@ -298,7 +321,8 @@ curl … elements_/elements/api-v2/elements/<element-id>/instances   # list | DE
 bash <SKILL_DIR>/scripts/run-probes.sh … [--probe <id>]… --list | --connection <id> --helper …  # default + code-built + named probes (Workflow 1, 7)
 curl … elements_/v3/element/instances/<connection-id><flavor-path>  # what run-probes sends; a streamed call (Workflow 7)
 curl … connections_/api/v1/Connections -H 'x-uipath-folderkey: <folder>'   # runtime connection session in a shared folder (Workflow 9)
-curl … orchestrator_/odata/Folders?$filter=Key eq <folder>   # the folder's numeric Id, for the configuration link (Workflow 10)
+uip is resources run create <key> '<flavor-path>' --connection-id <id> --body '<json>'   # one call to a connection, no shell needed
+uip or folders get <folder-key>                          # the folder's numeric Id, for the configuration link (Workflow 10)
 uip is connections list <custom-key> --all-folders | ping <id> | edit <id> --no-wait | delete <id> --yes
 uip or folders list                                      # folder Type (Personal vs Standard)
 ```
