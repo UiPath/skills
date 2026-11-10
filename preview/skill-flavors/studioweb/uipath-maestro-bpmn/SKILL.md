@@ -43,6 +43,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip maestro bpmn debug "<Project>" --inputs '{}'` | Works: a real run of the process open in the designer ([`references/operate.md`](references/operate.md)). |
 | `uip maestro bpmn debug-instance variables`, `variables-all`, `incidents` | Work, with the `Trace ID` that `debug` prints. |
 | `uip maestro bpmn pack`, `uip solution pack`, `upload` | Not available. Studio Web owns the solution. |
+| `uip maestro bpmn eval` | Not available: no evaluators, eval sets, simulations or eval runs ([Evaluating a process](#evaluating-a-process)). |
 | `uip login` | Not available. You are already signed in to the tenant of the user. |
 | `node -e` | Works for a small script with `fs`. It has no `crypto` and no `uuidgen`. |
 | `npm`, `npx`, the `flow-sdk` bin, `python3` | Not available. |
@@ -162,3 +163,9 @@ user's choice). `bpmn debug` is a REAL run, not a validation step. Every
 mutation needs the user's decision for that action. Read
 **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:operating:end-->
+
+<!--skill-flavor:evaluating:start-->
+Evaluations are not available in Studio Web.
+`uip maestro bpmn eval` (evaluators, eval sets, simulations and eval runs) is not a command here, so do not follow [`references/evaluate.md`](references/evaluate.md).
+When the user asks to evaluate a process, tell them that evaluations run from the `uip` CLI on their own machine, outside Studio Web.
+<!--skill-flavor:evaluating:end-->
