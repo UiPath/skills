@@ -1,8 +1,8 @@
-"""Guard: uipath-planner's sdd-fingerprint.mjs and uipath-genome's checker agree.
+"""Guard: uipath-planner's sdd-fingerprint.mjs and check-genome.mjs agree.
 
-The planner records an SDD's fingerprint on a genome's `Designed in:` line; the builder's checker
-recomputes it to tell whether the SDD changed. Each skill carries its own copy of the rule, so this
-test fails the moment the two drift.
+The planner records an SDD's fingerprint on a genome's `Designed in:` line with sdd-fingerprint.mjs;
+check-genome.mjs recomputes it to fail a genome whose SDD changed. Each script carries its own copy of
+the rule, so this test fails the moment the two drift.
 
     python3 -m pytest tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py
 """
@@ -18,7 +18,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[4]
 PLANNER = REPO / "skills" / "uipath-planner" / "scripts" / "sdd-fingerprint.mjs"
-CHECKER = REPO / "skills" / "uipath-genome" / "scripts" / "check-genome.mjs"
+CHECKER = REPO / "skills" / "uipath-planner" / "scripts" / "check-genome.mjs"
 
 SDDS = {
     "lf": "# SDD\n\n## Planner Handoff\n\n| **Status** | ready |\n| **Tasks file** | `x-tasks.md` (written by `plan`) |\n",

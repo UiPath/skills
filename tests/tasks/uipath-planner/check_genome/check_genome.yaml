@@ -1,0 +1,73 @@
+task_id: skill-planner-smoke-check-genome
+description: >
+  Smoke: the uipath-planner skill's `check` verb runs the strict genome check on a component genome
+  (Daily Sales Summary) whose acceptance criteria are not numbered, a strict-profile defect. Grades
+  that the checker ran on the genome, that the genome is left byte-identical (`check` reports; a fix is
+  `edit`, run only when asked), that no project is scaffolded or built, and (llm_judge, low weight: the
+  verdict lives only in the final message, so it has no side effect to grade) that the agent reported the
+  unnumbered acceptance criteria as a finding. No tenant, no Windows host.
+tags: [uipath-planner, smoke, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# run_command goes through cmd.exe on Windows, so the check runs through `python -c` and reads
+# REFERENCE_DIR from the environment. REFERENCE_DIR holds the untouched copy of the genome.
+reference:
+  directory: fixtures
+
+initial_prompt: |
+  Is the genome in `daily-sales-summary-genome.md` ready to build? Check it; do not build anything yet.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the genome checker on the genome"
+    tool_name: "Bash"
+    command_pattern: 'check-genome\.mjs"?\s+component\s+"?[^\s"]*daily-sales-summary-genome\.md'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The check leaves the genome unchanged"
+    command: >-
+      python -c "import filecmp, os, sys; sys.exit(0 if filecmp.cmp('daily-sales-summary-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'daily-sales-summary-genome.md'), shallow=False) else 1)"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Checking a genome does not scaffold, build or run a project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa\s+(init|run|build|debug)|solution\s+(init|publish|deploy))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent reported the unnumbered acceptance criteria as a finding and left the genome unchanged"
+    weight: 1.0
+    pass_threshold: 0.7
+    include_dialog: false
+    include_agent_output: true
+    prompt: |
+      Grade only the agent's last [ASSISTANT] message. A [RESULT - ...] block
+      after it repeats that message and is harness output.
+      The genome under check has acceptance criteria that are not numbered; the
+      genome checker reports that as a FAIL. Expected:
+        - the agent does not say the check passed or the genome has no findings;
+        - it names the finding (acceptance criteria not numbered);
+        - it does not claim to have changed the genome; offering to fix it is fine.
+      Score 1.0 when all three hold, 0.5 when the finding is reported but the
+      agent claims it changed the genome, 0.0 when the agent says the check
+      passed or reports no finding.

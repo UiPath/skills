@@ -7,10 +7,10 @@ description: >
   configuration question kinds) are graded as an advisory criterion.
 tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
 
-# Every check calls uipath-genome's check-genome.mjs with node through $REFERENCE_DIR (its scripts
+# Every check calls the skill's check-genome.mjs with node through $REFERENCE_DIR (its scripts
 # folder). The genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
 reference:
-  directory: ../../../../skills/uipath-genome/scripts
+  directory: ../../../../skills/uipath-planner/scripts
 
 initial_prompt: |
   Write a genome for an automation called "Customer Address Sync" and save it in the

@@ -2,7 +2,7 @@
 message the author sees and the exit code the grader gets. The checker is Node; these tests drive it through
 `node`, so the CI job needs Node >= 20 on the runner.
 
-Run: pytest tests/tasks/uipath-genome/_shared/test_genome_check_findings.py -v
+Run: pytest tests/tasks/uipath-planner/_shared/test_genome_check_findings.py -v
 """
 
 import json
@@ -15,7 +15,7 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
-SCRIPT = REPO / "skills" / "uipath-genome" / "scripts" / "check-genome.mjs"
+SCRIPT = REPO / "skills" / "uipath-planner" / "scripts" / "check-genome.mjs"
 
 
 def node(*args):
@@ -139,14 +139,50 @@ def designed_in(text, line):
     return re.sub(r"^(> \*\*This is a UiPath automation blueprint\.\*\*.*)$", lambda m: f"{m[1]}\n\n{line}", text, count=1, flags=re.M)
 
 
-def test_designed_in_line_without_fingerprint_fails_strict_only(check):
+def pinned(tmp_path, fingerprint=None):
+    """A genome text whose Designed in: line links x-sdd.md in tmp_path, pinned to fingerprint or the SDD's own."""
+    sdd = tmp_path / "x-sdd.md"
+    sdd.write_text("# SDD\n\n| **Status** | agreed |\n", encoding="utf-8")
+    recorded = fingerprint or node_call("sddFingerprint", str(sdd))
+    return designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {recorded}")
+
+
+def test_designed_in_line_without_fingerprint_fails_strict_only(check, tmp_path):
     text = designed_in(COMPONENT, "> Designed in: [Design](x-sdd.md)")
     assert text != COMPONENT
     assert check(text)[0] == 0
     rc, out = check(text, profile="strict")
     assert rc == 1
     assert "Designed in: line has no sdd-sha256 fingerprint" in out
-    assert check(designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {'a' * 64}"), profile="strict")[0] == 0
+    assert check(pinned(tmp_path), profile="strict")[0] == 0
+
+
+def test_designed_in_fingerprint_that_no_longer_matches_fails_strict_only(check, tmp_path):
+    text = pinned(tmp_path, "a" * 64)
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Designed in: sdd-sha256 does not match x-sdd.md; the SDD changed since the genome was written" in out
+
+
+def test_designed_in_sdd_that_cannot_be_read_fails_strict_only(check, tmp_path):
+    text = pinned(tmp_path)
+    (tmp_path / "x-sdd.md").unlink()
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Designed in: x-sdd.md or a child SDD it lists cannot be read" in out
+
+
+def test_designed_in_root_sdd_with_an_unreadable_child_fails_strict(check, tmp_path):
+    (tmp_path / "x-sdd.md").write_text("| **Project SDD role** | root |\n\n[Child](child-sdd.md)\n", encoding="utf-8")
+    (tmp_path / "child-sdd.md").write_text("# Child\n", encoding="utf-8")
+    text = designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {node_call('sddFingerprint', str(tmp_path / 'x-sdd.md'))}")
+    assert check(text, profile="strict")[0] == 0
+    (tmp_path / "child-sdd.md").unlink()
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Designed in: x-sdd.md or a child SDD it lists cannot be read" in out
 
 
 def test_retired_skill_name_fails_core(check):

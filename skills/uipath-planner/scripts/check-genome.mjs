@@ -5,28 +5,6 @@
 //   check-genome.mjs component <genome.md> [--profile core|strict] [--expect TOKEN ...] [--source-map TOKEN ...]
 //   check-genome.mjs process   <genome.md> [--profile core|strict] [--skills SKILL ...] [--expect TOKEN ...]
 //   check-genome.mjs tokens    <pattern>   --expect TOKEN ... [--min FRACTION] [--files N]
-//   check-genome.mjs context   <genome.md>   JSON of the facts the read plans branch on: level (from the preamble
-//                                           marker, found as the component and process checks find it), sha256,
-//                                           components ({path, library} per Components row of a process genome),
-//                                           test_components (a test-case group in the Components table, or a
-//                                           `Test case:` step), independent_packages (the process Deployment's
-//                                           Packaging line: true for independent packages, false for a solution,
-//                                           null when it states neither or the genome is a component), extracted
-//                                           (a Source Map with a table, not a stub), source_framework (the Source
-//                                           Map's `Source framework` row; a component with a `Part of:` line takes
-//                                           it from its process genome's Source Map) and build_mode
-//                                           (build|refactor|migration|unknown: refactor when the framework names
-//                                           UiPath, migration for another framework, unknown when the genome is
-//                                           extracted and no framework is found, build otherwise), transactional
-//                                           (null without a level or a Transactional Shape section), designed_in
-//                                           (the `Designed in:` link resolved against the genome's folder, null
-//                                           without one) with designed_in_link (the link as written),
-//                                           designed_in_fingerprint (the `sdd-sha256` the line records, null
-//                                           without one) and designed_in_current (true when the SDD on disk
-//                                           still has that fingerprint, false when it changed, null without a
-//                                           recorded fingerprint or when the SDD or a child SDD it lists cannot
-//                                           be read; a solution root's fingerprint covers every child SDD it
-//                                           lists), and the strict check result
 //   check-genome.mjs skills                 JSON of the skill names a genome may cite: build and operate
 //   check-genome.mjs -h | --help
 //   component and process also take: [--shape transactional|stub [--flows N] [--unit TOKEN ...]]
@@ -34,9 +12,9 @@
 //                                    are graded by the strict profile only (a task that tests something else)
 //                                    [--processes <inventory.json> --recordsets <recordsets.json>]
 //
-// `build` and `check` run it with --profile strict before anything else. For a genome extracted through the
-// framework migration pack it adds the two files the pack's `data` command writes, and the build runs it so at
-// migration preflight against the export it resolved. The genome tasks grade with this file.
+// uipath-planner runs it with --profile strict after `author`, `extract` and `edit`, and for `check`. An
+// extraction through the framework migration pack adds the two files the pack's `data` command writes. The
+// genome tasks grade with this file.
 //
 // Profiles:
 //   core    the genome contract a smoke test gates on: level and preamble, every section, valid skill names,
@@ -50,7 +28,8 @@
 //           complete for every unit and alternative unit, retry and consecutive-failure stop; step table cells
 //           holding references only; no H2 heading twice; no component genome linked twice; the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
-//           `sdd-sha256` fingerprint.
+//           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
+//           lists) and still has that fingerprint.
 //
 // Export check (--processes and --recordsets, both required together):
 //   --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
@@ -240,18 +219,12 @@ function complexityOf(text) {
   return m ? m[1].toLowerCase() : null;
 }
 
-/** {extracted, framework}: a Source Map holding a table is an extracted genome's; its `Source framework` row, in
- * any of its tables (`| Row |` in a component, `| Component |` in a process), names the framework. */
-export function sourceMapFacts(text) {
-  const rows = lines(sectionBody(text, "Source Map")).filter((l) => l.trim().startsWith("|")).map(cells);
-  const row = rows.find((c) => c.length > 1 && c[0].replace(/\*/g, "").trim().toLowerCase() === "source framework");
-  return { extracted: rows.length > 0, hasFrameworkRow: Boolean(row), framework: row ? row[1].split("—")[0].trim() || null : null };
-}
-
-/** strict: a process or standalone component genome's Source Map names its framework; a part inherits it. */
+/** strict: a process or standalone component genome's Source Map (one holding a table) has a `Source framework`
+ * row in any of its tables (`| Row |` in a component, `| Component |` in a process); a part inherits it. */
 function checkSourceFramework(text, r) {
-  const { extracted, hasFrameworkRow } = sourceMapFacts(text);
-  if (extracted && !hasFrameworkRow) r.strict("Source Map has no 'Source framework' row");
+  const rows = lines(sectionBody(text, "Source Map")).filter((l) => l.trim().startsWith("|")).map(cells);
+  const hasFrameworkRow = rows.some((c) => c.length > 1 && c[0].replace(/\*/g, "").trim().toLowerCase() === "source framework");
+  if (rows.length && !hasFrameworkRow) r.strict("Source Map has no 'Source framework' row");
 }
 
 const bodyWithoutSourceMap = (text) => text.split(/^## Source Map\s*$/m)[0];
@@ -321,7 +294,7 @@ const skillNames = (body) => [...new Set([...body.matchAll(/`(uipath-[a-z-]+)`/g
 
 // --- checks shared by both levels ---------------------------------------------------------------
 
-function checkCommon(text, level, sections, r, minCriteria) {
+function checkCommon(path, text, level, sections, r, minCriteria) {
   if (!new RegExp(`UIPATH-AUTOMATION-GENOME:\\s*${level}`, "i").test(text)) r.core(`missing preamble comment 'UIPATH-AUTOMATION-GENOME: ${level}'`);
   else if (!text.includes(`UIPATH-AUTOMATION-GENOME: ${level}`)) r.strict(`preamble comment not written exactly 'UIPATH-AUTOMATION-GENOME: ${level}'`);
   if (!/UiPath automation blueprint/i.test(text)) r.core("missing blueprint blockquote");
@@ -333,6 +306,7 @@ function checkCommon(text, level, sections, r, minCriteria) {
   if (blockquote && !routesToBuilder(blockquote[0])) r.strict(`blueprint blockquote does not name ${BUILDER} as the skill that builds the genome`);
   const designedIn = text.match(/^>\s*Designed in:[^\n]*/m);
   if (designedIn && !/\bsdd-sha256\s+[0-9a-f]{64}\b/.test(designedIn[0])) r.strict("Designed in: line has no sdd-sha256 fingerprint");
+  checkDesignedIn(path, text, r);
   const pos = h2Positions(text);
   const headings = [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim());
   for (const h of new Set(headings.filter((h, i) => headings.indexOf(h) !== i))) r.strict(`heading '## ${h}' appears more than once`);
@@ -371,6 +345,15 @@ function checkCommon(text, level, sections, r, minCriteria) {
     const pointer = !question.includes("?") && /Configuration Question \d+/.test(question); // a question the process genome asks
     if (!pointer && !/\((setting|constant); default:/.test(question)) r.strict(`configuration question ${num} does not name its kind and default as '(setting; default: …)' or '(constant; default: …)'`);
   }
+}
+
+/** strict: the SDD a `Designed in:` line links still has the fingerprint the line records. */
+function checkDesignedIn(path, text, r) {
+  const m = text.match(DESIGNED_IN);
+  if (!m || !m[2]) return;
+  const current = sddFingerprint(resolvePath(dirname(path), m[1]));
+  if (current === null) r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`);
+  else if (current !== m[2]) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
 }
 
 /** [flows, headed]: the '### Flow N' blocks, or — when there is no such heading but the section names a
@@ -514,7 +497,7 @@ function checkComponent(path, a, partOf, shape = true, library = false) {
   const r = new Report(a.profile, a.shapeChecks === "gate");
   const level = complexityOf(text);
   const minSteps = MIN_STEPS_BY_COMPLEXITY[level] ?? a.minSteps;
-  checkCommon(text, "component", COMPONENT_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY[level] ?? a.minCriteria);
+  checkCommon(path, text, "component", COMPONENT_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY[level] ?? a.minCriteria);
   const pos = h2Positions(text);
   const bw = sectionPos(pos, "Build With"), wf = sectionPos(pos, "Workflow");
   if (bw !== null && wf !== null && bw > wf) r.core("Build With must precede Workflow");
@@ -547,7 +530,7 @@ function checkComponent(path, a, partOf, shape = true, library = false) {
 function checkProcess(path, a) {
   const text = read(path);
   const r = new Report(a.profile, a.shapeChecks === "gate");
-  checkCommon(text, "process", PROCESS_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY[complexityOf(text)] ?? a.minCriteria);
+  checkCommon(path, text, "process", PROCESS_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY[complexityOf(text)] ?? a.minCriteria);
   const pos = h2Positions(text);
   const cp = sectionPos(pos, "Components"), pm = sectionPos(pos, "Process Map");
   if (cp !== null && pm !== null && cp > pm) r.core("Components must precede Process Map");
@@ -689,19 +672,17 @@ function loadInventory(path, what) {
   return data;
 }
 
-// the preamble marker, matched anywhere in the file as checkCommon matches it; the first match decides the level
-const MARKER = /UIPATH-AUTOMATION-GENOME:\s*(component|process)\b/i;
 const DESIGNED_IN = /^>\s*Designed in:\s*\[[^\]]*\]\(([^)]+)\)(?:[^\n]*?\bsdd-sha256\s+([0-9a-f]{64})\b)?/m;
 // the SDD's `Genome` handoff row (and an older SDD's `Tasks file` row) is written after the genome's fingerprint;
-// uipath-planner computes the same value (tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py)
+// scripts/sdd-fingerprint.mjs computes the same value
 const LATE_ROWS = /^\|\s*\*\*(Tasks file|Genome)\*\*\s*\|.*\n?/gm;
 const ROOT_ROLE = /^\|\s*\*\*Project SDD role\*\*\s*\|\s*root\s*\|/im;
 // children: every `*-sdd.md` link target or backticked path in the root, resolved against its folder, in order, once each, the root excluded
 const CHILD_REF = /\]\(([^)\s#]+-sdd\.md)(?:#[^)\s]*)?\)|`([^`\s]+-sdd\.md)`/g;
 const normalizeSdd = (text) => text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").replace(LATE_ROWS, "");
 
-/** The fingerprint uipath-planner records for an SDD, a solution root's covering every child it lists; null when
- * the SDD or a child cannot be read. */
+/** The fingerprint a `Designed in:` line records for an SDD, a solution root's covering every child it lists;
+ * null when the SDD or a child cannot be read. */
 export function sddFingerprint(path) {
   const readSdd = (p) => { try { return normalizeSdd(readFileSync(p, "utf8")); } catch { return null; } };
   const root = readSdd(path);
@@ -718,66 +699,9 @@ export function sddFingerprint(path) {
   }
   return hash.digest("hex");
 }
-const PART_OF = /^>\s*Part of:[^\n]*?\]\(([^)]+-genome\.md)\)/m;
-const TEST_GROUP = /\btest[- ]case group\b/i;
-
-/** The Source Map framework of the process genome a `Part of:` line links; null when the link does not resolve. */
-function parentFramework(path, text) {
-  const m = text.match(PART_OF);
-  if (!m) return null;
-  const parent = resolvePath(dirname(path), m[1]);
-  if (!existsSync(parent)) return null;
-  try { return sourceMapFacts(read(parent)).framework; } catch (e) { if (e instanceof InputError) return null; throw e; }
-}
-
-/** true for independent packages, false for one solution, null when the Packaging line states neither. */
-function independentPackages(text) {
-  const m = sectionBody(text, "Deployment").match(/^\s*[-*]\s*\*\*Packaging:?\*\*:?([^\n]*)$/im);
-  if (!m) return null;
-  if (/\bindependent\b/i.test(m[1])) return true;
-  return /\bsolution\b/i.test(m[1]) ? false : null;
-}
-
-/** The facts every read plan branches on, read from the file once instead of re-derived by each lane. */
-export function context(path) {
-  const [raw, decoded] = decode(path);
-  const text = decoded.replace(/\r\n?/g, "\n");
-  const marker = text.match(MARKER);
-  const level = marker ? marker[1].toLowerCase() : null;
-  const { extracted, framework: own } = sourceMapFacts(text);
-  const framework = own ?? (level === "component" ? parentFramework(path, text) : null);
-  const designedIn = text.match(DESIGNED_IN);
-  const sdd = designedIn ? resolvePath(dirname(path), designedIn[1]) : null;
-  const recorded = designedIn?.[2] ?? null;
-  const current = recorded ? sddFingerprint(sdd) : null;
-  const links = level === "process" ? componentLinks(path, text) : [];
-  const hasShape = sectionPos(h2Positions(text), "Transactional Shape") !== null;
-  const a = { ...DEFAULTS, profile: "strict" };
-  const errors = !level ? [] : level === "component" ? checkComponent(path, a, false) : checkProcess(path, a);
-  return {
-    genome: posix(path),
-    sha256: createHash("sha256").update(raw).digest("hex"),
-    level,
-    components: links.map(([, t, library]) => ({ path: posix(t), library })),
-    test_components: !level ? null : level === "process"
-      ? tableRows(sectionBody(text, "Components"), "| #").some((row) => row.length > 2 && TEST_GROUP.test(row[2]))
-      : /^\d+\. \*\*Test case:/m.test(sectionBody(text, "Workflow")),
-    independent_packages: level === "process" ? independentPackages(text) : null,
-    extracted,
-    source_framework: framework,
-    build_mode: !level ? null : framework ? (/\buipath\b/i.test(framework) ? "refactor" : "migration") : extracted ? "unknown" : "build",
-    transactional: !level || !hasShape ? null : !sectionBody(text, "Transactional Shape").trim().startsWith(STUB),
-    designed_in: sdd ? posix(sdd) : null,
-    designed_in_link: designedIn ? designedIn[1] : null,
-    designed_in_fingerprint: recorded,
-    designed_in_current: current === null ? null : current === recorded,
-    check: { profile: "strict", ok: Boolean(level) && !errors.length, errors: level ? errors : ["the genome carries no <!-- UIPATH-AUTOMATION-GENOME: component|process marker"] },
-  };
-}
-
 // --- command line -------------------------------------------------------------------------------
 
-const USAGE = "usage: check-genome.mjs {component,process,tokens} <genome> [options] | context <genome> | skills";
+const USAGE = "usage: check-genome.mjs {component,process,tokens} <genome> [options] | skills";
 const HELP = `${USAGE}
 
   component|process <genome>  check a genome: [--profile core|strict] [--expect TOKEN ...] [--source-map TOKEN ...]
@@ -785,7 +709,6 @@ const HELP = `${USAGE}
                               [--shape-checks gate|advisory] [--min-steps N] [--min-criteria N]
                               [--processes <inventory.json> --recordsets <recordsets.json>]
   tokens <pattern>            --expect TOKEN ... [--min FRACTION] [--files N]
-  context <genome>            JSON of the facts the read plans branch on
   skills                      JSON of the skill names a genome may cite
 
 Options take '--flag value' or '--flag=value'. Exit 0 pass, 1 failures, 2 usage error.`;
@@ -831,7 +754,7 @@ function parse(argv) {
     } else positional.push(arg);
   }
   if (positional.length !== 2) throw new UsageError("the following arguments are required: level, genome");
-  if (!["component", "process", "tokens"].includes(positional[0])) throw new UsageError(`argument level: invalid choice: '${positional[0]}' (choose from component, process, tokens, context, skills)`);
+  if (!["component", "process", "tokens"].includes(positional[0])) throw new UsageError(`argument level: invalid choice: '${positional[0]}' (choose from component, process, tokens, skills)`);
   if (Boolean(a.processes) !== Boolean(a.recordsets)) throw new UsageError("--processes and --recordsets go together");
   [a.level, a.genome] = positional;
   return a;
@@ -854,12 +777,6 @@ function run(argv, out) {
   }
   if (argv[0] === "skills") {
     out(JSON.stringify({ build: [...VALID_SKILLS].sort(), operate: [...OPERATE_SKILLS].sort() }, null, 2));
-    return 0;
-  }
-  if (argv[0] === "context") {
-    const paths = argv.length > 1 ? resolveGlob(argv[1]) : [];
-    if (paths.length !== 1) { out(`FAIL: context takes exactly one genome, found ${paths.length}`); return 1; }
-    out(JSON.stringify(context(paths[0]), null, 2));
     return 0;
   }
   let a;

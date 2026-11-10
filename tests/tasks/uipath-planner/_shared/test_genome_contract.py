@@ -1,5 +1,5 @@
-"""Contract tests between the two genome skills: uipath-planner writes genomes from its templates and guides,
-uipath-genome checks and builds them with scripts/check-genome.mjs. Neither skill reads the other's
+"""Contract tests between the two genome skills: uipath-planner writes genomes from its templates and guides and
+checks them with scripts/check-genome.mjs; uipath-genome builds them. Neither skill reads the other's
 files, so these tests hold the planner's templates and skill mapping to the checker's constants, and every
 `file.md § Section` pointer in either skill to a heading of that skill's own file.
 
@@ -17,7 +17,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 PLANNER = REPO / "skills" / "uipath-planner"
 BUILDER = REPO / "skills" / "uipath-genome"
-CHECKER = BUILDER / "scripts" / "check-genome.mjs"
+CHECKER = PLANNER / "scripts" / "check-genome.mjs"
 TEMPLATES = PLANNER / "assets" / "templates"
 MAPPING_GUIDE = PLANNER / "references" / "shared" / "skill-mapping-guide.md"
 LEVELS = {"component": "COMPONENT_SECTIONS", "process": "PROCESS_SECTIONS"}
@@ -168,14 +168,18 @@ def test_section_pointers_resolve_in_the_skills_own_files(skill):
     assert unresolved_pointers(skill) == []
 
 
-# The requests uipath-genome hands to uipath-planner's edit; each must be matched by an edit-guide row.
-EDIT_REQUESTS = ["The SDD was revised: update the genome", "Findings from `uipath-genome`"]
+# The requests sent to uipath-planner's edit, by the files that send them; each must be matched by an edit-guide row.
+EDIT_REQUESTS = {
+    "The SDD was revised: update the genome": ("uipath-planner design", PLANNER / "references" / "design"),
+    "Findings from `uipath-genome`": ("uipath-genome", BUILDER / "references"),
+}
 
 
 @pytest.mark.parametrize("request_text", EDIT_REQUESTS)
-def test_builder_edit_requests_have_an_edit_guide_row(request_text):
-    builder = "".join(p.read_text(encoding="utf-8") for p in (BUILDER / "references").glob("*.md"))
+def test_edit_requests_have_an_edit_guide_row(request_text):
+    sender, folder = EDIT_REQUESTS[request_text]
+    sent = "".join(p.read_text(encoding="utf-8") for p in folder.glob("*.md"))
     edit_rows = [line for line in (PLANNER / "references" / "edit" / "edit-guide.md").read_text(encoding="utf-8").splitlines()
                  if line.startswith(f'| "{request_text}"')]
-    assert request_text in builder, f"uipath-genome no longer sends {request_text!r}"
+    assert request_text in sent, f"{sender} no longer sends {request_text!r}"
     assert edit_rows, f"uipath-planner's edit-guide.md has no row starting with {request_text!r}"

@@ -23,7 +23,7 @@ sandbox:
 # names are the agent's choice, so the process genome is the top-level *-genome.md and its
 # components sit in its folder.
 reference:
-  directory: ../../../../skills/uipath-genome/scripts
+  directory: ../../../../skills/uipath-planner/scripts
 
 initial_prompt: |
   The UiPath solution in `InvoiceOps/` runs our nightly accounts-payable intake.

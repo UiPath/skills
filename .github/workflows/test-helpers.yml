@@ -125,9 +125,9 @@ jobs:
       - name: Install pytest
         run: pip install pytest
 
-      # The genome contract and SDD fingerprint tests need Node; they run in the genome checker job below.
+      # The genome checker, contract and SDD fingerprint tests need Node; they run in the genome checker job below.
       - name: Run pytest
-        run: pytest tests/tasks/uipath-planner/ -v --ignore=tests/tasks/uipath-planner/_shared/test_genome_contract.py --ignore=tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py
+        run: pytest tests/tasks/uipath-planner/ -v --ignore=tests/tasks/uipath-planner/_shared/test_genome_check.py --ignore=tests/tasks/uipath-planner/_shared/test_genome_check_findings.py --ignore=tests/tasks/uipath-planner/_shared/test_genome_contract.py --ignore=tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py
 
       - name: Run SDD caller-contract guard
         run: pytest tests/scripts/test_planner_sdd_contract.py -v
@@ -235,7 +235,8 @@ jobs:
       - name: Run pytest
         run: pytest tests/tasks/uipath-functions/_shared/ -v
 
-  # Name kept: it is a required status check (docs/REQUIRED-CHECKS.md). Runs the uipath-genome checker tests.
+  # Name kept: it is a required status check (docs/REQUIRED-CHECKS.md). Runs the uipath-planner genome checker tests
+  # and the uipath-genome execute-check tests.
   pytest-genome-check:
     runs-on: uipath-ubuntu-latest
     name: uipath-genome checker unit tests
@@ -254,13 +255,13 @@ jobs:
       - name: Install pytest
         run: pip install pytest
 
-      # Pins the genome graders against the skill they grade: every worked example
+      # Pins the genome graders against the skills they grade: every worked example
       # passes the strict profile, the skill lists match skills/, and the execute
-      # checks count a setting or an open item only where the skill puts it. The
-      # contract tests hold the planner's templates and skill mapping to the
-      # builder's checker, and each skill's section pointers to its own files.
+      # checks count a setting or an open item only where the builder puts it. The
+      # contract tests hold the planner's templates and skill mapping to its
+      # checker, and each skill's section pointers to its own files.
       - name: Run pytest
-        run: pytest tests/tasks/uipath-genome/_shared/ tests/tasks/uipath-planner/_shared/test_genome_contract.py tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py -v
+        run: pytest tests/tasks/uipath-genome/_shared/ tests/tasks/uipath-planner/_shared/test_genome_check.py tests/tasks/uipath-planner/_shared/test_genome_check_findings.py tests/tasks/uipath-planner/_shared/test_genome_contract.py tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py -v
 
   runtime-payload-casing-guard:
     runs-on: uipath-ubuntu-latest

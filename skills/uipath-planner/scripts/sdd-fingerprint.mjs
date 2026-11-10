@@ -5,8 +5,8 @@
 //
 // sha256 of the SDD with LF line endings and without its `Genome` handoff row, which `author` writes
 // after the SDD is agreed, or an older SDD's `Tasks file` row. A solution root SDD (`Project SDD role`
-// root) is hashed followed by each child SDD it lists, each normalized the same way. uipath-genome's
-// checker computes the same value to tell whether the SDD changed since the genome was written.
+// root) is hashed followed by each child SDD it lists, each normalized the same way. check-genome.mjs computes
+// the same value; its strict profile fails a genome whose SDD changed since the genome was written.
 //
 // Exit codes: 0 success · 1 usage error, unreadable file or missing child SDD
 

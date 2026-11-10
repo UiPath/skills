@@ -216,6 +216,10 @@ Then continue:
    - The intent implies implementation ("create / build / implement / set up / make", "so we can build it", "ready to build") → invoke `uipath-genome` with `build "<GENOME_MD>"` and the user's build request quoted verbatim on the turn after the genome, without asking — do not add a "shall I build?" question here. It asks its own configuration questions (an SDD's `Execution autonomy` never waives them), builds every component through its owning skill and ends with the hand-off folder. A request that also asks to publish or deploy follows [SKILL.md](../../SKILL.md) § Chaining. `uipath-genome` not installed → stop after the genome; `author`'s summary says the build needs it.
    - The user only asked to "design / architect / generate an SDD", or the intent is unclear → stop after the genome in either mode; the SDD and the genome are the deliverable. Offer the build in one line of `author`'s summary.
 
+## Keeping the Genome Current
+
+An SDD change — a `design` revise (a `revise:` caller request, a design change routed from a designed genome, an SDD change asked for after the genome is written) or a user's edit to the SDD the planner is told about — on an SDD whose `Genome` handoff row (the root's, for a solution) names a genome on disk ends the same run with `edit` "The SDD was revised: update the genome" ([edit-guide.md](../edit/edit-guide.md)) and its strict check ([SKILL.md](../../SKILL.md) § Check). A caller's request with `stop-after: sdd` ends at its result instead. An SDD whose `Genome` row is missing, or names no file on disk, gets its genome through Step 3.
+
 ## Gap Markers
 
 `[DEFAULT]` and `[SME REVIEW]` are the entire gap vocabulary of an SDD and a plan ([SKILL.md](../../SKILL.md) Critical Rule 6).

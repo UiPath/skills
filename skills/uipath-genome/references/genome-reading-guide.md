@@ -1,6 +1,6 @@
 # Genome Reading Guide — what a genome's sections mean at build
 
-The genome is read-only at build: `scripts/check-genome.mjs` validates its shape before any question (SKILL.md § Check), and a gap in it goes back to `uipath-planner` as an edit, never into the file. A section holding its stub line does not apply, and the build makes nothing for it.
+The genome is read-only at build: the build reads it as written, and a gap in it goes back to `uipath-planner` as an edit, never into the file. A section holding its stub line does not apply, and the build makes nothing for it.
 
 ## Two Levels
 
@@ -14,8 +14,8 @@ Rules:
 1. **One component genome is one buildable project**, except test components: every test component of a process (a group of test cases over data rows for one business area) is built into a *single* test project, `<ProcessName>.Tests`, with one configuration for constants. Each group keeps its own component genome (Interface, rules, criteria) and its own folder in that project; never build one test project per business area. A process genome whose components are the groups of one UiPath test project, plus one shared component for its execution template and helpers, rebuilds that one project.
 2. **A component genome's `Part of:` line links its process genome**: the build takes the component's source framework from that process genome. A component reached through a process genome's links is inside it, with or without the line.
 3. **Detail lives at the lowest level that owns it.** The build reads a component's steps, rules, error handling and criteria in its component genome, and what spans components (process map, handoffs, shared platform dependencies, the transactional shape, cross-cutting rules, end-to-end criteria, deployment) in the process genome.
-4. **Every section is present**: a section the build cannot find is a check finding, never a section to infer.
-5. **A genome whose preamble names `uipath-genome`** instead of `uipath-genome` builds here; the checker accepts it.
+4. **Every section is present**: a section the build cannot find is an edit for `uipath-planner` ([execution-guide.md § 1.1](execution-guide.md)), never a section to infer.
+5. **A genome whose preamble names `uipath-genome`** instead of `uipath-genome` builds here.
 6. **Shared behaviour is one library component**: a project of its own, published to a feed and installed in its consumers as a package, never a project of the solution (§ Deployment). The build packs it before its consumers, and each consumer's steps call it as they call any library; only the Library layout answer of execution's configuration questions folds it into a consumer. What one or a few activities do (close an application, append a line to the run's log, send one mail) stays a step of each consumer.
 
 ## File Naming and Location
@@ -99,7 +99,7 @@ Packaging, entry points, triggers and target folders or environments; the builda
 
 ## Design Links
 
-`> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT}` ties the genome to the SDD it derives from. The build reads no SDD content for it: the SDD's decisions are already in the sections that hold them and are read as answered. The `context` call returns `designed_in` (the resolved link), `designed_in_fingerprint` and `designed_in_current` (whether the SDD on disk still matches); what the build does with them: [execution-guide.md](execution-guide.md) § 1.1. A `Designed in:` line without a fingerprint is a check finding the report lists; it does not block the build.
+`> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT}` ties the genome to the SDD it derives from. The build reads no SDD content for it: the SDD's decisions are already in the sections that hold them and are read as answered. The build does not compare the fingerprint: `uipath-planner` keeps a designed genome current ([execution-guide.md](execution-guide.md) § 1.1).
 
 ## Source Map
 

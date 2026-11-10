@@ -1,6 +1,6 @@
 # Editing Guide — change a genome in place
 
-Content rules for what an edit writes: [genome-format-guide.md](../shared/genome-format-guide.md), and for an extracted genome [extracted-genome-guide.md](../shared/extracted-genome-guide.md). Only `edit` changes a genome; `uipath-genome` reads it and never edits it, so a fix found during a build comes back here and the build re-runs. Edits are targeted and in place, never a regeneration ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)).
+Content rules for what an edit writes: [genome-format-guide.md](../shared/genome-format-guide.md), and for an extracted genome [extracted-genome-guide.md](../shared/extracted-genome-guide.md). Only `edit` changes a genome; `uipath-genome` reads it and never edits it, so a deviation the build reports comes back here and the build re-runs. Every edit ends with the strict check (§ Review after every edit). Edits are targeted and in place, never a regeneration ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)).
 
 ## Read Plan
 
@@ -22,12 +22,12 @@ Every edit rewrites a legacy preamble (one naming `uipath-genome`) to the templa
 
 ### Any genome
 
-On a genome with a `Designed in:` line only the first two rows are edits. Any other change — products, projects, components, a skill, a step's design — goes to `design` to revise the linked SDD; the fingerprint then drives "The SDD was revised" to update the genome.
+On a genome with a `Designed in:` line only the first two rows are edits. Any other change — products, projects, components, a skill, a step's design — goes to `design` to revise the linked SDD, and the same run then applies "The SDD was revised" to update the genome ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current).
 
 | Request | Update |
 |---|---|
-| "The SDD was revised: update the genome" (from `uipath-genome`, or the user) | Read the SDD the `Designed in:` line links whole and redo [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) items 3–6 against it: every section whose SDD content changed is rewritten, nothing else is. Then take the fingerprint again, over the root and every child SDD it lists for a solution, and rewrite the `Designed in:` line ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)). An unattended build's request applies the edit without offering it; the closing summary names the sections changed |
-| "Findings from `uipath-genome`" (from the build, or the user forwarding its report) | Apply each finding where it points: a checker `FAIL` → the section and rule it names ([genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md)); a genome deviation → the step the source contradicts, written as the build followed it unless the user rules otherwise; a retired skill name → the Build With row, from [skill-mapping-guide.md](../shared/skill-mapping-guide.md); a `Not covered` object to build → [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md). A build's request applies the edits without offering them |
+| "The SDD was revised: update the genome" (after a `design` revise, or from the user) | Read the SDD the `Designed in:` line links whole and redo [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) items 3–6 against it: every section whose SDD content changed is rewritten, nothing else is. Then take the fingerprint again, over the root and every child SDD it lists for a solution, and rewrite the `Designed in:` line ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)). A run that follows a `design` revise, or an unattended request, applies the edit without offering it; the closing summary names the sections changed |
+| "Findings from `uipath-genome`" (from the build's completion report, or the user forwarding it) | Apply each finding where it points: a genome deviation → the step the source contradicts, written as the build followed it unless the user rules otherwise; a retired skill name → the Build With row, from [skill-mapping-guide.md](../shared/skill-mapping-guide.md); a `Not covered` object to build → [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md). A build's request applies the edits without offering them |
 | "Add detail to step X" | Workflow step X; add acceptance criteria if detail is testable |
 | "Change complexity" / "complexity should be higher or lower" | Complexity section, then section depth per population matrix |
 | "Add/remove an application" | Target Applications, Workflow, Build With, Acceptance Criteria |
@@ -56,7 +56,9 @@ On a genome with a `Designed in:` line only the first two rows are edits. Any ot
 
 ## Review after every edit
 
-After every edit, review what changed, and every component genome a process genome links that the edit touched, against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) before answering. An extracted genome also takes the Source Map checks [extract-guide.md](../extract/extract-guide.md) Step 6b runs against its source. Fix what breaks a rule, then name what is left.
+After every edit, review what changed, and every component genome a process genome links that the edit touched, against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) before answering. An extracted genome also takes the Source Map checks [extract-guide.md](../extract/extract-guide.md) Step 6b runs against its source. Fix what breaks a rule.
+
+Then run the strict check on the edited genome ([SKILL.md](../../SKILL.md) § Check) — `node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict`, adding `--processes` and `--recordsets` when a partial re-extraction wrote the inventory files. Fix every `FAIL` and run it again, at most three rounds; name every `FAIL` left, and what else is open, when answering.
 
 ## Back to the Build
 

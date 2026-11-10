@@ -10,7 +10,7 @@ paths:
 
 # Genome Skills — Subject Homes
 
-`uipath-planner` writes genomes and SDDs; `uipath-genome` checks and builds genomes. Each subject is stated in full in one file; every other mention points to it. Edit the home, leave the pointers.
+`uipath-planner` writes, checks and keeps current genomes and SDDs; `uipath-genome` builds genomes. Each subject is stated in full in one file; every other mention points to it. Edit the home, leave the pointers.
 
 ## Home per subject
 
@@ -30,6 +30,7 @@ Paths are relative to the skill folder.
 | Skill mapping: Build With names, Decision Tree, operate-only skills, common combinations | `references/shared/skill-mapping-guide.md` |
 | `design`: SDD phases, products, packages, solution composition, caller requests | `references/design/design-guide.md`; Phase 3: `references/design/sdd-writing-guide.md`; the rest of `references/design/` per subject |
 | SDD fingerprint | `scripts/sdd-fingerprint.mjs` |
+| `check` and the strict check after `author`, `extract` and `edit`; genome checker: what it checks | `SKILL.md`; checker: `scripts/check-genome.mjs` header comment |
 | `decompose`: dated plan and tasks | `references/decompose/decompose-guide.md`; format: `references/shared/plan-and-tasks-format.md` |
 | Verb choice, chaining, Critical Rules | `SKILL.md`; each verb's reads: its guide's § Read Plan |
 
@@ -37,7 +38,7 @@ Paths are relative to the skill folder.
 
 | Subject | Home |
 |---|---|
-| Verb choice, `context` setup, `check` | `SKILL.md` |
+| Verb choice | `SKILL.md` |
 | `build` start, verb rules, read plan | `references/build-guide.md` (§ Start, § Verb Rules, § Read Plan) |
 | What each genome section means at build | `references/genome-reading-guide.md` |
 | Execution: phases, target project resolution, skill groups, owning-skill contract, acceptance verdicts | `references/execution-guide.md` |
@@ -55,7 +56,6 @@ Paths are relative to the skill folder.
 | Completion report and hand-off folder | `references/completion-report-guide.md` |
 | Package doc and tool errata (temporary) | `references/package-doc-errata-guide.md` |
 | Offline definition workarounds (temporary) | `references/offline-definition-workarounds-guide.md` |
-| Genome checker: what it checks | `scripts/check-genome.mjs` header comment |
 
 Framework facts (detection, inventory, locators, per-field translation, pitfalls, scripts, examples) live in the framework migration pack, never in either skill. What a pack contains: the pack's `CONTRACT.md`.
 
@@ -81,10 +81,10 @@ One change, every file in its row, same PR.
 
 | Change | uipath-planner | uipath-genome | Tests |
 |---|---|---|---|
-| Genome format change | `references/shared/genome-format-guide.md` (or `extracted-genome-guide.md` / `transactional-shape-guide.md` for its subject); `assets/templates/component-genome-template.md`; `assets/templates/process-genome-template.md` | `references/genome-reading-guide.md` (build consequence); `scripts/check-genome.mjs` | `tests/tasks/uipath-planner/_shared/test_genome_contract.py` |
-| New UiPath file kind or product | `SKILL.md` description; `references/extract/source-frameworks-guide.md` and `references/extract/uipath-source-guide.md` detection tables; `references/decompose/decompose-guide.md` scan list; `references/shared/skill-mapping-guide.md` § Decision Tree for Ambiguous Steps | `references/source-frameworks-guide.md`; `references/execution-guide.md` § 1.4 reuse list; `scripts/check-genome.mjs` skill lists | — |
-| New building skill | `references/shared/skill-mapping-guide.md` | `scripts/check-genome.mjs` `VALID_SKILLS` / `OPERATE_SKILLS` | `tests/tasks/uipath-genome/_shared/test_genome_check.py` asserts both |
-| SDD fingerprint change | `scripts/sdd-fingerprint.mjs` | `scripts/check-genome.mjs` | `tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py` |
+| Genome format change | `references/shared/genome-format-guide.md` (or `extracted-genome-guide.md` / `transactional-shape-guide.md` for its subject); `assets/templates/component-genome-template.md`; `assets/templates/process-genome-template.md`; `scripts/check-genome.mjs` | `references/genome-reading-guide.md`, only when the build's consequence changes | `tests/tasks/uipath-planner/_shared/test_genome_contract.py` |
+| New UiPath file kind or product | `SKILL.md` description; `references/extract/source-frameworks-guide.md` and `references/extract/uipath-source-guide.md` detection tables; `references/decompose/decompose-guide.md` scan list; `references/shared/skill-mapping-guide.md` § Decision Tree for Ambiguous Steps; `scripts/check-genome.mjs` skill lists | `references/source-frameworks-guide.md`; `references/execution-guide.md` § 1.4 reuse list | — |
+| New building skill | `references/shared/skill-mapping-guide.md`; `scripts/check-genome.mjs` `VALID_SKILLS` / `OPERATE_SKILLS` | — | `tests/tasks/uipath-planner/_shared/test_genome_check.py` asserts both |
+| SDD fingerprint change | `scripts/sdd-fingerprint.mjs`; `scripts/check-genome.mjs` | — | `tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py` |
 
 ## Where to put new content
 
