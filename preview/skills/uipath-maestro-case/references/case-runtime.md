@@ -119,6 +119,63 @@ make from syntax alone. Exact signatures remain in the generated API.
   are the common case: an `exceptionStage(...)` that gates normal completion is
   almost never what was meant.
 
+## Task exit rules
+
+<!-- RULE:case.task-exit.semantics -->
+- A `task-exited` rule reacts to a task of its own stage that ended without
+  completing: `failed` (the task failed on its own, after its retries) or
+  `userExited` (a person ended the running task through the exit API). A task
+  the case itself cancelled (an interrupting stage) is neither and fires no
+  rule. The rule fires once EVERY task it names has exited; for "any one of
+  them", write one rule per task. An exited task does not satisfy
+  `required-tasks-completed`: the stage stays open until a rule moves the case
+  on, or an operator re-runs the task.
+
+<!-- RULE:case.task-exit.placement -->
+- Put the rule on the entry of the task that should start (a manual fallback),
+  or on an exit of the failing task's stage with `{ marksStageComplete: false }`
+  and enter the next stage with `rule('selected-stage-exited', { stage })`. The
+  platform compiles it nowhere else: at a stage entry, on an exit that marks
+  the stage complete (unless `type: 'wait-for-user'`), or at case completion
+  the rule is written and never fires (`check`: `TASK_EXITED_PLACEMENT`;
+  `validate`: `CASE_MGMT_CASE_CONDITION_RULE_TASK_EXITED_NOT_HERE`). Name only
+  tasks of the rule's own stage (`TASK_EXITED_TASK_OUTSIDE_STAGE`), and never
+  the task whose entry holds the rule: that re-runs it after every failure
+  until the case guardrail stops the loop (`TASK_EXITED_SELF_RERUN`).
+
+  ```ts
+  .exitWhen(rule('task-exited', { tasks: ['Fetch Policy'], exitReasons: ['failed'], errorCategories: ['Deployment'] }),
+    { displayName: 'Fetch failed to deploy', marksStageComplete: false })
+  .task('Enter Policy By Hand', t => t.action({ title: 'Enter the policy' }).required(false)
+    .entryWhen(rule('task-exited', { tasks: ['Fetch Policy'] })))
+  ```
+
+<!-- RULE:case.task-exit.filters -->
+- `exitReasons` narrows the rule to `failed`, `userExited`, or both; omit it
+  for either. `errorCategories` (`User`, `System`, `Deployment`) applies only
+  to a failures-only rule (`exitReasons: ['failed']`): only a failure carries an
+  error, and the platform ignores the filter on any other rule
+  (`TASK_EXITED_FILTER_IGNORED`). Anything finer than the category, such as the
+  error code or message, is an `expression` over the task's error, not a
+  filter.
+
+<!-- RULE:case.task-exit.flags -->
+- A plan with a `task-exited` rule compiles with both case flags on,
+  `caseExecutionExitsOnTaskFailure` (a failing task exits and the case keeps
+  running instead of faulting) and `caseExecutionUsesTaskExitRules` (the rules
+  react to exits). Call `.exitOnTaskFailure()` alone for a case that wants the
+  exit behaviour without a rule; call either with `false` only to keep the old
+  behaviour, which makes every `task-exited` rule a no-op
+  (`TASK_EXITED_IGNORED`). A decompiled plan carries the calls explicitly, so
+  keep them.
+
+<!-- RULE:case.task-exit.cli -->
+- `uip maestro case validate` knows the rule from case-schema 0.1212 on;
+  `uip maestro case rule-types list --output json` lists `task-exited` under
+  `task-entry` and `stage-exit` when it does. An older `uip` rejects the rule
+  as an invalid discriminator: upgrade before compiling, do not remove the rule
+  to pass.
+
 ## Design fidelity
 
 <!-- RULE:case.sdd.declared-shapes -->
