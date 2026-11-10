@@ -97,8 +97,8 @@ overrides:
 
 suppressions:
   - rule: STRUCT-REQUIRED-FILES
-    paths: ["skills/uipath-maestro-case/references/plugins/logging",
-            "skills/uipath-maestro-case/references/plugins/variables/bindings"]
+    paths: ["classic/skills/uipath-maestro-case/references/plugins/logging",
+            "classic/skills/uipath-maestro-case/references/plugins/variables/bindings"]
     reason: "No planning.md on purpose: each impl-json.md says 'Intentional, not a gap'"
   - rule: AGENT-READ-TRUNCATED
     paths: ["skills/uipath-rpa/references/xaml/common-pitfalls.md"]
