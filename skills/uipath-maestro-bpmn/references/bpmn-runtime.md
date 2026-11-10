@@ -355,7 +355,7 @@ binding half, which is the same for every connector-backed node.
   To fix the source after a merge, edit the same `.bpmn.ts` and merge again, also after `format`: `merge` restamps it for the merged file, and the check ignores what decompile does not read, such as the layout `format` rewrites and line endings.
   When `merge` refuses with `MERGE_ORIGINAL_CHANGED` (the original's process changed since the decompile), `MERGE_SOURCE_NOT_STAMPED` or `MERGE_SOURCE_STAMP_UNREADABLE` (line 1 is missing or edited), it writes nothing: decompile the original again and reapply the edit.
   On `MERGE_OPTION_CONFLICT`, drop the decompile option given to `merge`; the stamp already records it.
-  Needs the `@uipath/maestro-builder-sdk` release that ships source-form merge (UiPath/builder-sdk#1889); on an older SDK `merge` stops with a ConfigError asking for an upgrade, so run the install command the ConfigError prints and merge again.
+  Needs `@uipath/maestro-builder-sdk` 6.95.0 or later; on an older SDK `merge` stops with a ConfigError asking for an upgrade, so run the install command the ConfigError prints and merge again.
 <!--skill-flavor:brownfield-merge-form:end-->
   Then `format` (only when the edit added elements; see `bpmn.brownfield.format`), `refresh` and `validate` the target as in the validation loop.
 
