@@ -35,7 +35,7 @@ npx rpa-sdk merge Main.xaml Main.edited.xaml --in-place
 ```
 
 - Each command reads the activity catalog from `$RPA_SDK_CATALOG`, or from `--catalog <dir>`, which wins.
-  The catalog is a folder or a `.zip`; look activities up with the CLI, not by reading its files: `npx rpa-sdk catalog <word>` lists the activities whose name matches (`npx rpa-sdk catalog textfile`), and `npx rpa-sdk catalog <className>` lists one activity's properties, their kinds, types, and which are required (`npx rpa-sdk catalog UiPath.Core.Activities.AppendLine`).
+  The catalog is a folder or a `.zip`; look activities up with the CLI, not by reading its files: `npx rpa-sdk catalog <word>` lists the activities whose name matches (`npx rpa-sdk catalog textfile`), and `npx rpa-sdk catalog <className>` lists one activity's properties, their kinds, types, and which are required (`npx rpa-sdk catalog UiPath.Core.Activities.AppendLine`), and writes the activity's typed module into `activities/`; import it to call `s.AppendLine(id, { … })`.
 - `check` reports refusals and lint findings; with `--json` it prints `{"ok":true,"warnings":0,…}` when the file is clean.
   `ok` is false only for a refusal, which compile cannot write; `ok` with warnings is still not clean.
 - `compile` writes the XAML. A file in a subfolder compiles the same way: `npx rpa-sdk compile Workflows/ValidateInvoice.rpa.ts -o Workflows/ValidateInvoice.xaml`.

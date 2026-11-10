@@ -1,36 +1,50 @@
 # Catalog activities, collections, Invoke Method and Switch
 
-Any activity the catalog lists goes through `.activity(id, catalogActivity(className), props, slots)`, or `activity(…)` with the same arguments as a slot's one activity.
-Look the activity up before writing it: `npx rpa-sdk catalog <word>` finds its class name, and `npx rpa-sdk catalog <className>` lists its property names, their kinds and their types.
+Any activity the catalog lists is written through a typed module generated from its entry.
+Find the activity's class name with `npx rpa-sdk catalog <word>`, then `npx rpa-sdk catalog <className>` lists its properties, their kinds and types, and writes its module into the project's `activities/` folder:
+
+```
+npx rpa-sdk catalog UiPath.Core.Activities.GetRobotAsset
+wrote activities/UiPath.System.Activities/GetRobotAsset.ts: import { GetRobotAsset } from './activities/UiPath.System.Activities/GetRobotAsset.ts'; adds .GetRobotAsset(id, { … }) to the chain
+```
 
 ## Activities from the catalog
 
 ```ts
-import { catalogActivity, invokeArguments, Decimal, String } from '@uipath/rpa-builder-sdk';
+import { arg, invokeArguments, Decimal, Object, String, vb } from '@uipath/rpa-builder-sdk';
+import './activities/UiPath.System.Activities/ReadTextFile.ts';
+import './activities/UiPath.System.Activities/InvokeWorkflowFile.ts';
+import { GetRobotAsset } from './activities/UiPath.System.Activities/GetRobotAsset.ts';
 
-s.activity('read', catalogActivity('UiPath.Core.Activities.ReadTextFile'), {
+s.ReadTextFile('read', {
   FileName: (v) => v.in_InputPath,
   Content: (v) => v.text,                       // an OutArgument takes a reference to a variable
 })
-s.activity('validate', catalogActivity('UiPath.Core.Activities.InvokeWorkflowFile'), {
-  WorkflowFileName: 'Workflows\\ValidateInvoice.xaml',
-  ArgumentsVariable: null,
-  Arguments: invokeArguments([
-    { key: 'in_Amount', direction: 'In', type: Decimal, value: vb('CDec(row("Amount"))') },
-    { key: 'out_AmountEur', direction: 'Out', type: Decimal, value: (v) => v.amountEur },
-  ]),
-})
+  .InvokeWorkflowFile('validate', {
+    WorkflowFileName: 'Workflows\\ValidateInvoice.xaml',
+    ArgumentsVariable: null,
+    Arguments: invokeArguments([
+      { key: 'in_Amount', direction: 'In', type: Decimal, value: vb('CDec(row("Amount"))') },
+      { key: 'out_AmountEur', direction: 'Out', type: Decimal, value: (v) => v.amountEur },
+    ]),
+  })
+  .If('missing', { Condition: (v) => v.text === '', Then: GetRobotAsset('asset', { AssetName: 'Fallback', Value: arg(Object, (v) => v.fallback, 'Out') }) })
 ```
 
-Property names and kinds come from that listing: `InArgument` takes an expression or literal, `OutArgument` a reference, `Literal` a plain value or enum member, `Activity` a slot, one activity (in the fourth argument, `{ Then: LogMessage(…) }`), `Object` an `objectValue({…})`, `Arguments` an `invokeArguments([…])`.
+- Importing a module adds its activity to the chain (`s.ReadTextFile(…)`); import its factory by name to use it as a slot's one activity (`Then: GetRobotAsset(…)`).
+- The module types every property from the catalog, so the editor rejects a misspelled property, an enum value that is not a member, and a value of the wrong type; `check` refuses them too.
+- A module is generated: regenerate it with `rpa-sdk catalog <className>` rather than edit it. `decompile` writes the ones a file uses beside it.
+- `s.activity(id, catalogActivity(className), props, slots)` is the same activity without a module.
+
+Property names and kinds come from that listing: `InArgument` takes an expression or literal, `OutArgument` a reference, `Literal` a plain value or enum member, `Activity` a slot, one activity (`Then: LogMessage(…)`), `Object` an `objectValue({…})`, `Arguments` an `invokeArguments([…])`.
 Invoke Workflow File's `WorkflowFileName` is relative to the project root (the folder with `project.json`), wherever the invoking workflow is; `check` reports a file the project has in neither its `.xaml` nor its `.rpa.ts` form (`INVOKE_FILE_MISSING`).
 `Condition` is an `Activity<T>`: an expression, or for a value an activity computes (UI Automation's `AnchorProvider`), that one activity, `activityValue(activity('find', …))`.
-`ActivityFunc` is a delegate whose one activity computes the value, as `RetryScope`'s `Condition`: one activity in the fourth argument, `noActivity` for none.
+`ActivityFunc` is a delegate whose one activity computes the value, as `RetryScope`'s `Condition`: one activity, `noActivity` for none.
 `ArgumentList` is a list of arguments of one type, as `RemoveLogFields`' `Fields`: a plain array, `['logF_TransactionID', (v) => v.name]`.
 `Unsupported` properties can only be `null`.
 
-- A generic activity (its class name ends in `` `1 `` and `rpa-sdk catalog` lists properties of type `T`, as `DeserializeJson`, `AddDataColumn`) takes its type argument as the fifth argument of `.activity`, after the slots: `.activity('column', catalogActivity('UiPath.Core.Activities.AddDataColumn`1'), { DataTable: (v) => v.table, ColumnName: 'Count', DefaultValue: 0 }, {}, Int32)`.
-- A catalog activity with a body (`TimeoutScope`, `RepeatNumberOfTimesX`, `RetryScope`'s `ActivityBody`) takes `body('item', Type, activity)`, or `body(activity)` when it hands its body no item, in the fourth argument of `.activity`.
+- A generic activity (its class name ends in `` `1 `` and `rpa-sdk catalog` lists properties of type `T`, as `DeserializeJson`, `AddDataColumn`) takes its type argument after the id: `.AddDataColumn('column', Int32, { DataTable: (v) => v.table, ColumnName: 'Count', DefaultValue: 0 })`.
+- A catalog activity with a body (`TimeoutScope`, `RepeatNumberOfTimesX`, `RetryScope`'s `ActivityBody`) takes `body('item', Type, activity)`, or `body(activity)` when it hands its body no item.
 
 ## Collections, Invoke Method, Switch
 
