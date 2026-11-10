@@ -10,7 +10,7 @@ description: >
   scope with tools=[review_contract]), discovers a judge model via
   `uip agent guardrails llm-as-judge-models`, blocks, runs at PRE, and sets
   detection_scope to Files.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

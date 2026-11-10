@@ -7,7 +7,7 @@ description: >
   an uploaded document. Verifies that the @guardrail with UserPromptAttacksValidator is
   placed above the LLM factory with detection_scope Both, and that the uploaded file is
   an Attachment input rendered into the user message.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

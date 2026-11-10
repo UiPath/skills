@@ -8,7 +8,7 @@ description: >
   uipath_langchain.guardrails and spread into create_agent(), uses LLM scope,
   PRE stage, and a BlockAction — and that it is NOT done in decorator style.
   Complements the existing decorator-style test by covering the middleware path.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

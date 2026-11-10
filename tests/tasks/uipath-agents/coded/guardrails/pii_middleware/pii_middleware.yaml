@@ -7,7 +7,7 @@ description: >
   account statement. Verifies that the correct middleware class is imported and
   spread into create_agent(), that the statement is an Attachment input rendered into
   the user message, and that the Agent-scope middleware sets detection_scope Both.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

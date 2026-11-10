@@ -8,7 +8,7 @@ description: >
   UiPathByoGuardrailMiddleware — pinned to the configuration by validator_name,
   spread into create_agent(), with a block action — rather than reaching for the
   built-in PII validator.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:edit, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:edit, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

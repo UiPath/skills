@@ -9,7 +9,7 @@ description: >
   requires the agent to refuse auto-upload, surface the missing prerequisite,
   and ask the user to authorize an upload. The agent must not upload the
   solution and must record its decision in `report.json`.
-tags: [uipath-maestro-flow, mode:operate, lifecycle:execute, feature:eval]
+tags: [uipath-maestro-flow, mode:operate, lifecycle:execute, feature:eval, studio-web-unsupported, studio-web-unsupported:local-only-solution]
 
 run_limits:
   expected_turns: 26
