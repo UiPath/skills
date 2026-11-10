@@ -17,3 +17,15 @@
 <!--skill-flavor:sdk-palette-elements:start-->
   Needs `@uipath/maestro-builder-sdk` 6.88.1 or later. Studio Web ships its own SDK: when `decompile` refuses one of these elements with "has no builder equivalent", tell the user that this Studio Web build cannot edit that element yet.
 <!--skill-flavor:sdk-palette-elements:end-->
+
+<!--skill-flavor:sdk-script-result:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.93.7 or later. Studio Web ships its own SDK: when its `check` does not report `=result.<field>`, the rule still holds; read `=result.response`.
+<!--skill-flavor:sdk-script-result:end-->
+
+<!--skill-flavor:sdk-script-type:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.93.8 or later. Studio Web ships its own SDK: when it accepts `type`, the rule still holds; drop `type`.
+<!--skill-flavor:sdk-script-type:end-->
+
+<!--skill-flavor:sdk-http-manual:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.93.9 or later. Studio Web ships its own SDK: when its `.http()` with no `connection` writes `mode="manual"` with the request as context rows, the runtime faults that task with 102018. Tell the user that this Studio Web build cannot write a runnable connection-less HTTP call yet.
+<!--skill-flavor:sdk-http-manual:end-->
