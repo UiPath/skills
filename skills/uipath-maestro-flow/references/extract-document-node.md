@@ -49,7 +49,7 @@ that lives in Studio Web and has to be pulled down first — ask them for its UR
 4. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
 5. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
 6. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
-7. **Report** what was added, where it reads its file from, and what it extracts, and that the node's processor resource was written under the solution's `resources/`, which travels with the `.flow` ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
+7. **Report** what was added, where it reads its file from, what it extracts, and what `nodes create` reported about its processor: inside a solution the resource file was written under `resources/` and travels with the `.flow`, and outside one it is still to be created ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
 
 ## Not available everywhere
 
@@ -185,7 +185,7 @@ A node from before the CLI provisioned anything, one written by hand, or one com
 uip maestro flow nodes provision <file> --output json
 ```
 
-Never write a `processorKey` by hand, and never copy one from another node: a processor holds exactly one node's extraction definition, and a solution where two nodes define the same one refuses to pack or publish. A node meant to run another node's processor sets `inputs.processorReadOnly: true` instead.
+Never write a `processorKey` by hand, and never give a node another node's key as its own: a processor holds exactly one node's extraction definition, and a solution where two nodes define the same one refuses to pack or publish. A node that deliberately runs another node's processor is the one place a key is shared — it takes that node's `processorKey` and sets `inputs.processorReadOnly: true` alongside it, so the key says which processor it reads and the flag says it is not the author. Neither half works without the other: a read-only node carrying no key names nothing to read, and validation rejects it.
 
 A package built from a node without a processor faults at run time:
 

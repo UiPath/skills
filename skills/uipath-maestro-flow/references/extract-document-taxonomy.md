@@ -95,7 +95,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.
 5. **Fix what it rejects.** Exit 3 means the document is a schema but breaks a rule; `Data.Issues` lists each problem with the path it is at. Correct those and run the same command again.
 6. **Validate the flow:** `uip maestro flow validate <file> --output json` must come back `Valid`.
-7. **Report** what was created, and pass on `Data.ProcessorSync`: it says whether this schema reaches the node's processor when the solution next packs or publishes, or why it never will. Taking the node live is the user's step.
+7. **Report** what was created, and pass on `Data.ProcessorSync`: it says whether this schema reaches the node's processor when the solution next packs or publishes. Taking the node live is the user's step.
 
 ## The document
 
@@ -286,4 +286,4 @@ On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 
 Everything here is offline. `set` and `flow validate` prove the taxonomy is well formed, that its references resolve and that its names and instructions fit — not that it extracts the right values. Only running the node against real documents shows that, and the taxonomy usually needs a round of tightening afterwards, mostly in the instructions.
 
-The write stops at the `.flow`. The processor's own copy of the schema is regenerated from the node when the solution next packs or publishes — `Data.ProcessorSync` says when it never will be (a read-only mirror, or a processor published to the tenant) — and taking the node live stays a decision for the user.
+The write stops at the `.flow`. The processor's own copy of the schema is regenerated from the node when the solution next packs or publishes, and `Data.ProcessorSync` says when it never will be. Taking the node live stays a decision for the user.
