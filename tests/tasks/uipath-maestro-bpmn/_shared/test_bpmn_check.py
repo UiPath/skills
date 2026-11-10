@@ -242,6 +242,32 @@ def test_find_bpmn_file_with_hint_prefers_the_project_file(tmp_path, monkeypatch
     assert bpmn_check.find_bpmn_file("Proj") == "Proj-old.bpmn"
 
 
+def _project_with_entry_point(root, entry_point: str):
+    project = root / "Sol" / "Proj"
+    project.mkdir(parents=True)
+    (project / "project.uiproj").write_text("{}", encoding="utf-8")
+    (project / "Proj.bpmn").write_text("<definitions/>", encoding="utf-8")
+    (project / "Process.bpmn").write_text("<definitions/>", encoding="utf-8")
+    (project / "entry-points.json").write_text(
+        json.dumps({"entryPoints": [{"filePath": f"/content/{entry_point}#Event_start"}]}),
+        encoding="utf-8",
+    )
+
+
+def test_find_bpmn_file_grades_the_entry_point_not_a_file_beside_it(tmp_path, monkeypatch) -> None:
+    _project_with_entry_point(tmp_path, "Process.bpmn")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Process.bpmn")
+
+
+def test_find_bpmn_file_keeps_the_named_file_when_it_is_the_entry_point(tmp_path, monkeypatch) -> None:
+    _project_with_entry_point(tmp_path, "Proj.bpmn")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Proj.bpmn")
+
+
 def test_context_value_strips_and_falls_back_to_element_text() -> None:
     """One canonical reading of an input, so one artifact gets one verdict.
 
