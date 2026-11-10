@@ -24,10 +24,10 @@ Use this matrix to infer packages from §9 Application Inventory. Match on the *
 | Access Method in §9 | Package(s) | Required Assets | Common Pitfalls |
 |---|---|---|---|
 | IMAP | `UiPath.Mail.Activities` | Credential asset (username + app password); server host + port as text assets | Do not default to O365 — check PDD for protocol. IMAP needs app password, not user password, on 2FA accounts. |
-| POP3 | `UiPath.Mail.Activities` | Credential asset; host + port | Rarely used — prefer IMAP or Graph API if available. |
+| POP3 | `UiPath.Mail.Activities` | Credential asset; host + port | Rarely used — use IMAP or Graph API when available. |
 | Exchange / EWS | `UiPath.Mail.Activities` | Credential asset; EWS URL | Being deprecated by Microsoft — confirm the tenant still allows EWS. |
 | O365 Graph API | `UiPath.MicrosoftOffice365.Activities` | App registration client ID + tenant ID (text assets); certificate or secret (credential asset) | Different activity set from `UiPath.Mail.Activities`. Requires admin consent for mail scopes. |
-| Gmail API | `UiPath.GSuite.Activities` | OAuth client JSON (credential asset) | Integration Service alternative exists — prefer the connector unless the PDD requires specific activity packages. |
+| Gmail API | `UiPath.GSuite.Activities` | OAuth client JSON (credential asset) | Integration Service alternative exists — use the connector unless the PDD requires specific activity packages. |
 
 ### Microsoft Office files
 
@@ -53,7 +53,7 @@ Use this matrix to infer packages from §9 Application Inventory. Match on the *
 |---|---|---|
 | SAP GUI | `UiPath.SAP.BAPI.Activities` | BAPI function calls (RFC). |
 | SAP Fiori (web) | `UiPath.UIAutomation.Activities` | UI automation — no SAP package. |
-| Salesforce (native activities) | `UiPath.Salesforce.Activities` | Only when Integration Service is not available. Prefer the connector. |
+| Salesforce (native activities) | `UiPath.Salesforce.Activities` | Only when Integration Service is not available; otherwise use the connector. |
 | ServiceNow | `UiPath.ServiceNow.Activities` | Only when Integration Service is not available. |
 | Workday | `UiPath.Workday.Activities` | Only when Integration Service is not available. |
 

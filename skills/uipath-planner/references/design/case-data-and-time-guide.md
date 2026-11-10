@@ -254,8 +254,8 @@ ONE checklist. Settle every item before the Phase 2 Step 5 review and re-walk it
 | Single-recipient bottleneck | `action` recipient is one `User:`/`Email:` AND the stage runs on every case AND no documented volume limit | `rev_bottleneck_<task>`: confirm volume or use UserGroup/Role |
 | No escalation on SLA | Stage SLA set, escalation absent | `rev_escalation_<stage>`: no one is paged on breach |
 | Escalation loops to the breacher | Escalation recipient = the stage's primary recipient | `rev_escalation_loop_<stage>`: pick a tier-up recipient |
-| Sync child case in the critical path | `Wait for Completion: Yes` + parent SLA + no timeout cover | `rev_childcase_<task>`: consider async + completion event, or an exception path |
-| All-human stage | 100% `action` tasks, > 2 tasks | `rev_human_only_<stage>`: consider agent/process pre-screening |
+| Sync child case in the critical path | `Wait for Completion: Yes` + parent SLA + no timeout cover | `rev_childcase_<task>`: recommend async + completion event, or an exception path |
+| All-human stage | 100% `action` tasks, > 2 tasks | `rev_human_only_<stage>`: recommend agent/process pre-screening |
 | No happy path on the first stage | Only `No` exits, no `required-tasks-completed` completion | `rev_no_happy_path_<stage>` |
 | Decision outcome unread | Decision task writes a variable no downstream rule reads | `rev_orphan_decision_<task>`: consume it or drop decision status |
 | Connector failure uncovered | Connector task in a primary stage, no failure lane (HIGH when ≥ 2 connector tasks share a critical path, zero cover) | `rev_no_failure_path_<task>` |

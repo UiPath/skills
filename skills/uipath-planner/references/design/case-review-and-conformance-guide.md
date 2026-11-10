@@ -28,7 +28,7 @@ Caller obligation (file In-arg detected):
   Maestro Studio Web's "Start case" dialog does this automatically.
 ```
 
-**Product vocabulary.** User-visible activation labels: `Sequential`, `Parallel`, `Parallel after predecessor`, `Event-triggered`, `Manually triggered`, `Fan-in`, `Conditional gate` (`adhoc` → `Manually triggered`). Prefer product task labels — `Human action`, `Agent`, `RPA workflow`, `API workflow`, `Child case` — over schema enum names.
+**Product vocabulary.** User-visible activation labels: `Sequential`, `Parallel`, `Parallel after predecessor`, `Event-triggered`, `Manually triggered`, `Fan-in`, `Conditional gate` (`adhoc` → `Manually triggered`). Use product task labels — `Human action`, `Agent`, `RPA workflow`, `API workflow`, `Child case` — over schema enum names.
 
 **Completeness gate.** Incomplete unless: all eight sections shown, every stage and task named, every modeled and intentionally omitted path covered, every meaningful SLA response/status row present, Caller obligation when relevant. No approval question before every section has been shown — even sections reading `None`. Never substitute a list of build steps, artifacts, folders, or validation commands, or a summary that points at the SDD for a missing business decision.
 
@@ -71,7 +71,10 @@ names only what to LOOK AT.
      `## Case Trigger`, `## Stages`, `## Business Rules`, `## Task Plan`, `## Resource Resolution`,
      `## Acceptance Scenarios`.
   4. The Case Variables header is literally
-     `| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |`.
+     `| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |`, and that
+     table is the section's only table: every variable, task-output targets included, is a row of it —
+     no second table, no `####` sub-heading split, no sibling `###` section (e.g.
+     `### Task-output variables`). Only the first table declares variables; later rows drop silently.
   5. Every `### Stage <N>:` / `### Secondary Stage:` block carries `**Type:** Stage`, `**Design Rationale:**`,
      `#### Stage Entry Conditions`, `#### Stage Exit Conditions`, `#### Tasks`; a secondary stage carries an
      explicit `**Interrupting:** Yes` or `No`, and `Yes` whenever one of its exit rows is `return-to-origin`.

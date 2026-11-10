@@ -88,7 +88,7 @@ Apply in order:
 
 1. **User decision pinned to a type** — honor unless schema-invalid or conflicting with tier 2.
 2. **Regulatory constraint requiring human sign-off** — the task MUST be `action`. Trigger phrases: "only a licensed X may decide / sign off / certify / approve"; "regulation requires human review"; "ECOA adverse-action notice" / "FCRA adverse action"; "NCQA UM 3 adverse determination"; "HIPAA-protected approval"; "SOC 2 attestation"; any `<role>-licensed` / `<role>-credentialed` gate; "fiduciary review", "legal sign-off", "auditor review". If the user proposes a non-`action` type AND any phrase appears anywhere in the conversation → ask to confirm; never silently accept. Ask phrasing: name the regulation and propose `action` with the LLM/agent work bound to the action's form and recipient. Example: ECOA adverse-action notice with user-stated `agent` → `action` (Compliance Officer recipient; LLM-drafted body bound to the action's form).
-3. **Tenant evidence** — the registry cache resolves a deployed Action App / process / agent / api-workflow / function / RPA that fits → prefer that resource's type and surface the match.
+3. **Tenant evidence** — the registry cache resolves a deployed Action App / process / agent / api-workflow / function / RPA that fits → use that resource's type and surface the match.
 4. **Connector availability** — an Integration Service connector matches → `execute-connector-activity` over `api-workflow`.
 5. **Verb signal** — fall through to the § Task types tie-breakers.
 6. **Fallback** — keep the user's stated value if any; otherwise a placeholder plus a `high` review item ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Review Items).
