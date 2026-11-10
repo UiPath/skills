@@ -311,6 +311,37 @@ _PACK_ALLOWED = [
     "multi_node/wiki_pageviews/wiki_pageviews.yaml",
 ]
 
+# One lifecycle pattern per variant. The six yamls carry a copy each (a yaml cannot
+# import one); test_lifecycle_guards_share_one_pattern_per_variant keeps them equal,
+# so a fix lands in all six or the suite fails.
+_SOLUTION_CLOUD = (
+    r"solution\s+(?:upload|publish|delete|packages\s+delete|projects\s+publish"
+    r"|deploy\b(?!\s+(?:list|status|config\s+get)\b){pack})"
+)
+_NOT_HELP = r"\b(?![^\n;&|]*\s(?:--help|-h)\b)"
+LIFECYCLE_GUARD_NO_PACK = (
+    r"(?:\buip|\$UIP)\s+(?:maestro\s+bpmn\s+(?:upload|publish|deploy|debug|run|process\s+(?:run|publish))|"
+    + _SOLUTION_CLOUD.format(pack="")
+    + ")"
+    + _NOT_HELP
+)
+LIFECYCLE_GUARD_WITH_PACK = (
+    r"(?:\buip|\$UIP)\s+(?:maestro\s+bpmn\s+(?:upload|publish|deploy|debug|run|pack|process\s+(?:run|publish))|"
+    + _SOLUTION_CLOUD.format(pack="|pack")
+    + ")"
+    + _NOT_HELP
+)
+
+
+@pytest.mark.parametrize(
+    ("task", "expected"),
+    [(t, LIFECYCLE_GUARD_WITH_PACK) for t in _PACK_FORBIDDEN]
+    + [(t, LIFECYCLE_GUARD_NO_PACK) for t in _PACK_ALLOWED],
+)
+def test_lifecycle_guards_share_one_pattern_per_variant(task: str, expected: str) -> None:
+    assert _pattern(task, "lifecycle command").pattern == expected, task
+
+
 LIFECYCLE_RUNS = [
     "uip solution upload InvoiceSolution --output json",
     "cd X && uip maestro bpmn process run --process-key k --folder-key f",
@@ -318,6 +349,12 @@ LIFECYCLE_RUNS = [
     "uip solution deploy run --name x",
     "uip maestro bpmn process publish p",
     "$UIP solution publish ./pkg",
+    # rockymadden on #4543: cloud-side verbs the first guard missed.
+    "uip solution projects publish ./S --output json",
+    "uip solution delete InvoiceSolution",
+    "uip solution packages delete InvoiceSolution --version 1.0.0",
+    "uip solution deploy config set --name x --key k --value v",
+    "uip solution deploy --name x",
 ]
 
 LIFECYCLE_LOCAL = [
@@ -330,6 +367,11 @@ LIFECYCLE_LOCAL = [
     "uip solution upload --help 2>&1 | head -20",
     "uip maestro bpmn process run -h",
     "uip solution resources list --search Invoice --output json",
+    # Read-only deploy subcommands: a status read is not a deploy.
+    "uip solution deploy status --name x --output json",
+    "uip solution deploy list --output json",
+    "uip solution deploy config get --name x",
+    "uip solution projects list --output json",
 ]
 
 
