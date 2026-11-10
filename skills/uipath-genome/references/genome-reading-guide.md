@@ -99,7 +99,7 @@ Packaging, entry points, triggers and target folders or environments; the builda
 
 ## Design Links
 
-`> Designed in: [<SDD title>](<path>) · sdd-sha256 <SDD_FINGERPRINT>` ties the genome to the SDD it derives from. The build reads no SDD content for it: the SDD's decisions are already in the sections that hold them and are read as answered. The `context` call returns `designed_in` (the resolved link), `designed_in_fingerprint` and `designed_in_current` (whether the SDD on disk still matches); what the build does with them: [execution-guide.md](execution-guide.md) § 1.1. A `Designed in:` line without a fingerprint is a check finding the report lists; it does not block the build.
+`> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT}` ties the genome to the SDD it derives from. The build reads no SDD content for it: the SDD's decisions are already in the sections that hold them and are read as answered. The `context` call returns `designed_in` (the resolved link), `designed_in_fingerprint` and `designed_in_current` (whether the SDD on disk still matches); what the build does with them: [execution-guide.md](execution-guide.md) § 1.1. A `Designed in:` line without a fingerprint is a check finding the report lists; it does not block the build.
 
 ## Source Map
 
