@@ -86,7 +86,7 @@ The CLI stops a `Custom` mapping, before any probe, when it cannot read the temp
 
 ## Reading the verdict
 
-The verdict is keyed by catalog model (`validation.<model>` on success; in the failure message otherwise):
+The verdict is keyed by catalog model (on success `Data.Validation.<Model>`, the model name PascalCased — `gemini-3.8-flash` → `Gemini3.8Flash` — with PascalCase fields `IsAvailable`, `IsCompatible`, `IsModelNameSimilar`; in the failure message otherwise):
 
 | Field | Meaning |
 |---|---|

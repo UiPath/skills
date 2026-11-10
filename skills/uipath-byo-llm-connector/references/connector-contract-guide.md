@@ -71,6 +71,8 @@ Rules that hold for every type:
 
 A per-connection host part (region, workspace, deployment name) is one config templated into the base URL: `init --base-url 'https://{workspace}.llm.example.com'` seeds a single `{workspace}` field. Add other fixed-set options with `state patch element.json/configuration/<KEY> --value-file <entry.json>` (a complete entry: `name`, `key`, `type`, `required`, `configScreenType`, `hide`, `displayOrder`, `hintText`, and `options` for a `COMBO`). Hooks read them as `configuration['<KEY>']`.
 
+When the same connector must reach different hosts — a test endpoint first, then the customer's production one — make `base.url` itself a connection field: `init` writes it hidden (`configScreenType: "none"`), so patch the entry to `configScreenType: "pre"`, `hide: false`, `required: true`, with the real host as `defaultValue` and a `hintText`. A second host the connector calls (a separate token service, say) is its own `pre` entry the same way. `base.url` may carry a path: a relative `request_vendor_path` is appended to it, prefix included.
+
 ## Porting from a template or zip
 
 When the user supplies a zip, or names an AI Gateway template to start from, use it as reference material for a fresh scaffold:

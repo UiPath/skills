@@ -40,7 +40,7 @@ Everything here runs through `uip`: `uip is connectors builder` (author on disk)
 9. **Every publish needs a higher version.** Bump `element-metadata.json:latestVersion` (or `publish --version`) before each `publish`; the server rejects an equal version. While testing, only re-import.
 10. **Probing saves a configuration.** `byo-connections create` and `update` run the product probes and save only when every model passes; there is no dry run. Create with `--no-enabled`, so a configuration never serves traffic before the user says it should, and ask the user before deleting a configuration (`byo-connections delete --force`) or a connection (the test connection's `DELETE` in [references/connections-guide.md](references/connections-guide.md), `uip is connections delete --yes`).
 11. **Stop after three failed attempts on the same failure.** Read the failure (the step 7 answer, or the probe's reason in step 9), change one thing, re-import, try again. After three attempts on one failure, stop and show the user the answer or the probe summary and the hook — do not keep guessing.
-12. **Git Bash on Windows: disable path conversion for `uip`, not for `run-probes.sh`.** `export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'` before any builder, `import` or `publish` command, or `/v1/chat/completions` is rewritten to a Windows path that validates, publishes, and then 404s. With conversion off, pass file paths relative or as `C:/…`: a `/c/…` path reaches the CLI as `C:\c\…`. Run `run-probes.sh` in a shell without those variables: a Windows-native `jq` cannot open the `/c/…` probe paths unconverted, and the runner stops with "a probe file is not valid JSON".
+12. **Git Bash on Windows: disable path conversion for `uip` only.** `export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'` before any builder, `import` or `publish` command, or `/v1/chat/completions` is rewritten to a Windows path that validates, publishes, and then 404s. With conversion off, pass file paths relative or as `C:/…`: a `/c/…` path reaches the CLI as `C:\c\…`. The same holds for the native Windows `jq` and `curl`, which cannot open an unconverted `/c/…` path: `run-probes.sh` stops with "a probe file is not valid JSON", and `curl --data-binary @/c/…` with "error encountered when reading a file". Run `run-probes.sh` and the `curl` calls in a shell without those variables, or give them relative paths.
 13. **A custom token exchange has fixed lifecycle resources.** Integration Service calls `GET /onProvision` when a connection is created and `POST /onRefresh` on the first call after the token's lifetime has elapsed. The builder writes `vendorMethod: "GET"` on the first and `/on-refresh` for the second, so neither runs until patched. A `provisionAuthValidation` resource runs before `onProvision` — with no token yet — and fails every connection. Recipe: [references/hook-authoring-guide.md](references/hook-authoring-guide.md) §"Custom token exchange".
 
 ## Workflow
@@ -184,7 +184,7 @@ Open a connection session on the draft, in your Personal workspace, with a conne
 )
 ```
 
-- `asksNothing: false` — give the user `authUrl`, ask them to open it before `expiresAt`, enter the vendor credentials (a sandbox key is fine) and confirm when done. Never complete this session yourself.
+- `asksNothing: false` — give the user `authUrl` straight away, ask them to open it before `expiresAt` (about 12 minutes after the session opens), enter the vendor credentials (a sandbox key is fine) and confirm when done. Never complete this session yourself.
 
 Either way `connectionId` is the test connection (the connection step 7 calls), and `elementId` addresses the draft's connections. Confirm it exists — a `404` "No element instances found" means none does yet:
 
@@ -218,7 +218,7 @@ Probes never stream. If the product streams, also send one streamed request with
 )
 ```
 
-When a probe fails, read its answer in `<WORK_DIR>/probes/`, fix the hook or the config entry it points at, `builder validate`, `import` (the test connection runs the new import at once) and run the probes again. Integration Service answers two failures itself, both `404`: "No API found at that URL for the given token and credentials" (no resource at that path, Rule 1) and "Invalid Element Instance Id provided." (the test connection is gone). Every other answer comes from the vendor through your hooks.
+When a probe fails, read its answer in `<WORK_DIR>/probes/`, fix the hook or the config entry it points at, `builder validate`, `import` (the test connection runs the new import at once) and run the probes again. Integration Service answers two failures itself, both `404`: "No API found at that URL for the given token and credentials" (no resource at that path, Rule 1) and "Invalid Element Instance Id provided." (the test connection is gone). Every other answer comes from the vendor through your hooks. A vendor error keeps the vendor's status, but its body reaches you inside Integration Service's own envelope, flattened into `providerMessage` (`error - {message=…}`): read the vendor's reason there.
 
 ### 8. Publish
 
@@ -247,7 +247,7 @@ uip llm-configuration byo-connections create --product <PRODUCT> --feature <FEAT
   --llm-name <CATALOG_MODEL> --llm-identifier <VENDOR_MODEL_ID> --output json
 ```
 
-Use repeated `--mapping '…,connector-type=Custom'` for `AllModels` / `AnyModel` features. The CLI first reads the connector template from the connection's connector tags and stops, before any probe, on a connection Integration Service does not list or a connector whose tags name no template. Exit 0 with every model `isAvailable: true` and `isCompatible: true` is a pass. Otherwise read `unavailabilityReason` / `incompatibilityReason` / `vendorRawResponse` per [references/probes-guide.md](references/probes-guide.md). To fix:
+Use repeated `--mapping '…,connector-type=Custom'` for `AllModels` / `AnyModel` features. The CLI first reads the connector template from the connection's connector tags and stops, before any probe, on a connection Integration Service does not list or a connector whose tags name no template. Exit 0 with every model `IsAvailable: true` and `IsCompatible: true` is a pass: the CLI answers in PascalCase, the verdict under `Data.Validation` keyed by the model name PascalCased (`gemini-3.8-flash` → `Gemini3.8Flash`), and the saved configuration's id at `Data.Configuration.Id` — the `<CONFIG_ID>` for `update` and `get`. Otherwise read `unavailabilityReason` / `incompatibilityReason` / `vendorRawResponse` per [references/probes-guide.md](references/probes-guide.md). To fix:
 - reproduce it with step 7's `run-probes.sh` on the test connection, which sends the same requests;
 - fix the hook and re-import until that probe passes;
 - bump `latestVersion`, then `import` and `publish --wait`;
