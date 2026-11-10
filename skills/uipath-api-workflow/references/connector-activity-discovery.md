@@ -162,7 +162,7 @@ Never use Http kind with a vendor UUID, the simple `call: "http"` form, or a ven
 
 `with.method` is always `POST`; `with.endpoint` is always `/http-request`. Put the actual request in `bodyParameters`: `authentication` (`"manual"` or `"connector"`), actual `method`, `url`, `headers`, `body`, and other inputs. Output is an envelope; use `Data.ExportBucketKey`, then `.content`, `.statusCode`, `.headers`, etc.
 
-Give a JSON `body` as the object itself: `"body": "${{ <FIELD>: $workflow.input.<INPUT_NAME> }}"`, or `"${$context.outputs.<ACTIVITY>}"` when an earlier task built it. The activity JSON-encodes the body, so `"${JSON.stringify(...)}"` is encoded a second time and arrives as a quoted JSON string (`"{\"<FIELD>\":...}"`). An API that expects an object rejects that, often with a generic 400 or 500 that retrying never fixes.
+Set a JSON `body` to the object, e.g. `"${{ <FIELD>: $workflow.input.<INPUT_NAME> }}"` or `"${$context.outputs.<ACTIVITY>}"`, never to a `JSON.stringify(...)` string: the activity JSON-encodes `body`, so a string arrives as a quoted JSON string (`"{\"<FIELD>\":...}"`) that an API expecting an object rejects.
 
 Example: stub the HTTP Request activity with `--inputs '{"url":"https://api.example.com/facts/random","method":"GET"}'`.
 

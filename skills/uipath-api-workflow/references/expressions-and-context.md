@@ -133,7 +133,7 @@ ${$context.variables.count > 0 ? "has items" : "empty"}
 // Array length
 ${$context.outputs.Javascript_1.items.length}
 
-// JSON text, e.g. for a log message (an HTTP Request body takes the object itself)
+// JSON text, not for an HTTP Request body (pass the object)
 ${JSON.stringify($context.outputs.Javascript_1)}
 
 // Type coercion
