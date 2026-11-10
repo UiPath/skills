@@ -3,7 +3,7 @@ the known-good genomes kept with the tests pass the strict profile, a format sli
 and a broken contract fails core. The checker is Node (users need no Python); these tests drive it
 through `node`, so the CI job needs Node >= 20 on the runner.
 
-Run: pytest tests/tasks/uipath-planner/_shared/test_genome_check.py -v
+Run: pytest tests/tasks/uipath-genome/_shared/test_genome_check.py -v
 """
 
 import json
@@ -58,7 +58,7 @@ class genome_check:
         return json.loads(node("skills").stdout)
 
 
-EXAMPLES = HERE / "genome-examples"  # known-good genomes, kept with the tests; the skill ships the templates only
+EXAMPLES = REPO / "tests" / "tasks" / "uipath-planner" / "_shared" / "genome-examples"  # known-good genomes, kept with the planner tests; the skill ships the templates only
 MAPPING_GUIDE = REPO / "skills" / "uipath-planner" / "references" / "shared" / "skill-mapping-guide.md"
 COMPONENT_EXAMPLE = EXAMPLES / "purchase-requisition-entry-genome.md"  # transactional, two units of work
 PROCESS_EXAMPLE = EXAMPLES / "invoice-processing-genome.md"
@@ -231,7 +231,9 @@ def test_skill_lists_cover_the_shipped_skills():
                for p in root.iterdir() if (p / "SKILL.md").is_file()}
     names = genome_check.skills()
     listed = set(names["build"]) | set(names["operate"]) | {"uipath-genome"}
-    assert shipped - listed == set(), "add each new skill to VALID_SKILLS or OPERATE_SKILLS"
+    assert shipped - listed == set(), (
+        "add each new skill to VALID_SKILLS or OPERATE_SKILLS in skills/uipath-genome/scripts/check-genome.mjs"
+        " and to skills/uipath-planner/references/shared/skill-mapping-guide.md")
     assert listed - shipped == set(), "a listed skill no longer ships"
 
 

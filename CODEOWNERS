@@ -128,11 +128,12 @@
 /skills/uipath-planner/assets/templates/component-genome-template.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /skills/uipath-planner/assets/templates/process-genome-template.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/_shared/genome-examples/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/test_genome_contract.py @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/author_component/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/extract_component/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/extract_solution/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/genome_from_sdd/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
-/tests/tasks/uipath-planner/_shared/test_genome_check.py @danmunteanu1 @vlad-coteanu-uipath
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu

@@ -2,7 +2,7 @@
 message the author sees and the exit code the grader gets. The checker is Node; these tests drive it through
 `node`, so the CI job needs Node >= 20 on the runner.
 
-Run: pytest tests/tasks/uipath-planner/_shared/test_genome_check_findings.py -v
+Run: pytest tests/tasks/uipath-genome/_shared/test_genome_check_findings.py -v
 """
 
 import json
@@ -37,7 +37,7 @@ def node_call(function, *args):
     return json.loads(done.stdout)
 
 
-EXAMPLES = HERE / "genome-examples"  # known-good genomes, kept with the tests
+EXAMPLES = REPO / "tests" / "tasks" / "uipath-planner" / "_shared" / "genome-examples"  # known-good genomes, kept with the planner tests
 COMPONENT = (EXAMPLES / "purchase-requisition-entry-genome.md").read_text(encoding="utf-8")
 PROCESS = EXAMPLES / "invoice-processing-genome.md"
 PROCESS_DIR = EXAMPLES / "invoice-processing-genome"
