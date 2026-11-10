@@ -185,6 +185,12 @@ Merge warns, does not carry, and refuses under `--strict` when:
   the original agent node carries its own configuration (embedded) ... The
   change is NOT carried; the original's resource.json stays`). Make that change
   on the canvas.
+- the agent node is embedded and the edit adds a process tool, or changes one
+  whose node is `{ source }` only. The change does not reach the agent: merge
+  writes the `resource.json`, but the canvas loads the tool from its node, with
+  no schema or arguments (`the edit adds the tool "<nodeId>"` / `its tool
+  "<nodeId>" was edited ... and merge writes that resource.json, but ...`). Add
+  or change that tool on the canvas.
 
 Never copy `$WORK/edited/<source>/` into the project by hand: it carries the
 round trip's changes along with yours.

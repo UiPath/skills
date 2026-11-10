@@ -84,8 +84,9 @@ and a Fixed value, but not a Variable**: compile refuses one
 **Brownfield.** Decompile reads the sources back, including from a
 canvas-saved tool node. Leave arguments the request does not touch as
 decompiled, including the canvas's text values (`'42'`) and arguments reported
-lossy. On an embedded canvas-saved agent, merge withholds every edit to a
-process tool's `resource.json`: make that change on the canvas and report it
+lossy. On an embedded canvas-saved agent, merge reports every edit to a
+process tool, and every process tool the edit adds: make that change on the
+canvas and report it
 ([brownfield.md](brownfield.md#why-three-directories-inline-agents)).
 
 ## Escalation
