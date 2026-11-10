@@ -7,7 +7,7 @@ An Integration Service connection is one set of vendor credentials on a connecto
 | | Test connection | Runtime connection |
 |---|---|---|
 | Purpose | Call the unpublished draft through Integration Service while it is being built and fixed (SKILL.md step 7) | Run the product's probes when the configuration is saved, then serve the product once it is enabled |
-| Made with | `curl` on the Integration Service API — the Connector Builder's Add connection (SKILL.md step 6) | The Integration Service web UI, on the published connector — or the Connections API with the folder in a header (below) |
+| Made with | `curl` on the Integration Service API — the Connector Builder's Add connection (SKILL.md step 6) | The Connections API with the folder in a header (below), its page opened in the user's browser — or the Integration Service web UI, on the published connector |
 | Connector | The draft (`design-…`); runs whatever was last imported | The published `custom-…` key; runs the published version |
 | Credentials | A sandbox key, or the builder's own | The credentials production must use — ask the user |
 | Who sees it | Only its creator; `uip is connections` never lists it, so no configuration can be saved on it | The shared folder the configuration names in `--folder-key`, so other admins can manage it |
@@ -17,7 +17,7 @@ Use one set of credentials for both only when the user says the same credentials
 
 ## Create the test connection
 
-SKILL.md step 6 has the calls: the `<WORK_DIR>/is-api.sh` helper, then open a session, finish it or hand its page to the user, and list. They are the requests the Connector Builder sends when you press Add connection:
+SKILL.md step 6 has the calls: the `<WORK_DIR>/is-api.sh` helper, then open a session, finish it or open its page in the user's browser, and list. They are the requests the Connector Builder sends when you press Add connection:
 
 | Call | Request |
 |---|---|
@@ -30,7 +30,7 @@ SKILL.md step 6 has the calls: the `<WORK_DIR>/is-api.sh` helper, then open a se
 
 Every call carries `x-uipath-source: UiPath.IntegrationService.ConnectorBuilder`, under `<BaseUrl>/<OrganizationId>/<TenantName>/` from `uip login refresh`.
 
-- A session asks for something when the connector has authentication or a connection field the page shows (`configScreenType` `"pre"` or `"pre-optional"`). Hand `authUrl` to the user and wait for them to say it is done. Never ask for the credentials in the chat or pass them on a command line, never complete that session with `authenticate`, and do not open the page on their behalf with stored credentials. The finished connection carries the `connectionId` you chose; the page names it.
+- A session asks for something when the connector has authentication or a connection field the page shows (`configScreenType` `"pre"` or `"pre-optional"`). Open `authUrl` in the user's own browser (SKILL.md step 6 has the command per OS) and wait for them to say it is done. Never ask for the credentials in the chat or pass them on a command line, never complete that session with `authenticate`, and never fill in the page yourself, with stored credentials or any others. The finished connection carries the `connectionId` you chose; the page names it.
 - A session is spent once a connection is made from it, and expires at `expiresAt`: reading it then answers `404` "Session expired" — open a new one.
 
 What the calls answer when something is wrong:
@@ -55,9 +55,9 @@ To change the test connection's credentials, create a new one and delete the old
 
 ## Create the runtime connection
 
-After `publish` (`Data.PublishedKey`, `design-` swapped for `custom-`), the user creates the runtime connection from Integration Service in the web UI, on the published connector, in the shared folder the product will use. `uip is connections create <PUBLISHED_KEY>` has no folder option: it puts the connection in the creator's **Personal** workspace, where the gateway can still use it but only its creator can see, edit or rotate it. With the `design-…` key, `uip is connections create` fails.
+After `publish` (`Data.PublishedKey`, `design-` swapped for `custom-`), the runtime connection is made on the published connector, in the shared folder the product will use. `uip is connections create <PUBLISHED_KEY>` has no folder option: it puts the connection in the creator's **Personal** workspace, where the gateway can still use it but only its creator can see, edit or rotate it. With the `design-…` key, `uip is connections create` fails.
 
-When the user cannot find the published connector in the web UI, open the connection session yourself with the call `uip is connections create` makes, plus the folder header the Connections API reads, and hand the user its `authUrl` exactly as for the test connection (they enter the credentials; you never do):
+Open the connection session yourself with the call `uip is connections create` makes, plus the folder header the Connections API reads, and open its `authUrl` in the user's browser exactly as for the test connection (they enter the credentials; you never do):
 
 ```bash
 uip or folders list --output json                                   # Key of the shared folder (Type Standard)
@@ -67,7 +67,7 @@ uip or folders list --output json                                   # Key of the
 )
 ```
 
-`expiresAt` is in epoch milliseconds. Once the user has connected, the list below shows the connection with that `FolderKey`; if it shows the Personal workspace instead, the header was not applied — have the user create it in the web UI.
+`expiresAt` is in epoch milliseconds. Once the user has connected, the list below shows the connection with that `FolderKey`; if it shows the Personal workspace instead, the header was not applied — have the user create it from Integration Service in the web UI, on the published connector, in the shared folder.
 
 Then locate it:
 

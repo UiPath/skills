@@ -36,7 +36,7 @@ Everything here runs through `uip`: `uip is connectors builder` (author on disk)
 5. **Credentials enter only through the connection form.** API keys, client secrets and tokens are typed by the user into the Integration Service connection page (`AuthUrl`). Never put one in a hook, an `element.json` default, a CLI argument, a file, or the chat. Never send a credential in a query string or path (`vendorType: "query"`/`"path"`, or in `request_vendor_path`) — full request URLs are recorded in telemetry. Headers or the token request's body only (form-encoded or JSON, whichever the token service takes). The same goes for the UiPath access token the step 6 helper reads: it reaches `curl` on stdin only — never print it or `$S`, and never put it in a command line, a file or a URL.
 6. **Hooks never log or echo content.** No `console.log`, no prompt, completion, header or token in an error message, `response_error_message`, or `connection_identity`. Return the vendor's error status and a fixed message instead.
 7. **Log in and check the session before any tenant step.** `uip login status --output json` → `Data.Status` must be `"Logged in"` (the envelope says `Success` even when the session expired). If it is not, ask the user to run `uip login`; until then build offline only, and never guess a tenant, folder or connection id. The user needs the **OrganizationAdmin** role for AI Trust Layer to probe or save a configuration.
-8. **Test the unpublished draft through Integration Service; publish once those calls pass.** The test connection (step 6) is the Connector Builder's Add connection button, called over the API: it connects the imported design connector, and that connection runs whatever was last imported — a fix is one `import` away, with no version bump and no publish. Step 7 sends the flavor's requests to it at the path the gateway calls. It belongs to the draft: `uip is connections` never lists it, only its creator sees it, and the gateway cannot probe it (Rule 2). The runtime connection is made on the **published** `custom-…` key (`PublishedKey` from `publish`) in the shared folder — from the Integration Service web UI, or with the Connections API call in [references/connections-guide.md](references/connections-guide.md) §"Create the runtime connection", which takes the folder; `uip is connections create` cannot pick one.
+8. **Test the unpublished draft through Integration Service; publish once those calls pass.** The test connection (step 6) is the Connector Builder's Add connection button, called over the API: it connects the imported design connector, and that connection runs whatever was last imported — a fix is one `import` away, with no version bump and no publish. Step 7 sends the flavor's requests to it at the path the gateway calls. It belongs to the draft: `uip is connections` never lists it, only its creator sees it, and the gateway cannot probe it (Rule 2). The runtime connection is made on the **published** `custom-…` key (`PublishedKey` from `publish`) in the shared folder — with the Connections API call in [references/connections-guide.md](references/connections-guide.md) §"Create the runtime connection", which takes the folder, its page opened in the user's browser (or from the Integration Service web UI); `uip is connections create` cannot pick one.
 9. **Every publish needs a higher version.** Bump `element-metadata.json:latestVersion` (or `publish --version`) before each `publish`; the server rejects an equal version. While testing, only re-import.
 10. **Probing saves a configuration.** `byo-connections create` and `update` run the product probes and save only when every model passes; there is no dry run. Create with `--no-enabled`, so a configuration never serves traffic before the user says it should, and ask the user before deleting a configuration (`byo-connections delete --force`) or a connection (the test connection's `DELETE` in [references/connections-guide.md](references/connections-guide.md), `uip is connections delete --yes`).
 11. **Stop after three failed attempts on the same failure.** Read the failure (the step 7 answer, or the probe's reason in step 9), change one thing, re-import, try again. After three attempts on one failure, stop and show the user the answer or the probe summary and the hook — do not keep guessing.
@@ -184,7 +184,7 @@ Open a connection session on the draft, in your Personal workspace, with a conne
 )
 ```
 
-- `asksNothing: false` — give the user `authUrl` straight away, ask them to open it before `expiresAt` (about 12 minutes after the session opens), enter the vendor credentials (a sandbox key is fine) and confirm when done. Never complete this session yourself.
+- `asksNothing: false` — open `authUrl` for the user straight away, in their own browser, where they are already signed in to UiPath: `open '<AUTH_URL>'` on macOS, `xdg-open '<AUTH_URL>'` on Linux, `Start-Process '<AUTH_URL>'` on Windows (from Git Bash: `powershell.exe -NoProfile -Command "Start-Process '<AUTH_URL>'"`). Open it only when it starts with the `BaseUrl` you are logged in to, and never in a browser you drive yourself, which is not signed in. Tell the user the page is open and expires at `expiresAt` (about 12 minutes after the session opens), and ask them to enter the vendor credentials (a sandbox key is fine) and say when it is done. Hand them the link instead only when no browser opens from this shell (a remote or headless session). Never fill in the form or complete this session yourself.
 
 Either way `connectionId` is the test connection (the connection step 7 calls), and `elementId` addresses the draft's connections. Confirm it exists — a `404` "No element instances found" means none does yet:
 
@@ -232,7 +232,7 @@ A `FAILURE` status or a non-zero exit stops the workflow: read the message, fix,
 
 ### 9. Runtime connection and the configuration
 
-The test connection usually holds the builder's own or a sandbox key. Ask the user which credentials production uses and have them create the runtime connection from Integration Service in the web UI, on the published connector (`<PUBLISHED_KEY>`), in the shared folder the product will use (`uip is connections create` cannot pick a folder). When they cannot find the connector there, open the session yourself with the Connections API call in [references/connections-guide.md](references/connections-guide.md) §"Create the runtime connection" and hand them its `authUrl`, as for the test connection. Find its id:
+The test connection usually holds the builder's own or a sandbox key. Ask the user which credentials production uses, then open the runtime connection's page for them: start the session on the published connector (`<PUBLISHED_KEY>`) in the shared folder the product will use with the Connections API call in [references/connections-guide.md](references/connections-guide.md) §"Create the runtime connection" (`uip is connections create` cannot pick a folder), and open its `authUrl` in their browser as in step 6. If the connection lands in the Personal workspace, have them create it from Integration Service in the web UI instead. Find its id:
 
 ```bash
 uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json    # Id, State, FolderKey
@@ -253,7 +253,30 @@ Use repeated `--mapping '…,connector-type=Custom'` for `AllModels` / `AnyModel
 - bump `latestVersion`, then `import` and `publish --wait`;
 - run the probes again: `create` again (a failed one saved nothing) or `update <CONFIG_ID>` with the same mapping.
 
-When every model passes and the user says the product should use it, run `update <CONFIG_ID>` with the same mapping and `--enabled`. Finish with `byo-connections get <CONFIG_ID> --force-refresh --output json`, and ask before deleting the test connection ([references/connections-guide.md](references/connections-guide.md) §"Delete"). Report: connector key + version, flavor, the connections (id, folder), the configuration id, the probe verdict, and any limitation (streaming, unsupported parameters).
+When every model passes and the user says the product should use it, run `update <CONFIG_ID>` with the same mapping and `--enabled`. Finish with `byo-connections get <CONFIG_ID> --force-refresh --output json`, and ask before deleting the test connection ([references/connections-guide.md](references/connections-guide.md) §"Delete").
+
+### 10. Report to the user
+
+The reader is usually the customer's administrator, not a UiPath engineer. Write for them: short, plain language, in the product's terms. Leave out what only matters while building: resource paths, hook variables, probe reason codes, `IsModelNameSimilar`, Integration Service envelopes, CLI output. Keep the ids (connector key, connection and configuration ids) out of the report too, and give them when the user asks, for example for a support ticket.
+
+1. **The outcome, in one sentence**: the product and feature, the model the product asks for and the vendor model that answers it, and whether the configuration is enabled.
+2. **A short status table**: the connector (name, version, published), the connection (name, folder), the configuration (name, checks passed, enabled or not).
+3. **What works and what does not**: what the checks covered (text answers, tool calls, images), then each limitation once, with what to do instead — a stream the connector cannot serve, request options it refuses (structured output, several choices, built-in tools such as search grounding), settings it ignores.
+4. **The next step**, when one is left: for example, editing the connection to the production host and credentials, or enabling the configuration.
+5. **End with one link, the configuration in AI Trust Layer**, and open it in the user's browser as in step 6:
+
+```text
+<BaseUrl>/<Organization>/portal_/admin/ai-trust-layer/llm-configurations/<TenantId>/<FOLDER_ID>/edit/<CONFIG_ID>
+```
+
+`BaseUrl`, `Organization` and `TenantId` come from `uip login status --output json`. `<FOLDER_ID>` is the shared folder's **numeric** id, not its key, and `uip or folders list` does not print it. Read it from Orchestrator with the step 6 helper:
+
+```bash
+( set -o pipefail; source <WORK_DIR>/is-api.sh &&
+  api -G "$T/orchestrator_/odata/Folders" --data-urlencode "\$filter=Key eq <SHARED_FOLDER_KEY>" \
+    --data-urlencode '$select=Id' | jq '.value[0].Id'
+)
+```
 
 ## Command Map
 
@@ -273,6 +296,7 @@ curl … elements_/elements/api-v2/elements/<element-id>/instances   # list | DE
 bash <SKILL_DIR>/scripts/run-probes.sh … [--probe <id>]… --list | --connection <id> --helper …  # default + code-built + named probes (Workflow 1, 7)
 curl … elements_/v3/element/instances/<connection-id><flavor-path>  # what run-probes sends; a streamed call (Workflow 7)
 curl … connections_/api/v1/Connections -H 'x-uipath-folderkey: <folder>'   # runtime connection session in a shared folder (Workflow 9)
+curl … orchestrator_/odata/Folders?$filter=Key eq <folder>   # the folder's numeric Id, for the configuration link (Workflow 10)
 uip is connections list <custom-key> --all-folders | ping <id> | edit <id> --no-wait | delete <id> --yes
 uip or folders list                                      # folder Type (Personal vs Standard)
 ```
