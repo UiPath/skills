@@ -1,6 +1,6 @@
-# Live Application Guide — exploration and the live healing pass
+# Live Application Guide — exploration, live capture and the live healing pass
 
-The two live phases of a migration's UI targets ([ui-target-migration-guide.md](ui-target-migration-guide.md) rule 4) run when the Live application answer names a reachable application — the target application or a comparable instance of it ([configuration-questions-guide.md](configuration-questions-guide.md)): exploration, which walks the application before the targets are derived and ends with a contract probe before the first part that authors, and the live healing pass once every workflow is linked. What each kind of instance lets a verdict say, and the live checks every UI migration writes: [ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md).
+The two live phases of a migration's UI targets ([ui-target-migration-guide.md](ui-target-migration-guide.md) rule 4) run when the Live application answer names a reachable application — the target application or a comparable instance of it ([configuration-questions-guide.md](configuration-questions-guide.md)): exploration, which walks the application before the targets are derived and ends with a contract probe before the first part that authors, and the live healing pass once every workflow is linked. What each kind of instance lets a verdict say, and the live checks every UI migration writes: [ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md). An authored genome has no targets to migrate: a reachable application is where its targets are captured (§ Authored genomes).
 
 ## Driving the application
 
@@ -70,6 +70,17 @@ Where the Healing pass answer allows it, after the read-only check, on the insta
 7. **Every data change the runs made** goes into the completion report's section for it ([completion-report-guide.md](completion-report-guide.md)).
 
 The runs are the local runs the acceptance verdicts cite ([execution-guide.md § 3.1](execution-guide.md)), and each `run` row closes with what its run showed.
+
+## Authored genomes — capturing targets live
+
+An authored genome has no export, so its targets are captured, not migrated. Where the Live application answer names a reachable application:
+
+1. **Drive it** as § Driving the application items 1–4 state; exploration's notes and the contract probe are a migration's.
+2. **Capture each target in the project of the build** through the owning skill's target-capture procedure, the screen in the state the step needs, so it registers in that project's Object Repository; item 5's scratch project holds probes only.
+3. **Validate each captured target's strict selector** with target validation; one that does not resolve, or resolves another node, is captured again.
+4. **Runs** follow § Runs, on the Healing pass answer.
+
+Where the answer is Neither, each UI activity gets the owning skill's placeholder target, and the report lists every placeholder with the live check it owes.
 
 ## Anti-patterns
 

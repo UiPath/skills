@@ -11,7 +11,7 @@ Execution ends with a hand-off for the engineer who maintains and deploys the bu
 | `open-items.md`, `open-items/<project-slug>.md` | what the target environment needs before the first run, with the records to load beside them | at the end, when the environment needs setup ([open-items-guide.md](open-items-guide.md)) |
 | `live-checks/<project-slug>.md` | what only the live application can settle, by screen | with each UI target ([ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md)) |
 | `applications/<application-slug>.md` | how each application is driven: windows and titles, input method, structures, selector verdicts | when a reachable application is explored ([live-application-guide.md § Exploring](live-application-guide.md)) |
-| `correspondence/<component>.md` | where the rebuild departs from the source's names and shape, and why | with each component, when the Source fidelity answer keeps it ([source-migration-guide.md § What the executor records](source-migration-guide.md)) |
+| `correspondence/<component>.md` | where the rebuild departs from the source's names and shape, and why | with each component of an extracted genome, unless the Source fidelity answer takes the build's own names and grouping ([source-migration-guide.md § What the executor records](source-migration-guide.md)) |
 | `parity/<TestCase>.md`, `checkpoints/<component>.md` | which assertion stands for each source checkpoint | with each test component ([test-execution-guide.md § Result parity](test-execution-guide.md)) |
 | `refactor-plan.md` | a refactor's decisions, differences from the source, kept outputs and what is not proven until it runs | once the refactor questions are answered ([refactor-guide.md § Refactor plan](refactor-guide.md)) |
 | `integration-check.md` | the independent review of the projects against each other and what became of each finding | after every project is built (§ 3.5) |
@@ -51,7 +51,7 @@ The README is the completion report. It is written for a reader who has this fol
 ## Configuration answers
 | Question | Answer |
 |---|---|
-| <the question in plain words> | <the answer>, "(default)" where no one answered |
+| <the question in plain words> | <the answer>, "(default)" where no one answered, "(from the request)" where a file of answers the request names gave it, "(source)" where the source's values answered it |
 
 ## Acceptance criteria
 | # | Criterion | Verdict | Where, or what is missing |
@@ -62,6 +62,10 @@ The README is the completion report. It is written for a reader who has this fol
 
 ## Differences from the genome
 | Step | Genome says | Build does | Why |
+|---|---|---|---|
+
+## Changes to existing projects
+| Project | Workflow, argument or dependency | Change | Why |
 |---|---|---|---|
 
 ## Rulings still owed
@@ -82,6 +86,7 @@ What each section holds:
 
 1. **Decisions:** every choice the build made that the genome leaves open — the split per flow (`Flow <N> (<components>) — option <A|B|C> — <materialised projects and their roles, runners per project>; unit <item> (<the genome's | alternative: reason>); store <one queue per unit: <names> [+ record store: <entity or table>] | in-process | + kept coordination stores: <names>>; template <REFramework <queue|direct> | plain> per consumer project; coordination folded: <what became what>; exits exercised per consumer project: …; as-is was <one sentence>`), the libraries folded into a project, the lead agent's rulings, the user's rulings on source defects, the guards on settings ([configuration-questions-guide.md](configuration-questions-guide.md) rule 8) and the analyzer errors accepted. A ruling that changes what the genome says is offered as a genome edit.
 2. **Differences from the genome:** the genome deviations the groups reported, each for a `uipath-planner` edit, with what the build followed ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4).
+2a. **Changes to existing projects:** every difference between each project the build reused and its copy from before the first change (§ 1.4) — a workflow added, rewritten or removed, an argument added, removed, renamed or retyped, a dependency, the version it packs under — with why; a change to a library's public workflow or its arguments is marked breaking for the consumers outside this build.
 3. **Expected failures on a live run:** the criteria Met (static) that the source's own data or defect fails on a live run (§ 3.1), the placeholder targets, and, as not built, the objects of the Source Map's `Not covered` row — building them is a `uipath-planner` edit (re-extraction), then a new build.
 3a. **Rulings still owed:** the questions raised after the configuration answers that the user has not answered, each with the default in place and what changes if the answer differs.
 4. **Data the build's runs changed:** each change a run made in a target system or a store, with how to undo it; nothing is undone unasked.

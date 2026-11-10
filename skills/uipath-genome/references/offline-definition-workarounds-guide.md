@@ -146,7 +146,7 @@ Structural validity is the easy half. A catalog cannot tell you these, and each 
 | Whether the grid exposes `tableRow`/`colName`/`rowName` | assume div-based (text-pinned rows) or assume `TABLE` | tag-only cell plus a description naming row rule and column; live, read one cell's attribute list (rule 8) |
 | Where a caption recorded beside a control sits in the tree relative to it | an anchor with zero design-time rectangles, or the caption written onto the control | the caption leaf and the `<nav>` path the source recorded or the framework pack's widget anatomy documents, else a tag-only target (rule 13); live, target validation shows the node a path lands on (rule 6) |
 
-Shared failure mode: all these wrong answers *look* like finished work and pass every structural check, while a tag-only target with a good semantic description looks unfinished and tells the live pass what to capture. Prefer the honest shape. Two fields the driver writes on every live definition and the minimal shape omits — `ElementVisibilityArgument="Interactive"` and `WaitForReadyArgument="Interactive"` — are project-setting defaults, not requirements; a live pass restores them when it replaces the definition.
+Shared failure mode: all these wrong answers *look* like finished work and pass every structural check, while a tag-only target with a good semantic description looks unfinished and tells the live pass what to capture. Use the honest shape. Two fields the driver writes on every live definition and the minimal shape omits — `ElementVisibilityArgument="Interactive"` and `WaitForReadyArgument="Interactive"` — are project-setting defaults, not requirements; a live pass restores them when it replaces the definition.
 
 ## Before shipping
 

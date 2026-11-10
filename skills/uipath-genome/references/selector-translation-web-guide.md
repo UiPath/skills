@@ -8,7 +8,7 @@ The web's side of [selector-translation-guide.md](selector-translation-guide.md)
 |---|---|---|
 | `app` | browser executable — selects browser driver at run time | critical — never drop: empty or missing `app` is treated as Internet Explorer |
 | `url` | page URL | very reliable — wildcard path, keep host: `url='https://host/*'` |
-| `title` | page title | alright — wildcard; prefer `url` to tell tabs apart |
+| `title` | page title | alright — wildcard; use `url` to tell tabs apart |
 | `htmlwindowname` | `window.name` | alright |
 | `mobiledata` | mobile device binding | critical when present — never drop |
 | `sapweb-ses-screen`, `sapweb-ses-transaction`, `sapweb-ses-client`, `sapweb-ses-user`, `sapweb-ses-program` | SAP Web GUI session context | session |
