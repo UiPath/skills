@@ -3,8 +3,7 @@ description: >
   Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author a
   computed inline-JavaScript expression with the exact case-sensitive `=js:`
   prefix (no space after the colon) inside a json-typed mapping that still emits
-  valid JSON. Grades the `=js:` escape-hatch rules from
-  references/expression-authoring.md. Authoring only — no cloud effects.
+  valid JSON. Grades the `=js:` escape-hatch rules. Authoring only — no cloud effects.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
 
 run_limits:

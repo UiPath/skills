@@ -103,7 +103,7 @@ def test_typed_extension_rejects_another_type_version(type_attrs: str) -> None:
 
 def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     start_agent = spec["extensionTypes"]["Orchestrator.StartAgentJob"]
 
@@ -130,7 +130,7 @@ def test_bundled_context_inputs_declare_a_type() -> None:
     """The canvas parser rejects a uipath:context input with no `type`, so a
     template pasted verbatim from the bundle would fail `validate`/`refresh`."""
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
 
     untyped = []
@@ -159,7 +159,7 @@ def test_bundled_context_inputs_declare_a_type() -> None:
 
 def test_bundled_intsvc_activity_contract_matches_cli_manifest() -> None:
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     activity = spec["extensionTypes"]["Intsvc.ActivityExecution"]
 
@@ -183,7 +183,7 @@ def test_bundled_intsvc_activity_contract_matches_cli_manifest() -> None:
 
 def test_bundled_intsvc_event_contracts_match_cli_manifest() -> None:
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
 
     for extension_type in ("Intsvc.EventTrigger", "Intsvc.WaitForEvent"):

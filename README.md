@@ -48,7 +48,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-rpa** | RPA workflows (`.xaml` and `.cs` coded) — create, edit, build, run, debug, test; UI automation, Object Repository, Integration Service activities. |
 | **uipath-maestro-flow** | Maestro Flow (`.flow`) — author, connect nodes, validate, run, publish; triggers, schedules, evals, incidents. |
 | **uipath-agents** | UiPath agents end-to-end — coded (Python: LangGraph, LlamaIndex, OpenAI Agents) and low-code (`agent.json`); scaffold, run, evaluate, deploy. |
-| **uipath-maestro-bpmn** | Maestro BPMN process orchestration (`.bpmn`) — author XML, validate, package, operate, diagnose. |
+| **uipath-maestro-bpmn** | Maestro BPMN process orchestration (`<Name>.bpmn.ts` → `.bpmn`) — author with the TypeScript builder SDK, compile, validate, package, operate, diagnose; edit existing processes by decompiling them. |
 | **uipath-maestro-case** | Case Management (`<Name>.case.ts` → `caseplan.case`) — author with the TypeScript builder SDK, compile, validate; edit existing plans by decompiling them. |
 | **uipath-coded-apps** | Coded Web Apps and Coded Action Apps — scaffold, build, debug, pack, publish, deploy via `uip codedapp`. |
 | **uipath-api-workflow** | API Workflow JSON DSL — author, run, package, publish; HTTP and Integration Service connector activities. |

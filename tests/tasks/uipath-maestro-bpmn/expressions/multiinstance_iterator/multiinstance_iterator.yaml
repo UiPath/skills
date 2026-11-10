@@ -4,7 +4,7 @@ description: >
   a multi-instance SUBPROCESS whose body reads the current item and loop index at
   subprocess depth — `iterator[0].item` and `iterator[0].loopCounter` — not the
   task-level `iterator.item`. Grades the iterator-depth indexing rule from
-  references/expression-authoring.md. Authoring only — no cloud effects.
+  references/patterns/high-volume-batch-guide.md. Authoring only — no cloud effects.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "node:loop"]
 
 run_limits:

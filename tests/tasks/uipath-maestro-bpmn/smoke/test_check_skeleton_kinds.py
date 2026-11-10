@@ -129,7 +129,7 @@ class KindTests(unittest.TestCase):
                 self.assertEqual(kinds.main(["P", "--registry-json", "reg.json"]), 1)
 
 
-SKILL_DIR = HERE.parents[3] / "skills" / "uipath-maestro-bpmn"
+SKILL_DIR = HERE.parents[3] / "classic" / "skills" / "uipath-maestro-bpmn"
 GUIDE = SKILL_DIR / "references" / "phase-2-skeleton-guide.md"
 SKILL_MD = SKILL_DIR / "SKILL.md"
 
@@ -174,7 +174,7 @@ class DriftTests(unittest.TestCase):
         self.assertEqual(exact, kinds.CASE_ONLY_EXACT | kinds.OTHER_DROPPED_EXACT)
 
 
-V2_GUIDE = HERE.parents[3] / "preview" / "skills" / "uipath-maestro-bpmn" / "references" / "draft-skeleton.md"
+V2_GUIDE = HERE.parents[3] / "skills" / "uipath-maestro-bpmn" / "references" / "draft-skeleton.md"
 
 
 class GuideTests(unittest.TestCase):
