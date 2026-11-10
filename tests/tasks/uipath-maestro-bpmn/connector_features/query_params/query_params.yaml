@@ -87,8 +87,7 @@ success_criteria:
   # below passes only when validate does (score only, pass_threshold 0.0, so the
   # documented refusal still passes the task), so a process left unbound scores
   # 1.0 of 2.0 here whether or not the agent looked for a connection, and the judge
-  # (which requires the lookup) carries the rest. Before the split an unbound
-  # placeholder earned the full 2.0 with no gate on the lookup (#4543 review).
+  # (which requires the lookup) carries the rest.
   - type: run_command
     description: "The completed process validates (an unbound HTTP connection placeholder is accepted as the documented refusal)"
     command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py --accept-unbound-connection uipath-uipath-http"

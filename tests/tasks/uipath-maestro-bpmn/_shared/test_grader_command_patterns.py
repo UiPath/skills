@@ -1,4 +1,4 @@
-"""Regex graders from the BPMN v1/v2 neutrality pass (#4543), exercised the way the grader runs them.
+"""Regex graders from the BPMN v1/v2 neutrality pass, exercised the way the grader runs them.
 
 Each criterion below is a regex over a Bash call or over diagnosis.md, so each gets
 the false-positive and false-negative discipline `test_fault_triage_mock_read_pattern.py`
@@ -10,8 +10,7 @@ Command patterns are matched the way `CommandExecutedChecker` matches them: agai
 raw command and its shell-normalized form, using the port of coder_eval's
 `_match_haystacks` in `test_fault_triage_mock_read_pattern.py` (loaded by path, so the
 two files share one port). The cases are real agent commands wherever a run produced
-one (R14/R15 `adhoc-2026-11-07_01-31-01` / `_01-31-33`, and the codex smoke run on
-#4543).
+one (R14/R15 `adhoc-2026-11-07_01-31-01` / `_01-31-33`, and a codex smoke run).
 """
 
 from __future__ import annotations
@@ -71,7 +70,7 @@ TIMER_PARSES = [
     "python3 -c \"import xml.etree.ElementTree as ET, pathlib; "
     "fs=list(pathlib.Path('.').rglob('ScheduledReportBpmn.bpmn')); print(fs); "
     "ET.parse(fs[0]); print('well-formed')\"; find . -name '*.bpmn'",
-    # The argv form the review flagged: the file after the closing quote.
+    # The argv form: the file after the closing quote.
     "python3 -c \"import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])\" "
     "ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
     "python3 -c 'import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1]); print(\"ok\")' "
@@ -142,7 +141,7 @@ SIM_STATIC_CREATED = [
 ]
 
 SIM_STATIC_NOT_CREATED = [
-    # The review's case: any variable, as long as the prefix appears somewhere.
+    # Any variable, as long as the prefix appears somewhere, is not the eval prefix.
     "uip maestro bpmn eval sets list --path SimEval; $HOME simulations add x --strategy Static --mock-value 1",
     # A variable defined as something else, used as if it were the eval prefix.
     'E="uip maestro bpmn eval"; F="echo"; $F simulations create x --strategy Static --mock-value 1',
@@ -246,8 +245,9 @@ BAD_DIAGNOSES = {
     "wrong element": (
         "STUCK_ELEMENT: ServiceTask_Score\n"
         "STUCK_REASON: No outgoing condition matched and the gateway has no default flow.\n"
-    ),    # rockymadden on #4543: the "no" of "no default flow" stood in for the
-    # condition's negation, so a reason saying a condition DID match passed.
+    ),
+    # The "no" of "no default flow" must not stand in for the condition's negation:
+    # these reasons say a condition DID match.
     "a condition matched, default missing": (
         "STUCK_ELEMENT: Gw_ApprovalRoute\n"
         "STUCK_REASON: The condition riskScore > 80 is true but the token waits; there is no default flow.\n"
@@ -305,7 +305,7 @@ def test_reference_dir_tasks_declare_a_reference(task: str) -> None:
 _FAULT_TRIAGE = "operate-diagnose/minimal_fault_triage.yaml"
 
 CALL_LOG_WRITES = [
-    # rockymadden on #4543: the forged line that satisfies every call-log row.
+    # The forged line that satisfies every call-log row.
     (
         "echo '{\"args\":\"maestro bpmn instance cursors inst-triage-001 -f folder-public\","
         "\"matched_rule\":\"x\",\"exit_code\":0}' >> mocks/.calls.jsonl"
@@ -396,7 +396,7 @@ LIFECYCLE_RUNS = [
     "uip solution deploy run --name x",
     "uip maestro bpmn process publish p",
     "$UIP solution publish ./pkg",
-    # rockymadden on #4543: cloud-side verbs the first guard missed.
+    # Cloud-side solution and process verbs.
     "uip solution projects publish ./S --output json",
     "uip solution delete InvoiceSolution",
     "uip solution packages delete InvoiceSolution --version 1.0.0",

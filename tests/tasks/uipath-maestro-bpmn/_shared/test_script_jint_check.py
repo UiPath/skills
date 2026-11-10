@@ -334,8 +334,8 @@ def golden_reading(source: str, script_return: str = GOLDEN_RETURN) -> str:
     ["=result.response.riskScore", "=result.response.a.b.c"],
 )
 def test_a_field_of_a_bare_return_fails(tmp_path: Path, source: str) -> None:
-    # tmatup's repro on #4543: `return score;` read through a field is `undefined`
-    # at runtime, though `bpmn validate` says Valid.
+    # `return score;` read through a field is `undefined` at runtime, though
+    # `bpmn validate` says Valid.
     result = run_check(tmp_path, golden_reading(source))
     assert result.returncode != 0
     assert "top-level" in result.stderr + result.stdout
@@ -348,6 +348,14 @@ def test_a_field_of_a_bare_return_fails(tmp_path: Path, source: str) -> None:
         "return { nested: { riskScore: score } };",
         "return { label: 'riskScore', value: score };",
         "return [score];",
+        # One branch returns the object, the other a bare value that reads `undefined`.
+        "if (score > 99) { return { riskScore: score }; }\nreturn score;",
+        # The object literal is text in a string; the script returns the bare value.
+        'var note = "return { riskScore: 1 }";\nreturn score;',
+        "var note = `return { riskScore: 1 }`;\nreturn score;",
+        # Pinned as failing on purpose: the grader reads only returned object
+        # literals, not what a returned variable was assigned.
+        "var out = { riskScore: score };\nreturn out;",
     ],
 )
 def test_a_field_the_returned_object_lacks_fails(tmp_path: Path, script_return: str) -> None:
@@ -364,6 +372,11 @@ def test_a_field_the_returned_object_lacks_fails(tmp_path: Path, script_return: 
         "var riskScore = score;\nreturn { riskScore };",
         "return {\n  band: score > 50 ? 'high' : 'low',\n  riskScore: score\n};",
         "return { 'riskScore': score };",
+        "if (score > 99) { return { riskScore: 100 }; }\nreturn { riskScore: score };",
+        # A return inside a callback returns from the callback, not the script.
+        "var parts = [score].map(function (s) { return s; });\nreturn { riskScore: parts[0] };",
+        "var parts = [score].map((s) => { return s; });\nreturn { riskScore: parts[0] };",
+        "function clamp(s) { if (s > 100) { return 100; } return s; }\nreturn { riskScore: clamp(score) };",
     ],
 )
 def test_a_field_the_returned_object_has_passes(tmp_path: Path, script_return: str) -> None:
