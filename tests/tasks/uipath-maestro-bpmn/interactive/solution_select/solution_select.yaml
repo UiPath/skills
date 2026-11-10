@@ -35,7 +35,7 @@ description: >
   skills/uipath-maestro-bpmn/. Expect this task to fail on today's skill
   unless the agent generalizes its general "confirm before authoring"
   rule (SKILL.md rule 4) to solution placement on its own initiative.
-tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", simulation]
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", simulation, studio-web-unsupported, studio-web-unsupported:solution-selection]
 
 # skip:true, skill-gap-gated. This task grades a behavior the BPMN skill does
 # not teach yet: "existing solutions are present -> stop and ask before

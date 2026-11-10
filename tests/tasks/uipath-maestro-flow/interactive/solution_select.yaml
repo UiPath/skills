@@ -14,7 +14,7 @@ description: >
   guessing. A simulated user answers the prompt with a non-default solution
   name. The resulting artifact proves that the agent used that answer before
   building and validating the Flow.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, simulation]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, simulation, studio-web-unsupported, studio-web-unsupported:solution-selection]
 
 agent:
   # Make the structured-question tool available to runtimes that support it.
