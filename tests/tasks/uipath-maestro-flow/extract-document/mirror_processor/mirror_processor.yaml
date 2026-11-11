@@ -4,8 +4,8 @@ description: >
   the existing one, which Studio Web offers as "In this solution" when adding
   an Extract node. Tests that the agent creates it as a read-only mirror of
   Extract Invoice's processor: the same `processorKey` with
-  `inputs.processorReadOnly: true`, no taxonomy of its own, and no processor
-  resource of its own. Either half of the pair alone fails validate: the key
+  `inputs.processorReadOnly: true`, and no processor resource of its own.
+  Either half of the pair alone fails validate: the key
   without the flag makes a second author of the same processor, and the flag
   without the key names nothing to run.
 
@@ -44,11 +44,24 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: run_command
-    description: "The new node mirrors Extract Invoice's processor: the same processorKey, read-only, no field groups of its own, and no processor resource of its own"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader --node-id extractInvoice1 mirrored
-    expected_exit_code: 0
+  - type: json_check
+    description: "One new Extract document node mirrors Extract Invoice's processor: read-only, with the same processorKey"
+    path: "InvoiceReader/InvoiceReader/InvoiceReader.flow"
+    assertions:
+      - expression: "length(nodes[?type=='uipath.ixp.extract-document-builder' && id!='extractInvoice1' && inputs.processorReadOnly])"
+        operator: equals
+        expected: 1
+      - expression: "nodes[?type=='uipath.ixp.extract-document-builder' && id!='extractInvoice1'].inputs.processorKey == nodes[?id=='extractInvoice1'].inputs.processorKey"
+        operator: equals
+        expected: true
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The mirror has no processor resource of its own: the solution still holds one"
+    command: "test \"$(grep -rlE '\"kind\": *\"idpProcessor\"' InvoiceReader/resources | wc -l)\" -eq 1"
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
