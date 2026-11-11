@@ -29,7 +29,7 @@ from _shared.bpmn_check import (  # noqa: E402
     require_di_for_visible_elements,
     require_no_private_connector_values,
     require_sequence_integrity,
-    resolve_project,
+    resolve_bpmn_file,
 )
 
 BPMN_NAME = "CustomerEscalation.bpmn"
@@ -53,8 +53,8 @@ def load_json(project: Path, name: str):
 
 
 def main() -> None:
-    project = resolve_project(BPMN_NAME)
-    bpmn_file = project / BPMN_NAME
+    bpmn_file = resolve_bpmn_file(BPMN_NAME)
+    project = bpmn_file.parent
     try:
         root = ET.parse(bpmn_file).getroot()
     except Exception as exc:  # noqa: BLE001
@@ -103,8 +103,8 @@ def main() -> None:
 
     # Package metadata references the BPMN file.
     for name in ("entry-points.json", "operate.json", "package-descriptor.json"):
-        if BPMN_NAME not in json.dumps(load_json(project, name)):
-            fail(f"{name} must reference {BPMN_NAME}")
+        if bpmn_file.name not in json.dumps(load_json(project, name)):
+            fail(f"{name} must reference {bpmn_file.name}")
 
     print(f"OK: {bpmn_file} classifies, routes, escalates via a user task, and ships consistent package metadata")
 

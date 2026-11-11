@@ -54,7 +54,7 @@ UIP_CALL_RE = re.compile(
     r"""\buip\b(?:["'\s,\]\[]+(?:--[\w-]+\s+)?)((?:[a-z][a-z-]*["'\s,]+){1,3})""",
 )
 
-# Verbs that run without a tenant, per skills/uipath-maestro-case/references/case-commands.md
+# Verbs that run without a tenant, per classic/skills/uipath-maestro-case/references/case-commands.md
 # and skills/uipath-solution. Every other `uip` verb is treated as tenant-calling.
 OFFLINE_VERBS = (
     "maestro case validate",
