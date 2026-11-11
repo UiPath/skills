@@ -187,6 +187,14 @@ uip maestro flow nodes provision <file> --output json
 
 Never write a `processorKey` by hand, and never give a node another node's key as its own: a processor holds exactly one node's extraction definition, and a solution where two nodes define the same one refuses to pack or publish. A node that deliberately runs another node's processor is the one place a key is shared — it takes that node's `processorKey` and sets `inputs.processorReadOnly: true` alongside it, so the key says which processor it reads and the flag says it is not the author. Neither half works without the other: a read-only node carrying no key names nothing to read, and validation rejects it.
 
+Both inputs go on when the node is created, since nothing adds them to a node that already exists:
+
+```bash
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract credit note' --input '{"fileRef":"=js:$vars.start.output.creditNote","processorKey":"<the authoring node key>","processorReadOnly":true}' --output json
+```
+
+Such a node gets no resource file of its own, and it holds no taxonomy of its own either — the extraction it runs is the one the authoring node defines. Writing a schema to it changes nothing that deploys, which is what `nodes schema set` reports when it is run on one.
+
 A package built from a node without a processor faults at run time:
 
 ```
