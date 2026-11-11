@@ -41,6 +41,9 @@ Publish is asynchronous: tell the user to check the result in the Publish
 history of Studio Web. A personal-workspace publish deploys itself. A
 shared-location publish does not: deploy it with `uip solution deploy run`
 (the `uipath-solution` skill has the contract).
+
+There is no standalone process publish here: `uip maestro bpmn process publish`
+packs the project locally, and Studio Web owns packaging. Publish the solution.
 <!--skill-flavor:ship:end-->
 
 <!--skill-flavor:debug-run:start-->

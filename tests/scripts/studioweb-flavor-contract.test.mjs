@@ -330,6 +330,14 @@ test("the studioweb Flow skill is the builder-SDK skill", (t) => {
   assert.ok(skill.includes("@uipath/maestro-builder-sdk"));
 });
 
+test("the studioweb HITL skill hands Case and BPMN to their own skills", (t) => {
+  const skill = readFileSync(join(buildStudioweb(t), "uipath-human-in-the-loop", "SKILL.md"), "utf8");
+
+  assert.ok(!skill.includes("cover the Case, Low-Code Agent and Maestro"));
+  assert.ok(!skill.includes("bpmn:task id="));
+  assert.ok(skill.includes("Case and Maestro have their own stops below"));
+});
+
 for (const skillName of ["uipath-maestro-bpmn", "uipath-maestro-case"]) {
   test(`the studioweb ${skillName} skill is the builder-SDK skill`, (t) => {
     const skill = readFileSync(join(buildStudioweb(t), skillName, "SKILL.md"), "utf8");
@@ -457,7 +465,6 @@ function bpmnLinesNaming(skillRoot) {
       ),
   );
 }
-
 
 test("the studioweb BPMN skill names no terminal-only command", (t) => {
   const skillRoot = join(buildStudioweb(t), "uipath-maestro-bpmn");

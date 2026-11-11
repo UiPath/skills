@@ -3,8 +3,7 @@
 These tasks exercise the `uipath-maestro-bpmn` skill. Since the promotion,
 `skills/uipath-maestro-bpmn` is the builder-SDK skill (author `<Name>.bpmn.ts`,
 compile to `.bpmn`); the previous registry-driven XML skill lives in
-`classic/skills/uipath-maestro-bpmn`, kept for these graders and the v1-vs-v2
-comparison; no package ships it.
+`classic/skills/uipath-maestro-bpmn`, kept for these graders; no package ships it.
 Several descriptions below still describe the classic skill's mechanism.
 
 - `smoke/` covers the core registry-driven authoring loop.
