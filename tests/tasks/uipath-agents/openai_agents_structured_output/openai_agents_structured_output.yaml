@@ -7,7 +7,7 @@ description: >
   both schemas into `entry-points.json`, and enforces the
   factory-function pattern (Critical Rule C4 — module-level
   `UiPathChatOpenAI` setup breaks `uip codedagent init`).
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents, feature:schema-sync]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents, feature:schema-sync, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 48

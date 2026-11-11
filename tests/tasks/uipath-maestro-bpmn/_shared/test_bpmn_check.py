@@ -103,7 +103,7 @@ def test_typed_extension_rejects_another_type_version(type_attrs: str) -> None:
 
 def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     start_agent = spec["extensionTypes"]["Orchestrator.StartAgentJob"]
 
@@ -130,7 +130,7 @@ def test_bundled_context_inputs_declare_a_type() -> None:
     """The canvas parser rejects a uipath:context input with no `type`, so a
     template pasted verbatim from the bundle would fail `validate`/`refresh`."""
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
 
     untyped = []
@@ -159,7 +159,7 @@ def test_bundled_context_inputs_declare_a_type() -> None:
 
 def test_bundled_intsvc_activity_contract_matches_cli_manifest() -> None:
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     activity = spec["extensionTypes"]["Intsvc.ActivityExecution"]
 
@@ -183,7 +183,7 @@ def test_bundled_intsvc_activity_contract_matches_cli_manifest() -> None:
 
 def test_bundled_intsvc_event_contracts_match_cli_manifest() -> None:
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
 
     for extension_type in ("Intsvc.EventTrigger", "Intsvc.WaitForEvent"):
@@ -297,6 +297,32 @@ def test_resolve_project_skips_an_archived_scaffold(tmp_path, monkeypatch) -> No
     monkeypatch.chdir(tmp_path)
 
     assert bpmn_check.resolve_project("AcrUserList.bpmn") == Path.cwd() / "AcrUserList" / "AcrUserList"
+
+
+def _project_with_entry_point(root, entry_point: str):
+    project = root / "Sol" / "Proj"
+    project.mkdir(parents=True)
+    (project / "project.uiproj").write_text("{}", encoding="utf-8")
+    (project / "Proj.bpmn").write_text("<definitions/>", encoding="utf-8")
+    (project / "Process.bpmn").write_text("<definitions/>", encoding="utf-8")
+    (project / "entry-points.json").write_text(
+        json.dumps({"entryPoints": [{"filePath": f"/content/{entry_point}#Event_start"}]}),
+        encoding="utf-8",
+    )
+
+
+def test_find_bpmn_file_grades_the_entry_point_not_a_file_beside_it(tmp_path, monkeypatch) -> None:
+    _project_with_entry_point(tmp_path, "Process.bpmn")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Process.bpmn")
+
+
+def test_find_bpmn_file_keeps_the_named_file_when_it_is_the_entry_point(tmp_path, monkeypatch) -> None:
+    _project_with_entry_point(tmp_path, "Proj.bpmn")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Proj.bpmn")
 
 
 def test_context_value_strips_and_falls_back_to_element_text() -> None:

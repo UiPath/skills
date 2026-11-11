@@ -40,6 +40,12 @@ re-lays out every node and discards them. Upload or debug the merged file as
 `merge` wrote it.
 <!--skill-flavor:operate-format:end-->
 
+`nodes create` without `--position`, or a hand edit that adds nodes, leaves every new
+node at `layout.nodes[<id>].position` 0,0. After such an edit to a file with no
+author-chosen layout, run `format`, then confirm each node in `layout.nodes` has a
+distinct position. With an author-chosen layout, skip `format` and pass
+`--position <x>,<y>` to each `nodes create`.
+
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
 
 The builder can place the nodes itself, so the emitted file never needs `format` — provided every node that is not 96 × 96 carries its size (rule 1).
@@ -308,7 +314,9 @@ uip maestro flow job traces <job-key> --output json
 ```
 
 Traces are the full execution timeline and are verbose. They are a last resort,
-not a starting point.
+not a starting point, except for per-iteration timing: `elementExecutions`
+aggregates per element, so a loop body shows one row. The spans stream to
+stderr, one JSON line each (`--pretty` for readable lines).
 
 ## Instance lifecycle
 

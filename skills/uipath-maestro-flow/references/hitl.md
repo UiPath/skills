@@ -29,6 +29,11 @@ the next step instead, each on its own edge.
 
 `.stepSwitch` is how you route them: one arm per outcome, none of them the tacit
 next step. It works on the default node, on quick-form and on a pinned task.
+Never combine it with `outcomePorts: false` (STEP_SWITCH_NO_EXITS: no ports to
+route). Drop the flag to get an arm per outcome. Keeping it means routing on
+`out('<step>', 'Action')` downstream ("The decision as data" below), and that
+branch must send every outcome value somewhere: an unhandled `Reject` continues
+down the main path.
 Arms behave like `.switch()`'s — one that ends in `.return()` is terminal, and one
 that does not CONVERGES, so the step after the `.stepSwitch` fans in from every
 arm that reaches it.
@@ -54,7 +59,7 @@ document-validation station.
 .return({ status: v('status') })
 ```
 
-Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed` on a task that has outcomes, and every outcome must be wired. `.stepSwitch` gives each one an arm — no tacit exit, arms converge like `.switch`'s, a missing arm warns — on the default node, on quick-form, or on a pinned task. After a default-node task with more than one outcome, `.step` + `.stepToList` is the older shape where the FIRST outcome continues the main path. After quick-form, `outcomePorts: false` or `{ version: '1.0' }`, a plain `.step()` continues EVERY outcome to the next step, each on its own edge, where you route on `out('review', 'Action')`.
+Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed` on a task that has outcomes, and every outcome must be wired. `.stepSwitch` gives each one an arm — no tacit exit, arms converge like `.switch`'s, a missing arm warns — on the default node, on quick-form, or on a pinned task, never with `outcomePorts: false`. After a default-node task with more than one outcome, `.step` + `.stepToList` is the older shape where the FIRST outcome continues the main path. After quick-form, `outcomePorts: false` or `{ version: '1.0' }`, a plain `.step()` continues EVERY outcome to the next step, each on its own edge, where you route on `out('review', 'Action')`.
 
 ## Delivery, fields, and routing
 
@@ -190,7 +195,8 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   Do not route the FIRST outcome with `.stepToList`: its port is already taken by
   the main path (flow-builder-sdk#741). After a task that does not route per
   outcome EVERY outcome port is taken, so `.stepToList('outcome-…')` there is
-  refused (HITL_OUTCOME_PORTS_OFF) — use `.stepSwitch`, or `outcomePorts: true`.
+  refused (HITL_OUTCOME_PORTS_OFF) — use `outcomePorts: true`, or `.stepSwitch`
+  on quick-form or a pin (never with `outcomePorts: false`).
 
   **So `.step()` means one of two things.** After a task that routes per outcome,
   the FIRST outcome continues and the others need routes. After any other task,

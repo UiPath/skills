@@ -23,6 +23,9 @@
 5. Explore-first → call `EnterPlanMode` as soon as the user picks it, before any further discovery or the Step 4 UI batch. Discover read-only inside plan mode, author the plan where and how the plan-mode context says (not `docs/plans/`), then call `ExitPlanMode` for approval. Nothing changes in the project before approval; the host derives the task list from the approved plan.
 6. Simultaneous → write `YYYY-MM-DD-<feature>.md` to `docs/plans/` (project) or `./plans/` (no project), every task prompt embedding the plan path; emit the plan as text and start the first task.
 <!--skill-flavor:lane-b-write-and-present:end-->
+<!--skill-flavor:planner-bpmn-row:start-->
+| `uipath-maestro-bpmn` | `.bpmn` files — standards-based BPMN 2.0 process orchestration (gateways, events, boundary timeouts, subprocesses, multi-instance) over RPA, agents, APIs, HITL. Authors its own inline userTask/HITL nodes. | Yes (`uip login`) | **Yes** — packages, uploads, publishes/deploys, and runs via `uip maestro bpmn`; Orchestrator deploy of `.uipx`-wrapped solutions → `uipath-solution` |
+<!--skill-flavor:planner-bpmn-row:end-->
 
 <!--skill-flavor:plan-and-tasks-format-row:start-->
 | [Plan and Tasks Format](references/plan-and-tasks-format.md) | Header schema, task row schema, identity tuple, status states, regenerate-with-preservation algorithm, plan-mode mapping, anti-hallucination rule, quality rules |

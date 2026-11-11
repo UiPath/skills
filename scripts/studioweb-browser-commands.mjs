@@ -24,15 +24,24 @@
  *     rewording prose or renaming an example argument keeps the key) — today's
  *     debt, driven down per skill. Above it, the test fails. Below it, the
  *     test passes, so a flavor fix needs no edit to this root-owned file; the
- *     scheduled refresh (`--lower-ceiling`) lowers the ceiling to the count.
+ *     browser-surface refresh (`--lower-ceiling`) lowers the ceiling to the
+ *     count.
+ *
+ * A Node catalog change moves keys without changing any mention: a new deeper
+ * verb (`maestro bpmn eval`) takes mentions off `maestro bpmn` onto a key
+ * whose ceiling is 0. The catalog refresh runs `--rekey`, which scans the tree
+ * under the previous and the new catalog, moves every ceiling and allow entry
+ * with its mention, and refuses (exit 1, nothing written) when the ratchet
+ * already fails under the previous catalog.
  *
  * Known limit: this reads what the flavor says, not what an agent executes.
  * Only `.md` files are scanned.
  *
- * Usage:
+ * Usage (at most one mode flag):
  *   node scripts/studioweb-browser-commands.mjs                  # report
  *   node scripts/studioweb-browser-commands.mjs --write-ceiling  # reset ceilings to today's counts
- *   node scripts/studioweb-browser-commands.mjs --lower-ceiling  # only lower them (the scheduled refresh)
+ *   node scripts/studioweb-browser-commands.mjs --lower-ceiling  # only lower them (the browser-surface refresh)
+ *   node scripts/studioweb-browser-commands.mjs --rekey --previous-catalog <PATH>  # the catalog refresh
  */
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -175,7 +184,15 @@ export function unrunnableMentions(treeRoot, browser, nodeVerbs) {
           // check-skill-verbs.py: `uip or eval` is a stale path, not prose.
           if (!nodeCommandPath(tokens, nodeVerbs) && PROSE_NOISE.has(tokens[0])) continue;
           const kind = mentionKind(tokens, browser, nodeVerbs);
-          out.push({ skill, file, line: index + 1, command: mentionCommand(tokens, nodeVerbs), kind, text: text.trim() });
+          out.push({
+            skill,
+            file,
+            line: index + 1,
+            column: match.index,
+            command: mentionCommand(tokens, nodeVerbs),
+            kind,
+            text: text.trim(),
+          });
         }
       });
   }
@@ -227,15 +244,15 @@ export function ceilingDrift(counts, ratchet) {
 
 const readJson = (file) => JSON.parse(readFileSync(file, "utf8"));
 
-/** Build the studioweb tree into a temp dir and scan it. */
-export function scanStudioweb() {
+/** Build the studioweb tree into a temp dir and scan it, keying by `catalog`. */
+export function scanStudioweb(catalog = NODE_CATALOG) {
   const output = mkdtempSync(join(tmpdir(), "studioweb-browser-commands-"));
   try {
     materializeComposition(createCompositionPlan(REPO_ROOT, STUDIOWEB_ROOT), output);
     return unrunnableMentions(
       output,
       usableBrowserCommands(readJson(BROWSER_SNAPSHOT), readJson(HOST_SERVED)),
-      new Set(readJson(NODE_CATALOG).verbs),
+      new Set(readJson(catalog).verbs),
     );
   } finally {
     rmSync(output, { recursive: true, force: true });
@@ -262,13 +279,83 @@ export function withCeilings(ratchet, counts, { lowerOnly = false } = {}) {
   return out;
 }
 
+const mentionId = (m) => `${m.skill}\0${m.file}\0${m.line}\0${m.column}`;
+
+/**
+ * Follow a Node catalog change. `before` and `after` scan the same tree under
+ * the previous and the new catalog, so a mention keeps its position and only
+ * its key can move. Throws when the ratchet already fails under `before`:
+ * re-keying would bury that failure. Allow entries follow their mentions to
+ * the new keys; ceilings reset to the counts of mentions both scans share. A
+ * mention only `after` has (prose the new catalog turned into a command) gets
+ * no ceiling, so it still fails the test.
+ */
+export function rekeyRatchet(ratchet, before, after) {
+  const problems = [
+    ...staleAllowEntries(before, ratchet).map((e) => `${e.skill}: allow entry uip ${e.command} in ${e.file} matches nothing`),
+    ...ceilingDrift(countUnallowed(before, ratchet), ratchet)
+      .filter((d) => d.count > d.ceiling)
+      .map((d) => `${d.skill}: uip ${d.command} (${d.count} > ${d.ceiling})`),
+  ];
+  if (problems.length > 0) {
+    throw new Error(
+      `the ratchet already fails under the previous catalog; fix that first:\n  ${problems.join("\n  ")}`,
+    );
+  }
+
+  const newKey = new Map(after.map((m) => [mentionId(m), m.command]));
+  const moved = {};
+  for (const skill of Object.keys(ratchet)) {
+    const allow = [];
+    for (const entry of ratchet[skill].allow ?? []) {
+      const keys = new Set(
+        before
+          .filter((m) => m.skill === skill && m.file === entry.file && m.command === entry.command)
+          .map((m) => newKey.get(mentionId(m)))
+          .filter(Boolean),
+      );
+      for (const command of [...keys].sort()) {
+        if (!allow.some((a) => a.file === entry.file && a.command === command)) allow.push({ ...entry, command });
+      }
+    }
+    moved[skill] = { ...ratchet[skill], allow };
+  }
+
+  const shared = new Set(before.map(mentionId));
+  return withCeilings(moved, countUnallowed(after.filter((m) => shared.has(mentionId(m))), moved));
+}
+
+const MODES = ["--write-ceiling", "--lower-ceiling", "--rekey"];
+
+function fail(message, code) {
+  process.stderr.write(`${message}\n`);
+  process.exitCode = code;
+}
+
 function main(argv) {
+  const modes = argv.filter((arg) => MODES.includes(arg));
+  if (modes.length > 1) return fail(`Pass at most one of ${MODES.join(", ")}; got ${modes.join(" ")}.`, 2);
+  const mode = modes[0];
+  const previousAt = argv.indexOf("--previous-catalog");
+  const previousCatalog = previousAt >= 0 ? argv[previousAt + 1] : undefined;
+  if ((mode === "--rekey") !== (previousCatalog !== undefined)) {
+    return fail("--rekey and --previous-catalog <PATH> go together.", 2);
+  }
+
   const mentions = scanStudioweb();
   const ratchet = readJson(RATCHET);
-  const counts = countUnallowed(mentions, ratchet);
-  const write = argv.includes("--write-ceiling");
-  if (write || argv.includes("--lower-ceiling")) {
-    writeFileSync(RATCHET, `${JSON.stringify(withCeilings(ratchet, counts, { lowerOnly: !write }), null, 2)}\n`);
+  if (mode) {
+    let next;
+    if (mode === "--rekey") {
+      try {
+        next = rekeyRatchet(ratchet, scanStudioweb(previousCatalog), mentions);
+      } catch (error) {
+        return fail(`Not re-keyed: ${error.message}`, 1);
+      }
+    } else {
+      next = withCeilings(ratchet, countUnallowed(mentions, ratchet), { lowerOnly: mode === "--lower-ceiling" });
+    }
+    writeFileSync(RATCHET, `${JSON.stringify(next, null, 2)}\n`);
     process.stdout.write(`Wrote ${RATCHET}.\n`);
     return;
   }

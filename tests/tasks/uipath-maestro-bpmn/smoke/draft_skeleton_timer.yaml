@@ -14,7 +14,8 @@ sandbox:
   python: {}
 
 reference:
-  directory: .
+  # The parent, so the staged copy also holds the `_shared` that check_draft_skeleton.py imports.
+  directory: ..
 
 initial_prompt: |
   I want a BPMN process called "NightlyReportSketch" that runs every morning
@@ -48,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "Skeleton has a timer start, bare task boxes, a real conditioned gateway, full DI, project metadata, and validates with zero errors"
-    command: "python3 $REFERENCE_DIR/check_draft_skeleton.py NightlyReportSketch --timer-start"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py NightlyReportSketch --timer-start"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -132,7 +133,7 @@ success_criteria:
 
   - type: run_command
     description: "Every box is labeled with a toolbox kind (the skill's table, else the type's `registry list` Label), never an invented or case-only one"
-    command: "python3 $REFERENCE_DIR/check_skeleton_kinds.py NightlyReportSketch"
+    command: "python3 $REFERENCE_DIR/smoke/check_skeleton_kinds.py NightlyReportSketch"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

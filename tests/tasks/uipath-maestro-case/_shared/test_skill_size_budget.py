@@ -44,7 +44,7 @@ import pytest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
-SKILL_PATH = os.path.join(_REPO, "skills", "uipath-maestro-case", "SKILL.md")
+SKILL_PATH = os.path.join(_REPO, "classic", "skills", "uipath-maestro-case", "SKILL.md")
 
 # Whole file. Set at the port (256 lines, 52,235 bytes, ~19.2K tok) just above
 # the current size, so the next growth is a decision; the line cap is looser on

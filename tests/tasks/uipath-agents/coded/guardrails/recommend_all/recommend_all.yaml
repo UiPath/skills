@@ -8,7 +8,7 @@ description: >
   are added, an LLM-scoped adversarial-input guardrail is present, and a
   PII/harmful-content guardrail is present. graph.py must remain syntactically
   valid.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
@@ -57,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "At least 2 guardrails added including LLM-scoped and content-safety guardrails; graph.py parses"
-    command: "python3 $REFERENCE_DIR/_shared/check_recommend_all.py"
+    command: "python3 $REFERENCE_DIR/_shared/guardrails/check_recommend_all.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

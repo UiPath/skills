@@ -108,6 +108,21 @@ STUDIO_WEB_MAIN_FILE = "Process.bpmn"
 """The main file Studio Web gives every BPMN project; the Node CLI names it ``<Project>.bpmn``."""
 
 
+def _entry_point_beside(path: str) -> str:
+    """``path``, or the one entry point beside it when ``path`` is not an entry point.
+
+    The project runs only its entry points. A Studio Web project's is
+    ``Process.bpmn``, so a ``<Name>.bpmn`` an agent wrote beside it never runs
+    and must not be graded in its place.
+    """
+    file = Path(path)
+    entries = entry_point_files(file.parent)
+    if not entries or file.name in {e.name for e in entries}:
+        return path
+    existing = [e for e in entries if e.is_file()]
+    return str(existing[0]) if len(existing) == 1 else path
+
+
 def bpmn_file_is_named(path: _PathLike, name: str) -> bool:
     """True for ``<name>.bpmn``, or for Studio Web's ``Process.bpmn`` in a project directory named ``<name>``."""
     file = Path(path)
@@ -143,7 +158,7 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
             # resolve_project's rule here as well so the draft is never graded.
             hinted = _project_files(matches)
-            return hinted[0] if len(hinted) == 1 else matches[0]
+            return _entry_point_beside(hinted[0] if len(hinted) == 1 else matches[0])
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
@@ -322,7 +337,7 @@ def body_object(element: ET.Element) -> dict:
     """The request body ``element``'s ``target="body"`` input encodes.
 
     The runtime reads exactly one ``target="body"`` input as the whole body;
-    several do not merge (skills/uipath-maestro-bpmn/references/registry-workflow.md,
+    several do not merge (classic/skills/uipath-maestro-bpmn/references/registry-workflow.md,
     "Body shape"). So the only gradeable shape is::
 
         <uipath:input name="body" type="json" target="body"><![CDATA[{...}]]></uipath:input>
@@ -398,7 +413,7 @@ def path_parameters(element: ET.Element) -> dict[str, str]:
     A V1 template node writes one ``target="path"`` input per field. A V2
     element from ``registry get --input-details`` writes one
     ``target="pathParameters"`` input holding them all as a JSON object
-    (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
+    (classic/skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
     from the V1 template"). A V2 payload that is not a JSON object adds
     nothing, and neither does a null, object or array value. A V2 boolean or
     number reads as V1 spells it: ``"false"``, ``"1"``.
