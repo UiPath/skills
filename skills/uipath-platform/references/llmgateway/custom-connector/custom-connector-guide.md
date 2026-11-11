@@ -23,6 +23,7 @@ The one exception is the unpublished draft: `curl` creates its test connection a
 - A customer wants a UiPath product (Agents, Autopilot, a feature listed by `list-product-configs`) to use an LLM endpoint that no built-in BYO connector covers.
 - Building, publishing, or fixing a custom connector whose BYO configuration fails validation (`isAvailable: false` / `isCompatible: false`).
 - Porting an existing custom-connector zip or an AI Gateway template to a new vendor, or re-publishing one after a hook fix.
+- Changing a connector that is already published — a hook fix, another host, a new field or flavor — while configurations run on it: [§"Change a published connector"](#change-a-published-connector).
 - Testing a custom LLM connector before publishing it (the builder's test connection, called through Integration Service), then creating the runtime connection and registering the BYO configuration on it.
 
 ## Critical Rules
@@ -43,7 +44,7 @@ The one exception is the unpublished draft: `curl` creates its test connection a
 
 ## Workflow
 
-Use placeholders for every tenant value. Pass `--output json` whenever you read the result.
+Use placeholders for every tenant value. Pass `--output json` whenever you read the result. The first call of the day to a `uip` tool can print `Checking today's update for '<tool>'.` on stdout ahead of the JSON: parse from the first `{`.
 
 ### 0. Preflight — which products, and is a custom connector allowed there?
 
@@ -88,6 +89,8 @@ Each line names a file under `<GUIDE_DIR>/assets/probes/` holding the request bo
 Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); the probes a product lists can send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
 
 ### 2. Scaffold the connector
+
+A connector that already exists is never scaffolded again: start from its source, as [§"Change a published connector"](#change-a-published-connector) says.
 
 ```bash
 export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'      # Git Bash only
@@ -297,6 +300,42 @@ The reader is usually the customer's administrator, not a UiPath engineer. Write
 <!--skill-flavor:config-link-values:end-->
 `<FOLDER_ID>` is the shared folder's **numeric** id, not its key: `uip or folders get <SHARED_FOLDER_KEY> --output json` prints it as `Data.Id` (`uip or folders list` does not).
 
+## Change a published connector
+
+A connector that is published may already serve products. Change it from its own source, test the change on the draft, publish it, then bring every connection and configuration on it along. The commands are the workflow's; what differs is the order and what to check.
+
+1. **Find what runs on it.** The published key is `Key` in `uip is connectors list --output json` (`Stage` `CUSTOM`); its connections are `uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json`; the configurations on them are the entries of `uip llm-configuration byo-connections list --include-connection-details --output json` whose `LlmConfigurations[].ConnectionId` is one of those. Every one of those connections runs a new version the moment it is published — nothing is re-created or re-authorized, and an enabled configuration serves it to its product at once — so tell the user which configurations the change reaches and which are enabled, and agree the change with them.
+2. **Start from its source.** Download the draft into a fresh, empty directory:
+
+   ```bash
+   uip is connectors download <DESIGN_KEY> --connector-dir <WORK_DIR> --output json   # Data.ConnectorRoot is the <CONNECTOR_DIR>
+   ```
+
+   `<DESIGN_KEY>` is the published key with `custom-` replaced by `design-`. Never run `init` for a connector that exists: under the same name it derives the same key, and `import` replaces the draft, then the next publish the connector, with a rebuild that has lost every patch the connector carried (Rule 13's lifecycle resources among them); under another name it makes a second connector. The download is the draft as last imported, which can be ahead of what was published: when it differs from what you expect (a local copy from the build, or the user's account of the last change), ask before building on it. Copy the downloaded folder somewhere untouched before you change anything — it is the rollback (step 7 below).
+
+   The download keeps the resources, lifecycle patches and configuration entries, with each hook's code inline in `element.json` (`resources[].hooks[].body`) instead of a file. It also writes a second copy of each resource, hooks included, into its `standard-resources/<name>.json` under `resources`, and `import` takes the hooks from that copy: left in place, every hook change is silently dropped — `import` answers `Updated`, and the draft keeps running the old code. After making the untouched copy, delete the `resources` key from every `standard-resources/*.json` of the one you will change: `state query standard-resources/<name>`, drop `resources` from `Data.Value`, and `state patch standard-resources/<name> --value-file <file>` with the rest. Two more things do not survive the download, and `builder validate` fails until both are back:
+   - `element-metadata.json:latestVersion` is gone. Set it above the published version, which is `Data[0].Version` in `uip is connectors metadata <PUBLISHED_KEY> --output json` (`connectors get` does not show it): query the whole file, add the field, patch it back as in step 2 of the workflow.
+   - Each header parameter of `type: "value"` has lost `source: "request"` ("missing required field 'source'"). Query `element.json/parameters`, add `"source": "request"` to each such entry, and patch the array back.
+
+   `validate` then also warns "publishStatus not set"; that one is expected on a download.
+3. **Change it** with the builder commands of steps 2–4 run against `--connector-dir <CONNECTOR_DIR>`, then `builder validate` and the pre-publish checklist. To change a hook, save its body to a `.js` file, edit that, and register it again with `activity hook create` (same resource, method and hook type): the builder replaces the inline code with the file.
+4. **Test the draft.** `import` changes only the draft; the runtime connections keep running the published version. Check first that the import carried the change: download the draft again into another empty directory and look for it in `element.json` — an answer that still comes from the old code means a `standard-resources` copy was left in (step 2). Then run the probes of every configuration from step 1 (steps 1 and 7 of the workflow, once per feature), and the streamed call if the product streams, on a test connection. Create a new one (step 6) when the old one is gone or the change touches what its page asked for — the host, a field, the auth type: a test connection's fields cannot be edited.
+5. **Publish** with `import` and `publish --wait` (step 8 of the workflow), once `latestVersion` (set in step 2 above) is still higher than `Data[0].Version` in `uip is connectors metadata <PUBLISHED_KEY>`.
+6. **Bring each connection and configuration along.**
+   - A runtime connection keeps the field values and the auth it was made with. When the change adds a field the page asks for, changes the host a field holds, or changes the auth type, open each connection's page for the user: `uip is connections edit <CONNECTION_ID> --no-wait --output json` returns its `AuthUrl`, opened as in step 6; never fill it in yourself. The edit page shows the connection's own values, not the connector's new defaults: tell the user which fields to change and to what, every one of them — a token call reads its own URL field, so changing only the base URL still fails with "Failed to execute API … during provisioning" naming the old host.
+   - Probe every configuration from step 1 again. `update` replaces all of a configuration's mappings, so rebuild them from `byo-connections get <CONFIG_ID> --output json`, one `--mapping` per entry of `Data.LlmConfigurations`: `llm-name=<DesiredModel>,llm-identifier=<CustomerModel>,connector-type=<ConnectorType>,api-flavor=<ApiFlavor>,connection-id=<ConnectionId>`, plus `--enabled` when `Data.Enabled` is true:
+
+     ```bash
+     uip llm-configuration byo-connections update <CONFIG_ID> \
+       --mapping 'llm-name=<DesiredModel>,llm-identifier=<CustomerModel>,connector-type=Custom,api-flavor=<ApiFlavor>,connection-id=<ConnectionId>' \
+       --enabled --output json
+     ```
+
+   - A failed `update` leaves the configuration as it was — still enabled, on a connector that now fails its probes. Roll back (step 7) first, then fix and repeat from step 3.
+7. **Roll back** by publishing the untouched copy from step 2: give it step 2's two repairs, with `latestVersion` above the version now published, and leave its `standard-resources` copies in, since they hold the same old code. `import`, `publish --wait`; the connections run it as soon as it is published, as they ran the change. Then run step 6's `update` once more.
+
+Report as in step 10: what changed, the version now published, and each configuration with whether its probes passed.
+
 ## Command Map
 
 ```text
@@ -308,6 +347,7 @@ uip is connectors builder                                # author on disk (see W
   init | activity create | activity hook create | auth set | auth system create
   state query <ptr> | state patch <ptr> --value-file | inspect | validate
 uip is connectors import | publish --wait | publish-status <id> | get <key>       # import/publish: --connector-dir <dir>
+uip is connectors download <design-key> --connector-dir <dir>                     # an existing connector's source (Change a published connector)
 uip login refresh                                        # token for the curl calls (via <WORK_DIR>/is-api.sh)
 curl … elements_/v1/elements/normalized-instances        # the draft's test connection (Workflow 6)
   POST applications/default/sessions | GET applications/sessions/<id> | POST authenticate
@@ -347,3 +387,6 @@ For general connector authoring depth (every auth type, `state patch` semantics,
 10. Reporting done on "publish succeeded" without a passing probe on the runtime connection.
 11. Keeping the builder's `onProvision` / `onRefresh` entries as written, or a `provisionAuthValidation` beside a token exchange — the token is never fetched and every connection fails with the vendor's 401 (Rule 13).
 12. Reading the caller's request from `request_body_map` in a postRequest hook — there it is the vendor's body; the caller's is `request_body_raw`.
+13. Running `init` again to change a connector that already exists, instead of downloading its source — the rebuild replaces the draft, and the next publish the connector, without the patches it carried (§"Change a published connector").
+14. Publishing a change and probing only the configuration you came for — every configuration on the connector's connections runs the new version.
+15. Importing a downloaded connector with the resource copies still in its `standard-resources` files — `import` answers `Updated` and the draft keeps the old hooks (§"Change a published connector" step 2).

@@ -8,7 +8,7 @@ An Integration Service connection is one set of vendor credentials on a connecto
 |---|---|---|
 | Purpose | Call the unpublished draft through Integration Service while it is being built and fixed (custom-connector-guide.md step 7) | Run the product's probes when the configuration is saved, then serve the product once it is enabled |
 | Made with | `curl` on the Integration Service API — the Connector Builder's Add connection (custom-connector-guide.md step 6) | The Connections API with the folder in a header (below), its page opened in the user's browser — or the Integration Service web UI, on the published connector |
-| Connector | The draft (`design-…`); runs whatever was last imported | The published `custom-…` key; runs the published version |
+| Connector | The draft (`design-…`); runs whatever was last imported | The published `custom-…` key; runs the latest published version — each publish reaches it at once, with no edit |
 | Credentials | A sandbox key, or the builder's own | The credentials production must use — ask the user |
 | Who sees it | Only its creator; `uip is connections` never lists it, so no configuration can be saved on it | The shared folder the configuration names in `--folder-key`, so other admins can manage it |
 | Lifetime | Delete when the runtime connection passes (ask first) | Kept; rotate with `edit` |
