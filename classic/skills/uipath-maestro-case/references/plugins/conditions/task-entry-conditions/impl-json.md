@@ -132,7 +132,7 @@ The sequential/ordered-task-set rule is the task's only entry condition for stri
 
 The task fires when the referenced SLA changes status—the direct `start-task` response shape ([sla-response-shapes.md](../../../sla-response-shapes.md)). The follow-up task is in the breached stage and activates on the SLA event; no stage re-entry occurs and other stage tasks do not re-run. Resolve `slaId` and any at-risk `escalationId` against objects written in Phase 2 Step 11. Use the stage's **own** SLA for a stage-scoped response or `root`'s for a case-scoped response.
 
-`slaId` alone is a **breach** rule. For at-risk, add a concrete `escalationId` declared on that same SLA; never use the `"any"` sentinel. This is valid on uip 1.198.0-preview.102 for stage-owned and root SLAs.
+`slaId` alone is a **breach** rule. For at-risk, add a concrete `escalationId` declared on that same SLA. Not `"any"`: that is the Designer's at-risk wildcard (every at-risk escalation of the SLA), never a breach rule; name the escalation you mean. This is valid on uip 1.198.0-preview.102 for stage-owned and root SLAs.
 
 If a *stage* should take the case, put the rule on its `entryConditions` ([stage-entry-conditions/impl-json.md](../stage-entry-conditions/impl-json.md)); that is `enter-stage`, not `start-task`.
 

@@ -72,7 +72,7 @@ Persist at-risk with `slaId` and a concrete escalation declared on that SLA:
 "rules":[[{"id":"Rule_xxxxxx","rule":"sla-status-change","slaId":"sla_aB3kL9Qx","escalationId":"esc_xY2mNp"}]]
 ```
 
-`isInterrupting` comes from the SDD row, not SLA scope; the SLA may be on `root` or any stage, and `validate` passes with either `isInterrupting` value. Never emit Case Designer's `"any"` escalation sentinel: released `validate` rejects it as a missing escalation. Use separate rows for both statuses.
+`isInterrupting` comes from the SDD row, not SLA scope; the SLA may be on `root` or any stage, and `validate` passes with either `isInterrupting` value. `slaId` alone is a **breach** rule; `slaId` plus a concrete at-risk `escalationId` on that SLA is an at-risk rule. Do not emit `escalationId: "any"`: it is the Case Designer's at-risk wildcard (valid; it fires on every at-risk escalation of that SLA), so name the escalation the SDD means, and never put it on a breach row. Use separate rows for both statuses.
 
 **This scope is the `enter-stage` response — a stage takes the case.** A `start-task` response puts the same rule on the follow-up **task's** `entryConditions` instead ([task-entry-conditions/impl-json.md](../task-entry-conditions/impl-json.md)). Do **not** author `start-task` as a stage-entry rule on the breached stage: although `validate` accepts it, re-entering the stage reruns every task whose `shouldRunOnlyOnce` is `false` (the default), not only the intended follow-up. Response choice, status shape, interrupting semantics, and defects `validate` cannot see: [sla-response-shapes.md](../../../sla-response-shapes.md). Non-interrupting lanes retain `data.stageType: "secondary"` and `isRequired: false`; never demote them to a regular stage.
 

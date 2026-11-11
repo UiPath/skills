@@ -134,6 +134,20 @@ uip solution publish <PackageZip> --output json
 
 Activation and the `uip solution deploy` steps that follow are the platform
 skill's; this skill stops at the BPMN project and package boundary.
+
+### Standalone process publish
+
+When the user explicitly asks to publish one BPMN project as an Orchestrator process, without a solution, use `process publish`.
+It packs the project, uploads it to the tenant feed, and creates the release in the folder.
+It does not run `bpmn refresh`: run that first.
+
+```bash
+uip maestro bpmn process publish <project-path> --folder-key <FOLDER_KEY> --wait --output json
+```
+
+`--folder-key` is required. `--wait` returns once the entry points are available.
+`Data.ProcessKey`, `Data.ProcessVersion` and `Data.ReleaseKey` feed `process run`; `<PROCESS_KEY>` is `<ProcessKey>:<ProcessVersion>`.
+Anything shipped with a solution still goes through the solution path above.
 <!--skill-flavor:ship:end-->
 
 ## Debug — a controlled Studio Web run
