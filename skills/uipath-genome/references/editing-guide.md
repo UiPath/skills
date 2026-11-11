@@ -31,7 +31,7 @@ Content rules for what an edit writes: [genome-format-guide.md](genome-format-gu
 | "Here is the PDD too" | [extraction-guide.md](extraction-guide.md) Step 3, **Related resources** |
 | "Is this really a defect?" / "check it against the source" | Rerun both passes of [defect-verification-guide.md](defect-verification-guide.md) for that finding, and re-mark it in the body and its Source Map row by what the passes show |
 | "Fix this defect in the rebuild" / "keep the source's behaviour" | A ruling: written at the step after the source fact, cited in the defect index's Rebuild follows cell, and carried into the step's Workflow lines, criteria and Source Map row ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)) |
-| "Also translate what is not covered" | § Partial Re-extraction with the objects of the Source Map's `Not covered` row the user names |
+| "Also translate what is not covered", or an unused part | § Partial Re-extraction with the objects of the Source Map's `Not covered` or `Unused` row the user names |
 | "The source changed" / "finish the unread parts" | § Partial Re-extraction with the changed or unread objects. Rerun extraction from its Step 1 ([extraction-guide.md](extraction-guide.md)) only when the components themselves changed (projects or root processes added, removed or regrouped); preserve user edits the source does not contradict and say which were kept |
 
 ## Check after every edit

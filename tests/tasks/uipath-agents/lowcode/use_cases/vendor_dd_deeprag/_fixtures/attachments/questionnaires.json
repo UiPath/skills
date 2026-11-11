@@ -1,0 +1,27 @@
+[
+  {
+    "vendor": "Fabrikam Cloud Payroll",
+    "evidence": [
+      "evidence/fabrikam-soc2-type2-2026.pdf",
+      "evidence/fabrikam-bcp-2026.pdf"
+    ],
+    "questions": [
+      {
+        "question": "Is customer data encrypted at rest? Which algorithm?",
+        "vendorAnswer": "Yes, AES-256."
+      },
+      {
+        "question": "What is your recovery time objective for the payroll service?",
+        "vendorAnswer": "4 hours."
+      },
+      {
+        "question": "Were there any exceptions noted in your most recent SOC 2 report?",
+        "vendorAnswer": "No exceptions."
+      },
+      {
+        "question": "Do you hold ISO 27001 certification?",
+        "vendorAnswer": "In progress."
+      }
+    ]
+  }
+]

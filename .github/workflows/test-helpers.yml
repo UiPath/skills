@@ -86,8 +86,10 @@ jobs:
       - name: Install pytest
         run: pip install pytest pyyaml
 
+      # test_tenant_catalog.py fails when a case task gains a tenant dependency
+      # that no disposition rule in tests/scripts/tenant_catalog.py classifies.
       - name: Run pytest
-        run: pytest tests/tasks/uipath-maestro-case/ -v
+        run: pytest tests/tasks/uipath-maestro-case/ tests/scripts/test_tenant_catalog.py -v
 
   # Covers the Automation Hub publish graders and the `.uip-recorder` shim the
   # live tasks run behind, offline: a stub stands in for the real CLI, so these
@@ -210,6 +212,25 @@ jobs:
       - name: Run pytest
         run: pytest tests/tasks/uipath-rules/ -v
 
+  pytest-functions-check:
+    runs-on: uipath-ubuntu-latest
+    name: uipath-functions checker unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Pins the simple-echo grader to SKILL.md rule 4: typed I/O passes
+      # whatever the classes are named (Input/Output or EchoIn/EchoOut), and
+      # an unannotated or dict-typed entry function fails (#4585).
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-functions/_shared/ -v
+
   pytest-genome-check:
     runs-on: uipath-ubuntu-latest
     name: uipath-genome checker unit tests
@@ -286,6 +307,24 @@ jobs:
       - name: Run catalog guard tests
         run: pytest tests/scripts/test_catalog_build_guards.py -v
 
+  cli-declaration-refresh-tests:
+    runs-on: uipath-ubuntu-latest
+    name: CLI declaration refresh unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Guards the nightly refresh-cli-declarations.yml: what counts as drift,
+      # that a missing command writes nothing, and what the drift PR names.
+      - name: Run declaration refresh tests
+        run: pytest tests/scripts/test_refresh_cli_declarations.py -v
+
   skills-sh-checker-tests:
     runs-on: uipath-ubuntu-latest
     name: skills.sh grouping checker unit tests
@@ -308,6 +347,27 @@ jobs:
       # branches per incident (see the 2026-08-04 process-mining window).
       - name: Run skills.sh checker tests
         run: pytest tests/scripts/test_check_skills_sh.py -v
+
+  sensitive-content-checker-tests:
+    runs-on: uipath-ubuntu-latest
+    name: sensitive-content checker unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        # No fetch-depth override: the baseline case resolves only HEAD.
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Replays every value the customer content-inspection gate flagged in
+      # 1.202.0/1.203.0 (block tier must fail, inconsistent shapes must warn)
+      # plus the false positives found tuning against main. A detector that
+      # loosens lets a rejected shape ship; one that tightens floods PRs.
+      - name: Run sensitive-content checker tests
+        run: pytest tests/scripts/test_check_sensitive_content.py -v
 
   telemetry-hook-tests:
     runs-on: uipath-ubuntu-latest
@@ -348,8 +408,35 @@ jobs:
 
       # Guards both gates in scripts/check-task-driver.py; the headline case
       # replays the 2026-09-04 multi-line pre_run that ERRORed the Windows split.
+      # Also runs the behaviour tests of scripts/check-task-doc-citations.py.
       - name: Run task gate tests
-        run: pytest tests/scripts/test_check_task_driver.py -v
+        run: pytest tests/scripts/test_check_task_driver.py tests/scripts/test_check_task_doc_citations.py -v
+
+      # A task prompt that cites a renamed or retired skill doc (or section)
+      # sends the agent to a file its catalog does not ship; nothing else
+      # re-reads tasks when a doc moves (#4531). Full-corpus scan: the corpus
+      # is clean, so any hit is new.
+      - name: Every skill reference a task cites exists
+        run: python3 scripts/check-task-doc-citations.py
+
+  repo-script-tests:
+    runs-on: uipath-ubuntu-latest
+    name: repo script checker unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest pyyaml
+
+      # Unit tests for the scripts/ checkers that no domain job above covers.
+      # The nightly SonarCloud run (.pipelines/jobs/ci.quality.sonar.yml)
+      # measures their coverage; this job keeps them passing on every PR.
+      - name: Run repo script tests
+        run: pytest tests/scripts/test_build_uip_catalog.py tests/scripts/test_check_cli_verbs.py tests/scripts/test_check_connection_parity.py tests/scripts/test_check_skill_status.py tests/scripts/test_check_skill_verbs.py tests/scripts/test_check_skills_sh_findings.py tests/scripts/test_check_task_driver_edges.py tests/scripts/test_check_task_host_paths.py tests/scripts/test_parse_required_checks.py tests/scripts/test_prune_task_defaults.py tests/scripts/test_script_tests_run_in_ci.py tests/scripts/test_dockerfile_connectors_library_pin.py tests/scripts/test_task_command_patterns.py -v
 
   required-checks-contract:
     runs-on: uipath-ubuntu-latest

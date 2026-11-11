@@ -12,10 +12,9 @@ description: >
   verified by the node shape, so the test does not depend on a live Spotify
   connection in the grading sandbox.
   Ported from Flow `connector_features/non-catalog-http-fallback/non_catalog_http_fallback.yaml`;
-  the managed `core.action.http.v2` node is modeled as a bpmn:sendTask carrying
-  the registry Intsvc.ActivityExecution wrapper (connectorKey
-  uipath-uipath-http, connection bound via `=bindings.<id>`) instead of a Flow
-  connector-mode HTTP node.
+  the managed `core.action.http.v2` node is an Intsvc.UnifiedHttpRequest
+  bpmn:sendTask in connector mode (targetConnector uipath-uipath-http,
+  connection bound via `=bindings.<id>`), as every BPMN HTTP request is.
 tags:
   - uipath-maestro-bpmn
   - integration

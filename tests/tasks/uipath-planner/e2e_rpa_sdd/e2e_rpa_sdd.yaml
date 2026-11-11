@@ -33,7 +33,7 @@ reference:
   directory: .
 
 initial_prompt: |
-  I've saved the Process Design Document for our Employee Onboarding Data Entry
+  I've saved the Process Definition Document for our Employee Onboarding Data Entry
   process as `pdd.md` in the current directory (staged from the task fixtures).
   Read `pdd.md` and use it as the source of truth to produce the complete
   Solution Design Document.

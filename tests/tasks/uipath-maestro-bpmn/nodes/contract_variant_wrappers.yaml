@@ -38,8 +38,7 @@ initial_prompt: |
   - `bpmn:serviceTask` with `Orchestrator.CreateAndWaitForQueueItem`.
   - `bpmn:callActivity` with `Orchestrator.StartAgenticProcess`.
   - `bpmn:callActivity` with `Orchestrator.StartAgenticProcessAsync`.
-  - `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcess`; if a
-    case-management payload is needed, mark it preserve-only and synthetic.
+  - `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcess`.
   - `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcessAsync`; keep it
     synthetic and do not invent deployment identifiers.
   - `bpmn:receiveTask` with `Intsvc.WaitForEvent`; keep connector details
@@ -52,7 +51,10 @@ initial_prompt: |
     preserve-only and keep all payloads synthetic.
   - `bpmn:serviceTask` with `Maestro.CaseRulesEvaluator`; mark it preserve-only
     and keep all payloads synthetic.
-  - Preserve numeric `uipath:migrationVersion` values `5`, `11`, and `11.5`.
+  - Carry a synthetic, preserve-only `uipath:caseManagement` payload, on the
+    process or on a case-management call activity.
+  - Stamp the process with a numeric `uipath:migrationVersion` of `5`, `11` or
+    `11.5` (a process carries one schema version).
   - Preserve a legacy `uipath:scriptVersion` value `v2` on a script task while
     still following the skill guidance that new scripts should prefer `v3`.
   - Preserve a generic unsupported `uipath:Activity` payload instead of

@@ -122,6 +122,24 @@ def read_caseplan(path: str | None = None) -> dict:
         return json.load(f)
 
 
+# Written by `_setup/localize_tenant_ids.py` in the sandbox when the task ran it.
+TENANT_ID_MAP = os.path.join("_setup", ".tenant-ids.map.json")
+
+
+def localize_ids(text: str, map_path: str = TENANT_ID_MAP) -> str:
+    """Rewrite the cloud-tenant IDs in a reference fixture the way the task's pre_run
+    rewrote the sandbox copy, so a checker compares against the IDs the agent saw.
+    Returns ``text`` unchanged when the task did not localize."""
+    if not os.path.isfile(map_path):
+        return text
+    with open(map_path, encoding="utf-8") as f:
+        changed = {cloud: live for cloud, live in json.load(f).items() if cloud != live}
+    if not changed:
+        return text
+    pattern = re.compile("|".join(re.escape(cloud) for cloud in changed), re.IGNORECASE)
+    return pattern.sub(lambda m: changed[m.group(0).lower()], text)
+
+
 def exit_type(condition: dict) -> str:
     """A stage exit condition's type, reading an absent `type` as `exit-only`.
 
@@ -233,6 +251,55 @@ def registry_audit_entries(payload: object) -> list[dict]:
     if not all(isinstance(entry, dict) for entry in entries):
         _fail("registry-resolved.json entries must be objects")
     return [normalize_audit_entry(entry) for entry in entries]
+
+
+REGISTRY_CACHE_DIR = os.path.join("~", ".uip", "case-resources")
+REGISTRY_PULL_TIMEOUT_S = 60
+
+
+def _pull_registry_cache(path: str) -> None:
+    """Pull the live registry into the grader's own cache; FAIL if `path` still is not written.
+
+    A harness whose `uip` runs outside this container leaves no cache here: Studio Web's
+    browser CLI keeps it in the page's storage. The audit is graded against the tenant either way.
+    A plain pull keeps any index already cached and fetches only the missing ones. It also
+    skips the fetch while `<type>-index.meta.json` is under 24h old, even with the index gone,
+    so an orphaned meta file is removed first.
+    """
+    what = "uip maestro case registry pull"
+    meta = os.path.splitext(path)[0] + ".meta.json"
+    if os.path.isfile(meta):
+        os.remove(meta)
+    try:
+        proc = _run(
+            ["uip", "maestro", "case", "registry", "pull", "--output", "json"],
+            timeout=REGISTRY_PULL_TIMEOUT_S,
+            what=what,
+        )
+    except OSError as exc:
+        _fail(f"registry cache {path} is absent and the grader could not run `{what}`: {exc}")
+    if not os.path.isfile(path):
+        _fail(
+            f"registry cache {path} is absent, and the grader's own `{what}` did not write it "
+            f"(exit {proc.returncode}), so the audit cannot be checked against the tenant: an "
+            f"environment failure, not the agent's\nstdout: {proc.stdout[-1500:]}\nstderr: {proc.stderr[-1500:]}"
+        )
+    print(f"registry cache {path} was absent; grading against the grader's own `{what}`", file=sys.stderr)
+
+
+def read_registry_cache(cache_file: str) -> list:
+    """Load `~/.uip/case-resources/<cache_file>`, pulling the live registry first when it is absent."""
+    path = os.path.expanduser(os.path.join(REGISTRY_CACHE_DIR, cache_file))
+    if not os.path.isfile(path):
+        _pull_registry_cache(path)
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:
+        _fail(f"registry cache {path} is unreadable: {exc}")
+    if not isinstance(data, list):
+        _fail(f"registry cache {path} is not a JSON array")
+    return data
 
 
 def iter_tasks(plan: dict):
@@ -614,6 +681,97 @@ def debug_fault_is_transient(output: str) -> str | None:
     return None
 
 
+# Why a debug run did not complete, for the FAIL message. `case debug` fetches
+# the incidents of a faulted run, but its JSON drops them (UiPath/cli#5519;
+# `flow debug` inlines them on `Data.incidents`). Until that ships, the only
+# incident text is the WARN line it logs on stderr:
+#   Debug session faulted with 1 incident(s). First: [CODE] message (element tJ2dcRjxB)
+# and the `Incidents: [...]` line its incident callback logs.
+_DEBUG_FIRST_INCIDENT = re.compile(
+    r"Debug session faulted with (\d+) incident\(s\)\.\s*First:\s*\[([^\]]*)\]\s*(.*?)\s*$",
+    re.MULTILINE,
+)
+_DEBUG_INCIDENTS_LINE = re.compile(r"Incidents:\s*(\[.*\])\s*$", re.MULTILINE)
+_DEBUG_DONE_STATUSES = frozenset({"completed", "successful"})
+# Element states worth naming under "Why:". NotStarted / Pending / InProgress
+# elements are bystanders of a fault, not its cause.
+_DEBUG_ELEMENT_FAULT = re.compile(r"fail|fault|error|cancel", re.IGNORECASE)
+
+
+def _incident_line(incident: Any) -> str | None:
+    if not isinstance(incident, dict):
+        return None
+    message = _get_ci(incident, "errorMessage", "message")
+    code = _get_ci(incident, "errorCode", "code")
+    element = _get_ci(incident, "elementId")
+    if not (message or code):
+        return None
+    line = f"[{code or 'no-code'}] {message or ''}".rstrip()
+    return f"{line} (element {element})" if element else line
+
+
+def debug_failure_lines(payload: Any, stderr: str = "") -> list[str]:
+    """Explain a debug run that did not complete, one finding per line.
+
+    ``payload`` is the debug ``Data`` object (or the whole envelope); ``stderr``
+    is the CLI's stderr, where the incident WARN line lands. Returns, in order:
+    the incidents on ``Data.incidents``; else the incidents named on stderr; then
+    every element execution that did not complete. Returns ``[]`` for a
+    Completed run.
+
+    Example: ``["incident [CONN_401] Unauthorized (element tJ2dcRjxB)",
+    "element tJ2dcRjxB (SendTask) Failed"]``. Returns ``[]`` too when the
+    output carries no status and no incident (the run never started).
+    """
+    data = payload if isinstance(payload, dict) else {}
+    if isinstance(_get_ci(data, "Data"), dict):
+        data = _get_ci(data, "Data")
+    status = _get_ci(data, "finalStatus", "FinalStatus", "status", "Status")
+    if isinstance(status, str) and status.lower() in _DEBUG_DONE_STATUSES:
+        return []
+
+    incidents = [
+        line for line in map(_incident_line, _get_ci(data, "incidents", "Incidents") or [])
+        if line
+    ]
+    if not incidents:
+        for match in _DEBUG_INCIDENTS_LINE.finditer(stderr or ""):
+            try:
+                listed = json.loads(match.group(1))
+            except json.JSONDecodeError:
+                continue
+            incidents.extend(line for line in map(_incident_line, listed) if line)
+    if not incidents:
+        for match in _DEBUG_FIRST_INCIDENT.finditer(stderr or ""):
+            count, code, rest = match.groups()
+            more = f" (first of {count})" if count != "1" else ""
+            incidents.append(f"[{code}] {rest}{more}")
+
+    lines = [f"incident {line}" for line in dict.fromkeys(incidents)]
+    for execution in _get_ci(data, "elementExecutions", "ElementExecutions") or []:
+        if not isinstance(execution, dict):
+            continue
+        state = _get_ci(execution, "status", "Status")
+        if not _DEBUG_ELEMENT_FAULT.search(str(state or "")):
+            continue
+        element = _get_ci(execution, "elementId", "ElementId")
+        kind = _get_ci(execution, "elementType", "ElementType")
+        lines.append(f"element {element} ({kind}) {state}")
+    if not lines and status:
+        # Only for a run that reported a status: an exit before the run started
+        # (auth, missing project) has no Data, and its raw output says enough.
+        lines.append(
+            f"no incident or failed element in the debug output (finalStatus={status})"
+        )
+    return lines
+
+
+def format_debug_failure(payload: Any, stderr: str = "") -> str:
+    """``debug_failure_lines`` as an indented block for a FAIL message."""
+    lines = debug_failure_lines(payload, stderr)
+    return "Why:\n  - " + "\n  - ".join(lines) if lines else ""
+
+
 def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.CompletedProcess[str]:
     """``subprocess.run`` that reports a timeout as a FAIL, not a traceback.
 
@@ -807,7 +965,11 @@ def run_debug(
         )
         status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
     if status != "Completed" and status != "Successful":
-        _fail(f"Case did not complete (finalStatus={status})\nPayload: {json.dumps(payload, default=str)[:2000]}")
+        _fail(
+            f"Case did not complete (finalStatus={status})\n"
+            f"{format_debug_failure(payload)}\n"
+            f"Payload: {json.dumps(payload, default=str)[:2000]}"
+        )
     return payload
 
 
@@ -861,8 +1023,10 @@ def start_debug(
         fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}")
         if fault is None or attempt == 2:
             retried = " (after one retry)" if attempt == 2 else ""
+            # The reason first: the raw dump below is mostly --log-level debug noise.
+            why = format_debug_failure(_parse_json(r.stdout) or {}, r.stderr)
             _fail(
-                f"case debug exit {r.returncode}{retried}\n"
+                f"case debug exit {r.returncode}{retried}\n{why}\n"
                 f"stdout: {r.stdout}\nstderr: {r.stderr}"
             )
         print(

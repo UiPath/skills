@@ -7,12 +7,14 @@ description: >
   to build a process that uses every UiPath Test Manager connector node for
   the generic record group — adding one connector node per operation. Drives
   connector discovery, authoring, and validation. Graded on the produced
-  .bpmn containing one Intsvc.ActivityExecution sendTask per generic-record
-  operation (insert/get/update/delete/list) and validating successfully;
-  registry-refresh telemetry is advisory. Ported from Flow
-  `connector_features/testmanager_generic_records.yaml`; BPMN has no
-  per-operation node type, so operations are distinguished by the registry's
-  operation field (method fallback) instead of node type.
+  .bpmn giving each generic-record operation (insert/get/update/delete/list)
+  its own node, an ActivityExecution or a connector-mode HTTP call, and
+  validating successfully; registry-refresh telemetry is advisory. Ported
+  from Flow `connector_features/testmanager_generic_records.yaml`; BPMN has
+  no per-operation node type, so an operation matches any Test Manager
+  catalog object that supports it, by objectName + method, or method + path
+  for a connector-mode HTTP request through the Test Manager connection,
+  instead of node type.
 tags:
   - uipath-maestro-bpmn
   - e2e
@@ -67,12 +69,14 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    # Consulting the node manifest, by either arm's path: v1 pulls then searches it; the
-    # builder SDK reads types from its package and reaches for `registry search` / `get`
-    # only for a name it does not know. `pull` alone named the v1 mechanism.
-    description: "Advisory: agent consulted the node manifest before authoring (registry pull, search or get)"
+    # Consulting the node manifest, by either arm's path: v1 pulls then searches it with
+    # `uip maestro bpmn registry`; the builder SDK reads types from its package and
+    # resolves a connector through `uip maestro registry prepare` / `describe` (or
+    # `search` / `get` for a name it does not know). Matching only the v1 spelling
+    # scored every v2 run 0 here (R14 and R15, builder-sdk#1882).
+    description: "Advisory: agent consulted the node manifest before authoring (registry pull, search, get, prepare or describe)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|search|get)\b'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+(bpmn\s+)?registry\s+(pull|search|get|prepare|describe)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 0.0
@@ -94,7 +98,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Produced .bpmn references every generic record connector node type (5 nodes)"
+    description: "Produced .bpmn has its own node per generic record operation (5 nodes: ActivityExecution or connector-mode HTTP)"
     command: "python3 $REFERENCE_DIR/_shared/check_testmanager_generic_records.py --all-ops"
     timeout: 30
     expected_exit_code: 0

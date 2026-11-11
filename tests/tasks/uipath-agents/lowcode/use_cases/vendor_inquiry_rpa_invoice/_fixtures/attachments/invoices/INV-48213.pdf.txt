@@ -1,0 +1,13 @@
+GLOBEX LOGISTICS
+Freight & Warehousing
+
+INVOICE INV-48213
+Invoice date: 2026-08-28
+Customer: Acme Manufacturing
+
+Description                                  Amount
+Ocean freight, container MSCU 4471203        3,450.00
+Port handling and customs clearance            620.00
+Total (USD)                                  4,070.00
+
+Payment terms: Net 45. Due date: 2026-10-12

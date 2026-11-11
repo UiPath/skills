@@ -1,0 +1,43 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DownloadVendorInvoice",
+    "kind": "process",
+    "type": "process",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4ff0cdce-b1bc-4ad4-9837-aeeb15ea7fd9",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "DownloadVendorInvoice"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Process",
+      "name": "DownloadVendorInvoice",
+      "package": {
+        "key": "78151e0f-ae96-4c37-a128-1fa3553d40e9"
+      },
+      "jobPriority": "Medium",
+      "jobRecording": "Disabled",
+      "targetFrameworkValue": "Portable",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "39627b26-4bbc-4b6d-b161-da5e4cc75f51",
+    "files": []
+  }
+}

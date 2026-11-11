@@ -26,6 +26,11 @@ DOCUMENTED_QUERY = (
     + IS_ASCENDING_FALSE
     + SORT_FIELD_BODY
 )
+V2_QUERY = (
+    '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA[{{{}}}]]></uipath:input>'
+)
+V2_EXPRESSION = '"queryExpression":"contractTitle = \'Contract Intake Validation\'"'
+V2_DOCUMENTED_QUERY = V2_QUERY.format(f'"isAscending":false,{V2_EXPRESSION}') + SORT_FIELD_BODY
 FILTER_TREE_WITH_SORT = (
     '<uipath:input name="queryExpression" type="json" target="query"><![CDATA['
     '{"groupOperator": 0, "index": 0, "filters": [], "groups": [], '
@@ -73,8 +78,19 @@ def _sort_body(sort_options: str) -> str:
         IS_ASCENDING_FALSE + SORT_FIELD_BODY,
         IS_ASCENDING_FALSE + '<uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName": "Priority"}]]></uipath:input>',
         DOCUMENTED_QUERY,
+        V2_DOCUMENTED_QUERY,
+        V2_QUERY.format('"isAscending":"false"') + SORT_FIELD_BODY,
     ],
-    ids=["eval-node", "string-true", "second-entry", "body-sortfieldname", "body-capitalized", "documented"],
+    ids=[
+        "eval-node",
+        "string-true",
+        "second-entry",
+        "body-sortfieldname",
+        "body-capitalized",
+        "documented",
+        "v2-documented",
+        "v2-string-false",
+    ],
 )
 def test_priority_desc_sort_accepted(inputs: str) -> None:
     assert checker.has_priority_desc_sort(_query(inputs))
@@ -101,6 +117,14 @@ def test_priority_desc_sort_accepted(inputs: str) -> None:
         IS_ASCENDING_TRUE
         + SORT_FIELD_BODY
         + '<uipath:input name="metadata" type="json"><![CDATA[{"note": "priority desc"}]]></uipath:input>',
+        V2_QUERY.format(f'"isAscending":true,{V2_EXPRESSION}') + SORT_FIELD_BODY,
+        V2_QUERY.format(V2_EXPRESSION) + SORT_FIELD_BODY,
+        V2_QUERY.format('"isAscending":false'),
+        V2_QUERY.format('"isAscending":false,"sortFieldName":"priority"'),
+        V2_QUERY.format('"isAscending":null') + SORT_FIELD_BODY,
+        V2_QUERY.format('"isAscending":true')
+        + SORT_FIELD_BODY
+        + '<uipath:input name="metadata" type="json"><![CDATA[{"note": "priority desc"}]]></uipath:input>',
     ],
     ids=[
         "descending-false",
@@ -119,6 +143,12 @@ def test_priority_desc_sort_accepted(inputs: str) -> None:
         "direction-not-query",
         "query-sortfieldname-alias",
         "ascending-beats-text",
+        "v2-ascending",
+        "v2-no-direction",
+        "v2-isascending-only",
+        "v2-query-sortfieldname",
+        "v2-null-direction",
+        "v2-ascending-beats-text",
     ],
 )
 def test_priority_desc_sort_rejected(inputs: str) -> None:

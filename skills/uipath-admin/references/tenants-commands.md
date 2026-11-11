@@ -29,7 +29,7 @@ If not logged in, run `uip login`.
 - `create`, `update`, `delete`, `enable`, and `disable` are asynchronous and return an `operationId`. Poll each with `uip admin organizations operation get <OPERATION_ID>`; there is no `tenants operation get`. `list`, `get`, and all `services` commands are synchronous; service mutations return 200 OK with no body.
 - `delete` is soft-delete only and has no hard-delete flag. Restore through the support / restore flow.
 - `get`, `update`, `delete`, `enable`, and `disable` accept a positional tenant id and default to the login tenant. Always pass an explicit `<TENANT_ID>` to `delete`, `disable`, and `services remove`.
-- `create` requires `--region`. Run `organizations regions list`, then run `tenants services list-available --region <REGION>` because the catalog is region-aware.
+- `create` requires `--region`. Run `organizations regions list` (Automation Suite has none: [use the organization's `Region`](organizations-commands.md#regions-list)), then run `tenants services list-available --region <REGION>` because the catalog is region-aware.
 - Before `services add`, `enable`, `disable`, or `remove`, run `tenants get <ID> --output json`, resolve `<TENANT_ID>`, and echo the tenant name, especially for `remove`. These commands silently default `--tenant-id` to the login tenant.
 - Disable is not honored for Integration Service (`connections`), Data Fabric (`dataservice`), or Insights (`insights`). Remove is rejected or not honored for Orchestrator (`orchestrator`), Maestro (`maestro`), Integration Service (`connections`), Data Fabric (`dataservice`), Insights (`insights`), or Test Manager (`testmanager`).
 - Before submitting an unsupported disable/remove, warn: *"Service `<X>` cannot be {disabled|removed} via the CLI — it's pinned by the platform. The call will return Success but the service will stay {Enabled|provisioned}. To deprovision, revoke the org entitlement via the UiPath Portal. Continue anyway, or skip `<X>`?"* Skip it or continue only with the user's choice. If continuing, warn again in the post-state summary.
@@ -71,7 +71,7 @@ uip admin tenants get --output json
 
 ### `tenants create`
 
-Run `organizations regions list`, run `tenants services list-available --region <REGION>`, and create asynchronously with:
+Run `organizations regions list` (Automation Suite has none: [use the organization's `Region`](organizations-commands.md#regions-list)), run `tenants services list-available --region <REGION>`, and create asynchronously with:
 
 ```bash
 uip admin tenants create --file ./tenant.json --output json
@@ -91,7 +91,7 @@ uip admin tenants create --file ./tenant.json --output json
 | Field | Required | Description |
 |-------|----------|-------------|
 | `name` | Yes | Display name; alphanumeric, 2–32 chars, starts with a letter |
-| `region` | Yes | Value from `organizations regions list` |
+| `region` | Yes | Value from `organizations regions list`; on Automation Suite, [use the organization's `Region`](organizations-commands.md#regions-list) |
 | `environment` | No | `Production`, `NonProduction`, or `Development` |
 | `services` | **Yes** | Plain string array of catalog `name` values, not the `{name: true}` map used by `services add`; resolve names with the default-provision filter below and never hardcode them. `isAlwaysProvision === true` services are automatic. |
 | `customProperties` | No | Free-form key/value bag |
@@ -278,7 +278,7 @@ All file entries must be `false`. Orchestrator (`orchestrator`), Maestro (`maest
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `tenant not found` | Invalid tenant UUID | Resolve via `tenants list --filter <NAME>` |
-| `region not allowed` | `--region` unavailable | Run `organizations regions list` and use a returned value |
+| `region not allowed` | `--region` unavailable | Run `organizations regions list` and use a returned value; on Automation Suite, [use the organization's `Region`](organizations-commands.md#regions-list) |
 | `service not available in region` | Service absent from regional catalog | Run `tenants services list-available --region <REGION>` first |
 | `service already provisioned` | `add` targets an existing service | Use `enable`, or run `services list` |
 | Operation stuck `Updating` | Async operation pending or failed | Poll `organizations operation get <OPERATION_ID>` for status / error |

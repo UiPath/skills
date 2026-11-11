@@ -1,0 +1,150 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.voice",
+   "inputs": {
+    "entryPointId": "start"
+   }
+  },
+  {
+   "id": "triageAgent",
+   "type": "uipath.agent.voice",
+   "inputs": {
+    "source": "e71413eb-17be-4527-8cd3-43e7aa85b3c3",
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "routeCall",
+   "type": "core.logic.switch",
+   "inputs": {
+    "cases": [
+     {
+      "id": "case_1",
+      "label": "Case \"A\"",
+      "expression": "$vars.triageAgent.output.uipath__voice_session.reason === \"A\""
+     },
+     {
+      "id": "case_2",
+      "label": "Case \"B\"",
+      "expression": "$vars.triageAgent.output.uipath__voice_session.reason === \"B\""
+     }
+    ],
+    "hasDefault": true
+   }
+  },
+  {
+   "id": "specialistA",
+   "type": "uipath.agent.voice",
+   "inputs": {
+    "source": "b7fb8ef2-9971-46ae-ad0c-f27e1731178a",
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "specialistB",
+   "type": "uipath.agent.voice",
+   "inputs": {
+    "source": "674c9c43-b124-4e57-93f9-2b6fc5e09e33",
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "fallbackAgent",
+   "type": "uipath.agent.voice",
+   "inputs": {
+    "source": "9e33a53d-79cb-469d-9211-d03503931315",
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "endCall",
+   "type": "uipath.conversational.voice.end-call",
+   "inputs": {
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "triageAgent",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "triageAgent",
+   "sourcePort": "success",
+   "targetNodeId": "routeCall",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeCall",
+   "sourcePort": "case-case_1",
+   "targetNodeId": "specialistA",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeCall",
+   "sourcePort": "case-case_2",
+   "targetNodeId": "specialistB",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeCall",
+   "sourcePort": "default",
+   "targetNodeId": "fallbackAgent",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "specialistA",
+   "sourcePort": "success",
+   "targetNodeId": "endCall",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "specialistB",
+   "sourcePort": "success",
+   "targetNodeId": "endCall",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "fallbackAgent",
+   "sourcePort": "success",
+   "targetNodeId": "endCall",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "endCall",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ]
+}

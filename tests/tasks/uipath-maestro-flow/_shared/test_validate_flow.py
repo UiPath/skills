@@ -13,6 +13,7 @@ budget. Faked at ``subprocess.run`` like :mod:`test_flow_check`, so nothing here
 needs a tenant, a real ``uip``, or wall-clock sleeping.
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -132,6 +133,82 @@ def test_invalid_flow_fails_without_retry(monkeypatch, capsys):
     assert '"Failure"' in capsys.readouterr().out
 
 
+_WARNED = '{"Result":"Success","Data":{"Status":"Valid","Warnings":"[nodes[n1].inputs.fileRef] Property \'x\' does not exist"}}'
+
+
+def test_warnings_pass_without_the_flag(monkeypatch):
+    _stub(monkeypatch, [_cp(0, _WARNED)])
+    assert validate_flow.main() == 0
+
+
+def test_no_warnings_fails_a_flow_that_validates_with_warnings(monkeypatch, capsys):
+    calls = _stub(monkeypatch, [_cp(0, _WARNED)])
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert calls["n"] == 1
+    assert "a.flow validated with warnings" in capsys.readouterr().err
+
+
+def _layout_warning(flow: str, project: str) -> str:
+    """The canonical-layout warning as `flow validate` words it (coder_eval run adhoc-2026-11-06_10-38-56)."""
+    stem = flow.rsplit("/", 1)[-1].removesuffix(".flow")
+    return json.dumps({"Result": "Success", "Data": {"Status": "Valid", "Warnings": (
+        f'1 warning(s):\n  - [(workflow)] .flow file at /work/{flow} does not match canonical layout. '
+        f'Expected the .flow basename ("{stem}") to match its parent directory name ("{project}"). '
+        "The canonical layout is <solution>/<projectName>/<projectName>.flow."
+    )}})
+
+
+def test_no_warnings_passes_studio_webs_new_flow_with_only_the_layout_warning(monkeypatch):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    _stub(monkeypatch, [_cp(0, _layout_warning(flow, "InvoiceReader"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 0
+
+
+def test_no_warnings_still_fails_the_layout_warning_on_another_file_name(monkeypatch, capsys):
+    flow = "InvoiceReader/InvoiceReader/Draft.flow"
+    _stub(monkeypatch, [_cp(0, _layout_warning(flow, "InvoiceReader"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert "validated with warnings" in capsys.readouterr().err
+
+
+def _warned(flow: str, warnings: str) -> str:
+    return json.dumps({"Result": "Success", "Data": {"Status": "Valid", "Warnings": warnings}})
+
+
+def test_no_warnings_still_fails_studio_webs_new_flow_with_another_warning_beside_the_layout_one(monkeypatch, capsys):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    layout = json.loads(_layout_warning(flow, "InvoiceReader"))["Data"]["Warnings"].split("\n", 1)[1]
+    warnings = f"2 warning(s):\n{layout}\n  - [nodes[map].inputs.script] [EXPRESSION_DIAGNOSTIC] Property 'Text' does not exist"
+    _stub(monkeypatch, [_cp(0, _warned(flow, warnings))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert "EXPRESSION_DIAGNOSTIC" in capsys.readouterr().err
+
+
+def test_no_warnings_still_fails_studio_webs_new_flow_when_the_count_names_more_warnings_than_it_lists(monkeypatch):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    layout = json.loads(_layout_warning(flow, "InvoiceReader"))["Data"]["Warnings"].split("\n", 1)[1]
+    _stub(monkeypatch, [_cp(0, _warned(flow, f"2 warning(s):\n{layout}"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 1
+
+
+def test_no_warnings_says_when_it_drops_the_layout_warning(monkeypatch, capsys):
+    flow = "InvoiceReader/InvoiceReader/new.flow"
+    _stub(monkeypatch, [_cp(0, _layout_warning(flow, "InvoiceReader"))], flows=(flow,))
+    assert validate_flow.main(["--no-warnings"]) == 0
+    assert "ignoring the canonical-layout warning" in capsys.readouterr().err
+
+
+def test_no_warnings_passes_a_clean_flow(monkeypatch):
+    _stub(monkeypatch, [_cp(0, '{"Result":"Success","Data":{"Status":"Valid"}}')])
+    assert validate_flow.main(["--no-warnings"]) == 0
+
+
+def test_no_warnings_fails_output_that_is_not_json(monkeypatch, capsys):
+    _stub(monkeypatch, [_cp(0, "Valid")])
+    assert validate_flow.main(["--no-warnings"]) == 1
+    assert "no JSON envelope" in capsys.readouterr().err
+
+
 def test_every_flow_file_is_validated(monkeypatch):
     calls = _stub(
         monkeypatch,
@@ -190,6 +267,33 @@ def test_explicit_paths_skip_discovery(monkeypatch, tmp_path):
     monkeypatch.setattr(validate_flow, "find_flow_files", no_discovery)
     assert validate_flow.main([str(flow)]) == 0
     assert calls["flows"] == [str(flow)]
+
+
+def _studio_web_project(root, name, *, project_type="Flow"):
+    proj = root / f"{name}Sol" / name
+    proj.mkdir(parents=True)
+    (proj / "project.uiproj").write_text(json.dumps({"ProjectType": project_type}))
+    (proj / "new.flow").write_text(json.dumps({"nodes": []}))
+    return proj
+
+
+def test_explicit_path_validates_studio_webs_main_file(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    _studio_web_project(tmp_path, "DocsFlow")
+    calls = _stub(monkeypatch, [_cp(0, "valid")])
+
+    assert validate_flow.main(["DocsFlowSol/DocsFlow/DocsFlow.flow"]) == 0
+    assert calls["flows"] == [os.path.join("DocsFlowSol", "DocsFlow", "new.flow")]
+
+
+def test_explicit_path_for_another_project_still_fails(monkeypatch, tmp_path, capsys):
+    monkeypatch.chdir(tmp_path)
+    _studio_web_project(tmp_path, "DocsFlow")
+    calls = _stub(monkeypatch, [])
+
+    assert validate_flow.main(["DocsFlowSol/DocsFlow/Other.flow"]) == 1
+    assert calls["n"] == 0
+    assert "flow file not found: DocsFlowSol/DocsFlow/Other.flow" in capsys.readouterr().err
 
 
 def test_explicit_missing_path_fails_without_running(monkeypatch, capsys):

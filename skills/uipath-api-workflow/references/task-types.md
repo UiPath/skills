@@ -404,6 +404,8 @@ Wraps activities in error handling.
 
 **Required fields:** `try` (array of activities), `catch.as` (error variable name), `catch.do` (array of error-handling activities), `export.as`, `metadata`
 
+**Optional:** `catch.retry` — retry policy that re-runs the whole `try` list before `catch.do` runs (Studio Web **Retry** section). See [Retry](#retry-catchretry) below.
+
 **Export pattern:**
 ```
 { ...$context, outputs: { ...$context?.outputs, "Try_Catch_N": $output } }
@@ -441,16 +443,24 @@ Wraps activities in error handling.
 The bound value is a **ProblemDetails-shaped object**, NOT a JavaScript Error. Useful keys:
 - `$error.title` — short message (e.g., `"Worker operation failed: <user error message>"`)
 - `$error.detail` — full detail including stack trace
-- `$error.status` — HTTP-style status code (`500` for runtime errors, `400` for validation)
+- `$error.status` — the **real HTTP status** (`404`, `429`, `503`, …) when an HTTP, Connector, or Connector-event call failed; otherwise an HTTP-style code (`500` for runtime errors, `400` for validation)
+- `$error.data.cause` — full failed HTTP response, for HTTP / Connector failures
 - `$error.originatingTaskName` — which task threw
 - `$error.type` — RFC 7807 error type URL
 
 There is **no** `.message` / `.name` / `.stack` property — those would return `undefined`. Always use `.title` or `.detail` for the human-readable text.
 
+### Retry (`catch.retry`)
+
+`catch.retry` re-runs the whole `try` list; `catch.do` then runs once with the last error. Policy fields, the exact Studio Web shape, status filters, and precedence over `httpRetryConfig`: [http-retry-config.md](http-retry-config.md#task-level-retry-catchretry).
+
+A `try` task keyed `<id>#Retry` with no `catch.do` is an HTTP Request whose own Retry section is on, not a Try/Catch activity. Keep it as is and never add `catch.do`; see [http-retry-config.md](http-retry-config.md#http-request-with-retry-idretry-wrapper).
+
 **Common mistakes:**
 - Missing `catch.as`
 - Empty `catch.do` without any error handling
 - Forgetting the export on the TryCatch wrapper itself
+- Putting `retry` on the inner activity, or at the TryCatch top level, instead of in `catch`
 
 **Nesting:**
 - **TryCatch around a loop:** wraps the entire loop. If any iteration throws, the loop stops and execution jumps to `catch.do`. Use this when one bad item should abort the whole batch.
@@ -534,6 +544,7 @@ The simple single-expression form is fine; the designer corruption only affects 
 <!--skill-flavor:response-object-roundtrip:start-->
 - **Object payload with `${...}` fields** (`"response": { "tier": "${$context.variables.tier}" }`) — runs locally, corrupted by StudioWeb on save. Use single-expression `${{ ... }}` instead.
 <!--skill-flavor:response-object-roundtrip:end-->
+- **Doubled braces** (`"response": "${{ { status: 'ok' } }}"`) — `validate` passes, the run fails with `Unexpected token '{'`. `${{ ... }}` already supplies the object's braces: write `"${{ status: 'ok' }}"`.
 - Missing `then: "end"` — workflow does not terminate
 - Nesting `markJobAsFailed` inside `response` — it MUST be a sibling
 - Placing Response in the middle of a sequence — it should be at the end of an execution path

@@ -452,17 +452,21 @@ def check_bindings(label: str, block: dict, root_bindings: list) -> None:
     folder — and copies neither onto itself. A dangling or malformed binding
     renders as a broken node in Studio Web while `validate` stays green.
 
-    Empty and omitted are the SAME state here: the FE reads per-activity
-    property bindings at `data.context[name="metadata"].bindings` (via
-    getContextMap in PackagingUtil) and never reads `data.bindings`, and
-    `bindings?: UiPathBinding[]` is optional in the CLI's own type model. Only a
-    non-empty copy is the defect this guards."""
+    `data.bindings` may list the picker rows `splice` writes (an `entity` a
+    resource picker chose), as the Case Designer lists them. A Connection row
+    there — the connection or its folder copied onto the task — is the defect
+    this guards."""
     by_id = {b.get("id"): b for b in root_bindings if isinstance(b, dict)}
     ctx = {c.get("name"): c.get("value") for c in (block.get("context") or [])}
 
-    if block.get("bindings"):
-        fail(f"{label}: data.bindings must be empty or omitted — root bindings are never copied "
-             f"onto the task (got {block.get('bindings')!r})")
+    referenced = {m.group(1) for name in ("connection", "folderKey")
+                  if (m := re.fullmatch(r"=bindings\.(\w+)", str(ctx.get(name))))}
+    copied = [b for b in (block.get("bindings") or [])
+              if isinstance(b, dict)
+              and (b.get("resource") == "Connection" or b.get("id") in referenced)]
+    if copied:
+        fail(f"{label}: data.bindings must not copy the connection or folder binding onto the "
+             f"task — those stay root bindings (got {copied!r})")
 
     conn_id = ctx.get("resourceKey")
     for ctx_name, attr in (("connection", "ConnectionId"), ("folderKey", "folderKey")):

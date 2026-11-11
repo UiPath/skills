@@ -17,13 +17,14 @@ import jira_is
 
 tag = secrets.token_hex(4)
 correlation = f"ESC-JIRA-{tag}"
+conn = jira_is.connection_id()
 seed = {
     "tag": tag,
     "project_key": jira_is.PROJECT_KEY,
-    "issuetype_id": jira_is.ISSUETYPE_ID,
+    "issuetype_id": jira_is.issuetype_id(conn),
     # Jira's design-time schema marks fields.reporter.id as required for this
     # project/issue type; pin it so agents never have to guess or ask.
-    "reporter_id": jira_is.myself(jira_is.connection_id()),
+    "reporter_id": jira_is.myself(conn),
     "correlationId": correlation,
     "inputs": {
         "senderEmail": "jane.doe@acmecorp.com",
@@ -45,4 +46,4 @@ seed = {
     "expected_script": {"engineeringNeeded": True},
 }
 Path("seed.json").write_text(json.dumps(seed, indent=2) + "\n", encoding="utf-8")
-print(f"OK: wrote seed (correlationId={correlation}, project={jira_is.PROJECT_KEY}, issuetype={jira_is.ISSUETYPE_ID})")
+print(f"OK: wrote seed (correlationId={correlation}, project={jira_is.PROJECT_KEY}, issuetype={jira_is.issuetype_id(conn)})")

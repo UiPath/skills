@@ -59,9 +59,9 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 
 **Investigation:**
 1. Verify robot exists: `uip admin robot-accounts list --search "<ROBOT_NAME>" --output json`
-2. Check group membership: `uip admin groups list --output json`, then `groups members list "<GROUP_ID>" --output json`
+2. Check group membership from the account side: take the id from step 1, then `uip admin robot-accounts get <ROBOT_ID> --output json` and read its group-ids field. Prefer this over `groups members list`, which returns only one 50-entry page — absence from that page is not evidence of non-membership.
 
-**Fix:** Cause 1 → create robot account. Cause 2 → robot accounts are **identities only** — they don't carry API credentials (Client ID + Secret). For API access, create an **external app** instead. For unattended execution, Orchestrator provisions credentials via machine connection. Cause 3 → add to appropriate group.
+**Fix:** Cause 1 → create robot account. Cause 2 → robot accounts are **identities only** — they don't carry API credentials (Client ID + Secret). For API access, create an **external app** instead. For unattended execution, Orchestrator provisions credentials via machine connection. Cause 3 → report the missing membership and let the user decide; add to the group only once they ask (SKILL.md Critical Rule 34).
 
 ---
 
@@ -101,7 +101,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 2. Test delivery: `uip admin smtp test --recipient "<TEST_EMAIL>" --output json`
 3. Branch on test result error message
 
-**Fix:** Update config with correct values: `uip admin smtp update --host "<HOST>" --port <PORT> --secure <true|false> --user "<USER>" --password "<PASS>" --output json`. Re-test after each change.
+**Fix:** Update config with correct values: `uip admin smtp update --host "<HOST>" --port <PORT> --enable-ssl <true|false> --username "<USER>" --password "<PASS>" --output json`. Re-test after each change.
 
 ---
 
@@ -280,7 +280,7 @@ Validate the binding (Rule 17):
 1. Poll: `uip admin organizations operation get "<OPERATION_ID>" --output json`
 2. Interpret status: `Pending`/`Queued`/`Creating`/`Updating`/`Enabling`/`Disabling`/`Deleting`/`InProgress` → still in progress (auto-poll 3× at 5s, Rule 18). `Failed` → inspect `Data.error` / `Data.message`. Terminal success statuses are verb-specific: `Created`/`Updated`/`Enabled`/`Disabled`/`Deleted`/`Done` → verify with `tenants get "<TENANT_ID>" --output json`
 
-**Fix:** Cause 1 → try different region: `organizations regions list --output json`. Cause 2 → check catalog: `tenants services list-available --region "<REGION>" --output json`. Cause 3 → retry. Cause 4 → contact support. Do NOT auto-retry failed mutations.
+**Fix:** Cause 1 → try different region: `organizations regions list --output json` (cloud only: Automation Suite has one region). Cause 2 → check catalog: `tenants services list-available --region "<REGION>" --output json`. Cause 3 → retry. Cause 4 → contact support. Do NOT auto-retry failed mutations.
 
 ---
 

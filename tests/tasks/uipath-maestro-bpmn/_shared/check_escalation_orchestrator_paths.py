@@ -21,7 +21,8 @@ Assertion map (Flow -> BPMN):
       -> assert_error_handlers(): boundary errorEventDefinition on each Slack sendTask reaches a connector-free,
          acyclic, terminating path
   F check_escalation_orchestrator_paths.py:145  assert_connector_send_identity(SLACK_KEY, "user", ...)
-      -> assert_send_identity(): every Slack sendTask carries target=query name=send_as value=user
+      -> assert_send_identity(): every Slack sendTask carries exactly one send_as=user, a V1 input or a V2
+         queryParameters key
   F check_escalation_orchestrator_paths.py:55   assert_named_equals(payload, name, expected, ...)
       -> public_value_present(): normalized value present among root Globals leaves + non-classifier element Outputs
          leaves, input echoes (input_echo_ids) excluded from both except for caseKey, which the
@@ -50,7 +51,7 @@ Assertion map (Flow -> BPMN):
   F check_escalation_orchestrator_paths.py:180-189 runtime escalation_ends/triage_ends disjointness
       -> same runtime disjointness check over per-case fired_ends
   I               locate/parse .bpmn, resolve project directory
-      -> resolve_project() / resolve_contract()
+      -> resolve_bpmn_file() / resolve_contract()
   I               ephemeral solution init + import + sha256 pin, run bpmn debug per case, read variables-all
       -> LIVE-tier canonical pattern (bpmn_live.import_exact() + run_debug())
   T               finalStatus/elementExecutions completion check (flow_check.run_debug does this inline for `flow
@@ -86,12 +87,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))  # tests/tasks/uipath-maestro-bpmn/
 
 from _shared import graph  # noqa: E402
-from _shared.bpmn_check import NS, attr, elements, resolve_project  # noqa: E402
+from _shared.bpmn_check import NS, attr, elements, query_values, resolve_bpmn_file  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     COMPLETED_STATUSES,
     CheckFailure,
-    UIPATH_NS,
     VARIABLES_ALL_TIMEOUT,
     connector_context,
     element_output_records,
@@ -192,16 +192,12 @@ def assert_send_identity(process: ET.Element, slack_ids: tuple[str, ...]) -> Non
     for element in process.iter():
         if element.attrib.get("id") not in slack_ids:
             continue
-        sends_as = [
-            item.attrib.get("value")
-            for item in element.iter(q(UIPATH_NS, "input"))
-            if item.attrib.get("name") == "send_as"
-        ]
+        sends_as = query_values(element, "send_as")
         if sends_as != [SLACK_SEND_AS]:
             bad.append((element.attrib.get("id"), sends_as))
     if bad:
         raise CheckFailure(
-            f"Slack sendTask(s) do not carry exactly one send_as input with "
+            f"Slack sendTask(s) do not carry exactly one send_as query parameter with "
             f"value {SLACK_SEND_AS!r}: {bad}; the prompt requires sending as the "
             "requested identity"
         )
@@ -507,8 +503,9 @@ def main() -> None:
     if not isinstance(cases, list) or not cases:
         raise CheckFailure("seed.json must contain at least one case")
 
-    project_dir = resolve_project(BPMN_NAME)
-    bpmn_path = project_dir / BPMN_NAME
+    # The located file, not <project>/<Name>.bpmn: in Studio Web it is Process.bpmn.
+    bpmn_path = resolve_bpmn_file(BPMN_NAME)
+    project_dir = bpmn_path.parent
     contract = resolve_contract(bpmn_path)
     root = ET.parse(bpmn_path).getroot()
     process = root.find(q(BPMN_NS, "process"))

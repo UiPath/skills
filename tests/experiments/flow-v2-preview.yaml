@@ -1,10 +1,10 @@
 experiment_id: flow-v2-preview
 description: >-
   Flow v2: the three Maestro builder-SDK skills (uipath-maestro-{flow,case,bpmn})
-  as the ONLY skill catalog, under the docker driver. Shadows the shipped v1 Case
-  and BPMN skills by pointing the catalog at preview/ alone, so a run measures the
-  SDK authoring path rather than a mix of both generations. Flow is promoted to
-  skills/uipath-maestro-flow; preview/skills/uipath-maestro-flow is a symlink to it.
+  as the ONLY skill catalog, under the docker driver. All three are promoted to
+  skills/uipath-maestro-{flow,case,bpmn}, and preview/skills/uipath-maestro-{flow,case,bpmn}
+  are symlinks to them, so a run measures the SDK authoring path with no v1 skill
+  in the catalog.
 
 # Pointing the catalog at preview/ is necessary but not sufficient: a task can
 # undo it from its own side. Until 2026-09-23 every uipath-maestro-bpmn task
@@ -14,8 +14,8 @@ description: >-
 # named v1-only reference files that do not exist under preview/.
 #
 # Those are fixed, but the leak is NARROWED, NOT CLOSED: extra_mounts below still
-# binds $SKILLS_REPO_PATH read-only, so skills/uipath-maestro-bpmn/SKILL.md and
-# its references/ stay readable from inside the preview container. The cwd copy
+# binds $SKILLS_REPO_PATH read-only, so the v1 BPMN skill (now
+# classic/skills/uipath-maestro-bpmn) stays readable from inside the preview container. The cwd copy
 # — where agents demonstrably tripped over it — is gone; a `grep -r` or a prompt
 # naming references/structural-bpmn.md still lands there. So prompts must not
 # name a v1 reference file. See the "Arm neutrality" section of
@@ -57,8 +57,6 @@ defaults:
         - $SKILLS_REPO_PATH:$SKILLS_REPO_PATH:ro
 
   agent:
-    permission_mode: acceptEdits
-    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     plugins:
       # PREVIEW ONLY. Also the source of the automatic repo-path bind mount.
       # Must stay the plugin ROOT (holds .claude-plugin/ + skills/), never preview/skills.

@@ -1,0 +1,145 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "eachInvoice",
+   "type": "core.logic.loop",
+   "inputs": {
+    "collection": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.invoices",
+     "fieldType": "array"
+    },
+    "parallel": false,
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "enrich",
+   "type": "uipath.agent.autonomous",
+   "parentId": "eachInvoice",
+   "inputs": {
+    "source": "0c5399fe-bebc-4028-8942-f1ba2425da58",
+    "agentInputVariables": [
+     {
+      "id": "eachInvoice__currentItem",
+      "type": "string",
+      "binding": "=js:$vars.eachInvoice.currentItem"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "note",
+      "type": "string"
+     }
+    ],
+    "errorHandlingEnabled": true
+   }
+  },
+  {
+   "id": "recordFail",
+   "type": "core.action.script",
+   "parentId": "eachInvoice",
+   "inputs": {
+    "script": "return 1;"
+   }
+  },
+  {
+   "id": "summarize",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "f389e0aa-1594-4b66-9723-d72a8d1d511e",
+    "agentInputVariables": [
+     {
+      "id": "notes",
+      "type": "string",
+      "binding": "=js:$vars.notes"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "summary",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "eachInvoice",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "eachInvoice",
+   "sourcePort": "start",
+   "targetNodeId": "enrich",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "enrich",
+   "sourcePort": "error",
+   "targetNodeId": "recordFail",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "recordFail",
+   "sourcePort": "success",
+   "targetNodeId": "eachInvoice",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "enrich",
+   "sourcePort": "success",
+   "targetNodeId": "eachInvoice",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "eachInvoice",
+   "sourcePort": "success",
+   "targetNodeId": "summarize",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "summarize",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ],
+ "variables": {
+  "variableUpdates": {
+   "enrich": [
+    {
+     "variableId": "notes",
+     "expression": {
+      "type": "jsExpression",
+      "expression": "[...$vars.notes, { id: $vars.eachInvoice.currentItem.id, note: $vars.enrich.output.note }]",
+      "fieldType": "array"
+     }
+    }
+   ],
+   "recordFail": [
+    {
+     "variableId": "notes",
+     "expression": {
+      "type": "jsExpression",
+      "expression": "[...$vars.notes, { id: $vars.eachInvoice.currentItem.id, failed: true }]",
+      "fieldType": "array"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -56,7 +56,18 @@ jobs:
           MAX_SMOKE_TASKS: ${{ vars.SMOKE_MAX_TASKS || '40' }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.sha }}
+          DISABLE_SMOKE: ${{ vars.DISABLE_SMOKE }}
         run: |
+          # Kill switch: repo variable DISABLE_SMOKE=true skips the smoke tests
+          # (e.g. while coder-eval runs fail on expired registry tokens rather
+          # than on skill regressions). Emitting skip=true keeps this required
+          # check (and the gated one) green. Unset or any other value: run.
+          if [ "$DISABLE_SMOKE" = "true" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Smoke tests disabled (vars.DISABLE_SMOKE == 'true') — skipping"
+            exit 0
+          fi
+
           BASE_REF="${{ github.base_ref }}"
           BASE_REF="${BASE_REF:-main}"
           CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD")
@@ -381,16 +392,9 @@ jobs:
       - name: Verify Docker is available
         run: docker info > /dev/null
 
-      # Host coder-eval CLI = pinned wheel from the Azure Artifacts `coder_eval`
-      # feed; its UiPath deps resolve from the ml-packages feed (both as extra
-      # indexes). No source checkout. The [codex] extra is required even though the
-      # agent itself runs inside the container: the docker driver imports the selected
-      # agent class on the HOST before dispatching work.
-      - name: Install coder-eval
-        run: uv pip install --system --prerelease=allow "coder-eval[codex,litellm]==${{ steps.ceref.outputs.version }}"
-
       # Pull the pinned agent image from GHCR (never built from source); the
-      # skills smoke image extends it below. Needs read:packages only —
+      # skills smoke image extends it below, and its frozen deps constrain the
+      # host install. Needs read:packages only —
       # GH_PACKAGES_TOKEN, never the repo-write PAT: this workflow is
       # `pull_request`-triggered, so anyone who can push a branch to this
       # public repo can read the secret it is handed.
@@ -398,6 +402,21 @@ jobs:
         run: |
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }}
+
+      # Host coder-eval CLI = pinned wheel from the Azure Artifacts `coder_eval`
+      # feed; its UiPath deps resolve from the ml-packages feed (both as extra
+      # indexes). No source checkout. Constrained to the image's frozen deps so
+      # host and container resolve the same versions. The [codex] extra is
+      # required even though the agent itself runs inside the container: the
+      # docker driver imports the selected agent class on the HOST before
+      # dispatching work.
+      - name: Install coder-eval
+        env:
+          VERSION: ${{ steps.ceref.outputs.version }}
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint pip "ghcr.io/uipath/coder-eval-agent:$VERSION" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
+          uv pip install --system --prerelease=allow -c "$RUNNER_TEMP/ce-constraints.txt" "coder-eval[codex,litellm]==$VERSION"
 
       # Build custom smoke image extending coder-eval-agent with @uipath/cli,
       # every whitelisted tool plugin from GitHub Packages @dev, and the latest
@@ -492,18 +511,10 @@ jobs:
           # Route the agent through AWS Bedrock. The Anthropic workspace
           # hit its API usage limit (resets 2026-05-01), so DirectRoute
           # is blocked. Bedrock has a separate quota.
-          #
-          # ANTHROPIC_API_KEY stays set for the LLM reviewer (lightweight
-          # token spend — coder_eval's reviewer only supports Anthropic
-          # direct or UiPath LLM Gateway, not Bedrock). If the shared
-          # workspace quota is still drained when the reviewer fires,
-          # orchestrator._run_final_llm_review swallows the error and
-          # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ vars.AWS_REGION }}
           BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
           # Codex auth: the key + the endpoint the codex binary talks to. Same secrets
           # the nightly and run-coder-eval.yml use.
@@ -579,7 +590,6 @@ jobs:
         if: always()
         env:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           python - <<'PY'
           import os
@@ -588,7 +598,6 @@ jobs:
           names = (
               "UIPATH_CLI_AUTH_TOKEN",
               "AWS_BEARER_TOKEN_BEDROCK",
-              "ANTHROPIC_API_KEY",
           )
           values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
           if not values:
@@ -773,9 +782,21 @@ jobs:
       - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
-      # deps). `coder-eval plan` validates schemas on the runner -- no image.
+      # deps), constrained to the dependency set frozen into the pinned agent
+      # image so the schema check resolves the same deps the tasks run under.
+      # `coder-eval plan` itself validates on the runner -- the image is only
+      # the constraints source. GH_PACKAGES_TOKEN (read:packages) only; see
+      # the e2e job's pull step for why never the repo-write PAT.
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval[litellm]==${{ steps.ceref.outputs.version }}"
+        env:
+          VERSION: ${{ steps.ceref.outputs.version }}
+        run: |
+          set -euo pipefail
+          img="ghcr.io/uipath/coder-eval-agent:$VERSION"
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$img"
+          docker run --rm --entrypoint pip "$img" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
+          uv pip install --system -c "$RUNNER_TEMP/ce-constraints.txt" "coder-eval[litellm]==$VERSION"
 
       - name: Validate every task YAML against the pinned coder_eval schema
         # `coder-eval plan` exits non-zero if any file fails to load under the

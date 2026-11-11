@@ -1,0 +1,13 @@
+GLOBEX LOGISTICS
+Freight & Warehousing
+
+INVOICE INV-48390
+Invoice date: 2026-09-09
+Customer: Acme Manufacturing
+
+Description                                  Amount
+Warehouse storage, September                 1,800.00
+Total (USD)                                  1,800.00
+
+Payment terms: Net 30. Due date: 2026-10-09
+Note: please quote the purchase order number on remittance.

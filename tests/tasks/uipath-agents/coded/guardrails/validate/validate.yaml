@@ -9,7 +9,7 @@ description: >
   the catalog/list/SDK docs were consulted, the misuse is gone, the
   user_prompt_attacks guardrail now decorates the LLM factory, and graph.py
   still parses. Neither the diagnosis nor the fix is stated in the prompt.
-tags: [uipath-agents, e2e, coded, mode:diagnose, lifecycle:edit, guardrail]
+tags: [uipath-agents, e2e, coded, mode:diagnose, lifecycle:edit, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
@@ -76,5 +76,4 @@ success_criteria:
 
 run_limits:
   task_timeout: 1800
-  max_turns: 40
   turn_timeout: 1200

@@ -102,9 +102,30 @@ jobs:
       - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
-      # deps). Activation runs under the tempdir driver -- no agent image.
+      # deps), constrained to the dependency set frozen into the pinned agent
+      # image so activation resolves the same deps as smoke/ad-hoc/nightly.
+      # Activation itself runs under the tempdir driver -- the image is only
+      # the constraints source. Fork PRs get no secrets, so without the token
+      # this falls back to an unconstrained install rather than failing the
+      # required `Skill activation gate` context.
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+        env:
+          VERSION: ${{ steps.ceref.outputs.version }}
+          GHCR_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          constraints=()
+          if [ -n "${GHCR_TOKEN:-}" ]; then
+            img="ghcr.io/uipath/coder-eval-agent:$VERSION"
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker pull "$img"
+            docker run --rm --entrypoint pip "$img" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
+            docker logout ghcr.io
+            constraints=(-c "$RUNNER_TEMP/ce-constraints.txt")
+          else
+            echo "::warning::No GHCR token (fork PR?) — installing coder-eval without image constraints"
+          fi
+          uv pip install --system "${constraints[@]}" "coder-eval==$VERSION"
 
       - name: Run activation gate
         env:

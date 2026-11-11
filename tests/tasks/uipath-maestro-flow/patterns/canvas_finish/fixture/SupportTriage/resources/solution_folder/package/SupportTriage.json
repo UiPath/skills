@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SupportTriage",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "97745a96-e4a9-4d16-8bdf-bcbadf13e865",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SupportTriage"
+    },
+    "locks": [],
+    "key": "953fde91-8bc1-4c22-8f92-ca9bc2a1584a",
+    "files": []
+  }
+}

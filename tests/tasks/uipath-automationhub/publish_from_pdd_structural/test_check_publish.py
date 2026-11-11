@@ -254,6 +254,33 @@ def test_create_after_the_success_fails(sandbox: Path, tmp_path: Path) -> None:
     assert "never re-run" in grade(sandbox, "create-once").stdout
 
 
+CREATE_ON_FLOW = r'''#!/usr/bin/env python3
+import json, sys
+if " automations create" in " " + " ".join(sys.argv[1:]):
+    print(json.dumps({"Result": "Success", "Data": {"Id": %d, "IdeaFlowId": %%d}})); sys.exit(0)
+print(json.dumps({"Result": "Success", "Data": {}}))
+''' % PROCESS_ID
+
+
+def create_by_flow_name(sandbox: Path) -> None:
+    (sandbox / "ah-answers.json").write_text(json.dumps(good_answers()))
+    uip(sandbox, "ah", "automations", "create", "--from-schema", "--idea-flow", "Business Process",
+        "--file", "./ah-answers.json", "--output", "json")
+
+
+def test_create_by_flow_name_on_the_business_process_flow_passes(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(CREATE_ON_FLOW % 8)
+    create_by_flow_name(sandbox)
+    result = grade(sandbox, "create-once")
+    assert result.returncode == 0, result.stdout
+
+
+def test_create_by_flow_name_on_another_flow_fails(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(CREATE_ON_FLOW % 9)
+    create_by_flow_name(sandbox)
+    assert "targeted idea flow 9" in grade(sandbox, "create-once").stdout
+
+
 def test_template_placeholders_fail(sandbox: Path) -> None:
     answers = good_answers()
     section(answers, "OVR-OVERVIEW_DESCRIPTION")["OVR-OVERVIEW_DESCRIPTION"] = {"value": "Sample input for the description field"}
@@ -652,6 +679,55 @@ def test_id_added_during_the_run_that_the_pdd_does_not_name_is_a_decoy(sandbox: 
     assert "78" in grade_on_stub(sandbox, "applications").stdout
 
 
+# The first create gets the gateway's 503 although the service committed it; a later
+# create (if any) succeeds. `automations list --search` shows how many processes carry
+# the run's token on the tenant.
+GATEWAY_503_CREATE = r'''#!/usr/bin/env python3
+import json, os, sys
+args = " ".join(sys.argv[1:])
+if " automations create" in " " + args and not os.path.exists("first-create-done"):
+    open("first-create-done", "w").close()
+    print(json.dumps({"Result": "Failure", "Message": "API request failed: 503 Service Unavailable - "
+                      "upstream connect error or disconnect/reset before headers"})); sys.exit(1)
+if " automations create" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": {"Id": %(pid)d, "IdeaFlowId": 8}})); sys.exit(0)
+if " automations list" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": [{"Id": %(pid)d + i, "Name": "Retail Account Onboarding %(token)s"}
+                                                    for i in range(%%d)]})); sys.exit(0)
+if " documents create" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": {"Id": 901, "FileId": 77}})); sys.exit(0)
+print(json.dumps({"Result": "Success", "Data": {}}))
+''' % {"pid": PROCESS_ID, "token": TOKEN}
+
+
+@pytest.mark.parametrize("check", ["create-once", "documents", "verify"])
+def test_create_the_gateway_failed_but_that_landed_counts(sandbox: Path, tmp_path: Path, check: str) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(GATEWAY_503_CREATE % 1)
+    publish(sandbox, good_answers())
+    result = grade_on_stub(sandbox, check)
+    assert result.returncode == 0, result.stdout
+
+
+def test_create_the_gateway_failed_that_never_landed_fails(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(GATEWAY_503_CREATE % 0)
+    publish(sandbox, good_answers())
+    assert "did not succeed" in grade_on_stub(sandbox, "create-once").stdout
+
+
+def test_recreating_after_a_gateway_failure_that_landed_fails(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(GATEWAY_503_CREATE % 2)
+    publish(sandbox, good_answers(), creates=2)
+    assert "second process" in grade_on_stub(sandbox, "create-once").stdout
+
+
+def test_recorder_keeps_a_failure_message(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(GATEWAY_503_CREATE % 1)
+    publish(sandbox, good_answers())
+    calls = [json.loads(line) for line in (sandbox / ".uip-recorder" / ".calls.jsonl").read_text().splitlines()]
+    create = next(c for c in calls if "automations create" in " ".join(c["args"]))
+    assert "503 Service Unavailable" in create["message"]
+
+
 def test_alias_matches_whole_tokens_only(sandbox: Path) -> None:
     answers = good_answers()
     apps = section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]
@@ -667,3 +743,122 @@ def test_a_name_matching_required_and_optional_counts_as_required(sandbox: Path)
     manifest = retail_manifest(optional_systems={"Signicat sandbox": ["signicat"]})
     result = grade_with(sandbox, "applications", manifest)
     assert result.returncode == 0 and "(0 optional too)" in result.stdout, result.stdout
+
+
+# --- cleanup_ah.py --created ----------------------------------------------------
+
+CLEANUP = HERE.parent / "_setup" / "cleanup_ah.py"
+# Answers cleanup's own calls and logs each `phases set` so a test can see what was archived.
+CLEANUP_UIP = r'''#!/usr/bin/env python3
+import json, sys
+from pathlib import Path
+args = sys.argv[1:]
+if args[:3] == ["ah", "idea-flows", "list"]:
+    archived = {"PhaseVariable": "QUALIFICATION", "StatusVariable": "QUALIFICATION_ARCHIVED", "StatusValue": "Archived"}
+    flow = {"Name": "Business Process", "Phases": {"QUALIFICATION": {"A": archived}}}
+    print(json.dumps({"Result": "Success", "Data": [flow]})); sys.exit(0)
+if args[:3] == ["ah", "phases", "set"]:
+    with (Path(__file__).parent / "archived.txt").open("a") as log:
+        log.write(args[3] + "\n")
+print(json.dumps({"Result": "Success", "Data": {}}))
+'''
+
+
+def run_cleanup(sandbox: Path, *args: str) -> tuple[subprocess.CompletedProcess, list[str]]:
+    stub = sandbox.parent / "cleanup-bin"
+    stub.mkdir(exist_ok=True)
+    (stub / "uip").write_text(CLEANUP_UIP)
+    (stub / "uip").chmod(0o755)
+    env = {**os.environ, "PATH": f"{stub}{os.pathsep}{os.environ['PATH']}"}
+    result = subprocess.run([sys.executable, str(CLEANUP), *args], cwd=sandbox, env=env,
+                            capture_output=True, text=True, check=False)
+    archived = stub / "archived.txt"
+    return result, archived.read_text().split() if archived.is_file() else []
+
+
+def clean_created(sandbox: Path) -> list[str]:
+    result, archived = run_cleanup(sandbox, "--created")
+    assert result.returncode == 0
+    return archived
+
+
+def test_cleanup_archives_only_the_processes_this_run_created(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    assert clean_created(sandbox) == [str(PROCESS_ID)]
+
+
+def test_cleanup_skips_a_create_that_failed(sandbox: Path) -> None:
+    uip(sandbox, "ah", "applications", "update", "--file", "x.json")  # the stub fails this verb
+    log = sandbox / ".uip-recorder" / ".calls.jsonl"
+    rejected = {"ts": 0, "args": ["ah", "automations", "create", "--from-schema"], "exit_code": 1, "result": "Failure"}
+    log.write_text(log.read_text() + json.dumps(rejected) + "\n")
+    assert clean_created(sandbox) == []
+
+
+def test_cleanup_archives_a_recorded_create_whose_name_dropped_the_token(sandbox: Path) -> None:
+    seed = json.loads((sandbox / "seed.json").read_text())
+    seed.update(archive_phase="QUALIFICATION", archive_status="QUALIFICATION_ARCHIVED")
+    (sandbox / "seed.json").write_text(json.dumps(seed))
+    publish(sandbox, good_answers())  # the stub's token search finds nothing
+    result, archived = run_cleanup(sandbox)
+    assert result.returncode == 0 and archived == [str(PROCESS_ID)]
+
+
+def test_cleanup_exits_zero_when_it_cannot_run(sandbox: Path) -> None:
+    (sandbox / "seed.json").write_text("{")  # unreadable seed
+    result, archived = run_cleanup(sandbox)
+    assert result.returncode == 0 and "cleanup aborted" in result.stderr and archived == []
+
+
+@pytest.mark.parametrize("value", ["12", 12])
+def test_non_list_applications_value_fails_cleanly(sandbox: Path, value: object) -> None:
+    answers = good_answers()
+    section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"] = {"value": value}
+    publish(sandbox, answers)
+    result = grade(sandbox, "applications")
+    assert result.returncode == 1 and "must be a list" in result.stdout and "Traceback" not in result.stderr
+
+
+def test_non_map_user_inputs_fails_cleanly(sandbox: Path) -> None:
+    publish(sandbox, {"user_inputs": []})
+    result = grade(sandbox, "payload")
+    assert result.returncode == 1 and "assessment map" in result.stdout and "Traceback" not in result.stderr
+
+
+# --- harness plumbing -------------------------------------------------------------
+
+SETUP = HERE.parent / "_setup"
+
+
+def test_uip_json_turns_a_hang_or_a_missing_cli_into_an_envelope(tmp_path: Path, monkeypatch) -> None:
+    sys.path.insert(0, str(SETUP))
+    import ah_cli
+    monkeypatch.chdir(tmp_path)
+    slow = tmp_path / "slow-bin"
+    slow.mkdir()
+    (slow / "uip").write_text("#!/bin/sh\nsleep 5\n")
+    (slow / "uip").chmod(0o755)
+    monkeypatch.setenv("PATH", f"{slow}{os.pathsep}{os.environ['PATH']}")
+    assert ah_cli.uip_json(["ah", "auth-info", "get"], timeout=1)["Result"] == "Timeout"
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    assert ah_cli.uip_json(["ah", "auth-info", "get"])["Result"] == "ExecError"
+
+
+def test_seed_digest_is_the_bytes_on_disk(tmp_path: Path) -> None:
+    (tmp_path / "pdd-template.md").write_bytes(b"# PDD {{RUN_TOKEN}}\nline two\n")
+    subprocess.run([sys.executable, str(SETUP / "seed_publish.py")], cwd=tmp_path, check=True, capture_output=True)
+    seed = json.loads((tmp_path / "seed.json").read_text())
+    assert seed["fixtures"]["pdd.md"] == digest(tmp_path / "pdd.md")
+
+
+def tenant_switch_block(path: Path) -> list[str]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith("# --- tenant switch"))
+    end = next(i for i in range(start + 1, len(lines)) if lines[i].startswith("# -----"))
+    return lines[start + 1:end]
+
+
+def test_tenant_switch_copies_stay_identical() -> None:
+    """The recorder can't import `_setup` (the smoke tasks mount it without the recorder), so it keeps a copy."""
+    recorder = LIVE_TEMPLATE / ".uip-recorder" / "uip"
+    assert tenant_switch_block(recorder) == tenant_switch_block(SETUP / "ah_cli.py")

@@ -1,0 +1,176 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.voice",
+   "inputs": {
+    "entryPointId": "start"
+   }
+  },
+  {
+   "id": "greeter",
+   "type": "uipath.agent.voice",
+   "inputs": {
+    "source": "7e232d73-ace9-4b37-8787-b98b943bbf6f",
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "classify",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "0f6b211b-78da-4815-bf71-05e39e4699c9",
+    "agentInputVariables": [
+     {
+      "id": "greeter__output__uipath__agent_response_messages",
+      "type": "string",
+      "binding": "=js:$vars.greeter.output.uipath__agent_response_messages"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "topic",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "routeCall",
+   "type": "core.logic.switch",
+   "inputs": {
+    "cases": [
+     {
+      "id": "case_1",
+      "label": "Case \"cards\"",
+      "expression": "$vars.classify.output.topic === \"cards\""
+     },
+     {
+      "id": "case_2",
+      "label": "Case \"loans\"",
+      "expression": "$vars.classify.output.topic === \"loans\""
+     }
+    ],
+    "hasDefault": true
+   }
+  },
+  {
+   "id": "cardsAgent",
+   "type": "uipath.agent.voice",
+   "inputs": {
+    "source": "800d31c5-53e2-4bd3-8946-40edeea98427",
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "loansAgent",
+   "type": "uipath.agent.voice",
+   "inputs": {
+    "source": "0b66a499-7773-43ef-bd0b-f8495517e763",
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "generalAgent",
+   "type": "uipath.agent.voice",
+   "inputs": {
+    "source": "08e7cb90-06c5-4602-bbfc-2d04adf380e2",
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "hangUp",
+   "type": "uipath.conversational.voice.end-call",
+   "inputs": {
+    "callContext": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.callContext",
+     "fieldType": "object"
+    }
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "greeter",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "greeter",
+   "sourcePort": "success",
+   "targetNodeId": "classify",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "classify",
+   "sourcePort": "success",
+   "targetNodeId": "routeCall",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeCall",
+   "sourcePort": "case-case_1",
+   "targetNodeId": "cardsAgent",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeCall",
+   "sourcePort": "case-case_2",
+   "targetNodeId": "loansAgent",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeCall",
+   "sourcePort": "default",
+   "targetNodeId": "generalAgent",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "cardsAgent",
+   "sourcePort": "success",
+   "targetNodeId": "hangUp",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "loansAgent",
+   "sourcePort": "success",
+   "targetNodeId": "hangUp",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "generalAgent",
+   "sourcePort": "success",
+   "targetNodeId": "hangUp",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "hangUp",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ]
+}

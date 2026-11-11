@@ -8,7 +8,7 @@ Create, pack, publish, deploy, and manage UiPath solution packages.
 
 ## What is a Solution?
 
-A UiPath Solution is a container that groups multiple automation projects (processes, tests, agents, API workflows, apps) into a single deployable unit — not libraries ([develop-solution.md § Step 2](develop-solution.md#step-2-add-existing-projects)). Solutions enable:
+A UiPath Solution is a container that groups multiple automation projects (processes, tests, agents, API workflows, apps) into a single deployable unit — not libraries ([develop-solution.md § Step 2](develop-solution.md#step-2-add-existing-projects)). A deploy does not install a Tests project ([pack-and-deploy.md § Step 4](pack-and-deploy.md#step-4-deploy-to-orchestrator)). Solutions enable:
 
 - **Bundled deployment** -- Deploy multiple projects together as one package
 - **Version management** -- Track and version the entire solution as a single entity
@@ -145,9 +145,11 @@ uip solution
         └── delete <name> <version>       Delete a specific package version
 ```
 
+<!--skill-flavor:feed-flags-pointer:start-->
 `publish`, `deploy run`, `deploy list`, `packages list` and `packages delete` all take
 `--feed <name-or-key>` or `--personal-workspace` to target a feed other than the
 tenant's. See [Pack and Deploy — Publishing to a non-tenant feed](pack-and-deploy.md#publishing-to-a-non-tenant-feed).
+<!--skill-flavor:feed-flags-pointer:end-->
 
 ---
 

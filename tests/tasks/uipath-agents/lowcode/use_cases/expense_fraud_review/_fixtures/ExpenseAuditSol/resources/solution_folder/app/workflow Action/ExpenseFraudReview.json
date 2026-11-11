@@ -1,0 +1,45 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ExpenseFraudReview",
+    "kind": "app",
+    "type": "workflow Action",
+    "apiVersion": "apps.uipath.com/v1",
+    "projectKey": "3cefb52e-0c62-457c-a8bb-c847ccc5f1ab",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "ExpenseFraudReview",
+        "kind": "appVersion"
+      },
+      {
+        "name": "ExpenseFraudReview",
+        "kind": "process"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ExpenseFraudReview",
+      "description": null,
+      "type": "workflow Action",
+      "version": null,
+      "appSystemName": null,
+      "appVersionRef": {
+        "key": "fb3f88ae-c764-43bc-b27c-78907e5cb891"
+      },
+      "codeBehindProcess": {
+        "key": "c2546dc4-7de9-4ab3-92f2-88fa031460c2"
+      },
+      "actionSchema": null,
+      "manualActivationActions": null
+    },
+    "locks": [],
+    "key": "7a6e0b0b-e48d-417e-901a-6fabebe8b6b4"
+  }
+}

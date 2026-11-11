@@ -21,12 +21,15 @@ advances:
 
 ```ts
 .loop('eachRepo', input('repos'), (body) => body
-  .step('fetch', http({ managed: false, url: 'https://example.test',
+  .step('fetch', http({ managed: true, url: 'https://example.test',
     returns: { name: 'string' } }))
-  .branch('found', js`$vars.fetch.output.statusCode !== 404`,
+  .branch('found', js`$vars.fetch.output.body.name !== ''`,
     (yes) => yes.step('notify', script({
       code: 'return $vars.fetch.output.body.name;' }))))
 ```
+
+A non-2xx fails `fetch` and faults the loop. To skip that item instead, end an
+`.onError()` handler on `fetch` with `.continue()` ([Loop options](#loop-options)).
 
 The loop runs sequentially (`parallel: false`). Inside the body, read
 `$vars.<loop>.currentItem` and `$vars.<loop>.currentIteration` — or
@@ -40,7 +43,7 @@ but the local engine (`flow-debug`) currently reads 0 for the first item, and
 the cloud runtime is not yet verified
 ([flow-builder-sdk#874](https://github.com/UiPath/flow-builder-sdk/issues/874)).
 If a flow's result depends on the number, confirm it with a live
-`uip maestro flow debug` run.
+`uip maestro flow debug` run ([ask first](operate.md#debug--a-real-end-to-end-run)).
 
 The item is named after the LOOP, not after the collection and not by a
 convention: **there is no `$vars.item`, `$vars.currentItem` or `$vars.<collection>`.**
@@ -58,8 +61,9 @@ Every `.loop()` emits `core.logic.loop` 2.4: the body reads
 `$vars.<loop>.currentItem` and `$vars.<loop>.currentIteration` (not the legacy
 1.0.0 `currentIndex`, which `check` refuses). Options: `parallel: true`,
 `completionCondition` (checked after each iteration, stops early), and
-`body.break()` exits the whole loop from inside an arm. The option details and
-examples are below.
+`body.break()` exits the whole loop from inside an arm; `body.continue()` goes
+on to the next item, from an arm or an `.onError()` handler. The option details
+and examples are below.
 
 ## Loop options
 
@@ -67,7 +71,9 @@ Every `.loop()` emits the loop's 2.4 definition (inner `start`/`continue`/`break
 handles), the version the registry serves and the designer authors. The legacy
 1.0.0 shape (body from `output`, back-edge into `loopBack`, `currentIndex`) is
 emitted only for an explicit `{ version: '1.0.0' }`. On 1.0.0, `body.continue()`
-works; `completionCondition`, `breakEnabled` and `body.break()` fail `check` with
+works; `breakEnabled` and `body.break()` fail `check` with
+`LOOP_VERSION_UNSUPPORTED`. `completionCondition` passes `check` on 1.0.0 with
+`@uipath/maestro-builder-sdk` 6.86.25 or later; an older SDK fails `check` with
 `LOOP_VERSION_UNSUPPORTED`. `parallel: true` compiles on 1.0.0 only to
 round-trip a canvas 1.0.0 loop, and `check` warns `LOOP_PARALLEL_LEGACY`: that
 version is not confirmed to run iterations in parallel. For a new parallel loop,
@@ -77,12 +83,48 @@ drop `version` (2.4).
   Concurrent iterations' `{ updates }` writes overwrite each other, so a `.var()`
   they all update keeps only some of the writes, in no fixed order. Read the
   results after the loop from `$vars.<loop>.output` instead: one entry per item,
-  in collection order, each `{ <bodyStep>: { output } }`.
+  in collection order, each `{ <bodyStep>: { output } }`. Do not use it when a
+  body step reads `currentItem`: iterations do not isolate it (30 items gave 26
+  distinct values, run `Completed`, no warning). Run such a loop sequentially.
+  Entries omit HTTP steps, and a step that did not run in a pass carries the
+  previous pass's value, so do not read either from `$vars.<loop>.output`.
 - `completionCondition` — an expression checked after each iteration; the loop
-  stops early when it is true.
+  stops early when it is true. Needs `@uipath/maestro-builder-sdk` 6.87.2 or
+  later; an older SDK compiles it, but the loop ignores it and runs every item,
+  `Completed`, no warning,
+<!--skill-flavor:completion-condition-sdk-upgrade:start-->
+  so upgrade the copy `uip` uses:
+  `npm install -g @uipath/maestro-builder-sdk@latest`, or
+  `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a
+  workspace copy.
+<!--skill-flavor:completion-condition-sdk-upgrade:end-->
 - `body.break()` — exit the whole loop from inside an arm. Terminal on its
   path, like `.terminate()` but scoped to the loop; using it shows the loop's
   break handle automatically (`breakEnabled`).
+- `body.continue()` — go on to the next iteration from inside an arm or an
+  `.onError()` handler, through the loop's continue handle. Terminal on its
+  path. A handler inside the body otherwise ends the whole run on an End of
+  its own, so "log the failure and skip this item" needs it. Do not write
+  `.stepToRef('<the loop>')` for this: that enters the loop from its outer
+  input and restarts it, and `check` refuses it (`REF_TO_OWN_LOOP`). Works on
+  a 1.0.0 loop too (via `loopBack`).
+  Needs `@uipath/maestro-builder-sdk`
+  6.20.0 or later; an older SDK fails with `continue is not a function`,
+<!--skill-flavor:continue-sdk-upgrade:start-->
+  so
+  upgrade the copy `uip` uses:
+  `npm install -g @uipath/maestro-builder-sdk@latest`, or
+  `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a
+  workspace copy.
+<!--skill-flavor:continue-sdk-upgrade:end-->
+
+```ts
+.loop('each', input('items'), (body) => body
+  .step('call', http({ url: 'https://api.example.test/items', method: 'POST', managed: true }))
+  .onError((h) => h
+    .step('logFailure', script({ code: 'return "logged";' }))
+    .continue()))
+```
 
 ```ts
 .var('found', types.string, '')
@@ -102,8 +144,9 @@ Run a body, then repeat **while a condition is true** — checked AFTER each
 pass, so the body always runs at least once (`core.logic.dowhile`). The
 container publishes no data output: write results to a `.var()` from inside
 the body with `{ updates }`. `limit` caps iterations (1–10,000; blank means
-the platform default of 10,000), and `body.break()` works exactly as in
-`.loop()`.
+the platform default of 10,000), and `body.break()` and `body.continue()`
+work exactly as in `.loop()`. A body step's failure can route to `.onError()`
+after the `.doWhile(...)`, as with `.loop()` ([error-handling.md](error-handling.md)).
 
 Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
 
@@ -111,7 +154,7 @@ Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
 .var('page', types.number, 1)
 .doWhile('paginate', js`$vars.fetch.output.body.hasNextPage === true`, (body) => body
   .step('fetch', http({ url: tmpl`https://api.example.test/items?page=${v('page')}`,
-    method: 'GET', managed: false, returns: { hasNextPage: 'boolean' } }),
+    method: 'GET', managed: true, returns: { hasNextPage: 'boolean' } }),
     { updates: { page: js`$vars.page + 1` } }),
   { limit: 50 })
 ```

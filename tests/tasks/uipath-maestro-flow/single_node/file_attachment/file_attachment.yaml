@@ -10,7 +10,7 @@ description: >
   a randomly-named local file the agent never saw and asserts that name appears
   in the output — proving the attachment actually flowed through, not a
   hardcoded literal.
-tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node]
+tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, studio-web-unsupported, studio-web-unsupported:attachment-upload]
 agent:
   type: claude-code
   permission_mode: acceptEdits
@@ -22,6 +22,7 @@ sandbox:
       mount_point: _setup
 run_limits:
   turn_timeout: 1200
+  task_timeout: 2100
 
 reference:
   directory: ../..

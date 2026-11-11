@@ -79,6 +79,9 @@ Filter by name with `--name` (contains match). Paginate with `--limit` / `--offs
 # Get queue details (cross-folder, no --folder-path needed)
 uip or queues get <queue-key> --output json
 
+# Require the queue to be in a folder (also true when it is only shared into it)
+uip or queues get <queue-key> --folder-path "Finance" --output json
+
 # Update queue properties (cross-folder). Flags you don't pass keep their stored values.
 uip or queues update <queue-key> --max-retries 5 --no-auto-retry --output json
 
@@ -176,7 +179,9 @@ uip or queue-items list --all-folders --status Failed --output json
 uip or queue-items get <item-unique-key> --folder-path "Finance" --output json
 ```
 
-> `queue-items list` is a filtered `GET /odata/QueueItems`, which Orchestrator rate-limits per tenant. Do not poll it in a tight loop. Keep `--limit` at 100 or below, and keep `SpecificContent` under 256,000 characters. See [api-limits.md](api-limits.md).
+> `queue-items list` is a filtered `GET /odata/QueueItems`, which Orchestrator rate-limits per tenant. Do not poll it in a tight loop. Keep `--limit` at 100 or below (the CLI refuses a larger one with `invalid_argument` before any call), and keep `SpecificContent` under 256,000 characters. See [api-limits.md](api-limits.md).
+
+`get`, `update`, `delete`, `delete-bulk`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-history` and `has-video` want the item's **`UniqueKey`** (a GUID), not the numeric `Id` that `--all-fields` also prints. A numeric Id, or any key that is not a GUID, fails with `invalid_argument` before any call and names the `UniqueKey` field. `get-last-retry` is the exception: it takes the item `Key` (see [Get History and Retry Info](#get-history-and-retry-info)).
 
 Filter with `--queue-name` (exact match), `--queue-definition-key` (GUID), or `--status` (New, InProgress, Failed, Successful, Abandoned, Retried, Deleted).
 
@@ -196,7 +201,7 @@ uip or queue-items delete-bulk <key1> <key2> --folder-path "Finance" --yes --out
 
 `update` changes `--priority`, `--due-date`, `--defer-date`, and `--specific-content`. Progress is a work-in-progress message a running robot reports, so the CLI does not let you set it.
 
-`delete` (one key) and `delete-bulk` (a list of keys) are a **soft-delete**: the item's status changes to `Deleted`; it is not permanently removed.
+`delete` (one key) and `delete-bulk` (a list of keys) are a **soft-delete**: the item's status changes to `Deleted`; it is not permanently removed. They do not check the item's status: an item that is `Successful` or `InProgress` is deleted like any other, so look at `Status` first when that matters.
 
 ### Get History and Retry Info
 
