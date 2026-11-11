@@ -27,7 +27,7 @@ export default flow('meteor-shower-pages')
       .step('fetchPage', http({
         method: 'GET',
         url: tmpl`https://sightings.example.com/meteors?page=${v('page')}`,
-        managed: false,
+        managed: true,
         returns: { hasNextPage: 'boolean' },
       }), { updates: { page: js`$vars.page + 1` } }),
     { limit: 50 },

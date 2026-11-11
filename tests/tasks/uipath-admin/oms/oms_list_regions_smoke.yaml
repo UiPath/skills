@@ -3,6 +3,11 @@ description: >
   Smoke test (outcome-graded): agent lists the regions the organization can
   provision services in. Graded on the region records read back from the platform
   (real region names from the platform's own enumeration), not the command string.
+  Automation Suite serves no region list (OMS gates `supportedregions` to cloud),
+  and the CLI answers `regions list` there with `ErrorCode: not_supported`. That
+  envelope passes only when the session's host is not a `uipath.com` cloud host
+  and the grader's own `regions list` call gets the same answer, so a cloud
+  regression or a hand-written file still fails.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, oms]
 
 run_limits:
@@ -16,11 +21,31 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "regions.json holds real region records returned by the platform"
+    description: "regions.json holds real region records returned by the platform (or, on Automation Suite only, the CLI's not_supported answer)"
     command: |
       python3 -c "
-      import json
+      import json, subprocess
+      from urllib.parse import urlparse
       d = json.load(open('regions.json', encoding='utf-8-sig'))
+      if isinstance(d, dict) and d.get('ErrorCode') == 'not_supported':
+          # Automation Suite has no region list, and the CLI says so with not_supported.
+          # That is the right answer there, but on cloud it means the region list broke.
+          assert d.get('Code') == 'OmsRegionsList', f'not_supported did not come from regions list: Code={d.get(\"Code\")!r}'
+          st = subprocess.run(['uip', 'login', 'status', '--output', 'json'], capture_output=True, text=True, timeout=20)
+          base = (json.loads(st.stdout).get('Data') or {}).get('BaseUrl') or ''
+          host = (urlparse(base).hostname or '').lower()
+          assert host, f'not_supported, and no login BaseUrl to tell Automation Suite from cloud: {st.stdout[:200]!r}'
+          assert not (host == 'uipath.com' or host.endswith('.uipath.com')), f'not_supported on cloud host {host}: the region list is a cloud feature, so this is a real failure'
+          # The saved file could have been written by hand, so ask the platform the same question.
+          live = subprocess.run(['uip', 'admin', 'organizations', 'regions', 'list', '--output', 'json'], capture_output=True, text=True, timeout=20)
+          try:
+              lv = json.loads(live.stdout)
+          except ValueError:
+              raise AssertionError(f'regions list printed no JSON: {live.stdout[:200]!r} {live.stderr[:200]!r}')
+          lv = lv if isinstance(lv, dict) else {'Data': lv}
+          assert lv.get('ErrorCode') == 'not_supported' and lv.get('Code') == 'OmsRegionsList', f'saved file says not_supported, but regions list answers ErrorCode={lv.get(\"ErrorCode\")!r} Code={lv.get(\"Code\")!r}'
+          print(f'OK: {host} is Automation Suite, which serves no region list; the CLI reported not_supported, and does again')
+          raise SystemExit(0)
       res = d.get('Result') if isinstance(d, dict) else None
       assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
       def dicts(o):
@@ -36,7 +61,7 @@ success_criteria:
       assert matched, f'no recognizable platform region names: {names[:8]}'
       print(f'OK: {len(names)} regions retrieved, e.g. {matched[:3]}')
       "
-    timeout: 15
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

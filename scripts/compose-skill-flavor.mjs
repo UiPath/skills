@@ -18,6 +18,12 @@
  * `classic/skills/<skill>` must be pinned by some flavor, so a retained tree is
  * deleted as soon as its last host moves off it.
  *
+ * A flavor may also prepare a preview skill before promotion:
+ * `preview/skill-flavors/<flavor>/` mirrors `preview/skills/<skill>/` with the
+ * same block rules. `validate` and `build` check it (`build` writes it to
+ * `build/preview/<flavor>/`), and `pack` never ships it. Promotion moves the
+ * skill and its overrides together into `skills/` and `skill-flavors/`.
+ *
  * The no-argument `validate`, `build`, and `pack` commands discover every
  * flavor by convention. Legacy explicit-flavor validate/build invocations are
  * retained for focused debugging. Generated files are marker-free and are
@@ -54,6 +60,7 @@ export const REPO_ROOT = path.resolve(
 export const FLAVORS_DIRNAME = "skill-flavors";
 export const DEFAULT_VARIANT = "default";
 export const CLASSIC_DIRNAME = "classic";
+export const PREVIEW_DIRNAME = "preview";
 export const CANONICAL_PIN_FILENAME = ".canonical";
 export const CANONICAL_PIN_VALUE = "classic";
 export const PACKAGE_NAME_MAX_LENGTH = 214;
@@ -277,8 +284,7 @@ export function stripMarkerBoundaries(text) {
     .join("");
 }
 
-function discoverCanonicalSkills(repoRoot, findings) {
-  const skillsRoot = path.join(repoRoot, "skills");
+function discoverCanonicalSkills(repoRoot, findings, skillsRoot = path.join(repoRoot, "skills")) {
   const rootStats = safeLstat(skillsRoot);
   if (!rootStats) return [];
   if (rootStats.isSymbolicLink()) {
@@ -292,6 +298,8 @@ function discoverCanonicalSkills(repoRoot, findings) {
     const skillRoot = path.join(skillsRoot, entry.name);
     const stats = lstatSync(skillRoot);
     if (stats.isSymbolicLink()) {
+      // A promoted preview skill stays behind as a link to skills/<skill>, which composes it.
+      if (skillsRoot === path.join(repoRoot, PREVIEW_DIRNAME, "skills")) continue;
       findings.push(`${skillRoot}: canonical skill trees cannot contain symlinks`);
       continue;
     }
@@ -477,14 +485,22 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
   }
   validateFlavorName(flavorRoot, findings);
 
-  const skills = discoverCanonicalSkills(repoRoot, findings);
-  if (skills.length === 0) findings.push(`${path.join(repoRoot, "skills")}: no canonical skills found`);
-  const pins = readCanonicalPins(repoRoot, flavorRoot, skills, findings);
+  const preview = path.dirname(flavorRoot) === path.join(repoRoot, PREVIEW_DIRNAME, FLAVORS_DIRNAME);
+  const skillsRoot = preview
+    ? path.join(repoRoot, PREVIEW_DIRNAME, "skills")
+    : path.join(repoRoot, "skills");
+  const shown = (logical) => (preview ? `${PREVIEW_DIRNAME}/${logical}` : logical);
+  const skills = discoverCanonicalSkills(repoRoot, findings, skillsRoot);
+  if (skills.length === 0) findings.push(`${skillsRoot}: no canonical skills found`);
+  const pins = preview ? new Map() : readCanonicalPins(repoRoot, flavorRoot, skills, findings);
+  const sourceRoots = preview
+    ? new Map(skills.map((skill) => [skill, path.join(skillsRoot, skill)]))
+    : pins;
   const { canonicalFiles, canonicalText, canonicalBlocks } = collectCanonicalFiles(
     repoRoot,
     skills,
     findings,
-    pins,
+    sourceRoots,
   );
 
   const replacements = new Map();
@@ -504,7 +520,10 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
     const relative = posixRelative(flavorRoot, entry.path);
     const parts = splitPosix(relative);
     // Read and validated by readCanonicalPins above.
-    if (parts.length === 2 && parts[1] === CANONICAL_PIN_FILENAME) continue;
+    if (parts.length === 2 && parts[1] === CANONICAL_PIN_FILENAME) {
+      if (preview) findings.push(`${entry.path}: a preview flavor cannot pin a skill`);
+      continue;
+    }
     if (parts.length < 2) {
       findings.push(`${entry.path}: override path must mirror <skill>/<file>.md`);
       continue;
@@ -522,7 +541,7 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
     }
     const logical = `skills/${relative}`;
     if (!canonicalFiles.has(logical)) {
-      findings.push(`${entry.path}: canonical target does not exist: ${logical}`);
+      findings.push(`${entry.path}: canonical target does not exist: ${shown(logical)}`);
       continue;
     }
 
@@ -535,7 +554,7 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
     for (const block of parsedOverride) {
       if (!available.has(block.name)) {
         findings.push(
-          `${entry.path}: flavor block ${quote(block.name)} has no matching canonical marker in ${logical}`,
+          `${entry.path}: flavor block ${quote(block.name)} has no matching canonical marker in ${shown(logical)}`,
         );
       }
     }
@@ -570,9 +589,7 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
   };
 }
 
-export function discoverFlavorRoots(repoRoot = REPO_ROOT) {
-  repoRoot = path.resolve(repoRoot);
-  const flavorsRoot = path.join(repoRoot, FLAVORS_DIRNAME);
+export function discoverFlavorRoots(repoRoot = REPO_ROOT, flavorsRoot = path.join(path.resolve(repoRoot), FLAVORS_DIRNAME)) {
   const rootStats = safeLstat(flavorsRoot);
   if (!rootStats) return [];
   if (rootStats.isSymbolicLink()) {
@@ -633,6 +650,35 @@ export function createAllVariants(repoRoot = REPO_ROOT) {
         `${path.join(repoRoot, CLASSIC_DIRNAME, "skills", skill)}: no flavor pins this retained tree; ` +
           `delete it, or pin it with ${FLAVORS_DIRNAME}/<flavor>/${skill}/${CANONICAL_PIN_FILENAME}`,
       );
+    }
+  }
+  if (findings.length) throw new FlavorCompositionError([...new Set(findings)]);
+  return variants;
+}
+
+/** Preview flavors: checked and built like a flavor, never packed. */
+export function createPreviewVariants(repoRoot = REPO_ROOT) {
+  repoRoot = path.resolve(repoRoot);
+  const findings = [];
+  const variants = [];
+  let roots = [];
+  try {
+    roots = discoverFlavorRoots(repoRoot, path.join(repoRoot, PREVIEW_DIRNAME, FLAVORS_DIRNAME));
+  } catch (error) {
+    if (error instanceof FlavorCompositionError) findings.push(...error.findings);
+    else throw error;
+  }
+  for (const flavorRoot of roots) {
+    const name = path.basename(flavorRoot);
+    if (!safeLstat(path.join(repoRoot, FLAVORS_DIRNAME, name))?.isDirectory()) {
+      findings.push(`${flavorRoot}: preview flavor has no matching ${FLAVORS_DIRNAME}/${name}/`);
+      continue;
+    }
+    try {
+      variants.push({ name, plan: createCompositionPlan(repoRoot, flavorRoot) });
+    } catch (error) {
+      if (error instanceof FlavorCompositionError) findings.push(...error.findings);
+      else throw error;
     }
   }
   if (findings.length) throw new FlavorCompositionError([...new Set(findings)]);
@@ -756,16 +802,26 @@ function replaceGeneratedDirectories(replacements) {
 export function buildAllSkillTrees(repoRoot = REPO_ROOT) {
   repoRoot = path.resolve(repoRoot);
   const variants = createAllVariants(repoRoot);
+  const previewVariants = createPreviewVariants(repoRoot);
   const buildRoot = prepareBuildRoot(repoRoot);
   const temporaryRoot = mkdtempSync(path.join(buildRoot, ".skill-flavor-build-"));
   const temporarySkills = path.join(temporaryRoot, "skills");
+  const temporaryPreview = path.join(temporaryRoot, PREVIEW_DIRNAME);
   try {
     materializeVariants(variants, temporarySkills);
-    const findings = markerFindings(temporarySkills, "built skill tree");
+    materializeVariants(previewVariants, temporaryPreview);
+    const findings = [
+      ...markerFindings(temporarySkills, "built skill tree"),
+      ...markerFindings(temporaryPreview, "built preview tree"),
+    ];
     if (findings.length) throw new FlavorCompositionError(findings);
     const finalSkills = path.join(buildRoot, "skills");
-    replaceGeneratedDirectories([[temporarySkills, finalSkills]]);
-    return { variants, outputRoot: finalSkills };
+    const finalPreview = path.join(buildRoot, PREVIEW_DIRNAME);
+    replaceGeneratedDirectories([
+      [temporarySkills, finalSkills],
+      [temporaryPreview, finalPreview],
+    ]);
+    return { variants, previewVariants, outputRoot: finalSkills, previewRoot: finalPreview };
   } finally {
     rmSync(temporaryRoot, REMOVE_OPTIONS);
   }
@@ -928,6 +984,12 @@ function stagePackages(repoRoot, variants, skillTreesRoot, packagesRoot) {
       if (safeLstat(versionManifest)?.isFile()) {
         copyPayload(versionManifest, path.join(packageDir, "version-manifest.json"), "package version manifest");
         customFiles.push("version-manifest.json");
+      }
+      // Hosts read each skill's lifecycle status from here; the rest of assets/ stays default-only.
+      const skillStatus = path.join(repoRoot, "assets", "skill-status.json");
+      if (safeLstat(skillStatus)?.isFile()) {
+        copyPayload(skillStatus, path.join(packageDir, "assets", "skill-status.json"), "package skill status");
+        customFiles.push("assets/skill-status.json");
       }
     }
 
@@ -1546,11 +1608,12 @@ export function main(argv = process.argv.slice(2)) {
     const { repoRoot, command, args } = options;
     if (command === "validate") {
       if (!args[0]) {
-        const variants = createAllVariants(repoRoot);
-        const summaries = variants.map(
-          ({ name, plan }) =>
-            `${name}: ${plan.skills.length} skills, ${plan.files.length} files, ${plan.replacementCount} replacements`,
-        );
+        const summarize = (prefix) => ({ name, plan }) =>
+          `${prefix}${name}: ${plan.skills.length} skills, ${plan.files.length} files, ${plan.replacementCount} replacements`;
+        const summaries = [
+          ...createAllVariants(repoRoot).map(summarize("")),
+          ...createPreviewVariants(repoRoot).map(summarize(`${PREVIEW_DIRNAME}/`)),
+        ];
         console.log(`OK - ${summaries.join("; ")}.`);
       } else {
         const defaultPlan = createDefaultPlan(repoRoot);
@@ -1568,11 +1631,14 @@ export function main(argv = process.argv.slice(2)) {
       materializeComposition(plan, outputDir);
       console.log(`Built default: ${plan.files.length} files for ${plan.skills.length} skills at ${outputDir}.`);
     } else if (command === "build" && !args[0]) {
-      const { variants, outputRoot } = buildAllSkillTrees(repoRoot);
+      const { variants, previewVariants, outputRoot, previewRoot } = buildAllSkillTrees(repoRoot);
+      const listed = (items) => items.map(({ name, plan }) => `${name} (${plan.skills.length} skills)`).join(", ");
       console.log(
-        `Built ${variants.length} complete marker-free skill trees at ${outputRoot}: ` +
-          `${variants.map(({ name, plan }) => `${name} (${plan.skills.length} skills)`).join(", ")}.`,
+        `Built ${variants.length} complete marker-free skill trees at ${outputRoot}: ${listed(variants)}.`,
       );
+      if (previewVariants.length) {
+        console.log(`Built ${previewVariants.length} preview flavor trees at ${previewRoot}: ${listed(previewVariants)}.`);
+      }
     } else if (command === "build") {
       const defaultPlan = createDefaultPlan(repoRoot);
       const flavorRoot = path.resolve(args[0]);

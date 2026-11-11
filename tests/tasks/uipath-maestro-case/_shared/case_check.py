@@ -254,16 +254,44 @@ def registry_audit_entries(payload: object) -> list[dict]:
 
 
 REGISTRY_CACHE_DIR = os.path.join("~", ".uip", "case-resources")
+REGISTRY_PULL_TIMEOUT_S = 60
+
+
+def _pull_registry_cache(path: str) -> None:
+    """Pull the live registry into the grader's own cache; FAIL if `path` still is not written.
+
+    A harness whose `uip` runs outside this container leaves no cache here: Studio Web's
+    browser CLI keeps it in the page's storage. The audit is graded against the tenant either way.
+    A plain pull keeps any index already cached and fetches only the missing ones. It also
+    skips the fetch while `<type>-index.meta.json` is under 24h old, even with the index gone,
+    so an orphaned meta file is removed first.
+    """
+    what = "uip maestro case registry pull"
+    meta = os.path.splitext(path)[0] + ".meta.json"
+    if os.path.isfile(meta):
+        os.remove(meta)
+    try:
+        proc = _run(
+            ["uip", "maestro", "case", "registry", "pull", "--output", "json"],
+            timeout=REGISTRY_PULL_TIMEOUT_S,
+            what=what,
+        )
+    except OSError as exc:
+        _fail(f"registry cache {path} is absent and the grader could not run `{what}`: {exc}")
+    if not os.path.isfile(path):
+        _fail(
+            f"registry cache {path} is absent, and the grader's own `{what}` did not write it "
+            f"(exit {proc.returncode}), so the audit cannot be checked against the tenant: an "
+            f"environment failure, not the agent's\nstdout: {proc.stdout[-1500:]}\nstderr: {proc.stderr[-1500:]}"
+        )
+    print(f"registry cache {path} was absent; grading against the grader's own `{what}`", file=sys.stderr)
 
 
 def read_registry_cache(cache_file: str) -> list:
-    """Load `~/.uip/case-resources/<cache_file>`, or FAIL naming the missing pull."""
+    """Load `~/.uip/case-resources/<cache_file>`, pulling the live registry first when it is absent."""
     path = os.path.expanduser(os.path.join(REGISTRY_CACHE_DIR, cache_file))
     if not os.path.isfile(path):
-        _fail(
-            f"registry cache {path} is absent: `uip maestro case registry pull` never ran or "
-            f"did not succeed, so the audit cannot be checked against the tenant"
-        )
+        _pull_registry_cache(path)
     try:
         with open(path, encoding="utf-8") as handle:
             data = json.load(handle)

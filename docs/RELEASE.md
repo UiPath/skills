@@ -4,7 +4,9 @@ The complete default tree is published as **`@uipath/skills`**, versioned in loc
 
 > **Release gate.** Every npmjs publish (`preview`, `latest`) waits for the
 > Azure DevOps release gate (`.pipelines/release-gate.yml`), which runs the
-> blocking per-release FOSSA scan. A gate failure stops the publish — there is
+> per-release FOSSA scan (blocking for `latest`) and the sensitive-content scan
+> of the packed tarball (blocking for every channel; same
+> `scripts/check-sensitive-content.py` as the PR check). A gate failure stops the publish — there is
 > no ungated fallback. `dev` builds on GitHub Packages skip the gate, and
 > flavor packages ship no `hooks/` at all. Package integrity on npmjs is the
 > `--provenance` attestation; the hooks are Node scripts (`hooks/*.mjs`) and
@@ -83,7 +85,7 @@ There is no package registry file. The source directory is the package identity:
 | `skill-flavors/studioweb/` | `@uipath/skills-studioweb` |
 | `skill-flavors/<flavor>/` | `@uipath/skills-<flavor>` |
 
-`npm run skills:pack` discovers every flavor, builds complete files first, stages the packages under `build/packages/`, and creates verified tarballs under `build/npm/`. The default package preserves the existing hooks, commands, plugin metadata, and assets, but its `skills/` directory comes from the marker-free `build/skills/default` tree. Every custom package contains the complete canonical skill catalog with its sparse flavor replacements applied, plus minimal package/legal metadata. Custom manifests omit `package.json.repository` and pin both the default and `@uipath` scoped registry to `https://npm.pkg.github.com/`; the scoped pin prevents an ambient `@uipath` npmjs setting from redirecting an ordinary publish. The default manifest and root publishing behavior remain unchanged.
+`npm run skills:pack` discovers every flavor, builds complete files first, stages the packages under `build/packages/`, and creates verified tarballs under `build/npm/`. The default package preserves the existing hooks, commands, plugin metadata, and assets, but its `skills/` directory comes from the marker-free `build/skills/default` tree. Every custom package contains the complete canonical skill catalog with its sparse flavor replacements applied, plus minimal package/legal metadata and `assets/skill-status.json`, the lifecycle status hosts read per skill (the rest of `assets/` stays default-only). Custom manifests omit `package.json.repository` and pin both the default and `@uipath` scoped registry to `https://npm.pkg.github.com/`; the scoped pin prevents an ambient `@uipath` npmjs setting from redirecting an ordinary publish. The default manifest and root publishing behavior remain unchanged.
 
 The established repository-root commands remain supported. Normal `npm pack` builds exactly one marker-free `@uipath/skills` default tarball, and normal `npm publish` publishes that default package using the caller's registry, tag, access, and provenance flags. A `prepack`/`postpack` transaction temporarily activates the composed default tree and restores the exact canonical `skills/` source afterward. If npm fails or is interrupted between those steps and `build/.root-pack-transaction` remains, confirm the original npm process has ended, run `npm run skills:recover`, and retry. Recovery restores canonical sources; unexpected overlay edits are preserved under `build/.root-pack-recovery-*` and make recovery exit nonzero for explicit review. Do not use `--ignore-scripts` for source-repository packaging because that npm option deliberately bypasses composition. The default jobs in `publish.yml` retain these root `npm publish` commands and never run the all-flavor package loop.
 

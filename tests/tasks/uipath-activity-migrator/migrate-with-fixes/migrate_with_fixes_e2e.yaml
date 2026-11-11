@@ -35,7 +35,8 @@ reference:
 initial_prompt: |
   Migrate the UiPath project in ./StaffDirectoryAudit with the Activity
   Migrator, targeting UIAutomation 26.10.4, and leave it ready to open in
-  Studio. Do not run the migrated project.
+  Studio. Do not run the migrated project. Download the Activity Migrator if
+  it is not installed.
 
   The `uip` CLI is available and authenticated in this sandbox.
 
