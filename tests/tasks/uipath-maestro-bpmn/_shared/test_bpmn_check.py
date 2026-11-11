@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -102,7 +103,7 @@ def test_typed_extension_rejects_another_type_version(type_attrs: str) -> None:
 
 def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     start_agent = spec["extensionTypes"]["Orchestrator.StartAgentJob"]
 
@@ -129,7 +130,7 @@ def test_bundled_context_inputs_declare_a_type() -> None:
     """The canvas parser rejects a uipath:context input with no `type`, so a
     template pasted verbatim from the bundle would fail `validate`/`refresh`."""
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
 
     untyped = []
@@ -158,7 +159,7 @@ def test_bundled_context_inputs_declare_a_type() -> None:
 
 def test_bundled_intsvc_activity_contract_matches_cli_manifest() -> None:
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     activity = spec["extensionTypes"]["Intsvc.ActivityExecution"]
 
@@ -182,7 +183,7 @@ def test_bundled_intsvc_activity_contract_matches_cli_manifest() -> None:
 
 def test_bundled_intsvc_event_contracts_match_cli_manifest() -> None:
     repo_root = Path(__file__).parents[4]
-    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec_path = repo_root / "classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
 
     for extension_type in ("Intsvc.EventTrigger", "Intsvc.WaitForEvent"):
@@ -235,10 +236,93 @@ def test_find_bpmn_file_with_hint_prefers_the_project_file(tmp_path, monkeypatch
 
     assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Proj.bpmn")
 
-    # Two hint matches beside a project.uiproj: the rule cannot pick, so the
-    # pre-existing first-match behaviour stands rather than a spurious FAIL.
+    # Two files beside a project.uiproj: the file the task NAMED (`Proj.bpmn`)
+    # beats a substring match, wherever it sorts.
     (tmp_path / "project.uiproj").write_text("{}", encoding="utf-8")
-    assert bpmn_check.find_bpmn_file("Proj") == "Proj-old.bpmn"
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Proj.bpmn")
+
+    # Two exact matches beside a project.uiproj: the rule cannot pick, so the
+    # pre-existing first-match behaviour stands rather than a spurious FAIL.
+    (tmp_path / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+    assert bpmn_check.find_bpmn_file("Proj") == "Proj.bpmn"
+
+
+@pytest.mark.parametrize(
+    "leftover",
+    [
+        "ShipmentReview.baseline.bpmn",
+        "ShipmentReview.edited.bpmn",
+        "ShipmentReview.merged.bpmn",
+        "ShipmentReview.original.bpmn",
+        "_created-scaffolds/ShipmentReview.bpmn",
+        "tmp/ShipmentReview.bpmn",
+        "tmp.Xa81kQ/ShipmentReview.bpmn",
+    ],
+)
+def test_find_bpmn_file_skips_brownfield_scratch_files(tmp_path, monkeypatch, leftover) -> None:
+    """The brownfield pipeline's leftovers are never the graded file (builder-sdk#1871).
+
+    `compile -o X.baseline.bpmn` holds the UNEDITED process and sorts before
+    `X.bpmn`; seven correct v2 edits failed on it. No hint and a hint must both
+    reach the target, and the validate-every-file helper must skip the leftover.
+    """
+    (tmp_path / "ShipmentReview.bpmn").write_text("<edited/>", encoding="utf-8")
+    scratch = tmp_path / leftover
+    scratch.parent.mkdir(parents=True, exist_ok=True)
+    scratch.write_text("<unedited/>", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.is_scratch_bpmn(leftover)
+    assert bpmn_check.find_bpmn_file("ShipmentReview") == "ShipmentReview.bpmn"
+    assert bpmn_check.find_bpmn_file() == "ShipmentReview.bpmn"
+    validate_bpmn = _load("validate_bpmn")
+    assert validate_bpmn._bpmn_files() == [tmp_path / "ShipmentReview.bpmn"]
+
+
+def test_is_scratch_bpmn_tests_directories_not_the_file_name() -> None:
+    assert not bpmn_check.is_scratch_bpmn("tmp.bpmn")
+    assert not bpmn_check.is_scratch_bpmn("Temp/Proj/Proj.bpmn")
+    assert not bpmn_check.is_scratch_bpmn("ProjSolution/Proj/Proj.bpmn")
+    assert bpmn_check.is_scratch_bpmn("node_modules/pkg/x.bpmn")
+
+
+def test_resolve_project_skips_an_archived_scaffold(tmp_path, monkeypatch) -> None:
+    """An agent archived a superseded scaffold under `_created-scaffolds/`
+    (R15 generic-dynamic-node); the live project is the only candidate."""
+    for root in (tmp_path / "AcrUserList" / "AcrUserList",
+                 tmp_path / "_created-scaffolds" / "AcrUserListSolution" / "AcrUserList"):
+        root.mkdir(parents=True)
+        (root / "AcrUserList.bpmn").write_text("<x/>", encoding="utf-8")
+        (root / "project.uiproj").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.resolve_project("AcrUserList.bpmn") == Path.cwd() / "AcrUserList" / "AcrUserList"
+
+
+def _project_with_entry_point(root, entry_point: str):
+    project = root / "Sol" / "Proj"
+    project.mkdir(parents=True)
+    (project / "project.uiproj").write_text("{}", encoding="utf-8")
+    (project / "Proj.bpmn").write_text("<definitions/>", encoding="utf-8")
+    (project / "Process.bpmn").write_text("<definitions/>", encoding="utf-8")
+    (project / "entry-points.json").write_text(
+        json.dumps({"entryPoints": [{"filePath": f"/content/{entry_point}#Event_start"}]}),
+        encoding="utf-8",
+    )
+
+
+def test_find_bpmn_file_grades_the_entry_point_not_a_file_beside_it(tmp_path, monkeypatch) -> None:
+    _project_with_entry_point(tmp_path, "Process.bpmn")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Process.bpmn")
+
+
+def test_find_bpmn_file_keeps_the_named_file_when_it_is_the_entry_point(tmp_path, monkeypatch) -> None:
+    _project_with_entry_point(tmp_path, "Proj.bpmn")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Proj.bpmn")
 
 
 def test_context_value_strips_and_falls_back_to_element_text() -> None:
@@ -549,6 +633,76 @@ def test_find_bpmn_file_without_hint_accepts_identical_copies(tmp_path, monkeypa
     (tmp_path / "Proj" / "Proj.bpmn").write_text("<y/>", encoding="utf-8")
     with pytest.raises(SystemExit):
         bpmn_check.find_bpmn_file()
+
+
+def _studio_web_project(root: Path, solution: str, project: str) -> Path:
+    """Studio Web's export layout: ``<Solution>/<Project>/Process.bpmn`` beside ``project.uiproj``."""
+    directory = root / solution / project
+    directory.mkdir(parents=True)
+    (directory / "Process.bpmn").write_text("<x/>", encoding="utf-8")
+    (directory / "project.uiproj").write_text("{}", encoding="utf-8")
+    return directory
+
+
+def test_find_bpmn_file_takes_studio_webs_process_bpmn_for_the_named_project(tmp_path, monkeypatch) -> None:
+    _studio_web_project(tmp_path, "ExpenseApprovalBpmn", "ExpenseApprovalBpmn")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("ExpenseApprovalBpmn") == "ExpenseApprovalBpmn/ExpenseApprovalBpmn/Process.bpmn"
+
+
+def test_find_bpmn_file_refuses_process_bpmn_in_another_project(tmp_path, monkeypatch) -> None:
+    _studio_web_project(tmp_path, "Sol", "OtherProject")
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit):
+        bpmn_check.find_bpmn_file("ExpenseApprovalBpmn")
+
+
+def test_resolve_project_takes_studio_webs_process_bpmn(tmp_path, monkeypatch) -> None:
+    project = _studio_web_project(tmp_path, "Sol", "Proj")
+    _studio_web_project(tmp_path, "Sol", "Other")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.resolve_project("Proj.bpmn") == project
+
+
+def test_resolve_bpmn_file_returns_studio_webs_process_bpmn(tmp_path, monkeypatch) -> None:
+    project = _studio_web_project(tmp_path, "Sol", "Proj")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.resolve_bpmn_file("Proj.bpmn") == project / "Process.bpmn"
+
+
+@pytest.mark.parametrize(
+    ("path", "named"),
+    [
+        ("Sol/Proj/Proj.bpmn", True),
+        ("Sol/Proj/Process.bpmn", True),
+        ("Sol/Other/Process.bpmn", False),
+        ("Sol/Proj/Draft.bpmn", False),
+    ],
+)
+def test_bpmn_file_is_named(path: str, named: bool) -> None:
+    assert bpmn_check.bpmn_file_is_named(path, "Proj") is named
+
+
+def _check_present(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    script = Path(__file__).with_name("check_bpmn_present.py")
+    return subprocess.run([sys.executable, str(script), *args], cwd=cwd, capture_output=True, text=True)
+
+
+def test_check_bpmn_present_checks_files_beside_and_text_inside_the_bpmn(tmp_path) -> None:
+    project = _studio_web_project(tmp_path, "Sol", "Proj")
+    (project / "Process.bpmn").write_text("<x>Article not found</x>", encoding="utf-8")
+
+    assert _check_present(tmp_path, "Proj", "--beside", "project.uiproj", "--contains", "Article not found").returncode == 0
+    missing = _check_present(tmp_path, "Proj", "--beside", "operate.json")
+    assert missing.returncode != 0
+    assert "operate.json missing beside" in missing.stderr
+    absent = _check_present(tmp_path, "Proj", "--contains", "exclusiveGateway")
+    assert absent.returncode != 0
+    assert "does not contain" in absent.stderr
 
 
 def test_resolve_project_excludes_the_live_run_copy(tmp_path, monkeypatch) -> None:

@@ -111,6 +111,22 @@ jobs:
             git diff --stat -- assets/uip-catalog-snapshot.json
           fi
 
+      # The studioweb ratchet keys each mention by the longest verb the Node
+      # catalog knows, so a new deeper verb (`maestro bpmn eval`) moves
+      # existing mentions onto a key whose ceiling is 0 and fails `Build and
+      # inspect every skill package` with no flavor change. `--rekey` moves
+      # each ceiling and allow entry with its mention, comparing a scan under
+      # the committed catalog (HEAD) with one under the rebuilt one. It exits
+      # 1 and writes nothing when the ratchet already fails on main, which
+      # fails this run before a PR opens: fix main's ratchet first.
+      - name: Re-key studioweb ratchet to the new catalog
+        if: steps.check.outputs.exists != 'true' && steps.diff.outputs.changed == 'true'
+        run: |
+          git show HEAD:assets/uip-catalog-snapshot.json > "$RUNNER_TEMP/previous-uip-catalog.json"
+          node scripts/studioweb-browser-commands.mjs --rekey \
+            --previous-catalog "$RUNNER_TEMP/previous-uip-catalog.json"
+          git diff --stat -- tests/scripts/studioweb-browser-commands.json
+
       - name: Open PR with updated catalog
         if: steps.check.outputs.exists != 'true' && steps.diff.outputs.changed == 'true'
         # Use a PAT (not GITHUB_TOKEN) so the opened PR triggers
@@ -143,8 +159,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git checkout -b "$BRANCH"
-          git add assets/uip-catalog-snapshot.json
-          git commit -m "chore: refresh uip CLI catalog ($CLI_VERSION, $VERB_COUNT verbs)"
+          git add assets/uip-catalog-snapshot.json tests/scripts/studioweb-browser-commands.json
+          git commit -m "chore: refresh uip CLI catalog ($CLI_VERSION, $VERB_COUNT verbs)" \
+            -m "Re-keys tests/scripts/studioweb-browser-commands.json to the new catalog's command paths."
           git push -u origin "$BRANCH"
 
           # Past this point the branch exists on the remote, so any failure
@@ -184,7 +201,11 @@ jobs:
             --title "chore: refresh uip CLI catalog ($CLI_VERSION)" \
             --body "Automated refresh against \`@uipath/cli@$CLI_VERSION\`. The catalog has $VERB_COUNT reachable verbs after installing all available plugins.
 
-          Merges automatically once all checks pass (handled by \`automerge-catalog-refresh.yml\`). If a check fails, the failure is real drift (a CLI release removed/renamed a verb still referenced in skill docs or task YAMLs); investigate the gate annotations and either sweep the docs or, if the verb is intentionally retired, add it to \`.claude/rules/cli-renames.md\`. \`/lint-task\` and the CLI Verb Gate will surface the affected references." \
+          Also re-keys \`tests/scripts/studioweb-browser-commands.json\` to the new catalog's command paths: mentions only moved between keys, none were added.
+
+          Merges automatically once all checks pass (handled by \`automerge-catalog-refresh.yml\`). If a check fails, the failure is real drift:
+          - CLI Verb Gate: a CLI release removed/renamed a verb still referenced in skill docs or task YAMLs. Sweep the docs or, if the verb is intentionally retired, add it to \`.claude/rules/cli-renames.md\`. \`/lint-task\` and the gate annotations surface the affected references.
+          - \`studioweb-browser-commands.test.mjs\` (in Build and inspect every skill package): a studioweb mention the new catalog turned from prose into a command. Fix the guidance, or allowlist the mention in \`tests/scripts/studioweb-browser-commands.json\`. Not a \`cli-renames.md\` case." \
             --label "automated"
 
           # PR owns the branch now — leave it for the auto-merger.

@@ -484,3 +484,95 @@ def test_extends_names_each_change_to_what_was_there(write, original, capsys, ch
 def test_extends_with_bad_values_is_a_usage_error(write, values):
     write(_flow())
     assert _run("extends", *values) == 2
+
+
+TARGET_ID = "extractCreditNote1"
+
+
+def _two_node_flow(target_schema):
+    """The source node holds the seeded taxonomy; the target node is the one under test."""
+    target = {"id": TARGET_ID, "type": EXTRACT_NODE_TYPE, "inputs": {"schemaDocument": target_schema}}
+    return _flow(schema=_seeded_schema(), extra_nodes=[target])
+
+
+def _copy(schema):
+    """What a copy through ``nodes schema set`` leaves: new ids and the target's own config."""
+    schema = json.loads(json.dumps(schema).replace('"id-', '"new-id-'))
+    schema["config"] = {"model": {"family": "gpt"}}
+    return schema
+
+
+def _run_on_target(*args):
+    return main(["--flow-name", "InvoiceReader", "--node-id", TARGET_ID, *args])
+
+
+def test_node_id_selects_the_node_under_test(write, capsys):
+    write(_two_node_flow(_schema(groups={}, prompt="")))
+    assert _run("has-instructions") == 0
+    assert _run_on_target("has-instructions") == 1
+    assert "the overall prompt is empty" in capsys.readouterr().err
+
+
+def test_node_id_naming_no_extract_document_node_fails(write, capsys):
+    write(_flow())
+    assert main(["--flow-name", "InvoiceReader", "--node-id", "start", "has-instructions"]) == 1
+    assert "no Extract document node start" in capsys.readouterr().err
+
+
+def test_node_id_selects_the_same_node_in_the_original(write, tmp_path):
+    flow = _two_node_flow(_schema(groups={}, prompt="Extract the credit note."))
+    path = tmp_path / "two_node_original.flow"
+    path.write_text(json.dumps(flow))
+    write(flow)
+    assert _run_on_target("unchanged", str(path)) == 0
+    assert _run_on_target("extends", str(path)) == 0
+
+
+def test_copies_passes_a_copy_with_other_ids_and_config(write, original):
+    write(_two_node_flow(_copy(_seeded_schema())))
+    assert _run_on_target("copies", original, NODE_ID) == 0
+
+
+def test_copies_passes_a_copy_that_kept_the_source_ids(write, original):
+    write(_two_node_flow(_seeded_schema()))
+    assert _run_on_target("copies", original, NODE_ID) == 0
+
+
+def _add_choice_values(schema):
+    schema["outputSchema"]["$defs"]["ft-date"]["enum"] = ["2026"]
+
+
+@pytest.mark.parametrize("change, named", [
+    (_change_prompt, "prompt was"),
+    (lambda s: _rename(s, "Total", "Total Amount"), "Invoice.properties.Total was dropped"),
+    (lambda s: s["outputSchema"]["properties"]["Invoice"]["properties"]["Total"].update({"$ref": "#/$defs/ft-number"}),
+     "Total.$ref was"),
+    (_change_instructions, "Vendor Name.description was"),
+    (_drop_group, "outputSchema.properties.Line Items was dropped"),
+    (_drop_def, "$defs.ft-boolean was dropped"),
+    (_add_choice_values, "$defs.ft-date.enum was added"),
+])
+def test_copies_names_each_difference_from_the_source(write, original, capsys, change, named):
+    schema = _copy(_seeded_schema())
+    change(schema)
+    write(_two_node_flow(schema))
+    assert _run_on_target("copies", original, NODE_ID) == 1
+    assert named in capsys.readouterr().err
+
+
+def test_copies_fails_an_empty_target(write, original, capsys):
+    write(_two_node_flow(_schema(groups={}, prompt="")))
+    assert _run_on_target("copies", original, NODE_ID) == 1
+    assert "outputSchema.properties.Invoice was dropped" in capsys.readouterr().err
+
+
+def test_copies_of_a_source_the_original_lacks_fails(write, original, capsys):
+    write(_two_node_flow(_seeded_schema()))
+    assert _run_on_target("copies", original, "extractReceipt1") == 1
+    assert "no Extract document node extractReceipt1 in the original" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("values", [(), ("orig.flow",), ("orig.flow", NODE_ID, "extra")])
+def test_copies_with_bad_values_is_a_usage_error(write, values):
+    write(_flow())
+    assert _run("copies", *values) == 2

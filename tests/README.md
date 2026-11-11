@@ -193,7 +193,7 @@ criteria that passed.
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
-| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
+| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow, Case and BPMN all promoted) | 200 | 1200s | 900s |
 | `use-case-tiers.yaml` | docker | Opt-in A/B for the `uipath-agents` use-case tasks: `assisted` vs `unassisted` (lower-tier helper text stripped) | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
@@ -223,14 +223,15 @@ SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run \
 
 `flow-v2-preview.yaml` runs the three builder-SDK skills
 `uipath-maestro-{flow,case,bpmn}` as the ONLY skill catalog, so a run measures the
-Flow v2 authoring path rather than a mix of both generations. Flow has been
-promoted: its tree lives in `skills/uipath-maestro-flow` (the default catalog, so
-`nightly.yaml` runs it too), and `preview/skills/uipath-maestro-flow` is a relative
-symlink to it so this arm keeps loading all three. Case and BPMN are still
-`preview/`-only. The previous Flow generation lives in
-`classic/skills/uipath-maestro-flow` (shipped only in the Studio Web flavor). It is
-in no plugin catalog, but the read-only repo mount leaves it readable from inside
-eval containers, so a prompt must not name a v1 Flow reference file. `preview/` is a Claude Code
+Flow v2 authoring path rather than a mix of both generations. Flow, Case and BPMN
+have all been promoted: their trees live in `skills/uipath-maestro-{flow,case,bpmn}`
+(the default catalog, so `nightly.yaml` runs them too), and
+`preview/skills/uipath-maestro-{flow,case,bpmn}` are relative symlinks to them so this
+arm keeps loading all three. The previous Case and BPMN generations live in
+`classic/skills/uipath-maestro-{case,bpmn}` (shipped only in the Studio Web flavor).
+They are in no plugin catalog, but the read-only repo mount leaves them readable
+from inside eval containers, so a prompt must not name a v1 Case or BPMN reference
+file. `preview/` is a Claude Code
 **plugin root** (`preview/.claude-plugin/plugin.json` + `preview/skills/<name>/SKILL.md`),
 which is the one layout every harness loads: Claude Code requires it, the
 Delegate SDK appends `/skills` to it, Codex and Antigravity accept it. Skills load
@@ -437,6 +438,11 @@ success_criteria:
     command: "python3 $REFERENCE_DIR/check_asset_scoping.py"
 ```
 
+coder-eval 1.x stages only `reference.directory` itself, so a grader that
+imports a sibling (`../_shared`) needs `directory: ..` and
+`$REFERENCE_DIR/<subdir>/check_*.py` commands. When a task changes its
+`reference.directory`, update any grader docstring that states what is staged.
+
 A single helper script (`tests/tasks/uipath-platform/_setup/seed.py`) writes
 `seed.json` with a fresh `uuid8` and — when `E2E_PROCESS_KEY` is set —
 `process_key` + `folder_path` (resolved via `uip or processes list`, matched by Key — the `get` endpoint doesn't populate FolderPath). Tests
@@ -479,6 +485,7 @@ folders) persist on the tenant across runs.
 3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly, not to hand-hold it.
 4. Tag every task using the [Tag Taxonomy](#tag-taxonomy): required `skill` + `tier` + `mode:*`, plus optional `shape`, `node`, `resource`, `connector`, and `feature` where applicable.
 5. Stick to the closed-vocabulary values. Propose new tags in the PR — do not invent them inline.
+6. When a prompt or grader note cites a skill doc (`references/<file>.md`, or `skills/<other-skill>/references/<file>.md`), the file must exist in `skills/` or `preview/skills/` for that skill (the trees an eval catalog loads; a doc only `classic/skills/` has does not count in a task YAML). A grader script or fixture beside the task may also cite a `classic/skills/` doc whose rule it still enforces. A `#section` must match a heading of the cited file. `python3 scripts/check-task-doc-citations.py` checks every `.yaml`, `.py` and `.json` under `tests/tasks/` in CI. When a doc is renamed or retired, point the task at the doc that now states the rule, or name the rule instead of the file.
 
 ### Task ID Convention
 

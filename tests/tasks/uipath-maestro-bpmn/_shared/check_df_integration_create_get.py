@@ -6,7 +6,7 @@ Ported from Flow `connector_features/datafabric_connector/integration_create_get
 against FlowCodeEvalEntity, with the second chain comparing expansionLevel across
 1/2/3), translated from a JSON node/inputs.detail walk to an XML walk over the
 registry-driven ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
 
 Flow's grader matched node `type` suffixes (``.create-entity-record`` /
 ``.get-entity-record-by-id``) and read ``pathParameters.entityName`` /

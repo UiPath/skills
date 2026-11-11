@@ -2,49 +2,48 @@
 
 *Exact signatures, fields, and defaults: `http()`.*
 
-The one factory selects two distinct product nodes:
-
-- standalone: `http({ managed: false, ... })`, non-2xx responses stay on the
-  success output with `statusCode`;
-- managed: `http({ managed: true, ... })`, non-2xx responses take the error
-  path.
-
-Signature:
-`http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
-
-```ts
-.step('policy', http({ method: 'GET', url: policyUrl,
-  managed: true, returns: { limit: 'number' } }))
-.step('read', script({
-  code: 'return $vars.policy.output.body.limit;' }))
-```
+Always author `http({ managed: true, ... })`; non-2xx responses take the error
+path. `managed: false` (`core.action.http`) no longer runs: the tenant answers 500
+`No handler registered for extension type 'Intsvc.HttpExecution'`, even though
+`check` only warns (`HTTP_V1_RETIRED`). A `managed: false` step you edit gets
+the same switch, and every read of its `statusCode` becomes an `.onError()`
+handler ([error-handling.md](error-handling.md)); leave an untouched one alone.
+An older SDK's `HTTP_V1_RETIRED` text saying to "keep managed: false" for a URL without a connection is outdated; still use `managed: true`.
 
 ## At a glance
 
-Standalone HTTP keeps non-2xx responses on its success output. Managed HTTP routes
-them through its error port. Both expose JSON response bodies as parsed values.
+Managed HTTP routes non-2xx responses through its error port and exposes a JSON
+response body as a parsed value. Its success `output` is `{ code, headers, body }`
+with `code` a number; there is no `statusCode`. Reading `output.code` needs
+`@uipath/maestro-builder-sdk` 6.90.1 or later; an older SDK's `check` rejects it
+(`HTTP_READ_UNKNOWN_FIELD`), so on it read neither field and route a status with
+`.onError()` + `err(step, 'status')`,
+<!--skill-flavor:http-code-sdk-upgrade:start-->
+or upgrade the copy `uip` uses:
+`npm install -g @uipath/maestro-builder-sdk@latest`, or
+`npm install --save-dev @uipath/maestro-builder-sdk@latest` for a workspace copy.
+<!--skill-flavor:http-code-sdk-upgrade:end-->
+A status check is an `.onError()` handler reading `err(step, 'status')`, not a
+`branches` condition on `statusCode`.
 
 Signature: `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
 
 ```ts
 .step('getPolicy', http({ method: 'GET', url: policyUrl,
-  managed: true, returns: { limit: 'number' },
-  branches: [{ name: 'throttled', condition: js`$vars.getPolicy.output.statusCode === 429` }] }))
-.stepToList('branch-throttled', (b) => b.return({}))
+  managed: true, returns: { limit: 'number' } }))
+.onError((h) => h.return({ status: err('getPolicy', 'status') }))
 .step('limit', script({ code: 'return $vars.getPolicy.output.body.limit;' }))
 ```
 
-Match `managed` to the scenario's node; connector auth needs both `connection` and `folder` from `.flow-sdk/bindings.json`.
-A `branch-<name>` side exit uses `.stepToList`; omit both bindings for manual/implicit mode.
+Connector auth needs both `connection` and `folder` from `.flow-sdk/bindings.json`; omit both bindings for manual/implicit mode.
+A `branch-<name>` side exit uses `.stepToList`.
 
 ## Choosing the node
 
-Match the product node named by the scenario. “Managed HTTP Request,” “HTTP
-Request node,” and `core.action.http.v2` select managed; “standalone” and
-`core.action.http` select standalone. Authentication needs or the desire for an
-error handler are not substitutes for that intent.
+Use managed for every request. A scenario that says “standalone” or
+`core.action.http` still gets `managed: true`.
 
-Live product evidence shows that both nodes expose an `application/json` body as
+Live product evidence shows that the node exposes an `application/json` body as
 a parsed value. Declare its top-level fields with `returns` and read them
 directly; do not apply `JSON.parse` to a body declared by `returns`. A non-JSON
 body remains opaque unless its live media type establishes a scalar contract. An
@@ -57,13 +56,12 @@ them only when the scenario calls for different operational behavior.
 ## Managed authentication
 
 Managed HTTP has two authentication modes. Omit `connection` and `folder` for
-manual/implicit mode. For a URL that needs no connection, prefer standalone
-(`managed: false`) unless the scenario names the managed node: implicit managed
-HTTP goes out through Integration Service's shared egress, which public APIs
-often rate-limit. Standalone draws an `HTTP_V1_RETIRED` warning from `check`;
-that is expected. CLI builds before cli#5384 also refuse implicit managed HTTP
-in `uip maestro flow debug` (`Connection ImplicitConnection not found in
-Resource Catalog`).
+manual/implicit mode, which a URL that needs no connection uses. Implicit managed
+HTTP goes out through Integration Service's shared egress, which public APIs may
+rate-limit (429 `Daily API request limit exceeded`); that is infrastructure, not
+a reason to switch to `managed: false`. CLI builds before cli#5384 also refuse
+implicit managed HTTP in `uip maestro flow debug` (`Connection ImplicitConnection
+not found in Resource Catalog`).
 
 To reuse an Integration Service HTTP connection, provide both symbolic names
 from `bindings.json`; the compiler resolves them into the
@@ -113,17 +111,23 @@ proxied request reuses that connector's authentication:
 }))
 ```
 
-`targetConnector` requires both bindings and is not valid on standalone HTTP.
+`targetConnector` requires both bindings.
+
+## Failure fields
+
+The envelope shape and how to read it: [error-handling.md](error-handling.md#reading-the-failure).
+On managed HTTP `code` is a string and `status` a number. The server's body and
+headers are not parsed; they appear only as text inside `detail`. An unhandled
+non-2xx raises incident `102001` (observed for 404).
 
 ## Response branches
 
-`branches: [{ name, condition }]` declares extra exits evaluated against the
-response — each becomes a `branch-<name>` source port routed with
-`.stepToList('branch-<name>', …)`, while the main path continues from the
-default port. Conditions are expressions (e.g.
-``js`$vars.fetch.output.statusCode === 429` ``), typically reading the step's
-own declared `returns`. Names must be unique and constant conditions are
-rejected by `check`.
+`branches: [{ name, condition }]` declares extra `branch-<name>` exits routed
+with `.stepToList('branch-<name>', …)`. A managed branch fires only with SDK
+6.90.1 or later; an older SDK writes the condition without `=js:` and no branch
+fires, not even on a 200. A non-2xx fails the step and never reaches a branch:
+route it with `.onError()` + `err(step, 'status')`. Names must be unique and
+constant conditions are rejected by `check`.
 
 ## Evidence
 
@@ -131,6 +135,6 @@ An offline replay proves the graph and chosen response shape. A live request is
 the evidence for endpoint reachability, response media type, authentication,
 and the service's actual status/body behavior.
 
-Both HTTP types default to `timeout: 'PT15M'` and `retryCount: 0` when omitted.
-The managed node deserializes the response body, so read `out('fetch', 'body.items')`
+The node defaults to `timeout: 'PT15M'` and `retryCount: 0` when omitted.
+It deserializes the response body, so read `out('fetch', 'body.items')`
 and let `returns` declare the body's top-level fields.

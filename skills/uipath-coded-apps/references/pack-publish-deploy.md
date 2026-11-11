@@ -31,7 +31,7 @@ Package the app build output into a `.nupkg` file with UiPath metadata.
 uip codedapp pack dist
 
 # Pack with all options specified
-uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "Production app"
+uip codedapp pack dist -n my-webapp --version 1.0.0 --author "My Team" --description "Production app"
 ```
 
 ### Options
@@ -42,7 +42,7 @@ uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "
 | `-n, --name <name>` | Package name | Prompted |
 | `-v, --version <version>` | Package version | `1.0.0` |
 | `-o, --output <dir>` | Output directory for `.nupkg` | `./.uipath` |
-| `-a, --author <author>` | Package author | `UiPath Developer` |
+| `--author <author>` | Package author | `UiPath Developer` |
 | `--description <desc>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | `webapp`, `library`, or `process` | `webapp` |

@@ -16,8 +16,11 @@ and the two persisted status shapes, both CLI-verified on ``uip 1.198.0-preview.
   (borrowing another SLA's escalation fails validate: "The escalation referenced by rule … no
   longer exists").
 
-The Case Designer's ``"any"`` escalation sentinel is never authorable — released ``validate``
-rejects it with that same error.
+``escalationId: "any"`` is the Case Designer's at-risk wildcard: the platform runs it as one
+at-risk condition per at-risk escalation of that SLA (Studio Web ``SLA_ANY_ESCALATION_VALUE``,
+``inferSlaStatus`` → AtRisk), and the Designer validator that ``validate`` bundles accepts it.
+It is never a breach rule, and the battery never authors it: a requirement names the escalation
+it means, and a wildcard would also fire on any at-risk escalation added to that SLA later.
 """
 
 from __future__ import annotations
@@ -176,10 +179,10 @@ def assert_no_any_sentinel(plan: dict) -> None:
     blob = json.dumps(plan)
     if '"escalationId": "any"' in blob or '"escalationId":"any"' in blob:
         fail(
-            'an sla-status-change rule uses the Case Designer "any" escalation sentinel; '
-            "released `uip maestro case validate` rejects it "
-            '("The escalation referenced by rule ... no longer exists"). '
-            "A breach rule carries slaId alone."
+            'an sla-status-change rule uses escalationId "any", the Case Designer\'s at-risk '
+            "wildcard: it fires on every at-risk escalation of that SLA, never on a breach. "
+            "Author the status the requirement names: a breach rule carries slaId alone; an "
+            "at-risk rule names the concrete escalation it means."
         )
 
 

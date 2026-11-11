@@ -45,6 +45,10 @@ cannot make: which node, which topology, what an output means, and what to ask.
    `entry-points.json`, `operate.json` or `package-descriptor.json` — the CLI
    regenerates them, and the next compile silently undoes a hand edit.
    Brownfield JSON goes through `decompile` ([`brownfield.md`](brownfield.md)).
+   Non-interactive runs take the same route: nobody can approve a script over the
+   `.flow`, so write a large node definition into the source. A node the builder
+   cannot express is an SDK gap to report, not JSON to splice, unless its
+   reference names a CLI route.
 5. **Run the loop once the source is complete.** `check --source` is cheap, so
    use it freely while writing; `compile` and `validate` run on the finished
    source, and again after the last edit. `compile` does not run `check`, so a
@@ -217,6 +221,13 @@ Inputs, outputs and vars take one of the six types the Flow CLI and Workbench of
 - **Never use `console.log` in a script.** The script runtime has no
   `console`, and `check` does not flag it. Return the value to inspect:
   `return { debug: value }`.
+- **Never put every `$vars` reference of an expression inside double quotes.**
+  An End-node `=js:` expression like `'No results for "' + $vars.start.output.topic + '".'`
+  evaluates to null, with no warning. Keep at least one reference outside the
+  quotes.
+- **Never rely on a dotted JSON key surviving `$vars`.** Read through `$vars`,
+  `{"5.3.0":"x"}` becomes `{"5":{"3":{"0":"x"}}}`. Pass the JSON as a string and
+  `JSON.parse` it in a script.
 - **Never treat a green `validate` as proof of business correctness.** It
   checks structure. Named outputs, reference ids and connector field values
   are only proven by the evidence in [`CLI-LOOP.md`](CLI-LOOP.md#bounded-completion).

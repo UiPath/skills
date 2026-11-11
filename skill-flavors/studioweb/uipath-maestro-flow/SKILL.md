@@ -1,25 +1,25 @@
 <!--skill-flavor:sdk-project-layout:start-->
-**In Studio Web the builder SDK is built in.** `uip maestro flow check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm` and no Node process here. `examples/` contains authored examples, and `references/` contains the details routed from this guide.
+**In Studio Web the builder SDK is built in.** `uip maestro flow check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm` or Node here. `examples/` holds authored examples, and `references/` the details this guide routes to.
 
-**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Each project is a folder `/solution/<Project>/`. Create a Flow project only when the user asks for a new project: `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `.flow`.
+**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another, and never copy a project out of it. Each project is a folder `/solution/<Project>/`. Create a Flow project only when the user asks for a new project, never because the request names the flow ("a Maestro Automate called CronCop"): `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `.flow`. Run `uip maestro flow init <Project> --automate` when the request names **Maestro Automate** as the product. A project you fill keeps its type: if the request names Maestro Automate and `/solution/<Project>/.maestro_automate` is missing, keep building, then tell the user to switch Build as to Maestro Automate.
 
 **Edit the open flow.** The context of each turn gives these values:
 
 - `CurrentFile.AbsolutePath` — the open file, for example `/solution/Flow/new.flow`.
 - `CurrentFile.IsCurrentFileEmpty` — `true` when the open `.flow` holds no flow yet.
 - `CurrentProject.AbsolutePath` — the open project, for example `/solution/Flow`.
-- `CurrentWorkingDirectory` — the directory of the shell. It can differ from the project, so `cd` to the project first.
+- `CurrentWorkingDirectory` — the shell's directory. It can differ from the project, so `cd` there first.
 
 Choose the target `.flow` in this order:
 
 1. The user names a file: edit that file.
 2. An edit: edit the `.flow` at `CurrentFile.AbsolutePath`.
-3. A new flow, and `IsCurrentFileEmpty` is `true`: fill the open `.flow`.
-4. A new flow otherwise: write a new `<Name>.flow` in the open project. At the end, tell the user to open `<Name>.flow` in the Explorer. A write refreshes the canvas only for the open file.
+3. A new flow, and `IsCurrentFileEmpty` is `true`, you just created the project, or the project holds only an empty or trigger-only `new.flow`: fill that `.flow`.
+4. A new flow otherwise: write a new `<Name>.flow` in the open project. At the end, tell the user to open it in the Explorer: a write refreshes the canvas only for the open file.
 
-Below, `<Project>` is the folder of the target and `<Name>` is the file name of the target without `.flow` (`new` for `new.flow`). `<Draft>` is `/tmp/flow-draft/<Project>/<Name>`.
+Below, `<Project>` is the target's folder and `<Name>` its file name without `.flow` (`new` for `new.flow`). `<Draft>` is `/tmp/flow-draft/<Project>/<Name>`.
 
-**The target `.flow` is the single source of truth.** The user can change it on the canvas between your turns. So never use a `.flow.ts` from an earlier turn: decompile a fresh one every turn.
+**The target `.flow` is the single source of truth.** The user can change it on the canvas between your turns, so never reuse a `.flow.ts` from an earlier turn: decompile a fresh one.
 
 **Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `original/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
 
@@ -29,7 +29,7 @@ Below, `<Project>` is the folder of the target and `<Name>` is the file name of 
 
 **The Flow SDK can be off for this user.** When an SDK verb answers `ConfigError` "this host has no way to run …", the Flow SDK is not enabled for this user. Say so, and stop.
 
-Every `uip` call prints `[WARN] [Telemetry] applicationinsights package not available`. This warning is harmless.
+Every `uip` call prints a harmless `[WARN] [Telemetry] applicationinsights package not available`.
 
 ### Commands in Studio Web
 
@@ -56,7 +56,7 @@ When a reference tells you to run a command that is not available, use the Studi
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
-Integrations with non-UiPath systems use connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector. `"total": 0` is a miss and means `http()` (not for an external agent: see the table). For another tenant capability (agent, process), run the `uip maestro flow registry search` of that family ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); the Extract document node only when asked for by name or already in the flow ([`references/extract-document-node.md`](references/extract-document-node.md)). No published model fits: report the missing model and stop, unless the user asked for a `mock()` placeholder. Add no Extract document node unless the user named it, and do not hand off to `uipath-ixp`. A `script()` that returns fixed values is never a stand-in for that step, and `mock()` only marks a capability that the search proved absent.
+Integrations with non-UiPath systems use connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector. `"total": 0` is a miss and means `http()` (not for an external agent: see the table). For another tenant capability (agent, process), run the `uip maestro flow registry search` of that family ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); the Extract document node only when asked for by name or already in the flow ([`references/extract-document-node.md`](references/extract-document-node.md)). No published model fits: stop and report it, unless the user asked for a `mock()` placeholder; no hand-off to `uipath-ixp`. A `script()` that returns fixed values is never a stand-in for that step, and `mock()` only marks a capability that the search proved absent.
 
 ### The connector loop in Studio Web
 
