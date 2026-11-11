@@ -1,0 +1,131 @@
+task_id: skill-ontology-authoring-e2e-sdd-to-pack
+description: >
+  E2E: from the equipment-maintenance SDD, a simulated domain owner confirms
+  each authoring step; authoring delegates to uipath-ontology-modeler, which
+  builds the local solution, validates with the ontology service until clean
+  and packs. Grades the outcome: the SDD's entities and choice set are local
+  resources, the mapping types the decimal and Yes/No fields, `uip ont
+  validate --local` is clean with the service verdict Done, the package lists
+  schema, constraints and mapping, and nothing was published or deployed.
+  Needs a CLI that ships `uip ont` (cli#5710, cli#5798) and a login whose
+  tenant serves ontology validation.
+tags: [uipath-ontology-authoring, e2e, mode:build, lifecycle:generate, feature:entities, feature:conversational, outcome-graded]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+
+reference:
+  directory: ../../uipath-ontology-modeler
+
+run_limits:
+  task_timeout: 3600
+  turn_timeout: 3000
+
+initial_prompt: |
+  Create an ontology called "maintenance" from maintenance-sdd.md and build it
+  as a new local UiPath solution named MaintenanceModel in the current
+  directory. The task is not complete until the ontology validates cleanly and
+  the solution is packed. Do not publish or deploy.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the plant maintenance lead who wrote maintenance-sdd.md. You know
+    exactly what it says and nothing more.
+  goal: |
+    Get a validated, packed local solution named MaintenanceModel holding the
+    "maintenance" ontology and its entities. Approve each table and batch the
+    assistant shows. Stop once it reports the package.
+  constraints:
+    - "Answer in one short sentence, or pick the recommended / first option. Never bounce the decision back."
+    - "Approve each table that matches the SDD. If one contradicts the SDD, name the single correction."
+    - "Accept the folder names the assistant proposes. There is no external data source."
+    - "If asked to publish, deploy or activate, say no: packing is enough."
+    - "When the assistant reports the packed solution, end the conversation."
+  max_turns: 40
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-ontology-authoring skill for the SDD"
+    skill_name: uipath-ontology-authoring
+    expected_skill: uipath-ontology-authoring
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Authoring delegated the build to the uipath-ontology-modeler skill"
+    skill_name: uipath-ontology-modeler
+    expected_skill: uipath-ontology-modeler
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The SDD's three entities and its choice set are local resources of the solution"
+    command: "cd MaintenanceModel/resources/solution_folder && test -f entity/native/Asset.json && test -f entity/native/WorkOrder.json && test -f entity/native/Technician.json && test -f choiceSet/WorkOrderPriority.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Mapping reads each entity by name and types the decimal and Yes/No fields"
+    path: "maintenance/maintenance-mapping.yarrrml.yml"
+    includes:
+      - "table: Asset"
+      - "table: WorkOrder"
+      - "table: Technician"
+      - "xsd:decimal"
+      - "xsd:boolean"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Priority is constrained to the SDD's three values"
+    path: "maintenance/maintenance-constraints.ttl"
+    includes:
+      - "sh:in"
+      - '"Low"'
+      - '"Medium"'
+      - '"High"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema declares the SDD's three classes, each labelled, commented and a property domain"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py classes maintenance maintenance --count 3"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "`uip ont validate --local` is clean and the ontology service validated"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py validate MaintenanceModel maintenance"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One package in MaintenanceModel/out; `uip ont files list --package` lists schema, constraints and mapping"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py package MaintenanceModel maintenance"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No Data Fabric write without --local (nothing created on the tenant)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+df\s+\S+\s+(create|update|delete)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:local|help)\b)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No publish, deploy or activate"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(publish|deploy|activate)'
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,101 @@
+task_id: skill-ontology-authoring-sdd-handoff
+description: >
+  Smoke: from a small equipment-maintenance SDD, the agent runs the authoring
+  steps with a simulated domain owner confirming each table, then delegates to
+  uipath-ontology-modeler, which writes the entity definitions and authors the
+  choice set and entities locally in a new solution. The user stops the run at
+  the modeler's artifact-batch confirmation. Grades the delegation (both
+  skills fire), that the SDD's names, references and choice set reach the
+  entity definitions and the local resources, and that no Data Fabric write
+  ran without --local. No login needed beyond `uip login status`.
+tags: [uipath-ontology-authoring, smoke, mode:build, lifecycle:generate, feature:entities, feature:conversational]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+
+run_limits:
+  task_timeout: 1500
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create an ontology called "maintenance" from maintenance-sdd.md and build it
+  as a new local UiPath solution named MaintenanceModel in the current
+  directory.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the plant maintenance lead who wrote maintenance-sdd.md. You know
+    exactly what it says and nothing more.
+  goal: |
+    Confirm the ontology model the assistant extracts from the SDD. Once the
+    solution and its entities exist and the assistant asks you to confirm the
+    ontology artifact files, tell it to stop there: you will review the model
+    first.
+  constraints:
+    - "Answer in one short sentence, or pick the recommended / first option. Never bounce the decision back."
+    - "Approve each table that matches the SDD. If one contradicts the SDD, name the single correction."
+    - "Accept the folder names the assistant proposes. There is no external data source."
+    - "When asked to confirm the ontology artifact files (schema, constraints, mapping), say: stop here, I'll review the model first. Then end the conversation."
+  max_turns: 25
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-ontology-authoring skill for the SDD"
+    skill_name: uipath-ontology-authoring
+    expected_skill: uipath-ontology-authoring
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Authoring delegated the build to the uipath-ontology-modeler skill"
+    skill_name: uipath-ontology-modeler
+    expected_skill: uipath-ontology-modeler
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "WorkOrder definition keeps the SDD's references and choice set, by name"
+    path: "maintenance/input/entities/WorkOrder.json"
+    assertions:
+      - expression: "fields[?name=='priority'] | [0].choiceSetName"
+        operator: equals
+        expected: "WorkOrderPriority"
+      - expression: "fields[?name=='asset'] | [0].referenceEntityName"
+        operator: equals
+        expected: "Asset"
+      - expression: "fields[?name=='assignedTo'] | [0].referenceEntityName"
+        operator: equals
+        expected: "Technician"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "WorkOrderPriority choice set authored locally in the solution"
+    path: "MaintenanceModel/resources/solution_folder/choiceSet/WorkOrderPriority.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Asset, WorkOrder and Technician authored as local native entities"
+    command: "cd MaintenanceModel/resources/solution_folder/entity/native && test -f Asset.json && test -f WorkOrder.json && test -f Technician.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No Data Fabric write without --local (nothing created on the tenant)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+df\s+\S+\s+(create|update|delete)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:local|help)\b)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No publish or deploy"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(publish|deploy|activate)'
+    weight: 1.0
+    pass_threshold: 1.0

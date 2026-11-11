@@ -1,0 +1,110 @@
+task_id: skill-ontology-modeler-e2e-pack
+description: >
+  E2E (Standalone mode): from a plain-language orders domain, a simulated
+  domain owner confirms the model and the agent builds the local solution
+  (choice set, two native entities, ontology resource and its files),
+  validates with the ontology service until clean, and packs. Grades the
+  outcome: the local resources exist, `uip ont validate --local` is clean with
+  the service verdict Done, the package lists schema, constraints and mapping,
+  and nothing was published or deployed. Needs a CLI that ships `uip ont`
+  (cli#5710, cli#5798) and a login whose tenant serves ontology validation.
+tags: [uipath-ontology-modeler, e2e, mode:build, lifecycle:generate, feature:entities, outcome-graded]
+
+reference:
+  directory: ..
+
+run_limits:
+  task_timeout: 2700
+  turn_timeout: 2400
+
+initial_prompt: |
+  Build an ontology called "orders" for our order data, as a new local UiPath
+  solution named OrdersModel in the current directory, with the ontology files
+  under ./orders.
+
+  A sales order has an order number (text, required) and a status that is one
+  of Open, Shipped or Cancelled. A customer has a name. Each sales order is
+  placed by exactly one customer.
+
+  The task is not complete until `uip ont validate` is clean and the solution
+  is packed. Do not publish or deploy.
+
+simulation:
+  enabled: true
+  persona: |
+    You own the order data at a small distributor. You know only what your
+    opening message says: sales orders with an order number and an
+    Open/Shipped/Cancelled status, customers with a name, and that each order
+    is placed by exactly one customer.
+  goal: |
+    Get a validated, packed local solution named OrdersModel holding the
+    "orders" ontology and its entities. Approve the proposed model and each
+    batch the assistant shows. Stop once it reports the package.
+  constraints:
+    - "Answer in one short sentence, or pick the recommended / first option. Never bounce the decision back."
+    - "Accept the assistant's proposed entity names (for example SalesOrder instead of Order), field types and choice-set name."
+    - "Do not add classes, fields or systems beyond the opening message. There is no external or connector data source."
+    - "If asked to publish, deploy or activate, say no: packing is enough."
+    - "When the assistant reports the packed solution, end the conversation."
+  max_turns: 30
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-ontology-modeler skill"
+    skill_name: uipath-ontology-modeler
+    expected_skill: uipath-ontology-modeler
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "The choice set is a local resource of the solution"
+    path: "OrdersModel/resources/solution_folder/choiceSet/OrderStatus.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both entities are local native resources (any confirmed names; exactly two)"
+    command: "test $(ls OrdersModel/resources/solution_folder/entity/native/*.json | wc -l) -eq 2"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema declares two classes, one per entity, each labelled, commented and a property domain"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py classes orders orders --count 2"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every artifact in ./orders passes `uip ont artifacts check` and holds no GUID"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py artifacts orders orders"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "`uip ont validate --local` is clean and the ontology service validated"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py validate OrdersModel orders"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One package in OrdersModel/out; `uip ont files list --package` lists schema, constraints and mapping"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py package OrdersModel orders"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Modeler stops after pack: no publish, deploy or activate"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(publish|deploy|activate)'
+    weight: 2.0
+    pass_threshold: 1.0

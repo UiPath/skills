@@ -134,3 +134,4 @@
 {"id": "uipath-data-fabric-048", "prompt": "Insert this loan application record from loan.json", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-049", "prompt": "Find all SystemUser records where Email endswith '@uipath.com'", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-050", "prompt": "Wipe all test records from my Sandbox entity (query then bulk delete)", "expected_skill": "uipath-platform"}
+{"id": "uipath-data-fabric-051", "prompt": "Create a Data Fabric entity named Vendor with name and country fields on my tenant", "expected_skill": "uipath-platform"}

@@ -1,0 +1,25 @@
+{"id": "uipath-ontology-modeler-001", "prompt": "I have Orders, Customers, and Products with their fields and relationships. Generate the ontology artifacts.", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-002", "prompt": "Model a clinic ontology from this plain-language domain description", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-003", "prompt": "Regenerate the SHACL constraints for my orders ontology after I added a required delivery date", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-004", "prompt": "Create the OWL schema, constraints, and mapping for a supplier management domain I described here, with a local entity per class", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-005", "prompt": "Build a UiPath ontology for our fleet: vehicles, drivers and trips, where each trip has one vehicle and one driver", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-006", "prompt": "I need a semantic model over my Data Fabric data so an agent can answer questions about invoices and vendors", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-007", "prompt": "Turn this list of classes and fields into an ontology solution I can pack and deploy later", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-008", "prompt": "Write the .ofn, the constraints .ttl and the YARRRML mapping for a library domain: books, members and loans", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-009", "prompt": "Give me just the ontology files for a simple HR model, employees and departments, no solution", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-010", "prompt": "I have generated OFN, SHACL, and YARRRML files; validate them and build a new local ontology solution from them", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-011", "prompt": "Clone these ontology artifacts under a new name and build them into a local solution", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-012", "prompt": "Build a solution from these OFN, constraints, and context files; the mapping is missing, so generate it from the schema", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-013", "prompt": "Create the ontology resource and a local entity per class in the solution folder, validate with the ontology service, and pack it", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-014", "prompt": "uip ont validate says XF-012 on my local ontology solution: the Shipment class has no matching entity. Fix it and validate again", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-015", "prompt": "My ontology's YARRRML mapping treats totalAmount as a string; fix the mapping so it is typed as a decimal", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-016", "prompt": "Add a Warehouse class to the local ontology solution I built yesterday and repack it", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-017", "prompt": "Model a claims domain where a claim status is one of Submitted, Approved or Rejected, and build the ontology with its entities", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-018", "prompt": "Build an ontology whose Customer class reads from our Salesforce accounts through a federated entity", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-019", "prompt": "Create a knowledge graph schema for our product catalog on UiPath and the Data Fabric entities behind it", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-020", "prompt": "Make an OWL 2 QL ontology for maintenance assets and work orders and check every file with uip ont artifacts check", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-021", "prompt": "Package my ontology solution and show me which ontology files ended up in the zip", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-022", "prompt": "Write SHACL shapes so every purchase order has exactly one supplier and an amount", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-023", "prompt": "Rebuild this ontology folder (orders.ofn, orders-constraints.ttl, orders-mapping.yarrrml.yml) as a local UiPath solution", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-024", "prompt": "I described patients, appointments and doctors above; create the ontology and local entities, then pack the solution", "expected_skill": "uipath-ontology-modeler"}
+{"id": "uipath-ontology-modeler-025", "prompt": "Set up an ontology over local entities for tickets and agents so our support agent can query them by meaning", "expected_skill": "uipath-ontology-modeler"}
