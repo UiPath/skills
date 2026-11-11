@@ -133,6 +133,7 @@ Is this the process you want?
 ```
 
 The reply is the template and nothing else: no line before it, between its parts or after it.
+Write the path line as the plain path, not as a Markdown link: `InvoiceIntake/InvoiceIntake.bpmn`, not `[InvoiceIntake.bpmn](…)`.
 That rules out a status or validation line (`Valid`, `zero errors`), an explanation of a warning, a note about a default you chose, and a question of your own (a time zone, which app); anything the user should settle waits for *Change it*.
 List every task box, in order, and nothing else: not the start event, a gateway or the end event.
 A box line is the box's label exactly as its `.task()` name spells it, `→ variable` suffix included, and never a branch condition, an arm label or a route: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`.
