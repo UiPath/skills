@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "PUT",
+          "Target": "/api/remote-a2a-agents/vendor-agent"
+        }
+      ],
+      "Resolved": {
+        "Description": "",
+        "Headers": "Authorization:%ASSETS/VendorToken%",
+        "UseRelay": false
+      }
+    }
+  }
+}

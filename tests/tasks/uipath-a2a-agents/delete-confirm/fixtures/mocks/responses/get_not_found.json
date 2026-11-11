@@ -1,0 +1,12 @@
+{
+  "Result": "Failure",
+  "Code": "AgentHubRemoteA2aAgentGet",
+  "ErrorCode": "not_found",
+  "Message": "HTTP 404: Not Found",
+  "Instructions": "Verify the resource exists in the current folder/tenant",
+  "Retry": "RetryWillNotFix",
+  "Context": {
+    "HttpStatus": 404,
+    "TraceId": "00-00000000000000000000000000000001-0000000000000001-00"
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "remote-a2a-agent-user-connections set --help",
+      "file": "help_uc_set.txt"
+    },
+    {
+      "match": "remote-a2a-agent-user-connections list --help",
+      "file": "help_uc_list.txt"
+    },
+    {
+      "match": "remote-a2a-agent-user-connections delete --help",
+      "file": "help_uc_delete.txt"
+    },
+    {
+      "match": "remote-a2a-agent create --help",
+      "file": "help_create.txt"
+    },
+    {
+      "match": "remote-a2a-agent update --help",
+      "file": "help_update.txt"
+    },
+    {
+      "match": "remote-a2a-agent get --help",
+      "file": "help_get.txt"
+    },
+    {
+      "match": "remote-a2a-agent list --help",
+      "file": "help_list.txt"
+    },
+    {
+      "match": "remote-a2a-agent delete --help",
+      "file": "help_delete.txt"
+    },
+    {
+      "match": "remote-a2a-agent refresh-card --help",
+      "file": "help_refresh_card.txt"
+    },
+    {
+      "match": "or folders list",
+      "file": "or_folders_list.json"
+    },
+    {
+      "match": "remote-a2a-agent list",
+      "file": "list.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent create",
+        "--print-schema"
+      ],
+      "file": "create_print_schema.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent update",
+        "--print-schema"
+      ],
+      "file": "update_print_schema.json"
+    },
+    {
+      "match": "is connections list",
+      "file": "is_connections_list.json"
+    },
+    {
+      "match": "admin users list",
+      "file": "admin_users_list.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent-user-connections set",
+        "--dry-run"
+      ],
+      "file": "uc_set_dryrun.json"
+    },
+    {
+      "match": "remote-a2a-agent-user-connections set",
+      "file": "uc_set.json"
+    },
+    {
+      "match": "remote-a2a-agent-user-connections list",
+      "after": [
+        "remote-a2a-agent-user-connections set",
+        "--agent foundry-agent"
+      ],
+      "file": "uc_list_after_set.json"
+    },
+    {
+      "match": "remote-a2a-agent-user-connections list",
+      "file": "uc_list.json"
+    },
+    {
+      "match": "remote-a2a-agent get foundry-agent",
+      "file": "get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

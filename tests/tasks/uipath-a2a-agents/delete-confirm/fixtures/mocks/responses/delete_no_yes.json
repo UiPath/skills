@@ -1,0 +1,7 @@
+{
+  "Result": "Failure",
+  "Message": "Confirmation required: this will delete remote A2A agent 'vendor-agent' and cannot be undone.",
+  "Instructions": "Re-run with --yes to confirm.",
+  "ErrorCode": "confirmation_required",
+  "Retry": "RetryWillNotFix"
+}

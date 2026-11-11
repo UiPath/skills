@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "7a1b2c3d-0000-4000-8000-0000000000bb",
+      "Name": "Foundry Agent",
+      "ConnectorKey": "uipath-google-agent2agent",
+      "ConnectorName": "Agent 2 Agent",
+      "State": "Enabled",
+      "Owner": "mock.user@example.com",
+      "IsDefault": "Yes",
+      "ByoaConnection": "No",
+      "ElementInstanceId": 100001,
+      "Folder": "Shared",
+      "FolderKey": "0f0f0f0f-0000-4000-8000-0000000000f1",
+      "Created": "2026-11-10T16:06:18.063Z",
+      "Updated": "2026-11-10T16:06:18.063Z"
+    },
+    {
+      "Id": "7a1b2c3d-0000-4000-8000-0000000000aa",
+      "Name": "Foundry Agent #2",
+      "ConnectorKey": "uipath-google-agent2agent",
+      "ConnectorName": "Agent 2 Agent",
+      "State": "Enabled",
+      "Owner": "mock.user@example.com",
+      "IsDefault": "No",
+      "ByoaConnection": "No",
+      "ElementInstanceId": 100005,
+      "Folder": "Shared",
+      "FolderKey": "0f0f0f0f-0000-4000-8000-0000000000f1",
+      "Created": "2026-11-10T16:08:28.243Z",
+      "Updated": "2026-11-10T16:44:38.250Z"
+    }
+  ]
+}

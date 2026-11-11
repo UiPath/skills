@@ -1,0 +1,63 @@
+Usage: uip agenthub remote-a2a-agent update [options] <slug>
+
+Update a remote A2A agent. Options left out keep the stored values.
+
+Arguments:
+  slug                        Agent slug.
+
+Options:
+  --name <name>               Updated name.
+  --description <text>        Updated description.
+  --agent-card-url <url>      Updated card URL, fetched on the next
+                              refresh-card. Moving the agent to another origin
+                              (scheme, host or port) is refused while users have
+                              per-user Integration Service connections on it,
+                              needs --clear-connection or another
+                              --connection-id when it has its own connection,
+                              and needs --header when it has secret or
+                              asset-backed headers, so those credentials are not
+                              sent there.
+  --agent-card-json <json>    Raw agent card JSON, replacing the stored card. A
+                              card whose endpoint is on another origin counts as
+                              a move, as --agent-card-url does.
+  --header <key=value>        HTTP header; replaces every stored header. Pass
+                              --header "<name>=****", with the name exactly as
+                              `remote-a2a-agent get` shows it, to keep a masked
+                              value. Repeatable. A value of exactly
+                              %ASSETS/<asset-name>% is replaced by that
+                              Orchestrator asset's value, from the agent's
+                              folder, each time the header is sent. An
+                              Authorization header is not sent while the agent
+                              has an Integration Service connection. (default:
+                              [])
+  --connection-id <id>        Integration Service connection, by id, replacing
+                              the stored one; its token authenticates the card
+                              fetch and every call. Use an OAuth connection of
+                              the Agent 2 Agent connector
+                              (uipath-google-agent2agent), the one Agent Gateway
+                              offers: the service stores any connection
+                              Integration Service finds, and one it gets no
+                              OAuth token from fails every call. List that
+                              connector's connections with `uip is connections
+                              list uipath-google-agent2agent --all-folders`.
+  --clear-connection          Remove the agent's Integration Service connection.
+                              Cannot be combined with --connection-id. Without
+                              --connection-id or --clear-connection, an update
+                              keeps the agent's connection.
+  --use-relay                 Route through UiPath Relay.
+  --no-use-relay              Stop routing through UiPath Relay. Without
+                              --use-relay or --no-use-relay, an update keeps the
+                              agent's Relay setting.
+  --is-active <boolean>       Activation state ('true' or 'false').
+  --file <path>               Read JSON payload from file.
+  --body <json>               Read JSON payload from inline JSON.
+  --print-schema              Emit the expected --file JSON schema.
+  --dry-run                   Print the mutation plan without calling the API.
+  --folder-key <key>          Orchestrator folder key (GUID). Use --folder-path
+                              for the folder name or fully-qualified path.
+  --folder-path <path>        Orchestrator folder display name or
+                              fully-qualified path (e.g. 'Shared' or
+                              'Foo/Shared'). Resolved to the folder key via the
+                              Orchestrator SDK.
+  --login-validity <minutes>  Interactive-login token lifetime.
+  -h, --help                  display help for command

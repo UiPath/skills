@@ -1,0 +1,43 @@
+Usage: uip agenthub remote-a2a-agent create [options]
+
+Create a remote A2A agent.
+
+Options:
+  --slug <slug>               Agent slug.
+  --name <name>               Agent name.
+  --description <text>        Agent description.
+  --agent-card-url <url>      Agent card URL. The service fetches the card from
+                              it, with the headers and the connection's token,
+                              on create and on every refresh-card.
+  --agent-card-json <json>    Raw agent card JSON, stored instead of fetching a
+                              card.
+  --header <key=value>        HTTP header sent with the card fetch and every
+                              call to the agent. Repeatable. A value of exactly
+                              %ASSETS/<asset-name>% is replaced by that
+                              Orchestrator asset's value, from the agent's
+                              folder, each time the header is sent. An
+                              Authorization header is not sent while the agent
+                              has an Integration Service connection. (default:
+                              [])
+  --connection-id <id>        Integration Service connection, by id, whose token
+                              authenticates the card fetch and every call. Use
+                              an OAuth connection of the Agent 2 Agent connector
+                              (uipath-google-agent2agent), the one Agent Gateway
+                              offers: the service stores any connection
+                              Integration Service finds, and one it gets no
+                              OAuth token from fails every call. List that
+                              connector's connections with `uip is connections
+                              list uipath-google-agent2agent --all-folders`.
+  --use-relay                 Route through UiPath Relay.
+  --file <path>               Read JSON payload from file.
+  --body <json>               Read JSON payload from inline JSON.
+  --print-schema              Emit the expected --file JSON schema.
+  --dry-run                   Print the mutation plan without calling the API.
+  --folder-key <key>          Orchestrator folder key (GUID). Use --folder-path
+                              for the folder name or fully-qualified path.
+  --folder-path <path>        Orchestrator folder display name or
+                              fully-qualified path (e.g. 'Shared' or
+                              'Foo/Shared'). Resolved to the folder key via the
+                              Orchestrator SDK.
+  --login-validity <minutes>  Interactive-login token lifetime.
+  -h, --help                  display help for command

@@ -1,0 +1,74 @@
+task_id: skill-a2a-agents-not-supported-as
+description: |
+  Ask to register a remote A2A agent on an environment whose Agent Gateway has none (as on Automation Suite 26.10): every `uip agenthub remote-a2a-agent` call that reaches the service fails with `ErrorCode: not_supported`. Exercises Critical Rule 10 and the Automation Suite section: the agent reports that remote A2A agents aren't available there, does not keep retrying or log in again, and does not register the agent as something else (an MCP server) on its own. Graded from the uip mock's call log, plus an LLM judge on the answer. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-a2a-agents, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Register our vendor's A2A agent in Agent Gateway, in the Shared
+  folder, with the name and slug vendor-agent, from its agent card at
+  https://agent.example.com/.well-known/agent-card.json.
+success_criteria:
+- type: command_executed
+  description: Agent ran a remote-a2a-agent command against the service
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+remote-a2a-agent\s+(list|get|create)\b(?![^\n]*--(dry-run|help|print-schema))'
+  min_count: 1
+  weight: 1.0
+- type: command_executed
+  description: Agent did NOT keep retrying the create (at most two real attempts)
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+remote-a2a-agent\s+create\b(?![^\n]*--(dry-run|help|print-schema))'
+  min_count: 0
+  max_count: 2
+  weight: 1.5
+- type: command_not_executed
+  description: Agent did NOT register the agent as an MCP server instead
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp\s+create\b(?![^\n]*--(dry-run|help|print-schema))'
+  weight: 2.0
+- type: command_not_executed
+  description: Agent did NOT log in again (not_supported is not an auth failure)
+  tool_name: Bash
+  # Read-only subcommands (`status`, `which`, `tenant list`, `profiles list`) and
+  # `--help`/`-h` only read the session, so they are exempt. The pattern is the
+  # MCP suite's swagger-not-supported guard.
+  command_pattern: 'uip\s+(login|auth\s+login)\b(?!\s+(status|which|tenant\s+list|profiles\s+list)\b)(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
+  weight: 1.0
+- type: llm_judge
+  description: The answer says remote A2A agents aren't available on the connected environment
+  weight: 2.0
+  pass_threshold: 0.7
+  include_reference: false
+  include_dialog: true
+  include_agent_output: true
+  prompt: |
+    The CLI answered the remote-a2a-agent commands with ErrorCode
+    not_supported: Agent Gateway on the connected environment does not offer
+    remote A2A agents (as on Automation Suite 26.10). Nothing was registered.
+    Grade the agent's final answer to the user:
+
+      1.0  Says the agent was not registered because the connected
+           environment does not offer remote A2A agents, and leaves the next
+           step to the user (for example another environment, such as
+           Automation Cloud) without doing it.
+      0.7  Says remote A2A agents aren't supported there, but is vague about
+           what the user can do next.
+      0.3  Blames something else first (permissions, the folder, the card
+           URL, a transient error) or suggests retrying the same command.
+      0.0  Says the agent was registered, or registered it as something else.
+
+    Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+run_limits: {max_turns: 40}
