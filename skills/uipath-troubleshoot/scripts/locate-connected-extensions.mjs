@@ -10,35 +10,11 @@
 //   component          name, version, directory, setupExtensionsPath
 // Exit:  0 found, 1 unsupported OS, 3 anything else. No dependencies. Node 18+.
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { emit, requireUpdater } from './connected-installer.mjs';
 
-const emit = (obj, code) => {
-  process.stdout.write(JSON.stringify(obj) + '\n');
-  process.exit(code);
-};
-
-if (process.platform !== 'win32') emit({ status: 'unsupported-os', os: process.platform }, 1);
-
-const readUpdaterAppPath = (configRoot) => {
-  try {
-    const text = readFileSync(join(configRoot, 'UiPathConnected', 'Updater', 'apiconfig.json'), 'utf8');
-    return JSON.parse(text.replace(/^\uFEFF/, '')).UpdaterAppPath || null;
-  } catch {
-    return null;
-  }
-};
-
-// Per-user install first, then per-machine.
-const updater = [
-  { scope: 'user', configRoot: process.env.LOCALAPPDATA },
-  { scope: 'machine', configRoot: process.env.ProgramData },
-]
-  .map((s) => ({ ...s, updaterAppPath: s.configRoot && readUpdaterAppPath(s.configRoot) }))
-  .find((s) => s.updaterAppPath);
-if (!updater) emit({ status: 'connected-missing' }, 3);
-
-const { scope, updaterAppPath } = updater;
+const { scope, updaterAppPath } = requireUpdater();
 // The Updater is at <platform root>\Updater\<exe>; a product is at <platform root>\<name>\<version>.
 const platformRoot = dirname(dirname(updaterAppPath));
 

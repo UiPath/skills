@@ -37,10 +37,21 @@ What to look for:
    | `connected-missing` | 3 | No Connected installer, per-user or per-machine |
    | `unsupported-os` | 1 | Not Windows |
 
+3. **On `component-missing` only**, offer to open the Connected installer window. Ask via `AskUserQuestion` first: the Browser Extensions component is missing; open the UiPath Connected installer so it can be added? State that the command opens a window and installs nothing by itself. Run the command only on a yes:
+
+   ```bash
+   node scripts/open-connected-installer.mjs > .local/investigations/raw/open-connected-installer.json
+   ```
+
+   - Declined, no answer, or `AskUserQuestion` unavailable → do not run it; go to Resolution.
+   - `status: opened` → tell the user: the UiPath Connected installer window is open; tick **Browser Extensions**, confirm, and reply when it finishes. Then stop and wait for the reply. Never wait on a timer and never re-run the command meanwhile.
+   - `status: open-failed` → quote `error`; go to Resolution.
+   - When the user replies, re-run step 1. Still `component-missing` → go to Resolution. Open the window at most 2 times per investigation.
+
 Do NOT probe install folders by hand or call the Updater directly. The script's answer is final.
 
 ## Resolution
 
 - **If `connected-missing`:** report that UiPath on this machine was not installed through the Connected installer. Stop.
-- **If `component-missing`:** report that the Browser Extensions component is not installed. Recommend adding it from the Connected installer's Modify window. Do not install it yourself.
+- **If `component-missing`** after step 3 (window not opened, user declined, or the component is still absent): report that the Browser Extensions component is not installed. Recommend adding it from the Connected installer's Modify window. Stop.
 - **If `ok`:** report `component.directory` and `component.version`. The tooling is present; continue with the playbook that led here, e.g. [browser-communication-failed.md](./browser-communication-failed.md).
