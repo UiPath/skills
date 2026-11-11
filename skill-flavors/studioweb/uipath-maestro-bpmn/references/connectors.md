@@ -9,3 +9,7 @@ In Studio Web the library of the session is always loaded: `uip maestro registry
 <!--skill-flavor:package-metadata-row:start-->
 | package metadata | `entry-points.json`, `operate.json`, `package-descriptor.json` | the same `refresh`. Studio Web has no `uip solution resources refresh`: add each connection with `uip solution resources add` ([Validation loop](../SKILL.md#validation-loop)) |
 <!--skill-flavor:package-metadata-row:end-->
+
+<!--skill-flavor:prepare-live:start-->
+**`prepare` is a live call.** It reads through a real connection, so it needs a connection on the tenant (you are already signed in). Run it when `check` asks for it, not speculatively.
+<!--skill-flavor:prepare-live:end-->

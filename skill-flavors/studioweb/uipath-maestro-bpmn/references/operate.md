@@ -101,3 +101,10 @@ When the action reveals a modeling or binding problem, the fix is in the
 `.bpmn.ts`: run the [Validation loop](../SKILL.md#validation-loop) again, then
 debug or publish again.
 <!--skill-flavor:fix-and-ship:end-->
+
+<!--skill-flavor:operate-scope:start-->
+Everything past `validate` that touches the cloud: package metadata, Studio Web
+publish, debug and deployed runs, job and instance inspection, and instance
+lifecycle. These actions may contact UiPath services and external systems. You
+are already signed in to the tenant of the user, so there is no `uip login`.
+<!--skill-flavor:operate-scope:end-->

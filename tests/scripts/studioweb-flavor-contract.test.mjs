@@ -330,6 +330,16 @@ test("the studioweb Flow skill is the builder-SDK skill", (t) => {
   assert.ok(skill.includes("@uipath/maestro-builder-sdk"));
 });
 
+test("the studioweb BPMN skill says evals are not available, in the routing table and the page", (t) => {
+  const root = join(buildStudioweb(t), "uipath-maestro-bpmn");
+  const skill = readFileSync(join(root, "SKILL.md"), "utf8");
+  const evaluate = readFileSync(join(root, "references", "evaluate.md"), "utf8");
+
+  assert.ok(!skill.includes("| Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | `uip maestro bpmn eval` |"));
+  assert.ok(skill.includes("| Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | Not available in Studio Web |"));
+  assert.ok(evaluate.includes("**Not available in Studio Web.**"));
+});
+
 test("the studioweb HITL skill hands Case and BPMN to their own skills", (t) => {
   const skill = readFileSync(join(buildStudioweb(t), "uipath-human-in-the-loop", "SKILL.md"), "utf8");
 

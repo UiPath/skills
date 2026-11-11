@@ -169,3 +169,7 @@ Evaluations are not available in Studio Web.
 `uip maestro bpmn eval` (evaluators, eval sets, simulations and eval runs) is not a command here, so do not follow [`references/evaluate.md`](references/evaluate.md).
 When the user asks to evaluate a process, tell them that evaluations run from the `uip` CLI on their own machine, outside Studio Web.
 <!--skill-flavor:evaluating:end-->
+
+<!--skill-flavor:evaluate-row:start-->
+| Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | Not available in Studio Web | [Evaluate](references/evaluate.md) says what to tell the user | — |
+<!--skill-flavor:evaluate-row:end-->

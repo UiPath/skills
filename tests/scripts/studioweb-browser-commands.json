@@ -340,12 +340,18 @@
     }
   },
   "uipath-maestro-bpmn": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/evaluate.md",
+        "command": "maestro bpmn eval",
+        "reason": "Studio Web override note at the top of the page: eval does not run in the browser, so the commands below are not to be run here."
+      }
+    ],
     "ceiling": {
-      "login": 5,
+      "login": 3,
       "login status": 1,
       "maestro bpmn": 41,
-      "maestro bpmn eval": 22,
+      "maestro bpmn eval": 2,
       "maestro bpmn eval list": 1,
       "maestro bpmn pack": 1,
       "rules describe": 1,
