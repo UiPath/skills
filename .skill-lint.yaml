@@ -96,10 +96,6 @@ overrides:
     rules: {STRUCT-REF-TOC: off, SIZE-REFERENCE-FILE: off}
 
 suppressions:
-  - rule: STRUCT-REQUIRED-FILES
-    paths: ["classic/skills/uipath-maestro-case/references/plugins/logging",
-            "classic/skills/uipath-maestro-case/references/plugins/variables/bindings"]
-    reason: "No planning.md on purpose: each impl-json.md says 'Intentional, not a gap'"
   - rule: AGENT-READ-TRUNCATED
     paths: ["skills/uipath-rpa/references/xaml/common-pitfalls.md"]
     reason: "Read by section, never whole: SKILL.md says to list its headings and read the matching sections"

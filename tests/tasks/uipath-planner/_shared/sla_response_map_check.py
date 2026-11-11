@@ -144,7 +144,7 @@ def check(text: str) -> list[str]:
             # nothing — so `—` is the only legal value. `No` is not: it implies the
             # stage-re-entry shape, which re-runs every task in the breached stage whose
             # shouldRunOnlyOnce is false (the default). See
-            # classic/skills/uipath-maestro-case/references/sla-response-shapes.md section 5, defect 4.
+            # skills/uipath-maestro-case/references/case-runtime.md § SLA (start-task response).
             if not _is_dash(row.get("interrupting", "")):
                 issues.append(
                     f"SLA Response Map row [{label}] is start-task with Interrupting "

@@ -9,7 +9,7 @@ not re-entered and its other tasks do not re-run.
 accepts it (verified on uip 1.198.0-preview.102). Re-entering the stage restarts every task
 in it whose `shouldRunOnlyOnce` is `false` — the default for every task type — so a breach
 meant to add one manager check silently re-runs the whole stage. See
-`classic/skills/uipath-maestro-case/references/sla-response-shapes.md` section 5, defect 4.
+`skills/uipath-maestro-case/references/case-runtime.md` § SLA (start-task response).
 
 The rule must reference **Review's own** SLA and be a breach rule (`slaId`, no
 `escalationId`), and the follow-up task must be an `action` task in Review with a working

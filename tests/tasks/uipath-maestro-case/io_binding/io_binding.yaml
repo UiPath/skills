@@ -49,9 +49,7 @@ initial_prompt: |
   invent an operator-free Outputs row in sdd.md.
 
   Do not run `uip maestro case debug` yourself; the test harness runs it
-  after structural grading. The workspace already contains exactly one .uipx
-  solution manifest — do not create, download, or overwrite it. Do not run
-  `uip solution init` or `uip solution pack`. After `validate` passes, stop.
+  after grading. After `validate` passes, stop.
 
 success_criteria:
   - type: run_command

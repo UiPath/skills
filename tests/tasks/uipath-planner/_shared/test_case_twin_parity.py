@@ -16,12 +16,19 @@ rule from either side fails the test, while rewording it does not.
 import os
 import re
 
+import pytest
+
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..")
-CANONICAL = os.path.join(ROOT, "skills", "uipath-planner", "references", "design", "case-data-and-time-guide.md")
-# The twin is the classic (JSON-authoring) case skill, which Studio Web pins.
-TWIN = os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "references", "sla-response-shapes.md")
+CANONICAL = os.path.join(ROOT, "skills", "uipath-planner", "references", "case", "case-design-layers-guide.md")
+# The twin was the classic (JSON-authoring) case skill. After the v2 unpin
+# (classic tree removed), the SLA response shapes live in the v2 case-runtime
+# reference. Skip parity tests when the classic twin is absent.
+_CLASSIC_TWIN = os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "references", "sla-response-shapes.md")
+_CLASSIC_TWIN_FIELDS = os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "references", "registry-discovery.md")
+CLASSIC_AVAILABLE = os.path.isfile(_CLASSIC_TWIN)
+TWIN = _CLASSIC_TWIN
 CANONICAL_FIELDS = CANONICAL
-TWIN_FIELDS = os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "references", "registry-discovery.md")
+TWIN_FIELDS = _CLASSIC_TWIN_FIELDS
 
 
 def read(path: str) -> str:
@@ -93,10 +100,12 @@ def assert_pair(concepts, canonical_path, twin_path):
     assert not missing, "canonical/twin drift:\n  " + "\n  ".join(missing)
 
 
+@pytest.mark.skipif(not CLASSIC_AVAILABLE, reason="classic tree removed (v2 unpin)")
 def test_sla_response_model_stated_on_both_sides():
     assert_pair(SLA_RESPONSE_MODEL, CANONICAL, TWIN)
 
 
+@pytest.mark.skipif(not CLASSIC_AVAILABLE, reason="classic tree removed (v2 unpin)")
 def test_field_name_invariant_stated_on_both_sides():
     assert_pair(FIELD_NAME_INVARIANT, CANONICAL_FIELDS, TWIN_FIELDS)
 
@@ -114,8 +123,12 @@ def test_the_planner_declares_the_twin_relationship():
 
 def test_neither_side_links_into_the_other_skills_files():
     """Self-containment: sibling references are by skill NAME, never by file path."""
-    for path in (CANONICAL, TWIN, TWIN_FIELDS,
-                 os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "SKILL.md")):
+    paths = [CANONICAL,
+             os.path.join(ROOT, "skills", "uipath-planner", "references", "case", "case-design-lane-guide.md")]
+    if CLASSIC_AVAILABLE:
+        paths += [TWIN, TWIN_FIELDS,
+                  os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "SKILL.md")]
+    for path in paths:
         text = read(path)
         offenders = re.findall(r"\]\((?:\.\./)+uipath-[a-z-]+/[^)]+\)", text)
         assert not offenders, f"{os.path.basename(path)} links into another skill's files: {offenders}"

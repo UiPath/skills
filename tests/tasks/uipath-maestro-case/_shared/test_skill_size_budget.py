@@ -2,14 +2,12 @@
 
 Ported from tests/tasks/uipath-maestro-flow/_shared/test_skill_size_budget.py
 (same gates, same rules); only the path, the numbers and the evidence differ.
-It replaces the single byte cap #4135 added (MST-17096, acceptance item 3).
 
 Why this exists. SKILL.md is loaded whole, on the first turn of every run, and
-then rides along as cached context on every later turn. In the MST-17096 A/B
-(2026-10-20, Opus 5.5, 77 case tasks, arm A on main 883fd3ed9) the 52,370-byte
-SKILL.md cost a median 19,279 cache-write tokens on the message after the
-Skill call (n=75, p90 19,303). The file had grown from 38,442 bytes at #3018
-(2026-09-04) to 52,370 in six weeks with nothing bounding it.
+then rides along as cached context on every later turn. The v2 builder-SDK
+skill (skills/uipath-maestro-case/SKILL.md) is a router: most content is in
+references/, so the file is much smaller than the classic JSON-authoring skill
+it replaces. The gates still matter — growth here costs per turn.
 
 The gates, as in the flow skill:
 
@@ -17,18 +15,14 @@ The gates, as in the flow skill:
   order the same way as tokens); the line cap is set loosely so a reflow
   cannot trip it, and exists so a file of many short lines still has a ceiling.
 - MAX_SECTION_BYTES = 1300 for every H2, the flow skill's value unchanged, with
-  explicit larger budgets in SECTION_BUDGETS for the sections that carry the
-  Critical Rules, the phase workflow, the reference router and the
-  anti-patterns. Critical Rules holds all 25 numbered rules in one H2 (57% of
-  the file), so it gets its own entry rather than a looser global cap.
+  explicit larger budgets in SECTION_BUDGETS for the sections that need them.
 
 The canonical file is measured, flavor-marker comments included; the built
 default strips them, so the gate is slightly stricter than what an agent loads.
 
 Raising any number here is a deliberate act: say in the PR what the new text
 buys that a reference file could not, and what it costs in tokens. The
-estimate uses BYTES_PER_TOKEN = 2.72, measured in the run above (52,370 bytes
--> 19,279 cache-write tokens); it is indicative only.
+estimate uses BYTES_PER_TOKEN = 2.72; it is indicative only.
 
 Regex only: CI installs only pytest (see test-helpers.yml, the
 uipath-maestro-case checker unit tests job).
@@ -44,24 +38,23 @@ import pytest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
-SKILL_PATH = os.path.join(_REPO, "classic", "skills", "uipath-maestro-case", "SKILL.md")
+SKILL_PATH = os.path.join(_REPO, "skills", "uipath-maestro-case", "SKILL.md")
 
-# Whole file. Set at the port (256 lines, 52,235 bytes, ~19.2K tok) just above
-# the current size, so the next growth is a decision; the line cap is looser on
-# purpose (see above).
-MAX_BYTES = 52_500
-MAX_LINES = 300
+# Whole file. Set at the v2 port (150 lines, 14,546 bytes, ~5.3K tok) just
+# above the current size, so the next growth is a decision; the line cap is
+# looser on purpose (see above).
+MAX_BYTES = 15_000
+MAX_LINES = 180
 
 # Per H2, the flow skill's value.
 MAX_SECTION_BYTES = 1300
 
 # H2 title -> its own byte budget, for the sections that must stay larger.
-# Each is the size at the port plus 1-3%.
+# Each is the size at the port plus ~5%.
 SECTION_BUDGETS = {
-    "Critical Rules": 30_200,  # the 25 numbered rules (29,987)
-    "Workflow": 8_000,  # phase-by-phase steps (7,909)
-    "Reference Navigation": 5_300,  # the reference router (5,152)
-    "Anti-patterns": 4_600,  # (4,442)
+    "Workflow": 5_200,  # phase-by-phase steps (4,926)
+    "Capability router": 3_600,  # the reference router (3,425)
+    "Validation loop": 2_600,  # (2,469)
 }
 
 BYTES_PER_TOKEN = 2.72

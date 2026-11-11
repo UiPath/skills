@@ -26,7 +26,7 @@ Some commands in the references do not work in Studio Web. Use this table:
 
 When a reference tells you to run a command that is not available, use the Studio Web route that this guide gives. If there is no route, tell the user.
 
-**The solution manifest (`.uipx`) belongs to Studio Web.** Never run `uip solution init`, `uip solution pack`, or any command that creates or replaces a `.uipx` file. The workspace already has exactly one; creating a second breaks structural grading and is never recoverable in-session. After `validate` passes, stop — do not attempt to package, export, or download the solution.
+**The solution manifest (`.uipx`) belongs to Studio Web.** Never run `uip solution init`, `uip solution pack`, or any command that creates or replaces a `.uipx` file. The workspace already has exactly one; a second manifest is never recoverable in-session. After `validate` passes, stop — do not attempt to package, export, or download the solution.
 
 Every `uip` call prints a harmless `[WARN] [Telemetry] applicationinsights package not available`.
 <!--skill-flavor:host-setup:end-->

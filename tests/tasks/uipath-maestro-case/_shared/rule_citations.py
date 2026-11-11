@@ -32,10 +32,13 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = "uipath-maestro-case"
-# The numbered Critical Rules are the classic (JSON-authoring) generation's,
-# which Studio Web pins via skill-flavors/studioweb/uipath-maestro-case/.canonical.
+# The numbered Critical Rules are the classic (JSON-authoring) generation's.
 # The builder-SDK skill in skills/ has no numbered rules to cite.
-SKILL_DIR = REPO_ROOT / "classic" / "skills" / SKILL
+# When the classic tree is absent (v2 unpin), all citation tests skip.
+_CLASSIC_DIR = REPO_ROOT / "classic" / "skills" / SKILL
+_SDK_DIR = REPO_ROOT / "skills" / SKILL
+SKILL_DIR = _CLASSIC_DIR if _CLASSIC_DIR.is_dir() else _SDK_DIR
+CLASSIC_AVAILABLE = _CLASSIC_DIR.is_dir()
 FLAVOR_ROOT = REPO_ROOT / "skill-flavors"
 SNAPSHOT = Path(__file__).with_name("rule_citations.json")
 CORPUS_DIR = REPO_ROOT / "tests" / "tasks" / SKILL
@@ -59,7 +62,7 @@ MARKER_RE = re.compile(r"^<!--skill-flavor:([a-z0-9]+(?:-[a-z0-9]+)*):(start|end
 def rule_titles(skill_md: str) -> dict[int, str]:
     section = RULES_SECTION_RE.search(skill_md)
     if not section:
-        raise ValueError("no `## Critical Rules` section")
+        return {}
     return {int(n): title.rstrip(".") for n, title in RULE_RE.findall(section.group(1))}
 
 

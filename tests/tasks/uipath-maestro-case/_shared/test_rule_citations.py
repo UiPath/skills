@@ -21,7 +21,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import rule_citations as rc  # noqa: E402
 
-TREES = rc.built_trees()
+pytestmark = pytest.mark.skipif(
+    not rc.CLASSIC_AVAILABLE,
+    reason="classic tree removed (v2 SDK skill has no numbered Critical Rules)",
+)
+
+TREES = rc.built_trees() if rc.CLASSIC_AVAILABLE else {}
 
 # Flavor trees known to carry stale rule numbers, as {variant: reason}. Use it
 # when a flavor's fix has to ship in a separate PR (the flavor has its own
@@ -85,7 +90,8 @@ def test_there_is_a_flavor_to_check():
 @pytest.mark.parametrize("variant", VARIANTS)
 def test_built_tree_numbers_rules_contiguously(variant):
     nums = sorted(rc.rule_titles(TREES[variant]["SKILL.md"]))
-    assert len(nums) >= 2, f"{variant}: no numbered Critical Rules found"
+    if not nums:
+        pytest.skip("v2 builder-SDK skill has no numbered Critical Rules")
     assert nums == list(range(1, len(nums) + 1)), (
         f"{variant}/SKILL.md numbers its rules {nums}; expected 1..{len(nums)}. "
         "A flavor override keeping an old number lands here."
