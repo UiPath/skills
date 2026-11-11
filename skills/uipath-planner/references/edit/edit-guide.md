@@ -18,7 +18,7 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 
 ## Edits
 
-Every edit rewrites a legacy preamble (one naming `uipath-genome`) to the template's preamble ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 5).
+Every edit rewrites an older preamble (one asking for the `uipath-genome` skill's Execute mode, written before genome writing moved here) to the template's preamble ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 5).
 
 ### Any genome
 

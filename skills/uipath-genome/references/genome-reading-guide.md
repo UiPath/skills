@@ -15,7 +15,7 @@ Rules:
 2. **A component genome's `Part of:` line links its process genome**: the build takes the component's source framework from that process genome. A component reached through a process genome's links is inside it, with or without the line.
 3. **Detail lives at the lowest level that owns it.** The build reads a component's steps, rules, error handling and criteria in its component genome, and what spans components (process map, handoffs, shared platform dependencies, the transactional shape, cross-cutting rules, end-to-end criteria, deployment) in the process genome.
 4. **Every section is present**: a section the build cannot find is an edit for `uipath-planner` ([execution-guide.md § 1.1](execution-guide.md)), never a section to infer.
-5. **A genome whose preamble names `uipath-genome`** instead of `uipath-genome` builds here.
+5. **An older preamble** — one that asks for this skill's Execute mode, written before genome writing moved to `uipath-planner` — builds the same way.
 6. **Shared behaviour is one library component**: a project of its own, published to a feed and installed in its consumers as a package, never a project of the solution (§ Deployment). The build packs it before its consumers, and each consumer's steps call it as they call any library; only the Library layout answer of execution's configuration questions folds it into a consumer. What one or a few activities do (close an application, append a line to the run's log, send one mail) stays a step of each consumer.
 
 ## File Naming and Location

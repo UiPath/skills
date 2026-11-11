@@ -349,7 +349,7 @@ def test_heading_case_and_wording_variants_pass_core(tmp_path):
     assert run(tmp_path, text, profile="strict") == 1
 
 
-@pytest.mark.parametrize("legacy", ["uipath-genome", "uipath-genome-builder"])
+@pytest.mark.parametrize("legacy", ["uipath-genome-builder"])
 def test_preamble_naming_a_legacy_builder_still_passes(tmp_path, legacy):
     text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome", legacy)
     assert run(tmp_path, text, profile="strict") == 0
@@ -394,7 +394,7 @@ def test_invalid_utf8_is_a_fail_line(tmp_path):
     assert r.returncode == 1 and "FAIL:" in r.stdout and "not valid UTF-8" in r.stdout and "Error" not in r.stderr
 
 
-@pytest.mark.parametrize("legacy", ["uipath-genome", "uipath-genome-builder"])
+@pytest.mark.parametrize("legacy", ["uipath-genome-builder"])
 def test_legacy_builder_name_is_a_known_skill(tmp_path, legacy):
     text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("## Platform Dependencies", f"Built through `{legacy}`.\n\n## Platform Dependencies", 1)
     target = tmp_path / "sample-genome.md"

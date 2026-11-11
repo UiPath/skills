@@ -67,11 +67,10 @@ export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / De
   "uipath-activity-migrator", "uipath-knowledge-bundles", "uipath-vertical-solutions",
 ]);
 const RETIRED_SKILLS = ["uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"];
-// the skill a genome's preamble routes its build to; a genome written earlier names `uipath-genome` (before the
-// split) or `uipath-genome-builder` (the builder's first name), and both still build
+// the skill a genome's preamble routes its build to; `uipath-genome-builder`, an earlier name, still builds
 export const BUILDER = "uipath-genome";
-const LEGACY_BUILDERS = new Set(["uipath-genome", "uipath-genome-builder"]);
-const routesToBuilder = (s) => /\buipath-(?:build-from-genome|genome(?:-builder)?)(?![\w-])/.test(s);
+const LEGACY_BUILDERS = new Set(["uipath-genome-builder"]);
+const routesToBuilder = (s) => /\buipath-genome(?:-builder)?(?![\w-])/.test(s);
 
 export const COMPONENT_SECTIONS = [
   "Overview", "Target Applications", "Build With", "Platform Dependencies", "Interface",

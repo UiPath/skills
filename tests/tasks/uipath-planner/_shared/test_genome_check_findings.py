@@ -129,7 +129,7 @@ def test_blockquote_must_name_the_builder(check):
     assert f"blueprint blockquote does not name {BUILDER}" in out
 
 
-@pytest.mark.parametrize("legacy", ["uipath-genome", "uipath-genome-builder"])
+@pytest.mark.parametrize("legacy", ["uipath-genome-builder"])
 def test_blockquote_naming_a_legacy_builder_passes(check, legacy):
     text = COMPONENT.replace(f"Build it with the **{BUILDER}** skill", f"Build it with the **{legacy}** skill", 1)
     assert text != COMPONENT

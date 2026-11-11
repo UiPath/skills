@@ -1,7 +1,7 @@
 ---
 name: uipath-genome
 description: "UiPath genome builder: always invoke FIRST to build, execute, implement or follow an EXISTING `*-genome.md`, or run the migration or refactor it describes — before reading the file or loading any skill it names — through the owning skills. Configuration questions, a build per component through its skill, a verdict per acceptance criterion, open items and cutover; a genome extracted from a UiPath project is a refactor, one from another framework's export a migration (UI targets and test data migrated, characterization tests, run modes, comparison). Write, draft, author, edit, extract or document a genome, or turn an idea, SOP, PDD or SDD into one→uipath-planner (it writes every genome; never write or change one here); check or validate a genome→uipath-planner. Build without a genome→that artifact's skill. Legacy activity upgrade in place→uipath-activity-migrator. Quality review→uipath-review."
-when_to_use: "User points at an existing *-genome.md (or a file whose first line is `<!-- UIPATH-AUTOMATION-GENOME`) and asks to build, execute, implement or follow it; or uipath-planner hands over a genome it wrote for a build, a migration or a refactor. A genome whose preamble names `uipath-genome` builds here too. Not for writing, drafting, editing, checking or validating a genome — that is uipath-planner."
+when_to_use: "User points at an existing *-genome.md (or a file whose first line is `<!-- UIPATH-AUTOMATION-GENOME`) and asks to build, execute, implement or follow it; or uipath-planner hands over a genome it wrote for a build, a migration or a refactor. Not for writing, drafting, editing, checking or validating a genome — that is uipath-planner."
 argument-hint: "[build] <genome.md>"
 user-invocable: true
 ---
