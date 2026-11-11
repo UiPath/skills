@@ -32,7 +32,8 @@ reference:
   directory: ../migrate-classic/fixture
 
 initial_prompt: |
-  migrate activities in the ConsentBannerProbe project
+  migrate activities in the ConsentBannerProbe project. download the activity
+  migrator if it is not installed
 
 simulation:
   enabled: true

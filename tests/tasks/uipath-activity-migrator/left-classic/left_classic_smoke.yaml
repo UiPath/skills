@@ -32,6 +32,7 @@ reference:
 initial_prompt: |
   Migrate the UiPath project in ./vendor-portal-sync with the Activity
   Migrator, targeting UIAutomation 26.10.4. Do not run the migrated project.
+  Download the Activity Migrator if it is not installed.
 
   The `uip` CLI is available and authenticated in this sandbox.
 

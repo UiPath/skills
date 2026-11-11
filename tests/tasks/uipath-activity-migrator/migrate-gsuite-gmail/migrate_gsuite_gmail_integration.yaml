@@ -48,7 +48,7 @@ initial_prompt: |
   Migrate the UiPath project in ./GSuiteMigration with the Activity Migrator.
   Use the Integration Service connection 9b7e2d41-3c6a-4f8e-b215-6d0a9c3e7f52
   for Gmail and target GSuite Activities 3.12.10. Do not run the migrated
-  project.
+  project. Download the Activity Migrator if it is not installed.
 
   The `uip` CLI is available and authenticated in this sandbox.
 

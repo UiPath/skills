@@ -3,8 +3,10 @@
 
 Final-state only. Validates:
   1. Autonomous agent; schemas in sync with entry-points.json.
-  2. `receipt` is a job-attachment input and `claim` is declared, both
-     templated into the messages; a file-reading built-in tool is enabled.
+  2. `receipt` is a job-attachment input and the claim is declared — as a
+     `claim` object holding every claim field, or as those fields at the top
+     level — and every input is templated into the messages; a file-reading
+     built-in tool is enabled.
   3. An enabled escalation resource has an actionCenter channel bound to the
      solution-local "ExpenseFraudReview" Workflow Action app (appName,
      folderName=solution_folder, the app's Key as resourceKey), with at least
@@ -57,6 +59,8 @@ APP_INPUTS = {f["name"] for f in _SCHEMA["inputs"]}
 APP_INOUTS = {f["name"] for f in _SCHEMA["inOuts"]} | {f["name"] for f in _SCHEMA["outputs"]}
 APP_OUTCOMES = {o["name"] for o in _SCHEMA["outcomes"]}
 SOLUTION_DIR = AGENT_DIR.parent
+# The claim's fields, as the prompt names them.
+CLAIM_FIELDS = {"employeeId", "amount", "currency", "expenseDate", "category", "merchant", "businessPurpose"}
 
 
 def app_keys(solution_dir: Path) -> set[str]:
@@ -85,12 +89,38 @@ def current_app_key() -> str:
     return next(iter(keys))
 
 
-def check_inputs(in_schema: dict) -> None:
+def _resolve(schema: dict, node: dict) -> dict:
+    ref = node.get("$ref") or ""
+    if ref.startswith("#/definitions/"):
+        return (schema.get("definitions") or {}).get(ref.rsplit("/", 1)[-1]) or {}
+    return node
+
+
+def check_inputs(in_schema: dict) -> list[str]:
+    """`receipt` must be a job-attachment. The prompt lists the claim's fields in
+    prose ("the `claim` itself (employeeId, …)"), which reads either as one
+    `claim` object or as the fields themselves — both carry the same data and
+    nothing downstream depends on the shape. Accept a `claim` object holding
+    every CLAIM_FIELDS entry, or every CLAIM_FIELDS entry at the top level.
+    Returns the input names that must be templated into the messages."""
     if "receipt" not in attachment_fields(in_schema):
         fail("receipt must be a job-attachment input")
-    if "claim" not in (in_schema.get("properties") or {}):
-        fail("inputSchema must declare the claim input")
-    print("OK: receipt is a job-attachment and claim is declared")
+    props = in_schema.get("properties") or {}
+    if "claim" in props:
+        claim = _resolve(in_schema, props["claim"])
+        missing = sorted(CLAIM_FIELDS - set(claim.get("properties") or {}))
+        if claim.get("type") != "object" or missing:
+            fail(f"claim input must be an object declaring {sorted(CLAIM_FIELDS)}; missing {missing}")
+        print("OK: receipt is a job-attachment and claim is an object with every claim field")
+        return ["receipt", "claim"]
+    missing = sorted(CLAIM_FIELDS - set(props))
+    if missing:
+        fail(
+            "inputSchema must declare the claim — either a `claim` object or its fields "
+            f"{sorted(CLAIM_FIELDS)} as top-level inputs; missing {missing}"
+        )
+    print("OK: receipt is a job-attachment and every claim field is a top-level input")
+    return ["receipt", *sorted(CLAIM_FIELDS)]
 
 
 def check_escalation() -> None:
@@ -175,8 +205,7 @@ def main() -> None:
     assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
-    check_inputs(in_schema)
-    assert_inputs_referenced(agent, ["receipt", "claim"])
+    assert_inputs_referenced(agent, check_inputs(in_schema))
     require_resource(AGENT_DIR, is_file_reading_tool, "file-reading built-in tool")
     check_escalation()
     check_app_declaration()

@@ -1,0 +1,71 @@
+task_id: skill-flow-file-attachment-studio-web
+description: >
+  Studio Web variant of skill-flow-file-attachment-debug. Build a Flow whose
+  trigger exposes a file-typed input variable, read the uploaded attachment's
+  name, and surface it as flow output. Studio Web's `uip maestro flow debug`
+  runs the open project through the Unified Build Debug service, which takes no
+  `--attachment` binding, so the agent is not asked to run the flow with a
+  file. The checker does: it binds a randomly-named local file the agent never
+  saw with `uip maestro flow debug --attachment` and asserts that name appears
+  in the output, so a hardcoded literal cannot pass.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:single-node, studio-web-only]
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 2100
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build the flow inside a solution of the same name.
+
+  Create a UiPath Flow project named "AttachmentEcho" that accepts a file as
+  input and echoes the uploaded file's name back as a flow output. Use a
+  file-typed input variable named `inputDoc` and surface the name as an output
+  variable named `fileName`.
+
+  Validate the flow. Do not run it with a file: the task is complete when the
+  flow validates and would echo the name of any file bound to `inputDoc`.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Execution: attachment uploads, binds, and the file name round-trips ─
+  - type: run_command
+    description: "The grader's debug with --attachment completes and the uploaded file name appears in the output"
+    command: "python3 $REFERENCE_DIR/_shared/check_file_attachment_flow.py"
+    timeout: 600  # >= debug_budget(240) + margin
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

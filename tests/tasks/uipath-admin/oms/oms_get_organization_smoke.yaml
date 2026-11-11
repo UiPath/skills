@@ -2,7 +2,10 @@ task_id: skill-admin-oms-get-organization-smoke
 description: >
   Smoke test (outcome-graded): agent fetches the caller's organization record.
   Graded on the record read back from the platform (name, id, status and the
-  provisioned service instances), not the command string.
+  provisioned service instances), not the command string. Both reads count:
+  the flat record from `organizations get` and the `{Organization, Tenants,
+  Logos}` envelope from `organizations get --full`, whose `Organization` is
+  the same record.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, get, oms]
 
 run_limits:
@@ -24,6 +27,10 @@ success_criteria:
       res = d.get('Result') if isinstance(d, dict) else None
       assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
       data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      # organizations get --full wraps the record as {Organization, Tenants, Logos}: grade the record inside it.
+      inner = (data.get('Organization') or data.get('organization')) if isinstance(data, dict) else None
+      if isinstance(inner, dict):
+          data = inner
       assert isinstance(data, dict), f'organization record is {type(data).__name__}, expected an object'
       for field in ('Name', 'Id'):
           assert data.get(field) or data.get(field[0].lower() + field[1:]), f'record missing {field}; keys={list(data)[:12]}'
