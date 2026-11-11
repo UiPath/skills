@@ -647,3 +647,65 @@ def test_processor_fails_a_flow_outside_a_solution(write, capsys):
 def test_processor_takes_no_values(write):
     write(_keyed_flow())
     assert _run("processor", "extra") == 2
+
+
+MIRROR_ID = "extractArchivedInvoice1"
+
+
+def _mirrored_flow(**mirror_inputs):
+    flow = _keyed_flow()
+    inputs = {"fileRef": "=js:$vars.start.output.archived", "processorKey": PROCESSOR_KEY, "processorReadOnly": True}
+    inputs.update(mirror_inputs)
+    flow["nodes"].append({"id": MIRROR_ID, "type": EXTRACT_NODE_TYPE, "inputs": {k: v for k, v in inputs.items() if v is not None}})
+    return flow
+
+
+def _run_mirrored():
+    return _run("--node-id", NODE_ID, "mirrored")
+
+
+@pytest.mark.parametrize("schema", [None, {"prompt": "", "outputSchema": {"properties": {}, "$defs": ALL_DEFS}}])
+def test_mirrored_passes_a_read_only_node_on_the_source_key(write, solution, schema):
+    write(_mirrored_flow(schemaDocument=schema))
+    solution(PROCESSOR_KEY)
+    assert _run_mirrored() == 0
+
+
+@pytest.mark.parametrize(
+    "mirror_inputs, named",
+    [
+        ({"processorReadOnly": None}, "processorReadOnly is null, not true"),
+        ({"processorKey": None}, "processorKey is null, not " + PROCESSOR_KEY),
+        ({"processorKey": "0f1e2d3c-4b5a-4968-8776-655443322110"}, "processorKey is \"0f1e2d3c-4b5a-4968-8776-655443322110\""),
+        ({"schemaDocument": _schema()}, "field groups of its own: Invoice, Line Items"),
+    ],
+)
+def test_mirrored_names_what_the_mirror_got_wrong(write, solution, capsys, mirror_inputs, named):
+    write(_mirrored_flow(**mirror_inputs))
+    solution(PROCESSOR_KEY)
+    assert _run_mirrored() == 1
+    assert named in capsys.readouterr().err
+
+
+def test_mirrored_fails_a_second_processor_resource(write, solution, capsys):
+    write(_mirrored_flow())
+    solution(PROCESSOR_KEY)
+    solution("0f1e2d3c-4b5a-4968-8776-655443322110", name="Extract Archived Invoice")
+    assert _run_mirrored() == 1
+    assert "not only " + PROCESSOR_KEY in capsys.readouterr().err
+
+
+def test_mirrored_fails_a_source_turned_read_only(write, solution, capsys):
+    flow = _mirrored_flow()
+    flow["nodes"][1]["inputs"]["processorReadOnly"] = True
+    write(flow)
+    solution(PROCESSOR_KEY)
+    assert _run_mirrored() == 1
+    assert "no longer authors its processor" in capsys.readouterr().err
+
+
+def test_mirrored_fails_without_exactly_one_other_node(write, solution, capsys):
+    write(_keyed_flow())
+    solution(PROCESSOR_KEY)
+    assert _run_mirrored() == 1
+    assert "found 0: none" in capsys.readouterr().err

@@ -57,6 +57,12 @@ Checks:
     processor            the node's inputs.processorKey is a GUID, and the
                          solution the flow sits in holds an idpProcessor
                          resource with that key under resources/
+    mirrored             exactly one other Extract document node runs this
+                         node's processor: it carries this node's
+                         processorKey with inputs.processorReadOnly true and
+                         no field groups of its own. This node is not
+                         read-only, and the solution holds no idpProcessor
+                         resource but this node's
 
 Exit 0 and ``OK: ...`` on stdout when the check holds. Otherwise exit 1 and a
 ``FAIL: ...`` line on stderr naming what was found instead.
@@ -414,6 +420,32 @@ def check_processor(_: dict, node: dict, args: argparse.Namespace) -> str | None
     )
 
 
+def check_mirrored(flow: dict, node: dict, args: argparse.Namespace) -> str | None:
+    inputs = node.get("inputs") or {}
+    key = inputs.get("processorKey")
+    if not isinstance(key, str) or not GUID.fullmatch(key):
+        return f"{node['id']} has no processorKey to mirror ({json.dumps(key)})"
+    if inputs.get("processorReadOnly"):
+        return f"{node['id']} is read-only, so it no longer authors its processor"
+    others = [n for n in flow.get("nodes") or [] if n.get("type") == EXTRACT_NODE_TYPE and n is not node]
+    if len(others) != 1:
+        return f"expected one other Extract document node, found {len(others)}: {', '.join(n.get('id', '?') for n in others) or 'none'}"
+    mirror = others[0]
+    mirror_inputs = mirror.get("inputs") or {}
+    problems = []
+    if mirror_inputs.get("processorKey") != key:
+        problems.append(f"its processorKey is {json.dumps(mirror_inputs.get('processorKey'))}, not {key}")
+    if mirror_inputs.get("processorReadOnly") is not True:
+        problems.append(f"its inputs.processorReadOnly is {json.dumps(mirror_inputs.get('processorReadOnly'))}, not true")
+    if _list_groups(mirror):
+        problems.append(f"it carries field groups of its own: {', '.join(_list_groups(mirror))}")
+    solution_dir = _find_solution_dir(args.flow_path)
+    keys = _list_processor_keys(solution_dir) if solution_dir else []
+    if keys != [key]:
+        problems.append(f"the solution's idpProcessor keys are {', '.join(keys) or 'none'}, not only {key}")
+    return f"{mirror.get('id')}: " + "; ".join(problems) if problems else None
+
+
 CHECKS = {
     "fields": check_fields,
     "has-instructions": check_has_instructions,
@@ -425,6 +457,7 @@ CHECKS = {
     "edge": check_edge,
     "no-other-ixp": check_no_other_ixp,
     "processor": check_processor,
+    "mirrored": check_mirrored,
 }
 
 

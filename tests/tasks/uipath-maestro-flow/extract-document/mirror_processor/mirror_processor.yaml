@@ -1,29 +1,36 @@
 task_id: skill-flow-extract-document-mirror-processor
 description: >
-  The user wants Extract Credit Note to run Extract Invoice's processor rather
-  than define one of its own. Tests that the agent makes the node a read-only
-  mirror: Extract Invoice's `processorKey` together with
-  `inputs.processorReadOnly: true`. Either half alone fails validate: the key
+  The user wants a second Extract document node that uses the same model as
+  the existing one, which Studio Web offers as "In this solution" when adding
+  an Extract node. Tests that the agent creates it as a read-only mirror of
+  Extract Invoice's processor: the same `processorKey` with
+  `inputs.processorReadOnly: true`, no taxonomy of its own, and no processor
+  resource of its own. Either half of the pair alone fails validate: the key
   without the flag makes a second author of the same processor, and the flag
-  without the key names nothing to run. No CLI command sets these inputs on an
-  existing node, so the edit goes to the `.flow` itself.
+  without the key names nothing to run.
 
-  Extract Invoice and everything else in the flow stay as seeded, and Extract
-  Credit Note keeps reading the credit note.
+  `pre_run` provisions Extract Invoice with the CLI, so the source has a real
+  key and resource file. Extract Invoice's taxonomy and every other original
+  node stay as seeded.
 
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, node:extract-document]
 
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../_fixtures/BillingDocs
-      mount_point: BillingDocs
+      path: ../_fixtures/InvoiceReader
+      mount_point: InvoiceReader
 reference:
   directory: ../..
 
+pre_run:
+  - command: 'uip maestro flow nodes provision InvoiceReader/InvoiceReader/InvoiceReader.flow --node-id extractInvoice1 --output json'
+    timeout: 120
+
 initial_prompt: |
-  In my BillingDocs flow, make the Extract Credit Note node run Extract
-  Invoice's processor instead of one of its own. Make sure the flow validates.
+  In my InvoiceReader flow, add an Extract document node named "Extract
+  Archived Invoice" that reads a new archived invoice file input and uses the
+  same model as Extract Invoice. Make sure the flow validates.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
@@ -37,40 +44,39 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: json_check
-    description: "Extract Credit Note mirrors Extract Invoice's processor: the same processorKey, marked read-only"
-    path: "BillingDocs/BillingDocs/BillingDocs.flow"
-    assertions:
-      # The source node's key in _fixtures/BillingDocs/BillingDocs/BillingDocs.flow.
-      - expression: "nodes[?id=='extractCreditNote1'] | [0].inputs.processorKey"
-        operator: equals
-        expected: "3f6b2a9e-8c41-4d7a-9b25-61e0c4d8f713"
-      - expression: "nodes[?id=='extractCreditNote1'] | [0].inputs.processorReadOnly"
-        operator: equals
-        expected: true
+  - type: run_command
+    description: "The new node mirrors Extract Invoice's processor: the same processorKey, read-only, no field groups of its own, and no processor resource of its own"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader --node-id extractInvoice1 mirrored
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Extract Credit Note keeps reading the credit note file input"
-    path: "BillingDocs/BillingDocs/BillingDocs.flow"
-    assertions:
-      - expression: "nodes[?id=='extractCreditNote1'] | [0].inputs.fileRef"
-        operator: equals
-        expected: "=js:$vars.start.output.creditNote"
+  - type: run_command
+    description: "Extract Invoice still authors its processor: a processorKey with its idpProcessor resource in the solution"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader --node-id extractInvoice1 processor
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Every node but Extract Credit Note, Extract Invoice included, and every edge, variable and definition, is unchanged"
-    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/BillingDocs/BillingDocs --project BillingDocs/BillingDocs --changed-node extractCreditNote1"
+    description: "Extract Invoice's taxonomy equals the seeded one"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader --node-id extractInvoice1 unchanged
+      $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader/InvoiceReader.flow
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every other original node, edge, variable and definition is unchanged (Extract Invoice gained its key in pre_run)"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader --project InvoiceReader/InvoiceReader --changed-node extractInvoice1"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro flow validate passes with no warnings: no second author of Extract Invoice's processor, and no read-only node without a key"
+    description: "uip maestro flow validate passes with no warnings: the new node reads a declared file input, and there is no second author of the processor"
     command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0
@@ -78,6 +84,6 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 10
+  expected_turns: 12
   max_turns: 25
   task_timeout: 900
