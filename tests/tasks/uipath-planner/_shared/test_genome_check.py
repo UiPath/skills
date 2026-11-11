@@ -17,6 +17,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 CHECKER = REPO / "skills" / "uipath-planner" / "scripts" / "check-genome.mjs"
+FINGERPRINT = REPO / "skills" / "uipath-planner" / "scripts" / "sdd-fingerprint.mjs"
 
 
 def node(*args: str) -> subprocess.CompletedProcess:
@@ -29,6 +30,10 @@ def node_call(function: str, *args):
               f"process.stdout.write(JSON.stringify(c.{function}(...{json.dumps(list(args))})));")
     r = subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, encoding="utf-8", check=True)
     return json.loads(r.stdout)
+
+
+def sdd_fingerprint(sdd) -> str:
+    return subprocess.run(["node", str(FINGERPRINT), str(sdd)], capture_output=True, text=True, check=True).stdout.strip()
 
 
 class genome_check:
@@ -452,7 +457,7 @@ def test_designed_in_resolves_against_the_genome_folder(tmp_path):
     sdd.write_text("# SDD\n", encoding="utf-8")
     (tmp_path / "out").mkdir()
     genome = tmp_path / "out" / "x-genome.md"
-    designed(genome, "../sdd/x-sdd.md", node_call("sddFingerprint", str(sdd)))
+    designed(genome, "../sdd/x-sdd.md", sdd_fingerprint(sdd))
     assert genome_check.main(["component", str(genome), "--profile", "strict"]) == 0
 
 
@@ -460,7 +465,7 @@ def test_strict_fails_once_the_sdd_changes_since_its_fingerprint(tmp_path):
     sdd = tmp_path / "x-sdd.md"
     sdd.write_text("# SDD\r\n\r\n## Planner Handoff\r\n\r\n| **Status** | ready |\r\n| **Tasks file** | `x-tasks.md` (written by plan) |\r\n", encoding="utf-8")
     genome = tmp_path / "x-genome.md"
-    designed(genome, "x-sdd.md", node_call("sddFingerprint", str(sdd)))
+    designed(genome, "x-sdd.md", sdd_fingerprint(sdd))
     strict = ["component", str(genome), "--profile", "strict"]
     assert genome_check.main(strict) == 0
     # the rows plan and author write after the genome leave the fingerprint unchanged

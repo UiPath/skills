@@ -1,6 +1,6 @@
 # Execution Guide — build an automation from a genome
 
-Genome says *what* to build; build skills know *how*. Execution reads genome, collects configuration answers, builds skill group by skill group through owning skills, wires pieces, checks result against acceptance criteria. Genome is read-only throughout: spec fixes are a `uipath-planner` edit, then a new build. Companion guides open only when their condition holds, and the build's only once the configuration answers exist ([build-guide.md § Read Plan](build-guide.md)).
+Genome says *what* to build; build skills know *how*. Execution reads genome, collects configuration answers, builds skill group by skill group through owning skills, wires pieces, checks result against acceptance criteria. Companion guides open only when their condition holds, and the build's only once the configuration answers exist ([build-guide.md § Read Plan](build-guide.md)).
 
 **Done when** — execution is finished only when all of these hold; a passing build alone is not the end:
 
@@ -22,7 +22,7 @@ Required sections — component: Overview, Target Applications, Build With, Work
 
 When the genome carries a design link ([genome-reading-guide.md § Design Links](genome-reading-guide.md)):
 
-- **`Designed in:`** — the build reads no SDD and does not compare its `sdd-sha256` fingerprint: `uipath-planner` keeps a designed genome current. The SDD's decisions are already in the genome's sections — the split and queue design on `Decided:` lines, the implementation mode, the package pins, the refactor answers, the products and projects the Build With and Components tables place — and are answered from there, recorded `(from the SDD)` ([configuration-questions-guide.md](configuration-questions-guide.md)); the Target question is asked only for a component the genome leaves unplaced ([refactor-guide.md § Choosing the target](refactor-guide.md) rule 7). The scaffolding and environment questions the genome leaves open are asked as usual; the SDD's `Execution autonomy` row governs the design only and never waives them ([configuration-questions-guide.md](configuration-questions-guide.md), autonomous runs).
+- **`Designed in:`** — the build reads no SDD and does not compare its `sdd-sha256` fingerprint: `uipath-planner` keeps a designed genome current. The SDD's decisions are already in the genome's sections — the split and queue design on `Decided:` lines, the implementation mode, the package pins, the refactor answers, the products and projects the Build With and Components tables name — and are answered from there, recorded `(from the SDD)` ([configuration-questions-guide.md](configuration-questions-guide.md)). The scaffolding and environment questions the genome leaves open are asked as usual ([configuration-questions-guide.md](configuration-questions-guide.md), autonomous runs).
 
 ### 1.2 Preflight discovery
 
@@ -200,8 +200,8 @@ After every project of a process genome is built, and before the report, a revie
 2. **Pausing between skill groups.** "Shall I continue with the RPA part?" is wrong. Advance.
 3. **One project per skill group.** Component genome is one project. Process genome is one solution with one project per non-test component, a library the Library layout answer folds excepted, and exactly one test project holding every test component — never one test project per business area.
 4. **Reordering Build With or Components** except for the handoff-dependency case in 2.1.
-5. **Adding features the genome does not name, or dropping steps it does.** Gaps go to the user, not into improvised code. A refactor adds only what its answers ask for and drops only what they retire or fold ([refactor-guide.md](refactor-guide.md)).
-6. **Editing the genome during execution.** It is read-only.
+5. **Adding features the genome does not name, or dropping steps it does.** Gaps go to the user, not into improvised code. A refactor adds only what its answers ask for and drops only what the genome's `Requested change` row retires or folds ([refactor-guide.md](refactor-guide.md)).
+6. **Editing the genome during execution** ([SKILL.md](../SKILL.md) Critical Rule 2).
 7. **Skipping acceptance validation** because "everything compiled". Criteria are the definition of done.
 8. **Building past the owning skill.** Activity XML written from memory, or a subagent dispatched without the skill's mandatory reads and authoring journey (2.2 step 2).
 9. **Skipping the export question, or deriving nothing because no catalog sat beside the genome**, and so shipping placeholder targets or generated test rows for a reachable export (1.3, 2.2b, 2.2c). Every other migration mistake — naive composite translation, per-step Object Repository entries, Check activities instead of `VerifyOptions`, copied credentials — is prohibited in the anti-patterns of [source-migration-guide.md](source-migration-guide.md), [ui-target-migration-guide.md](ui-target-migration-guide.md), [ui-verification-guide.md](ui-verification-guide.md) and [test-execution-guide.md](test-execution-guide.md).

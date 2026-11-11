@@ -1,8 +1,7 @@
-"""Guard: uipath-planner's sdd-fingerprint.mjs and check-genome.mjs agree.
+"""Guard: uipath-planner's sdd-fingerprint.mjs CLI prints what its exported sddFingerprint returns.
 
-The planner records an SDD's fingerprint on a genome's `Designed in:` line with sdd-fingerprint.mjs;
-check-genome.mjs recomputes it to fail a genome whose SDD changed. Each script carries its own copy of
-the rule, so this test fails the moment the two drift.
+The planner records an SDD's fingerprint on a genome's `Designed in:` line with the CLI; check-genome.mjs
+imports sddFingerprint to fail a genome whose SDD changed. This test fails the moment the two disagree.
 
     python3 -m pytest tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py
 """
@@ -18,7 +17,6 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[4]
 PLANNER = REPO / "skills" / "uipath-planner" / "scripts" / "sdd-fingerprint.mjs"
-CHECKER = REPO / "skills" / "uipath-planner" / "scripts" / "check-genome.mjs"
 
 SDDS = {
     "lf": "# SDD\n\n## Planner Handoff\n\n| **Status** | ready |\n| **Tasks file** | `x-tasks.md` (written by `plan`) |\n",
@@ -32,13 +30,15 @@ def planner(path: Path) -> str:
 
 
 def checker(path: Path) -> str:
-    script = (f"import {{ sddFingerprint }} from {json.dumps(CHECKER.as_uri())};"
-              f"process.stdout.write(String(sddFingerprint({json.dumps(str(path))})));")
+    """The exported function's result, or 'error: <message>' when it throws."""
+    script = (f"import {{ sddFingerprint }} from {json.dumps(PLANNER.as_uri())};"
+              f"try {{ process.stdout.write(sddFingerprint({json.dumps(str(path))})); }}"
+              f"catch (e) {{ process.stdout.write(`error: ${{e.message}}`); }}")
     return subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, check=True).stdout
 
 
 @pytest.mark.parametrize("name", SDDS)
-def test_planner_and_checker_fingerprints_agree(tmp_path, name):
+def test_cli_and_exported_function_agree(tmp_path, name):
     sdd = tmp_path / f"{name}.md"
     sdd.write_bytes(SDDS[name].encode("utf-8"))
     assert planner(sdd) == checker(sdd)
@@ -108,4 +108,10 @@ def test_a_missing_child_leaves_the_solution_fingerprint_uncomputed(tmp_path):
     (tmp_path / "review-sdd.md").unlink()
     r = subprocess.run(["node", str(PLANNER), str(root)], capture_output=True, text=True)
     assert r.returncode == 1 and "child SDD" in r.stderr and "review-sdd.md" in r.stderr
-    assert checker(root) == "null"
+    assert checker(root).startswith("error: cannot read child SDD") and "review-sdd.md" in checker(root)
+
+
+def test_importing_the_script_prints_nothing(tmp_path):
+    script = f"import {{ sddFingerprint }} from {json.dumps(PLANNER.as_uri())};"
+    r = subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, check=True)
+    assert r.stdout == r.stderr == ""

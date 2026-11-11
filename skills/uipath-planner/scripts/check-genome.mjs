@@ -25,7 +25,8 @@
 //           genome's Source Map: behavioural wording (no code-level tokens), configuration question kind
 //           and default, bold step names, numbered acceptance criteria, the As-is table, exactly the outcome
 //           rows the transactional shape allows, split options named by letter with only their Requires and Changes cells,
-//           complete for every unit and alternative unit, retry and consecutive-failure stop; step table cells
+//           complete for every unit and alternative unit, a `Decided:` project chain on option B only and naming two
+//           or more projects, retry and consecutive-failure stop; step table cells
 //           holding references only; no H2 heading twice; no component genome linked twice; the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
@@ -48,10 +49,10 @@
 //
 // Exit 0 when every check passes; exit 1 with one line per failure; exit 2 on a usage error.
 
-import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { pathToFileURL } from "node:url";
+import { sddFingerprint } from "./sdd-fingerprint.mjs";
 
 export const VALID_SKILLS = new Set([
   "uipath-rpa", "uipath-maestro-flow", "uipath-maestro-bpmn", "uipath-maestro-case",
@@ -142,7 +143,7 @@ export const TEMPLATE_PLACEHOLDERS = [
   "{projects and schedules, where per-item state is visible, retry granularity, end-of-parent work}",
   "{alternative unit}",
   "{facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}",
-  "{only when the SDD or the request already chose the split: option and unit — source}",
+  "{only when the SDD or the request already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}",
   "{a, b}",
   "{c, d}",
   "{per-item record and where it lands; screenshot on system exception; run summary}",
@@ -351,9 +352,9 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
 function checkDesignedIn(path, text, r) {
   const m = text.match(DESIGNED_IN);
   if (!m || !m[2]) return;
-  const current = sddFingerprint(resolvePath(dirname(path), m[1]));
-  if (current === null) r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`);
-  else if (current !== m[2]) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+  let current;
+  try { current = sddFingerprint(resolvePath(dirname(path), m[1])); } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
+  if (current !== m[2]) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
 }
 
 /** [flows, headed]: the '### Flow N' blocks, or — when there is no such heading but the section names a
@@ -364,6 +365,8 @@ function effectiveFlows(ts) {
   if (/unit of work/i.test(ts)) return [[["Flow 1", ts]], false];
   return [[], false];
 }
+
+const DECIDED_CHAIN = /:\s+([^:]*→[^:]*|[A-Za-z][\w.-]*)\s*$/;
 
 /** Transactional Shape: the stub, or flow blocks of the transactional shape format. */
 function checkTransactional(text, level, r, partOf = false) {
@@ -409,9 +412,17 @@ function checkTransactional(text, level, r, partOf = false) {
       if (row.length >= 2 && !SPLIT_OPTIONS.includes(row[1].trim())) r.strict(`Transactional Shape ${name}: option cell '${row[1]}' of '${row[0]}' holds more than its letter — the transactional shape guide defines A, B and C`);
     }
     // a split the SDD or the request already took (`**Decided:** B, ...`) lists that option alone, never reopened
-    const decided = (lines(body).find((l) => l.startsWith("**Decided:**")) ?? "").match(/^\*\*Decided:\*\*\s*([ABC])\b(?:,\s*([^—–]+?))?\s*(?:[—–]|$)/);
-    if (lines(body).some((l) => l.startsWith("**Decided:**")) && !decided) r.strict(`Transactional Shape ${name}: the 'Decided:' line does not start with the option letter`);
+    const decidedLine = lines(body).find((l) => l.startsWith("**Decided:**")) ?? "";
+    const decided = decidedLine.match(/^\*\*Decided:\*\*\s*([ABC])\b(?:,\s*([^—–]+?))?\s*(?:[—–]\s*(.*)|$)/);
+    if (decidedLine && !decided) r.strict(`Transactional Shape ${name}: the 'Decided:' line does not start with the option letter`);
     if (decided) {
+      // `<source>: <Project> → <Project> …` — a bare single name after the last ': ' is a one-project chain
+      const chain = (decided[3] ?? "").match(DECIDED_CHAIN);
+      if (chain) {
+        const projects = chain[1].split("→").map((p) => p.trim());
+        if (decided[1] !== "B") r.strict(`Transactional Shape ${name}: the 'Decided:' line of option ${decided[1]} names a project chain — only option B names its projects`);
+        else if (projects.length < 2 || projects.some((p) => !p)) r.strict(`Transactional Shape ${name}: the 'Decided:' project chain '${chain[1].trim()}' does not name two or more projects separated by ' → '`);
+      }
       const unit = (decided[2] ?? "").trim();
       const pool = unit && units.has(unit) ? [units.get(unit)] : unit ? [] : [...units.values()];
       if (!pool.some((opts) => opts.has(decided[1]))) r.strict(`Transactional Shape ${name}: decided option ${decided[1]}${unit ? ` of '${unit}'` : ""} has no Split options row`);
@@ -673,32 +684,7 @@ function loadInventory(path, what) {
 }
 
 const DESIGNED_IN = /^>\s*Designed in:\s*\[[^\]]*\]\(([^)]+)\)(?:[^\n]*?\bsdd-sha256\s+([0-9a-f]{64})\b)?/m;
-// the SDD's `Genome` handoff row (and an older SDD's `Tasks file` row) is written after the genome's fingerprint;
-// scripts/sdd-fingerprint.mjs computes the same value
-const LATE_ROWS = /^\|\s*\*\*(Tasks file|Genome)\*\*\s*\|.*\n?/gm;
-const ROOT_ROLE = /^\|\s*\*\*Project SDD role\*\*\s*\|\s*root\s*\|/im;
-// children: every `*-sdd.md` link target or backticked path in the root, resolved against its folder, in order, once each, the root excluded
-const CHILD_REF = /\]\(([^)\s#]+-sdd\.md)(?:#[^)\s]*)?\)|`([^`\s]+-sdd\.md)`/g;
-const normalizeSdd = (text) => text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").replace(LATE_ROWS, "");
 
-/** The fingerprint a `Designed in:` line records for an SDD, a solution root's covering every child it lists;
- * null when the SDD or a child cannot be read. */
-export function sddFingerprint(path) {
-  const readSdd = (p) => { try { return normalizeSdd(readFileSync(p, "utf8")); } catch { return null; } };
-  const root = readSdd(path);
-  if (root === null) return null;
-  const hash = createHash("sha256").update(root);
-  if (ROOT_ROLE.test(root)) {
-    const self = resolvePath(path);
-    const children = [...new Set([...root.matchAll(CHILD_REF)].map((m) => resolvePath(dirname(self), m[1] ?? m[2])))].filter((p) => p !== self);
-    for (const child of children) {
-      const text = readSdd(child);
-      if (text === null) return null;
-      hash.update(text);
-    }
-  }
-  return hash.digest("hex");
-}
 // --- command line -------------------------------------------------------------------------------
 
 const USAGE = "usage: check-genome.mjs {component,process,tokens} <genome> [options] | skills";

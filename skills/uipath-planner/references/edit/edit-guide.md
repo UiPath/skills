@@ -22,7 +22,7 @@ Every edit rewrites a legacy preamble (one naming `uipath-genome`) to the templa
 
 ### Any genome
 
-On a genome with a `Designed in:` line only the first two rows are edits. Any other change — products, projects, components, a skill, a step's design — goes to `design` to revise the linked SDD, and the same run then applies "The SDD was revised" to update the genome ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current).
+A genome with a `Designed in:` line accepts two edits only: "The SDD was revised" and "Findings from `uipath-genome`". Any other change — products, projects, components, a skill, a step's design — goes to `design` to revise the linked SDD, and the same run then applies "The SDD was revised" to update the genome ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current).
 
 | Request | Update |
 |---|---|
@@ -47,6 +47,7 @@ On a genome with a `Designed in:` line only the first two rows are edits. Any ot
 |---|---|
 | "This step is wrong / missing" | Workflow, then Build With, Acceptance Criteria, Source Map |
 | "Rename / reorder / remove steps" | Workflow and Source Map together, so every step still names its source objects |
+| "Retire / fold / rebuild `<component>` on `<product>`" (a refactor or migration target) | The refactor answer, as [extract-guide.md](../extract/extract-guide.md) Step 6c records it: the component's Build With / Components row and the `Requested change` row; a split it decides → the flow's `Decided:` line |
 | "Drop the Source Map" | Remove section from every file — genome is being shared as a blueprint; say target and data migration will no longer be possible from it |
 | "Here is the PDD too" (any related resource) | A related resource of [extract-guide.md](../extract/extract-guide.md) Step 1: read it and write what it settles as Step 3's **Related resources** paragraph states |
 | "Is this really a defect?" / "check it against the source" | Rerun both passes of [defect-verification-guide.md](../shared/defect-verification-guide.md) for that finding, and re-mark it in the body and its Source Map row by what the passes show |

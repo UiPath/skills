@@ -1,6 +1,6 @@
 # Genome Reading Guide — what a genome's sections mean at build
 
-The genome is read-only at build: the build reads it as written, and a gap in it goes back to `uipath-planner` as an edit, never into the file. A section holding its stub line does not apply, and the build makes nothing for it.
+The build reads the genome as written ([SKILL.md](../SKILL.md) Critical Rule 2). A section holding its stub line does not apply, and the build makes nothing for it.
 
 ## Two Levels
 
@@ -112,7 +112,7 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 | 3 | `Submit_Order` (482113, lines 29–40) | `Order_Rows` (1207) | 2 | The confirmation is sent by `Send_Confirmation` (529077), a step of its own; called by the run's root `Order_Main` (310045) |
 
 1. **One row per Workflow step**; a test component's steps are its test cases.
-2. **Source objects** are the objects whose behaviour the step implements, primary first: a rebuild that keeps the source's names names the step's file or workflow after it. A framework source's object is `` `Name` (id) `` or `` `Name` (id, {locator}) `` — the id identifies the copy; a UiPath source's is its project-relative path, a test case with its `testCaseId` ([refactor-guide.md § Provenance](refactor-guide.md)).
+2. **Source objects** are the objects whose behaviour the step implements, primary first: a rebuild that keeps the source's names names the step's file or workflow after it. A framework source's object is `` `Name` (id) `` or `` `Name` (id, {locator}) `` — the id identifies the copy; a UiPath source's is its project-relative path, a test case with its `testCaseId`.
 3. **Data sets** are the data sets the step's own objects read, or `none`.
 4. **Captures** is the number of screen captures the source takes in the step; the build checks the rebuild's evidence against it.
 5. **Notes** is free text no check reads.

@@ -8,7 +8,7 @@ user-invocable: true
 
 # UiPath Genome — build automations from their genome
 
-One verb. A genome is the markdown specification of an automation — what it does, its business rules, the data between its parts, platform resources, transactional shape, verification, and the skill that builds each part. `uipath-planner` writes every genome; this skill builds it and never changes it. The genome says *what*; the owning skills know *how*.
+One verb. A genome is the markdown specification of an automation — what it does, its business rules, the data between its parts, platform resources, transactional shape, verification, and the skill that builds each part. `uipath-planner` writes every genome; this skill builds it. The genome says *what*; the owning skills know *how*.
 
 ## Setup
 
@@ -53,4 +53,4 @@ Each rule names its subject and the guide that states it in full; [build-guide.m
 ## Anti-patterns
 
 1. **Writing, extracting or editing a genome here — including a direct edit the user names.** That is `uipath-planner` (§ Choosing the Verb item 1).
-2. **Editing the genome to make a build pass.** The genome is read-only at build; the gap goes into the report and back to `uipath-planner`.
+2. **Editing the genome to make a build pass** (Critical Rule 2).

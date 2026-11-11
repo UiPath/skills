@@ -16,6 +16,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 SCRIPT = REPO / "skills" / "uipath-planner" / "scripts" / "check-genome.mjs"
+FINGERPRINT = REPO / "skills" / "uipath-planner" / "scripts" / "sdd-fingerprint.mjs"
 
 
 def node(*args):
@@ -135,6 +136,10 @@ def test_blockquote_naming_a_legacy_builder_passes(check, legacy):
     assert check(text, profile="strict")[0] == 0
 
 
+def sdd_fingerprint(sdd):
+    return subprocess.run(["node", str(FINGERPRINT), str(sdd)], capture_output=True, text=True, check=True).stdout.strip()
+
+
 def designed_in(text, line):
     return re.sub(r"^(> \*\*This is a UiPath automation blueprint\.\*\*.*)$", lambda m: f"{m[1]}\n\n{line}", text, count=1, flags=re.M)
 
@@ -143,7 +148,7 @@ def pinned(tmp_path, fingerprint=None):
     """A genome text whose Designed in: line links x-sdd.md in tmp_path, pinned to fingerprint or the SDD's own."""
     sdd = tmp_path / "x-sdd.md"
     sdd.write_text("# SDD\n\n| **Status** | agreed |\n", encoding="utf-8")
-    recorded = fingerprint or node_call("sddFingerprint", str(sdd))
+    recorded = fingerprint or sdd_fingerprint(sdd)
     return designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {recorded}")
 
 
@@ -177,7 +182,7 @@ def test_designed_in_sdd_that_cannot_be_read_fails_strict_only(check, tmp_path):
 def test_designed_in_root_sdd_with_an_unreadable_child_fails_strict(check, tmp_path):
     (tmp_path / "x-sdd.md").write_text("| **Project SDD role** | root |\n\n[Child](child-sdd.md)\n", encoding="utf-8")
     (tmp_path / "child-sdd.md").write_text("# Child\n", encoding="utf-8")
-    text = designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {node_call('sddFingerprint', str(tmp_path / 'x-sdd.md'))}")
+    text = designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {sdd_fingerprint(tmp_path / 'x-sdd.md')}")
     assert check(text, profile="strict")[0] == 0
     (tmp_path / "child-sdd.md").unlink()
     rc, out = check(text, profile="strict")
@@ -325,6 +330,39 @@ def test_a_decided_line_names_its_option_first(check):
     rc, out = check(_decided(COMPONENT, "**Decided:** the SDD chose two projects"), profile="strict")
     assert rc == 1
     assert "the 'Decided:' line does not start with the option letter" in out
+
+
+def _decided_b(line: str) -> str:
+    """COMPONENT with the B row of 'one requisition line' alone and the given Decided: line."""
+    text = re.sub(r"^\| one requisition line \| [AC] \|.*$", "", COMPONENT, flags=re.M)
+    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
+    return _decided(text, line)
+
+
+def test_a_decided_b_line_with_a_project_chain_passes(check):
+    rc, out = check(_decided_b("**Decided:** B, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer → ReqReporter"), profile="strict")
+    assert "'Decided:'" not in out, out
+
+
+def test_a_decided_chain_on_option_a_fails_strict(check):
+    text = re.sub(r"^\| one requisition line \| [BC] \|.*$", "", COMPONENT, flags=re.M)
+    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
+    text = _decided(text, "**Decided:** A, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer")
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "the 'Decided:' line of option A names a project chain — only option B names its projects" in out
+
+
+def test_a_decided_chain_naming_one_project_fails_strict(check):
+    rc, out = check(_decided_b("**Decided:** B, one requisition line — the SDD §10: ReqDispatcher"), profile="strict")
+    assert rc == 1
+    assert "the 'Decided:' project chain 'ReqDispatcher' does not name two or more projects separated by ' → '" in out
+
+
+def test_a_decided_source_quoting_the_request_is_no_chain(check):
+    rc, out = check(_decided_b('**Decided:** B, one requisition line — the request: "retry lines individually"'), profile="strict")
+    assert "project chain" not in out, out
 
 
 def test_alternative_units_need_split_options_for_each(check):
