@@ -1,6 +1,6 @@
 {
   "version": "1.0.2",
-  "source": "PO.Frontend registry generator (2026-04-14) + serializer contract corrections verified 2026-07-30 + CLI notes",
+  "source": "PO.Frontend registry generator (2026-04-14) + serializer contract corrections verified 2026-07-30 + CLI notes + case decision contracts from UiPath/cli #5957",
   "extractedFrom": {
     "designSchemaUtils": "src/services/serialization/design-schema/design-schema-utils.ts",
     "bpmnModdle": "src/services/serialization/bpmn-moddle.ts",
@@ -2104,10 +2104,25 @@
     "Maestro.CaseRulesEvaluator": {
       "extensionType": "Maestro.CaseRulesEvaluator",
       "label": "Case rules evaluator",
-      "bpmnElement": "bpmn:ServiceTask",
+      "bpmnElement": "bpmn:Task",
       "placements": {},
       "extensionTag": "uipath:activity",
-      "contextFields": [
+      "contextFields": [],
+      "inputPattern": "mergedBody",
+      "inputName": "caseManagerInput",
+      "inputTarget": "body",
+      "outputSource": "=result",
+      "outputType": "json",
+      "outputName": "caseRulesDecisions",
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "contractOutputMayBeCustom": true,
+      "xmlTemplate": "<bpmn:task id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Maestro.CaseRulesEvaluator\" version=\"v1\" />\n      <uipath:input name=\"caseManagerInput\" type=\"json\" target=\"body\"><![CDATA[{\"caseDeterministicRules\":{caseDeterministicRules},\"caseCurrentExecutionState\":{caseCurrentExecutionState}}]]></uipath:input>\n      <uipath:output name=\"caseRulesDecisions\" type=\"json\" source=\"=result\" var=\"{varId}\" custom=\"true\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:task>",
+      "bpmnElementNotes": "The case converter is the only producer of this element and always emits it as bpmn:Task (PO.Frontend CaseManagementCaseRulesEvaluationNodes.ts, taskType \"bpmn:Task\").",
+      "inputNotes": "The case converter creates this task right before the case manager in every case process. Its two inputs are merged into caseManagerInput during BPMN serialization (bpmn-moddle.ts names the merged body after the design schema's jsonBody), so they are body fields, not uipath:context inputs.",
+      "outputNotes": "The output writes the evaluator's result into caseRulesDecisions, which the case manager reads next. The converter spreads caseRulesDecisionsOutputVariable(), which stamps custom=\"true\" on it - a converter detail, not a panel narrowing, so contractOutputMayBeCustom tells the validator to still shape-check it (name/type/source/var) instead of dropping it as an unrelated custom addition.",
+      "inputFields": [
         {
           "name": "caseDeterministicRules",
           "displayName": "Case deterministic rules",
@@ -2116,7 +2131,8 @@
           "hidden": false,
           "isPrimaryKey": false,
           "binding": false,
-          "defaultValue": null
+          "defaultValue": null,
+          "target": "body"
         },
         {
           "name": "caseCurrentExecutionState",
@@ -2126,30 +2142,10 @@
           "hidden": false,
           "isPrimaryKey": false,
           "binding": false,
-          "defaultValue": null
-        },
-        {
-          "name": "_label",
-          "type": "string",
-          "required": false,
-          "hidden": true,
-          "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "defaultValue": null,
+          "target": "body"
         }
-      ],
-      "inputPattern": "mergedBody",
-      "inputName": "caseManagerInput",
-      "inputTarget": "body",
-      "outputSource": null,
-      "outputType": "Maestro.CaseRulesEvaluator",
-      "outputName": "schedulerOutput",
-      "useRelativeSource": true,
-      "bindingPattern": "none",
-      "requiresDiscovery": false,
-      "isDynamic": false,
-      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Maestro.CaseRulesEvaluator\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"caseDeterministicRules\" type=\"json\" value=\"{caseDeterministicRules}\" />\n        <uipath:input name=\"caseCurrentExecutionState\" type=\"json\" value=\"{caseCurrentExecutionState}\" />\n        <uipath:input name=\"_label\" type=\"string\" value=\"{_label}\" />\n      </uipath:context>\n      <uipath:input name=\"caseManagerInput\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"schedulerOutput\" type=\"Maestro.CaseRulesEvaluator\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
-      "bpmnElementNotes": "Not in FPS_TO_NODE_MAPPING activity section; used internally for case management processes. Likely bpmn:ServiceTask or bpmn:Task."
+      ]
     },
     "Maestro.CaseManagerGuardrails": {
       "extensionType": "Maestro.CaseManagerGuardrails",
@@ -2157,7 +2153,22 @@
       "bpmnElement": "bpmn:ServiceTask",
       "placements": {},
       "extensionTag": "uipath:activity",
-      "contextFields": [
+      "contextFields": [],
+      "inputPattern": "mergedBody",
+      "inputName": "body",
+      "inputTarget": "body",
+      "outputSource": "=result",
+      "outputType": "json",
+      "outputName": "caseManagerDecisions",
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "contractOutputMayBeCustom": true,
+      "xmlTemplate": "<bpmn:serviceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Maestro.CaseManagerGuardrails\" version=\"v1\" />\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{\"decisions\":{decisions},\"caseCurrentExecutionState\":{caseCurrentExecutionState}}]]></uipath:input>\n      <uipath:output name=\"caseManagerDecisions\" type=\"json\" source=\"=result\" var=\"{varId}\" custom=\"true\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:serviceTask>",
+      "bpmnElementNotes": "The case converter is the only producer of this element and emits it as bpmn:ServiceTask (PO.Frontend generateCaseManagerGuardrailsNode in CaseManagementCaseManagerNodes.ts).",
+      "inputNotes": "The case converter adds this task after the case manager whenever it has case-manager decisions. Its two inputs are merged into the body payload during BPMN serialization, so they are body fields, not uipath:context inputs. Studio Web saves from before 2026-08-25 (PO.Frontend #6783) carry only decisions and no output; re-saving the case in Studio Web brings them up to this shape.",
+      "outputNotes": "The output writes the guardrails result back over the variable the decisions input reads, which the run-tasks step reads next; that is what makes the guardrails take effect. The validator picks the output by source \"=result\", accepts the name caseManagerDecisions or schedulerOutput, does not pin its type, and requires its var to equal the variable the decisions input reads. The converter stamps custom=\"true\" on it - a converter detail, not a panel narrowing, so contractOutputMayBeCustom tells the validator to still shape-check it instead of dropping it as an unrelated custom addition.",
+      "inputFields": [
         {
           "name": "decisions",
           "displayName": "Decisions",
@@ -2166,30 +2177,21 @@
           "hidden": false,
           "isPrimaryKey": false,
           "binding": false,
-          "defaultValue": null
+          "defaultValue": null,
+          "target": "body"
         },
         {
-          "name": "_label",
-          "type": "string",
-          "required": false,
-          "hidden": true,
+          "name": "caseCurrentExecutionState",
+          "displayName": "Case current execution state",
+          "type": "json",
+          "required": true,
+          "hidden": false,
           "isPrimaryKey": false,
           "binding": false,
-          "defaultValue": null
+          "defaultValue": null,
+          "target": "body"
         }
-      ],
-      "inputPattern": "mergedBody",
-      "inputName": "body",
-      "inputTarget": "body",
-      "outputSource": null,
-      "outputType": "Maestro.CaseManagerGuardrails",
-      "outputName": "guardrailsOutput",
-      "useRelativeSource": true,
-      "bindingPattern": "none",
-      "requiresDiscovery": false,
-      "isDynamic": false,
-      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Maestro.CaseManagerGuardrails\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"decisions\" type=\"json\" value=\"{decisions}\" />\n        <uipath:input name=\"_label\" type=\"string\" value=\"{_label}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"guardrailsOutput\" type=\"Maestro.CaseManagerGuardrails\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
-      "bpmnElementNotes": "Not in FPS_TO_NODE_MAPPING activity section; used internally for case management processes. Likely bpmn:ServiceTask or bpmn:Task."
+      ]
     }
   },
   "bpmnElements": {
