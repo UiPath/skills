@@ -204,7 +204,9 @@ credential at an arbitrary vendor URL. To probe a vendor endpoint, write the cal
 into a script and run that.
 
 `--body` is the script's inbound request (`context.request.body`); `--query` and
-`--header` fill the rest of it. Giving both sources, or neither, is a
+`--header` fill the rest of it. `--refresh` skips the runtime's cached answer for a
+published script and stores a fresh one (sent as `cache_data=uncache`); an inline script
+is never cached ([caching.md](activity-generation/caching.md)). Giving both sources, or neither, is a
 `ValidationError` (exit `3`), as is `--script-ref` without `--connector-key`.
 
 #### Reading the result
