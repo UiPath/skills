@@ -41,8 +41,8 @@ async function execute(context) {
 }
 ```
 
-A hit makes no vendor call and costs nothing against the script's call or egress budget
-(response bytes still count). The runtime proxy's `docs/intsvc-sdk.md` §3a is the live contract for limits and
+A Layer A hit makes no vendor call and costs nothing against the script's call or egress
+budget (response bytes still count). A Layer B hit does not run the script at all. The runtime proxy's `docs/intsvc-sdk.md` §3a is the live contract for limits and
 metrics; follow it where this page differs.
 
 ## Which layer
@@ -50,8 +50,8 @@ metrics; follow it where this page differs.
 1. Is the same read (method + URL) made by two or more scripts of the connector?
    Yes: `cache` on that `intsvc.http` call, in **every** script that makes it, with the
    same method and url template. A describe or user lookup several actions share.
-2. Otherwise, does the script's answer depend only on its method, path, query and body,
-   and make no write? Yes: `export const cache`. One page of a list, the object list.
+2. Otherwise, does the script's answer depend only on its inbound query and body (and the
+   connection), and make no write? Yes: `export const cache`. One page of a list, the object list.
 3. Otherwise do not cache. Live data (record lists, search results, anything a user
    edits and reads back) stays uncached; cache the shared lookups inside them with
    Layer A.
@@ -87,14 +87,15 @@ stored.
 
 ## What the key holds
 
-A Layer A key is the tenant, connection, method, URL (query merged and sorted) and **every
-header the script sets**. Anything that changes the answer must be in the URL, the query
+A Layer A key is the tenant, connection, method, URL (query merged and sorted), **every
+header the script sets**, and a digest of the request body. Anything that changes the answer must be in the URL, the query
 or a header; a header you set but do not mean to vary on splits the cache, so leave it
 off. A call carrying `authorization`, `cookie`, `range` or a conditional header is not
 cached.
 
-A Layer B key is the connection, the script's digest (a hash of its source), and the inbound
-query (without `cache_data`) and body. Each page has its own entry, because the page
+A Layer B key is the tenant, connection, the script's digest (a hash of its source), and the
+inbound query (without `cache_data`) and body. The method and path are not in it; each
+script has its own digest. Each page has its own entry, because the page
 token is in the query. A publish that changes the script changes its digest, so its old
 entries are never read again; there is nothing to version. The key does **not** include inbound headers, so a script
 with `export const cache` gets no `context.request.headers`: do not write one that varies
@@ -145,43 +146,33 @@ Two calls count as the same when the method and URL match, ignoring the query st
 
 ## Worked example: Slack
 
-**List channels** caches its whole answer (Layer B above); only this script lists
-channels, so the Slack call inside it carries no `cache`.
+Slack's v4 connector caches its three lookup lists the way v3 did: **ListUsers**,
+**ListChannels** and **ListPublicChannels** each declare `export const cache = { ttl: 172800 }`
+(48 h). Each list is made by one script only, so none of their `intsvc.http` calls carries
+`cache`, and each page is its own entry.
 
 **Send a message to a user by email** is a write, so it has no `export const cache`. Its
-email lookup is a read that every Slack script resolving a user by email makes, so it
-carries `cache` in each of them:
+`users.lookupByEmail` read is also made by Get User by Email, so it could take `cache` in
+both scripts; Slack leaves it uncached because v3 never cached it. Had it been cached, it
+would read:
 
 ```js
-async function execute(context) {
-  const { email, text } = context.request?.body ?? {};
-  if (!email || !text) throw new Error("email and text are required");
-
-  const user = await intsvc.http({ method: "GET", url: "/users.lookupByEmail", query: { email }, cache: { ttl: 86400 } });
-  if (!user.body?.ok) throw new Error(`users.lookupByEmail failed: ${user.body?.error}`);
-
-  const dm = await intsvc.http({ method: "POST", url: "/conversations.open", body: { users: user.body.user.id } });
-  if (!dm.body?.ok) throw new Error(`conversations.open failed: ${dm.body?.error}`);
-
-  const sent = await intsvc.http({ method: "POST", url: "/chat.postMessage", body: { channel: dm.body.channel.id, text } });
-  if (!sent.body?.ok) throw new Error(`chat.postMessage failed: ${sent.body?.error}`);
-
-  sent.body = { channel: sent.body.channel, ts: sent.body.ts, user: user.body.user.id };
-  return sent;
-}
+const user = await intsvc.http({ method: "GET", url: "/users.lookupByEmail", query: { email }, cache: { ttl: 3600 } });
+if (!user.body?.ok) throw new Error(`users.lookupByEmail failed: ${user.body?.error}`);
 ```
 
-| call | answer cache | lookup | vendor calls |
-|---|---|---|---|
-| ListChannels, first time | miss, script runs | none | 1 |
-| ListChannels again within the hour | hit, script does not run | none | 0 |
-| ListChannels with `types=private_channel` | miss, different query | none | 1 |
-| SendMessageToUser to Alice, first time | not declared | miss | 3 |
-| SendMessageToUser to Alice again | not declared | hit | 2 |
-| Any other script that looks up Alice by email | not declared | hit, same entry | one fewer |
+in **both** scripts, with the same method and url, or `validate` fails it with `cache-not-shared`.
 
-Salesforce follows the same shape: `cache` on the describe that lists, writes and
-metadata discovery all make; `export const cache` on object discovery.
+| call | answer cache | vendor calls |
+|---|---|---|
+| ListChannels, first time | miss, script runs | 1 |
+| ListChannels again within 48 h | hit, script does not run | 0 |
+| ListChannels with another `types` or `nextPage` | miss, different key | 1 |
+| ListChannels with `--refresh` | skipped, answer re-stored | 1 |
+| SendMessageToUser | not declared (a write) | every call |
+
+For Salesforce the split is the same: `cache` on the object describe that several scripts
+make, and `export const cache` on a list that only one script makes.
 
 ## Testing
 
