@@ -149,10 +149,36 @@
     }
   },
   "uipath-coded-apps": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/environment-variables.md",
+        "command": "codedapp deploy",
+        "reason": "Deliberate Node-only steps for the developer's machine: the host-scope block says the codedapp CLI is not available in Studio Web, and this reference tells the user which command to run locally."
+      },
+      {
+        "file": "references/environment-variables.md",
+        "command": "codedapp init",
+        "reason": "Deliberate Node-only steps for the developer's machine: the host-scope block says the codedapp CLI is not available in Studio Web, and this reference tells the user which command to run locally."
+      },
+      {
+        "file": "references/environment-variables.md",
+        "command": "codedapp push",
+        "reason": "Deliberate Node-only steps for the developer's machine: the host-scope block says the codedapp CLI is not available in Studio Web, and this reference tells the user which command to run locally."
+      },
+      {
+        "file": "references/environment-variables.md",
+        "command": "function",
+        "reason": "Deliberate Node-only steps for the developer's machine: the host-scope block says the codedapp CLI is not available in Studio Web, and this reference tells the user which command to run locally."
+      },
+      {
+        "file": "references/environment-variables.md",
+        "command": "update",
+        "reason": "Deliberate Node-only steps for the developer's machine: the host-scope block says the codedapp CLI is not available in Studio Web, and this reference tells the user which command to run locally."
+      }
+    ],
     "ceiling": {
       "codedapp": 13,
-      "codedapp deploy": 36,
+      "codedapp deploy": 38,
       "codedapp init": 2,
       "codedapp pack": 19,
       "codedapp publish": 25,
@@ -441,7 +467,7 @@
       {
         "file": "references/integration-service/activity-generation/runtime.md",
         "command": "is resources",
-        "reason": "Prose in a diagram (`uip is resources reads the file …`), not a command."
+        "reason": "Prose in a diagram (`uip is resources reads the file \u2026`), not a command."
       },
       {
         "file": "references/licensing/diagnose/references/troubleshooting-guide.md",
