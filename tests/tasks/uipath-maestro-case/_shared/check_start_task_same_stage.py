@@ -69,7 +69,7 @@ def main() -> None:
             f"({cond.get('displayName')!r}). A start-task response belongs on the follow-up "
             "TASK's own entryConditions. validate accepts stage re-entry, but re-entering "
             "Review restarts every task whose shouldRunOnlyOnce is false (the default), not "
-            "just the manager check — see references/sla-response-shapes.md section 5, defect 4."
+            "just the manager check — see case-runtime.md § SLA (start-task response)."
         )
 
     node, task, _cond, rule = task_hits[0]

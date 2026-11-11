@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Assert entry-points.json input/output were back-filled from the case In/Out args (Step 6.3).
 
-Verifies the FE-ported projection (see uipath-maestro-case/references/entry-points-sync.md):
+Verifies the FE-ported projection (see case-runtime.md § entry-points sync):
 - input.properties populated (not the empty `{}` bug shape)
 - type/format mapping: string, datetime->date-time, float->number/float
 - file -> {"$ref": "#/definitions/job-attachment"} + an input-level definitions block
@@ -16,7 +16,7 @@ import sys
 
 
 # Canonical JOB_ATTACHMENTS_DEFINITION["job-attachment"] — must be emitted verbatim
-# (PackagingUtil.ts; references/entry-points-sync.md). Note the unbalanced inner quotes in
+# (PackagingUtil.ts; case-runtime.md § entry-points sync). Note the unbalanced inner quotes in
 # MimeType.description — reproduced exactly, as the FE does.
 EXPECTED_JOB_ATTACHMENT = {
     "type": "object",
