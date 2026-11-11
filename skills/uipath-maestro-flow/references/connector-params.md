@@ -45,7 +45,9 @@ source. The loop is:
 2. **Author** the step from the task's own words — the fields you intend,
    `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a
    generic operation.
+<!--skill-flavor:check-source:start-->
 3. **Check**: `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
+<!--skill-flavor:check-source:end-->
    gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`,
    `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
    Three codes say the operation itself does not resolve, so no prepare

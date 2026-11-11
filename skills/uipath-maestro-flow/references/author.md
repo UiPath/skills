@@ -1,10 +1,12 @@
 # Author — build and edit a flow with the builder SDK
 
+<!--skill-flavor:author-scope:start-->
 Everything that happens on disk before a flow touches the cloud: scaffold the
 project, choose each node, write `<Name>.flow.ts`, and run the loop in
 [`CLI-LOOP.md`](CLI-LOOP.md) until the emitted `.flow` validates. Authoring ends
 at a valid artifact; publishing, running and debugging are
 [`operate.md`](operate.md), and a failed run is [`diagnose.md`](diagnose.md).
+<!--skill-flavor:author-scope:end-->
 
 The builder owns the `.flow` JSON. `compile` emits every node definition, the
 `variables.nodes[]` entries that make `$vars.<step>.output` resolve, the
@@ -38,9 +40,11 @@ cannot make: which node, which topology, what an output means, and what to ask.
    connection exists after its recovery flow, stop and report it as an open
    question. `resources.md` covers reference-field lookups; finish its
    pagination loop before reporting "not found".
+<!--skill-flavor:source-not-artifact:start-->
 4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit
    with `compile -o` for a new flow; a non-empty `.flow` that existed before this
    turn is re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)).
+<!--skill-flavor:source-not-artifact:end-->
    Never hand-edit the emitted `.flow`, `content/*.bpmn`, `bindings_v2.json`,
    `entry-points.json`, `operate.json` or `package-descriptor.json` — the CLI
    regenerates them, and the next compile silently undoes a hand edit.
