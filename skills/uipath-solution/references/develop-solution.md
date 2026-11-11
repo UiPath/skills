@@ -312,7 +312,7 @@ A local stub starts from the kind's defaults: a queue has automatic retry on, `m
 
 ### Data Fabric kinds
 
-**Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. Idempotent — re-run on drift; returns `Updated`.
+**Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. A repeated import returns `Unchanged`; it never overwrites. To pull a changed cloud definition, see [Step 11a](#step-11a-pull-a-changed-cloud-definition---source-remote).
 
 **A federated entity's connection:** `uip solution resources add --source remote --kind Connection --name <CONNECTION> --folder-path <FOLDER>`, where `<FOLDER>` holds the connection.
 
