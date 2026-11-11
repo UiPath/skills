@@ -18,7 +18,7 @@ import re
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..")
 CANONICAL = os.path.join(ROOT, "skills", "uipath-planner", "references", "case", "case-design-layers-guide.md")
-# The twin is the classic (JSON-authoring) case skill, which Studio Web pins.
+# The twin is the classic (JSON-authoring) case skill, kept in classic/ for the graders.
 TWIN = os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "references", "sla-response-shapes.md")
 CANONICAL_FIELDS = CANONICAL
 TWIN_FIELDS = os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "references", "registry-discovery.md")
