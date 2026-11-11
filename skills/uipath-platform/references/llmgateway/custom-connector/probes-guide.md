@@ -4,12 +4,13 @@ The product's compatibility probes are the acceptance test for a BYO LLM connect
 
 ## The probe requests (`assets/probes/`)
 
-The gateway's probes are fixed requests with fixed checks. `assets/probes/` holds them as one JSON file per request, and `scripts/run-probes.sh` sends them to any connection (custom-connector-guide.md steps 1 and 7), so the draft meets the same requests and checks before it is published. There are two kinds of folder:
+The gateway's probes are fixed requests with fixed checks. `assets/probes/` holds them as one JSON file per request, and `scripts/run-probes.sh` sends them to any connection (custom-connector-guide.md steps 1 and 7), so the draft meets the same requests and checks before it is published. There are three kinds of folder:
 
 | Folder | What it holds | When each runs |
 |---|---|---|
 | `default/` | Every product's probes: the gateway's base probe for the flavor (`base-chat`, one per chat flavor; `base-responses`; `base-embeddings`), and the basic payloads any product's configuration can list (the `*_basic_probe`s, `"optIn": true`) | A base probe always, unless a product's code-built probe takes its place; a basic payload only when named with `--probe <ProbeId>` |
 | `<product>/` | One product's own: the probe the gateway's code builds for it (`agents/agents-tool-call.*`, Agents' forced `tool2` call on every feature but `agents-autopilot`; `uia/uia-screenplay.*`, UIA on its computer-use model), and the payloads only that product lists, each with a validator of its own in the gateway (`uipath-ecs/`: ECS's tool-calling, multimodal, several-choices, embeddings and grounding probes, `"optIn": true`) | A code-built probe automatically for that product, in place of the base probe it `replaces`; a listed payload only when named with `--probe <ProbeId>` |
+| `autopilot/` | Autopilot's tool-result round trips, one per flavor (`autopilot_*_stream_roundtrip_probe`, `"optIn": true`, `"roundTrip": true`): two streamed calls with values drawn for the run (§"Round-trip probes") | Only when named with `--probe <ProbeId>` |
 
 A file marked `"optIn": true` is a payload a product's Model Hub configuration lists for a feature, and it is opt in. This guide holds no product's list of them: the list is the product's own configuration, and it varies by feature, model and environment. A product comes with its probes — ask the user or the product team which `ProbeId`s the feature lists, and pass each with `--probe`. With none, the default and any code-built probe run, which is what the gateway runs for a feature that lists none. A named probe written for another flavor is reported as skipped: the gateway runs only those of the configuration's flavor.
 
@@ -47,7 +48,19 @@ A kept file's `replaces` then drops the kept files with those ids: Agents' `agen
 - `checks` run in order on the answer to a 2xx call, each a jq condition that is true when the answer is fine. The first false one is the verdict, with the gateway's reason. With no checks, any 2xx passes; with checks, an answer that is not JSON is `MALFORMED_RESPONSE`. A non-2xx answer is `UNAVAILABLE`.
 - `retries`: when the answer has that status and contains every string listed, the runner applies the jq `edit` to the body and sends it once more, as the gateway does (`max_completion_tokens` instead of `max_tokens`; tool choice `auto` when a model refuses a forced one).
 - `optIn: true` marks a payload a product's configuration lists: it runs only when named with `--probe`, and its file is named `<ProbeId>.json`. The base and code-built probes leave it out.
+- `roundTrip: true` marks a tool-result round trip (below): `path` is the flavor's streaming path, `body` is the first turn's request with `{{order_id}}` and `{{customer_id}}` where the prompt names the run's ids, and the file has no `checks` — the runner's are the validator's own.
 - `id`, `apiFlavor`, `path`, `body` are required; the rest are optional.
+
+### Round-trip probes (`autopilot/`)
+
+Autopilot's `autopilot_*_stream_roundtrip_probe`s — one per flavor Autopilot uses: chat completions, Responses, Anthropic Messages, Bedrock Invoke, Gemini — are not one request with fixed checks. Each run makes two streamed calls with values drawn fresh for it, so a stub, a cache or a replayed answer cannot pass:
+
+1. **Tool calls.** The prompt names an order id and a customer id. The stream must reassemble into calls to `lookup_order` / `lookup_customer` whose `order_id` / `customer_id` are exactly those ids. One call passes; two is what the prompt asks for.
+2. **Tool results.** The same request goes back with the assistant's calls and a result for each, in the form the flavor's clients use: `tool_calls` and `tool` messages for chat completions; `function_call` and `function_call_output` items for Responses; the first turn's `thinking` blocks, then `tool_use`, and `tool_result` blocks for Anthropic and Bedrock; `functionCall` with its `thoughtSignature`, and `functionResponse`, for Gemini. The streamed answer must quote the status and tier codes that exist only in those results.
+
+`run-probes.sh` makes both calls with `Accept: text/event-stream` and reads each stream as the gateway does. The files are `"optIn": true` like every listed payload: name the one of the configuration's flavor with `--probe`. `autopilot/` is named for the probes' owner, not for a `--product` key, so they are found only by id.
+
+Both turns stream, and Integration Service relays a streamed answer raw (custom-connector-guide.md Rule 4): the vendor itself must stream the flavor's events. For chat completions that means `delta.tool_calls` fragments carrying an `index`, the call's `id` and `function.name` sent once, and `arguments` in pieces. A vendor whose stream differs cannot pass, whatever the hooks do; say so to the user in step 1.
 
 ### Adding a probe
 
@@ -55,6 +68,7 @@ Only a probe the gateway itself has — never a request of this guide's own:
 
 - **code-built** (a class under the gateway's `CompatibilityProbes/ProgrammaticProbes/`): `<product>/<id>.<flavor-slug>.json`, one per flavor the gateway's mappers send it in, with `replaces` naming the default it takes the place of and the `match` / `excludeFeatures` the class selects by;
 - **a payload a product lists** (under the gateway's `CompatibilityProbes/ProductDefinedProbes/Payloads/`, with its validator): `default/<ProbeId>.json` when any product can list it, `<product>/<ProbeId>.json` when the payload and its validator are that product's own; `"optIn": true`, the payload as `body`, the validator's checks in order, and no `match`: it runs when named.
+- **a round trip** (a payload whose validator makes more than one call, such as `AutopilotStreamRoundTripProbeValidator`): the first turn's payload as `body`, `"optIn": true`, `"roundTrip": true`, the streaming `path`, and no `checks`. A new flavor or a new scenario also needs its reader and its tool-result form in `scripts/run-probes.sh`.
 
 Set `path` to the flavor's resource path ([connector-contract-guide.md](connector-contract-guide.md)), add `model: "{{model}}"` to the body for the OpenAI and Anthropic flavors, and check the selection offline with `--list`.
 
@@ -125,6 +139,7 @@ The table and the sections below use the gateway's camelCase names; on success, 
 | `INCORRECT_RESPONSE` | Shape is right but the content is not the model's answer (empty text, a wrapper object, the request echoed back) | Return the vendor's generated text, not its envelope |
 | `MULTIPLE_RESPONSES` | More choices, candidates or embeddings than requested | Return exactly `n` (default 1) |
 | `MISSING_TOOL_CALL` | `tools` / `tool_choice` dropped on the way to the vendor, or the vendor's call not mapped back | Map the tool definitions and choice both ways |
+| `TOOL_RESULT_IGNORED` | A round-trip probe's second turn: the answer is empty, is another tool call, or does not quote the codes the tool results carry — the results were dropped or reshaped on the way to the vendor, or the model did not read them | Map the assistant's tool calls and the tool results in the preRequest hook (matching ids, the result's content as sent); read `<name>.turn2.request.json` and `<name>.turn2.stream.txt` from the runner |
 | `INCORRECT_TOOL_CALL` | Wrong function name, or `arguments` not a JSON **string** (OpenAI) / not an object (Anthropic, Gemini, Converse) | Fix the call mapping |
 | `MULTIPLE_TOOL_CALLS_WHEN_PARALLEL_TOOL_CALLS_NOT_ALLOWED` | `parallel_tool_calls: false` not honoured | Map it (Anthropic `disable_parallel_tool_use`) or keep only the first call |
 | `EXPECTED_MAX_COMPLETION_TOKENS` | The vendor wants `max_completion_tokens`; the gateway retries with it once automatically | If it persists, map `max_tokens` → `max_completion_tokens` in the preRequest hook |

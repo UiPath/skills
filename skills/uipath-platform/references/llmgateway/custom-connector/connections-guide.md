@@ -11,7 +11,7 @@ An Integration Service connection is one set of vendor credentials on a connecto
 | Connector | The draft (`design-…`); runs whatever was last imported | The published `custom-…` key; runs the latest published version — each publish reaches it at once, with no edit |
 | Credentials | A sandbox key, or the builder's own | The credentials production must use — ask the user |
 | Who sees it | Only its creator; `uip is connections` never lists it, so no configuration can be saved on it | The shared folder the configuration names in `--folder-key`, so other admins can manage it |
-| Lifetime | Delete when the runtime connection passes (ask first) | Kept; rotate with `edit` |
+| Lifetime | Kept, for the next fix; never deleted or offered for deletion unless the user asks | Kept; rotate with `edit` |
 
 Use one set of credentials for both only when the user says the same credentials serve production.
 

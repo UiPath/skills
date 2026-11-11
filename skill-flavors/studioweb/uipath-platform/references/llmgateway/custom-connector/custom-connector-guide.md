@@ -11,7 +11,7 @@ List what will run by the rules in [probes-guide.md](probes-guide.md) §"Which f
 <!--skill-flavor:probe-list:end-->
 
 <!--skill-flavor:draft-test-connection:start-->
-This host cannot open the Connector Builder's test connection itself, so ask the user to add it: in Integration Service, open the draft connector (`<CONNECTOR_NAME>`) in the Connector Builder, choose **Add connection**, enter the vendor credentials (a sandbox key is fine), connect, and give you the connection's id. Never ask for the credentials themselves. That connection belongs to the draft and runs whatever was last imported — a fix is one `import` away — and `uip is connections list` does not show it, so its id comes from the user.
+This host cannot open the Connector Builder's test connection itself, so ask the user to add it, saying it is the test connection for the draft and not the one the product will run on: in Integration Service, open the draft connector (`<CONNECTOR_NAME>`) in the Connector Builder, choose **Add connection**, enter the vendor credentials (a sandbox key is fine), connect, and give you the connection's id. Never ask for the credentials themselves. That connection belongs to the draft and runs whatever was last imported — a fix is one `import` away — and `uip is connections list` does not show it, so its id comes from the user.
 
 If the user cannot find the id, test on the published connector instead: publish (step 8), have them create the runtime connection (step 9), take its `Id` from `uip is connections list <PUBLISHED_KEY> --all-folders --refresh --output json`, and run step 7 on it with `<PUBLISHED_KEY>` in place of the draft's key. Each fix then needs a higher `latestVersion`, `import` and `publish --wait` before that connection runs it (Rule 9).
 <!--skill-flavor:draft-test-connection:end-->
@@ -29,7 +29,7 @@ uip is resources run create <CONNECTOR_KEY> '<PROBE_PATH>' --connection-id <TEST
 - A `Success` answer carries the vendor's answer, through your hooks, in `Data`. Check it against the file's `checks` in order: each `says` what must hold and its `jq` is the exact test. The first that fails is the gateway's verdict, `INCOMPATIBLE` with that `reason`; none failing is a pass.
 - A `Failure` answer is `UNAVAILABLE`: `Message` holds the status (`404 Not Found`), and `Instructions` holds Integration Service's envelope, with the vendor's reason in `providerMessage`. When the status and that text match one of the file's `retries`, apply its `edit` to the body and send it once more, as the gateway does.
 
-The command cannot ask for an event stream, so a streamed call cannot be tested here: if the product streams, tell the user it was not tested.
+The command cannot ask for an event stream, so a streamed call cannot be tested here: if the product streams, tell the user it was not tested. The same holds for a probe marked `"roundTrip": true` (Autopilot's `autopilot_*_stream_roundtrip_probe`s): it is two streamed calls, so skip it here, tell the user it was not tested on the draft, and let the save in step 9 run it.
 <!--skill-flavor:draft-calls:end-->
 
 <!--skill-flavor:runtime-connection:start-->

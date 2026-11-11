@@ -37,7 +37,7 @@ The one exception is the unpublished draft: `curl` creates its test connection a
 7. **Log in and check the session before any tenant step.** `uip login status --output json` → `Data.Status` must be `"Logged in"` (the envelope says `Success` even when the session expired). If it is not, ask the user to run `uip login`; until then build offline only, and never guess a tenant, folder or connection id. The user needs the **OrganizationAdmin** role for AI Trust Layer to probe or save a configuration.
 8. **Test the unpublished draft through Integration Service; publish once those calls pass.** The test connection (step 6) is the Connector Builder's Add connection button, called over the API: it connects the imported design connector, and that connection runs whatever was last imported — a fix is one `import` away, with no version bump and no publish. Step 7 sends the flavor's requests to it at the path the gateway calls. It belongs to the draft: `uip is connections` never lists it, only its creator sees it, and the gateway cannot probe it (Rule 2). The runtime connection is made on the **published** `custom-…` key (`PublishedKey` from `publish`) in the shared folder — with the Connections API call in [connections-guide.md](connections-guide.md) §"Create the runtime connection", which takes the folder, its page opened in the user's browser (or from the Integration Service web UI); `uip is connections create` cannot pick one.
 9. **Every publish needs a higher version.** Bump `element-metadata.json:latestVersion` (or `publish --version`) before each `publish`; the server rejects an equal version. While testing, only re-import.
-10. **Probing saves a configuration.** `byo-connections create` and `update` run the product probes and save only when every model passes; there is no dry run. Create with `--enabled`: the probes gate the save, so a configuration that fails is never saved, and one that passes serves the product at once — on a production tenant, say so before saving, and use `--no-enabled` only when the user asks to keep it off. Ask the user before deleting a configuration (`byo-connections delete --force`) or a connection (the test connection's `DELETE` in [connections-guide.md](connections-guide.md), `uip is connections delete --yes`).
+10. **Probing saves a configuration.** `byo-connections create` and `update` run the product probes and save only when every model passes; there is no dry run. Create with `--enabled`: the probes gate the save, so a configuration that fails is never saved, and one that passes serves the product at once — on a production tenant, say so before saving, and use `--no-enabled` only when the user asks to keep it off. Ask the user before deleting a configuration (`byo-connections delete --force`) or a runtime connection (`uip is connections delete --yes`). The draft's test connection is kept once the work is done: do not delete it, and do not ask whether to (step 9).
 11. **Stop after three failed attempts on the same failure.** Read the failure (the step 7 answer, or the probe's reason in step 9), change one thing, re-import, try again. After three attempts on one failure, stop and show the user the answer or the probe summary and the hook — do not keep guessing.
 12. **Git Bash on Windows: disable path conversion for `uip` only.** `export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'` before any builder, `import` or `publish` command, or `/v1/chat/completions` is rewritten to a Windows path that validates, publishes, and then 404s. With conversion off, pass file paths relative or as `C:/…`: a `/c/…` path reaches the CLI as `C:\c\…`. The same holds for the native Windows `jq` and `curl`, which cannot open an unconverted `/c/…` path: `run-probes.sh` stops with "a probe file is not valid JSON", and `curl --data-binary @/c/…` with "error encountered when reading a file". Run `run-probes.sh` and the `curl` calls in a shell without those variables, or give them relative paths.
 13. **A custom token exchange has fixed lifecycle resources.** Integration Service calls `GET /onProvision` when a connection is created and `POST /onRefresh` on the first call after the token's lifetime has elapsed. The builder writes `vendorMethod: "GET"` on the first and `/on-refresh` for the second, so neither runs until patched. A `provisionAuthValidation` resource runs before `onProvision` — with no token yet — and fails every connection. Recipe: [hook-authoring-guide.md](hook-authoring-guide.md) §"Custom token exchange".
@@ -67,7 +67,18 @@ uip llm-configuration byo-connections list-product-configs \
 
 From the row read (the CLI returns these keys PascalCase): `ModelsConfigurationOption` (multi-mapping needed for `AllModels`/`AnyModel`), each entry of `Models` with its `AllowedApiFlavors` and `AllowedConnectors`, and `AddYourOwn`. `Custom` must appear in `AllowedConnectors` (or as a key of `AddYourOwn` for a customer-added model). If it does not, custom connectors are not enabled for this organization or feature — stop and tell the user; do not build a connector the gateway will refuse. With several features, build for the API flavors they share, and run steps 1, 7 and 9 once per feature: its own probes, its own configuration.
 
-A model missing from `Models` on an `AnyModelWithOwnAdditions` feature is a customer-added model: its flavors are the ones `AddYourOwn.Custom` lists, it goes to `--llm-name` as-is (step 9), and the gateway runs the default and code-built probes for it plus the ones the feature itself lists (step 1).
+Then ask, per feature, how the vendor's model should appear in the product — the same choice [byo-connections.md](../byo-connections.md) offers for a built-in connector. Ask it even when the request names a model:
+
+- **Replace a catalog model.** The product keeps asking for a model in `Models` (`--llm-name`), and the vendor's model answers in its place (`--llm-identifier`). Offer the catalog models whose `AllowedConnectors` include `Custom`.
+- **Add a custom alias.** Only on an `AnyModelWithOwnAdditions` feature, and always offered there: the user picks a name of their own that is not in `Models`, and it appears in the product beside the catalog models. Its flavors are the ones `AddYourOwn.Custom` lists, it goes to `--llm-name` as-is (step 9), and the gateway runs the default and code-built probes for it plus the ones the feature itself lists (step 1).
+
+A folder holds one configuration per product, feature and model, and the gateway refuses a second one at the very end, after the connector is built and published. So check now, before building, whether the model already has one:
+
+```bash
+uip llm-configuration byo-connections list --include-connection-details --output json   # Product, OperationGroupName, FolderId, LlmConfigurations[].DesiredModel
+```
+
+When one exists for that product, feature and model in the folder the product will use, tell the user and let them choose: move the existing configuration to the new connector's connection (`update <CONFIG_ID>` in step 9, which can rename it too), use another shared folder, or add the model as a custom alias instead.
 
 ### 1. Agree the contract with the user
 
@@ -86,7 +97,7 @@ bash <GUIDE_DIR>/scripts/run-probes.sh --product <PRODUCT> --feature <FEATURE> -
 Each line names a file under `<GUIDE_DIR>/assets/probes/` holding the request body and what the answer must show ([probes-guide.md](probes-guide.md)).
 <!--skill-flavor:probe-list:end-->
 
-Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); the probes a product lists can send images, several choices (`n`) or web-search grounding. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
+Agents forces a tool call (a required `tool_choice`, `parallel_tool_calls: false`); the probes a product lists can send images, several choices (`n`) or web-search grounding. Autopilot's round-trip probes (`autopilot_*_stream_roundtrip_probe`, one per flavor) stream both ways: the vendor must stream tool calls in the flavor's own event format, then answer from the tool results sent back. A connector cannot reshape a stream (Rule 4), so a vendor whose stream is not the flavor's cannot pass them. A vendor without the feature cannot pass, however the hooks are written — tell the user and agree whether to go on.
 
 ### 2. Scaffold the connector
 
@@ -153,6 +164,8 @@ The `builder` commands find the connector from `<WORK_DIR>`; `import` and `publi
 
 ### 6. Create the test connection on the draft
 
+The user connects twice, so say which connection this is before asking for it: this first one is only for testing the unpublished draft, a sandbox key is enough for it, and no product ever uses it. The connection the product runs on comes second, after publishing (step 9), and that one takes the credentials production must use.
+
 <!--skill-flavor:draft-test-connection:start-->
 This is the Connector Builder's **Add connection**, called with `curl` (it needs `curl`, `jq` and `node`). Shell variables do not survive between commands, so write a helper once, outside the connector folder, and source it in every call. It reads a fresh token from `uip login refresh` and hands it to `curl` on stdin, so the token never reaches a command line, a file or the output:
 
@@ -203,7 +216,7 @@ Open a connection session on the draft, in your Personal workspace, with a conne
 )
 ```
 
-- `asksNothing: false` — open `authUrl` for the user straight away, in their own browser, where they are already signed in to UiPath: `open '<AUTH_URL>'` on macOS, `xdg-open '<AUTH_URL>'` on Linux, `Start-Process '<AUTH_URL>'` on Windows (from Git Bash: `powershell.exe -NoProfile -Command "Start-Process '<AUTH_URL>'"`). Open it only when it starts with the `BaseUrl` you are logged in to, and never in a browser you drive yourself, which is not signed in. Tell the user the page is open and expires at `expiresAt` (about 12 minutes after the session opens), and ask them to enter the vendor credentials (a sandbox key is fine) and say when it is done. Hand them the link instead only when no browser opens from this shell (a remote or headless session). Never fill in the form or complete this session yourself.
+- `asksNothing: false` — open `authUrl` for the user straight away, in their own browser, where they are already signed in to UiPath: `open '<AUTH_URL>'` on macOS, `xdg-open '<AUTH_URL>'` on Linux, `Start-Process '<AUTH_URL>'` on Windows (from Git Bash: `powershell.exe -NoProfile -Command "Start-Process '<AUTH_URL>'"`). Open it only when it starts with the `BaseUrl` you are logged in to, and never in a browser you drive yourself, which is not signed in. Tell the user the page is open, that it is the test connection for the draft, and that it expires at `expiresAt` (about 12 minutes after the session opens), and ask them to enter the vendor credentials (a sandbox key is fine) and say when it is done. Hand them the link instead only when no browser opens from this shell (a remote or headless session). Never fill in the form or complete this session yourself.
 
 Either way `connectionId` is the test connection (the connection step 7 calls), and `elementId` addresses the draft's connections. Confirm it exists — a `404` "No element instances found" means none does yet:
 
@@ -229,7 +242,9 @@ bash <GUIDE_DIR>/scripts/run-probes.sh --product <PRODUCT> --feature <FEATURE> -
 
 Each probe prints `PASS`, `INCOMPATIBLE <reason>` (the reason the gateway would give, and what the check wants), `UNAVAILABLE` with the HTTP status and the start of the answer, or `RETRY` when the gateway would send it once more with an edited body. Every request and answer is kept in `<WORK_DIR>/probes/` (`<name>.request.json`, `<name>.response.json`). Exit 0 means every probe passed; 1, that one failed; 2, that none was sent: a usage error, a flavor no probe has, or no probe for that product, feature and flavor. Which files run, their format and how to add one: [probes-guide.md](probes-guide.md).
 
-Probes never stream. If the product streams, also send one streamed request with the header the gateway sends with a stream: for chat completions, Responses and Messages, a probe's request with `"stream": true` at the same path; for Gemini and Bedrock, the same body at the flavor's stream path ([connector-contract-guide.md](connector-contract-guide.md), `?alt=sse` for Gemini). It passes when the events arrive in the flavor's own stream format. On the draft, Integration Service may append one line that is not an event (`{"message":"Published Connector not found with key design-…"}`) after the vendor's last one; ignore it:
+A probe marked `"roundTrip": true` (Autopilot's `autopilot_*_stream_roundtrip_probe`s) is two streamed calls with ids and codes drawn for the run: the runner sends both, reassembles each stream as the gateway does, and keeps each turn's request and raw stream (`<name>.turn1.request.json`, `<name>.turn1.stream.txt`, and the same for `turn2`). A stub or a canned answer fails it by design, so run it against the vendor's real model.
+
+No other probe streams. If the product streams and no round-trip probe ran, also send one streamed request with the header the gateway sends with a stream: for chat completions, Responses and Messages, a probe's request with `"stream": true` at the same path; for Gemini and Bedrock, the same body at the flavor's stream path ([connector-contract-guide.md](connector-contract-guide.md), `?alt=sse` for Gemini). It passes when the events arrive in the flavor's own stream format. On the draft, Integration Service may append one line that is not an event (`{"message":"Published Connector not found with key design-…"}`) after the vendor's last one; ignore it:
 
 ```bash
 ( set -o pipefail; source <WORK_DIR>/is-api.sh &&
@@ -279,7 +294,9 @@ Use repeated `--mapping '…,connector-type=Custom'` for `AllModels` / `AnyModel
 - bump `latestVersion`, then `import` and `publish --wait`;
 - run the probes again: `create` again (a failed one saved nothing) or `update <CONFIG_ID>` with the same mapping.
 
-A configuration saved with `--no-enabled` at the user's request is switched on later with `update <CONFIG_ID>`, the same mapping and `--enabled` (it runs the probes again). Finish with `byo-connections get <CONFIG_ID> --force-refresh --output json`, and ask before deleting the test connection ([connections-guide.md](connections-guide.md) §"Delete").
+A configuration saved with `--no-enabled` at the user's request is switched on later with `update <CONFIG_ID>`, the same mapping and `--enabled` (it runs the probes again). Finish with `byo-connections get <CONFIG_ID> --force-refresh --output json`. Keep the draft's test connection, without asking the user about it: it costs nothing, no product can reach it, and the next fix is tested on it. Delete it only when the user asks ([connections-guide.md](connections-guide.md) §"Delete").
+
+When `create` answers that there is already a configuration for this product, feature and model in the folder, nothing was saved and the probes did not run: it is step 0's check, met late. Ask the user as step 0 says; to move the existing configuration over, `update <CONFIG_ID>` with this mapping and, to rename it, `--name`.
 
 ### 10. Report to the user
 
@@ -382,7 +399,7 @@ For general connector authoring depth (every auth type, `state patch` semantics,
 5. Asking the user to paste an API key into the chat, or baking one into `element.json` as a default (Rule 5).
 6. Publishing a version per fix to test it, instead of re-importing and calling the draft's test connection again; or leaving the runtime connection in a Personal workspace, where only its creator can manage it (Rule 8).
 7. Re-publishing without bumping `latestVersion` (Rule 9).
-8. Taking the one product the request names as the whole scope, without asking whether other products or features will use the connector — another feature can allow other flavors and run other probes (step 0).
+8. Taking the one product the request names as the whole scope, without asking whether other products or features will use the connector — another feature can allow other flavors and run other probes (step 0). Likewise taking the model the request names as a replacement without asking whether it replaces a catalog model or is added as a custom alias, or building before checking that the folder has no configuration for that model yet.
 9. Logging the prompt or the vendor response "to debug" from a hook (Rule 6).
 10. Reporting done on "publish succeeded" without a passing probe on the runtime connection.
 11. Keeping the builder's `onProvision` / `onRefresh` entries as written, or a `provisionAuthValidation` beside a token exchange — the token is never fetched and every connection fails with the vendor's 401 (Rule 13).
