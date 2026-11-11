@@ -23,40 +23,33 @@
       "extensionTag": "uipath:activity",
       "contextFields": [
         {
-          "name": "appId",
+          "name": "name",
+          "displayName": "App",
           "type": "string",
-          "required": false,
-          "hidden": true,
-          "isPrimaryKey": true,
-          "binding": false,
-          "defaultValue": null
-        },
-        {
-          "name": "appVersion",
-          "type": "number",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "app",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "name"
+          }
         },
         {
-          "name": "actions",
+          "name": "folderPath",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
-        },
-        {
-          "name": "key",
-          "type": "string",
-          "required": false,
-          "hidden": true,
-          "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "app",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "folderPath"
+          }
         },
         {
           "name": "taskTitle",
@@ -75,12 +68,17 @@
       "outputType": "Actions.HITL",
       "outputName": "Process response",
       "useRelativeSource": true,
-      "bindingPattern": "none",
+      "bindingPattern": "app",
       "requiresDiscovery": true,
       "isDynamic": true,
-      "xmlTemplate": "<bpmn:UserTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Actions.HITL\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"appId\" type=\"string\" value=\"{appId}\" />\n        <uipath:input name=\"appVersion\" type=\"number\" value=\"{appVersion}\" />\n        <uipath:input name=\"actions\" type=\"string\" value=\"{actions}\" />\n        <uipath:input name=\"key\" type=\"string\" value=\"{key}\" />\n        <uipath:input name=\"taskTitle\" type=\"string\" value=\"{taskTitle}\" />\n      </uipath:context>\n      <uipath:input name=\"HitlTaskArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Actions.HITL\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:UserTask>",
+      "xmlTemplate": "<bpmn:UserTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Actions.HITL\" version=\"v2\" />\n      <uipath:context>\n        <uipath:input name=\"name\" type=\"string\" value=\"=bindings.{nameBindingId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"=bindings.{folderPathBindingId}\" />\n        <uipath:input name=\"taskTitle\" type=\"string\" value=\"{taskTitle}\" />\n      </uipath:context>\n      <uipath:input name=\"HitlTaskArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Actions.HITL\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:UserTask>",
       "discoveryNotes": "Uses getSupportedHumanTasks(search, systemName) to list available action app tasks",
-      "contextFieldNotes": "Note: 'folderKey' field in design schema has name='key' (the actual XML context input name)"
+      "bindingInfo": {
+        "resource": "app",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "name",
+        "contextField": "name"
+      }
     },
     "Orchestrator.StartJob": {
       "extensionType": "Orchestrator.StartJob",
@@ -94,46 +92,33 @@
       "extensionTag": "uipath:activity",
       "contextFields": [
         {
-          "name": "releaseKey",
+          "name": "name",
           "displayName": "Process",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
+          "binding": true,
           "defaultValue": null,
           "bindingInfo": {
             "resource": "process",
             "resourceKeyPattern": "${metadata.key}",
-            "propertyAttribute": "Key"
+            "propertyAttribute": "name"
           }
-        },
-        {
-          "name": "folderId",
-          "type": "string",
-          "required": false,
-          "hidden": true,
-          "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
         },
         {
           "name": "folderPath",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
-        },
-        {
-          "name": "name",
-          "type": "string",
-          "required": false,
-          "hidden": true,
-          "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "folderPath"
+          }
         }
       ],
       "inputPattern": "mergedBody",
@@ -147,12 +132,12 @@
       "bindingInfo": {
         "resource": "process",
         "resourceKeyPattern": "${metadata.key}",
-        "propertyAttribute": "Key",
-        "contextField": "releaseKey"
+        "propertyAttribute": "name",
+        "contextField": "name"
       },
       "requiresDiscovery": true,
       "isDynamic": true,
-      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartJob\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" type=\"string\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" type=\"string\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" type=\"string\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartJob\" version=\"v2\" />\n      <uipath:context>\n        <uipath:input name=\"name\" type=\"string\" value=\"=bindings.{nameBindingId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"=bindings.{folderPathBindingId}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
       "discoveryNotes": "Uses getSupportedOrchestratorTasks('process', search) to list available processes"
     },
     "Orchestrator.StartAgentJob": {

@@ -12,7 +12,7 @@ Resolve every resource named by `sdd.md` into tenant identities in `tasks/regist
 >
 > **Plugin detail:** read root case → `plugins/case/planning.md`; stages → `plugins/stages/planning.md`; tasks → `plugins/tasks/<type>/planning.md`; triggers → `plugins/triggers/<type>/planning.md`; conditions → `plugins/conditions/<scope>/planning.md`; SLA → `plugins/sla/planning.md`; global variables/arguments → `plugins/variables/global-vars/planning.md`; task I/O → `plugins/variables/io-binding/planning.md` (**always read alongside the matching task plugin**). Each `planning.md` defines SDD fields and resolution; sibling `impl-json.md` maps results to `caseplan.case` JSON.
 >
-> **Kickoff overview first (if not already shown).** If handoff did not run because the user supplied `sdd.md`, present the greenfield flow overview once before Step 0; see [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first). Skip if the delegation window showed it.
+> **Kickoff overview first (if not already shown).** If handoff did not run because the user supplied `sdd.md`, present the greenfield flow overview once before Step 0; see [SKILL.md § Workflow](../SKILL.md#workflow). Skip if the delegation window showed it.
 
 ## Step 0 — Resolve the `uip` binary
 

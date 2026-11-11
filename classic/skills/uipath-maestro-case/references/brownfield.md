@@ -6,7 +6,7 @@ Edit an existing `caseplan.case` in place. Skip design handoff and Phase 1–7 b
 
 ## When this journey applies
 
-Use this journey when `caseplan.case` exists and the user requests a targeted edit (adding a stage, removing a task, changing a condition, swapping a trigger, etc.). Do not use `sdd.md`, resolution, planning, or prototyping hard stops. Route via [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
+Use this journey when `caseplan.case` exists and the user requests a targeted edit (adding a stage, removing a task, changing a condition, swapping a trigger, etc.). Do not use `sdd.md`, resolution, planning, or prototyping hard stops. Route via [SKILL.md](../SKILL.md#routing).
 
 ## Kickoff — set dev expectations first
 
@@ -90,7 +90,7 @@ An SLA clock and response are separate edits. Choose response, status shape, and
 
 - **Do not widen the edit.** A notify-only requirement means add an escalation to the target's `slaRules[].escalationRule` ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and stop—no stage, task, or condition.
 - **`start-task` adds a task, not a lane** ([sla-response-shapes.md § 1](sla-response-shapes.md#1-pick-the-response)): put the follow-up task in the breached stage, with the `sla-status-change` rule as its own task-entry condition, never as a stage-entry row (which reruns other tasks).
-- **Four defects `validate` accepts:** task without an entry condition; non-interrupting lane demoted to a regular stage; `escalationId: "any"` "repaired" by repointing instead of deleting; and `start-task` authored as stage re-entry. Re-read [§ 5](sla-response-shapes.md#5-four-defects-validate-cannot-see) before finishing.
+- **Four defects `validate` accepts:** task without an entry condition; non-interrupting lane demoted to a regular stage; a rule whose status is not the requirement's (e.g. a breach lane left on the Designer's at-risk `escalationId: "any"`); and `start-task` authored as stage re-entry. Re-read [§ 5](sla-response-shapes.md#5-four-defects-validate-cannot-see) before finishing.
 - Passing `validate` does not prove the response is correct; all four defects validate clean.
 
 ## After edits
