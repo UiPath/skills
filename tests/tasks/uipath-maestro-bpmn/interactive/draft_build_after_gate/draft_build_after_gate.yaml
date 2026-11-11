@@ -100,8 +100,11 @@ success_criteria:
          file path here fails.
       3. Next come between one and eight box lines, each starting with `- `,
          each naming one step of the process (with or without a bracketed
-         kind) in one short clause under about 200 characters. There is no
-         line for a start event, timer, gateway, branch, or end event.
+         kind, and with or without a trailing ` → <variable>`, the variable
+         the step produces, which the skill puts in the box's label; that
+         suffix is not a line explaining a variable) in one short clause
+         under about 200 characters. There is no line for a start event,
+         timer, gateway, branch, or end event.
       4. Next is exactly the line `Is this the process you want?`.
       5. Then exactly three numbered options, in this order: `1.` Build it,
          `2.` Change it, `3.` Keep it, each with any short description.

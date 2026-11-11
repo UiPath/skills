@@ -8,7 +8,7 @@ present; connection + MailFolder reference both bound; the bound
 connection, not a cached/stale/renamed one), translated from a JSON
 ``inputs.detail`` walk over a ``.flow`` node to an XML ``uipath:input`` walk
 over the registry-driven ``Intsvc.EventTrigger`` startEvent shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md "Integration
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md "Integration
 Service triggers" and ``validator/bpmn-spec.json``'s ``Intsvc.EventTrigger``
 xmlTemplate).
 

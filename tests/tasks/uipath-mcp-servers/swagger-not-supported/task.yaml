@@ -42,7 +42,11 @@ success_criteria:
 - type: command_not_executed
   description: Agent did NOT log in again (not_supported is not an auth failure)
   tool_name: Bash
-  command_pattern: 'uip\s+(login|auth\s+login)\b'
+  # Read-only subcommands (`status`, `which`, `tenant list`, `profiles list`) and
+  # `--help`/`-h` only read the session, so they are exempt. `login refresh` and
+  # `login tenant set` still count: both change the session, the reaction this guards against.
+  # The --help lookahead is the uipath-insights "no uip login" guard's.
+  command_pattern: 'uip\s+(login|auth\s+login)\b(?!\s+(status|which|tenant\s+list|profiles\s+list)\b)(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))'
   weight: 1.0
 - type: llm_judge
   description: The answer says swagger MCP servers aren't available on the connected environment
