@@ -72,13 +72,13 @@ Then ask, per feature, how the vendor's model should appear in the product — t
 - **Replace a catalog model.** The product keeps asking for a model in `Models` (`--llm-name`), and the vendor's model answers in its place (`--llm-identifier`). Offer the catalog models whose `AllowedConnectors` include `Custom`.
 - **Add a custom alias.** Only on an `AnyModelWithOwnAdditions` feature, and always offered there: the user picks a name of their own that is not in `Models`, and it appears in the product beside the catalog models. Its flavors are the ones `AddYourOwn.Custom` lists, it goes to `--llm-name` as-is (step 9), and the gateway runs the default and code-built probes for it plus the ones the feature itself lists (step 1).
 
-A folder holds one configuration per product, feature and model, and the gateway refuses a second one at the very end, after the connector is built and published. So check now, before building, whether the model already has one:
+The gateway allows one configuration per product, feature and model — and on a feature whose `ModelsConfigurationOption` is `AllModels`, one per product and feature, whatever the model: a configuration there for another model, on another connector, already takes the place. It refuses a second one at the very end, after the connector is built and published. So check now, before building, whether the place is taken:
 
 ```bash
 uip llm-configuration byo-connections list --include-connection-details --output json   # Product, OperationGroupName, FolderId, LlmConfigurations[].DesiredModel
 ```
 
-When one exists for that product, feature and model in the folder the product will use, tell the user and let them choose: move the existing configuration to the new connector's connection (`update <CONFIG_ID>` in step 9, which can rename it too), use another shared folder, or add the model as a custom alias instead.
+Look in every folder, not only the one the product will use: the limit is per folder only where the organization has folder-level granularity for BYO configurations, and tenant-wide everywhere else. When one exists for that product and feature (`AllModels`), or for that product, feature and model (the other options), tell the user and let them choose: move the existing configuration to the new connector's connection (`update <CONFIG_ID>` in step 9, which can rename it too — on an `AllModels` feature this replaces what the existing one served, so say which model and connection it gives up), or, where the feature allows it, add the model as a custom alias instead. Another shared folder is a choice only with folder-level granularity; when you cannot tell, do not create a folder to try it — a `create` refused there too leaves an empty folder behind.
 
 ### 1. Agree the contract with the user
 
@@ -296,7 +296,9 @@ Use repeated `--mapping '…,connector-type=Custom'` for `AllModels` / `AnyModel
 
 A configuration saved with `--no-enabled` at the user's request is switched on later with `update <CONFIG_ID>`, the same mapping and `--enabled` (it runs the probes again). Finish with `byo-connections get <CONFIG_ID> --force-refresh --output json`. Keep the draft's test connection, without asking the user about it: it costs nothing, no product can reach it, and the next fix is tested on it. Delete it only when the user asks ([connections-guide.md](connections-guide.md) §"Delete").
 
-When `create` answers that there is already a configuration for this product, feature and model in the folder, nothing was saved and the probes did not run: it is step 0's check, met late. Ask the user as step 0 says; to move the existing configuration over, `update <CONFIG_ID>` with this mapping and, to rename it, `--name`.
+When `create` answers that there is already a configuration for this product, feature and model in the folder — or, on an `AllModels` feature, "there is already a configuration for this product and operation group under the same folder" — nothing was saved and the probes did not run: it is step 0's check, met late. "The same folder" means the tenant where folder-level granularity is off, so the same answer for a different folder is that case, not a wrong key. Ask the user as step 0 says; to move the existing configuration over, `update <CONFIG_ID>` with this mapping and, to rename it, `--name`.
+
+When the save is refused with a model "not available" (`VendorInvalidRequest`, or a provisioning failure) on a connection that passed before, read `vendorRawResponse` before touching a hook: a URL named there as not reachable or invalid is the connection's own host or token-service URL no longer answering — the token refresh failed, and no request reached the model. Check that each URL the connection holds answers from the internet (a temporary tunnel or sandbox host may be gone), have the user point the connection at one that does (`uip is connections edit`, as in §"Change a published connector" step 6), and save again. The connector needs no change and no new version.
 
 ### 10. Report to the user
 
@@ -340,6 +342,7 @@ A connector that is published may already serve products. Change it from its own
 5. **Publish** with `import` and `publish --wait` (step 8 of the workflow), once `latestVersion` (set in step 2 above) is still higher than `Data[0].Version` in `uip is connectors metadata <PUBLISHED_KEY>`.
 6. **Bring each connection and configuration along.**
    - A runtime connection keeps the field values and the auth it was made with. When the change adds a field the page asks for, changes the host a field holds, or changes the auth type, open each connection's page for the user: `uip is connections edit <CONNECTION_ID> --no-wait --output json` returns its `AuthUrl`, opened as in step 6; never fill it in yourself. The edit page shows the connection's own values, not the connector's new defaults: tell the user which fields to change and to what, every one of them — a token call reads its own URL field, so changing only the base URL still fails with "Failed to execute API … during provisioning" naming the old host.
+   - Before saving anything on an existing connection, check it still reaches the vendor: one probe from step 7 of the workflow on the runtime connection. A connection whose host or token-service URL stopped answering fails every save with the model "not available", whatever the connector does (step 9 of the workflow).
    - Probe every configuration from step 1 again. `update` replaces all of a configuration's mappings, so rebuild them from `byo-connections get <CONFIG_ID> --output json`, one `--mapping` per entry of `Data.LlmConfigurations`: `llm-name=<DesiredModel>,llm-identifier=<CustomerModel>,connector-type=<ConnectorType>,api-flavor=<ApiFlavor>,connection-id=<ConnectionId>`, plus `--enabled` when `Data.Enabled` is true:
 
      ```bash
@@ -399,7 +402,7 @@ For general connector authoring depth (every auth type, `state patch` semantics,
 5. Asking the user to paste an API key into the chat, or baking one into `element.json` as a default (Rule 5).
 6. Publishing a version per fix to test it, instead of re-importing and calling the draft's test connection again; or leaving the runtime connection in a Personal workspace, where only its creator can manage it (Rule 8).
 7. Re-publishing without bumping `latestVersion` (Rule 9).
-8. Taking the one product the request names as the whole scope, without asking whether other products or features will use the connector — another feature can allow other flavors and run other probes (step 0). Likewise taking the model the request names as a replacement without asking whether it replaces a catalog model or is added as a custom alias, or building before checking that the folder has no configuration for that model yet.
+8. Taking the one product the request names as the whole scope, without asking whether other products or features will use the connector — another feature can allow other flavors and run other probes (step 0). Likewise taking the model the request names as a replacement without asking whether it replaces a catalog model or is added as a custom alias, or building before checking that no configuration already takes that place — per model, or per feature on an `AllModels` one, and tenant-wide unless the organization has folder-level granularity.
 9. Logging the prompt or the vendor response "to debug" from a hook (Rule 6).
 10. Reporting done on "publish succeeded" without a passing probe on the runtime connection.
 11. Keeping the builder's `onProvision` / `onRefresh` entries as written, or a `provisionAuthValidation` beside a token exchange — the token is never fetched and every connection fails with the vendor's 401 (Rule 13).
