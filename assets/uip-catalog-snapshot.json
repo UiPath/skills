@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-10T04:06:29Z",
-  "cli_version": "1.207.0-dev.9743",
+  "generated_at": "2026-11-11T04:06:16Z",
+  "cli_version": "1.207.0-dev.9787",
   "verbs": [
     "admin",
     "admin audit",
@@ -480,6 +480,7 @@
     "eval schedule update",
     "eval simulatable-components",
     "eval simulatable-components list",
+    "explorer-engine",
     "feedback",
     "feedback send",
     "function",
@@ -1861,6 +1862,7 @@
     "codedagent register",
     "codedagent run",
     "coder",
-    "context-grounding"
+    "context-grounding",
+    "explorer-engine"
   ]
 }
