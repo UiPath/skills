@@ -30,7 +30,7 @@ The processor variant looks the same and is built from the same definition, but 
 Add the node with a name that says what it extracts, wire the file it reads, write the taxonomy, validate.
 
 ```bash
-uip maestro flow nodes create Flow/Flow.flow uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.start.output.invoice"}' --output json
+uip maestro flow nodes create Flow/Flow.flow uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --output json
 uip maestro flow nodes list Flow/Flow.flow --output json
 uip maestro flow validate Flow/Flow.flow --output json
 ```
@@ -43,8 +43,8 @@ uip maestro flow validate Flow/Flow.flow --output json
 0. **Find the flow.** Everything here edits a `.flow` on disk. When the user describes a flow they are already building and none exists locally, they may be referring to one
 that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 <!--skill-flavor:extract-find-flow:end-->
-1. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This is what makes `$vars.start.output.invoice` resolve, so it comes before the node that reads it.
-2. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`.
+1. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is the `<trigger>` in `$vars.<trigger>.output.invoice`, so it comes before the node that reads it.
+2. **Add the node** with `--label` naming what it extracts, `--input` carrying `fileRef`, and `--position <x>,<y>` beside the upstream node, not on top of it.
 3. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
 4. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
 5. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
@@ -80,18 +80,18 @@ The created node already carries everything else it needs:
 `fileRef` says which document the node extracts from. It is a reference evaluated when the flow runs, not a value, and it must name an upstream node's output or a flow variable:
 
 ```json
-"fileRef": "=js:$vars.start.output.invoice"
+"fileRef": "=js:$vars.<trigger>.output.invoice"
 ```
 
 Set it at creation when the upstream node already exists:
 
 ```bash
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.start.output.invoice"}' --output json
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --output json
 ```
 
 Write it as the plain `=js:$vars.…` string above, the simplest form that validates. The structured form `{"type":"jsExpression","expression":"$vars.…","fieldType":"object"}` also validates, but only with `fieldType` present — without it the value is not recognised as an expression and validation rejects it twice over. A literal file name or a hand-built attachment object reaches the runtime as a literal and the upstream output never resolves.
 
-Where the file comes from depends on the trigger. A connector event carries its own file-reference field, named in the trigger's output definition — a SharePoint-backed event declaring `ReferenceID` is wired as `$vars.start.output.ReferenceID`. Read the trigger's contract rather than guessing the field name, and do not insert a download step to change the shape; this node takes the reference directly.
+Where the file comes from depends on the trigger. A connector event carries its own file-reference field, named in the trigger's output definition — a SharePoint-backed event declaring `ReferenceID` is wired as `$vars.<trigger>.output.ReferenceID`. Read the trigger's contract rather than guessing the field name, and do not insert a download step to change the shape; this node takes the reference directly.
 
 A flow that simply takes a document in needs that input declared before anything can reference it:
 
@@ -99,7 +99,7 @@ A flow that simply takes a document in needs that input declared before anything
 uip maestro flow variables create <file> invoice -d in -t file --description 'The invoice document to extract' --output json
 ```
 
-That is what makes `$vars.start.output.invoice` resolve. Declaring it on the trigger is a separate step from wiring it into the node. A `fileRef` pointing at an input that was never declared still validates, with an `EXPRESSION_DIAGNOSTIC` warning naming the missing input — treat that warning on `fileRef` as an error.
+That is what makes `$vars.<trigger>.output.invoice` resolve. Declaring it on the trigger is a separate step from wiring it into the node. A `fileRef` pointing at an input that was never declared still validates, with an `EXPRESSION_DIAGNOSTIC` warning naming the missing input — treat that warning on `fileRef` as an error.
 
 Then connect the node in the graph:
 
@@ -136,7 +136,7 @@ Declare the output global, then add an End node and wire the extract node to it:
 
 ```bash
 uip maestro flow variables create <file> extractedData -d out -t object --description 'The structured data extracted from the document' --output json
-uip maestro flow nodes create <file> core.control.end --label 'End' --output json
+uip maestro flow nodes create <file> core.control.end --label 'End' --position <x>,<y> --output json
 uip maestro flow edges create <file> <extract-id> <end-id> --output json
 ```
 
@@ -174,7 +174,7 @@ For this node, validation enforces that `fileRef` is a `$vars` reference rather 
 
 ## Making it actually extract
 
-A node authored entirely through the CLI validates and deploys, but extracts nothing until the user opens the flow in Studio Web and saves it once. Say this when handing the work over, rather than letting them discover it from a failed run.
+A node authored entirely through the CLI validates and deploys, but extracts nothing until the flow is saved once in the Studio Web designer. Say this when handing the work over, rather than letting them discover it from a failed run.
 
 At run time the extraction service resolves which processor to use from `inputs.processorKey`, a tenant-side resource holding its own copy of the taxonomy. Nothing in the CLI provisions one. Running without it faults the instance:
 
