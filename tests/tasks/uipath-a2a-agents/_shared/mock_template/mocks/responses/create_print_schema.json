@@ -1,0 +1,71 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubRemoteA2aAgentSchema",
+  "Data": {
+    "type": "object",
+    "required": [
+      "name",
+      "slug"
+    ],
+    "anyOf": [
+      {
+        "required": [
+          "agentCardUrl"
+        ]
+      },
+      {
+        "required": [
+          "agentCardJson"
+        ]
+      }
+    ],
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 100
+      },
+      "slug": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 50,
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "description": {
+        "type": "string",
+        "maxLength": 500
+      },
+      "agentCardUrl": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 2000,
+        "description": "URL of the agent card, fetched on create and on every refresh-card. Set this or agentCardJson, not both."
+      },
+      "headers": {
+        "type": "string",
+        "maxLength": 6000,
+        "description": "Newline-separated Name:Value lines, sent with the card fetch and every call. A value of exactly %ASSETS/<asset-name>% is replaced by that Orchestrator asset's value, from the agent's folder, each time the header is sent. An Authorization line is not sent while the agent has a connection."
+      },
+      "agentCardJson": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 50000,
+        "description": "The agent card as a JSON string, stored as the card instead of fetching one. The service calls the endpoint the card names. Set this or agentCardUrl, not both."
+      },
+      "connectionId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "uuid",
+        "description": "Integration Service connection whose token authenticates the card fetch and every call, in place of an Authorization header. Use an OAuth connection of the Agent 2 Agent connector (uipath-google-agent2agent), the one Agent Gateway offers: the service stores any connection Integration Service finds, and one it gets no OAuth token from fails every call."
+      },
+      "useRelay": {
+        "type": "boolean",
+        "description": "Route the card fetch and every call through UiPath Relay, for an agent in a private network."
+      }
+    }
+  }
+}

@@ -149,3 +149,5 @@
 {"id": "uipath-platform-063", "prompt": "Create the runtime Integration Service connection for our custom LLM connector and point the BYO config at it", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-064", "prompt": "Make an Anthropic Messages compatible BYO connector in front of our proxy that needs a custom token exchange", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-065", "prompt": "Bring our own LLM that is not OpenAI-compatible to UiPath Autopilot through a custom connector", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-066", "prompt": "Create an Integration Service connection for the Agent 2 Agent connector with OAuth client credentials", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-067", "prompt": "List my Integration Service connections for the Salesforce connector and ping one", "expected_skill": "uipath-platform"}

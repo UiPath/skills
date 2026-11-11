@@ -1,0 +1,35 @@
+task_id: skill-a2a-agents-update-headers-masked
+description: |
+  Change one header and the description of a remote A2A agent while keeping its secret header, which `get` shows only as `****`. Exercises Updating Agents and Critical Rule 6: `--header` replaces every stored header, so the update passes `X-Api-Key=****` (spelled as stored) with the new `X-Region=us`, and does not re-send the card (`--agent-card-json`) to change something else. `X-Region=****` is refused by the CLI, since that header is stored unmasked (the mock answers it so). Graded from the uip mock's call log. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-a2a-agents, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: The remote A2A agent vendor-agent in Agent Gateway, in the Shared
+  folder, now serves the US region. Change its X-Region header to us and its
+  description to "Vendor pricing agent, US region". Keep its API key header as
+  it is.
+success_criteria:
+- type: run_command
+  description: 'A successful update of vendor-agent sent X-Api-Key=**** with X-Region=us, a successful update set the description, every update that sent headers kept X-Api-Key=****, none re-sent the card, every write in the Shared folder'
+  command: python3 $REFERENCE_DIR/check_update_headers_masked.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT delete or re-create the agent
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+remote-a2a-agent\s+(delete|create)\b(?![^\n]*--(dry-run|help|print-schema))'
+run_limits: {max_turns: 60}

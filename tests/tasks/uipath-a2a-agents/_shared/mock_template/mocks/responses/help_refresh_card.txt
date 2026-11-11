@@ -1,0 +1,18 @@
+Usage: uip agenthub remote-a2a-agent refresh-card [options] <slug>
+
+Fetch the agent card again from the stored card URL, with the headers and the
+connection's token.
+
+Arguments:
+  slug                        Agent slug.
+
+Options:
+  --dry-run                   Print the mutation plan without refreshing.
+  --folder-key <key>          Orchestrator folder key (GUID). Use --folder-path
+                              for the folder name or fully-qualified path.
+  --folder-path <path>        Orchestrator folder display name or
+                              fully-qualified path (e.g. 'Shared' or
+                              'Foo/Shared'). Resolved to the folder key via the
+                              Orchestrator SDK.
+  --login-validity <minutes>  Interactive-login token lifetime.
+  -h, --help                  display help for command

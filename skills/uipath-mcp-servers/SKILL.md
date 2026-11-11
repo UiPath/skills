@@ -1,6 +1,6 @@
 ---
 name: uipath-mcp-servers
-description: "UiPath Agent Gateway MCP servers (`uip agenthub mcp` / `uip agenthub mcp-tools`). Register, update, refresh tools, check connections, list, get, delete MCP servers: uipath (Orchestrator processes, agents, agentic processes, API workflows as tools), coded (published uipath-mcp Python server package), command (npx/uvx), remote (HTTP MCP URL, Relay), swagger (OpenAPI spec), platform (UiPath service operations, e.g. Test Manager); set users' own connections on a remote server; get the MCP URL a client connects to. For an agent that calls MCP tools→uipath-agents. For `uip mcp serve` (the uip CLI as an MCP server)→uipath-platform."
+description: "UiPath Agent Gateway MCP servers (`uip agenthub mcp` / `uip agenthub mcp-tools`). Register, update, refresh tools, check connections, list, get, delete MCP servers: uipath (Orchestrator processes, agents, agentic processes, API workflows as tools), coded (published uipath-mcp Python server package), command (npx/uvx), remote (HTTP MCP URL, Relay), swagger (OpenAPI spec), platform (UiPath service operations, e.g. Test Manager); set users' own connections on a remote server; get the MCP URL a client connects to. For an agent that calls MCP tools→uipath-agents. For `uip mcp serve` (the uip CLI as an MCP server)→uipath-platform. For remote A2A agents→uipath-a2a-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -24,7 +24,7 @@ Agent Gateway is Orchestrator's hub for MCP servers and A2A agents: [about](http
 - Add or remove tools on a `platform` server.
 - List or get the tools of any server.
 
-**Not this skill:** an agent that calls MCP tools → `uipath-agents`; running the `uip` CLI itself as an MCP server (`uip mcp serve`) → `uipath-platform`; A2A agents (`uip agenthub remote-a2a-agent --help`; no skill covers them). No skill covers writing the MCP server itself (`uipath-mcp` Python SDK, FastMCP, self-hosted runtime): see the [uipath-mcp quick start](https://uipath.github.io/uipath-python/mcp/quick_start/).
+**Not this skill:** an agent that calls MCP tools → `uipath-agents`; running the `uip` CLI itself as an MCP server (`uip mcp serve`) → `uipath-platform`; remote A2A agents (`uip agenthub remote-a2a-agent`) → `uipath-a2a-agents`. No skill covers writing the MCP server itself (`uipath-mcp` Python SDK, FastMCP, self-hosted runtime): see the [uipath-mcp quick start](https://uipath.github.io/uipath-python/mcp/quick_start/).
 
 ## Critical Rules
 

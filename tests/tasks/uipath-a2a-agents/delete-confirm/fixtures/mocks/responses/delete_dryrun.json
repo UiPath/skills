@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "DELETE",
+          "Target": "/api/remote-a2a-agents/vendor-agent"
+        }
+      ],
+      "Resolved": {
+        "Slug": "vendor-agent"
+      }
+    }
+  }
+}

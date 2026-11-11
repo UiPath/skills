@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "POST",
+          "Target": "/api/remote-a2a-agents"
+        }
+      ],
+      "Resolved": {
+        "Name": "foundry-agent",
+        "Slug": "foundry-agent",
+        "AgentCardUrl": "https://agent.example.com/api/a2a/agentCard/v1.0",
+        "ConnectionId": "7a1b2c3d-0000-4000-8000-0000000000bb"
+      }
+    }
+  }
+}
