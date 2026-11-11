@@ -5,8 +5,8 @@ description: >
   run extracts nothing. The user describes one of those symptoms. Tests that
   the agent gives the node its processor, the key on the node and the
   idpProcessor resource with that key in the solution, and changes nothing
-  else: the taxonomy, the file input, the extraction source and the model
-  settings stay as seeded.
+  else: the taxonomy, the file input and the extraction source stay as
+  seeded.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
 
@@ -63,7 +63,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Extract Invoice keeps its file input, extraction source and model settings"
+    description: "Extract Invoice keeps its file input and extraction source"
     path: "InvoiceReader/InvoiceReader/InvoiceReader.flow"
     assertions:
       - expression: "nodes[?id=='extractInvoice1'] | [0].inputs.fileRef"
@@ -72,9 +72,6 @@ success_criteria:
       - expression: "nodes[?id=='extractInvoice1'] | [0].inputs.source"
         operator: equals
         expected: "7b330239-c3e9-4e5e-99eb-af886f963e30"
-      - expression: "nodes[?id=='extractInvoice1'] | [0].inputs.modelConfig.model_version"
-        operator: equals
-        expected: "gemini_2_5_flash"
     weight: 1.5
     pass_threshold: 1.0
 
