@@ -66,18 +66,99 @@ def entry_point_files(project_dir: Path) -> list[Path] | None:
     return out
 
 
+# Scratch files the brownfield pipeline and agents leave beside the real artifact.
+# `decompile` -> `compile -o X.baseline.bpmn` -> edit -> `compile -o X.edited.bpmn` ->
+# `merge` writes the first two and often `X.merged.bpmn`, and an agent that keeps the
+# untouched input around names it `X.original.bpmn`. `X.baseline.bpmn` sorts first and
+# still holds the UNEDITED process, so a grader that took the first match failed seven
+# correct edits in one run (builder-sdk#1871). None of these suffixes is ever the file a
+# task names, and no task ships one as a fixture.
+SCRATCH_SUFFIXES = (".baseline.bpmn", ".edited.bpmn", ".merged.bpmn", ".original.bpmn")
+# Directories that hold scratch copies rather than the artifact: tool caches, an
+# agent's archive of superseded scaffolds (`_created-scaffolds/`, the same run), and
+# temp dirs made inside the workspace (`tmp/`, `mktemp -d -p .` -> `tmp.XXXXXXXXXX`).
+# Trade-off: `tmp`/`temp`/`.tmp` also hide a REAL project that lives in a folder of
+# that name. No task names one today; a task that must ever do so needs these
+# names taken out (or the grader pointed at the path), or its artifact goes unseen
+# and reads as "no BPMN file found".
+SCRATCH_DIR_NAMES = frozenset(
+    {"node_modules", ".npm-prefix", ".venv", "_created-scaffolds", "tmp", "temp", ".tmp"}
+)
+SCRATCH_DIR_PREFIXES = ("tmp.",)
+
+
+def is_scratch_bpmn(path: str | Path) -> bool:
+    """True for a ``.bpmn`` no grader should read as the task's artifact.
+
+    Scratch by name (:data:`SCRATCH_SUFFIXES`) or by location: under a directory
+    in :data:`SCRATCH_DIR_NAMES`, or one whose name starts with a
+    :data:`SCRATCH_DIR_PREFIXES` entry. Only the directories are tested, never
+    the file name, so ``tmp.bpmn`` itself is not excluded.
+    """
+    p = Path(path)
+    if p.name.lower().endswith(SCRATCH_SUFFIXES):
+        return True
+    dirs = p.parts[:-1]
+    return any(
+        d in SCRATCH_DIR_NAMES or d.startswith(SCRATCH_DIR_PREFIXES) for d in dirs
+    )
+
+
+STUDIO_WEB_MAIN_FILE = "Process.bpmn"
+"""The main file Studio Web gives every BPMN project; the Node CLI names it ``<Project>.bpmn``."""
+
+
+def _entry_point_beside(path: str) -> str:
+    """``path``, or the one entry point beside it when ``path`` is not an entry point.
+
+    The project runs only its entry points. A Studio Web project's is
+    ``Process.bpmn``, so a ``<Name>.bpmn`` an agent wrote beside it never runs
+    and must not be graded in its place.
+    """
+    file = Path(path)
+    entries = entry_point_files(file.parent)
+    if not entries or file.name in {e.name for e in entries}:
+        return path
+    existing = [e for e in entries if e.is_file()]
+    return str(existing[0]) if len(existing) == 1 else path
+
+
+def bpmn_file_is_named(path: _PathLike, name: str) -> bool:
+    """True for ``<name>.bpmn``, or for Studio Web's ``Process.bpmn`` in a project directory named ``<name>``."""
+    file = Path(path)
+    stem = name.removesuffix(".bpmn")
+    return file.name == f"{stem}.bpmn" or (file.name == STUDIO_WEB_MAIN_FILE and file.parent.name == stem)
+
+
 def find_bpmn_file(name_hint: str | None = None) -> str:
-    paths = sorted(glob.glob("**/*.bpmn", recursive=True))
+    paths = [
+        p for p in sorted(glob.glob("**/*.bpmn", recursive=True)) if not is_scratch_bpmn(p)
+    ]
     if not paths:
         fail("no BPMN file found")
     if name_hint:
-        matches = [p for p in paths if name_hint.lower() in os.path.basename(p).lower()]
+        # The file the task NAMED first: `<hint>.bpmn` exactly (case-insensitive).
+        # Only when none exists does the hint widen to a substring of the basename,
+        # which older tasks rely on (`parse_bpmn("Contract")`).
+        wanted = f"{name_hint.removesuffix('.bpmn')}.bpmn".lower()
+        exact = [p for p in paths if os.path.basename(p).lower() == wanted]
+        matches = exact or [
+            p for p in paths if name_hint.lower() in os.path.basename(p).lower()
+        ]
+        if not matches:
+            # Studio Web names the file Process.bpmn and the project after the task's name.
+            matches = [
+                p
+                for p in paths
+                if os.path.basename(p) == STUDIO_WEB_MAIN_FILE
+                and name_hint.lower() in os.path.basename(os.path.dirname(p)).lower()
+            ]
         if matches:
             # A hint narrows to a basename, not to a project: `Foo-old.bpmn`
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
             # resolve_project's rule here as well so the draft is never graded.
             hinted = _project_files(matches)
-            return hinted[0] if len(hinted) == 1 else matches[0]
+            return _entry_point_beside(hinted[0] if len(hinted) == 1 else matches[0])
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
@@ -98,7 +179,12 @@ def _sha256(path: str | Path) -> str:
 
 
 def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
-    """Locate the project directory containing ``bpmn_name``.
+    """Locate the project directory containing ``bpmn_name``; see :func:`resolve_bpmn_file`."""
+    return resolve_bpmn_file(bpmn_name, exclude_under).parent
+
+
+def resolve_bpmn_file(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
+    """Locate ``bpmn_name`` (or Studio Web's ``Process.bpmn`` for it) in its project.
 
     Grades the project wherever the agent placed it (top level or nested under
     a ``<Name>Solution/`` wrapper -- ``uip maestro bpmn init`` creates the
@@ -114,17 +200,22 @@ def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
     billing_invoice_lookup ``bindings``).
     """
     excluded = [Path(d).resolve() for d in exclude_under]
+    cwd = Path.cwd()
+    named = list(cwd.rglob(bpmn_name)) or [
+        p for p in cwd.rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)
+    ]
     candidates = [
         p
-        for p in _project_files(Path.cwd().rglob(bpmn_name))
+        for p in _project_files(named)
         if not any(p.resolve().is_relative_to(d) for d in excluded)
+        and not is_scratch_bpmn(p.relative_to(cwd))
     ]
     if len(candidates) != 1:
         fail(
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "
             f"found {[str(p) for p in candidates]}"
         )
-    return candidates[0].parent
+    return candidates[0]
 
 
 def parse_bpmn(name_hint: str | None = None) -> tuple[str, ET.Element]:
@@ -246,7 +337,7 @@ def body_object(element: ET.Element) -> dict:
     """The request body ``element``'s ``target="body"`` input encodes.
 
     The runtime reads exactly one ``target="body"`` input as the whole body;
-    several do not merge (skills/uipath-maestro-bpmn/references/registry-workflow.md,
+    several do not merge (classic/skills/uipath-maestro-bpmn/references/registry-workflow.md,
     "Body shape"). So the only gradeable shape is::
 
         <uipath:input name="body" type="json" target="body"><![CDATA[{...}]]></uipath:input>
@@ -322,7 +413,7 @@ def path_parameters(element: ET.Element) -> dict[str, str]:
     A V1 template node writes one ``target="path"`` input per field. A V2
     element from ``registry get --input-details`` writes one
     ``target="pathParameters"`` input holding them all as a JSON object
-    (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
+    (classic/skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
     from the V1 template"). A V2 payload that is not a JSON object adds
     nothing, and neither does a null, object or array value. A V2 boolean or
     number reads as V1 spells it: ``"false"``, ``"1"``.

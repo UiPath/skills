@@ -8,7 +8,7 @@ scenario (a Slack connector node creating a group direct message, whose
 JSON node's `inputs` dict (matched by `"slack" in node.type.lower()`) to a
 BPMN `bpmn:sendTask` carrying the registry `Intsvc.ActivityExecution` wrapper
 with `connectorKey == uipath-salesforce-slack` (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Both Flow
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Both Flow
 tasks call this same script with the same argv convention (`populated` or an
 integer count, default 3), so this one grader is used identically by both
 BPMN ports; each task's own `check_<task>.py` handles its remaining,

@@ -33,3 +33,7 @@ Use the Write tool for each file Step 6.0 did not seed. All 5 files live directl
 <!--skill-flavor:verify-not-solution-dir:start-->
 - **Project dir is not the solution dir.** The plan file lives at `/solution/<ProjectName>/caseplan.case` (or the name `case init` seeded), never directly under `/solution/`. If the 6 project files landed at the solution root, halt and move them into `/solution/<ProjectName>/`.
 <!--skill-flavor:verify-not-solution-dir:end-->
+
+<!--skill-flavor:packed-layout-note:start-->
+> `content/` prefix here describes the **packed** layout inside the eventual `.nupkg` — NOT the on-disk layout. On disk every file is flat under `<ProjectName>/`. `caseplan.case.bpmn` need not exist at scaffold time. In Studio Web, `uip solution publish` packages the solution and generates it ([phased-execution.md § Publish commands](../../phased-execution.md#publish-commands)).
+<!--skill-flavor:packed-layout-note:end-->

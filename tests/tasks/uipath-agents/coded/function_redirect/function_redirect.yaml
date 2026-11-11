@@ -12,7 +12,7 @@ description: >
   language-neutral prompt would make a JS/TS scaffold an equally valid reading
   while the graders (`uip function init`, `.py` entrypoint, `@traced`) are
   Python-only.
-tags: [uipath-agents, e2e, mode:build, lifecycle:generate, coded]
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, coded, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 34
