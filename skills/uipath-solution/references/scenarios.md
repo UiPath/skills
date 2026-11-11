@@ -27,7 +27,8 @@ Land here from a grep on an error message? Pick the matching row.
 | I changed the resource **in the cloud** (new entity field, queue setting) and `refresh` reports it under `Skipped` | `uip solution resources edit <resource-key> --source remote --force` — see [develop-solution.md Step 11a](develop-solution.md#step-11a-pull-a-changed-cloud-definition---source-remote) |
 | `resources edit` silently ignored a property I passed | The SDK skips unknown / reference / read-only props by design — see [manual-edits](scenarios/manual-edits.md) for what's editable vs not |
 | My hand-edit got reverted on the next refresh | [manual-edits](scenarios/manual-edits.md) (the SDK re-derives bindings) |
-| `… will permanently delete <k> resource(s) along with their data` at deploy / upgrade | [failure-modes](scenarios/failure-modes.md) — consent with `--acknowledge-permanent-deletion`, or keep the resources linked or shared (older servers: unlink, or `--keep-installed-copy` on the link) |
+| `… will permanently delete <k> resource(s) along with their data` at deploy / upgrade | [failure-modes](scenarios/failure-modes.md) — consent with `--acknowledge-permanent-deletion`, or keep the resources linked or shared (older servers: unlink to keep the copy) |
+| `… would permanently delete the installed copy … this server does not support keeping the installed copy` at deploy | [failure-modes](scenarios/failure-modes.md): `--delete-installed-copy` on the link and confirm, or unlink to keep the copy |
 | `deploy uninstall` fails with "uncompleted jobs", "permanently deletes these resources" or "cannot get past" | [failure-modes](scenarios/failure-modes.md) -- `--force` only with the user's consent, never for "cannot get past" |
 | Other deploy / refresh failures (folder collision, suffix amplification, missing bindings, version collision) | [failure-modes](scenarios/failure-modes.md) |
 
