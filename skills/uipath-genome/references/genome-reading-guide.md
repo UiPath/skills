@@ -41,7 +41,7 @@ Every Orchestrator or Integration Service resource the build declares or reads: 
 
 **Identifiers are not credentials.** A client id, tenant id, service URL or mailbox address is a Text asset (or configuration value), one per value, even when the source stored it in its credential vault: a consumer cannot read a credential asset's secret half back as text without a conversion the workflow analyzer rejects.
 
-**Values the platform keeps per environment are assets** (an environment variable, a global value), of the type their values take — Text, Integer, Bool, Secret, or a credential asset for an account. A component whose type reads no assets keeps such a value in the variable its owning skill provides.
+**Values the source platform keeps per environment are assets** (an environment variable, a global value), of the type their values take — Text, Integer, Bool, Secret, or a credential asset for an account. A component whose type reads no assets keeps such a value in the variable its owning skill provides.
 
 ## Interface
 

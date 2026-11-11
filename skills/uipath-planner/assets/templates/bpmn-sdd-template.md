@@ -311,7 +311,11 @@ flowchart LR
 
 ### HITL Touchpoints
 
-<!-- One row per userTask node. Record business intent only (who approves, what criteria). -->
+<!--skill-flavor:bpmn-hitl-touchpoints:start-->
+<!-- One row per human-task node. Authored INLINE by uipath-maestro-bpmn (`.humanTask(...)` in the `.bpmn.ts` source) — never
+     route to uipath-human-in-the-loop, which hands Maestro HITL back to uipath-maestro-bpmn. Record business intent only
+     (who approves, what criteria); the BPMN specialist owns the task schema. -->
+<!--skill-flavor:bpmn-hitl-touchpoints:end-->
 
 | Node Key | HITL Type | Purpose | Approval Criteria |
 |---|---|---|---|
@@ -340,15 +344,20 @@ flowchart LR
 
 ## 12. Project Structure
 
-<!-- Editable source layout per the owning skill: the .bpmn basename matches the project directory exactly.
-     bindings_v2.json, entry-points.json, operate.json, package-descriptor.json are generated/CLI-managed
-     package metadata — never scaffolded by hand. -->
+<!--skill-flavor:bpmn-project-structure:start-->
+<!-- Editable source layout per the owning skill: `uip maestro bpmn init` scaffolds the project, and the .bpmn
+     basename matches the project directory exactly. The `.bpmn.ts` source sits in the workspace root,
+     not inside the solution or project folder; the compiled .bpmn is never hand-edited. bindings_v2.json, entry-points.json, operate.json,
+     package-descriptor.json are generated/CLI-managed package metadata — never scaffolded by hand. -->
 
 ```text
-<BPMN_PROJECT_NAME>/
-├── <BPMN_PROJECT_NAME>.bpmn
-└── project.uiproj
+<WORKSPACE>/
+├── <BPMN_PROJECT_NAME>.bpmn.ts      # source: edit this, then compile
+└── <BPMN_PROJECT_NAME>/
+    ├── <BPMN_PROJECT_NAME>.bpmn     # compiled output
+    └── project.uiproj
 ```
+<!--skill-flavor:bpmn-project-structure:end-->
 
 ### Orchestrator Deployment Target
 
