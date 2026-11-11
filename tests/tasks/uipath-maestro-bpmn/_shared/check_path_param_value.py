@@ -5,7 +5,7 @@ Ported from Flow `connector_features/check_path_param_value.py`: same
 scenario (the Jira issue key ``ENGCE-00000`` must be wired into a real
 path-parameter, not just mentioned in the prompt echo), translated from a
 JSON `inputs.detail` walk to an XML walk over the registry-driven
-`Intsvc.*` connector shell (see skills/uipath-maestro-bpmn/references/
+`Intsvc.*` connector shell (see classic/skills/uipath-maestro-bpmn/references/
 registry-workflow.md §3 "Connector enrichment").
 
 Flow looked in exactly two places: a node's `pathParameters` dict values

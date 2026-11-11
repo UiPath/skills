@@ -985,6 +985,12 @@ function stagePackages(repoRoot, variants, skillTreesRoot, packagesRoot) {
         copyPayload(versionManifest, path.join(packageDir, "version-manifest.json"), "package version manifest");
         customFiles.push("version-manifest.json");
       }
+      // Hosts read each skill's lifecycle status from here; the rest of assets/ stays default-only.
+      const skillStatus = path.join(repoRoot, "assets", "skill-status.json");
+      if (safeLstat(skillStatus)?.isFile()) {
+        copyPayload(skillStatus, path.join(packageDir, "assets", "skill-status.json"), "package skill status");
+        customFiles.push("assets/skill-status.json");
+      }
     }
 
     copyPayload(builtSkills, path.join(packageDir, "skills"), "built skill tree");

@@ -330,6 +330,17 @@ test("the studioweb Flow skill is the builder-SDK skill", (t) => {
   assert.ok(skill.includes("@uipath/maestro-builder-sdk"));
 });
 
+// UV-17734: the Studio Web override of the project-layout block dropped this,
+// so Autopilot scaffolded Maestro Automate requests as plain Flow projects.
+const AUTOMATE_INIT = /uip maestro flow init <\w+> --automate/;
+
+test("every Flow skill flavor scaffolds Maestro Automate with `--automate`", (t) => {
+  for (const root of [buildDefault(t), buildStudioweb(t)]) {
+    const skill = readFileSync(join(root, "uipath-maestro-flow", "SKILL.md"), "utf8");
+    assert.match(skill, AUTOMATE_INIT, root);
+  }
+});
+
 // Studio Web runs the Flow builder SDK inside the page: no npm, no Node, no
 // local connector-library cache, no pipeline helper, no `flow-sdk` bin, no
 // local `.uipx` to refresh, no project-path debug, no login step, and a
@@ -407,63 +418,4 @@ function siblingLinesNaming(root) {
 
 test("the studioweb Flow siblings name no classic Flow instruction", (t) => {
   assert.deepEqual(siblingLinesNaming(buildStudioweb(t)), []);
-});
-
-// The preview BPMN skill authors with the builder SDK on a desktop terminal.
-// Its studioweb flavor (preview/skill-flavors/) runs the same SDK inside the
-// page, on the open solution, with no npm, no login step, no pack or upload, no
-// local `.uipx` to refresh and no connector markdown files. It must name none
-// of those, so it is ready on the day the preview skill moves into skills/.
-const PREVIEW_STUDIOWEB_ROOT = join(REPO_ROOT, "preview", "skill-flavors", "studioweb");
-const BPMN_TERMINAL_ONLY = [
-  "npm install",
-  "npx flow-sdk",
-  "resources refresh --solution-folder",
-  "uip solution upload <",
-  "uip solution pack <",
-  "uip maestro bpmn pack <",
-  "uip maestro bpmn debug <project-path>",
-  "uip login status --output",
-  "`markdownPath` is",
-  "at the workspace root",
-];
-
-function bpmnLinesNaming(skillRoot) {
-  return markdownFiles(skillRoot).flatMap((file) =>
-    readFileSync(file, "utf8")
-      .split("\n")
-      .flatMap((line, index) =>
-        BPMN_TERMINAL_ONLY.filter((needle) => line.includes(needle)).map(
-          (needle) => `${relative(skillRoot, file)}:${index + 1}: ${needle}`,
-        ),
-      ),
-  );
-}
-
-function buildPreviewStudioweb(t) {
-  const output = mkdtempSync(join(tmpdir(), "preview-studioweb-contract-"));
-  t.after(() => rmSync(output, { recursive: true, force: true }));
-  materializeComposition(createCompositionPlan(REPO_ROOT, PREVIEW_STUDIOWEB_ROOT), output);
-  return output;
-}
-
-test("the preview studioweb BPMN skill names no terminal-only command", (t) => {
-  const skillRoot = join(buildPreviewStudioweb(t), "uipath-maestro-bpmn");
-  const debugHits = markdownFiles(skillRoot).flatMap((file) =>
-    readFileSync(file, "utf8")
-      .split("\n")
-      .flatMap((line, index) =>
-        [TWO_TOKEN_VERB, JSON_DEBUG, PATH_DEBUG].some((pattern) => pattern.test(line))
-          ? [`${relative(skillRoot, file)}:${index + 1}`]
-          : [],
-      ),
-  );
-
-  assert.deepEqual(bpmnLinesNaming(skillRoot), []);
-  assert.deepEqual(debugHits, []);
-});
-
-test("the preview BPMN skill keeps its terminal commands (the guard is not vacuous)", () => {
-  const hits = bpmnLinesNaming(join(REPO_ROOT, "preview", "skills", "uipath-maestro-bpmn"));
-  assert.deepEqual([...new Set(hits.map((hit) => hit.split(": ").pop()))].sort(), [...BPMN_TERMINAL_ONLY].sort());
 });

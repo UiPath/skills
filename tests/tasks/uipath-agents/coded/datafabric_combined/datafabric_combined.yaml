@@ -4,7 +4,7 @@ description: >
   discovers entities, selects the right one, then wires both an
   NL-to-SQL tool for freeform queries and an SDK write tool for a
   fixed operation — with prompt forwarding and lazy init.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities, studio-web-unsupported, studio-web-unsupported:coded-agent]
 sandbox:
   template_sources:
     - type: template_dir

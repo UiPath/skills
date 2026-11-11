@@ -166,6 +166,7 @@ Inspect the final package contract, not only sparse sources:
 
 - The default contains every canonical skill and retains canonical block bodies without marker boundaries.
 - Each custom package contains every canonical skill and its flavor replacements.
+- Each custom package carries `assets/skill-status.json` byte-identical to the source, and no other file from `assets/`.
 - Every staged manifest uses the root version and the derived package name.
 - Custom manifests contain no repository lifecycle scripts or `package.json.repository` field. They pin both `publishConfig.registry` and `publishConfig["@uipath:registry"]` to `https://npm.pkg.github.com/`; the scoped pin prevents an ambient `@uipath` npmjs configuration from winning. The publisher still validates the effective scoped registry and supplies the reviewed `dev` or `preview` tag. Do not set an access value during normal publishing because the existing Internal visibility must remain unchanged.
 - No built tree, staged package, or tarball contains `skill-flavor:` comments, `skill-flavors/`, repository tests, or composer source.
