@@ -36,8 +36,10 @@ initial_prompt: |
     - use this prompt: `Write a 5-bullet executive summary covering scope, term, SLAs, penalties, and termination.`
     - set `returnCitations` to `true`
 
-  The node's instance JSON must NOT contain a `model` block, and `typeVersion`
-  must be exactly `"1.0"`. The instance `outputs.output` must use
+  The node's instance JSON must NOT contain a `model` block, and its
+  `typeVersion` must equal the `version` of the `uipath.pattern.deep-rag`
+  definition the flow carries in `definitions[]` (MAJOR.MINOR, e.g. `"1.1"`,
+  never `"1.0.0"`). The instance `outputs.output` must use
   `source: "=response"` (NOT `=deepRagResult`). The output schema's nested
   fields are PascalCase: `content.Text` and `content.Citations[]` (each with
   `Ordinal`, `PageNumber`, `Source`, `Reference`).

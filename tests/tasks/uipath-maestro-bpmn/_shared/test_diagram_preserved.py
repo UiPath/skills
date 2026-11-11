@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _shared.edit_check import assert_diagram_preserved  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[4]
-SCRIPT = REPO / "skills" / "uipath-maestro-bpmn" / "scripts" / "check-diagram-preserved.py"
+SCRIPT = REPO / "classic" / "skills" / "uipath-maestro-bpmn" / "scripts" / "check-diagram-preserved.py"
 
 BEFORE = """<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
     xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"

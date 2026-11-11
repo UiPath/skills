@@ -31,7 +31,7 @@ A genome says what the automation does, not how the source did it. However close
 | A wait-and-check step after each action | Verification on the action itself; a separate check only where the outcome changes what happens next. A test's checkpoints stay assertions |
 | Passwords and hosts in files or code | One credential asset per account; per-environment values as settings |
 
-Kept as the source has it: every business rule, outcome and log line, the schedule and every output. What changes is listed with its reason: a source defect you ruled to fix, a refactor answer, or a platform limit. So the build is a rebuild, not a translation, yet easy to compare with the source: a [rebuild as it is](#rebuilding-an-existing-automation) also keeps the step names and the shape, and by default a correspondence table records every step renamed, merged, split or dropped.
+Kept as the source has it: every business rule, outcome and log line, the schedule and every output. What changes is listed with its reason: a source defect you ruled to fix, a refactor answer, or a platform limit. So the build is a rebuild, not a translation, yet easy to compare with the source: a [rebuild as it is](#rebuilding-an-existing-automation) also keeps the step names, and the shape wherever UiPath's way does not differ, and by default a correspondence table records every step renamed, merged, split or dropped.
 
 ## Why it holds up
 
@@ -62,9 +62,9 @@ A genome extracted from an existing automation is rebuilt in one of two ways, bo
 
 **As it is.** The build keeps the source's step names, order and folders, so whoever knows the old automation can check the new one side by side. Every difference (a step renamed, merged, split, dropped or added) is a row of a correspondence table with its reason. The build asks how closely to follow:
 
-1. Names, shape and the table (recommended).
-2. Names and shape, without the table: for sources of thousands of steps, where the table costs more than a reviewer gains.
-3. The build's own names and grouping.
+1. Names, and the shape wherever UiPath's way does not differ (recommended): a workflow or loop whose work one or a few UiPath activities do becomes those activities, and the libraries left merge by application, each such change a row of the table.
+2. Names and shape throughout.
+3. The build's own names and grouping, with no table.
 
 **As a refactor.** Every part is re-authored on the UiPath product its shape fits, and the build names its steps in the business's words. A UiPath project is rebuilt as a refactor; a smaller change is made in the project itself. The product is chosen for the shape, never as an upgrade, and every capability it relies on is checked first:
 
@@ -151,7 +151,7 @@ This is your main decision point. The build follows the genome, and the agent ne
 
 ## 3 · Build
 
-Say "Build `<name>-genome.md`". The agent asks its questions first, in batches of up to four, each with a recommended answer: the genome's open values, the project location, XAML or C#, where settings live and package versions. A rebuild as it is also asks how closely to follow the source; a refactor asks its own questions first ([Rebuilding an existing automation](#rebuilding-an-existing-automation)). Then it builds without stopping.
+Say "Build `<name>-genome.md`". The agent asks its questions first, in batches of up to four, each with a recommended answer: the genome's open values, the project location, XAML or C#, where settings live and package versions. A rebuild as it is also asks how closely to follow the source; a refactor asks its own questions first ([Rebuilding an existing automation](#rebuilding-an-existing-automation)). For a genome extracted from a project, you can take the source's value wherever the genome has one, so only the values the source lacks, the choices it never had and the build setup are asked: pick that answer to the first question, or say "take the source's values" in the build request. Then it builds without stopping.
 
 You get:
 

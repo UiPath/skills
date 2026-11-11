@@ -23,6 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
+    main_flow_path,
     INLINE_SOLUTION_FOLDER_PATHS,
     assert_edge,
     find_autonomous_agent_node,
@@ -32,7 +33,7 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "OnboardingFlowSol" / "OnboardingFlow" / "OnboardingFlow.flow"
+FLOW_PATH = main_flow_path(Path(os.getcwd()) / "OnboardingFlowSol" / "OnboardingFlow" / "OnboardingFlow.flow")
 TOOL_NODE_PREFIX = "uipath.agent.resource.tool."
 
 

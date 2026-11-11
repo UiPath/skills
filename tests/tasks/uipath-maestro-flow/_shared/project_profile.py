@@ -35,7 +35,8 @@ def fail(message: str) -> int:
 
 
 def find_flow(flow_name: str) -> list[Path]:
-    return sorted(Path(".").rglob(f"{flow_name}.flow"))
+    # Studio Web names the main file new.flow in a project called flow_name.
+    return sorted([*Path(".").rglob(f"{flow_name}.flow"), *Path(".").rglob(f"{flow_name}/new.flow")])
 
 
 def project_dir_for(flow_path: Path) -> Path:
