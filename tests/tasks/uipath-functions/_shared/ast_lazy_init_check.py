@@ -1,6 +1,6 @@
 """AST scan for the lazy-LLM-init invariant.
 
-`references/coded/quickstart.md` Critical Rule C4:
+`skills/uipath-agents/references/coded/quickstart.md` Critical Rule C4:
 
   > Always instantiate `UiPath()` inside functions/nodes, never at
   > module level.

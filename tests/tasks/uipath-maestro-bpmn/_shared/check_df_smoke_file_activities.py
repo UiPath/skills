@@ -9,7 +9,7 @@ File from Record Field against FlowCodeEvalEntity/file1, with the upload's
 file input carrying some variable binding and the create output id wired into
 upload+delete), translated from a JSON node/inputs.detail walk to an XML walk
 over the registry-driven ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §2-4).
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §2-4).
 
 Node identity: Download/Upload/Delete are matched by objectName in every
 spelling the connector catalog serves for the operation --

@@ -143,10 +143,20 @@ jobs:
         with:
           python-version: '3.13'
 
+      # The gate comes from the publisher's own ref (main for the stable caller),
+      # not from the built commit: a stable build re-cuts a commit that may
+      # predate the gate, and its rules must be today's either way. The scanner
+      # reads its allowlist next to itself, so the scripts folder is enough.
+      - uses: actions/checkout@v4
+        with:
+          path: .publisher
+          sparse-checkout: scripts
+          fetch-depth: 1
+
       - name: Scan the flavor tarball for customer-blocked content
         env:
           TARBALL: ${{ steps.package.outputs.tarball }}
-        run: python3 scripts/check-sensitive-content.py "$TARBALL"
+        run: python3 .publisher/scripts/check-sensitive-content.py "$TARBALL"
 
       - name: Require the GitHub Packages registry
         run: |
