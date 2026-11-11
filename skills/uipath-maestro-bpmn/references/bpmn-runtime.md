@@ -339,9 +339,25 @@ binding half, which is the same for every connector-backed node.
 ## Brownfield editing
 
 <!-- RULE:bpmn.brownfield.merge -->
-- For a targeted edit, decompile the original, compile a baseline before editing,
-  compile the edit, then merge with `--baseline`. A bare recompile rewrites
-  untouched elements and drops original layout.
+- For a targeted edit, decompile the original, edit the source, then `merge` the edit into the original.
+  A bare recompile rewrites untouched elements and drops original layout; `merge` emits every element the edit did not touch from the original byte for byte.
+
+<!--skill-flavor:brownfield-merge-form:start-->
+
+  ```bash
+  uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested
+  # edit <Name>.bpmn.ts, then run check --source until it is clean
+  uip maestro bpmn merge <Name>.bpmn.ts --original <Project>/<Name>.bpmn
+  ```
+
+  `merge` writes the result over `--original`, so pass no `-o`.
+  Line 1 of the `.bpmn.ts` is the stamp `decompile` writes (`// @decompiled-from … sha256:…`): it records a hash of the source decompiled from the original and the decompile options, and `merge` reads them, so do not edit or remove that line and pass `merge` no decompile options.
+  To fix the source after a merge, edit the same `.bpmn.ts` and merge again, also after `format`: `merge` restamps it for the merged file, and the check ignores what decompile does not read, such as the layout `format` rewrites and line endings.
+  When `merge` refuses with `MERGE_ORIGINAL_CHANGED` (the original's process changed since the decompile), `MERGE_SOURCE_NOT_STAMPED` or `MERGE_SOURCE_STAMP_UNREADABLE` (line 1 is missing or edited), it writes nothing: decompile the original again and reapply the edit.
+  On `MERGE_OPTION_CONFLICT`, drop the decompile option given to `merge`; the stamp already records it.
+  Needs `@uipath/maestro-builder-sdk` 6.95.0 or later; on an older SDK `merge` stops with a ConfigError asking for an upgrade, so run the install command the ConfigError prints and merge again.
+<!--skill-flavor:brownfield-merge-form:end-->
+  Then `format` (only when the edit added elements; see `bpmn.brownfield.format`), `refresh` and `validate` the target as in the validation loop.
 
 <!-- RULE:bpmn.brownfield.nested-style -->
 - `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in `flowMode('sequence')`, and prints why each region it left flat stayed flat; the lifted source is written only after it has been compiled and its graph verified identical to the flat form's. The flow ids the constructs imply are KEPT: each is pinned back with `.flowIds([{ source, target, id }])`, emitted once at the top of the chain, so the recompiled artifact carries the ids it arrived with. This is what makes the lift safe for brownfield editing — `uip maestro bpmn merge` keys every process child by id with no filter for kind, so renaming a flow made the merge treat it as new, delete the original along with its `BPMNEdge`, and leave an untouched gateway's `default` naming an id that no longer exists (`MISSING_CONDITION_EXPRESSION` at validate). Measured on a three-flow fixture, a no-edit round trip now merges back byte-identical. `--keep-flow-ids` confines the lift to regions whose ids already match the derived form, for source with no pin table.
@@ -352,7 +368,7 @@ binding half, which is the same for every connector-backed node.
   Only a V2 task (`activityConfigurationVersion: v2`) is lifted, because `.connector()` writes V2; a V1 task stays the verbatim `.activity()` (reason: `a V1 connector task, kept verbatim so it stays V1`), so a no-edit round trip does not convert it.
   A lift is written only after that one call has been compiled on its own and its task compared with the original, so a lift that lost an input or picked the wrong action is refused per element, not approximated.
   The lifted form is the one to copy when adding a connector task to an import. What stays verbatim: a body field the static library does not declare (a Data Fabric update's entity columns; `registry prepare` loads them), a `connection` that is not a `=bindings.<id>` reference, a designer row with an attribute no option spells. A lifted task's variables keep the file's own `jsonSchema` declaration as an explicit `.vars([…])` entry rather than a row the call no longer has.
-  A lifted task's canvas metadata is regenerated on compile, so a no-edit decompile, compile and merge is not byte-identical for those tasks; `--connectors verbatim` keeps every task as written, for a byte-identical brownfield edit. `examples/InvoiceApproval.bpmn.ts` shows both forms side by side.
+  A lifted task's canvas metadata is regenerated on compile, so a no-edit round trip through `merge` is not byte-identical for those tasks; `--connectors verbatim` keeps every task as written, for a byte-identical brownfield edit. `examples/InvoiceApproval.bpmn.ts` shows both forms side by side.
   That file was decompiled before the lift became V2-only: its six `.connector()` calls came from V1 tasks and now compile to V2 tasks beside the six verbatim V1 ones, while a fresh decompile of the same export keeps all twelve verbatim.
 
 <!-- RULE:bpmn.brownfield.unused-bindings -->
@@ -363,8 +379,8 @@ binding half, which is the same for every connector-backed node.
   inert: a binding with no `value` is unresolved, so each one is reported missing and a
   dispatching run refuses to start, and the canvas offers no way to delete one. The
   cleanup reaches the tenant through `uip maestro bpmn merge`, which takes the process
-  extension block from the edited file. Pass `--keep-unused-bindings` when you need the
-  decompiled source to match the original row for row instead.
+  extension block from the edited source. Pass `--keep-unused-bindings` to `decompile`
+  when you need the decompiled source to match the original row for row instead.
 
 <!-- RULE:bpmn.brownfield.palette-elements -->
 - How `bpmn decompile` writes the palette elements that carry no `uipath:*` payload:
@@ -375,7 +391,7 @@ binding half, which is the same for every connector-backed node.
     a process binding;
   - data objects, data object references and data store references are left out of the
     source. A header comment that starts `// DATA ELEMENTS LEFT TO THE ORIGINAL` lists
-    each one; keep it. Merging with `--baseline` (`bpmn.brownfield.merge`) keeps them from
+    each one; keep it. Merging the edit (`bpmn.brownfield.merge`) keeps them from
     the original, with their data associations and shapes. A bare `compile` drops them.
 
 <!--skill-flavor:sdk-palette-elements:start-->

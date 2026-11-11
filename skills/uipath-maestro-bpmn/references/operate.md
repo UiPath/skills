@@ -117,8 +117,8 @@ uip solution download <SOLUTION_ID> --extract -d "$(mktemp -d)" --output json
   When they match, carry on.
 
 When they differ, ask which copy to keep, unless the user is answering a draft gate this run showed: then they edited the outline you uploaded, so build on their copy without asking, and say so in the reply.
-To build on the Studio Web copy, treat it as the original of a [brownfield edit](bpmn-runtime.md#brownfield-editing): copy its `.bpmn` over `<Project>/<Name>.bpmn`, seed `<Name>.bpmn.ts` from it with `uip maestro bpmn decompile --style nested`, compile that source as the baseline before editing, and merge the compiled edit back with `uip maestro bpmn merge <edited.bpmn> --original <Project>/<Name>.bpmn --baseline <baseline.bpmn> -o <Project>/<Name>.bpmn`, so the user's layout and the elements you did not touch stay as they drew them.
-Compile the baseline and the edit into a `mktemp -d` directory outside the workspace, as the download above does, so the workspace keeps exactly one `<Name>.bpmn`: a scratch folder elsewhere in the workspace leaves a second `.bpmn` for the next reader, and tools that search the workspace for `*.bpmn` find it.
+To build on the Studio Web copy, treat it as the original of a [brownfield edit](bpmn-runtime.md#brownfield-editing): copy its `.bpmn` from the download directory over `<Project>/<Name>.bpmn`, decompile that file to `<Name>.bpmn.ts` with `uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested`, make the edit in the source, and merge it back with `uip maestro bpmn merge <Name>.bpmn.ts --original <Project>/<Name>.bpmn`, so the user's layout and the elements you did not touch stay as they drew them.
+Decompile after the copy, not before: the source's first line records the file it came from, and `merge` refuses a source decompiled from the local copy the download replaced.
 
 ## Orchestrator deployment
 

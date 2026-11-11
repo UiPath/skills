@@ -91,6 +91,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 
 1. Run `uip maestro bpmn init <Name> --output json` and take the project directory from its `Data.Path`; the commands below write it as `<Project>`.
    It is not always `<Name>/`: outside a solution, `init` scaffolds one and the project lands at `<Name>Solution/<Name>/`.
+   When the user named where the `.bpmn` goes, run the `init` command that step 1 of [SKILL.md](../SKILL.md#workflow) gives for that path instead.
    Then seed `<Name>.bpmn.ts` from the stub with `uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested`, as in [SKILL.md](../SKILL.md#workflow).
 2. Rewrite the chain as the skeleton, in one write, keeping the seeded process id, `entryPointId` and start event id.
 3. Run the loop:
@@ -147,6 +148,7 @@ The reply is the template and nothing else: no line before it, between its parts
 <!--skill-flavor:gate-uploaded-rule:start-->
 Write `, uploaded` only when this turn's upload succeeded.
 <!--skill-flavor:gate-uploaded-rule:end-->
+When the path line is the local path, write the plain path, such as `InvoiceIntake/InvoiceIntake.bpmn`, not as a Markdown link with the file name as its text.
 That rules out a status or validation line (`Valid`, `zero errors`, `Uploaded`), an explanation of a warning, a note about a default you chose, and a question of your own (a time zone, which app); anything the user should settle waits for *Change it*.
 List every task box, in order, and nothing else: not the start event, a gateway or the end event.
 A box line is the box's label exactly as its `.task()` name spells it, `→ variable` suffix included, and never a branch condition, an arm label or a route: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`.
