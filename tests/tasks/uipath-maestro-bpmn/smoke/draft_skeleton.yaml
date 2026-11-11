@@ -90,7 +90,9 @@ success_criteria:
          does not say `uploaded`. After that, the same line may hold at most
          one more sentence, about a lookup that failed or changes kept.
       2. The second line is the path of the local `.bpmn` file (ends in
-         `.bpmn`), and nothing else.
+         `.bpmn`), and nothing else. A Markdown link whose target is that
+         path (`[label](<path ending in .bpmn>)`, a space after `(` allowed)
+         counts as the path: the chat client renders it as the file.
       3. Next come the box lines, each starting with `- `. The attached
          `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
          box has exactly one line, and every line names one task box (its
