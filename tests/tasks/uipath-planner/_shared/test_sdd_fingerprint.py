@@ -73,13 +73,15 @@ ROOT_SDD = """# Claims Solution SDD
 | [Intake](projects/intake-sdd.md) | reads the claims |
 | `review-sdd.md` | reviews them |
 | [Intake again](projects/intake-sdd.md#overview) | listed twice |
+| dispatch-sdd.md | dispatches them |
 """
 
 
 def solution(tmp_path: Path) -> Path:
     (tmp_path / "projects").mkdir()
     (tmp_path / "projects" / "intake-sdd.md").write_text("# Intake\n\n| **Project SDD role** | child |\n", encoding="utf-8")
-    (tmp_path / "review-sdd.md").write_text("# Review\r\n\r\n| **Project SDD role** | child |\r\n", encoding="utf-8")
+    (tmp_path / "review-sdd.md").write_text("# Review\r\n\r\n| **Project SDD role** | child |\r\n", encoding="utf-8", newline="")
+    (tmp_path / "dispatch-sdd.md").write_text("# Dispatch\n\n| **Project SDD role** | child |\n", encoding="utf-8")
     root = tmp_path / "claims-solution-sdd.md"
     root.write_text(ROOT_SDD, encoding="utf-8")
     return root
@@ -89,7 +91,7 @@ def test_solution_fingerprint_covers_every_child_in_order(tmp_path):
     root = solution(tmp_path)
     fingerprint = planner(root)
     assert fingerprint == checker(root)
-    texts = [root, tmp_path / "projects" / "intake-sdd.md", tmp_path / "review-sdd.md"]
+    texts = [root, tmp_path / "projects" / "intake-sdd.md", tmp_path / "review-sdd.md", tmp_path / "dispatch-sdd.md"]
     expected = hashlib.sha256(b"".join(p.read_bytes().replace(b"\r\n", b"\n") for p in texts)).hexdigest()
     assert fingerprint == expected
 
@@ -100,6 +102,13 @@ def test_a_child_change_changes_the_solution_fingerprint_and_the_genome_row_does
     root.write_text(ROOT_SDD.replace("| **Project SDD role** | root |\n", "| **Project SDD role** | root |\n| **Genome** | `claims-genome.md` |\n"), encoding="utf-8")
     assert planner(root) == checker(root) == before
     (tmp_path / "review-sdd.md").write_text("# Review\n\nRevised.\n", encoding="utf-8")
+    assert planner(root) == checker(root) != before
+
+
+def test_a_change_to_a_child_listed_by_bare_filename_changes_the_solution_fingerprint(tmp_path):
+    root = solution(tmp_path)
+    before = planner(root)
+    (tmp_path / "dispatch-sdd.md").write_text("# Dispatch\n\nRevised.\n", encoding="utf-8")
     assert planner(root) == checker(root) != before
 
 

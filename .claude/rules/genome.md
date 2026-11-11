@@ -10,7 +10,7 @@ paths:
 
 # Genome Skills — Subject Homes
 
-`uipath-planner` writes, checks and keeps current genomes and SDDs; `uipath-genome` builds genomes. Each subject is stated in full in one file; every other mention points to it. Edit the home, leave the pointers.
+`uipath-planner` writes, checks and keeps current genomes and SDDs; `uipath-genome` builds genomes. Each subject is stated in full in one file per skill; a fact both skills need is written in each and listed under § Copies kept in both skills; every other mention points to it. Edit the home, leave the pointers.
 
 ## Home per subject
 
@@ -61,7 +61,7 @@ Framework facts (detection, inventory, locators, per-field translation, pitfalls
 
 ## Rules
 
-1. **The two skills never read or link each other's files.** Naming the other skill and its verbs is allowed. A fact both need is written in both.
+1. **The two skills never read or link each other's files.** Naming the other skill and its verbs is allowed. A fact both need is written in both and listed under § Copies kept in both skills.
 2. **Generic first, framework second, never application-only.** A rule that holds for any source lives in a generic guide; a framework's guide keeps only what is specific to it. Application material survives only as a worked example inside the generic rule, when it shows what the generic wording cannot. Values from the run that prompted an edit are not examples.
 3. **A procedure lives in the guide of the verb that runs it**, even when two verbs run the same script.
 4. **SKILL.md is a router.** A Critical Rule names its subject and home in one or two sentences; conditions, numbers and examples stay in the home.
@@ -74,6 +74,29 @@ Framework facts (detection, inventory, locators, per-field translation, pitfalls
 11. **Temporary guides are deleted on their conditions:**
     - `offline-definition-workarounds-guide.md`: once the UIA CLI creates a first definition offline and registers a number attribute bound to a selector variable.
     - `package-doc-errata-guide.md`: a package's section once that package's shipped docs carry the corrected text; a tool's row once the tool behaves as its docs say; the file once no section is left.
+12. **Keep the external contracts** unchanged unless the change is the point: each skill's frontmatter `description`, the verbs and entry points other skills and hosts call, the pack resolution steps and the pack's README § Frameworks table shape, the Source Map contract rows, the planner's script names and flags.
+13. **A file's boundary is its audience: verb × condition.** A rule sits in the file every session that needs it reads, and in no file a session reads without needing it. A file every session of a verb reads holds no conditional block above about 5 KB; a block under about 5 KB whose condition is common stays where it is.
+14. **Check each added sentence against what its reader reads in that verb** (the verb's § Read Plan and the skill's source frameworks guide), and cut it when those reads already give it. At build the pack's source guide is read only in the sections the builder points to, so a pack fact a build needs reaches it through one pointer in a file the build reads. What the owning skill's routing already opens for the work being built needs no pointer. A step that says where its output goes is not listed again among the run brief's contents or a read plan's reads.
+
+## Copies kept in both skills
+
+Each row is one fact written in both skills. A change to either side changes the other in the same PR.
+
+| Subject | uipath-planner | uipath-genome |
+|---|---|---|
+| Options A, B and C, the item store, per-item state a queue cannot hold, a source's coordination stores and owned database | `references/shared/transactional-shape-guide.md` § Rules rule 3 | `references/transactional-execution-guide.md` § Shape Rules rule 2 |
+| The REFramework and the behaviour owed whatever the split | `references/shared/transactional-shape-guide.md` opening paragraph | `references/transactional-execution-guide.md` § Shape Rules opening paragraph |
+| `Decided:` line form and its project chain | `references/shared/transactional-shape-guide.md` § Rules rule 8 | `references/transactional-execution-guide.md` § Shape Rules rule 4 |
+| Split-option signals table, different-component producer and consumer | `references/shared/transactional-shape-guide.md` § Rules rule 8 derivation table | `references/transactional-execution-guide.md` § Shape Rules rule 5 |
+| Several levels of items are one unit of work | `references/shared/transactional-shape-guide.md` § Rules rule 11 | `references/transactional-execution-guide.md` § Shape Rules rule 7 |
+| Chains: the upstream reference, creating the downstream item | `references/shared/transactional-shape-guide.md` § Rules rule 13 | `references/transactional-execution-guide.md` § Shape Rules rule 8 |
+| UiPath Test Data table | `references/extract/uipath-source-guide.md` § Test Data | `references/source-migration-guide.md` § Test Data |
+| Source Map contract and its example | `references/shared/extracted-genome-guide.md` § Source Map | `references/genome-reading-guide.md` § Source Map |
+| Source values | `references/shared/extracted-genome-guide.md` § Source values | `references/genome-reading-guide.md` § Source values |
+| Secrets and attached applications across component boundaries | `references/shared/genome-format-guide.md` § Platform Dependencies, § Interface (component) | `references/genome-reading-guide.md` § Platform Dependencies, § Interface |
+| Genome file name slug | `references/shared/genome-format-guide.md` § File Naming and Location | `references/genome-reading-guide.md` § File Naming and Location |
+| Framework migration pack resolution | `references/extract/source-frameworks-guide.md` § Other frameworks — the framework migration pack | `references/source-frameworks-guide.md` § Other frameworks — the framework migration pack |
+| Running in parts: brief, ownership, ledgers, waits, resuming | `references/shared/extraction-parts-guide.md` § Running in Parts | `references/execution-parts-guide.md` § Running in Parts |
 
 ## Paired edits
 
@@ -81,9 +104,10 @@ One change, every file in its row, same PR.
 
 | Change | uipath-planner | uipath-genome | Tests |
 |---|---|---|---|
-| Genome format change | `references/shared/genome-format-guide.md` (or `extracted-genome-guide.md` / `transactional-shape-guide.md` for its subject); `assets/templates/component-genome-template.md`; `assets/templates/process-genome-template.md`; `scripts/check-genome.mjs` | `references/genome-reading-guide.md`, only when the build's consequence changes | `tests/tasks/uipath-planner/_shared/test_genome_contract.py` |
+| Genome format change | `references/shared/genome-format-guide.md` (or `extracted-genome-guide.md` / `transactional-shape-guide.md` for its subject); `assets/templates/component-genome-template.md`; `assets/templates/process-genome-template.md`; `scripts/check-genome.mjs` | the subject's § Copies kept in both skills file; `references/genome-reading-guide.md` when the build's consequence changes | `tests/tasks/uipath-planner/_shared/test_genome_contract.py`; the example genomes strict runs over, `tests/tasks/uipath-planner/_shared/genome-examples/` |
 | New UiPath file kind or product | `SKILL.md` description; `references/extract/source-frameworks-guide.md` and `references/extract/uipath-source-guide.md` detection tables; `references/decompose/decompose-guide.md` scan list; `references/shared/skill-mapping-guide.md` § Decision Tree for Ambiguous Steps and § Refactor Targets; `scripts/check-genome.mjs` skill lists | `references/source-frameworks-guide.md`; `references/execution-guide.md` § 1.4 reuse list | — |
 | New building skill | `references/shared/skill-mapping-guide.md`; `scripts/check-genome.mjs` `VALID_SKILLS` / `OPERATE_SKILLS` | — | `tests/tasks/uipath-planner/_shared/test_genome_check.py` asserts both |
+| A subject of § Copies kept in both skills | its planner file | its builder file | — |
 | SDD fingerprint change | `scripts/sdd-fingerprint.mjs` (`check-genome.mjs` imports it) | — | `tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py` |
 | `Decided:` line form (option, unit, source, project chain) | `references/shared/transactional-shape-guide.md`; `assets/templates/component-genome-template.md`; `assets/templates/process-genome-template.md`; `scripts/check-genome.mjs` | `references/transactional-execution-guide.md` | `tests/tasks/uipath-planner/_shared/test_genome_check_findings.py` |
 

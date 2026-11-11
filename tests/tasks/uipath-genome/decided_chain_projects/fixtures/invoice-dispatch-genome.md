@@ -33,8 +33,8 @@ It runs unattended on Orchestrator triggers and needs no application with a user
 
 | Resource | Type | Purpose |
 |----------|------|---------|
-| Invoice_Items | Queue | One item per invoice of the export |
-| Invoice_Register | Queue | One item per invoice filed or rejected, for the register |
+| Invoice_Items | Queue | Hand-off 1, InvoiceDispatcher → InvoicePerformer: one item per invoice of the export |
+| Invoice_Register | Queue | Hand-off 2, InvoicePerformer → InvoiceReporter: one item per invoice filed or rejected |
 | Invoice_InputFolder | Text asset | Folder the daily export arrives in |
 | Invoice_OutputFolder | Text asset | Folder the approval files are written to |
 | Invoice_RegisterPath | Text asset | Path of the invoice register workbook |
@@ -96,7 +96,7 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 |---|---|
 | Produced by | Steps 1–2, once every weekday at 07:00: one item per invoice of the export |
 | Consumed by | Steps 3–6 per invoice, then step 7 per filed or rejected invoice |
-| Item store | Orchestrator queues `Invoice_Items` and `Invoice_Register` |
+| Item store | One Orchestrator queue per hand-off, in chain order: `Invoice_Items` (steps 1–2 → steps 3–6), then `Invoice_Register` (steps 3–6 → step 7) |
 | Coordination | The invoice number as queue reference keeps an invoice from being queued twice |
 | Item kinds | One kind |
 | Step groups | per item: steps 3–6; per register item: step 7 (steps 1–2 are the producer's own) |

@@ -109,16 +109,16 @@ All inputs below are known by the end of Step 1/2 — no skip rule depends on a 
 > 1. **Explore first, then plan** — analyze the project and requirements, run non-mutating discovery, then present a plan for approval before any project changes *(recommended for non-trivial requests)*
 > 2. **Explore, plan, and execute simultaneously** — emit the plan as text and the main agent starts executing right away
 
-<!--skill-flavor:approach-behavior:start-->
 **If "explore first, then plan":**
+<!--skill-flavor:approach-behavior:start-->
 - You may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, reading `project.json`.
 - Do NOT run commands that mutate the project (create files, register targets, install packages) — those belong to execution.
 - After Steps 4–5, enter plan mode with the plan. User approves → exit plan mode.
+<!--skill-flavor:approach-behavior:end-->
 
 **If "explore, plan, and execute simultaneously":**
 - Emit the plan as text in Step 5. The main agent loads the first specialist skill immediately and follows that skill's own workflow.
-- Do NOT enter plan mode.
-<!--skill-flavor:approach-behavior:end-->
+- Do NOT enter plan mode (`EnterPlanMode`).
 
 ### Question 2 — Execution autonomy
 
@@ -186,10 +186,10 @@ Record the answers in the plan header AND summarize them in the relevant task's 
 
 ## Step 5 — Write the plan
 
+Compose the plan per the schema in [plan-and-tasks-format.md → `decompose`](../shared/plan-and-tasks-format.md#decompose-featuremd). Plan body holds the task list in the task row schema.
 <!--skill-flavor:write-plan-target:start-->
-Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → `decompose`](../shared/plan-and-tasks-format.md#decompose-featuremd). Plan body holds the task list in the task row schema.
 
-**Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of the file written below. Live tasks copy prompts verbatim; a bare "this plan" leaves a resumed task with no way to find its values.
+**Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of `<feature>.md`, written below. Live tasks copy prompts verbatim; a bare "this plan" leaves a resumed task with no way to find its values.
 <!--skill-flavor:write-plan-target:end-->
 
 ### Self-review before saving

@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -180,6 +181,14 @@ def main() -> int:
                 f"(per-task failures expected; deferring to threshold check)",
                 file=sys.stderr,
             )
+
+        # ACTIVATION_GATE_KEEP_DIR keeps each row's task.json (the agent's transcript) after the temp dir goes.
+        keep = os.environ.get("ACTIVATION_GATE_KEEP_DIR")
+        if keep and run_dir.is_dir():
+            for task_json in run_dir.rglob("task.json"):
+                target = Path(keep) / skill / task_json.relative_to(run_dir)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(task_json, target)
 
         suite_json = run_dir / "default" / f"skill-activation-gate-{skill}" / "suite.json"
         if not suite_json.is_file():

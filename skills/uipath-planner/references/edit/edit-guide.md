@@ -8,9 +8,9 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide whole; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links for a process genome and every section before § Process Genome Sections for a component genome (the level in the genome's first-line marker), plus § Design Links when the genome has a `Designed in:` line; [extracted-genome-guide.md](../shared/extracted-genome-guide.md) when the genome has a Source Map with a step table; [transactional-shape-guide.md](../shared/transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose Transactional Shape is not the stub |
+| start | — | this guide whole; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links for a process genome and every section before § Process Genome Sections for a component genome (the level in the genome's first-line marker), plus § Design Links when the genome has a `Designed in:` line; [extracted-genome-guide.md](../shared/extracted-genome-guide.md) when the genome has a Source Map with a step table; [transactional-shape-guide.md](../shared/transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose Transactional Shape is not the stub; the opening lines of the template of the genome's level ([process-genome-template.md](../../assets/templates/process-genome-template.md) or [component-genome-template.md](../../assets/templates/component-genome-template.md)), through the blueprint blockquote — the preamble § Edits rewrites an older preamble to |
 | a related resource is given | the genome is extracted and the user hands over a PDD, SOP, runbook or other resource beside the source | [extract-guide.md](../extract/extract-guide.md) Step 1 (the related-resources question) and Step 3's **Related resources** paragraph |
-| "The SDD was revised: update the genome" | — | [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) whole, plus the rows of its own Read Plan; [skill-mapping-guide.md](../shared/skill-mapping-guide.md); [transactional-shape-guide.md](../shared/transactional-shape-guide.md) § Layout (the `Decided:` line) and § Split options and evidence when the SDD records a split |
+| "The SDD was revised: update the genome" | — | [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) whole, plus the rows of its own Read Plan |
 | "Findings from `uipath-genome`" | a finding names a Build With skill (a retired name) | [skill-mapping-guide.md](../shared/skill-mapping-guide.md) |
 | partial re-extraction | — | [extract-guide.md](../extract/extract-guide.md), [defect-verification-guide.md](../shared/defect-verification-guide.md) and the source guide, as for `extract`; [extraction-parts-guide.md](../shared/extraction-parts-guide.md) when the list runs in parts |
 
@@ -18,11 +18,11 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 
 ## Edits
 
-Every edit rewrites an older preamble (one asking for the `uipath-genome` skill's Execute mode, written before genome writing moved here) to the template's preamble ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 5).
+Every edit rewrites an older preamble (one asking for the `uipath-genome` skill's Execute mode, written before genome writing moved here) to the template's preamble, copied from the template's opening lines the start row reads ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 5).
 
 ### Any genome
 
-A genome with a `Designed in:` line accepts two edits only: "The SDD was revised" and "Findings from `uipath-genome`". Any other change — products, projects, components, a skill, a step's design — goes to `design` to revise the linked SDD, and the same run then applies "The SDD was revised" to update the genome ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current).
+On a genome with a `Designed in:` line, a change to what the SDD holds — products, projects, components and their skills, and the decisions the SDD records (the split and queue design, the implementation mode, the package pins, the refactor answers) — goes to `design` to revise the linked SDD, and the same run then applies "The SDD was revised" to update the genome ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current). Every other row (complexity, inferred flags, wording, step detail, a finding from `uipath-genome`) applies as written.
 
 | Request | Update |
 |---|---|

@@ -349,10 +349,9 @@ def test_heading_case_and_wording_variants_pass_core(tmp_path):
     assert run(tmp_path, text, profile="strict") == 1
 
 
-@pytest.mark.parametrize("legacy", ["uipath-genome-builder"])
-def test_preamble_naming_a_legacy_builder_still_passes(tmp_path, legacy):
-    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome", legacy)
-    assert run(tmp_path, text, profile="strict") == 0
+def test_preamble_naming_an_unshipped_builder_name_fails_strict(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome", "uipath-genome-builder")
+    assert run(tmp_path, text, profile="strict") == 1
 
 
 def test_source_map_without_framework_row_fails_strict_only(tmp_path):
@@ -394,13 +393,11 @@ def test_invalid_utf8_is_a_fail_line(tmp_path):
     assert r.returncode == 1 and "FAIL:" in r.stdout and "not valid UTF-8" in r.stdout and "Error" not in r.stderr
 
 
-@pytest.mark.parametrize("legacy", ["uipath-genome-builder"])
-def test_legacy_builder_name_is_a_known_skill(tmp_path, legacy):
-    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("## Platform Dependencies", f"Built through `{legacy}`.\n\n## Platform Dependencies", 1)
+def test_unshipped_builder_name_is_an_unknown_skill(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("## Platform Dependencies", "Built through `uipath-genome-builder`.\n\n## Platform Dependencies", 1)
     target = tmp_path / "sample-genome.md"
     target.write_text(text, encoding="utf-8")
-    assert f"unknown skill name '{legacy}'" not in node("component", str(target)).stdout
-    assert run(tmp_path, text, profile="core") == 0
+    assert "unknown skill name 'uipath-genome-builder'" in node("component", str(target)).stdout
 
 
 def test_duplicate_heading_fails_strict_only(tmp_path):
@@ -463,7 +460,7 @@ def test_designed_in_resolves_against_the_genome_folder(tmp_path):
 
 def test_strict_fails_once_the_sdd_changes_since_its_fingerprint(tmp_path):
     sdd = tmp_path / "x-sdd.md"
-    sdd.write_text("# SDD\r\n\r\n## Planner Handoff\r\n\r\n| **Status** | ready |\r\n| **Tasks file** | `x-tasks.md` (written by plan) |\r\n", encoding="utf-8")
+    sdd.write_text("# SDD\r\n\r\n## Planner Handoff\r\n\r\n| **Status** | ready |\r\n| **Tasks file** | `x-tasks.md` (written by plan) |\r\n", encoding="utf-8", newline="")
     genome = tmp_path / "x-genome.md"
     designed(genome, "x-sdd.md", sdd_fingerprint(sdd))
     strict = ["component", str(genome), "--profile", "strict"]

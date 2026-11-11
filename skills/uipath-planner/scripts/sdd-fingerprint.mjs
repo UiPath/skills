@@ -17,8 +17,21 @@ import { pathToFileURL } from 'node:url';
 
 const LATE_ROWS = /^\|\s*\*\*(Tasks file|Genome)\*\*\s*\|.*\n?/gm;
 const ROOT_ROLE = /^\|\s*\*\*Project SDD role\*\*\s*\|\s*root\s*\|/im;
-// children: every `*-sdd.md` link target or backticked path in the root, resolved against its folder, in order, once each, the root excluded
-const CHILD_REF = /\]\(([^)\s#]+-sdd\.md)(?:#[^)\s]*)?\)|`([^`\s]+-sdd\.md)`/g;
+// children: every `*-sdd.md` link target or backticked path in the root, and every bare one in a table row or
+// list item, resolved against the root's folder, in order, once each, the root excluded
+const REF = /\[[^\]]*\]\(([^)\s#]*)[^)]*\)|`([^`\s]*)`|([^\s|`()[\]<>*,;]+)/g;
+const INDEX_ROW = /^\s*(?:\||[-*+]\s|\d+[.)]\s)/;
+const SDD_FILE = /-sdd\.md$/;
+
+/** The child SDD paths a root lists, as written, in order. */
+function childRefs(text) {
+    return text.split('\n').flatMap((line) => {
+        const row = INDEX_ROW.test(line);
+        return [...line.matchAll(REF)]
+            .map((m) => m[1] ?? m[2] ?? (row && !m[3].includes('://') ? m[3].replace(/[.:]+$/, '') : ''))
+            .filter((ref) => SDD_FILE.test(ref));
+    });
+}
 
 const normalize = (text) => text.replace(/^﻿/, '').replace(/\r\n?/g, '\n').replace(LATE_ROWS, '');
 
@@ -36,7 +49,7 @@ export function sddFingerprint(file) {
     const hash = createHash('sha256').update(root);
     if (ROOT_ROLE.test(root)) {
         const self = resolve(file);
-        const children = [...new Set([...root.matchAll(CHILD_REF)].map((m) => resolve(dirname(self), m[1] ?? m[2])))].filter((p) => p !== self);
+        const children = [...new Set(childRefs(root).map((ref) => resolve(dirname(self), ref)))].filter((p) => p !== self);
         for (const child of children) hash.update(read(child, `child SDD ${child} listed by ${file}`));
     }
     return hash.digest('hex');

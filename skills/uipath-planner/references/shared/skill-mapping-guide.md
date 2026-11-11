@@ -60,7 +60,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 ## Refactor Targets
 
-The Target answer of a refactor or migration ([extract-guide.md](../extract/extract-guide.md) Step 6c) is chosen per component in two moves: type each step with § Decision Tree for Ambiguous Steps, then give the component one host, the simplest product that holds every step. A host keeps as steps the calls it makes and uses within one run — an RPA process calls connectors, document models, an LLM, an agent or a published automation; an API workflow calls connectors and other API workflows; a coordinator calls them all as its nodes.
+The Target answer of every extraction ([extract-guide.md](../extract/extract-guide.md) Step 6c) is chosen per component in two moves: type each step with § Decision Tree for Ambiguous Steps, then give the component one host, the simplest product that holds every step. A host keeps as steps the calls it makes and uses within one run — an RPA process calls connectors, document models, an LLM, an agent or a published automation; an API workflow calls connectors and other API workflows; a coordinator calls them all as its nodes.
 
 | The component's steps | Recommended host |
 |---|---|
@@ -76,7 +76,7 @@ The Target answer of a refactor or migration ([extract-guide.md](../extract/extr
 3. **Coordination is replaced, not copied or dropped.** A lock on running jobs, a second pass over the same items or a ledger keeps its protection by the target's own means — a queue item per unit of work with a unique reference, a fresh read of each item before its writes; the source's mechanism stays only when the target's means cannot hold it. A coordinator is judged on what the whole chain needs, never on whether it takes the source's queue items.
 4. **An event trigger stays an event trigger.** The target is one the source's event can start, directly or through a component it starts.
 5. **A target the delivery model cannot run is never offered.** The delivery model is the one the genome records, or the Step 1 answer; the [Constraint Gate](product-selection-guide.md#constraint-gate) filters every option, and a product the matrix leaves unconfirmed is a later option naming the gap.
-6. **Check the target before recommending it.** Each connector operation, trigger and limit the steps rely on is confirmed through the target's owning skill and its discovery commands (`uip is connectors list --output json`); an operation the registry does not list is confirmed when the owning skill documents an HTTP step through the connection and the vendor's API documentation has the call. A capability nothing confirms makes that target a later option, the gap named in its label.
+6. **Check the target before recommending it.** Each connector operation, trigger and limit the steps rely on is confirmed through the target's owning skill and its discovery commands (`uip is connectors list --output json`); an operation the registry does not list is confirmed when the owning skill documents an HTTP step through the connection and the vendor's API documentation has the call. A tenant or a connection the run cannot reach is no evidence against a target. A capability nothing confirms makes that target a later option, the gap named in its label.
 
 ## Common Combinations
 

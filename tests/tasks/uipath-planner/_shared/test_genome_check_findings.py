@@ -129,11 +129,12 @@ def test_blockquote_must_name_the_builder(check):
     assert f"blueprint blockquote does not name {BUILDER}" in out
 
 
-@pytest.mark.parametrize("legacy", ["uipath-genome-builder"])
-def test_blockquote_naming_a_legacy_builder_passes(check, legacy):
-    text = COMPONENT.replace(f"Build it with the **{BUILDER}** skill", f"Build it with the **{legacy}** skill", 1)
+def test_blockquote_naming_an_unshipped_builder_name_fails_strict(check):
+    text = COMPONENT.replace(f"Build it with the **{BUILDER}** skill", "Build it with the **uipath-genome-builder** skill", 1)
     assert text != COMPONENT
-    assert check(text, profile="strict")[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"blueprint blockquote does not name {BUILDER}" in out
 
 
 def sdd_fingerprint(sdd):
@@ -358,6 +359,17 @@ def test_a_decided_chain_naming_one_project_fails_strict(check):
     rc, out = check(_decided_b("**Decided:** B, one requisition line — the SDD §10: ReqDispatcher"), profile="strict")
     assert rc == 1
     assert "the 'Decided:' project chain 'ReqDispatcher' does not name two or more projects separated by ' → '" in out
+
+
+@pytest.mark.parametrize("chain", [
+    "InvoiceDispatcher -> InvoicePerformer",
+    "InvoiceDispatcher, InvoicePerformer and InvoiceReporter",
+    "InvoiceDispatcher → InvoicePerformer, InvoiceReporter",
+])
+def test_a_decided_chain_not_separated_by_arrows_fails_strict(check, chain):
+    rc, out = check(_decided_b(f"**Decided:** B, one requisition line — the SDD §10: {chain}"), profile="strict")
+    assert rc == 1
+    assert f"the 'Decided:' project chain '{chain}' separates its projects with '->', ',' or ' and ' — separate them with ' → '" in out
 
 
 def test_a_decided_source_quoting_the_request_is_no_chain(check):

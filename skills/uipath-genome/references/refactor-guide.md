@@ -29,8 +29,8 @@ Asked after the genome questions and before the split questions ([configuration-
 Rules:
 
 1. The answers are recorded under `Refactor` in the Configuration Answers, one line per component: `<component> — modes <both | dry run | none> — run record <yes | no> — connections <kept | <service account>> — rulings <defect: intent | source>, …`. A ruling becomes a plan difference (§ Refactor plan) and is offered in the completion report as a genome edit for `uipath-planner`, so the genome states the contract the rebuild follows.
-2. Unattended runs take the Recommended option of every refactor question, as [configuration-questions-guide.md](configuration-questions-guide.md) takes every default. The Source Map's `Requested change` row is the user's own answer to the topics it names: each is answered, never asked again, and recorded `(from the request)` in the Configuration Answers and the completion report.
-3. A component the Source Map's `Requested change` row records as retired or folded into another gets no project; every output a folded component left is still written, by the component it is folded into.
+2. Unattended runs take the Recommended option of every refactor question, as [configuration-questions-guide.md](configuration-questions-guide.md) takes every default. The Source Map's `Requested change` row is the user's own answer to the topics it names: each is answered, never asked again, and recorded `(from the refactor answers)` — `(from the request)` where the row marks the decision so — in the Configuration Answers and the completion report.
+3. A retired or folded component is built as every build builds one: [execution-guide.md § 1.4](execution-guide.md), retired and folded components.
 4. The split questions are asked only for the components whose target is an RPA process: any other target works its items in its own loop, and every outcome the Transactional Shape lists is still owed — each item retried and reported on its own, one item's failure never ending the others.
 
 ## Refactor plan
@@ -41,6 +41,8 @@ Written to `refactor-plan.md` in the hand-off folder ([completion-report-guide.m
 2. **Differences:** one row per output the rebuild produces differently from the source — `# | Source | Rebuild | Reason` — the reason one of the contract's (a defect with its index row, a ruling with its date, an answer, a UiPath limit with its finding, a retry made safe). A change of how that leaves every output the same is a row of the correspondence table, not of this table.
 3. **Kept outputs:** each store, file, mail, message and tag the source writes and the rebuild writes the same way, with its name and fields or recipients: the list the comparison and the characterization tests check.
 4. **Not proven until it runs:** each assumption the offline build cannot prove — a connector's answer shape, a trigger's input, a limit, an identity's access — with the run that first shows it (the first shadow run, the write test, the first live run) and what the rebuild does when it is wrong. Groups add the assumptions they meet.
+
+**The capability probe runs before the plan fixes the shape.** A behaviour the target's documentation leaves open and the shape turns on — whether a queue refuses a reference again once its item succeeded, whether a trigger can start that kind of project, the answer shape of a call — is tried in a throwaway project outside the build, which confirms the target runs what the steps need; the result goes into the plan's Decisions. A probe that needs a tenant runs only in a folder of its own that the user allows for it; without one, the plan takes the behaviour the documentation states, lists it under Not proven with the design the build falls back to when it is wrong, and names the probe as a cutover step before the shadow run. A capability found missing, by the probe or later in the build, stops that component: the plan records the finding, and the completion report names it as a `uipath-planner` edit of the component's target; the other components build on.
 
 The build names its own steps and groups them for the target — a refactor, not a migration — each display name saying what the step does in the business's words, and keeps every text a person or another system reads as the source spells it. The correspondence table of [source-migration-guide.md § What the executor records](source-migration-guide.md) is written per component, with every source workflow and step the rebuild does not keep under its own name and place; its Reason cell cites a plan row, a fold, a retirement or the kind of how-change.
 
@@ -108,7 +110,7 @@ A UiPath source has no inventory script, so its Source Map gets no mechanical ex
 ## Anti-patterns
 
 1. **Copying a source workflow into the rebuild**, or porting it activity by activity: a refactor re-authors each component from the genome.
-2. **Building on a target the genome's Components and Build With rows do not name** — a flow or an agent because it is newer, a queue because the source had one. Another target is a `uipath-planner` edit.
+2. **Building on a target the genome's Components and Build With rows do not name** — a flow or an agent because it is newer, a queue because the source had one. Another target is a `uipath-planner` edit, a capability found missing included (§ Refactor plan).
 3. **A changed output with no plan row**, an output dropped because nothing in the export reads it, or a defect fixed that the genome says the rebuild keeps (§ The contract).
 4. **A shadow that writes, or that decides from the source's done-marks** (§ Run modes).
 5. **Logic built before its characterization tests**, or tests whose expected values come from the rebuild instead of the source (§ Characterization).

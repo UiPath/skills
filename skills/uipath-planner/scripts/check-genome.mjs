@@ -67,10 +67,9 @@ export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / De
   "uipath-activity-migrator", "uipath-knowledge-bundles", "uipath-vertical-solutions",
 ]);
 const RETIRED_SKILLS = ["uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"];
-// the skill a genome's preamble routes its build to; `uipath-genome-builder`, an earlier name, still builds
+// the skill a genome's preamble routes its build to
 export const BUILDER = "uipath-genome";
-const LEGACY_BUILDERS = new Set(["uipath-genome-builder"]);
-const routesToBuilder = (s) => /\buipath-genome(?:-builder)?(?![\w-])/.test(s);
+const routesToBuilder = (s) => /\buipath-genome(?![\w-])/.test(s);
 
 export const COMPONENT_SECTIONS = [
   "Overview", "Target Applications", "Build With", "Platform Dependencies", "Interface",
@@ -142,7 +141,7 @@ export const TEMPLATE_PLACEHOLDERS = [
   "{projects and schedules, where per-item state is visible, retry granularity, end-of-parent work}",
   "{alternative unit}",
   "{facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}",
-  "{only when the SDD or the request already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}",
+  "{only when the SDD, the request or the refactor answers already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}",
   "{a, b}",
   "{c, d}",
   "{per-item record and where it lands; screenshot on system exception; run summary}",
@@ -319,7 +318,7 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
   // Service connector key (`uipath-slack`, `uipath-salesforce-sfdc`), not a skill
   for (const heading of ["Build With", "Components"]) {
     for (const name of skillNames(sectionBody(text, heading))) {
-      if (!VALID_SKILLS.has(name) && !OPERATE_SKILLS.has(name) && name !== BUILDER && !LEGACY_BUILDERS.has(name)) r.core(`unknown skill name '${name}' in ${heading}`);
+      if (!VALID_SKILLS.has(name) && !OPERATE_SKILLS.has(name) && name !== BUILDER) r.core(`unknown skill name '${name}' in ${heading}`);
     }
   }
   for (const heading of ["Build With", "Components"]) {
@@ -366,6 +365,9 @@ function effectiveFlows(ts) {
 }
 
 const DECIDED_CHAIN = /:\s+([^:]*→[^:]*|[A-Za-z][\w.-]*)\s*$/;
+// project names after the source's last ': ' joined by any chain separator; only ' → ' names a chain
+const DECIDED_LIST = /:\s+([A-Z][\w.-]*(?:\s*(?:→|->|,|\band\b)\s*[A-Z][\w.-]*)+)\s*$/;
+const LIST_SEPARATOR = /\s*(?:→|->|,|\band\b)\s*/g;
 
 /** Transactional Shape: the stub, or flow blocks of the transactional shape format. */
 function checkTransactional(text, level, r, partOf = false) {
@@ -410,14 +412,17 @@ function checkTransactional(text, level, r, partOf = false) {
       if (m) { if (!units.has(row[0])) units.set(row[0], new Set()); units.get(row[0]).add(m[1]); }
       if (row.length >= 2 && !SPLIT_OPTIONS.includes(row[1].trim())) r.strict(`Transactional Shape ${name}: option cell '${row[1]}' of '${row[0]}' holds more than its letter — the transactional shape guide defines A, B and C`);
     }
-    // a split the SDD or the request already took (`**Decided:** B, ...`) lists that option alone, never reopened
+    // a split the SDD, the request or the refactor answers already took (`**Decided:** B, ...`) lists that option alone, never reopened
     const decidedLine = lines(body).find((l) => l.startsWith("**Decided:**")) ?? "";
     const decided = decidedLine.match(/^\*\*Decided:\*\*\s*([ABC])\b(?:,\s*([^—–]+?))?\s*(?:[—–]\s*(.*)|$)/);
     if (decidedLine && !decided) r.strict(`Transactional Shape ${name}: the 'Decided:' line does not start with the option letter`);
     if (decided) {
       // `<source>: <Project> → <Project> …` — a bare single name after the last ': ' is a one-project chain
       const chain = (decided[3] ?? "").match(DECIDED_CHAIN);
-      if (chain) {
+      const list = decided[1] === "B" ? (decided[3] ?? "").match(DECIDED_LIST) : null;
+      if (list && list[1].match(LIST_SEPARATOR).some((sep) => sep.trim() !== "→")) {
+        r.strict(`Transactional Shape ${name}: the 'Decided:' project chain '${list[1].trim()}' separates its projects with '->', ',' or ' and ' — separate them with ' → '`);
+      } else if (chain) {
         const projects = chain[1].split("→").map((p) => p.trim());
         if (decided[1] !== "B") r.strict(`Transactional Shape ${name}: the 'Decided:' line of option ${decided[1]} names a project chain — only option B names its projects`);
         else if (projects.length < 2 || projects.some((p) => !p)) r.strict(`Transactional Shape ${name}: the 'Decided:' project chain '${chain[1].trim()}' does not name two or more projects separated by ' → '`);
