@@ -59,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "The mirror has no processor resource of its own: the solution still holds one"
-    command: "test \"$(grep -rlE '\"kind\": *\"idpProcessor\"' InvoiceReader/resources | wc -l)\" -eq 1"
+    command: "test \"$(grep -rliE '\"kind\": *\"idpProcessor\"' InvoiceReader/resources | wc -l)\" -eq 1"
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
