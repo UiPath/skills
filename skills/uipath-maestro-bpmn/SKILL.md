@@ -105,6 +105,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 <!--skill-flavor:workflow-merge:start-->
 8. Edit an existing process with `merge`, which takes the edited source and the original: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
    No `.bpmn` other than the target goes in the workspace: no intermediate copy, probe or second scaffold.
+   When the project sits in a solution this run did not scaffold, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
 
 ## Draft first
@@ -112,6 +113,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
 The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
+<!--skill-flavor:draft-upload-summary:start-->
+Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with a second upload and a final report.
+<!--skill-flavor:draft-upload-summary:end-->
 
 ## API index
 
@@ -274,13 +278,10 @@ required input, an unresolved `lookup()`, an unprepared object or a self-naming 
 ## Operating a process
 
 <!--skill-flavor:operating:start-->
-Refresh the package metadata, pack, upload to Studio Web (what "publish" means
-unless the user names Orchestrator), debug a real run, run a deployed process,
-inspect a job, and drive an instance's lifecycle. All of it needs `uip login`;
-`uip maestro bpmn refresh <project-path>` comes before every cloud action, and
-`bpmn debug` is a REAL run, not a validation step. Every mutation needs the
-user's decision for that action. Read
-**[`references/operate.md`](references/operate.md)**.
+Refresh the package metadata, pack, upload to Studio Web (what "publish" means unless the user names Orchestrator), debug a real run, run a deployed process, inspect a job, and drive an instance's lifecycle.
+All of it needs `uip login`; `uip maestro bpmn refresh <project-path>` comes before every cloud action, and `bpmn debug` is a REAL run, not a validation step.
+Every mutation needs the user's decision for that action, except the Studio Web upload of a project this run created, which a request to build or draft the process authorizes.
+Read **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:operating:end-->
 
 ## Evaluating a process
