@@ -133,19 +133,15 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 
 ## Source values
 
-A genome is extracted through a rendering of the source and inherits every gap in it: a rendering can hide a typed value and an extraction can paraphrase one. An empty value in a rendering is "not shown", never "not set". The build checks every fact of these kinds the genome cites against the source object before a group builds on it (its migration preflight), and follows the source where the two disagree:
+A genome is extracted through a rendering of the source, which can hide a typed value, and an extraction can paraphrase one. When the build reads the export, an empty value in a rendering is "not shown", never "not set": the value is read from the source object before it is built as unset. Before a group builds on a step, the build checks against the step's source objects every value of these kinds the genome cites ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4): comparison literals, operators and case rules, spelled exactly; counts, attempts and loop bounds, and whether the loop tests before or after its body; lengths, positions and occurrences in text operations; waits, pauses and timeouts, in the source's unit; set or typed; flags that change control flow; date and number formats; values bound to a built-in; a parameter's unit, its default, and which of two filled parameters overrides the other; log texts, with their wording and substitutions; the kind of each file read or written, and the date or field a filter, sort or window uses.
 
-1. **Comparison literals, operators and case rules** — contains / equals / starts with, case-sensitive or not, line breaks ignored or not, whitespace normalised or not, a pattern that must match the whole text or one that searches it — spelled exactly, spacing and punctuation included.
-2. **Counts, attempts and loop bounds**, and whether the loop tests before or after its body.
-3. **Lengths, positions and occurrences** in text operations (a cut to 20 characters, the second `|`-field).
-4. **Waits, pauses and timeouts** in the unit the source states, and a check's budget: its own timeout, or, for a check or an action with no timeout of its own, the framework's default budget the source guide names (a source check that waits its framework's default is not an activity waiting the activity's default).
-5. **Set or typed:** whether a field is set (replaced) or typed into (appended, key by key).
-6. **Flags that change control flow** (continue on error, a do-while, a skip switch, a failure the source tolerates or logs as a pass, a call made from a failure route). A check whose failure the source logs as a pass or ignores is a decision or an optional wait, not a hard check, and a check that passes when its target is absent asserts absence.
-7. **Formats** a date or number is typed or compared in (a mask, a pattern, one part of a date per segment): the format is part of the value.
-8. **Values bound to a built-in** (the run date, the user's folder), computed at run time — never the stored default a same-named project variable carries.
-9. **A parameter's unit, its default, and which of two filled parameters overrides the other**, read from the source's own documentation of that parameter before they are called unknown.
-10. **Log texts** of each step, with their literal wording and variable substitutions.
-11. **Which file and which field**: the kind of each file the process reads or writes, by its extension, and which of several dates or fields a filter, sort or window uses.
+Three readings decide what is built:
+
+1. A check or action with no timeout of its own waits the framework's default budget the source guide names, not the activity's default.
+2. A check whose failure the source logs as a pass or ignores is a decision or an optional wait, not a hard check; a check that passes when its target is absent asserts absence.
+3. A value bound to a built-in (the run date, the user's folder) is computed at run time, never taken from a same-named project variable's stored default.
+
+Where the genome and the source disagree, the build follows the source, with the exceptions that step lists. Each disagreement is a genome deviation in the group report — step, source object and line, genome says, source says — and the genome is left to a `uipath-planner` edit.
 
 ## Source Defects
 

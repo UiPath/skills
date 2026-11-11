@@ -92,11 +92,11 @@ Each row is one fact written in both skills. A change to either side changes the
 | Chains: the upstream reference, creating the downstream item | `references/shared/transactional-shape-guide.md` § Rules rule 13 | `references/transactional-execution-guide.md` § Shape Rules rule 8 |
 | UiPath Test Data table | `references/extract/uipath-source-guide.md` § Test Data | `references/source-migration-guide.md` § Test Data |
 | Source Map contract and its example | `references/shared/extracted-genome-guide.md` § Source Map | `references/genome-reading-guide.md` § Source Map |
-| Source values | `references/shared/extracted-genome-guide.md` § Source values | `references/genome-reading-guide.md` § Source values |
+| Source values: the kinds of value read from the source, and "not shown, never not set" | `references/shared/extracted-genome-guide.md` § Source values: the full rule, how extraction reads and writes each kind | `references/genome-reading-guide.md` § Source values: the kinds by name, the readings that decide what is built, the source followed on disagreement, the group report's deviation |
 | Secrets and attached applications across component boundaries | `references/shared/genome-format-guide.md` § Platform Dependencies, § Interface (component) | `references/genome-reading-guide.md` § Platform Dependencies, § Interface |
 | Genome file name slug | `references/shared/genome-format-guide.md` § File Naming and Location | `references/genome-reading-guide.md` § File Naming and Location |
 | Framework migration pack resolution | `references/extract/source-frameworks-guide.md` § Other frameworks — the framework migration pack | `references/source-frameworks-guide.md` § Other frameworks — the framework migration pack |
-| Running in parts: brief, ownership, ledgers, waits, resuming | `references/shared/extraction-parts-guide.md` § Running in Parts | `references/execution-parts-guide.md` § Running in Parts |
+| Running in parts: lead agent, brief and rulings, ledgers and resuming, read plans, return check, ownership, the two-at-once cap, cached waits | `references/shared/extraction-parts-guide.md` § Running in Parts items 1–8: the core, with the lead agent's model as the default | `references/execution-parts-guide.md` § Running in Parts items 1–8: the core, with the smaller model, the no-subagents option and its review, and the status script |
 
 ## Paired edits
 

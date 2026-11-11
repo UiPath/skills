@@ -51,7 +51,7 @@ A genome is extracted through a rendering of the source — a framework's invent
 10. **Log texts** of each step, with their literal wording and variable substitutions.
 11. **Which file and which field**: the kind of each file the process reads or writes, by its extension (a workbook, not a text file), and which of several dates or fields a filter, sort or window uses (loaded or completed, created or updated).
 
-Extraction writes them so (its Step 3); the build checks every one the genome cites before a group builds on it (its migration preflight).
+Extraction writes them so (its Step 3).
 
 ## Source Defects
 
