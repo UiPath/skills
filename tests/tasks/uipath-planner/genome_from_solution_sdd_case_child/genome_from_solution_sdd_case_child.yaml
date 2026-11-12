@@ -14,9 +14,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
-# Genome checks call uipath-genome's check-genome.mjs with node through $REFERENCE_DIR (its scripts folder).
+# Genome checks call the skill's check-genome.mjs with node through $REFERENCE_DIR (its scripts folder).
 reference:
-  directory: ../../../../skills/uipath-genome/scripts
+  directory: ../../../../skills/uipath-planner/scripts
 
 initial_prompt: |
   Write the genome for the agreed design in `supplier-onboarding-solution-sdd.md`.

@@ -42,7 +42,7 @@ The solution overview SDD includes:
 3. Project Inventory — the unified project list from Level 2.5 Part B
 4. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
 5. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
-6. Per-Project SDD Index — filename + one-line scope per project
+6. Per-Project SDD Index — one row per project: its SDD as a relative markdown link to `<PROJECT_NAME_KEBAB>-sdd.md`, never a bare filename, + one-line scope. The genome's SDD fingerprint finds the child SDDs by these links.
 
 Put the `<!-- planner-sdd-body:v1 -->` line on its own directly above item 3: items 1–2 are the overview's front matter ([caller-request-guide.md](caller-request-guide.md) § SDD Signals a Caller's Host May Read).
 

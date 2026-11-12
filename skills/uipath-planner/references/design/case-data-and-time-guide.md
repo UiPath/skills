@@ -159,7 +159,7 @@ Conditional overrides first (priority order), then a trailing default entry with
 | Breached | The SLA alone — an absent escalation reference IS the persisted breached shape | Nothing else. Never "complete" a breach rule with an escalation: that converts it to at-risk |
 | At-risk | The SLA + one concrete at-risk escalation declared on that same SLA | That escalation must exist on that SLA |
 
-Never the designer's `any` escalation sentinel. Borrowed and dangling references fail validate: `The escalation referenced by rule … no longer exists` / `The SLA referenced by rule … no longer exists`.
+The designer's `any` escalation reference is its at-risk wildcard: valid, it fires on every at-risk escalation of that SLA, and it is never a breach. Do not design with it — name the escalation the requirement means. Borrowed and dangling references fail validate: `The escalation referenced by rule … no longer exists` / `The SLA referenced by rule … no longer exists`.
 
 ### Choosing the response
 
@@ -195,7 +195,7 @@ Read the Interrupting cell off the SOURCE's words, exactly like the Response cel
 | Breach / at-risk on a task's entry conditions (stage or case SLA) | valid |
 | At-risk with a same-SLA escalation | valid |
 | At-risk borrowing another SLA's escalation | invalid |
-| `any` escalation reference | invalid |
+| `any` escalation reference | valid — at-risk on every at-risk escalation of that SLA, never breach |
 | Dangling SLA reference | invalid |
 | Task with empty or absent entry conditions | valid — and the task never starts |
 

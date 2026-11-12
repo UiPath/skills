@@ -1,6 +1,6 @@
 # Source Frameworks Guide — reading a source automation in `extract`
 
-`extract` reads a source automation to write its genome. This guide is the one home of how each source is read and how the framework migration pack is resolved; the extract guide's read plan opens it.
+`extract` reads a source automation to write its genome: how each source is read, and how a framework migration pack is resolved.
 
 ## UiPath sources
 

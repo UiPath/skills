@@ -51,7 +51,7 @@ The README is the completion report. It is written for a reader who has this fol
 ## Configuration answers
 | Question | Answer |
 |---|---|
-| <the question in plain words> | <the answer>, "(default)" where no one answered, "(from the request)" where a file of answers the request names gave it, "(source)" where the source's values answered it |
+| <the question in plain words> | <the answer>, with its source's label where the user did not give it in a batch: "(from the SDD)", "(from the request)" or "(from the refactor answers)" where the genome records it as decided, "(from the answers file)" where a file of answers gave it, "(source)" where the source's values answered it, "(default)" where no one answered |
 
 ## Acceptance criteria
 | # | Criterion | Verdict | Where, or what is missing |

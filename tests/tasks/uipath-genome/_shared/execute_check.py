@@ -2,7 +2,10 @@
 """Checks for a genome build (uipath-genome) run, from the sandbox root.
 
 Usage:
-  execute_check.py build                       the one RPA project built from the genome compiles (uip rpa build)
+  execute_check.py build [--all]               the one RPA project built from the genome compiles (uip rpa build);
+                                               --all: every RPA project compiles
+  execute_check.py projects --expect NAME …    the RPA projects are exactly the named ones, each by its folder
+                                               name or its project.json name
   execute_check.py settings --expect NAME …    that project reads every named setting as an Orchestrator asset:
                                                each name is an asset read's asset name, or a cell of a
                                                configuration workbook's Assets sheet
@@ -56,12 +59,36 @@ def one_project() -> Path:
     return projects[0]
 
 
-def cmd_build(_: argparse.Namespace) -> int:
-    project = one_project()
+def cmd_build(a: argparse.Namespace) -> int:
+    projects = rpa_projects(Path(".")) if a.all else [one_project()]
+    if not projects:
+        sys.exit("FAIL: no RPA project found")
     uip = shutil.which("uip") or "uip"
-    code = subprocess.call([uip, "rpa", "build", str(project), "--output", "json"])
-    print(("OK" if code == 0 else "FAIL") + f": uip rpa build {project} exited {code}")
-    return 0 if code == 0 else 1
+    failed = 0
+    for project in projects:
+        code = subprocess.call([uip, "rpa", "build", str(project), "--output", "json"])
+        print(("OK" if code == 0 else "FAIL") + f": uip rpa build {project} exited {code}")
+        failed += code != 0
+    return 0 if not failed else 1
+
+
+def project_name(project: Path) -> str:
+    try:
+        return json.loads((project / "project.json").read_text(encoding="utf-8-sig")).get("name") or ""
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+def cmd_projects(a: argparse.Namespace) -> int:
+    projects = rpa_projects(Path("."))
+    names = [{p.name, project_name(p)} for p in projects]
+    missing = [n for n in a.expect if not any(n in found for found in names)]
+    extra = [str(p) for p, found in zip(projects, names) if not found & set(a.expect)]
+    if missing or extra:
+        print(f"FAIL: missing {missing or 'none'}; unexpected projects {extra or 'none'}")
+        return 1
+    print(f"OK: projects {', '.join(a.expect)}")
+    return 0
 
 
 XAML_ASSET_READ = re.compile(r"<(\w+:)?(GetRobotAsset|GetRobotCredential|GetAsset|GetCredential)\b(?:[^>]*?/>|.*?</(?:\w+:)?\2>)", re.S)
@@ -242,7 +269,12 @@ def cmd_genome_unchanged(a: argparse.Namespace) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("build").set_defaults(func=cmd_build)
+    p = sub.add_parser("build")
+    p.add_argument("--all", action="store_true", help="build every RPA project, not exactly one")
+    p.set_defaults(func=cmd_build)
+    p = sub.add_parser("projects")
+    p.add_argument("--expect", nargs="+", required=True)
+    p.set_defaults(func=cmd_projects)
     p = sub.add_parser("settings")
     p.add_argument("--expect", nargs="*", default=[])
     p.set_defaults(func=cmd_settings)

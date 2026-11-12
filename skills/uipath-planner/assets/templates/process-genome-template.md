@@ -95,7 +95,7 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 ## Transactional Shape
 
-{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe how the process handles them as it is and which splits are possible; decide nothing — the Components table's Type cell reads `RPA process`, and the split, the store and the template are chosen at execution. A process can hold several flows — one kind of item handed from its producer to its consumer (components 1 → 2, 2 → 3, an independent 5 → 6): one `### Flow N` block each, even when there is one. A flow whose items a coordinator takes, one instance per item, has no RPA consumer and is no flow: the stub (transactional shape guide rule 1). Component genomes carry their own role per flow.}
+{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe how the process handles them as it is and which splits are possible; decide nothing — the Components table's Type cell reads `RPA process`, and the split, the store and the template are chosen at build. A process can hold several flows — one kind of item handed from its producer to its consumer (components 1 → 2, 2 → 3, an independent 5 → 6): one `### Flow N` block each, even when there is one. A flow whose items a coordinator takes, one instance per item, has no RPA consumer and is no flow: the stub (transactional shape guide rule 1). Component genomes carry their own role per flow.}
 
 **Flows:** Flow 1 — {unit}: component {p} → component {c} (Handoffs row {n}); Flow 2 — {unit}: component {c} → component {d} (Handoffs row {m}); chains: component {c} consumes Flow 1 and produces Flow 2; independent: {Flow k}.
 
@@ -135,7 +135,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | {alternative unit} | C | … | {…} |
 
 **Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
-**Decided:** {only when the SDD or the request already chose the split: option and unit — source}
+**Decided:** {only when the SDD, the request or the refactor answers already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
 **Traceability:** {per-item record and where it lands; the upstream reference a chained item carries; screenshot on system exception; run summary; which component reports on them}.
 
@@ -174,7 +174,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 |-----------|-----------------|-------|
 | Source framework | {`UiPath` for a UiPath source, else the framework name as the migration pack's README spells it} {version the source states} | |
 | Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
-| Requested change | {only when the request asks for a change: the user's words} | {each decision by builder topic — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
+| Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each refactor-question decision — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
 | {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {ambiguity or unresolved reference} |
 | Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because nothing reaches it and the Unused parts answer kept to what runs or it only works a technology UiPath's activities cover, or the request named others} |
 | Unused | {workflows, pages and helpers no caller invokes that extraction left out — `{Name}` ({id})} | {what each does} |

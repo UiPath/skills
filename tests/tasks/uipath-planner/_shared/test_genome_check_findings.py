@@ -15,7 +15,8 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
-SCRIPT = REPO / "skills" / "uipath-genome" / "scripts" / "check-genome.mjs"
+SCRIPT = REPO / "skills" / "uipath-planner" / "scripts" / "check-genome.mjs"
+FINGERPRINT = REPO / "skills" / "uipath-planner" / "scripts" / "sdd-fingerprint.mjs"
 
 
 def node(*args):
@@ -37,7 +38,7 @@ def node_call(function, *args):
     return json.loads(done.stdout)
 
 
-EXAMPLES = HERE / "genome-examples"  # known-good genomes, kept with the tests
+EXAMPLES = REPO / "tests" / "tasks" / "uipath-planner" / "_shared" / "genome-examples"  # known-good genomes, kept with the planner tests
 COMPONENT = (EXAMPLES / "purchase-requisition-entry-genome.md").read_text(encoding="utf-8")
 PROCESS = EXAMPLES / "invoice-processing-genome.md"
 PROCESS_DIR = EXAMPLES / "invoice-processing-genome"
@@ -128,25 +129,66 @@ def test_blockquote_must_name_the_builder(check):
     assert f"blueprint blockquote does not name {BUILDER}" in out
 
 
-@pytest.mark.parametrize("legacy", ["uipath-genome", "uipath-genome-builder"])
-def test_blockquote_naming_a_legacy_builder_passes(check, legacy):
-    text = COMPONENT.replace(f"Build it with the **{BUILDER}** skill", f"Build it with the **{legacy}** skill", 1)
+def test_blockquote_naming_an_unshipped_builder_name_fails_strict(check):
+    text = COMPONENT.replace(f"Build it with the **{BUILDER}** skill", "Build it with the **uipath-genome-builder** skill", 1)
     assert text != COMPONENT
-    assert check(text, profile="strict")[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"blueprint blockquote does not name {BUILDER}" in out
+
+
+def sdd_fingerprint(sdd):
+    return subprocess.run(["node", str(FINGERPRINT), str(sdd)], capture_output=True, text=True, check=True).stdout.strip()
 
 
 def designed_in(text, line):
     return re.sub(r"^(> \*\*This is a UiPath automation blueprint\.\*\*.*)$", lambda m: f"{m[1]}\n\n{line}", text, count=1, flags=re.M)
 
 
-def test_designed_in_line_without_fingerprint_fails_strict_only(check):
+def pinned(tmp_path, fingerprint=None):
+    """A genome text whose Designed in: line links x-sdd.md in tmp_path, pinned to fingerprint or the SDD's own."""
+    sdd = tmp_path / "x-sdd.md"
+    sdd.write_text("# SDD\n\n| **Status** | agreed |\n", encoding="utf-8")
+    recorded = fingerprint or sdd_fingerprint(sdd)
+    return designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {recorded}")
+
+
+def test_designed_in_line_without_fingerprint_fails_strict_only(check, tmp_path):
     text = designed_in(COMPONENT, "> Designed in: [Design](x-sdd.md)")
     assert text != COMPONENT
     assert check(text)[0] == 0
     rc, out = check(text, profile="strict")
     assert rc == 1
     assert "Designed in: line has no sdd-sha256 fingerprint" in out
-    assert check(designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {'a' * 64}"), profile="strict")[0] == 0
+    assert check(pinned(tmp_path), profile="strict")[0] == 0
+
+
+def test_designed_in_fingerprint_that_no_longer_matches_fails_strict_only(check, tmp_path):
+    text = pinned(tmp_path, "a" * 64)
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Designed in: sdd-sha256 does not match x-sdd.md; the SDD changed since the genome was written" in out
+
+
+def test_designed_in_sdd_that_cannot_be_read_fails_strict_only(check, tmp_path):
+    text = pinned(tmp_path)
+    (tmp_path / "x-sdd.md").unlink()
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Designed in: x-sdd.md or a child SDD it lists cannot be read" in out
+
+
+def test_designed_in_root_sdd_with_an_unreadable_child_fails_strict(check, tmp_path):
+    (tmp_path / "x-sdd.md").write_text("| **Project SDD role** | root |\n\n[Child](child-sdd.md)\n", encoding="utf-8")
+    (tmp_path / "child-sdd.md").write_text("# Child\n", encoding="utf-8")
+    text = designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {sdd_fingerprint(tmp_path / 'x-sdd.md')}")
+    assert check(text, profile="strict")[0] == 0
+    (tmp_path / "child-sdd.md").unlink()
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Designed in: x-sdd.md or a child SDD it lists cannot be read" in out
 
 
 def test_retired_skill_name_fails_core(check):
@@ -289,6 +331,50 @@ def test_a_decided_line_names_its_option_first(check):
     rc, out = check(_decided(COMPONENT, "**Decided:** the SDD chose two projects"), profile="strict")
     assert rc == 1
     assert "the 'Decided:' line does not start with the option letter" in out
+
+
+def _decided_b(line: str) -> str:
+    """COMPONENT with the B row of 'one requisition line' alone and the given Decided: line."""
+    text = re.sub(r"^\| one requisition line \| [AC] \|.*$", "", COMPONENT, flags=re.M)
+    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
+    return _decided(text, line)
+
+
+def test_a_decided_b_line_with_a_project_chain_passes(check):
+    rc, out = check(_decided_b("**Decided:** B, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer → ReqReporter"), profile="strict")
+    assert "'Decided:'" not in out, out
+
+
+def test_a_decided_chain_on_option_a_fails_strict(check):
+    text = re.sub(r"^\| one requisition line \| [BC] \|.*$", "", COMPONENT, flags=re.M)
+    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
+    text = _decided(text, "**Decided:** A, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer")
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "the 'Decided:' line of option A names a project chain — only option B names its projects" in out
+
+
+def test_a_decided_chain_naming_one_project_fails_strict(check):
+    rc, out = check(_decided_b("**Decided:** B, one requisition line — the SDD §10: ReqDispatcher"), profile="strict")
+    assert rc == 1
+    assert "the 'Decided:' project chain 'ReqDispatcher' does not name two or more projects separated by ' → '" in out
+
+
+@pytest.mark.parametrize("chain", [
+    "InvoiceDispatcher -> InvoicePerformer",
+    "InvoiceDispatcher, InvoicePerformer and InvoiceReporter",
+    "InvoiceDispatcher → InvoicePerformer, InvoiceReporter",
+])
+def test_a_decided_chain_not_separated_by_arrows_fails_strict(check, chain):
+    rc, out = check(_decided_b(f"**Decided:** B, one requisition line — the SDD §10: {chain}"), profile="strict")
+    assert rc == 1
+    assert f"the 'Decided:' project chain '{chain}' separates its projects with '->', ',' or ' and ' — separate them with ' → '" in out
+
+
+def test_a_decided_source_quoting_the_request_is_no_chain(check):
+    rc, out = check(_decided_b('**Decided:** B, one requisition line — the request: "retry lines individually"'), profile="strict")
+    assert "project chain" not in out, out
 
 
 def test_alternative_units_need_split_options_for_each(check):

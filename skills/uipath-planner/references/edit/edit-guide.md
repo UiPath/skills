@@ -1,6 +1,6 @@
 # Editing Guide — change a genome in place
 
-Content rules for what an edit writes: [genome-format-guide.md](../shared/genome-format-guide.md), and for an extracted genome [extracted-genome-guide.md](../shared/extracted-genome-guide.md). Only `edit` changes a genome; `uipath-genome` reads it and never edits it, so a fix found during a build comes back here and the build re-runs. Edits are targeted and in place, never a regeneration ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)).
+Content rules for what an edit writes: [genome-format-guide.md](../shared/genome-format-guide.md), and for an extracted genome [extracted-genome-guide.md](../shared/extracted-genome-guide.md). Only `edit` changes a genome; `uipath-genome` reads it and never edits it, so a deviation the build reports comes back here and the build re-runs. Every edit ends with the strict check (§ Review after every edit). Edits are targeted and in place, never a regeneration ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)).
 
 ## Read Plan
 
@@ -8,9 +8,9 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide whole; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links for a process genome and every section before § Process Genome Sections for a component genome (the level in the genome's first-line marker), plus § Design Links when the genome has a `Designed in:` line; [extracted-genome-guide.md](../shared/extracted-genome-guide.md) when the genome has a Source Map with a step table; [transactional-shape-guide.md](../shared/transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose Transactional Shape is not the stub |
+| start | — | this guide whole; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links for a process genome and every section before § Process Genome Sections for a component genome (the level in the genome's first-line marker), plus § Design Links when the genome has a `Designed in:` line; [extracted-genome-guide.md](../shared/extracted-genome-guide.md) when the genome has a Source Map with a step table; [transactional-shape-guide.md](../shared/transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose Transactional Shape is not the stub; the opening lines of the template of the genome's level ([process-genome-template.md](../../assets/templates/process-genome-template.md) or [component-genome-template.md](../../assets/templates/component-genome-template.md)), through the blueprint blockquote — the preamble § Edits rewrites an older preamble to |
 | a related resource is given | the genome is extracted and the user hands over a PDD, SOP, runbook or other resource beside the source | [extract-guide.md](../extract/extract-guide.md) Step 1 (the related-resources question) and Step 3's **Related resources** paragraph |
-| "The SDD was revised: update the genome" | — | [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) whole, plus the rows of its own Read Plan; [skill-mapping-guide.md](../shared/skill-mapping-guide.md); [transactional-shape-guide.md](../shared/transactional-shape-guide.md) § Layout (the `Decided:` line) and § Split options and evidence when the SDD records a split |
+| "The SDD was revised: update the genome" | — | [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) whole, plus the rows of its own Read Plan |
 | "Findings from `uipath-genome`" | a finding names a Build With skill (a retired name) | [skill-mapping-guide.md](../shared/skill-mapping-guide.md) |
 | partial re-extraction | — | [extract-guide.md](../extract/extract-guide.md), [defect-verification-guide.md](../shared/defect-verification-guide.md) and the source guide, as for `extract`; [extraction-parts-guide.md](../shared/extraction-parts-guide.md) when the list runs in parts |
 
@@ -18,16 +18,16 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 
 ## Edits
 
-Every edit rewrites a legacy preamble (one naming `uipath-genome`) to the template's preamble ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 5).
+Every edit rewrites an older preamble (one asking for the `uipath-genome` skill's Execute mode, written before genome writing moved here) to the template's preamble, copied from the template's opening lines the start row reads ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 5).
 
 ### Any genome
 
-On a genome with a `Designed in:` line only the first two rows are edits. Any other change — products, projects, components, a skill, a step's design — goes to `design` to revise the linked SDD; the fingerprint then drives "The SDD was revised" to update the genome.
+On a genome with a `Designed in:` line, a change to what the SDD holds — products, projects, components and their skills, and the decisions the SDD records (the split and queue design, the implementation mode, the package pins, the refactor answers) — goes to `design` to revise the linked SDD, and the same run then applies "The SDD was revised" to update the genome ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current). Every other row (complexity, inferred flags, wording, step detail, a finding from `uipath-genome`) applies as written.
 
 | Request | Update |
 |---|---|
-| "The SDD was revised: update the genome" (from `uipath-genome`, or the user) | Read the SDD the `Designed in:` line links whole and redo [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) items 3–6 against it: every section whose SDD content changed is rewritten, nothing else is. Then take the fingerprint again, over the root and every child SDD it lists for a solution, and rewrite the `Designed in:` line ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)). An unattended build's request applies the edit without offering it; the closing summary names the sections changed |
-| "Findings from `uipath-genome`" (from the build, or the user forwarding its report) | Apply each finding where it points: a checker `FAIL` → the section and rule it names ([genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md)); a genome deviation → the step the source contradicts, written as the build followed it unless the user rules otherwise; a retired skill name → the Build With row, from [skill-mapping-guide.md](../shared/skill-mapping-guide.md); a `Not covered` object to build → [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md). A build's request applies the edits without offering them |
+| "The SDD was revised: update the genome" (after a `design` revise, or from the user) | Read the SDD the `Designed in:` line links whole and redo [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) items 3–6 against it: every section whose SDD content changed is rewritten, nothing else is. Then take the fingerprint again, over the root and every child SDD it lists for a solution, and rewrite the `Designed in:` line ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)). A run that follows a `design` revise, or an unattended request, applies the edit without offering it; the closing summary names the sections changed |
+| "Findings from `uipath-genome`" (from the build's completion report, or the user forwarding it) | Apply each finding where it points: a genome deviation → the step the source contradicts, written as the build followed it unless the user rules otherwise; a retired skill name → the Build With row, from [skill-mapping-guide.md](../shared/skill-mapping-guide.md); a `Not covered` object to build → [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md). A build's request applies the edits without offering them |
 | "Add detail to step X" | Workflow step X; add acceptance criteria if detail is testable |
 | "Change complexity" / "complexity should be higher or lower" | Complexity section, then section depth per population matrix |
 | "Add/remove an application" | Target Applications, Workflow, Build With, Acceptance Criteria |
@@ -47,6 +47,7 @@ On a genome with a `Designed in:` line only the first two rows are edits. Any ot
 |---|---|
 | "This step is wrong / missing" | Workflow, then Build With, Acceptance Criteria, Source Map |
 | "Rename / reorder / remove steps" | Workflow and Source Map together, so every step still names its source objects |
+| "Retire / fold / rebuild `<component>` on `<product>`" (a refactor or migration target) | The refactor answer, as [extract-guide.md](../extract/extract-guide.md) Step 6c records it: the component's Build With / Components row and the `Requested change` row; a split it decides → the flow's `Decided:` line |
 | "Drop the Source Map" | Remove section from every file — genome is being shared as a blueprint; say target and data migration will no longer be possible from it |
 | "Here is the PDD too" (any related resource) | A related resource of [extract-guide.md](../extract/extract-guide.md) Step 1: read it and write what it settles as Step 3's **Related resources** paragraph states |
 | "Is this really a defect?" / "check it against the source" | Rerun both passes of [defect-verification-guide.md](../shared/defect-verification-guide.md) for that finding, and re-mark it in the body and its Source Map row by what the passes show |
@@ -56,7 +57,9 @@ On a genome with a `Designed in:` line only the first two rows are edits. Any ot
 
 ## Review after every edit
 
-After every edit, review what changed, and every component genome a process genome links that the edit touched, against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) before answering. An extracted genome also takes the Source Map checks [extract-guide.md](../extract/extract-guide.md) Step 6b runs against its source. Fix what breaks a rule, then name what is left.
+After every edit, review what changed, and every component genome a process genome links that the edit touched, against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) before answering. An extracted genome also takes the Source Map checks [extract-guide.md](../extract/extract-guide.md) Step 6b runs against its source. Fix what breaks a rule.
+
+Then run the strict check on the edited genome ([SKILL.md](../../SKILL.md) § Check) — `node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict`, adding `--processes` and `--recordsets` when a partial re-extraction wrote the inventory files. Fix every `FAIL` and run it again, at most three rounds; name every `FAIL` left, and what else is open, when answering.
 
 ## Back to the Build
 
