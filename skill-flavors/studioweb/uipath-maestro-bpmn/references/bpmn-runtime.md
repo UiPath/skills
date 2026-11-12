@@ -17,3 +17,16 @@
 <!--skill-flavor:sdk-palette-elements:start-->
   Needs `@uipath/maestro-builder-sdk` 6.88.1 or later. Studio Web ships its own SDK: when `decompile` refuses one of these elements with "has no builder equivalent", tell the user that this Studio Web build cannot edit that element yet.
 <!--skill-flavor:sdk-palette-elements:end-->
+
+<!--skill-flavor:sdk-script-result:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.93.7 or later. Studio Web ships its own SDK, and an older `check` does not report it: read `=result.response` yourself.
+<!--skill-flavor:sdk-script-result:end-->
+
+<!--skill-flavor:sdk-script-type:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.93.8 or later. Studio Web ships its own SDK, and an older one writes whatever `type` says: never pass `type`.
+<!--skill-flavor:sdk-script-type:end-->
+
+<!--skill-flavor:sdk-http-manual:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.93.9 or later. Studio Web ships its own SDK: when `compile` writes the old manual form (`mode="manual"` with the request as context rows), the run faults, so tell the user that this Studio Web build cannot write a plain HTTP call yet.
+  From 6.93.9, `outputVar` is the body, so read `vars.<id>_response.x`, not `vars.<id>_response.body.x`, which read the old form's whole response.
+<!--skill-flavor:sdk-http-manual:end-->
