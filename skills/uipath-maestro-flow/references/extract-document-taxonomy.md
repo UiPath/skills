@@ -9,9 +9,9 @@ uip maestro flow nodes schema get <file> --node-id <id> --output json
 uip maestro flow nodes schema set <file> --node-id <id> --schema @<taxonomy.json> --output json
 ```
 
-Both commands edit the `.flow` on disk without login. `--schema` accepts JSON or a file prefixed with `@`. These commands are new: an older CLI returns `error: unknown command 'schema'` with `"Result": "ValidationError"`; tell the user to update `uip`.
+`set` edits the `.flow` on disk; neither needs login. `--schema` takes JSON or `@<path>`. These commands are new: an older CLI returns `error: unknown command 'schema'` with `"Result": "ValidationError"`; tell the user to update `uip`.
 
-This guide assumes the node exists. Adding it, wiring `fileRef`, published IXP-model behavior, and `.flow-sdk/` overwrite behavior are in [extract-document-node.md](extract-document-node.md).
+This guide assumes the node exists. Adding it, wiring `fileRef`, when to use it instead of a published IXP model, and `.flow-sdk/` overwrite behavior are in [extract-document-node.md](extract-document-node.md).
 
 ## Starting from a flow in Studio Web
 
@@ -50,7 +50,7 @@ BINARY_FILE:application/pdf:2073
 JVBERi0xLjMKJe…
 ```
 
-Drop the first two lines before decoding, or the wrapper is read as document text and whole-file decoding fails:
+Drop the first two lines before decoding, else the wrapper is read as document text and whole-file decoding fails:
 
 ```bash
 mkdir -p decoded
@@ -173,7 +173,7 @@ The six predefined entries are:
 | Use it for | `$defs` key | Returns |
 | --- | --- | --- |
 | copied exactly as printed | `ft-exact-text` | verbatim text |
-| derived, summarized, or uncertain strict type | `ft-inferred-text` | text |
+| derived or summarized text, or when no stricter type is certain | `ft-inferred-text` | text |
 | date | `ft-date` | calendar date |
 | non-money count or quantity | `ft-number` | decimal, preserving printed scale |
 | currency amount | `ft-monetary-quantity` | amount with currency |
@@ -181,7 +181,7 @@ The six predefined entries are:
 
 Use a stricter type only when certain; otherwise use `ft-inferred-text`, since a wrong strict type can lose a value.
 
-A Choice is the only type to add. Use it only for a small, fixed, evident set of allowed values—not an open description—and key it with `ft-` plus a URL-safe suffix. Its shape is:
+A Choice is the only type to add. Use it only for a small, fixed set of allowed values stated by the user or fixed by the document's form—not an open description—and key it with `ft-` plus a URL-safe suffix. Its shape is:
 
 ```json
 "ft-payment-status": { "title": "Payment Status", "type": ["string", "null"], "enum": ["Paid", "Unpaid", "Partially paid"] }
@@ -199,7 +199,7 @@ Names must be nonempty, not start with punctuation, a symbol, or a space, and be
 
 ### Instructions
 
-Write instructions for every group, every field and the document as a whole: `description` on each group and field, `prompt` on the document. Each is **4096 characters or fewer**. Types specify value shape; instructions identify the correct value on the page, not merely repeat its name. User instructions about a field outrank sample-based inferences.
+Write instructions for every group, every field and the document as a whole: `description` on each group and field, `prompt` on the document. Each is **4096 characters or fewer**. Types specify value shape; instructions identify the correct value on the page, not merely repeat its name. User instructions about a field outrank sample-based inferences, even when every sample disagrees.
 
 ### Size
 
@@ -210,15 +210,15 @@ These limits are not CLI-enforced but improve extraction: keep groups to a reada
 - **Stable ids:** Groups and fields carry `x-uipath-field-group-id` and `x-uipath-field-id`, used by annotations, evaluator settings, and taxonomy history. First writes mint ids; later writes preserve submitted ids and assign a missing id from the same-named replaced entry.
 - **Model settings:** It rebuilds them from `inputs.modelConfig`.
 - **Validation:** It validates before writing. A non-schema or limit violation returns exit 3 and changes nothing on disk.
-- **It refuses to destroy an unsaved draft.** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops rather than overwriting it. `--discard-draft` proceeds and throws the draft away — only on the user's say-so.
+- **It refuses to destroy an unsaved draft.** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops rather than overwriting it. `--discard-draft` proceeds and throws the draft away. Pass it only when the user asked for it in this conversation. With no one to ask (headless, CI), leave the node as it is, report the draft and `DraftIssueMessages`, and stop; the request is not done. Never hand-edit `inputs.schemaDocument` to get around the refusal.
 
 ## Editing a taxonomy that already exists
 
-Always run `get` first, modify only what is needed, and send the whole document back. Preserve every returned id, including across renames; without it, annotations and evaluator settings can be reassigned by position. Since `set` replaces rather than patches, send all groups, the `$defs` catalogue, and the overall prompt. Never write a replacement from scratch over a taxonomy that already has content. If the user wants a fresh start, say what will be lost first.
+Always run `get` first, modify only what is needed, and send the whole document back. Preserve every returned id, including across renames; without it, annotations and evaluator settings can be reassigned by position. **Keep the text.** Send every existing group and field with its `description`, type and id exactly as `get` returned them. Put new information in new groups, new fields or the document `prompt`; never reword an existing description. Since `set` replaces rather than patches, send all groups, the `$defs` catalogue, and the overall prompt. Never write a replacement from scratch over a taxonomy that already has content. If the user wants a fresh start, say what will be lost first.
 
 ## Reading the output
 
-`get` returns the stored document as `Data.Schema`, preserving key casing. `Data.HasDraft` reports an unsaved Studio Web edit; `Data.DraftIssueMessages` reports editor problems.
+`get` returns the stored document as `Data.Schema`, preserving key casing. `Data.HasDraft` reports an unsaved Studio Web edit; `Data.DraftIssueMessages` lists what the editor flagged in the draft.
 
 `set` returns:
 
@@ -232,7 +232,7 @@ Always run `get` first, modify only what is needed, and send the whole document 
 | `ReplacedLegacyDocument` | superseded `{taxonomy, fieldTypes}` form was replaced; no id was preserved |
 | `Warnings` | a tenant-side processor still has the previous schema |
 
-On edits, inspect `FieldIdsMinted` and `BusinessChecksDropped` before reporting success. An unexpected minted id means a dropped rename id; its annotations and business checks no longer follow the field.
+On edits, inspect `FieldIdsMinted` and `BusinessChecksDropped` before reporting success. A minted id where a rename was meant means the id was dropped: annotations no longer point at the field, and its business checks are deleted (`BusinessChecksDropped`).
 
 ## When it refuses
 
@@ -241,7 +241,7 @@ On edits, inspect `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 | 3 | `Schema document failed validation` | Read `Data.Issues` for paths and problems. A missing parent is included: `Nested field group "<key>" has no parent group "<parent>"`. `Parent > Child` requires `Parent` in the same document; if an existing group was intended as parent, rename one key to match—never add an empty parent. |
 | 3 | `Invalid schema document` | Supply `prompt` and `outputSchema`; the document is not a schema. |
 | 3 | `Legacy schema document shape` | Send `{ prompt, outputSchema }`, not `{taxonomy, fieldTypes}`. An existing legacy node document is replaced and reports `ReplacedLegacyDocument: true`. |
-| 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. |
+| 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. Headless: stop and report. |
 | 1 | `Invalid --schema JSON` | The argument did not parse; prefer `--schema @<file>` for sizeable JSON because shells mangle inline JSON. |
 | 1 | `Cannot read the schema file` | The `@` path is missing or unreadable; this is a path error, not malformed schema JSON. |
 | 1 | node not found, or wrong node type | Run `uip maestro flow nodes list <file>` for ids and types. Only Extract document nodes carry taxonomies. |

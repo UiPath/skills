@@ -141,6 +141,7 @@
 /tests/tasks/uipath-planner/check_genome/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /.claude/rules/genome.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /docs/guides/live-healing-pass.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/docs/guides/working-with-uipath-genome.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu

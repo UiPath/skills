@@ -13,7 +13,7 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-The default for document extraction in a flow is a published IXP model, covered in [ixp.md](ixp.md), where the IXP project is built and deployed first and the flow then runs against it. Use the Extract document node only when the user asks for it by name or is already using it: the flow holds a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or the request is about the taxonomy an Extract document node carries inline. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
+In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet, since building one is the first step. Add the Extract document node to a new flow only when the user asks for it by name. In an existing flow, keep the extraction node it has: a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or a request about the taxonomy that node carries inline, stays on this guide. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
 
 Three node families share the `uipath.ixp.` prefix and they are not interchangeable:
 
@@ -23,7 +23,7 @@ Three node families share the `uipath.ixp.` prefix and they are not interchangea
 | A published IXP model — the default | `uipath.ixp.<project>.<version>-<folder>` | [ixp.md](ixp.md) |
 | An IDP processor resource inside the solution | `uipath.ixp.processor.<resource-key>` | not covered here — add it in Studio Web |
 
-The processor variant points to a solution processor and is a different node type. These conveniences apply only to `uipath.ixp.extract-document-builder`; a processor node added through CLI is incomplete, so leave it to Studio Web.
+The processor variant points to a solution processor and is a different node type. Only `uipath.ixp.extract-document-builder` gets the defaults `nodes create` fills in; a CLI-created processor node lacks them, so add it in Studio Web.
 
 ## At a glance
 
@@ -38,19 +38,19 @@ uip maestro flow validate Flow/Flow.flow --output json
 ## The loop
 
 <!--skill-flavor:extract-find-flow:start-->
-0. **Find the flow.** Edit a `.flow` on disk. If it exists only in Studio Web, ask for its URL or solution id; nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
+0. **Find the flow.** Edit a `.flow` on disk. No local `.flow`? Ask whether it is in Studio Web, and for its URL or solution id; nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 <!--skill-flavor:extract-find-flow:end-->
 1. **Declare the file input** unless it exists: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is the `<trigger>` in `$vars.<trigger>.output.invoice`, so it comes before the node that reads it.
 2. **Add the node** with descriptive `--label` and `--input` containing `fileRef`, laid out per [operate.md](operate.md#lay-out-the-emitted-flow-first).
 3. **Connect it** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
-4. **Write the taxonomy** in [extract-document-taxonomy.md](extract-document-taxonomy.md).
+4. **Write the taxonomy** following [extract-document-taxonomy.md](extract-document-taxonomy.md).
 5. **Bind the result to a flow output** ([Returning the result](#returning-the-result)).
-6. **Validate:** run `uip maestro flow validate <file> --output json`; it must return `Valid`.
-7. **Report** what was added, its file source, extracted fields, and the required Studio Web save ([Making it actually extract](#making-it-actually-extract)); the user must take the flow live.
+6. **Validate:** run `uip maestro flow validate <file> --output json`; it must return `Valid` with no `EXPRESSION_DIAGNOSTIC` on `fileRef`.
+7. **Report** what was added, its file source, extracted fields, and the required Studio Web save ([Making it actually extract](#making-it-actually-extract)); taking the flow live is the user's step; do not publish it.
 
 ## Not available everywhere
 
-The feature is new and tenant-gated. CLI creation and validation succeed either way; `registry search` reports `AvailableOnTenant: false` for this node on every tenant, while Studio Web's picker shows **Extract document** where enabled. If the tenant lacks it, or Automation Suite has structured extraction switched off, follow [When Extract document is not available](#when-extract-document-is-not-available).
+The feature is new and tenant-gated. CLI creation and validation succeed either way; `registry search` reports `AvailableOnTenant: false` for this node on every tenant, while Studio Web's picker shows **Extract document** where enabled. Keep the gating in mind as a possible cause of errors. If the tenant lacks it, or on Automation Suite, where structured extraction is off by default, follow [When Extract document is not available](#when-extract-document-is-not-available).
 
 ## Adding the node
 
@@ -58,7 +58,7 @@ The feature is new and tenant-gated. CLI creation and validation succeed either 
 **These commands edit the `.flow` file and do not mix with a TypeScript-source project.** A project initialized with `--sdk-source` compiles `.flow.ts` over the `.flow`, so check for `.flow-sdk/` first. If present, build this flow in a separate source-free project using only CLI; the SDK's `dynamicExtract()` is not the route here ([document-pipeline.md](document-pipeline.md)). Do not alternate between compilation and CLI edits.
 <!--skill-flavor:extract-sdk-mixing:end-->
 
-`--label` sets the canvas name and seeds the node id. Name the document and fields, not merely "Extract"; then run `uip maestro flow nodes list <file> --output json` to obtain the minted id.
+`--label` sets the canvas name and seeds the node id. Use a label that tells it apart from other extract nodes (e.g. `Extract Invoice Header`); then run `uip maestro flow nodes list <file> --output json` to obtain the minted id.
 
 The node supplies `inputs.schemaDocument` (empty taxonomy with six built-in field types), `inputs.modelConfig` (working defaults), `inputs.source` (minted identifier for the node's own extraction; nothing for you to supply), and `outputs.output`/`outputs.error` (both ports named on the instance, which is what lets a downstream `$vars` read resolve). It has no top-level `model` block: the slim manifest model belongs in `definitions[]`, and validation rejects an instance copy. `nodes create` leaves `modelName`, `folderKey`, and other deployment fields under `inputs` as empty strings; leave them empty because they belong to the published-model node in [ixp.md](ixp.md).
 
@@ -76,9 +76,9 @@ Set it during creation when possible:
 uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --output json
 ```
 
-Use the plain `=js:$vars.…` string. The structured form `{"type":"jsExpression","expression":"$vars.…","fieldType":"object"}` also validates, but `fieldType` is required; without it validation rejects the value. Do not use a literal filename or hand-built attachment object.
+Use the plain `=js:$vars.…` string. The structured form `{"type":"jsExpression","expression":"$vars.…","fieldType":"object"}` also validates, but `fieldType` is required; without it validation rejects the value twice. Do not use a literal filename or hand-built attachment object.
 
-For connector events, read the trigger output contract for the file-reference field (for example, `ReferenceID` wires as `$vars.<trigger>.output.ReferenceID`); do not guess or add a download step. For a direct document input, declare it first:
+For connector events, read the trigger output contract for the file-reference field (for example, a SharePoint event's `ReferenceID` wires as `$vars.<trigger>.output.ReferenceID`); do not guess or add a download step. For a direct document input, declare it first:
 
 ```bash
 uip maestro flow variables create <file> invoice -d in -t file --description 'The invoice document to extract' --output json
@@ -103,7 +103,7 @@ $vars.<extract-node-id>.output.result.output
 
 The `output` port contains a processed document with top-level `version`, `type`, `result`, `taxonomy`, and `metadata`. `result` contains `output` (field values), `attribution` (page locations keyed by JSON Pointer into `output`), and `traceContext`. Use `result.output` for values or the port for the whole document.
 
-Read the embedded definition if the shape evolves: this node's `definitions[]` entry has `outputDefinition.output.schema.properties`. `registry get` returns `Node not found` because no tenant manifest carries this type.
+If a `$vars` read of the output doesn't resolve, read this node's `definitions[]` entry: `outputDefinition.output.schema.properties`. `registry get` returns `Node not found` because no tenant manifest carries this type.
 
 **`ExtractionResult` is the published-model node's output, not this one.** `ExtractionResult.ResultsDocument.Fields[]` belongs to [ixp.md](ixp.md); a downstream step using that shape against this node reads a missing key.
 
@@ -158,7 +158,7 @@ errorCode 461008 — Invalid IDP.Extraction node input
 'processorKey' is required and must be a GUID, unless a processor name and folder are provided to resolve one
 ```
 
-A fast completion or empty `{}` means unprovisioned, not a taxonomy matching nothing. The Studio Web save provisions the processor; do not synthesize or copy a `processorKey`, which names a different taxonomy.
+An almost instant completion or empty `{}` can mean unprovisioned, not a taxonomy matching nothing. The Studio Web save provisions the processor; do not synthesize or copy a `processorKey`, which names a different taxonomy.
 
 <!--skill-flavor:extract-after-save:start-->
 Saving in Studio Web may convert the node to `uipath.ixp.processor.<key>`, a different type. Pull the solution down before further editing; for that variant, `nodes schema set` refuses it and taxonomy editing continues in Studio Web.
@@ -174,7 +174,7 @@ Never add the unavailable node or substitute a placeholder for requested working
 uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
 ```
 
-If a suitable published model exists, say Extract document is not enabled, identify the replacement and why, verify its taxonomy covers the request, state what it does not cover, and build it under [ixp.md](ixp.md). Published and Extract document nodes are not equivalent.
+If a suitable published model exists: a published model extracts only its trained fields, so check its taxonomy covers the request before offering it. Then say Extract document is not enabled, identify the replacement and why, say what it does not cover, and build it under [ixp.md](ixp.md).
 
 If none exists, stop. Say which tenant was checked, that neither Extract document nor a trained model is available, and that a tenant administrator must enable document extraction as covered in UiPath product documentation. Do not scaffold, write a flow file, or place `mock()` in the extraction position. A placeholder is allowed only for a validate-only topology explicitly showing where extraction belongs, never as expected runtime extraction.
 
@@ -204,4 +204,4 @@ For an uncovered Extract document setting or resource, do not seek a CLI path or
 
 ## Evidence boundary
 
-This is offline file authoring except registry lookup, which needs login to see tenant offerings. `validate` proves wiring and shape: `fileRef` resolves upstream, ports are named, and taxonomy is well formed. It does not prove extraction; that requires the Studio Web save ([Making it actually extract](#making-it-actually-extract)) and a run against real documents, typically followed by taxonomy refinement.
+This is offline file authoring except registry lookup, which needs login to see tenant offerings. `validate` proves wiring and shape: `fileRef` is a `$vars` reference, ports are named, and taxonomy is well formed. It does not prove extraction; that requires the Studio Web save ([Making it actually extract](#making-it-actually-extract)) and a run against real documents, typically followed by taxonomy refinement.

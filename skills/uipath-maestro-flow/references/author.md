@@ -18,7 +18,7 @@ The builder owns `.flow` JSON: `compile` emits node definitions, `variables.node
 <!--skill-flavor:solution-lookup:start-->
 10. **Look for an existing solution before `uip solution init`.** Run `find . -maxdepth 2 -name '*.uipx'`. If one exists, ask which to use with one option per solution, "Create a new solution", then "Something else"; do not silently adopt, re-initialize, or repair it. The scaffold is in [SKILL.md](../SKILL.md#project-layout).
 <!--skill-flavor:solution-lookup:end-->
-11. **Never invoke another skill on your own.** If an RPA process, agent, or nonexistent app is needed, name the gap and give the user what they need to switch skills.
+11. **Never invoke another skill on your own.** When the flow needs an RPA process, an agent, or an app that does not exist, name the gap and give the user what they need to switch skills.
 12. **Batch independent calls; chain dependent ones.** Scaffold, install, and registry search go in one turn. In the next, chain `check`, each named `prepare`, re-`check`, `compile`, and `validate`; split only when a later step needs earlier output.
 
 ## Journeys

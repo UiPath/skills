@@ -38,7 +38,7 @@ cp -r "$WORK/candidate/." "$PROJECT/"
 uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}"
 ```
 
-Run the displayed commands. Install the candidate wholesale with `cp`; never write or patch `.flow` yourself or copy only the change into the original. Merge renumbers every edge (`edge_0`, `edge_1`, ...), may reorder nodes, and adds default fields: that is its normal output, not drift to undo. Act on [merge warnings](#merge-warnings-what-the-round-trip-changed).
+Run the displayed commands. Install the candidate wholesale with `cp`; never write or patch `.flow` yourself or copy only the change into the original. Merge renumbers every edge (`edge_0`, `edge_1`, ...), may reorder nodes, and adds default fields, and moves original nodes right or down to make room for an added one: that is its normal output, not drift to undo. Never move them back. Act on [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
 Validate in the project, not `candidate/` alone: it contains only changed files, so an unchanged inline agent's `agent.json` may be absent ([builder-sdk#1318](https://github.com/UiPath/builder-sdk/issues/1318)). If validation fails, restore before merging again:
 `test -d "${BACKUP:?}" && rm -rf "${PROJECT:?}" && mkdir "$PROJECT" && cp -r "$BACKUP/." "$PROJECT/" && rm -rf "$BACKUP"`.
@@ -172,7 +172,7 @@ uip maestro flow check .flow-sdk/Deployed.flow.ts --source --baseline Deployed.f
 node .flow-sdk/Deployed.pipeline.mjs --strict   # compiles the edit, merges into .flow-sdk/Deployed.merged.flow
 ```
 
-Pipeline compiles do not run `check`; run [`check --baseline`](#check-only-what-you-changed-check---baseline) yourself before the second run, until no `(edited)` error remains. `--strict` makes merge refuse (exit 1, no file) instead of warning for unintended round-trip changes ([Merge warnings](#merge-warnings-what-the-round-trip-changed)); the Node stack trace after `flow-merge: refused (--strict)` is expected; read the refusal above it. Without `--strict`, warnings and a merged file are produced. If `grep -q STRICT .flow-sdk/Deployed.pipeline.mjs` fails, use [the same loop by hand](#the-same-loop-by-hand) with `merge --strict`.
+Pipeline compiles do not run `check`; run [`check --baseline`](#check-only-what-you-changed-check---baseline) yourself before the second run, until no `(edited)` error remains. `--strict` makes merge refuse (exit 1, no file) instead of warning for unintended round-trip changes ([Merge warnings](#merge-warnings-what-the-round-trip-changed)); the Node stack trace after `flow-merge: refused (--strict)` is expected; read the refusal above it. Without `--strict`, warnings and a merged file are produced. A pipeline written by an SDK older than this option ignores `--strict` silently: if `grep -q STRICT .flow-sdk/Deployed.pipeline.mjs` fails, use [the same loop by hand](#the-same-loop-by-hand) with `merge --strict`.
 
 Re-running after edits repeats compile and merge using the captured baseline. Before a later fresh decompile, remove prior artifacts and sidecars:
 `[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name 'Deployed.baseline' -o -name 'Deployed.edited' -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +`.
@@ -248,7 +248,7 @@ flow-merge: warning: the round trip rewires logFailure1@success from forEachItem
 flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves handle "case-case_1", which node "route1" (core.logic.switch) does not declare …
 ```
 
-Do not install an unintended candidate; fix `.flow.ts` and merge again. An invalid merged edge handle makes `validate` refuse.
+If the spot is one you did not mean to change, do not copy the candidate over the canonical file; fix the `.flow.ts` there and merge again. An invalid merged edge handle makes `validate` refuse.
 
 `the round trip appends End "<id>" after …` is benign: compile adds an End where an original path stops without changing behavior. A flow using `.openTails()` gets this after a human task; see [A path without an End stays open](#a-path-without-an-end-stays-open).
 

@@ -152,7 +152,7 @@ Supported operators are `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `
 | `accountNumber = "ACC123"` | double quotes mark a COLUMN reference | `accountNumber = 'ACC123'` |
 | `status eq 'Open'` | `eq`/`ne`/`gt`/`ge`/`lt`/`le` are OData | `status = 'Open'` |
 
-A runtime-varying `js` template keeps only the runtime half and `validate` rejects it; filter server-side on constants and narrow downstream, or deliberately accept the design-time gap.
+A filter built from a runtime value keeps the runtime half only. The tree holds literals, so a `js` template in `where` emits the query and no tree, which `validate` rejects; filter server-side on constants and narrow downstream, or deliberately accept the design-time gap.
 
 ## Schema-dynamic operations: the parent-field loop
 

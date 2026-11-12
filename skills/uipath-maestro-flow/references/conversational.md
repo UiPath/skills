@@ -58,7 +58,7 @@ A starting prompt is a chip: the user sees `displayPrompt` and the agent receive
 
 `personalWorkspaceConnectionsOnly` limits the connection-settings menu to personal workspace connections. It defaults to `true` for a new trigger; set `false` to show every connection.
 
-The default appearance is the trigger's 1.3 definition. Decompiled older flows pin `{ version: '1.0' }`, which has no appearance; compile refuses it (`CONVERSATION_TRIGGER_APPEARANCE_VERSION`). Drop the pin to add appearance, and set `personalWorkspaceConnectionsOnly: false` to preserve the former full connection menu.
+The default appearance is the trigger's 1.3 definition. Decompiled older flows pin `{ version: '1.0' }`, which has no appearance, and compile refuses one there (`CONVERSATION_TRIGGER_APPEARANCE_VERSION`). Drop the pin to add appearance, and set `personalWorkspaceConnectionsOnly: false` to preserve the former full connection menu.
 
 ## Conversations, exchanges, and messages
 
