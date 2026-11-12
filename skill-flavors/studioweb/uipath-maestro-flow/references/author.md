@@ -2,8 +2,9 @@
 Everything that happens before a flow runs: choose each node, write its source
 in `.flow-sdk/`, and run the loop in
 [SKILL.md — Lifecycle](../SKILL.md#lifecycle) until the target `.flow`
-validates. A new flow's source is `.flow-sdk/new.flow.ts`, decompiled from the
-project's `new.flow`; it is never a file named after the flow. Authoring ends
+validates. A new flow in a project whose `new.flow` has no steps is built in
+that file, from `.flow-sdk/new.flow.ts`, never in a second file named after the
+flow. Authoring ends
 at a valid artifact; publishing, running and debugging are
 [`operate.md`](operate.md), and a failed run is [`diagnose.md`](diagnose.md).
 <!--skill-flavor:author-scope:end-->
@@ -12,7 +13,9 @@ at a valid artifact; publishing, running and debugging are
 4. **Edit the source, not the artifact.** A new flow: `decompile` the project's
    `new.flow` into `.flow-sdk/new.flow.ts`, add your steps to that source, and
    `compile` it `-o new.flow`. Never write a source or a `.flow` named after the
-   flow: the canvas opens only `new.flow`. A `.flow` that already has steps is
+   flow beside a `new.flow` that has no steps; a second flow in the project gets
+   its own file ([SKILL.md — Project layout](../SKILL.md#project-layout), rule 4).
+   A `.flow` that already has steps is
    re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)).
 <!--skill-flavor:source-not-artifact:end-->
 
@@ -27,7 +30,7 @@ at a valid artifact; publishing, running and debugging are
 7. **What's next** — when the request did not already say, ask with rule 9:
    debug the flow, publish the solution, or "Something else". Each hands off
    to [`operate.md`](operate.md). A request that already named the next step
-   ("publish it", "debug it") is the selection; act on it. When you built
-   into a new project that is not the open one, tell the user to open its
-   `new.flow` in the Explorer.
+   ("publish it", "debug it") is the selection; act on it. When you wrote a
+   new `<Name>.flow` that is not the open file, tell the user to open it in
+   the Explorer.
 <!--skill-flavor:completion-next:end-->
