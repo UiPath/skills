@@ -101,6 +101,9 @@ sandbox:
             "Instructions":"HTTP 404: BundleDto does not exist.","Retry":"RetryWillNotFix",
             "Context":{"HttpStatus":404}}
 
+reference:
+  directory: .
+
 initial_prompt: |
   Download knowledge bundle a1b2c3d4-0000-0000-0000-000000000001 from folder
   Shared into ./kb, then tell me what concepts/queues.md says about retries.
@@ -147,18 +150,12 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Only a re-login counts: bare `login` (with or without flags) or
-  # `login refresh`. Read-only `login status` / `login which` are allowed;
-  # `cli_called` cannot say "no subcommand", so this reads the call log.
+  # Only a re-login counts: bare `login` (any flags) or `login refresh`.
+  # Read-only `login status` / `login which` pass. The script strips the
+  # CLI's global options first, as the CLI does, since the log keeps raw argv.
   - type: run_command
     description: "Did NOT treat the 404 as a login problem (no re-login or token refresh)"
-    command: >-
-      python3 -c "import json,os,sys; p=\"cli_mocks/calls.jsonl\";
-      rows=[json.loads(l) for l in open(p) if l.strip()] if os.path.exists(p) else [];
-      bad=[r[\"argv\"] for r in rows if r.get(\"tool\",\"uip\")==\"uip\" and r[\"argv\"][:1]==[\"login\"]
-      and not {\"--help\",\"-h\"}&set(r[\"argv\"])
-      and (len(r[\"argv\"])==1 or r[\"argv\"][1].startswith(\"-\") or r[\"argv\"][1]==\"refresh\")];
-      print(bad); sys.exit(1 if bad else 0)"
+    command: "python3 $REFERENCE_DIR/check_no_relogin.py"
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -188,9 +185,22 @@ success_criteria:
     value_flags: [output, folder-key, tenant, version]
     flags:
       folder-path: "Shared"
-      destination: {matches_regex: "(^|/)kb/?$"}
+      destination: {matches_regex: "(^|/)kb/?$", aliases: [d]}
       help: {absent: true, aliases: [h]}
     min_count: 1
     max_count: 1
     weight: 1.5
+    pass_threshold: 1.0
+
+  # The pinned criterion above misses a retry to another destination or
+  # key; this one counts every non-help download.
+  - type: cli_called
+    description: "Did NOT re-run the download anywhere after the 404"
+    verb: "or kb download"
+    tool: "uip"
+    flags:
+      help: {absent: true, aliases: [h]}
+    min_count: 0
+    max_count: 1
+    weight: 1.0
     pass_threshold: 1.0
