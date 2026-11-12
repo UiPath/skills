@@ -92,11 +92,11 @@ success_criteria:
          does not say `uploaded`. After that, the same line may hold at most
          one more sentence, about a lookup that failed or changes kept.
       2. The second line is the path of the local `.bpmn` file (ends in
-         `.bpmn`), and nothing else. A Markdown link whose target is that
-         path (`[label](<path ending in .bpmn>)`, a space after `(` allowed)
-         counts as the path: the chat client renders it as the file. In
-         Studio Web, where the skeleton is on the canvas, this line is
-         exactly `The outline is on the canvas` instead.
+         `.bpmn`) as plain text, and nothing else. A Markdown link
+         (`[label](<path>)`, whatever its label or target) fails this item:
+         the path is written bare, never as a link. In Studio Web, where the
+         skeleton is on the canvas, this line is exactly
+         `The outline is on the canvas` instead.
       3. Next come the box lines, each starting with `- `. The attached
          `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
          box has exactly one line, and every line names one task box (its
@@ -116,9 +116,12 @@ success_criteria:
       5. Then exactly three numbered options, in this order: `1.` Build it,
          `2.` Change it, `3.` Keep it, each with any short description. Nothing
          follows the third option.
-      6. No other line exists anywhere in the graded text: no status or
-         progress sentence (for example "Valid, zero errors", "Lookups
-         complete", "Here is the outline"), no `---` separator, no heading, no
+      6. No other line exists anywhere in the graded text, and nothing
+         comes before item 1's line: when the graded text is a `[RESULT - ...]`
+         block, its first non-blank line must be item 1's line, so any line
+         above it fails this item. No status or progress sentence (for
+         example "Valid, zero errors", "Lookups complete", "Here is the
+         outline"), no `---` separator, no heading, no
          code block or drawn diagram, no `Flow:` or `The shape:` prose, no line
          explaining a gateway, a condition, or a variable, no table.
 
