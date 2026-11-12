@@ -1,31 +1,14 @@
 # Pattern: `smart-triage`
 
-Heterogeneous inbound work is classified and dispatched to the right handling
-for its category. Use it when volume is too high to sort by hand and the
-downstream paths are well defined.
+Classify heterogeneous inbound work and dispatch each category to its defined path when volume exceeds manual sorting capacity.
 
 ## Why it works
 
-These four carry the shape. Change one and you are building something else.
-
-- **The trigger normalizes the payload.** Everything downstream reads one shape,
-  so the same process serves email, tickets, forms, and webhooks. Routing never
-  learns where the item came from.
-- **Classification returns a category and a confidence.** Two values, so one
-  gateway can decide whether to trust the answer and a second can act on it.
-  A classifier returning only a category leaves nothing to gate on.
-- **The human fallback rejoins the same route gateway.** Low-confidence items go
-  to a person who picks the category, then dispatch through the identical exit.
-  One dispatch point, not two, so adding a category is one branch rather than
-  two.
-- **Triage dispatches and ends.** Each category's real work lives in its own
-  process. Keeping handling out of triage is what lets one triage process serve
-  many downstreams without becoming all of them.
+Normalize every trigger to one downstream shape; return category and confidence so the gateway can accept or reject classification; send low-confidence items to human review and dispatch through the same exit using the human-selected category; keep category work in separate processes so triage stays reusable and thin. These four carry the shape. Change one and you are building something else.
 
 ## Shape
 
-AI-based is the base shape. Categories `A`/`B`/`C` are illustrative — one branch
-per category the domain actually has.
+AI-based is the base shape. `A`/`B`/`C` are illustrative; create one branch per actual category.
 
 | Node | Element | Role |
 | --- | --- | --- |
@@ -49,8 +32,7 @@ per category the domain actually has.
 | `route_gate` → `handle_c` | Category C | `=vars.routeCategory == "Category C"` |
 | `handle_a..c` → `routed_a..c` | | |
 
-`0.85` is an illustrative floor. Set it from how costly a misroute is against
-how much manual triage you can absorb.
+`0.85` is illustrative; set the floor against misroute cost and manual-triage capacity.
 
 | Variable | Type | Holds |
 | --- | --- | --- |
@@ -65,20 +47,17 @@ how much manual triage you can absorb.
 | Variant | Question it answers | Delta |
 | --- | --- | --- |
 | AI-based | — | The shape above |
-| Rule-based | Are the categories decided by stable, auditable rules? | Business rule task and a match gateway |
-| Hybrid | Can rules handle the clear cases cheaply? | Rules first, classifier catches the rest |
+| Rule-based | Are categories decided by stable, auditable rules? | Business rule task and a match gateway |
+| Hybrid | Can rules handle clear cases cheaply? | Rules first; classifier handles the rest |
 
-**Rule-based.** Replace `classify` and `conf_gate` with `apply_rules`
-(`bpmn:businessRuleTask`) and `rule_gate` (`bpmn:exclusiveGateway`).
+**Rule-based.** Replace `classify` and `conf_gate` with `apply_rules` (`bpmn:businessRuleTask`) and `rule_gate` (`bpmn:exclusiveGateway`):
 
 | Sequence flow | Label | Condition |
 | --- | --- | --- |
 | `rule_gate` → `route_gate` | Matched | `=vars.ruleMatched == true` |
 | `rule_gate` → `manual_triage` | No match | default |
 
-**Hybrid.** Keep both. Rules run first; an unmatched item falls through to the
-classifier rather than straight to a person, so only what neither resolves
-reaches manual triage.
+**Hybrid.** Run rules first; send unmatched items to `classify`; send items unresolved by both to `manual_triage`.
 
 | Sequence flow | Label | Condition |
 | --- | --- | --- |
@@ -89,41 +68,20 @@ reaches manual triage.
 
 ## What to bind
 
-- **`classify`** — the node that classifies at runtime, typically a UiPath agent
-  job. Place and bind it; never decide the categories or write classification
-  logic while authoring.
-- **`apply_rules`** — `Orchestrator.BusinessRules`. The rules live in a
-  separate BusinessRules project (uipath-rules), deployed before the BPMN binds
-  it (SKILL.md rule 17); there is no in-file rule authoring. This applies to the
-  rule-based and hybrid variants both.
-- **`extract`** — Document Understanding, or any step that pulls the fields the
-  classifier needs out of an unstructured source.
-- **`handle_a..c`** — see Adapting below; usually a message dispatch rather than
-  work done here.
-- **`manual_triage`** — `Actions.HITL`. Bind the task's category output to
-  `routeCategory`, the same variable `route_gate` reads. Bound anywhere else,
-  low-confidence items dispatch on the classifier's original guess and the
-  review changes nothing.
+- **`classify`** — Bind the runtime classifier, typically a UiPath agent job; never decide categories or write classification logic while authoring.
+- **`apply_rules`** — Bind `Orchestrator.BusinessRules`. Rules live in a separate BusinessRules project (uipath-rules), deployed before BPMN binding (SKILL.md rule 17); do not author rules in-file. This applies to rule-based and hybrid variants.
+- **`extract`** — Bind Document Understanding or another step that extracts classifier inputs from an unstructured source.
+- **`handle_a..c`** — See Adapting; usually dispatch a message rather than perform work here.
+- **`manual_triage`** — Bind `Actions.HITL` and bind its category output to `routeCategory`, the variable read by `route_gate`; otherwise low-confidence items dispatch using the classifier's original guess and review changes nothing.
 
 Fetch payloads through [registry-workflow.md](../registry-workflow.md).
 
 ## Adapting it
 
-Add or remove category branches to match the domain. Each is one condition on
-`route_gate` plus its handler and end event.
+Add or remove category branches as needed; each requires one `route_gate` condition, handler, and end event. Drop `extract` when the trigger already provides structured fields.
 
-Drop `extract` when the trigger already delivers structured fields.
-
-The `handle_*` nodes are the pattern's main decision. Replacing each with a
-message that starts a separate process keeps triage thin, which is the intent.
-Filling them inline makes triage own the handling for every category it routes,
-and that is what the shape is trying to avoid — but it is a legitimate choice for
-one or two trivial categories.
+The `handle_*` nodes are the pattern's main decision: keep them as messages starting separate processes so triage stays thin. Inline handling is legitimate for one or two trivial categories, but makes triage own each category's work.
 
 ## Composing
 
-Each category's downstream is usually its own process, reached by message rather
-than nested — see
-[composing-guide.md](composing-guide.md#dispatched-by-message-to-a-separate-process).
-`approval-chain` is a common downstream. Add `failure-escalation` so a
-classifier or dispatch failure does not vanish.
+Each category's downstream is usually a separate process reached by message rather than nesting; see [composing-guide.md](composing-guide.md#dispatched-by-message-to-a-separate-process). `approval-chain` is a common downstream. Add `failure-escalation` so classifier or dispatch failures do not vanish.
