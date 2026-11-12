@@ -41,6 +41,23 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: command_not_executed
+    description: "Agent did not debug or run the process, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(debug|process\s+run)\b(?![^\n;&|]*\s(--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Asking "draft or build?" is the failure under test, so a pick list counts
+  # against the run. AskUserQuestion is Claude Code's tool; codex and
+  # antigravity have no tool of that name, so this passes vacuously there.
+  - type: command_not_executed
+    description: "Claude only (vacuous on other agents): agent did not ask the user mid-turn with AskUserQuestion"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: llm_judge
     description: "The final message reports a built process; it does not stop at a draft approval gate or ask which mode"
     include_reference: false
