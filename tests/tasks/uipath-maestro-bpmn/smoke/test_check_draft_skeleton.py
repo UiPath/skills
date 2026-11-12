@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for the fork-exit and multi-instance checks in check_draft_skeleton.py.
+"""Unit tests for the fork-exit, multi-instance and payload checks in check_draft_skeleton.py.
 
 Stdlib and pytest only. Each rule gets a passing and a failing fixture.
 """
@@ -155,6 +155,42 @@ class MultiInstanceTests(unittest.TestCase):
     def test_missing_input_collection_fails(self):
         self.assert_fails(mi_task("Seq", True, "=vars.Flagged", collection="") + mi_task("Par", False),
                           "inputCollection")
+
+
+
+CAPTURE = ('<uipath:activity version="v1"><uipath:type value="uipath:Activity" version="v1" />'
+           '<uipath:output name="Error" type="jsonSchema" source="=Error" var="failure" /></uipath:activity>')
+
+
+def with_payload(owner: str, payload: str, definition: str = "<bpmn:errorEventDefinition />") -> ET.Element:
+    inner = f"<bpmn:extensionElements>{payload}</bpmn:extensionElements>{definition}"
+    if owner == "boundary":
+        return process(f'<bpmn:task id="A" /><bpmn:boundaryEvent id="E" attachedToRef="A">{inner}</bpmn:boundaryEvent>', "")
+    return process(f'<bpmn:task id="A">{inner}</bpmn:task>', "")
+
+
+class WiringPayloadTests(unittest.TestCase):
+    def test_error_capture_on_error_boundary_is_not_wiring(self):
+        self.assertEqual(skeleton.wiring_payloads(with_payload("boundary", CAPTURE)), [])
+
+    def test_capture_shape_on_a_task_is_wiring(self):
+        self.assertEqual(len(skeleton.wiring_payloads(with_payload("task", CAPTURE, ""))), 1)
+
+    def test_capture_shape_on_a_timer_boundary_is_wiring(self):
+        root = with_payload("boundary", CAPTURE, '<bpmn:timerEventDefinition />')
+        self.assertEqual(len(skeleton.wiring_payloads(root)), 1)
+
+    def test_capture_with_extra_rows_is_wiring(self):
+        extra = CAPTURE.replace("</uipath:activity>", '<uipath:input name="x" value="=1" /></uipath:activity>')
+        self.assertEqual(len(skeleton.wiring_payloads(with_payload("boundary", extra))), 1)
+
+    def test_output_from_another_source_is_wiring(self):
+        other = CAPTURE.replace('source="=Error"', 'source="=vars.other"')
+        self.assertEqual(len(skeleton.wiring_payloads(with_payload("boundary", other))), 1)
+
+    def test_payload_nested_below_extension_elements_is_wiring(self):
+        nested = f"<uipath:wrapper>{CAPTURE}</uipath:wrapper>"
+        self.assertEqual(len(skeleton.wiring_payloads(with_payload("boundary", nested))), 1)
 
 
 if __name__ == "__main__":

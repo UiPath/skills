@@ -28,32 +28,34 @@ TYPED_ACTIVITIES = ("serviceTask", "sendTask", "receiveTask", "scriptTask", "use
                     "businessRuleTask", "manualTask", "callActivity")
 
 
-def _payloads(root):
-    """Yield (parent, uipath:activity) for every payload in the document."""
-    for parent in root.iter():
-        ext = parent.find("bpmn:extensionElements", NS)
-        if ext is None:
-            continue
-        for act in ext.findall("uipath:activity", NS):
-            yield parent, act
-
-
-def _is_error_capture(pair) -> bool:
-    """An error boundary's capture of the caught error is not wiring.
+def wiring_payloads(root) -> list:
+    """Every uipath:activity payload except an error boundary's capture.
 
     A decision that routes on the error code reads it from a variable, and the
-    builder SDK's onError({ errorVar }) writes that capture as a bare
-    uipath:Activity payload holding one Error output row.
+    builder SDK's onError({ errorVar }) writes that capture on the boundary as
+    a bare uipath:Activity payload holding one `=Error` output row and nothing
+    else. That is not wiring; any other payload, anywhere, is.
     """
-    parent, act = pair
-    if parent.tag != f"{{{NS['bpmn']}}}boundaryEvent" or parent.find("bpmn:errorEventDefinition", NS) is None:
-        return False
-    kids = list(act)
-    types = [k for k in kids if k.tag == f"{{{NS['uipath']}}}type"]
-    outputs = [k for k in kids if k.tag == f"{{{NS['uipath']}}}output"]
-    return (len(types) == 1 and attr(types[0], "value") == "uipath:Activity"
-            and len(outputs) == 1 and attr(outputs[0], "name") == "Error"
-            and len(kids) == 2)
+    parents = {child: parent for parent in root.iter() for child in parent}
+    wiring = []
+    for act in root.iter(f"{{{NS['uipath']}}}activity"):
+        ext = parents.get(act)
+        owner = parents.get(ext) if ext is not None else None
+        kids = list(act)
+        types = [k for k in kids if k.tag == f"{{{NS['uipath']}}}type"]
+        outputs = [k for k in kids if k.tag == f"{{{NS['uipath']}}}output"]
+        capture = (
+            ext is not None and ext.tag == f"{{{NS['bpmn']}}}extensionElements"
+            and owner is not None and owner.tag == f"{{{NS['bpmn']}}}boundaryEvent"
+            and owner.find("bpmn:errorEventDefinition", NS) is not None
+            and len(kids) == 2 and len(types) == 1 and len(outputs) == 1
+            and attr(types[0], "value") == "uipath:Activity"
+            and attr(outputs[0], "name") == "Error" and attr(outputs[0], "source") == "=Error"
+            and len(outputs[0]) == 0
+        )
+        if not capture:
+            wiring.append(act)
+    return wiring
 
 
 def require_multi_instance(root) -> None:
@@ -187,7 +189,7 @@ def main() -> None:
     for tag in TYPED_ACTIVITIES:
         if root.findall(f".//bpmn:{tag}", NS):
             fail(f"skeleton contains a typed bpmn:{tag}; draft mode must stop before wiring")
-    if any(not _is_error_capture(a) for a in _payloads(root)):
+    if wiring_payloads(root):
         fail("skeleton contains a uipath:activity payload; draft mode must stop before wiring")
 
     flows = one_or_more(root, "sequenceFlow")

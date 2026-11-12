@@ -39,6 +39,8 @@ A skeleton is not a working process and must never be reported as one.
    - When the request names a failure or a deadline on a step, declare it in that box's body callback: `onError((h) => ...)` for a failure, `onTimer('PT10M', (h) => ...)` for a deadline that cancels the step.
      A deadline that escalates while the step keeps running is non-interrupting: `onTimer('PT10M', { interrupting: false }, (h) => ...)`.
      A non-interrupting handler's path must end in its own `.endEvent()`; `check` rejects one that falls through.
+     For one kind of error, pass it first: `onError({ name: 'ServerError', code: '500' }, (h) => ...)`; `onError(true, (h) => ...)` catches any error.
+     Each `onError` after the first on one box needs its own `id`, or `check` fails with `BPMN_DUP_BOUNDARY_ID`: `onError({ name: 'ServerError', code: '500' }, { id: 'pack_on500' }, (h) => ...)` beside `onError(true, { id: 'pack_onAnyError' }, (h) => ...)`.
 5. **Label each box with the action first and its kind last, in brackets** — `Extract invoice data [RPA workflow]`, `Manager review [Action app]`, `Classify ticket [Agent]`, `Notify the team [Slack]`.
    Take the kind from [Box kinds](#box-kinds).
    When several kinds could fit, pick the one a Studio Web user would most likely choose; the user changes it at the gate if they disagree.
@@ -62,38 +64,6 @@ A skeleton is not a working process and must never be reported as one.
    - When the process carries on, write another statement on the same branch after the activity, such as the next box, so the handler's path rejoins there and the branch reaches the join on one flow. A bare `.exclusiveGateway()` inside a branch does not compile, so merge on a box.
 
    A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so this rule does not apply to it.
-
-### Per-item boxes and fork exits
-
-"Verify the new hire's documents one at a time and stop at the first failure. Then set up accounts and payroll in parallel: if account setup fails, IT creates them by hand; if payroll fails, stop the onboarding; chase payroll after an hour. Welcome every team the hire joins."
-
-```ts
-// standard imports, .name(), .metadata() and .flowMode() omitted
-  .var('documents', 'array')
-  .var('documentFailed', 'boolean')
-  .var('teams', 'array')
-  .startEvent('Event_start', { name: 'New hire submitted' })
-  .task('verifyDoc', {
-    name: 'Verify document [Action app] → documentFailed',
-    loop: { collection: '=vars.documents', itemVar: 'document', sequential: true, completion: '=vars.documentFailed' },
-  })
-  .fork('setup', [
-    (b) => b
-      .task('createAccounts', { name: 'Create accounts [RPA workflow]' }, (a) => a
-        .onError((h) => h.task('createByHand', { name: 'Create accounts by hand [Action app]' })))
-      .task('confirmAccounts', { name: 'Confirm accounts [Execute script]' }),
-    (b) => b
-      .task('registerPayroll', { name: 'Register in payroll [API workflow]' }, (a) => a
-        .onError((h) => h.task('alertHr', { name: 'Alert HR [Connector]' }).endEvent('stopped', { name: 'Onboarding stopped', terminate: true }))
-        .onTimer('PT1H', { interrupting: false }, (h) => h.task('chasePayroll', { name: 'Chase payroll [Connector]' }).endEvent('chased', { name: 'Payroll chased' }))),
-  ])
-  .task('welcome', { name: 'Welcome the hire [Connector]', loop: { collection: '=vars.teams', itemVar: 'team' } })
-  .endEvent('done', { name: 'Onboarded' })
-  .build();
-```
-
-`createByHand` rejoins at `confirmAccounts`, so the first branch reaches `setup_join` on one flow.
-Without `confirmAccounts`, the compiled file carries `createByHand → setup_join` beside `createAccounts → setup_join`, and the join never fires after a failure.
 
 ### Box kinds
 
@@ -137,6 +107,38 @@ export default bpmn('Process_1')
 
 It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway with a condition and a default, a join, and an end event.
 
+### Per-item boxes and fork exits
+
+"Verify the new hire's documents one at a time and stop at the first failure. Then set up accounts and payroll in parallel: if account setup fails, IT creates them by hand; if payroll fails, stop the onboarding; chase payroll after an hour. Welcome every team the hire joins."
+
+```ts
+// standard imports, .name(), .metadata() and .flowMode() omitted
+  .var('documents', 'array')
+  .var('documentFailed', 'boolean')
+  .var('teams', 'array')
+  .startEvent('Event_start', { name: 'New hire submitted' })
+  .task('verifyDoc', {
+    name: 'Verify document [Action app] → documentFailed',
+    loop: { collection: '=vars.documents', itemVar: 'document', sequential: true, completion: '=vars.documentFailed' },
+  })
+  .fork('setup', [
+    (b) => b
+      .task('createAccounts', { name: 'Create accounts [RPA workflow]' }, (a) => a
+        .onError((h) => h.task('createByHand', { name: 'Create accounts by hand [Action app]' })))
+      .task('confirmAccounts', { name: 'Confirm accounts [Execute script]' }),
+    (b) => b
+      .task('registerPayroll', { name: 'Register in payroll [API workflow]' }, (a) => a
+        .onError((h) => h.task('alertHr', { name: 'Alert HR [Connector]' }).endEvent('stopped', { name: 'Onboarding stopped', terminate: true }))
+        .onTimer('PT1H', { interrupting: false }, (h) => h.task('chasePayroll', { name: 'Chase payroll [Connector]' }).endEvent('chased', { name: 'Payroll chased' }))),
+  ])
+  .task('welcome', { name: 'Welcome the hire [Connector]', loop: { collection: '=vars.teams', itemVar: 'team' } })
+  .endEvent('done', { name: 'Onboarded' })
+  .build();
+```
+
+`createByHand` rejoins at `confirmAccounts`, so the first branch reaches `setup_join` on one flow.
+Without `confirmAccounts`, the compiled file carries `createByHand → setup_join` beside `createAccounts → setup_join`, and the join never fires after a failure.
+
 ## Steps
 
 1. Run `uip maestro bpmn init <Name> --output json` and take the project directory from its `Data.Path`; the commands below write it as `<Project>`.
@@ -155,8 +157,10 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
    ```
 
    `validate` must report `Status: Valid`.
-   Before you compile, read the `check --graph` output for every `.fork()`: each branch must reach `<fork>_join` on exactly one flow.
-   A flow into `<fork>_join` from a box inside an `onError` or `onTimer` handler is the stall rule 9 describes; neither `check` nor `validate` reports it, so fix it as rule 9 says before you compile.
+   Before you compile, check every `.fork()` in the `check --graph` output, which neither `check` nor `validate` does for you.
+   Under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` must have an `Incoming` equal to the number of `Outgoing` entries on the `<fork>` node.
+   A larger `Incoming` means a handler's path flows into the join, the stall rule 9 describes; the join's extra source is a box inside an `onError` or `onTimer` handler.
+   Fix it as rule 9 says before you compile.
    Because the start event kept the id `Event_start`, the `init`-generated `entry-points.json` still matches and the skeleton needs no `refresh`.
    If `validate` fails with `entry-points.json references start event "Event_start"`, the id was renamed: put `Event_start` back.
 <!--skill-flavor:draft-upload:start-->
@@ -174,8 +178,8 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 
 A skeleton validates as **Valid** with one warning per declared variable it reads — each variable a decision reads, and each collection or stop flag a multi-instance box reads: `Variable "vars.<id>" is read but never assigned; it will be empty at run time`.
 That is correct for a skeleton, whose producers are blank boxes.
-When an error path merges onto a box (rule 9), `check` also warns `"<box>" has 2 incoming flows; the platform accepts this, but joining with a gateway is clearer`; that is the intended merge.
-Act only on errors, and do not report the warning: it appears on every skeleton, so it gets no line in the reply.
+When an error path merges onto a box (rule 9), `check` also warns `[FAKE_JOIN] "<box>" has <n> incoming flows; the platform accepts this, but joining with a gateway is clearer`; that is the intended merge.
+Act only on errors, and do not report these warnings: they are expected on a skeleton, so they get no line in the reply.
 
 ## Show the shape and stop
 
