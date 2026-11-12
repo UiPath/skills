@@ -106,7 +106,9 @@ That unpacks the version's files plus `./kb/.okf/workspace.json`, a marker recor
 
 ## Publishing
 
-`publish` and `create --input` only ever produce **version 1**, and only for a bundle with no content. A 409 from either means the bundle already has content: every later version comes from merging a change proposal (below). Never delete and re-create a bundle to work around it — that destroys the version history and the review record.
+`publish` and `create --input` only ever produce **version 1**, and only for a bundle with no content. A 409 from `publish` means the bundle already has content: every later version comes from merging a change proposal (below). Never delete and re-create a bundle to work around it — that destroys the version history and the review record.
+
+**`create --input` checks the directory, creates the record, then publishes.** A bad `--input` is refused before anything is created. When the publish half fails, the failure says `Bundle '<key>' was created, but its initial publication was not confirmed.` and carries `Data.Key`, `Data.RecordCreated: true` and `Data.PublicationConfirmed: false`. `PublicationConfirmed: false` means the CLI got no confirmed commit, not that the bundle is empty — an interrupted request may still have landed. Run `versions` on `Data.Key` in the same folder (and tenant) first: version 1 listed → the content is published, nothing more to do; none → `publish` that key from the same directory. The bundle is new, so this is never a change proposal. Never repeat `create` (the name is now taken) and never delete the record to retry.
 
 Both walk the directory, hash every file, and publish the manifest with the files inside the same request. A file larger than 16 MB cannot travel that way and is uploaded on its own first; either way it reaches the manifest as an ordinary entry, so nothing about the result depends on which path a file took. Two rules the walk obeys:
 
@@ -123,7 +125,7 @@ Both walk the directory, hash every file, and publish the manifest with the file
 `Failure` envelopes carry `Context.HttpStatus`. Three worth recognizing:
 
 - **409 on `create`** → that name is already used in the folder. Pick another; do not retry. Names are unique per folder and other agents publish into the same folders, so give a generated bundle a distinguishing suffix rather than a bare word.
-- **409 on `publish`** → the bundle already has content. Stop; this needs a change proposal.
+- **409 on `publish`** → the bundle already has content. Stop; this needs a change proposal — unless you are finishing a `create --input` that reported `RecordCreated: true`, where it means version 1 landed (Publishing).
 - **404 `BundleDto does not exist.` on a content command** → does not prove the bundle is missing. Run Step 0's `get` check before acting on it.
 
 `file` returns the content inline when it decodes as UTF-8 text, and refuses binary without `--destination <file>` — pass it rather than trying to read bytes from the envelope.
