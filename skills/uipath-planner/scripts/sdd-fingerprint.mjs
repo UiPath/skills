@@ -33,7 +33,7 @@ function childRefs(text) {
     });
 }
 
-const normalize = (text) => text.replace(/^﻿/, '').replace(/\r\n?/g, '\n').replace(LATE_ROWS, '');
+const normalize = (text) => text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').replace(LATE_ROWS, '');
 
 function read(path, what) {
     try {
