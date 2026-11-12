@@ -141,7 +141,18 @@ jobs:
           # and exits non-zero when this is unset — no literal fallback). Its recall
           # baselines are model-specific, so re-baseline when this moves.
           AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
+          ACTIVATION_GATE_KEEP_DIR: ${{ runner.temp }}/activation-gate-tasks
         run: python tests/scripts/activation_gate.py --skill "$SKILL"
+
+      # The rows' transcripts, so a miss can be read; uploaded only when the leg fails.
+      - name: Upload activation transcripts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: activation-gate-${{ matrix.skill }}
+          path: ${{ runner.temp }}/activation-gate-tasks
+          if-no-files-found: ignore
+          retention-days: 7
 
   # Fixed-name aggregator. The `gate` job above is named `${{ matrix.skill }}`,
   # so its check name changes with every skill added or renamed — 61 distinct

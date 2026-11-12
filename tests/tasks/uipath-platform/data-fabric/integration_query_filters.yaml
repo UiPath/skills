@@ -84,7 +84,7 @@ success_criteria:
   # ---------------------------------------------------------------------
   # Filter body shape — enforces the supported keys and operator strings
   # documented in SKILL.md Critical Rule 16 and
-  # references/records-query.md#filter-body-reference.
+  # references/data-fabric/filter-platform-contract.md#filter-body.
   # ---------------------------------------------------------------------
 
   - type: command_executed

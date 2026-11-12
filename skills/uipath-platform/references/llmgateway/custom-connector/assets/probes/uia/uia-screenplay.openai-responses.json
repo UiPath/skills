@@ -1,0 +1,43 @@
+{
+  "id": "uia-screenplay",
+  "description": "UI Automation's computer-use probe, for a computer-use model.",
+  "source": "ScreenplayResponseApiCompatibilityProbe",
+  "apiFlavor": "OpenAiResponses",
+  "match": [
+    {
+      "llmName": "computer-use-preview-2025-03-11"
+    }
+  ],
+  "replaces": [
+    "base-responses"
+  ],
+  "order": 90,
+  "path": "/v1/responses",
+  "body": {
+    "input": [
+      {
+        "content": "Check the latest AI news on google.com.",
+        "role": "user"
+      }
+    ],
+    "tools": [
+      {
+        "type": "computer_use_preview",
+        "display_width": 1024,
+        "display_height": 768,
+        "environment": "browser",
+        "parameters": {}
+      }
+    ],
+    "tool_choice": "auto",
+    "model": "{{model}}",
+    "truncation": "auto"
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "the answer is a Responses object",
+      "jq": "type == \"object\""
+    }
+  ]
+}

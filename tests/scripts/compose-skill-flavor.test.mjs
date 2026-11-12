@@ -29,6 +29,7 @@ import {
   createAllVariants,
   createCompositionPlan,
   createDefaultPlan,
+  createPreviewVariants,
   materializeComposition,
   packageName,
   packAllVariants,
@@ -143,6 +144,10 @@ function addPackageManifest(repo, version = "1.2.3", overrides = {}) {
   );
   mkdirSync(join(repo, "assets"));
   writeFileSync(join(repo, "assets", "shared.txt"), "default-only payload\n");
+  writeFileSync(
+    join(repo, "assets", "skill-status.json"),
+    `${JSON.stringify({ skills: { "uipath-changed": { status: "preview" } } })}\n`,
+  );
   mkdirSync(join(repo, "hooks"));
   writeFileSync(join(repo, "hooks", "tool.sh"), "#!/bin/sh\necho fixture\n");
   chmodSync(join(repo, "hooks", "tool.sh"), 0o755);
@@ -706,6 +711,90 @@ test("invalid pins and unpinned classic trees are rejected", (t) => {
   expectFlavorError(() => createAllVariants(repo), /no flavor pins this retained tree/);
 });
 
+function addPreviewSkill(repo, name, body = "Preview guidance.\n") {
+  const skill = join(repo, "preview", "skills", name);
+  mkdirSync(skill, { recursive: true });
+  writeFileSync(join(skill, "SKILL.md"), entrypoint(name, body));
+  return skill;
+}
+
+function writePreviewOverride(repo, flavor, relativePath, text) {
+  const root = join(repo, "preview", "skill-flavors", flavor);
+  const target = join(root, ...relativePath.split("/"));
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, text);
+  return root;
+}
+
+test("a preview flavor composes preview skills and stays out of the packaged variants", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-bpmn", block("host", "Current default."));
+  addPreviewSkill(repo, "uipath-bpmn", block("host", "Preview default."));
+  writeOverride(repo, "studioweb", "uipath-bpmn/SKILL.md", block("host", "Studio Web current."));
+  writePreviewOverride(repo, "studioweb", "uipath-bpmn/SKILL.md", block("host", "Studio Web preview."));
+
+  const previews = createPreviewVariants(repo);
+  assert.deepEqual(previews.map(({ name }) => name), ["studioweb"]);
+  assert.deepEqual(previews[0].plan.skills, ["uipath-bpmn"]);
+  assert.equal(previews[0].plan.replacementCount, 1);
+  assert.deepEqual(createAllVariants(repo).map(({ name }) => name), ["default", "studioweb"]);
+
+  buildAllSkillTrees(repo);
+  const preview = readFileSync(join(repo, "build", "preview", "studioweb", "uipath-bpmn", "SKILL.md"), "utf8");
+  assert.match(preview, /Studio Web preview\./);
+  assert.ok(!containsFlavorMarker(preview));
+  assert.match(
+    readFileSync(join(repo, "build", "skills", "studioweb", "uipath-bpmn", "SKILL.md"), "utf8"),
+    /Studio Web current\./,
+  );
+  assert.deepEqual(readdirSync(join(repo, "build", "preview")), ["studioweb"]);
+
+  const validate = runCli(repo, "validate");
+  assert.equal(validate.status, 0, validate.stderr);
+  assert.match(validate.stdout, /preview\/studioweb: 1 skills, 1 files, 1 replacements/);
+});
+
+test("invalid preview flavors are rejected against the preview tree", async (t) => {
+  const setup = (child) => {
+    const repo = fixtureRepo(child);
+    addSkill(repo, "uipath-current", block("host", "Current."));
+    addPreviewSkill(repo, "uipath-bpmn", block("host", "Preview."));
+    writeOverride(repo, "studioweb", "uipath-current/SKILL.md", block("host", "Studio Web."));
+    return repo;
+  };
+  const cases = [
+    ["missing target", "uipath-bpmn/references/gone.md", block("host", "x"), /canonical target does not exist: preview\/skills\/uipath-bpmn\/references\/gone\.md/],
+    ["missing marker", "uipath-bpmn/SKILL.md", block("other", "x"), /no matching canonical marker in preview\/skills\/uipath-bpmn\/SKILL\.md/],
+    ["skill not in preview", "uipath-current/SKILL.md", block("host", "x"), /unknown canonical skill "uipath-current"/],
+    ["pin", "uipath-bpmn/.canonical", "classic\n", /a preview flavor cannot pin a skill/],
+  ];
+  for (const [label, relativePath, text, pattern] of cases) {
+    await t.test(label, (child) => {
+      const repo = setup(child);
+      writePreviewOverride(repo, "studioweb", relativePath, text);
+      expectFlavorError(() => createPreviewVariants(repo), pattern);
+      expectFlavorError(() => buildAllSkillTrees(repo), pattern);
+    });
+  }
+
+  if (process.platform !== "win32") {
+    await t.test("a promoted preview skill link is skipped", (child) => {
+      const repo = setup(child);
+      symlinkSync("../../skills/uipath-current", join(repo, "preview", "skills", "uipath-current"), "dir");
+      writePreviewOverride(repo, "studioweb", "uipath-bpmn/SKILL.md", block("host", "x"));
+      assert.deepEqual(createPreviewVariants(repo)[0].plan.skills, ["uipath-bpmn"]);
+      writePreviewOverride(repo, "studioweb", "uipath-current/SKILL.md", block("host", "x"));
+      expectFlavorError(() => createPreviewVariants(repo), /unknown canonical skill "uipath-current"/);
+    });
+  }
+
+  await t.test("no matching flavor", (child) => {
+    const repo = setup(child);
+    writePreviewOverride(repo, "other-host", "uipath-bpmn/SKILL.md", block("host", "x"));
+    expectFlavorError(() => createPreviewVariants(repo), /preview flavor has no matching skill-flavors\/other-host\//);
+  });
+});
+
 test("default plan includes every canonical skill and strips CRLF marker boundaries", (t) => {
   const repo = fixtureRepo(t);
   addSkill(
@@ -1258,7 +1347,11 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     readFileSync(join(studioDir, "skills", "uipath-changed", "SKILL.md"), "utf8"),
     /Studio Web project tool/,
   );
-  assert.ok(!existsSync(join(studioDir, "assets")));
+  assert.deepEqual(
+    readFileSync(join(studioDir, "assets", "skill-status.json")),
+    readFileSync(join(repo, "assets", "skill-status.json")),
+  );
+  assert.ok(!existsSync(join(studioDir, "assets", "shared.txt")));
   assert.ok(!existsSync(join(studioDir, "hooks")));
   assert.ok(existsSync(join(byVariant.get("default").packageDir, "assets", "shared.txt")));
   assert.ok(existsSync(join(byVariant.get("default").packageDir, "hooks", "tool.sh")));
@@ -1292,6 +1385,7 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     assert.ok(existsSync(item.tarball));
     const entries = readTarballEntries(item.tarball);
     assert.ok(entries.has("package/package.json"));
+    assert.ok(entries.has("package/assets/skill-status.json"));
     assert.ok(![...entries.keys()].some((name) => name.startsWith("package/skill-flavors/")));
     assert.ok(!entries.has("package/scripts/compose-skill-flavor.mjs"));
     assert.equal(

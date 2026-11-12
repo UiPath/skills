@@ -128,8 +128,28 @@ class KindTests(unittest.TestCase):
                 (Path(d) / "P" / "P.bpmn").write_text(bpmn.replace("[Action app]", "[Create action app task]"))
                 self.assertEqual(kinds.main(["P", "--registry-json", "reg.json"]), 1)
 
+    def test_cli_entry_point_on_a_studio_web_project(self):
+        # Studio Web names every BPMN project's main file Process.bpmn.
+        bpmn = """<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1">
+    <bpmn:task id="A" name="Record invoice [Execute script]" />
+  </bpmn:process>
+</bpmn:definitions>"""
+        with tempfile.TemporaryDirectory() as d:
+            project = Path(d) / "P" / "P"
+            project.mkdir(parents=True)
+            (project / "Process.bpmn").write_text(bpmn)
+            (project / "project.uiproj").write_text("{}")
+            other = Path(d) / "P" / "Other"
+            other.mkdir()
+            (other / "Process.bpmn").write_text(bpmn.replace("[Execute script]", ""))
+            (Path(d) / "reg.json").write_text(json.dumps(REGISTRY))
+            with _cwd(d):
+                self.assertEqual(kinds.main(["P", "--registry-json", "reg.json"]), 0)
 
-SKILL_DIR = HERE.parents[3] / "skills" / "uipath-maestro-bpmn"
+
+SKILL_DIR = HERE.parents[3] / "classic" / "skills" / "uipath-maestro-bpmn"
 GUIDE = SKILL_DIR / "references" / "phase-2-skeleton-guide.md"
 SKILL_MD = SKILL_DIR / "SKILL.md"
 
@@ -172,6 +192,35 @@ class DriftTests(unittest.TestCase):
         self.assertIsNotNone(listed, "no contains([...],ExtensionType) exclusion list in the 1a filter")
         exact = set(re.findall(r"'([^']+)'", listed.group(1)))
         self.assertEqual(exact, kinds.CASE_ONLY_EXACT | kinds.OTHER_DROPPED_EXACT)
+
+
+V2_GUIDE = HERE.parents[3] / "skills" / "uipath-maestro-bpmn" / "references" / "draft-skeleton.md"
+
+
+class GuideTests(unittest.TestCase):
+    """The v2 draft guide teaches box labels; every one it teaches must pass this grader."""
+
+    def setUp(self):
+        types = REGISTRY["Data"]["ExtensionTypes"] + [
+            {"ExtensionType": "Intsvc.UnifiedHttpRequest", "Label": "Execute HTTP request"}]
+        self.toolbox, self.dropped = kinds.kind_sets(types)
+        self.text = _read_or_skip(V2_GUIDE)
+
+    def test_kinds_table_labels_pass(self):
+        table = self.text.split("| Step | Kind |", 1)[1].split("\n\n", 1)[0]
+        labels = []
+        for row in table.splitlines()[2:]:
+            cell = row.strip().strip("|").split("|")[-1].strip()
+            if cell.startswith("`<"):
+                continue
+            labels += [k.strip() for k in cell.split(",")]
+        self.assertGreater(len(labels), 5)
+        self.assertEqual(kinds.check([f"Step [{k}]" for k in labels], self.toolbox, self.dropped), [])
+
+    def test_example_boxes_pass(self):
+        boxes = re.findall(r"\.task\('[^']+', \{ name: '([^']+)' \}\)", self.text)
+        self.assertGreaterEqual(len(boxes), 3)
+        self.assertEqual(kinds.check(boxes, self.toolbox, self.dropped), [])
 
 
 if __name__ == "__main__":

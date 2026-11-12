@@ -47,8 +47,9 @@ The `synthesize` variant. `per-item` is the same without `synthesize`:
 and returns `summary`, `exceptions` and `processed`; its prompt says a result
 entry that carries an error is a failed item to list under exceptions.
 
-The loop runs items in order. Set `parallel: true` only for independent items
-that are not rate-limited.
+The loop runs items in order. Do not set `parallel: true`: `processItem` reads
+`currentItem`, which parallel iterations do not isolate
+([loops.md](../loops.md#loop-options)).
 
 ## Variants
 

@@ -248,7 +248,7 @@ test("the studioweb functions and coded-app flavors do not deny the QuickJS node
 // agent to create tasks there, or to write a markdown plan, starts building with
 // no approval. Frontmatter is excluded: marker blocks cannot sit inside YAML, so
 // `description` and `allowed-tools` still carry the canonical text.
-const TASK_TOOLS = /\b(TaskCreate|TaskUpdate|TaskList|addBlockedBy)\b/;
+const TASK_TOOLS = /\b(TaskCreate|TaskUpdate|TaskList|addBlockedBy|task-list tool)\b/;
 const RETIRED_PLAN_TOOLS = /\b(EnterPlan|ExitPlan)\b/;
 
 function plannerBodyLinesNaming(root, pattern) {
@@ -269,17 +269,15 @@ test("the built studioweb uipath-planner uses plan mode and no task tools", (t) 
 
   assert.deepEqual(plannerBodyLinesNaming(output, TASK_TOOLS), []);
   assert.deepEqual(plannerBodyLinesNaming(output, RETIRED_PLAN_TOOLS), []);
-  const laneB = readFileSync(join(output, "uipath-planner", "references", "non-pdd-lane-guide.md"), "utf8");
+  const decompose = readFileSync(join(output, "uipath-planner", "references", "decompose", "decompose-guide.md"), "utf8");
   assert.ok(
-    laneB.includes("Call `EnterPlanMode` as soon as the user picks this option"),
+    decompose.includes("Call `EnterPlanMode` as soon as the user picks this option"),
     "explore-first must enter plan mode before discovery",
   );
   assert.ok(
-    laneB.includes("call `ExitPlanMode` with outcome `complete`"),
+    decompose.includes("call `ExitPlanMode` with outcome `complete`"),
     "explore-first must present the plan with ExitPlanMode",
   );
-  const laneA = readFileSync(join(output, "uipath-planner", "references", "pdd-driven-lane-guide.md"), "utf8");
-  assert.ok(laneA.includes("1. Call `EnterPlanMode`."), "Lane A interactive review must enter plan mode");
 });
 
 test("the default uipath-planner keeps its task tools (the guard is not vacuous)", (t) => {
@@ -294,7 +292,7 @@ test("the default uipath-planner keeps its task tools (the guard is not vacuous)
 // the agent back to the drift these flavors had (skills#3008, #4100, #4209).
 const MAESTRO_SKILLS = ["uipath-maestro-flow", "uipath-maestro-case", "uipath-maestro-bpmn", "uipath-agents"];
 const TWO_TOKEN_VERB = /(^|[^a-z-])uip (flow|case|bpmn) (debug|pack)\b/;
-const JSON_DEBUG = /uip maestro (flow|case|bpmn) debug\b.*--output json/;
+const JSON_DEBUG = /uip maestro (flow|case|bpmn) debug(?![\w-]).*--output json/;
 const PATH_DEBUG = /uip maestro (flow|case|bpmn) debug +("?\.|"?\/|"?<[\w-]*(dir|path)>)/;
 
 function maestroLinesMatching(root, pattern) {
@@ -328,6 +326,17 @@ test("the studioweb Flow skill is the builder-SDK skill", (t) => {
   const skill = readFileSync(join(buildStudioweb(t), "uipath-maestro-flow", "SKILL.md"), "utf8");
 
   assert.ok(skill.includes("@uipath/maestro-builder-sdk"));
+});
+
+// UV-17734: the Studio Web override of the project-layout block dropped this,
+// so Autopilot scaffolded Maestro Automate requests as plain Flow projects.
+const AUTOMATE_INIT = /uip maestro flow init <\w+> --automate/;
+
+test("every Flow skill flavor scaffolds Maestro Automate with `--automate`", (t) => {
+  for (const root of [buildDefault(t), buildStudioweb(t)]) {
+    const skill = readFileSync(join(root, "uipath-maestro-flow", "SKILL.md"), "utf8");
+    assert.match(skill, AUTOMATE_INIT, root);
+  }
 });
 
 // Studio Web runs the Flow builder SDK inside the page: no npm, no Node, no

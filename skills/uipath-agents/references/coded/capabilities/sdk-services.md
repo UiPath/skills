@@ -178,8 +178,16 @@ embeddings = sdk.llm_openai.embeddings(input="The quick brown fox", embedding_mo
 ## Guardrails
 
 ```python
-result = sdk.guardrails.evaluate(guardrail_name="ContentSafety", data={"prompt": "User message"}, folder_path="MyFolder")
+from uipath.platform.guardrails import BuiltInValidatorGuardrail
+
+result = sdk.guardrails.evaluate_guardrail(
+    input_data="User message",
+    guardrail=BuiltInValidatorGuardrail(id="<GUARDRAIL_ID>", name="<GUARDRAIL_NAME>", guardrail_type="builtInValidator", validator_type="pii_detection"),
+)
+print(result.result, result.reason)
 ```
+
+For guardrails on agent code, prefer the `@guardrail` decorator or the middleware — see [guardrails/guardrails.md](guardrails/guardrails.md).
 
 ## Tasks
 

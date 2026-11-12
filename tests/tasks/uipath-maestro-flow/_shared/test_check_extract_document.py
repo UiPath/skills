@@ -484,3 +484,171 @@ def test_extends_names_each_change_to_what_was_there(write, original, capsys, ch
 def test_extends_with_bad_values_is_a_usage_error(write, values):
     write(_flow())
     assert _run("extends", *values) == 2
+
+
+TARGET_ID = "extractCreditNote1"
+
+
+def _two_node_flow(target_schema):
+    """The source node holds the seeded taxonomy; the target node is the one under test."""
+    target = {"id": TARGET_ID, "type": EXTRACT_NODE_TYPE, "inputs": {"schemaDocument": target_schema}}
+    return _flow(schema=_seeded_schema(), extra_nodes=[target])
+
+
+def _copy(schema):
+    """What a copy through ``nodes schema set`` leaves: new ids and the target's own config."""
+    schema = json.loads(json.dumps(schema).replace('"id-', '"new-id-'))
+    schema["config"] = {"model": {"family": "gpt"}}
+    return schema
+
+
+def _run_on_target(*args):
+    return main(["--flow-name", "InvoiceReader", "--node-id", TARGET_ID, *args])
+
+
+def test_node_id_selects_the_node_under_test(write, capsys):
+    write(_two_node_flow(_schema(groups={}, prompt="")))
+    assert _run("has-instructions") == 0
+    assert _run_on_target("has-instructions") == 1
+    assert "the overall prompt is empty" in capsys.readouterr().err
+
+
+def test_node_id_naming_no_extract_document_node_fails(write, capsys):
+    write(_flow())
+    assert main(["--flow-name", "InvoiceReader", "--node-id", "start", "has-instructions"]) == 1
+    assert "no Extract document node start" in capsys.readouterr().err
+
+
+def test_node_id_selects_the_same_node_in_the_original(write, tmp_path):
+    flow = _two_node_flow(_schema(groups={}, prompt="Extract the credit note."))
+    path = tmp_path / "two_node_original.flow"
+    path.write_text(json.dumps(flow))
+    write(flow)
+    assert _run_on_target("unchanged", str(path)) == 0
+    assert _run_on_target("extends", str(path)) == 0
+
+
+def test_copies_passes_a_copy_with_other_ids_and_config(write, original):
+    write(_two_node_flow(_copy(_seeded_schema())))
+    assert _run_on_target("copies", original, NODE_ID) == 0
+
+
+def test_copies_passes_a_copy_that_kept_the_source_ids(write, original):
+    write(_two_node_flow(_seeded_schema()))
+    assert _run_on_target("copies", original, NODE_ID) == 0
+
+
+def _add_choice_values(schema):
+    schema["outputSchema"]["$defs"]["ft-date"]["enum"] = ["2026"]
+
+
+@pytest.mark.parametrize("change, named", [
+    (_change_prompt, "prompt was"),
+    (lambda s: _rename(s, "Total", "Total Amount"), "Invoice.properties.Total was dropped"),
+    (lambda s: s["outputSchema"]["properties"]["Invoice"]["properties"]["Total"].update({"$ref": "#/$defs/ft-number"}),
+     "Total.$ref was"),
+    (_change_instructions, "Vendor Name.description was"),
+    (_drop_group, "outputSchema.properties.Line Items was dropped"),
+    (_drop_def, "$defs.ft-boolean was dropped"),
+    (_add_choice_values, "$defs.ft-date.enum was added"),
+])
+def test_copies_names_each_difference_from_the_source(write, original, capsys, change, named):
+    schema = _copy(_seeded_schema())
+    change(schema)
+    write(_two_node_flow(schema))
+    assert _run_on_target("copies", original, NODE_ID) == 1
+    assert named in capsys.readouterr().err
+
+
+def test_copies_fails_an_empty_target(write, original, capsys):
+    write(_two_node_flow(_schema(groups={}, prompt="")))
+    assert _run_on_target("copies", original, NODE_ID) == 1
+    assert "outputSchema.properties.Invoice was dropped" in capsys.readouterr().err
+
+
+def test_copies_of_a_source_the_original_lacks_fails(write, original, capsys):
+    write(_two_node_flow(_seeded_schema()))
+    assert _run_on_target("copies", original, "extractReceipt1") == 1
+    assert "no Extract document node extractReceipt1 in the original" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("values", [(), ("orig.flow",), ("orig.flow", NODE_ID, "extra")])
+def test_copies_with_bad_values_is_a_usage_error(write, values):
+    write(_flow())
+    assert _run("copies", *values) == 2
+
+
+PROCESSOR_KEY = "5d0b6e3c-2f4a-4c1e-9a7b-8e6f1d2c3b4a"
+
+
+def _keyed_flow(key=PROCESSOR_KEY):
+    flow = _flow()
+    flow["nodes"][1]["inputs"]["processorKey"] = key
+    return flow
+
+
+@pytest.fixture()
+def solution(tmp_path):
+    """The flow's solution root, holding a .uipx, and a writer for its idpProcessor resources."""
+    root = tmp_path / "InvoiceReaderSolution"
+    root.mkdir(exist_ok=True)
+    (root / "InvoiceReaderSolution.uipx").write_text("{}")
+    extraction = root / "resources" / "solution_folder" / "idpProcessor" / "extraction"
+
+    def write_resource(key, kind="idpProcessor", name="Extract Invoice"):
+        extraction.mkdir(parents=True, exist_ok=True)
+        (extraction / f"{name}.json").write_text(json.dumps({"resource": {"name": name, "kind": kind, "key": key}}))
+
+    return write_resource
+
+
+@pytest.mark.parametrize("kind", ["idpProcessor", "IdpProcessor"])
+def test_processor_passes_a_key_the_solution_holds(write, solution, kind):
+    write(_keyed_flow())
+    solution(PROCESSOR_KEY, kind=kind)
+    assert _run("processor") == 0
+
+
+@pytest.mark.parametrize(
+    "key, named",
+    [
+        (None, "inputs.processorKey is null, not a GUID"),
+        ("", 'inputs.processorKey is "", not a GUID'),
+        ("not-a-guid", 'inputs.processorKey is "not-a-guid", not a GUID'),
+    ],
+)
+def test_processor_fails_a_node_without_a_key(write, solution, capsys, key, named):
+    write(_flow() if key is None else _keyed_flow(key))
+    solution(PROCESSOR_KEY)
+    assert _run("processor") == 1
+    assert named in capsys.readouterr().err
+
+
+def test_processor_names_the_keys_the_solution_holds_instead(write, solution, capsys):
+    write(_keyed_flow())
+    solution("0f1e2d3c-4b5a-4968-8776-655443322110")
+    assert _run("processor") == 1
+    assert "idpProcessor keys: 0f1e2d3c-4b5a-4968-8776-655443322110" in capsys.readouterr().err
+
+
+def test_processor_ignores_a_resource_of_another_kind(write, solution, capsys):
+    write(_keyed_flow())
+    solution(PROCESSOR_KEY, kind="process")
+    assert _run("processor") == 1
+    assert "idpProcessor keys: none" in capsys.readouterr().err
+
+
+def test_processor_passes_a_keyed_flow_outside_a_solution(write):
+    write(_keyed_flow())
+    assert _run("processor") == 0
+
+
+def test_processor_fails_a_keyless_flow_outside_a_solution(write, capsys):
+    write(_keyed_flow(None))
+    assert _run("processor") == 1
+    assert "not a GUID" in capsys.readouterr().err
+
+
+def test_processor_takes_no_values(write):
+    write(_keyed_flow())
+    assert _run("processor", "extra") == 2

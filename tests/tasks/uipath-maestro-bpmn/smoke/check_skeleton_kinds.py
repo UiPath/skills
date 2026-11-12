@@ -19,7 +19,7 @@ triggers), which the BPMN toolbox does not offer.
 
 The table is embedded below (TOOLBOX_KINDS), not parsed from the skill: the
 grader cannot assume where an agent harness installed the skill, and the
-reference directory holds only the graders. Keep it in step with the
+staged reference directory holds graders, not skills. Keep it in step with the
 guide's table.
 
 The Labels come from the installed CLI, not a copy pinned here:
@@ -29,7 +29,9 @@ so the grade cannot drift from what the agent was shown when the CLI adds or
 renames a type. ``--registry-json`` grades against a saved list instead
 (fixtures).
 
-Stdlib only, with no ``_shared`` import, so it runs from any ``$REFERENCE_DIR``.
+Standalone on purpose (stdlib only, no ``_shared`` import), so it runs from a
+staged copy of ``smoke/`` alone. The draft-skeleton tasks stage the parent
+(``reference.directory: ..``) because check_draft_skeleton.py imports ``_shared``.
 """
 
 from __future__ import annotations
@@ -164,6 +166,10 @@ def bracket_candidates(name: str) -> list[str]:
 def find_bpmn(name: str) -> str:
     paths = [p for p in sorted(glob.glob("**/*.bpmn", recursive=True)) if "node_modules" not in p]
     hinted = [p for p in paths if os.path.basename(p).lower() == f"{name.lower()}.bpmn"]
+    if not hinted:
+        # Studio Web names the main file Process.bpmn, in a project folder named after the task's name.
+        hinted = [p for p in paths
+                  if os.path.basename(p) == "Process.bpmn" and Path(p).parent.name.lower() == name.lower()]
     in_project = [p for p in hinted if (Path(p).parent / "project.uiproj").is_file()]
     chosen = in_project or hinted
     if not chosen:

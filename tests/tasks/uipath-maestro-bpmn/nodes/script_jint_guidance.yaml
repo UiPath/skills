@@ -37,7 +37,7 @@ success_criteria:
 
   - type: run_command
     description: "BPMN passes the local Maestro canvas/deploy-readiness validator"
-    command: "bpmn=$(find . -type f -name 'RiskScoreScriptBpmn.bpmn'); test \"$(printf '%s\\n' \"$bpmn\" | grep -c .)\" -eq 1 && uip maestro bpmn validate \"$bpmn\" --output json"
+    command: "bpmn=$(find . -type f \\( -name 'RiskScoreScriptBpmn.bpmn' -o -path '*/RiskScoreScriptBpmn/Process.bpmn' \\)); test \"$(printf '%s\\n' \"$bpmn\" | grep -c .)\" -eq 1 && uip maestro bpmn validate \"$bpmn\" --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

@@ -48,8 +48,8 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-rpa** | RPA workflows (`.xaml` and `.cs` coded) — create, edit, build, run, debug, test; UI automation, Object Repository, Integration Service activities. |
 | **uipath-maestro-flow** | Maestro Flow (`.flow`) — author, connect nodes, validate, run, publish; triggers, schedules, evals, incidents. |
 | **uipath-agents** | UiPath agents end-to-end — coded (Python: LangGraph, LlamaIndex, OpenAI Agents) and low-code (`agent.json`); scaffold, run, evaluate, deploy. |
-| **uipath-maestro-bpmn** | Maestro BPMN process orchestration (`.bpmn`) — author XML, validate, package, operate, diagnose. |
-| **uipath-maestro-case** | Case Management (`caseplan.json`) authoring from SDD with phased build and validation. |
+| **uipath-maestro-bpmn** | Maestro BPMN process orchestration (`<Name>.bpmn.ts` → `.bpmn`) — author with the TypeScript builder SDK, compile, validate, package, operate, diagnose; edit existing processes by decompiling them. |
+| **uipath-maestro-case** | Case Management (`<Name>.case.ts` → `caseplan.case`) — author with the TypeScript builder SDK, compile, validate; edit existing plans by decompiling them. |
 | **uipath-coded-apps** | Coded Web Apps and Coded Action Apps — scaffold, build, debug, pack, publish, deploy via `uip codedapp`. |
 | **uipath-api-workflow** | API Workflow JSON DSL — author, run, package, publish; HTTP and Integration Service connector activities. |
 | **uipath-human-in-the-loop** | Human task authoring and operations — design approval gates, escalations, and validation forms in Flow, Maestro, or coded agents; list, assign, complete, and reassign the resulting Action Center tasks. |
@@ -59,10 +59,10 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-planner** | Solution planner & designer — turn a Process Definition Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
+| **uipath-planner** | Solution planner, designer and genome writer, driven by verbs — `design` an SDD from a Process Definition Document, `decompose` a multi-project request into a multi-skill task list, `author`, `extract`, `edit` or `check` an automation genome (`*-genome.md`) — the spec `uipath-genome` builds — and keep it current when its SDD changes. Guide for people: [working with UiPath genomes](docs/guides/working-with-uipath-genome.md). |
+| **uipath-genome** | Builds an automation from its genome (`*-genome.md`) through the owning skills — including refactors of a UiPath project and migrations from another framework. Supervising a live build: [live healing pass](docs/guides/live-healing-pass.md). |
 | **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
-| **uipath-genome** | Automation blueprints (`*-genome.md`) — extract one from an existing project, solution, or another framework's export; author one from a described idea; execute one to build or migrate the automation through the owning skills. |
 
 ### Platform & Operations
 
@@ -103,7 +103,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-ixp` | Stable |
 | `uipath-knowledge-bundles` | Preview |
 | `uipath-maestro-bpmn` | In-development |
-| `uipath-maestro-case` | Preview |
+| `uipath-maestro-case` | Stable |
 | `uipath-maestro-flow` | Stable |
 | `uipath-mcp-servers` | Preview |
 | `uipath-planner` | Stable |

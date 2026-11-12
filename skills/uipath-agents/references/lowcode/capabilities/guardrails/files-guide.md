@@ -160,7 +160,8 @@ An inline agent in a Flow carries the same `guardrails[]` (its sidecar is a proj
 | Automation Cloud | Per validator, when `detectionScope` appears in the validator's `Parameters` in `uip agent guardrails list` |
 | Automation Suite | Not available — guardrails evaluate text only |
 | BYO (`byoValidatorName`) guardrails | **Not available** — external providers receive no attachments |
-| Advanced agents, coded agents | Not covered by this guide |
+| Coded agents | Covered by the [coded-agent files guide](../../../coded/capabilities/guardrails/files-guide.md) |
+| Advanced agents | Not covered by this guide |
 
 A tenant-wide AI Trust Layer policy (`uip gov aops-policy`, product `AITrustLayer`) sets its own detection scope per guardrail (`Text` / `Files` / `Both`), evaluated at the LLM Gateway on files carried inline in the model request. It is independent of the agent guardrail's `detectionScope` — both layers run and either can block. Author it with the `uipath-governance` skill.
 

@@ -8,7 +8,7 @@ nine-condition FilterBuilder tree paged twice, plus a third active-only
 descending query) and the same assertions, re-homed from a Flow node's
 `inputs.detail` JSON dict to a BPMN `bpmn:sendTask` carrying the registry
 `Intsvc.ActivityExecution` wrapper (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Flow's task
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Flow's task
 names no project, so this grader locates the BPMN file with no name hint.
 
 Assertion map (Flow → BPMN):
