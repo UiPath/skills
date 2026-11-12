@@ -14,7 +14,7 @@ Choose the target `.flow` in this order:
 
 1. The user names a file: edit that file.
 2. An edit: edit the `.flow` at `CurrentFile.AbsolutePath`.
-3. A new flow, and `IsCurrentFileEmpty` is `true`, you just created the project, or the project holds only an empty or trigger-only `new.flow`: fill that `.flow`.
+3. A new flow, and `IsCurrentFileEmpty` is `true`, you just created the project, or the project holds only an empty or trigger-only `new.flow`: fill that `.flow`. In a project you created, it is `new.flow`, so `<Name>` is `new`: write `.flow-sdk/new.flow.ts` and compile with `-o new.flow`. The name the user gave the flow goes in `.name('…')`, never in a file name: a `<FlowName>.flow` beside `new.flow` is a second flow the canvas never opens.
 4. A new flow otherwise: write a new `<Name>.flow` in the open project. At the end, tell the user to open it in the Explorer: a write refreshes the canvas only for the open file.
 
 Below, `<Project>` is the target's folder and `<Name>` its file name without `.flow` (`new` for `new.flow`). `<Draft>` is `/tmp/flow-draft/<Project>/<Name>`.
@@ -110,7 +110,7 @@ Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` a
 
 - **Always finish with the merge into the target.** About 400 ms after a write, the canvas reloads the open file. Never run `format` on the merged file: it re-lays out the user's canvas.
 - **An open `.flow` with no content** gives `decompile` nothing to read. Treat it as a new file (next item), and compile straight to it.
-- **A new `.flow` in a new file** has no original. Write `.flow-sdk/<Name>.flow.ts` from [Hello world](#hello-world-flow), run step 2 without `--baseline`, and compile it straight to `<Name>.flow`. Then run `uip maestro flow format <Name>.flow --output json` once, and validate it.
+- **A new `.flow` in a new file** (rule 4 only; a new project's `new.flow` is rule 3) has no original. Write `.flow-sdk/<Name>.flow.ts` from [Hello world](#hello-world-flow), run step 2 without `--baseline`, and compile it straight to `<Name>.flow`. Then run `uip maestro flow format <Name>.flow --output json` once, and validate it.
 - **A baseline compile that refuses a draft node** (a generic operation with no object picked) stops the round trip: see [`references/brownfield.md`](references/brownfield.md#flows-with-draft-nodes-let-merge-compile).
 - **If the baseline compile refuses a canvas node**, run step 2. A node it marks `(pre-existing)` is a probable SDK defect: stop and tell the user (UiPath/builder-sdk#1402).
 - **A flow with connectors** needs each connection in the solution after the merge ([the connector loop](#the-connector-loop-in-studio-web), step 7).
