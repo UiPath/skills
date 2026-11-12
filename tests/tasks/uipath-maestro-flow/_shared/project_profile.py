@@ -15,6 +15,9 @@ Project resolution mirrors the CLI: the ``.flow`` may sit in the project root
 or under ``content/`` / ``flow_files/`` (and ``project.uiproj``'s ``MainFile``
 may nest it deeper still), so this climbs to the nearest enclosing
 ``project.uiproj`` rather than assuming a depth.
+
+The profile is read from ``operate.json``. A Studio Web project has no
+``operate.json`` at design time; there the marker decides (see ``read_profile``).
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ from pathlib import Path
 
 SENTINEL = ".maestro_automate"
 PROJECT_FILE = "project.uiproj"
+STUDIO_WEB_FLOW_FILE = "new.flow"
 MAX_CLIMB = 16
 
 
@@ -48,6 +52,28 @@ def project_dir_for(flow_path: Path) -> Path:
             break
         current = current.parent
     return flow_path.parent.resolve()
+
+
+def read_profile(project: Path, flow_path: Path) -> tuple[str | None, str]:
+    """The project's runtime profile and where it was read from.
+
+    ``operate.json`` wins when the project has one: the CLI's ``flow init``
+    writes it. A Studio Web project has none at design time, so its profile is
+    the one packaging derives from the marker: Lite with it, Standard without.
+    Only a Studio Web project (main file ``new.flow``) takes that route; a CLI
+    project that lost its ``operate.json`` still fails.
+    """
+    operate = project / "operate.json"
+    if operate.is_file():
+        try:
+            data = json.loads(operate.read_text())
+        except json.JSONDecodeError as err:
+            raise ValueError(f"{operate} is not valid JSON: {err}") from err
+        return (data.get("runtimeOptions") or {}).get("profile"), f"{operate} runtimeOptions.profile"
+    if flow_path.name != STUDIO_WEB_FLOW_FILE:
+        raise ValueError(f"no operate.json in {project}")
+    marker = project / SENTINEL
+    return ("Lite" if marker.is_file() else "Standard"), f"{marker} ({'present' if marker.is_file() else 'absent'})"
 
 
 def main() -> int:
@@ -74,19 +100,12 @@ def main() -> int:
         return fail(f"unexpected {SENTINEL} in {project}")
 
     if args.expect_profile:
-        operate = project / "operate.json"
-        if not operate.is_file():
-            return fail(f"no operate.json in {project}")
         try:
-            data = json.loads(operate.read_text())
-        except json.JSONDecodeError as err:
-            return fail(f"{operate} is not valid JSON: {err}")
-        found = (data.get("runtimeOptions") or {}).get("profile")
+            found, source = read_profile(project, matches[0])
+        except ValueError as err:
+            return fail(str(err))
         if found != args.expect_profile:
-            return fail(
-                f"{operate} runtimeOptions.profile is {found!r}, "
-                f"expected {args.expect_profile!r}"
-            )
+            return fail(f"{source} gives profile {found!r}, expected {args.expect_profile!r}")
 
     return 0
 
