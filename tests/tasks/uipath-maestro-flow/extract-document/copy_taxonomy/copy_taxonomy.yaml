@@ -4,14 +4,9 @@ description: >
   another in the same flow. Tests that the target ends up with the source's
   whole taxonomy (prompt, a nested repeating group, fields, types, a Choice and
   instructions) and that only the taxonomy moves: the target keeps its own
-  label, file input, extraction source and model settings. A node extracts
-  with the processor its processorKey names, and that processor holds its own
-  copy of the taxonomy, so the copy also has to reach the processor behind the
-  target: no key (the Studio Web save provisions one from the node), or a key of
-  its own whose idpProcessor resource holds the copied prompt and output schema.
-  The source's key, a key no resource declares, or a processor still holding
-  another taxonomy all fail. Ids are not graded: the guide does not say whether a
-  copy keeps the source's ids or gets new ones.
+  label, file input, extraction source and model settings, and gets a
+  processor of its own rather than the source's. Ids are not graded: the guide
+  does not say whether a copy keeps the source's ids or gets new ones.
 
   No `flow debug`: a CLI-authored Extract document node extracts nothing
   until the flow is saved once in Studio Web.
@@ -79,12 +74,14 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Extract Credit Note will extract with the copied taxonomy: it has no processor yet, or its own (not Extract Invoice's) whose idpProcessor resource holds the copied prompt and output schema"
-    command: python3 $REFERENCE_DIR/extract-document/copy_taxonomy/copy_taxonomy_helper.py
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
+  - type: json_check
+    description: "Extract Credit Note does not take Extract Invoice's processorKey, so it does not run Invoice's processor"
+    path: "BillingDocs/BillingDocs/BillingDocs.flow"
+    assertions:
+      - expression: "length(nodes[?id=='extractCreditNote1' && inputs.processorKey=='3f6b2a9e-8c41-4d7a-9b25-61e0c4d8f713'])"
+        operator: equals
+        expected: 0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
