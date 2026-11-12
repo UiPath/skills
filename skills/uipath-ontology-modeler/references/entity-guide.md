@@ -130,7 +130,7 @@ The resource is written to `entity/federated/<F>.json`. With at least one connec
 Build `<FEDERATED_BODY>` from the sources and joins the user confirmed. The sources become `externalFields`:
 
 - A connector source keeps `connectionName` (already a connection resource in the solution), `object` and `fields`. The `connector` key is for finding the connection and is not passed.
-- A native source keeps `entityName` (a local entity) and `fields`.
+- A native source keeps `entityName` (a local entity) and `fields`. Map and join only its plain columns (`STRING`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME_WITH_TZ`, `MULTILINE_TEXT`, `MULTILINE_MAX`). A relationship, choice-set, file or auto-number column, or an imported type such as `INT`, is refused with `UNSUPPORTED_SOURCE_COLUMN` before anything is written, even with a `type` override. Such a column may stay on the entity; leave it out of `fields` and joins.
 - `fields` entries are plain external field names, or override objects `{ "source": "<FIELD>", "name", "type", "direction", "searchable", "sortable", "requiredForRead" }` where only `source` is required. Field types come from the connector (connector source) or the local entity (native source).
 - Each join in `joins` keeps `source`, `relatedSource`, `sourceField`, `relatedField`, `sourceConnectionName` and `relatedConnectionName`. For a connector source the connection name goes in `sourceConnectionName` / `relatedConnectionName`; for a native source, the entity name.
 
