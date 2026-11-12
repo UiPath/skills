@@ -100,10 +100,11 @@ success_criteria:
       3. Next come the box lines, each starting with `- `. The attached
          `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
          box has exactly one line, and every line names one task box (its
-         action words, with or without the bracketed kind), optionally
-         followed by `: ` and the box's resource status (a resource name, a
+         action words, with or without the bracketed kind), followed by
+         `: ` and the box's resource status (a resource name, a
          which-of-two question, `none yet, create it or name one`, `not
-         checked`, or `no resource needed`). The task box's label may end
+         checked`, or `no resource needed`). A box line with no status
+         fails this item. The task box's label may end
          with ` → <variable>` (the variable that box produces, which the
          skill puts in the label itself), so a line may carry that suffix
          too: it is part of the box's name, not a resource status and not a
@@ -149,6 +150,19 @@ success_criteria:
     timeout: 60
     expected_exit_code: 0
     weight: 2.0
+    pass_threshold: 1.0
+
+  # Both skills look up each box's resource right before the gate (v1 3c,
+  # v2 draft-skeleton.md "Find the resources"); the manager-review box is an
+  # Action app, so at least one lookup must run. It is read-only, so the
+  # "don't upload or run anything" request does not forbid it, and a lookup
+  # that fails offline still counts: the box is then `not checked`.
+  - type: command_executed
+    description: "Agent looked up the boxes' resources before the gate"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   # Tenants hold thousands of processes: a 3c lookup without --search lists

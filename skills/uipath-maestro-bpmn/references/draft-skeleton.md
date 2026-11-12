@@ -24,8 +24,9 @@ A skeleton is not a working process and must never be reported as one.
    It compiles to a plain `<bpmn:task>` with no `uipath:activity` payload.
 2. **Use no typed activity method** — not `scriptTask`, `humanTask`, `http`, `connector`, `externalAgent`, `externalWorkflow`, `dataService`, `businessRule`, the Orchestrator start/execute/queue methods, or `activity`.
    The label carries the kind (rule 5).
-3. **Make no registry calls.** No `uip maestro bpmn registry pull`, `search` or `get`, and no connection or resource lookup.
-   Types and resources are chosen after the shape is approved.
+3. **Make no registry calls.** No `uip maestro bpmn registry pull`, `search` or `get`.
+   Types are chosen after the shape is approved.
+   Each box's resource is looked up once the skeleton validates, just before the gate ([Find the resources](#find-the-resources)); those lookups read the tenant and are not registry calls.
 4. **Control flow is real.**
    - The start event is the one the process actually has: plain when something calls it, `{ timer }` when it runs on a schedule (`{ timer: { cycle: 'R/2026-01-05T07:00:00Z/P7D' } }` for every Monday at 7:00 UTC; use the user's UTC offset in place of `Z` when they give a local time, and `Z` when they state none; a duration string for a one-off delay), `{ message: '<name>' }` when a message starts it.
      Do not set `trigger: true`: it adds the platform trigger's `uipath:activity` payload, which is a build-time decision.
@@ -117,12 +118,61 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
    Do not pack, debug or run anything.
    Those are separate decisions, and the user has not approved the shape yet.
 <!--skill-flavor:draft-upload:end-->
+5. **Find each box's resource**, as [Find the resources](#find-the-resources) says, then reply as [Show the shape and stop](#show-the-shape-and-stop) says.
 
 ### Expected findings — do not chase them
 
 A skeleton validates as **Valid** with one warning per variable a decision reads: `Variable "vars.<id>" is read but never assigned; it will be empty at run time`.
 That is correct for a skeleton, whose producers are blank boxes.
 Act only on errors, and do not report the warning: it appears on every skeleton, so it gets no line in the reply.
+
+## Find the resources
+
+A box whose kind runs a deployed resource cannot be built without one: every kind in [Box kinds](#box-kinds) except `Execute script` and `Execute HTTP request`, including Business rule, plus a queue, a Data Fabric entity, and a connector box's connection.
+When this run already found no `uip login` (the upload failed for it), skip the lookup and mark each such box `not checked`.
+Otherwise run every lookup in **one** Bash call.
+It is the turn's last tool call: send any progress note before it, and when it returns, send the gate reply as your next and final message, starting with its first line.
+
+- **Processes, queues, apps:** `uip solution resources list --kind <Process|Queue|App> --search "<term>" --output json`.
+  It lists what the solution already holds (`Source: Local`) and what the tenant has (`Source: Remote`).
+  `--kind Process` returns every process type; match the box's kind on `Type`: RPA workflow `process`, API workflow `api`, Agent `agent`, Maestro BPMN `processOrchestration`, Maestro Case `CaseManagement`, Maestro Flow `Flow`, Function `function`.
+  An Action app box takes `--kind App`.
+- **Connections:** run this once when any box is a connector box or a Data Fabric entity box, including when the user named no provider; skip it when no box is either.
+  No connector key is needed, and the command has no `--limit`, so the `--output-filter` row filter keeps the output to the boxes' connectors:
+
+  ```bash
+  uip is connections list --all-folders --output-filter "[?contains(ConnectorName,'<WORD>')].{Connector:ConnectorName,Connection:Name,State:State,IsDefault:IsDefault,Folder:Folder}" --output json
+  ```
+
+  Replace the `contains(...)` test with one per service the boxes use, joined with `||`.
+  `<WORD>` is one distinctive word of the app the user named, in the app's usual capitalization (`Slack`, `Outlook`, `SharePoint`, `Jira`, `Salesforce`); `contains` is case-sensitive and the exact display name is unknown, so never pass a full name for a named app.
+  For a box that names no provider, such as "send an email", use exact names, never `contains(...,'Mail')` (it also matches Mailchimp and Mailgun): `ConnectorName=='Gmail'`, `ConnectorName=='Microsoft Outlook 365'`, `ConnectorName=='Mail'`, `ConnectorName=='Exchange Server'`.
+  When any box is a Data Fabric entity, add `ConnectorName=='UiPath Data Fabric'`.
+  Match each connector box on `Connector` only, since a connector's key can contain another service's name (the Slack connector's key contains `salesforce`).
+  Prefer `State: Enabled`; among those, the folder the step names, then `IsDefault: Yes`.
+  An empty result for a box's service marks the box `none yet`; never say the tenant has no such connection.
+- **Business rules:** `uip rules list --all-folders --limit 10000 --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path.
+- **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
+  The box also needs the `UiPath Data Fabric` connection from the connections lookup.
+
+Run each lookup exactly as written, adding no flag: `uip` rejects `--output-filter` on `uip solution resources list` without `--limit`, and rejects `--limit` on every `uip is` and `uip df` list.
+`--search` matches names only, and tenants hold thousands of processes, so never list a kind unfiltered, not even after a search came back empty.
+Put every search in the one lookup call: the user's own words for the resource, and one or two keywords from the box's label (`review`, `approval` for `Manager review [Action app]`).
+When a lookup fails, mark its boxes `not checked`, say why in the one sentence the reply's first line allows, and do not retry.
+A failed lookup proves nothing is missing: say "Couldn't check your Slack connections", never "No Slack connection in this tenant", and never name a connector key, a kind or a CLI term.
+
+Then give each box one status:
+
+- When the user named the resource, or exactly one row fits the box, use it and name it, with its folder when the row has one.
+- When several fit, name the best two and ask which one.
+- When none fits, write `none yet, create it or name one`: the user creates it or names one, or picks *Change it*.
+- `Execute script` and `Execute HTTP request` boxes need no resource: write `no resource needed` and look nothing up for them.
+
+A row fits only when both hold: its kind is the box's kind (match `Type` as above, and an Action app box takes an action app, never a web or other app), and its name and folder show it does the step the box describes.
+A name that merely shares a keyword does not fit: an app called `review-app` in an unrelated project's folder is not the approval step of an accounts-payable process.
+When you cannot tell that a row serves the step, treat the box as having none, and never bind to that row.
+Run the lookup again at every gate, so a resource the user created since the last gate shows up.
+This gate is the one round for structure and resource questions.
 
 ## Show the shape and stop
 
@@ -136,9 +186,13 @@ When you uploaded the skeleton, the user may have changed it on the canvas befor
 Before you edit it again, download the cloud copy and compare it, as [Check the cloud copy](operate.md#check-the-cloud-copy-before-editing) says; when it differs, build on their copy without asking, and say so in the reply's one sentence.
 <!--skill-flavor:draft-cloud-copy:end-->
 
-- **Change it**: edit the skeleton, run the loop again, and show it again as step 4 does.
+- **Change it**: edit the skeleton, run the loop again, and show it again as steps 4 and 5 do.
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
+  Bind each box to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
+  A box the gate marked `none yet` gets a placeholder binding: the resource's symbolic name, with no tenant value, as [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) shows for a connection; the final report lists it under `Needs:`.
+  An unanswered which-of-two takes the first resource named, reported under `Assumed`.
+  A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.
   End the turn with the [final report](#the-final-report-after-build-it).
 - **Keep it**: stop, and report the file as an outline, not a working process.

@@ -99,10 +99,11 @@ success_criteria:
       3. Next come the box lines, each starting with `- `. The attached
          `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
          box has exactly one line, and every line names one task box (its
-         action words, with or without the bracketed kind), optionally
-         followed by `: ` and the box's resource status (a resource name, a
+         action words, with or without the bracketed kind), followed by
+         `: ` and the box's resource status (a resource name, a
          which-of-two question, `none yet, create it or name one`, `not
-         checked`, or `no resource needed`). The task box's label may end
+         checked`, or `no resource needed`). A box line with no status
+         fails this item. The task box's label may end
          with ` → <variable>` (the variable that box produces, which the
          skill puts in the label itself), so a line may carry that suffix
          too: it is part of the box's name, not a resource status and not a

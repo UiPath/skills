@@ -479,6 +479,32 @@ def test_draft_gate_guard_allows_the_preflight(task: str, command: str) -> None:
     assert not _hits(_pattern(task, "no registry discovery"), command), command
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        'uip solution resources list --kind App --search "review" --output json',
+        'uip solution resources list --kind Process --search "invoice" --output json; '
+        'uip solution resources list --kind App --search "approval" --output json',
+        "uip is connections list --all-folders --output-filter "
+        "\"[?contains(ConnectorName,'Slack')].{Connector:ConnectorName}\" --output json",
+    ],
+)
+def test_draft_resource_lookup_counts(command: str) -> None:
+    assert _hits(_pattern(_DRAFTS[0], "looked up the boxes' resources"), command), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip maestro bpmn validate InvoiceIntakeSketch/InvoiceIntakeSketch.bpmn --output json",
+        "uip is connectors list --output json",
+        "uip solution upload InvoiceIntakeSketchSolution --output json",
+    ],
+)
+def test_draft_resource_lookup_ignores_other_calls(command: str) -> None:
+    assert not _hits(_pattern(_DRAFTS[0], "looked up the boxes' resources"), command), command
+
+
 # --- query_params: the advisory connection-lookup row ---------------------------
 
 _QP = "connector_features/query_params/query_params.yaml"
