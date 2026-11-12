@@ -73,6 +73,7 @@ from __future__ import annotations
 import glob
 import json
 import os
+import re
 import sys
 import traceback
 import uuid
@@ -163,6 +164,9 @@ LEAKED_PROJECT_AGE_SECONDS = 7200.0
 # this sandbox is this run's; any other Debug_ folder is deleted only by the
 # seed sweep, and only when stale and wholly fixture-domain.
 DEBUG_FOLDER_PREFIX = "Debug_"
+DEBUG_FOLDER_TYPE = "DebugSolution"
+# A second debug run of one project lands in `Debug_<N> 1`, `Debug_<N> 2`, ...
+DEBUG_RERUN_SUFFIX = re.compile(r" \d+$")
 FOLDER_LIST_LIMIT = "500"
 
 
@@ -232,18 +236,31 @@ def sweep_domain_packages() -> list[str]:
     return deleted
 
 
-def list_debug_folders(name_part: str) -> list[dict]:
-    """Folders whose name starts with DEBUG_FOLDER_PREFIX and contains `name_part`."""
-    payload = run_uip_json(
-        ["or", "folders", "list", "--all", "--name", name_part,
-         "--limit", FOLDER_LIST_LIMIT, "--output", "json"]
-    )
-    if (payload.get("Pagination") or {}).get("HasMore"):
-        print(f"WARN: folder search '{name_part}' filled a page; some Debug_ folders stay")
+def list_debug_folders() -> list[dict]:
+    """Every Debug_ folder the caller can see.
+
+    `--all` is not used: it lists Standard and Solution folders only, and never
+    a debug run's folder, a DebugSolution under the caller's Personal
+    Workspace. The plain listing carries them, so it is paged here.
+    """
+    folders: list[dict] = []
+    offset = 0
+    while True:
+        payload = run_uip_json(
+            ["or", "folders", "list", "--limit", FOLDER_LIST_LIMIT,
+             "--offset", str(offset), "--output", "json"]
+        )
+        page = payload.get("Data") or []
+        folders.extend(page)
+        if not (payload.get("Pagination") or {}).get("HasMore") or not page:
+            break
+        offset += len(page)
     return [
         folder
-        for folder in payload.get("Data") or []
-        if str(folder.get("Name") or "").startswith(DEBUG_FOLDER_PREFIX) and folder.get("Key")
+        for folder in folders
+        if folder.get("Type") == DEBUG_FOLDER_TYPE
+        and str(folder.get("Name") or "").startswith(DEBUG_FOLDER_PREFIX)
+        and folder.get("Key")
     ]
 
 
@@ -264,7 +281,7 @@ def sweep_debug_folders() -> list[str]:
             str(version.get("Key")): version.get("Published")
             for version in list_domain_package_versions()
         }
-        folders = list_debug_folders(DEBUG_FOLDER_PREFIX)
+        folders = list_debug_folders()
     except Exception as exc:  # noqa: BLE001 — hygiene must not fail the seed
         print(f"WARN: Debug_ folder sweep skipped: {exc}")
         return swept
@@ -402,17 +419,17 @@ def delete_owned_debug_folders() -> list[str]:
     the packages outlive it and are returned for the caller's package delete.
     """
     packages: list[str] = []
-    for name in sandbox_project_names():
-        wanted = f"{DEBUG_FOLDER_PREFIX}{name}"
-        for folder in list_debug_folders(wanted):
-            if folder["Name"] != wanted:
-                continue
-            folder_key = str(folder["Key"])
-            try:
-                packages.extend(list_folder_process_packages(folder_key))
-            except Exception as exc:  # noqa: BLE001 — the folder delete still runs
-                print(f"WARN: could not list the processes of '{wanted}': {exc}")
-            delete_debug_folder(folder_key, wanted)
+    owned = {f"{DEBUG_FOLDER_PREFIX}{name}" for name in sandbox_project_names()}
+    for folder in list_debug_folders():
+        folder_name = str(folder["Name"])
+        if DEBUG_RERUN_SUFFIX.sub("", folder_name) not in owned:
+            continue
+        folder_key = str(folder["Key"])
+        try:
+            packages.extend(list_folder_process_packages(folder_key))
+        except Exception as exc:  # noqa: BLE001 — the folder delete still runs
+            print(f"WARN: could not list the processes of '{folder_name}': {exc}")
+        delete_debug_folder(folder_key, folder_name)
     return packages
 
 

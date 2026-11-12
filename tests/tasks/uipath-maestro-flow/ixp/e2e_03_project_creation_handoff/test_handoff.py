@@ -151,9 +151,11 @@ elif argv[:3] == ["or", "folders", "create"]:
     key = payload.get("created_folder_key", "created-" + argv[3])
     print(json.dumps({"Data": {"Key": key, "Name": argv[3]}}))
 elif argv[:3] == ["or", "folders", "list"]:
-    term = argv[argv.index("--name") + 1].lower() if "--name" in argv else ""
-    rows = [folder for folder in payload.get("debug_folders", [])
-            if term in folder["Name"].lower() and folder["Key"] not in deleted_folders()]
+    # `--all` never lists a debug run's folder (verified live), so the fake
+    # serves them only from the plain listing.
+    rows = [] if "--all" in argv else [
+        dict(folder, Type="DebugSolution") for folder in payload.get("debug_folders", [])
+        if folder["Key"] not in deleted_folders()]
     print(json.dumps({"Data": rows, "Pagination": {"HasMore": False}}))
 elif argv[:3] == ["or", "folders", "get"]:
     folder_ids = payload.get("folder_ids", {})
@@ -1469,6 +1471,7 @@ def debug_tenant(sandbox: pathlib.Path, **overrides: Any) -> dict[str, str]:
             DEBUG_FOLDER_KEY: 100030,
             FOREIGN_DEBUG_FOLDER_KEY: 100040,
             "a1b2c3d4-0000-4000-8000-000000000003": 100050,
+            "a1b2c3d4-0000-4000-8000-000000000004": 100060,
         },
     }
     payload.update(overrides)
@@ -1504,6 +1507,7 @@ def test_teardown_keeps_a_debug_folder_this_run_does_not_own(
             {"Key": DEBUG_FOLDER_KEY, "Name": OWNED_DEBUG_NAME},
             {"Key": FOREIGN_DEBUG_FOLDER_KEY, "Name": "Debug_SomeoneElsesFlow"},
             {"Key": "a1b2c3d4-0000-4000-8000-000000000003", "Name": "Debug_Proj2"},
+            {"Key": "a1b2c3d4-0000-4000-8000-000000000004", "Name": "Debug_Proj 1"},
         ],
     )
 
@@ -1513,6 +1517,7 @@ def test_teardown_keeps_a_debug_folder_this_run_does_not_own(
     assert DEBUG_FOLDER_KEY in deleted
     assert FOREIGN_DEBUG_FOLDER_KEY not in deleted
     assert "a1b2c3d4-0000-4000-8000-000000000003" not in deleted
+    assert "a1b2c3d4-0000-4000-8000-000000000004" in deleted
 
 
 def test_a_failing_debug_folder_delete_still_exits_zero_and_cleans_the_rest(
