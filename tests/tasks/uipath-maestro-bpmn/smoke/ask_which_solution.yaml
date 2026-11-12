@@ -8,7 +8,7 @@ description: >
   Single turn: nobody answers, so the run ends at the question. The
   answer-honoring half (the user picks a new named solution) is
   interactive/solution_select.
-tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:approval-gate"]
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", studio-web-unsupported, "studio-web-unsupported:solution-selection"]
 
 run_limits:
   expected_turns: 8
