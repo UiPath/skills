@@ -60,8 +60,9 @@ uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}"
 Install the candidate whole with `cp`. Never write or patch the `.flow`
 yourself, and never copy only your change into the original. Merge renumbers
 every edge (`edge_0`, `edge_1`, ...), may reorder nodes, and adds default
-fields: that is its normal output, not drift to undo. The changes to act on
-are the [merge warnings](#merge-warnings-what-the-round-trip-changed).
+fields, and moves original nodes right or down to make room for an added one:
+that is its normal output, not drift to undo. Never move them back. The changes
+to act on are the [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
 Validate in the project, not `candidate/` alone: it holds only the agent files
 merge changed, so an unchanged inline agent's `agent.json` is missing there
