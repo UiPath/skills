@@ -14,7 +14,7 @@ output, not drift to undo. Never move them back. The changes to act on are the
 
 Validate the target `.flow`, not `/tmp/flow-draft/<Project>/<Name>/edited/`: that folder holds only
 the agent files merge changed. If validate fails, copy
-`.flow-sdk/original/<Name>.flow` back over the target, fix the source, and
+`.flow-sdk/before-edit/<Name>.flow` back over the target, fix the source, and
 merge again.
 <!--skill-flavor:safe-project-loop:end-->
 
