@@ -481,8 +481,8 @@ def elements_local(root: ET.Element, local_name: str) -> list[ET.Element]:
 # The canvas renders from the diagram, so a user's pools, lanes, colors, box sizes and
 # placement live there. Regenerating the diagram (`uip maestro bpmn format` on an
 # existing file) drops every one of them while the model still validates.
-# classic/skills/uipath-maestro-bpmn/scripts/check-diagram-preserved.py ships the same rules
-# to agents; keep the two in step.
+# classic/skills/uipath-maestro-bpmn/SKILL.md ("Keep the user's diagram", step 7) lists the same rules for
+# agents to check by hand; keep the two in step.
 
 _CONTAINER_KINDS = frozenset({"participant", "lane"})
 _ARTIFACT_KINDS = frozenset({"textAnnotation", "group"})

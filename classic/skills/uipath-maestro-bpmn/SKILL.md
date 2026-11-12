@@ -14,7 +14,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 - **Plan the whole path up front, then chain.** Outline the full sequence of steps before running anything, batch independent steps into one turn, and pipeline the whole plan in as few turns as possible. Don't do things that can be pipelined into one call turn-by-turn.
 - **Inspect an input ONCE.** To learn a file's structure (sheets/columns, pages, form fields, keys), dump it once — ideally to a file you then grep — never re-open the same file field-by-field or retry it with several libraries. A source image is the exception: look at it again whenever it is no longer visible in your context (see [Authoring from an image](#authoring-from-an-image)).
 - **Don't repeat work.** Do not rerun a command when its inputs and relevant state are unchanged, and do not reread an unchanged file, script, or SKILL.md already in context. After a tool or command may modify a file, reread the affected content before relying on it.
-- **Write code once and reuse.** If a step needs code, write it once as a small script (paths/params as CLI args) and call it; don't paste near-duplicate inline python across turns. Keep it terse — no comment banners or narration in inline scripts.
+- **Write code once and reuse.** If a step needs code, write it once as a small script (paths/params as CLI args) and call it; don't paste near-duplicate inline code across turns. Keep it terse — no comment banners or narration in inline scripts.
 - **Keep outputs small.** Don't put large tool results and outputs into the context, instead write them into a file and use tools to inspect them. If there is no tool available, you should write your own scripts to inspect the file. To decide whether a row exists, filter CLI JSON by field (`jq select`), never truncate it (`head`, `sed -n`).
 - **Talk to the user in plain words.** Every line the user sees, including the short progress note you write while working, is one plain sentence about what is happening for them ("Sketching your process", "Checking what your tenant already has"). Never put an element, gateway, variable, validator, or file term in it, and never name a phase or step ("2f", "1a", "phase 4"): those labels are this skill's, not the user's.
 - **Don't do anything unnecessary.** Don't call tools, read files, or put results into context unless they're immediately needed.
@@ -103,23 +103,22 @@ while `validate` still passes. On such a file:
    orthogonal waypoints from the source's edge to the target's edge.
 6. For each node or flow you delete, delete its shape or edge, and remove the
    node's `bpmn:flowNodeRef` from its lane.
-<!--skill-flavor:diagram-preserved-check:start-->
-7. After the last write, and before `validate`, run
-   [scripts/check-diagram-preserved.py](scripts/check-diagram-preserved.py)
-   from this skill's folder (`<SKILL_DIR>`, the directory holding this
-   SKILL.md):
-   `python3 "<SKILL_DIR>/scripts/check-diagram-preserved.py" "<SNAPSHOT_PATH>" <file.bpmn> --removed <REMOVED_IDS>`,
-   where `<REMOVED_IDS>` is a comma-separated list of the ids you deleted (omit
-   `--removed` when you deleted nothing). Use `python` or `py -3` when
-   `python3` is missing; with no Python at all, compare the two files by hand
-   against the list the script's docstring gives. For each reported loss:
-   - the user asked for that diagram change (a color, a move, a re-layout):
-     keep it and name it in the summary;
-   - otherwise restore the lost entry from the snapshot.
+7. After the last write, and before `validate`, compare `<SNAPSHOT_PATH>` with
+   the edited file. Studio Web has no Python, so check by hand that, apart
+   from the ids you deleted:
+   - the `BPMNPlane` still targets the same `bpmnElement`;
+   - every pool and lane still has its shape, and every lane keeps its
+     `bpmn:flowNodeRef`s;
+   - every annotation and group survives, with its shape;
+   - every surviving shape and edge keeps its color attributes;
+   - every surviving node shape keeps its size (only pools, lanes and
+     expanded subprocesses may grow);
+   - surviving node shapes either stay put or all move by one common offset;
+   - every surviving flow still has its `BPMNEdge`.
 
-   Re-run the check after restoring, at most twice. If losses remain, list
-   them in the summary instead of finishing silently.
-<!--skill-flavor:diagram-preserved-check:end-->
+   For each loss: if the user asked for that diagram change, keep it and name
+   it in the summary; otherwise restore the entry from the snapshot. Re-check
+   at most twice, then list any remaining losses in the summary.
 
 A file this task created — an `init` scaffold or a greenfield draft — has no
 user layout yet; run `format` as rule 5 says.
