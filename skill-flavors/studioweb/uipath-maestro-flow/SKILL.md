@@ -119,7 +119,7 @@ Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "
 <!--skill-flavor:sdk-lifecycle:end-->
 
 <!--skill-flavor:sdk-editing:start-->
-In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Edit the decompiled source narrowly and let the merge carry only that delta back ([Lifecycle](#lifecycle)). Validate the merged target `.flow`, never `<Draft>/edited/`. Studio Web has no pipeline helper: `decompile` here never writes one.
+In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Edit the decompiled source narrowly and let the merge carry only that delta back ([Lifecycle](#lifecycle)). Validate the merged target `.flow`, never `<Draft>/edited/`. A `.flow-sdk/original/` left by an older turn is stale: never pass it to merge. Studio Web has no pipeline helper: `decompile` here never writes one.
 
 **True-brownfield procedure:**
 **[`references/brownfield.md`](references/brownfield.md)** — read its judgments. Its shell sequences assume a terminal, so use the round trip above instead.
