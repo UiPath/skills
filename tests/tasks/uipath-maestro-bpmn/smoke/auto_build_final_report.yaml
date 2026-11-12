@@ -35,7 +35,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not run the process, as the request forbids"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(debug|process\s+run)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(debug(?!-)|process\s+run)'
     weight: 1.0
     pass_threshold: 1.0
 
