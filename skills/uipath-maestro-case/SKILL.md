@@ -68,6 +68,33 @@ three entry points; each file's header spells the paths its rows resolve against
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
 | Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
+| Task activation modes (parallel, parallel-after-predecessor, sequential) | `rule('runs-sequentially')`, `.task(name, fn, { lane })` | [Activation modes](#activation-modes) | — |
+
+## Activation modes
+
+An SDD's `Activation Mode` column maps to the SDK's `runs-sequentially` rule and the `lane` parameter on `.task()`. **Do not use `selected-tasks-completed` for within-stage predecessor ordering** — that is a cross-stage concept. Within a stage, task-set grouping controls ordering:
+
+| SDD Activation Mode | SDK entry rule | `lane` param | Effect |
+|---|---|---|---|
+| `parallel` | `rule('current-stage-entered')` | omit | Task starts when the stage enters. Each task gets its own set. |
+| `parallel-after-predecessor` | `rule('runs-sequentially')` | shared index across siblings | Siblings share one set and start together after the predecessor set completes. |
+| `sequential` | `rule('runs-sequentially')` | omit (each task in its own set) | Strict chain: each task waits for the previous set. |
+
+`lane` is the set index in `data.tasks[][]`. Tasks with `runs-sequentially` that share the same `lane` value are grouped into one set. A task without `runs-sequentially` always gets its own set regardless of `lane`.
+
+```ts
+.stage('Issuing Permit', s => s
+  .task('Collect Fees', t => t.process('collect').required()
+    .entryWhen(rule('runs-sequentially')))
+  .task('Wait For Confirmation', t => t.waitForTimer({ duration: 'PT1H' }).required()
+    .entryWhen(rule('runs-sequentially')), { lane: 1 })
+  .task('Track Deadline', t => t.waitForTimer({ duration: 'P5D' }).required()
+    .entryWhen(rule('runs-sequentially')), { lane: 1 })
+  .task('Generate Permit', t => t.process('generate').required()
+    .entryWhen(rule('runs-sequentially'))))
+```
+
+Emits `tasks: [[Collect Fees], [Wait, Track], [Generate]]` — three sets, with the two siblings grouped in set 1.
 
 ## Minimal shape
 
