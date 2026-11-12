@@ -4,8 +4,9 @@ description: >
   agent adds `uipath.ixp.extract-document-builder` rather than a published IXP
   model node, points its `fileRef` at a declared file input, wires an edge into
   it, and leaves a flow that validates in a project without builder-SDK source,
-  without starting an IXP project. The node comes with its processor, so the
-  flow has to sit in a solution for the resource to be written.
+  without starting an IXP project. The node comes with its processor key;
+  inside a solution its resource file is written too, and outside one pack
+  writes it later.
 
   Graded on the final `.flow`, so a node that a compile from `.flow-sdk/`
   source drops counts as missing; a `.flow-sdk/` left beside the flow fails
@@ -64,7 +65,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The node has a processor: a processorKey, and the idpProcessor resource with that key in the solution"
+    description: "The node has a processor: a processorKey and, inside a solution, the idpProcessor resource with that key"
     command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader processor
     expected_exit_code: 0
     weight: 1.0

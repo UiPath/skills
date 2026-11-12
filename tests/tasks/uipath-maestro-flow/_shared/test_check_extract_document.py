@@ -638,10 +638,15 @@ def test_processor_ignores_a_resource_of_another_kind(write, solution, capsys):
     assert "idpProcessor keys: none" in capsys.readouterr().err
 
 
-def test_processor_fails_a_flow_outside_a_solution(write, capsys):
+def test_processor_passes_a_keyed_flow_outside_a_solution(write):
     write(_keyed_flow())
+    assert _run("processor") == 0
+
+
+def test_processor_fails_a_keyless_flow_outside_a_solution(write, capsys):
+    write(_keyed_flow(None))
     assert _run("processor") == 1
-    assert "is not inside a solution" in capsys.readouterr().err
+    assert "not a GUID" in capsys.readouterr().err
 
 
 def test_processor_takes_no_values(write):

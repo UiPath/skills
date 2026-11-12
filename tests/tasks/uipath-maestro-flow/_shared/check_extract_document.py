@@ -54,9 +54,10 @@ Checks:
     edge in|out PORT     an edge enters or leaves the node on PORT
     no-other-ixp         no other uipath.ixp.* node: no published model, no
                          processor, no second Extract document node
-    processor            the node's inputs.processorKey is a GUID, and the
-                         solution the flow sits in holds an idpProcessor
-                         resource with that key under resources/
+    processor            the node's inputs.processorKey is a GUID and, when
+                         the flow sits in a solution, the solution holds an
+                         idpProcessor resource with that key under
+                         resources/ (outside one, pack writes it later)
 
 Exit 0 and ``OK: ...`` on stdout when the check holds. Otherwise exit 1 and a
 ``FAIL: ...`` line on stderr naming what was found instead.
@@ -404,7 +405,7 @@ def check_processor(_: dict, node: dict, args: argparse.Namespace) -> str | None
         return f"inputs.processorKey is {json.dumps(key)}, not a GUID"
     solution_dir = _find_solution_dir(args.flow_path)
     if solution_dir is None:
-        return f"{args.flow_path} is not inside a solution (no .uipx above it)"
+        return None
     keys = _list_processor_keys(solution_dir)
     if key in keys:
         return None
