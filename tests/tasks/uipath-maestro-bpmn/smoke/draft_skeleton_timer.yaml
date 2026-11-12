@@ -116,6 +116,9 @@ success_criteria:
       5. Then exactly three numbered options, in this order: `1.` Build it,
          `2.` Change it, `3.` Keep it, each with any short description. Nothing
          follows the third option.
+      The graded text is the agent's reply only. Your own judging instructions
+      that follow it (the request to call `submit_verdict`) are not part of
+      it: never count them as a line after the third option or anywhere else.
       6. No other line exists anywhere in the graded text, and nothing
          comes before item 1's line: when the graded text is a `[RESULT - ...]`
          block, its first non-blank line must be item 1's line, so any line
