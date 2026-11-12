@@ -150,6 +150,11 @@ elif argv[:3] == ["or", "folders", "create"]:
     # Seed's run folder: returns the Key teardown will read back as "scope".
     key = payload.get("created_folder_key", "created-" + argv[3])
     print(json.dumps({"Data": {"Key": key, "Name": argv[3]}}))
+elif argv[:3] == ["or", "folders", "list"]:
+    term = argv[argv.index("--name") + 1].lower() if "--name" in argv else ""
+    rows = [folder for folder in payload.get("debug_folders", [])
+            if term in folder["Name"].lower() and folder["Key"] not in deleted_folders()]
+    print(json.dumps({"Data": rows, "Pagination": {"HasMore": False}}))
 elif argv[:3] == ["or", "folders", "get"]:
     folder_ids = payload.get("folder_ids", {})
     if argv[3] not in folder_ids or argv[3] in deleted_folders():
@@ -188,6 +193,8 @@ elif argv[:3] == ["or", "folders", "delete"]:
         sys.exit(1)
     with open(deleted_folders_log, "a") as handle:
         handle.write(argv[3] + os.linesep)
+    with open(os.path.join(here, "order.txt"), "a") as handle:
+        handle.write("folder:" + argv[3] + os.linesep)
     print(json.dumps({"Data": {"Status": "ok"}}))
 elif argv[:3] == ["or", "packages", "list"]:
     # --search is a case-insensitive substring match, as the feed's is.
@@ -210,6 +217,8 @@ elif argv[:3] == ["or", "packages", "delete"]:
         sys.exit(1)
     with open(os.path.join(here, "deleted_packages.txt"), "a") as handle:
         handle.write(argv[3] + os.linesep)
+    with open(os.path.join(here, "order.txt"), "a") as handle:
+        handle.write("package:" + argv[3] + os.linesep)
     print(json.dumps({"Data": {"Status": "ok"}}))
 elif argv[:3] == ["or", "processes", "list"]:
     folder = argv[argv.index("--folder-key") + 1]
@@ -1437,3 +1446,119 @@ def test_teardown_deletes_the_domain_package_bound_in_the_run_folder(
     assert deleted_packages(sandbox) == [uploaded]
     assert f"NOT DELETED package '{foreign}'" in completed.stdout
     assert RUN_FOLDER_KEY in (sandbox.parent / "bin" / "deleted_folders.txt").read_text()
+
+
+# ── Debug_ folders: `uip maestro flow debug` leaves processes bound to packages ──
+# A debug run deploys the flow's packages into Debug_<project> under the
+# caller's Personal Workspace. The run folder's delete never reaches it, so its
+# processes keep the packages bound (HTTP 409 on delete) and its deployments
+# survive.
+
+DEBUG_FOLDER_KEY = "a1b2c3d4-0000-4000-8000-000000000001"
+FOREIGN_DEBUG_FOLDER_KEY = "a1b2c3d4-0000-4000-8000-000000000002"
+OWNED_DEBUG_NAME = "Debug_Proj"
+DEBUG_PACKAGE = "FalconryLicenceFlow.flow.Flow:1.0.4"
+
+
+def debug_tenant(sandbox: pathlib.Path, **overrides: Any) -> dict[str, str]:
+    payload: dict[str, Any] = {
+        "debug_folders": [{"Key": DEBUG_FOLDER_KEY, "Name": OWNED_DEBUG_NAME}],
+        "folder_processes": {DEBUG_FOLDER_KEY: [DEBUG_PACKAGE]},
+        "folder_ids": {
+            RUN_FOLDER_KEY: 100010,
+            DEBUG_FOLDER_KEY: 100030,
+            FOREIGN_DEBUG_FOLDER_KEY: 100040,
+            "a1b2c3d4-0000-4000-8000-000000000003": 100050,
+        },
+    }
+    payload.update(overrides)
+    return tenant(sandbox, **payload)
+
+
+def operation_order(sandbox: pathlib.Path) -> list[str]:
+    log = sandbox.parent / "bin" / "order.txt"
+    return log.read_text().split() if log.exists() else []
+
+
+def test_teardown_deletes_the_owned_debug_folder_before_its_packages(
+    sandbox: pathlib.Path,
+) -> None:
+    wired_flow(sandbox)
+    env = debug_tenant(sandbox)
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    order = operation_order(sandbox)
+    assert f"folder:{DEBUG_FOLDER_KEY}" in order
+    assert f"package:{DEBUG_PACKAGE}" in order
+    assert order.index(f"folder:{DEBUG_FOLDER_KEY}") < order.index(f"package:{DEBUG_PACKAGE}")
+
+
+def test_teardown_keeps_a_debug_folder_this_run_does_not_own(
+    sandbox: pathlib.Path,
+) -> None:
+    wired_flow(sandbox)
+    env = debug_tenant(
+        sandbox,
+        debug_folders=[
+            {"Key": DEBUG_FOLDER_KEY, "Name": OWNED_DEBUG_NAME},
+            {"Key": FOREIGN_DEBUG_FOLDER_KEY, "Name": "Debug_SomeoneElsesFlow"},
+            {"Key": "a1b2c3d4-0000-4000-8000-000000000003", "Name": "Debug_Proj2"},
+        ],
+    )
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    deleted = (sandbox.parent / "bin" / "deleted_folders.txt").read_text()
+    assert DEBUG_FOLDER_KEY in deleted
+    assert FOREIGN_DEBUG_FOLDER_KEY not in deleted
+    assert "a1b2c3d4-0000-4000-8000-000000000003" not in deleted
+
+
+def test_a_failing_debug_folder_delete_still_exits_zero_and_cleans_the_rest(
+    sandbox: pathlib.Path,
+) -> None:
+    wired_flow(sandbox)
+    env = debug_tenant(sandbox, undeletable_folders=[DEBUG_FOLDER_KEY])
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "WARN: could not delete debug folder 'Debug_Proj'" in completed.stdout
+    assert f"deleted run-scoped folder {RUN_FOLDER_KEY}" in completed.stdout
+
+
+def test_seed_sweeps_a_stale_fixture_debug_folder_before_its_packages(
+    sandbox: pathlib.Path,
+) -> None:
+    env = debug_tenant(sandbox, packages={DEBUG_PACKAGE: iso_ago(86400)})
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "swept leaked fixture folder 'Debug_Proj'" in completed.stdout
+    order = operation_order(sandbox)
+    assert order == [f"folder:{DEBUG_FOLDER_KEY}", f"package:{DEBUG_PACKAGE}"]
+
+
+def test_seed_keeps_a_young_fixture_debug_folder(sandbox: pathlib.Path) -> None:
+    env = debug_tenant(sandbox, packages={DEBUG_PACKAGE: iso_ago(600)})
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "KEEPING fixture folder 'Debug_Proj'" in completed.stdout
+    assert operation_order(sandbox) == []
+
+
+def test_seed_keeps_a_stale_debug_folder_holding_a_foreign_process(
+    sandbox: pathlib.Path,
+) -> None:
+    unrelated = "InvoiceProcessing.flow.Flow:1.0.0"
+    env = debug_tenant(
+        sandbox,
+        folder_processes={DEBUG_FOLDER_KEY: [DEBUG_PACKAGE, unrelated]},
+        packages={DEBUG_PACKAGE: iso_ago(86400)},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert operation_order(sandbox) == [f"package:{DEBUG_PACKAGE}"]
+    assert "KEEPING" not in completed.stdout
