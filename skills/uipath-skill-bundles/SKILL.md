@@ -61,7 +61,7 @@ The bundle is positional and takes its **name or its key** (GUID): `uip or skill
 | Rename / re-describe | `uip or skill-bundles update <BUNDLE> --folder-path <FOLDER_PATH> [--name <NAME>] [-d <TEXT>]` |
 | Remove from a folder | `uip or skill-bundles delete <BUNDLE> --folder-path <FOLDER_PATH> --yes` |
 | Version history | `uip or skill-bundles versions <BUNDLE> --folder-path <FOLDER_PATH> [--limit <LIMIT>] [--offset <OFFSET>]` |
-| Unpack a version into a workspace | `uip or skill-bundles download <BUNDLE> --folder-path <FOLDER_PATH> --destination <EMPTY_DIRECTORY> [--version <VERSION>]` |
+| Unpack a version into a workspace | `uip or skill-bundles download <BUNDLE> --folder-path <FOLDER_PATH> --destination <NEW_DIRECTORY> [--version <VERSION>]` |
 | Whole version as a zip | `uip or skill-bundles archive <BUNDLE> --folder-path <FOLDER_PATH> --destination <ZIP_FILE> [--version <VERSION>]` |
 | One file's content | `uip or skill-bundles file <BUNDLE> --folder-path <FOLDER_PATH> --path <PATH> [--version <VERSION>] [--destination <FILE>]` |
 | One file across versions | `uip or skill-bundles history <BUNDLE> --folder-path <FOLDER_PATH> --path <PATH> [--version <VERSION>] [--limit <LIMIT>] [--offset <OFFSET>]` |
@@ -79,7 +79,7 @@ The bundle is positional and takes its **name or its key** (GUID): `uip or skill
 uip or skill-bundles download <BUNDLE> --folder-path <FOLDER_PATH> --destination ./skills --version <VERSION>
 ```
 
-`--destination` must be an empty directory or a new path. The command pins the selector to one version number first, so a tag that moves mid-download cannot mix two versions, and writes `./skills/.okf/workspace.json`, the marker recording the bundle, the version and its manifest. Read the files straight from disk. Do not write or edit the marker by hand: it is the base the next `publish` diffs against. A download that fails while writing leaves the destination as it was — no marker, no partial files — so once its cause is fixed (disk space, a local permission, a dropped connection) run it again into the same path. A refusal, a content 404 or a wrong-kind key fails before anything is written and is not retried: follow Step 0. `The destination is no longer empty. Download into a new path.` means something else wrote there meanwhile.
+`--destination` must be a path that does not exist yet: never an existing directory, even an empty one, and do not create it first. An existing path is refused with `The destination already exists.` before any request. The command pins the selector to one version number first, so a tag that moves mid-download cannot mix two versions, and writes `./skills/.okf/workspace.json`, the marker recording the bundle, the version and its manifest. Read the files straight from disk. Do not write or edit the marker by hand: it is the base the next `publish` diffs against. A download that fails while writing leaves no workspace behind — no marker, no partial files, and an existing path is never removed — so once its cause is fixed (disk space, a local permission, a dropped connection) download again into a new path. A refusal, a content 404 or a wrong-kind key fails before anything is written and is not retried: follow Step 0.
 
 To see whether a workspace is current, `sync` it (against `latest` unless `--version` says otherwise). The report is **pull-direction**: `Changed` is what to download to match that version, `Deleted` what it no longer carries. Only files the marker lists are compared, so your own extra files never show. There is no apply command — `download` into a fresh directory.
 
@@ -122,6 +122,7 @@ A tag names one version; every read accepts it in place of a number. Names: up t
 | 409 on `tags set` / `tags delete` | Tag is immutable | Stop and report |
 | `There are no content changes to publish.` | Directory equals the base | Nothing to do; say so |
 | `The workspace belongs to another bundle.` | Marker names a different bundle | Download this bundle into its own directory |
+| `The destination already exists.` | `download --destination` names an existing path, even an empty directory | Pass a path that does not exist; do not create it first |
 | `confirmation_required` on `publish` | Plain directory with `--base-version` would delete `Data.DeletedPaths`; nothing was sent | Show the user `DeletedPaths` and ask; re-run with `--yes` only on their approval |
 | `--base-version must match this workspace's base.` | Workspace marker disagrees with `--base-version` | Drop the flag, or download that version into a fresh workspace |
 | `The source is already a workspace.` | `create --input` on a downloaded workspace | Copy the content into a plain directory first |
