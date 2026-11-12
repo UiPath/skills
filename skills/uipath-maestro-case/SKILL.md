@@ -69,6 +69,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
 | Task activation modes (parallel, parallel-after-predecessor, sequential) | `rule('runs-sequentially')`, `.task(name, fn, { lane })` | [Activation modes](#activation-modes) | — |
+| Document extraction (IXP model on a case document) | `.documentExtraction(model, spec)` | [Document extraction](#document-extraction) | — |
 
 ## Activation modes
 
@@ -95,6 +96,68 @@ An SDD's `Activation Mode` column maps to the SDK's `runs-sequentially` rule and
 ```
 
 Emits `tasks: [[Collect Fees], [Wait, Track], [Generate]]` — three sets, with the two siblings grouped in set 1.
+
+## Document extraction
+
+A document-extraction task runs a deployed IXP model against a case document. IXP deployments are NOT in the case registry cache (`registry pull` does not find them). Discover and add them separately:
+
+```bash
+# List all IXP deployments on the tenant
+uip solution resources list --kind IxpDeployment --source remote --output json
+# Add the deployment to the solution (required for bindings)
+uip solution resources add --source remote --kind IxpDeployment --cloud-key <KEY> --output json
+```
+
+The deployment row gives `Key` (deploymentKey), `Name` (DeploymentTitle), `Folder`, and `FolderKey`. The model's `DeploymentName` (`<slug>-<hash>-ixp`) comes from:
+
+```bash
+uip ixp deployments list <IXP_PROJECT_NAME> --output json
+```
+
+Use the deployment's **DeploymentName**, not the IXP project's name, as `modelName`.
+
+### Builder
+
+`.documentExtraction(model, spec)` on `TaskBuilder`:
+
+```ts
+.task('Extract Receipt', t => t
+  .documentExtraction('invoice-model-0a1b2c3d-ixp', {
+    deployment: 'Invoice Extractor',
+    deploymentKey: '<DEPLOYMENT_KEY>',
+    folderKey: '<FOLDER_KEY>',
+    folder: 'Shared',
+    file: '=vars.invoice',
+  })
+  .required()
+  .entryWhen(rule('current-stage-entered')))
+```
+
+If `check --source` refuses `documentExtraction` as unknown, the installed SDK predates the builder. Use `sdd convert` to seed the plan, then decompile and author the remaining TypeScript from the seeded source (step 5 of the Workflow).
+
+### Shape
+
+The compiled task carries `type: "document-extraction"`, `data.serviceType: "IXP.Extraction"`, `data.version: "v2"`, and `data.context[]` in the Designer's field order:
+
+| # | context name | value |
+|---|---|---|
+| 1 | `solutionResourceKey` | deploymentKey (the `Key` from `resources list`) |
+| 2 | `name` | `=bindings.<ixpDeployment-binding-id>` (a root binding, `resource: "ixpDeployment"`, `resourceKey: <deploymentKey>`, `default: <DeploymentTitle>`) |
+| 3 | `folderKey` | FolderKey from the deployment row |
+| 4 | `folderName` | folder path (e.g. `Shared`) |
+| 5 | `modelName` | DeploymentName (`<slug>-<hash>-ixp`) |
+| 6 | `modelDisplayName` | DeploymentTitle |
+| 7 | `digitizationMode` | `fileUpload` |
+
+Inputs: `fileRef` (file, required) and `pageRange` (string). Outputs: `output` (`=result`, the extracted fields) and `error` (`=Error`).
+
+After compile, add the deployment to the solution and sync bindings:
+
+```bash
+uip solution resources add --source remote --kind IxpDeployment --cloud-key <KEY> --output json
+```
+
+Verify the deployment appears in `bindings_v2.json` and in `uip solution resources list --source local`.
 
 ## Minimal shape
 
