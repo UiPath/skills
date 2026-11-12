@@ -1277,14 +1277,16 @@ def test_seed_proceeds_while_a_published_extractor_covers_the_domain(
     """The RE-13543 fix, stated as a test.
 
     A resolvable published extractor for the fixture domain used to abort seed.
-    Seed no longer probes the registry at all, so a covering node cannot stop
-    it (`check` still probes, for its served-node fallback). Whether that is
+    A covering node with its project cannot stop seed (only one with no
+    project does). Whether that is
     right for the task consuming this grader is the task's business, not the
     grader's.
     """
     siblings_node = ixp_node_type(LEAKED_DOMAIN_PROJECT, folder_key=CONCURRENT_FOLDER_KEY)
     env = install_fake_uip(
         sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(60)},
         registry_nodes=[{"NodeType": siblings_node, "DisplayName": LEAKED_DOMAIN_PROJECT}],
     )
 
@@ -1567,3 +1569,42 @@ def test_seed_keeps_a_stale_debug_folder_holding_a_foreign_process(
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert operation_order(sandbox) == [f"package:{DEBUG_PACKAGE}"]
     assert "KEEPING" not in completed.stdout
+
+
+# ── seed: ghost node guard ───────────────────────────────────────────────────
+
+GHOST_PROJECT = f"{DOMAIN_MARKERS[0]}-licences-9437bdae-ixp"
+
+
+def registry_node(project: str, title: str = "") -> dict[str, str]:
+    return {
+        "NodeType": f"uipath.ixp.{project}.524dbd64-0000-0000-0000-000000000000-{FOLDER_KEY}",
+        "DisplayName": title or project,
+        "Description": "(coder-eval-bot's workspace/Debug_LicenceExpiryLog)",
+    }
+
+
+def test_seed_errors_on_a_domain_node_with_no_project(sandbox: pathlib.Path) -> None:
+    env = install_fake_uip(sandbox, registry_nodes=[registry_node(GHOST_PROJECT)])
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert "tenant not ready" in completed.stderr
+    assert GHOST_PROJECT in completed.stderr
+    assert not (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_accepts_a_domain_node_that_has_its_project(sandbox: pathlib.Path) -> None:
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [GHOST_PROJECT],
+        project_created_at={GHOST_PROJECT: iso_ago(60)},
+        registry_nodes=[registry_node(GHOST_PROJECT)],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_ignores_a_foreign_node_with_no_project(sandbox: pathlib.Path) -> None:
+    env = install_fake_uip(sandbox, registry_nodes=[registry_node("shared-other-1234abcd-ixp")])
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr

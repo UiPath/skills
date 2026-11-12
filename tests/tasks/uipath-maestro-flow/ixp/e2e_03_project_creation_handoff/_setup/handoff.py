@@ -38,7 +38,8 @@ one fixture domain and can run at the same time.
 
 **seed** checks the one precondition left — that the `deployments create` verb
 exists, since it rides the CLI `dev` dist-tag — then sweeps stale
-domain-covering projects, `Debug_` folders and tenant-feed packages, snapshots tenant project
+domain-covering projects, `Debug_` folders and tenant-feed packages, fails as
+tenant-not-ready on a fixture-domain IxP node with no backing project, snapshots tenant project
 names as digests, and creates this run's folder, naming it in seed.json for the
 prompt.
 
@@ -80,6 +81,7 @@ import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from handoff_tenant import (  # noqa: E402  (path set above)
+    IXP_NODE_PREFIX,
     SNAPSHOT,
     delete_folder_with_retry,
     delete_package,
@@ -304,6 +306,51 @@ def sweep_debug_folders() -> list[str]:
     return swept
 
 
+def ghost_node_project(node: dict) -> str | None:
+    """The project a published fixture-domain IxP node points at, or None.
+
+    A NodeType reads `uipath.ixp.<project>.<model>-<folder key>`; the project
+    segment is the project's Name.
+    """
+    node_type = str(node.get("NodeType") or "")
+    if not node_type.startswith(IXP_NODE_PREFIX):
+        return None
+    if not matches_fixture_domain(
+        node_type, node.get("DisplayName"), node.get("Description")
+    ):
+        return None
+    return node_type[len(IXP_NODE_PREFIX):].split(".", 1)[0]
+
+
+def require_no_ghost_nodes(project_names: set[str]) -> None:
+    """Fail pre_run (ERROR, not FAILURE) on a fixture-domain node with no project.
+
+    A deployment outlives its project, and the registry keeps serving its node.
+    The agent then finds a same-domain model and reuses it, which turns the
+    handoff decision into a reuse test it can only fail. The sweeps above cannot
+    clear it: deployments have no delete verb, only their folder does.
+    """
+    run_uip_json(["maestro", "flow", "registry", "pull", "--force", "--output", "json"])
+    nodes = run_uip_json(
+        ["maestro", "flow", "registry", "search", IXP_NODE_PREFIX.rstrip("."), "--output", "json"]
+    )["Data"]
+    ghosts = sorted(
+        {
+            str(node["NodeType"])
+            for node in nodes
+            if ghost_node_project(node) not in (None, *project_names)
+        }
+    )
+    if ghosts:
+        raise RuntimeError(
+            "tenant not ready: published IxP node(s) cover the fixture domain "
+            "but have no backing project, so the agent would reuse them instead "
+            "of handing off. Delete the Orchestrator folder holding the "
+            "deployment, then re-run: " + ", ".join(ghosts)
+        )
+    print("OK: no fixture-domain IxP node without a project")
+
+
 def create_run_folder(name_extractor: bool) -> str:
     """Create this run's folder, write seed.json, return the folder's Key.
 
@@ -367,6 +414,7 @@ def seed_main(name_extractor: bool = False) -> int:
     swept = sweep_domain_projects(projects)
     sweep_debug_folders()
     sweep_domain_packages()
+    require_no_ghost_nodes({str(project["Name"]) for project in projects} - set(swept))
     # Snapshot the projects BEFORE creating the folder, so the only step
     # between the folder existing and the snapshot recording it is a local
     # file write. A network failure in between leaks a folder teardown cannot
