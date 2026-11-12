@@ -32,6 +32,13 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: command_not_executed
+    description: "Agent did not run the process, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(debug|process\s+run)'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "The built process exists"
     command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py LoyaltyDiscount"

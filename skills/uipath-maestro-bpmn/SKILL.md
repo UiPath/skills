@@ -118,7 +118,7 @@ When the user asks to see the shape before it is built — *show me the shape*, 
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
 The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
 <!--skill-flavor:draft-upload-summary:start-->
-Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with a second upload and a final report.
+Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with the final report, which uploads again when [its rules](references/final-report-template.md#upload-the-built-process) allow.
 <!--skill-flavor:draft-upload-summary:end-->
 
 ## API index

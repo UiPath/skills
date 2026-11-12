@@ -93,6 +93,7 @@ Report the Studio Web URL (`Data.DesignerUrl`) or solution id; when the CLI retu
 **Consent.** Unless the request forbids upload, a request to build or draft the process authorizes the upload that shows it, so upload without asking when this run's `bpmn init` scaffolded the solution.
 Confirm first when it did not — the project went into a solution that already existed, or an existing project was edited in place — because `upload` overwrites the cloud solution that matches the `SolutionId` in the local `.uipx`.
 Ask once, before the first upload, and say in the question that the upload replaces the Studio Web copy.
+At the end of a build, the [final report](final-report-template.md#upload-the-built-process) decides whether to upload without a question and what its path line says; the consent and DesignerUrl rules here apply outside it.
 
 **Each later upload overwrites the same solution.**
 The first upload writes the cloud solution id back into the local `.uipx`, so each upload after it reports `Data.Action: "Overwritten"` with the same `SolutionId` and `DesignerUrl`.
