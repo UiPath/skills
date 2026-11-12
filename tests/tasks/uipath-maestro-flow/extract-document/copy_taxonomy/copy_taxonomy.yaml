@@ -6,8 +6,9 @@ description: >
   instructions) and that only the taxonomy moves: the target keeps its own
   label, file input, extraction source and model settings, and does not take
   the source's processorKey. A CLI that provisions a processor on
-  `nodes schema set` gives the target its own key; one that does not leaves it
-  without one; both pass. Ids are not graded: the guide does not say whether a
+  `nodes schema set` gives the target its own key and idpProcessor resource;
+  one that does not leaves it without a key; both pass. A key no resource
+  names is synthesised, and fails. Ids are not graded: the guide does not say whether a
   copy keeps the source's ids or gets new ones.
 
   No `flow debug`: a CLI-authored Extract document node extracts nothing
@@ -76,13 +77,11 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Extract Credit Note does not carry Extract Invoice's processorKey: a copied key would name Invoice's processor"
-    path: "BillingDocs/BillingDocs/BillingDocs.flow"
-    assertions:
-      - expression: "nodes[?id=='extractCreditNote1'].inputs.processorKey == nodes[?id=='extractInvoice1'].inputs.processorKey"
-        operator: equals
-        expected: false
+  - type: run_command
+    description: "Extract Credit Note has no processorKey, or its own: not Extract Invoice's, and named by an idpProcessor resource in the solution"
+    command: python3 $REFERENCE_DIR/extract-document/copy_taxonomy/copy_taxonomy_helper.py
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
