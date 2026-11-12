@@ -180,7 +180,7 @@ Packaging needs a passing `validate` (rule 20), not a local run — on a build/p
 
 ```bash
 uip solution pack <solutionDir> <outputDir> --name <PACKAGE_NAME> --version 1.0.0 --output json
-uip solution publish <outputDir>/<package>.zip --tenant <TENANT_NAME> --output json
+uip solution publish <outputDir>/<package>.zip --output json
 ```
 
 Publishing requires `uip login`. The packager detects `Type: "Api"`, validates/copies workflows, generates deployment metadata, and produces a `.nupkg` inside a `.zip`. After deployment, operate through Orchestrator/API triggers, jobs, connections, logs, and traces; local `uip api-workflow` verbs no longer operate the published workflow. See [references/operating-published-workflows.md](references/operating-published-workflows.md), delegating depth to `uipath-platform` or `uipath-troubleshoot` when appropriate.
@@ -198,8 +198,8 @@ uip api-workflow validate ./<ProjectName>/Workflow.json --output json
 # Ask for consent, then run if approved:
 uip api-workflow run ./<ProjectName>/Workflow.json --no-auth --output json
 uip solution pack . ./build --name <PackageName> --version 1.0.0 --output json
-uip login
-uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
+uip login --tenant <TenantName>
+uip solution publish ./build/<package>.zip --output json
 ```
 <!--skill-flavor:quick-start-create:end-->
 

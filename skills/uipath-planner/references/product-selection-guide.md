@@ -63,7 +63,7 @@ Operationalizes item 2. Best-effort and auth-required — same rules as tenant l
 | Deployed RPA processes | `uip or processes list --all-folders --output json` |
 | Tenant RPA libraries | Step 2.5 tenant library discovery (RPA scopes only) |
 | IS connectors / live connections | `uip is connectors list --output json` · `uip is connections list --output json` |
-| Deployed Agents | `uip agent list --output json` |
+| Deployed Agents | `uip or processes list --process-type Agent --all-folders --output json` |
 | Maestro processes | `uip maestro flow processes list --output json` · `uip maestro bpmn processes list --output json` · `uip maestro case processes list --output json` |
 | IXP projects / models | `uip ixp projects list --output json` — newer CLIs only; on `unknown command` apply the drift rule below or user-named estate |
 | Deployed Solutions | `uip solution deploy list --output json` |
