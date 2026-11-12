@@ -4,11 +4,13 @@ description: >
   another in the same flow. Tests that the target ends up with the source's
   whole taxonomy (prompt, a nested repeating group, fields, types, a Choice and
   instructions) and that only the taxonomy moves: the target keeps its own
-  label, file input, extraction source and model settings, and does not take
-  the source's processorKey. A CLI that provisions a processor on
-  `nodes schema set` gives the target its own key and idpProcessor resource;
-  one that does not leaves it without a key; both pass. A key no resource
-  names is synthesised, and fails. Ids are not graded: the guide does not say whether a
+  label, file input, extraction source and model settings. A node extracts
+  with the processor its processorKey names, and that processor holds its own
+  copy of the taxonomy, so the copy also has to reach the processor behind the
+  target: no key (the Studio Web save provisions one from the node), or a key of
+  its own whose idpProcessor resource holds the copied prompt and output schema.
+  The source's key, a key no resource declares, or a processor still holding
+  another taxonomy all fail. Ids are not graded: the guide does not say whether a
   copy keeps the source's ids or gets new ones.
 
   No `flow debug`: a CLI-authored Extract document node extracts nothing
@@ -78,11 +80,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Extract Credit Note has no processorKey, or its own: not Extract Invoice's, and named by an idpProcessor resource in the solution"
+    description: "Extract Credit Note will extract with the copied taxonomy: it has no processor yet, or its own (not Extract Invoice's) whose idpProcessor resource holds the copied prompt and output schema"
     command: python3 $REFERENCE_DIR/extract-document/copy_taxonomy/copy_taxonomy_helper.py
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
