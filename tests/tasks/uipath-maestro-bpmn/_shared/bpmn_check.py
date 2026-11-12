@@ -66,6 +66,44 @@ def entry_point_files(project_dir: Path) -> list[Path] | None:
     return out
 
 
+# Scratch files the brownfield pipeline and agents leave beside the real artifact.
+# `decompile` -> `compile -o X.baseline.bpmn` -> edit -> `compile -o X.edited.bpmn` ->
+# `merge` writes the first two and often `X.merged.bpmn`, and an agent that keeps the
+# untouched input around names it `X.original.bpmn`. `X.baseline.bpmn` sorts first and
+# still holds the UNEDITED process, so a grader that took the first match failed seven
+# correct edits in one run (builder-sdk#1871). None of these suffixes is ever the file a
+# task names, and no task ships one as a fixture.
+SCRATCH_SUFFIXES = (".baseline.bpmn", ".edited.bpmn", ".merged.bpmn", ".original.bpmn")
+# Directories that hold scratch copies rather than the artifact: tool caches, an
+# agent's archive of superseded scaffolds (`_created-scaffolds/`, the same run), and
+# temp dirs made inside the workspace (`tmp/`, `mktemp -d -p .` -> `tmp.XXXXXXXXXX`).
+# Trade-off: `tmp`/`temp`/`.tmp` also hide a REAL project that lives in a folder of
+# that name. No task names one today; a task that must ever do so needs these
+# names taken out (or the grader pointed at the path), or its artifact goes unseen
+# and reads as "no BPMN file found".
+SCRATCH_DIR_NAMES = frozenset(
+    {"node_modules", ".npm-prefix", ".venv", "_created-scaffolds", "tmp", "temp", ".tmp"}
+)
+SCRATCH_DIR_PREFIXES = ("tmp.",)
+
+
+def is_scratch_bpmn(path: str | Path) -> bool:
+    """True for a ``.bpmn`` no grader should read as the task's artifact.
+
+    Scratch by name (:data:`SCRATCH_SUFFIXES`) or by location: under a directory
+    in :data:`SCRATCH_DIR_NAMES`, or one whose name starts with a
+    :data:`SCRATCH_DIR_PREFIXES` entry. Only the directories are tested, never
+    the file name, so ``tmp.bpmn`` itself is not excluded.
+    """
+    p = Path(path)
+    if p.name.lower().endswith(SCRATCH_SUFFIXES):
+        return True
+    dirs = p.parts[:-1]
+    return any(
+        d in SCRATCH_DIR_NAMES or d.startswith(SCRATCH_DIR_PREFIXES) for d in dirs
+    )
+
+
 STUDIO_WEB_MAIN_FILE = "Process.bpmn"
 """The main file Studio Web gives every BPMN project; the Node CLI names it ``<Project>.bpmn``."""
 
@@ -93,11 +131,20 @@ def bpmn_file_is_named(path: _PathLike, name: str) -> bool:
 
 
 def find_bpmn_file(name_hint: str | None = None) -> str:
-    paths = sorted(glob.glob("**/*.bpmn", recursive=True))
+    paths = [
+        p for p in sorted(glob.glob("**/*.bpmn", recursive=True)) if not is_scratch_bpmn(p)
+    ]
     if not paths:
         fail("no BPMN file found")
     if name_hint:
-        matches = [p for p in paths if name_hint.lower() in os.path.basename(p).lower()]
+        # The file the task NAMED first: `<hint>.bpmn` exactly (case-insensitive).
+        # Only when none exists does the hint widen to a substring of the basename,
+        # which older tasks rely on (`parse_bpmn("Contract")`).
+        wanted = f"{name_hint.removesuffix('.bpmn')}.bpmn".lower()
+        exact = [p for p in paths if os.path.basename(p).lower() == wanted]
+        matches = exact or [
+            p for p in paths if name_hint.lower() in os.path.basename(p).lower()
+        ]
         if not matches:
             # Studio Web names the file Process.bpmn and the project after the task's name.
             matches = [
@@ -153,10 +200,16 @@ def resolve_bpmn_file(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Pat
     billing_invoice_lookup ``bindings``).
     """
     excluded = [Path(d).resolve() for d in exclude_under]
-    named = list(Path.cwd().rglob(bpmn_name)) or [
-        p for p in Path.cwd().rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)
+    cwd = Path.cwd()
+    named = list(cwd.rglob(bpmn_name)) or [
+        p for p in cwd.rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)
     ]
-    candidates = [p for p in _project_files(named) if not any(p.resolve().is_relative_to(d) for d in excluded)]
+    candidates = [
+        p
+        for p in _project_files(named)
+        if not any(p.resolve().is_relative_to(d) for d in excluded)
+        and not is_scratch_bpmn(p.relative_to(cwd))
+    ]
     if len(candidates) != 1:
         fail(
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "

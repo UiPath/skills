@@ -1,4 +1,4 @@
-task_id: "bpmn-vs-case-management"
+task_id: skill-planner-case-bpmn-vs-case-management
 description: "Binary classification: given an automation description, decide whether it should be implemented as a Maestro BPMN process or Maestro Agentic Case Management."
 # One off, do not use e2e, integration or smoke.
 tags: [uipath-planner, lifecycle:discover, mode:build, solution-classification]

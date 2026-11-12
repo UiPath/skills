@@ -94,6 +94,7 @@ a variable matched by `name` alone (the SDK writes `id` = what expressions read,
 and `command_executed` on `registry get … --object-name` alone — also accept the SDK arm's `uip is resources describe`.
 A fifth shape (2026-09-27, `-script-jint-guidance`): grading the canvas script-task TEMPLATE — a task-scoped `scriptResponse` variable, a task-scoped `Error`, whole-state `args` (`{vars, metadata}`) with its inputSchema, and start/end bridge mappings — where the runtime contract is only the `=result.response` row and the args keys.
 The SDK writes per-input args, lands `=result.response` in the public output, and writes no Error unless asked; `check_script_jint_guidance.py` now grades that the values FLOW (each input reaches the script under some name, the result reaches `riskScore`, an Error row when written is the platform envelope) and accepts either spelling.
+It also accepts the SDK's other typed-error design, an error boundary on the script task that ends its own path, and a row reading one field of the result (`=result.response.<field>`) (builder-sdk#1884).
 `patterns/` and `_shared/check_*.py` in the sibling repo UiPath/flow-builder-sdk vendor these graders byte for byte; change them there in the same PR.
 
 **What is still open.** `flow-v2-preview.yaml`'s `extra_mounts` binds the repo root read-only, so the v1 skill tree stays *readable* from inside the preview container even though the working-directory copy is gone.

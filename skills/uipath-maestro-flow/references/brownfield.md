@@ -60,8 +60,9 @@ uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}"
 Install the candidate whole with `cp`. Never write or patch the `.flow`
 yourself, and never copy only your change into the original. Merge renumbers
 every edge (`edge_0`, `edge_1`, ...), may reorder nodes, and adds default
-fields: that is its normal output, not drift to undo. The changes to act on
-are the [merge warnings](#merge-warnings-what-the-round-trip-changed).
+fields, and moves original nodes right or down to make room for an added one:
+that is its normal output, not drift to undo. Never move them back. The changes
+to act on are the [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
 Validate in the project, not `candidate/` alone: it holds only the agent files
 merge changed, so an unchanged inline agent's `agent.json` is missing there
@@ -191,7 +192,7 @@ An agent's context index or tool lives in
 flow-merge: wrote <source-uuid>/resources/<new-dir>/resource.json (carries added resource)
 flow-merge: wrote <source-uuid>/resources/<dir>/resource.json (carries settings.resultCount)
 flow-merge: remove <project>/<source-uuid>/resources/<dir> from the project: the edit removed this agent resource, and copying the candidate cannot delete it
-flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derived as compile does)
+flow-merge: wrote bindings_v2.json (connection and agent resource rows, re-derived as compile does)
 ```
 
 <!--skill-flavor:resource-install:start-->
@@ -203,8 +204,13 @@ flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derive
 - A resource another `.flow` in the project still uses is kept
   (`flow-merge: kept <source>/resources/<dir>: <Other>.flow still references it`).
   No action needed: do not delete it.
-- In a Flow project, merge also writes `bindings_v2.json` with the changed
-  agent's rows re-derived, so a removed index is no longer declared.
+- In a Flow project, merge also writes `bindings_v2.json` with the merged
+  flow's connection rows and its agents' rows re-derived, so a removed index or
+  a swapped connection is no longer declared. Copy it with the merged `.flow`.
+- A connection label the original carries as a stub (`connection: "jira"`)
+  resolves through `bindings.json` in the edited source. Edit the label to the
+  connection id, or fill `bindings.json`, and merge writes the id and drops the
+  stub rows.
 
 ## Flows with draft nodes: let merge compile
 
