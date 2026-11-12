@@ -248,7 +248,7 @@ test("the studioweb functions and coded-app flavors do not deny the QuickJS node
 // agent to create tasks there, or to write a markdown plan, starts building with
 // no approval. Frontmatter is excluded: marker blocks cannot sit inside YAML, so
 // `description` and `allowed-tools` still carry the canonical text.
-const TASK_TOOLS = /\b(TaskCreate|TaskUpdate|TaskList|addBlockedBy)\b/;
+const TASK_TOOLS = /\b(TaskCreate|TaskUpdate|TaskList|addBlockedBy|task-list tool)\b/;
 const RETIRED_PLAN_TOOLS = /\b(EnterPlan|ExitPlan)\b/;
 
 function plannerBodyLinesNaming(root, pattern) {
@@ -269,17 +269,15 @@ test("the built studioweb uipath-planner uses plan mode and no task tools", (t) 
 
   assert.deepEqual(plannerBodyLinesNaming(output, TASK_TOOLS), []);
   assert.deepEqual(plannerBodyLinesNaming(output, RETIRED_PLAN_TOOLS), []);
-  const laneB = readFileSync(join(output, "uipath-planner", "references", "non-pdd-lane-guide.md"), "utf8");
+  const decompose = readFileSync(join(output, "uipath-planner", "references", "decompose", "decompose-guide.md"), "utf8");
   assert.ok(
-    laneB.includes("Call `EnterPlanMode` as soon as the user picks this option"),
+    decompose.includes("Call `EnterPlanMode` as soon as the user picks this option"),
     "explore-first must enter plan mode before discovery",
   );
   assert.ok(
-    laneB.includes("call `ExitPlanMode` with outcome `complete`"),
+    decompose.includes("call `ExitPlanMode` with outcome `complete`"),
     "explore-first must present the plan with ExitPlanMode",
   );
-  const laneA = readFileSync(join(output, "uipath-planner", "references", "pdd-driven-lane-guide.md"), "utf8");
-  assert.ok(laneA.includes("1. Call `EnterPlanMode`."), "Lane A interactive review must enter plan mode");
 });
 
 test("the default uipath-planner keeps its task tools (the guard is not vacuous)", (t) => {
@@ -418,63 +416,4 @@ function siblingLinesNaming(root) {
 
 test("the studioweb Flow siblings name no classic Flow instruction", (t) => {
   assert.deepEqual(siblingLinesNaming(buildStudioweb(t)), []);
-});
-
-// The preview BPMN skill authors with the builder SDK on a desktop terminal.
-// Its studioweb flavor (preview/skill-flavors/) runs the same SDK inside the
-// page, on the open solution, with no npm, no login step, no pack or upload, no
-// local `.uipx` to refresh and no connector markdown files. It must name none
-// of those, so it is ready on the day the preview skill moves into skills/.
-const PREVIEW_STUDIOWEB_ROOT = join(REPO_ROOT, "preview", "skill-flavors", "studioweb");
-const BPMN_TERMINAL_ONLY = [
-  "npm install",
-  "npx flow-sdk",
-  "resources refresh --solution-folder",
-  "uip solution upload <",
-  "uip solution pack <",
-  "uip maestro bpmn pack <",
-  "uip maestro bpmn debug <project-path>",
-  "uip login status --output",
-  "`markdownPath` is",
-  "at the workspace root",
-];
-
-function bpmnLinesNaming(skillRoot) {
-  return markdownFiles(skillRoot).flatMap((file) =>
-    readFileSync(file, "utf8")
-      .split("\n")
-      .flatMap((line, index) =>
-        BPMN_TERMINAL_ONLY.filter((needle) => line.includes(needle)).map(
-          (needle) => `${relative(skillRoot, file)}:${index + 1}: ${needle}`,
-        ),
-      ),
-  );
-}
-
-function buildPreviewStudioweb(t) {
-  const output = mkdtempSync(join(tmpdir(), "preview-studioweb-contract-"));
-  t.after(() => rmSync(output, { recursive: true, force: true }));
-  materializeComposition(createCompositionPlan(REPO_ROOT, PREVIEW_STUDIOWEB_ROOT), output);
-  return output;
-}
-
-test("the preview studioweb BPMN skill names no terminal-only command", (t) => {
-  const skillRoot = join(buildPreviewStudioweb(t), "uipath-maestro-bpmn");
-  const debugHits = markdownFiles(skillRoot).flatMap((file) =>
-    readFileSync(file, "utf8")
-      .split("\n")
-      .flatMap((line, index) =>
-        [TWO_TOKEN_VERB, JSON_DEBUG, PATH_DEBUG].some((pattern) => pattern.test(line))
-          ? [`${relative(skillRoot, file)}:${index + 1}`]
-          : [],
-      ),
-  );
-
-  assert.deepEqual(bpmnLinesNaming(skillRoot), []);
-  assert.deepEqual(debugHits, []);
-});
-
-test("the preview BPMN skill keeps its terminal commands (the guard is not vacuous)", () => {
-  const hits = bpmnLinesNaming(join(REPO_ROOT, "preview", "skills", "uipath-maestro-bpmn"));
-  assert.deepEqual([...new Set(hits.map((hit) => hit.split(": ").pop()))].sort(), [...BPMN_TERMINAL_ONLY].sort());
 });

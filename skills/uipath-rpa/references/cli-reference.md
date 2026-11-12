@@ -100,14 +100,14 @@ Helm:
 [Information] <PROJECT_NAME> execution started
 [Information] Sum: 10
 [Information] <PROJECT_NAME> execution ended in: 00:00:00
-{ "Result": "Success", "Code": "ToolResult", "Data": {
+{ "Result": "Success", "Code": "Run", "Data": {
     "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null, "errorScope": null } }
 ```
 
 Studio Desktop (same command, project open in Studio):
 
 ```json
-{ "Result": "Success", "Code": "ToolResult", "Data": {
+{ "Result": "Success", "Code": "Run", "Data": {
     "output": "Session ended", "errors": [],
     "logEntries": [ { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution started" },
                     { "source": "Debug", "level": "Information", "message": "Sum: 10" },

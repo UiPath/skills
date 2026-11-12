@@ -20,6 +20,12 @@ For greenfield files, run `format` on the last-emitted artifact before `solution
 **Never format a merged brownfield file.** `merge` preserves the original `layout`, moves later nodes right or down, and expands containers as needed. Upload or debug the merged file as `merge` wrote it; `format` discards its positions.
 <!--skill-flavor:operate-format:end-->
 
+`nodes create` without `--position`, or a hand edit that adds nodes, leaves every new
+node at `layout.nodes[<id>].position` 0,0. After such an edit to a file with no
+author-chosen layout, run `format`, then confirm each node in `layout.nodes` has a
+distinct position. With an author-chosen layout, skip `format` and pass
+`--position <x>,<y>` to each `nodes create`.
+
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
 
 Use source layout so the emitted file needs no `format`, provided every non-96 × 96 node carries its size (rule 1). `.layout({ nodes })` needs one node-id entry per node; `at(x, y)` writes position and `dim(width, height)` size. A step id is its name; the trigger id is `start` unless `.triggerId()` renames it; an End id is its `.return` name, or `end`, `end2`, `end3`, … for unnamed Ends in emission order. A flow with several unnamed Ends needs all keys. Use this for a requested arrangement or decompiled source carrying layout ([`brownfield.md`](brownfield.md#the-same-loop-by-hand)); otherwise run `format`.
@@ -200,7 +206,10 @@ uip maestro flow job status <job-key> --output json
 uip maestro flow job traces <job-key> --output json
 ```
 
-Traces are verbose full timelines and a last resort, not a starting point.
+Traces are the full execution timeline and are verbose. They are a last resort,
+not a starting point, except for per-iteration timing: `elementExecutions`
+aggregates per element, so a loop body shows one row. The spans stream to
+stderr, one JSON line each (`--pretty` for readable lines).
 
 ## Instance lifecycle
 

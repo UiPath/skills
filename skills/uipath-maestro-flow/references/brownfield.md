@@ -119,15 +119,23 @@ An agent context index or tool is `<source>/resources/<dir>/resource.json`.
 flow-merge: wrote <source-uuid>/resources/<new-dir>/resource.json (carries added resource)
 flow-merge: wrote <source-uuid>/resources/<dir>/resource.json (carries settings.resultCount)
 flow-merge: remove <project>/<source-uuid>/resources/<dir> from the project: the edit removed this agent resource, and copying the candidate cannot delete it
-flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derived as compile does)
+flow-merge: wrote bindings_v2.json (connection and agent resource rows, re-derived as compile does)
 ```
 
 <!--skill-flavor:resource-install:start-->
 - Install added or changed resources with `cp -r`; a changed resource retains its original directory.
 - Do not install removed resources: delete every `remove` directory (`Data.Removed` in `--output json`), or it remains.
 <!--skill-flavor:resource-install:end-->
-
-A resource used by another project `.flow` is kept (`flow-merge: kept <source>/resources/<dir>: <Other>.flow still references it`); do not delete it. Merge writes `bindings_v2.json` with changed agents' re-derived rows, so removed indexes are no longer declared.
+- A resource another `.flow` in the project still uses is kept
+  (`flow-merge: kept <source>/resources/<dir>: <Other>.flow still references it`).
+  No action needed: do not delete it.
+- In a Flow project, merge also writes `bindings_v2.json` with the merged
+  flow's connection rows and its agents' rows re-derived, so a removed index or
+  a swapped connection is no longer declared. Copy it with the merged `.flow`.
+- A connection label the original carries as a stub (`connection: "jira"`)
+  resolves through `bindings.json` in the edited source. Edit the label to the
+  connection id, or fill `bindings.json`, and merge writes the id and drops the
+  stub rows.
 
 ## Flows with draft nodes: let merge compile
 

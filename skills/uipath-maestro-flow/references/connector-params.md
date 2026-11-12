@@ -222,7 +222,13 @@ Preparation separately fails for service rejection and accepted values resolving
 
 Use the generated descriptor and call; it carries resolved operation/object identity even when action ids differ from the catalog. `connectors-local/` is authoring input; emitted Flow is self-contained. Prefer curated operations; use raw `*-http-request` only for raw/generic needs absent from the curated surface.
 
-File uploads are multipart Flow inputs. Prepare against the connection when the static catalog omits an upload field, then pass the upstream file as a normal connector input:
+Preparation requires a working live connection. For explicitly offline/validate-only evidence without connection-specific fields, use the baked descriptor and published static inputs; do not use a placeholder connection or invent fields. If the list is empty, pass `{}`; offline evidence proves identity/control-flow routing, not provider payload or dispatch.
+
+[`bindings.json`](bindings.md) defines symbolic connection/folder bindings, schema, compile-time resolution, and the emitted-artifact boundary. Populate resource keys from live connection/folder listings. A plausible GUID is not proof that a resource exists or belongs to the intended tenant; resource refresh and product debug are the evidence.
+
+### File uploads are multipart Flow inputs
+
+Prepare against the connection when the static catalog omits an upload field, then pass the upstream file as a normal connector input:
 
 ```ts
 .step('upload', connector(SendFileToChannel, {
@@ -241,10 +247,6 @@ The compiler emits `multipartParameters`. This is Flow artifact transport; `uip 
   body: { content: 'A request was routed to Sales.' },   // or 'body.content': …
 }, { connection: 'teams', folder: 'shared' }))
 ```
-
-Preparation requires a working live connection. For explicitly offline/validate-only evidence without connection-specific fields, use the baked descriptor and published static inputs; do not use a placeholder connection or invent fields. If the list is empty, pass `{}`; offline evidence proves identity/control-flow routing, not provider payload or dispatch.
-
-[`bindings.json`](bindings.md) defines symbolic connection/folder bindings, schema, compile-time resolution, and the emitted-artifact boundary. Populate resource keys from live connection/folder listings. A plausible GUID is not proof that a resource exists or belongs to the intended tenant; resource refresh and product debug are the evidence.
 
 ## Resolving connection-scoped reference values
 
