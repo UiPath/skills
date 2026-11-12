@@ -44,7 +44,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 <!--skill-flavor:extract-find-flow:end-->
 1. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is the `<trigger>` in `$vars.<trigger>.output.invoice`, so it comes before the node that reads it.
-2. **Add the node** with `--label` naming what it extracts, `--input` carrying `fileRef`, and `--position <x>,<y>` beside the upstream node, not on top of it.
+2. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#lay-out-the-emitted-flow-first).
 3. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
 4. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
 5. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
@@ -132,11 +132,11 @@ The `error` port carries failures. Wire it with `edges create --source-port erro
 
 Extraction that nothing reads is not much use, so the flow usually declares an output carrying it. That takes three steps, and the last one has no CLI command — write it into the `.flow` file directly rather than going looking for a verb that does it.
 
-Declare the output global, then add an End node and wire the extract node to it:
+Declare the output global, then add an End node ([laid out](operate.md#lay-out-the-emitted-flow-first)) and wire the extract node to it:
 
 ```bash
 uip maestro flow variables create <file> extractedData -d out -t object --description 'The structured data extracted from the document' --output json
-uip maestro flow nodes create <file> core.control.end --label 'End' --position <x>,<y> --output json
+uip maestro flow nodes create <file> core.control.end --label 'End' --output json
 uip maestro flow edges create <file> <extract-id> <end-id> --output json
 ```
 
@@ -174,7 +174,7 @@ For this node, validation enforces that `fileRef` is a `$vars` reference rather 
 
 ## Making it actually extract
 
-A node authored entirely through the CLI validates and deploys, but extracts nothing until the flow is saved once in the Studio Web designer. Say this when handing the work over, rather than letting them discover it from a failed run.
+A node authored entirely through the CLI validates and deploys, but extracts nothing until the user opens the flow in Studio Web and saves it once. Say this when handing the work over, rather than letting them discover it from a failed run.
 
 At run time the extraction service resolves which processor to use from `inputs.processorKey`, a tenant-side resource holding its own copy of the taxonomy. Nothing in the CLI provisions one. Running without it faults the instance:
 
