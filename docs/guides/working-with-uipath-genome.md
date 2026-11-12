@@ -1,6 +1,8 @@
 # Working with UiPath genomes
 
-A genome is a markdown blueprint of an automation. Two skills work with it: `uipath-planner` writes it from a project or an idea, and `uipath-genome` builds the UiPath automation from it and, where it can reach the real applications, checks the build against them and fixes what fails. You make a few decisions; the agent, with helper agents it starts in parallel, does the rest.
+A genome is a plain-language blueprint of an automation, in markdown. Two skills work with it. `uipath-planner` writes it from what you have about your process. `uipath-genome` runs the build: it asks what is still open, hands each part to the UiPath skill that builds it, and gives every acceptance criterion a verdict. The genome says what to build; each product's own skill knows how, and validates, builds and packs with the `uip` command line. Where the build can reach the real applications, it checks itself against them and fixes what fails.
+
+That leaves you three things to focus on: the review of the genome, the answers to its questions, and the yes before anything runs on a real application.
 
 Use a genome to document an automation you run, in words people review and agents act on; to design a new one from an idea, an SOP or a meeting transcript; or to rebuild an existing automation onto the UiPath products that fit it.
 
@@ -17,6 +19,31 @@ A genome is a PDD and an SDD in one, written for the agent that builds it. When 
 | Where it came from (extracted genomes only) | Source Map | Carries the UI targets and test data over from the source |
 
 One project gives a component genome. Two or more give a process genome, with the process map, the handoffs between the projects and the deployment, plus one component genome per project.
+
+Three excerpts from the genome of [the small run below](#what-a-run-looks-like), as written.
+
+**A step** is behaviour: what goes in, what comes out, and each sub-step in order.
+
+```text
+8. **Look up the sleigh** (input: the request's Item Number; output: build year, model code, sleigh number, description, production date, delivery date):
+   a. Accept the registry's notice when one is shown — Sleigh Registry library, Close Notice
+   b. Search the Item Number — Sleigh Registry library, Search Sleigh No
+   c. Close the result message — Sleigh Registry library, Close popup; when it fails with a detail that contains `There is no data`, apply the no-data rule (Business Rules, Step 8)
+   d. Open the sleigh's details — Sleigh Registry library, Open Sleigh Details
+   e. Read the six values — Sleigh Registry library, Get Data
+```
+
+**A source defect** is written down where it acts, and kept as the source has it until you rule on it.
+
+```text
+**Source defect:** the subject names process number 069 in a process numbered 057. Evident intent: the subject names this process *[Inferred]*. The rebuild keeps the source's subject unless the user rules otherwise.
+```
+
+**An acceptance criterion** is specific enough to test.
+
+```text
+6. Given a request whose sleigh number the registry knows, the Sleigh Case List gains exactly one row with Created On as today's UTC date in month.day.year form, the sleigh number, description, model code, build year, production date and delivery date as the registry shows them, and Requested By as the sender's address.
+```
 
 ## Not a one-to-one translation
 
@@ -91,7 +118,20 @@ A change needs a reason: a source defect, your ruling, a refactor answer or a pl
 
 How far it is proven: target plans checked on small cases, and one component rebuilt with all 62 of its tests passing. A full refactor built end to end and a shadow run against a live source have not been done yet.
 
-## What one run produced
+## What a run looks like
+
+**A small one.** One existing process: 458 steps, 23 screen elements and 5 systems (two web applications, a mailbox, two workbooks). Run on 9 Nov 2026; the figures are counted from its files and session logs.
+
+| Stage | What came of it |
+| --- | --- |
+| One sentence, then 17 minutes of agent time | A genome: one file for the process and one for each of its three components (the process, and a library per web application), with 4 source defects written down |
+| About 30 questions before the build | Among them: how to build the queue, a ruling on a source defect, whether the two libraries become packages of their own, whether the applications can be reached, and how closely to follow the source |
+| 78 minutes of agent time | 3 projects that validate and build: the process on the REFramework template and 2 UI libraries, packed |
+| The hand-off | 46 of 49 acceptance criteria met by the code as built, 3 partial, none confirmed by a run. 20 screen elements translated offline, with 27 checks still owed on the real applications. 34 setup steps for the target environment. Nothing created or published in a tenant |
+
+The applications were out of reach, so nothing was run: every verdict is static, and the live checks are the next step.
+
+**A large one.**
 
 ![About 31 agent-hours in 9½ hours of run time, against 7 minutes of your answers](images/agents-over-time.svg)
 
@@ -107,13 +147,10 @@ What that run produced:
 | --- | --- |
 | Genome | 9 files, 6,300 lines: 2 library genomes with 169 steps, 6 test groups with 84 cases |
 | Projects | 2 shared libraries and 1 test project, all building with 0 errors, packed |
-| Workflows | 351 XAML files, 79,600 lines: 222 in the libraries, which hold each app step once, and 129 in the test project, whose 84 cases call them |
-| Activities | about 12,500, of which 1,329 UI actions |
-| C# code | 26 files, 1,750 lines |
+| Workflows | 351: 222 in the libraries, which hold each app step once, and 129 in the test project, whose 84 cases call them |
 | UI targets | 343 Object Repository elements on 71 screens of 14 applications, carried over from the source and not yet confirmed on screen |
 | Test checks | all 487 source checkpoints carried over, plus 69 added |
 | Acceptance criteria | 334 assessed: 286 built but not yet run on screen, 5 met by a run that needs no app, 43 partial, 0 not met |
-| Helper scripts | 72 scripts, 9,000 lines, that the agents wrote to register targets and check the build; kept in a working folder, not shipped |
 
 ## Who does what
 
@@ -125,6 +162,7 @@ Blue boxes are your turns. Say "take the defaults" in the build request and the 
 
 ## Before you start
 
+- **What you have about the process.** A process document first (a PDD, an SOP, a runbook), then the automation itself, and any test evidence, recordings or tickets. The agent asks for them once and reads only what you give it.
 - **Claude Code with the [UiPath skills](https://github.com/UiPath/skills).** Run `/uipath:install-permissions` once, so routine `uip` commands stop asking for approval.
 - **For live runs:** the target apps installed and signed in on this machine, the UiPath browser extension, and the Windows session unlocked.
 - **A test environment.** Live runs create real records. Everything else stays on this machine, with one exception the build asks about: Data Fabric entities the genome names are created in the connected tenant. Nothing is published or deployed unless you ask.
@@ -135,10 +173,12 @@ Say what you have. The agent writes the genome with `uipath-planner`, checks it 
 
 | You have | Say | The agent |
 | --- | --- | --- |
-| A project or solution | "Extract a genome from `<folder>`" | Asks for related documents (PDD, SOP), where the rebuild will run and whether to keep the parts nothing uses; for a UiPath project, also the Orchestrator folder it runs in. States its reading plan (in parts for a large project) and reads every file. Before it writes, it asks per part whether to fold it into another and which UiPath product it runs on; for a UiPath project, also whether to retire it |
-| An idea, SOP or transcript | "Write a genome for `<idea>`" | Asks up to three rounds of questions |
 | A PDD or another process document | "Design a solution from `<document>`" | Asks whether to decide on its own or pause at checkpoints for your review, and where the automation will run. Writes a solution design (SDD), then the genome of that design |
+| An idea, SOP or transcript | "Write a genome for `<idea>`" | Asks up to three rounds of questions |
+| A project or solution | "Extract a genome from `<folder>`" | Asks for related documents (PDD, SOP), where the rebuild will run and whether to keep the parts nothing uses; for a UiPath project, also the Orchestrator folder it runs in. States its reading plan (in parts for a large project) and reads every file. Before it writes, it asks per part whether to fold it into another and which UiPath product it runs on; for a UiPath project, also whether to retire it |
 | A UiPath project to refactor | "Refactor `<folder>`" | Extracts the genome with your refactor answers in it, waits for your edits, then builds |
+
+A request can name its skill: "Use the `uipath-planner` skill to extract a genome from `<folder>`".
 
 You get one genome per project — a spec of its steps, business rules, acceptance criteria and the UiPath skill that builds each part — plus an overview genome when there are several. Ask for changes in plain words ("step 4 is wrong") and the agent edits the file. Only this skill changes a genome: the build never does.
 
@@ -152,9 +192,17 @@ This is your main decision point. The build follows the genome, and the agent ne
 4. **Configuration questions** — the values the build will ask you for, such as URLs, accounts and settings. Check the list now; you answer it in step 3.
 5. **Not covered** — parts of the source that no step rebuilds. Ask now if you want them.
 
+To check a step against the original, the Source Map names the part of the source each step came from.
+
 ## 3 · Build
 
-Say "Build `<name>-genome.md`". The agent builds with `uipath-genome`, and asks its questions first, in batches of up to four, each with a recommended answer: the genome's open values, how to split work done item by item, the project location, XAML or C#, where settings live, package versions, and whether it can reach the application and how far it may go there ([step 4](#4--check-run-and-fix)). A rebuild as it is also asks how closely to follow the source; a refactor adds its own build questions ([Rebuilding an existing automation](#rebuilding-an-existing-automation)). For a genome extracted from a project, you can take the source's value wherever the genome has one, so only the values the source lacks, the choices it never had and the build setup are asked: pick that answer to the first question, or say "take the source's values" in the build request. Then it builds without stopping.
+Say "Build `<name>-genome.md`". The agent builds with `uipath-genome`, and asks its questions first, in batches of up to four, each with a recommended answer: the genome's open values, how to split work done item by item, the project location, XAML or C#, where settings live, package versions, and whether it can reach the application and how far it may go there ([step 4](#4--check-run-and-fix)). A rebuild as it is also asks how closely to follow the source; a refactor adds its own build questions ([Rebuilding an existing automation](#rebuilding-an-existing-automation)).
+
+A source defect that needs your ruling comes back as a question, with where it is in the source and what it affects. The build also looks for projects that already exist, so a library built for an earlier process is reused instead of built twice, and asks whether each library becomes a package of its own.
+
+For a genome extracted from a project, you can take the source's value wherever the genome has one, so only the values the source lacks, the choices it never had and the build setup are asked: pick that answer to the first question, or say "take the source's values" in the build request.
+
+Then it builds without stopping. A large build runs in parts, at most two at once, on a smaller model, and the main session checks each part's result against the files.
 
 You get:
 
@@ -166,7 +214,7 @@ You get:
 
 Before it builds, the agent asks whether it can reach the application, or a comparable test copy of it, and how far it may go there. The recommended answers are the cautious ones: not reachable, and a read-only check with no runs. [Live healing pass](live-healing-pass.md) lists what to tell it, what to ask before the first run, how to question a failure and what the final report must say.
 
-**Prepare:** open the app in a test environment, sign in, and keep off the mouse and keyboard: the agent takes over the screen, so a VM or a spare machine works best. In your answer, name the window or URL it may use and what it must never close.
+**Prepare:** open the app in a test environment and sign in yourself, since the agent never types a password. Then keep off the mouse and keyboard: the agent takes over the screen, so a VM or a spare machine works best. When the application is only on another machine, the RPA skill can work on an Orchestrator unattended robot there through a remote session. In your answer, name the window or URL it may use and what it must never close.
 
 **The targets are checked.** Once the workflows are built, the agent goes through every Object Repository element on its screens without saving anything: it opens pages, menus and lists, types to show a popup, then cancels. It repairs each selector that doesn't match and lists the elements it could not reach. Some screens only appear with data the workflows pull from other systems, such as a record an upstream feed creates; the runs check those.
 
@@ -179,7 +227,7 @@ Before it builds, the agent asks whether it can reach the application, or a comp
 | A step passes but missed | Treated as a failure: a control found only through a fallback, a read that came back empty while the screen showed something, a pick that landed on another entry |
 | The genome is wrong | Notes it in the completion report, and asks you when the genome leaves a gap |
 
-After each fix it re-runs what the fix touches and undoes a fix that breaks something that already worked; a failure it cannot fix goes into the completion report. You answer only when asked: a decision or a missing value.
+After each fix it re-runs what the fix touches and undoes a fix that breaks something that already worked; a failure it cannot fix goes into the completion report, and so does every change a run made in the application, with how to undo it. You answer only when asked: a decision or a missing value.
 
 **No application within reach?** The build ends at projects that validate and build, and lists what only the application can settle, screen by screen, in `live-checks/` of the hand-off folder.
 
