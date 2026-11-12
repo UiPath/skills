@@ -120,7 +120,7 @@ If the user provides a taxonomy file — or wants this project to carry another 
 | A second `--occurrence` call landed on the wrong row, or `unconfirm --occurrence N` no-ops | Indices came from a read taken *before* an earlier confirm renumbered the group | Re-read `get-predictions` between per-occurrence writes, or issue them as one `--updates-file` call. |
 | `deployments create` returns `409` | That title is already deployed in that folder on a different version — `create` only ever ADDS | Use `deployments upgrade <project-name> <deployment-name>` instead, taking `<deployment-name>` from `deployments list` (Critical Rule #19). |
 | `deployments upgrade` returns `404` | A `DeploymentTitle` was passed where `DeploymentName` is expected — the name is slugged and suffixed (`invoices` → `invoices-08963f00-ixp`), so it cannot be derived from the title | Run `deployments list <project-name> --output json` and pass its `DeploymentName` verbatim. |
-| `not_supported`: "The IXP service is not enabled in your environment." | No IXP in this environment (Automation Suite, or a tenant without it); `RetryWillNotFix` | Stop all `uip ixp` work: no retry, re-login, or enable request. Flow extraction → `uipath-maestro-flow`, offer the Extract document node. |
+| `not_supported`: "The IXP service is not enabled in your environment." | No IXP in this environment (Automation Suite, or a tenant without IXP service); `RetryWillNotFix` | Stop all `uip ixp` work: no retry, re-login, or enable request. Flow extraction → `uipath-maestro-flow`, offer the Extract document node. |
 
 ## Unsupported Capabilities
 
