@@ -104,7 +104,9 @@ success_criteria:
          table, no numbered list, no code block, no `---` separator, no
          status or validation line (for example "Validation: passed"), no
          question to the user, and no suggested next step (for example
-         "Want me to upload it?" or "Next, you can run it").
+         "Want me to upload it?" or "Next, you can run it"). The one sentence
+         item 2 allows after the mode on the first line is part of that line,
+         whatever it says: never fail item 6 for it.
 
       Score 1.0 only if every item holds; otherwise 0.0. In findings, list
       each failed item by number and quote the offending line.
