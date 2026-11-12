@@ -109,9 +109,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 <!--skill-flavor:workflow-merge:end-->
 9. **End every build with the final report.**
    End the turn with the reply in **[`references/final-report-template.md`](references/final-report-template.md)**, also when validation fails only because tenant resources are missing.
-   Before it, when the process validates, upload it to Studio Web unless the request forbids upload or the project has no solution.
+   Its first section says when to upload the validated process to Studio Web before replying, and when to ask first.
    This applies to a plain request to build or edit a process, which never stops at a gate (`(auto mode)`), as much as to *Build it* after a [draft gate](#draft-first) (`(draft mode)`).
-   Do not ask before uploading when this run's `init` scaffolded the solution; confirm first when it did not, as that file says.
 
 ## Draft first
 

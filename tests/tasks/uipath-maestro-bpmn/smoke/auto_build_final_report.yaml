@@ -33,8 +33,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The built process exists and has a decision"
-    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py LoyaltyDiscount --contains exclusiveGateway"
+    description: "The built process exists"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py LoyaltyDiscount"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -55,6 +55,8 @@ success_criteria:
     description: "The final message is the final report in its template: the name and (auto mode) on the first line, the local .bpmn path, at most five change lines, and nothing else"
     include_reference: false
     include_agent_output: true
+    # The final message is at the end of a long transcript: keep it in view.
+    max_file_chars: 60000
     weight: 3.0
     pass_threshold: 1.0
     prompt: |

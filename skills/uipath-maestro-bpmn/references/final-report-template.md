@@ -6,10 +6,12 @@ The skeleton's own gate reply is a different template ([Draft first](draft-skele
 ## Upload the built process
 
 <!--skill-flavor:final-upload:start-->
-When the built process validates, upload it unless the request forbids upload or the project has no solution (`init` ran with `--skip-solution-registration`).
+When the built process validates, upload it unless the request forbids upload or the project has no solution (no `.uipx` in the project's directory or a parent: `init` ran with `--skip-solution-registration`, or with `--path` outside any solution).
 Run the [pre-flight](operate.md#pre-flight-before-any-cloud-action) first, which a built process needs and a skeleton did not; then `uip solution upload <SolutionDir> --output json` returns the `Data.DesignerUrl`.
 Do not ask first when this run's `init` scaffolded the solution: the request to build the process authorizes the upload that shows it ([Studio Web upload](operate.md#studio-web-upload)).
-Confirm first when the solution already existed or an existing project was edited in place, and check its cloud copy before uploading over it, as [Check the cloud copy](operate.md#check-the-cloud-copy-before-editing) says; ask once per run, so a confirmation given for the skeleton's upload at a draft gate covers this one.
+Confirm first when the solution already existed or an existing project was edited in place; ask once per run, so a confirmation given for the skeleton's upload at a draft gate covers this one.
+In a run with no draft gate, do not stop to ask: skip the upload, write the local path, and say in the first line's one sentence that uploading would replace the Studio Web copy, so it waits for the user's go-ahead.
+The cloud copy was checked before the edit ([Check the cloud copy](operate.md#check-the-cloud-copy-before-editing)); do not compare it with the built file before uploading, because the two always differ.
 Do not upload a process that is not ready: when a connector's enrichment or a binding is still unresolved, do not upload ([Operate](operate.md#anti-patterns)).
 When the request forbids upload or the project has no solution, skip the upload, and do not create a solution to show the process.
 <!--skill-flavor:final-upload:end-->
@@ -36,7 +38,8 @@ The first line names the mode as literal text, in place of `<draft|auto>`.
 Write `(draft mode)` for any run that stopped at a draft gate, including after *Build it*, and write `(auto mode)` only in a run that never stopped at a gate.
 Never write `(auto mode)` after a draft gate.
 Write `, uploaded` only when this turn's upload succeeded, and `, run` only when this turn ran the process with the user's consent.
-When the upload fails, write the local path on the path line and say in the first line's one sentence that the process is not in Studio Web yet.
+When the pre-flight or the upload fails, write the local path on the path line and say in the first line's one sentence that the process is not in Studio Web yet.
+When the upload succeeds but returns no `Data.DesignerUrl`, write the local path on the path line and say in that sentence that Studio Web returned no link.
 
 When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
 Drop `Needs:` when nothing is missing.
