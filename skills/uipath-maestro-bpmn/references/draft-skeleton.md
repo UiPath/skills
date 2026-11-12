@@ -155,6 +155,8 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
    ```
 
    `validate` must report `Status: Valid`.
+   Before you compile, read the `check --graph` output for every `.fork()`: each branch must reach `<fork>_join` on exactly one flow.
+   A flow into `<fork>_join` from a box inside an `onError` or `onTimer` handler is the stall rule 9 describes; neither `check` nor `validate` reports it, so fix it as rule 9 says before you compile.
    Because the start event kept the id `Event_start`, the `init`-generated `entry-points.json` still matches and the skeleton needs no `refresh`.
    If `validate` fails with `entry-points.json references start event "Event_start"`, the id was renamed: put `Event_start` back.
 <!--skill-flavor:draft-upload:start-->
