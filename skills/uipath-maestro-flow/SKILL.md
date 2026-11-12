@@ -219,7 +219,7 @@ The table is the authoritative router; read a node's `Reference` before writing 
 | Inline agent | `uipath.agent.autonomous` | `inlineAgent(...)` | [inline-agent.md](references/inline-agent.md) | `examples/PostcardCaption.flow.ts` |
 | IxP extraction | `uipath.ixp.<project>.<version>-<folder>` | `ixpExtract(...)` | [ixp.md](references/ixp.md) | `examples/ArchiveCardExtract.flow.ts` |
 | Document classify | `uipath.document.classify` | `documentClassify(...)` | [document-pipeline.md](references/document-pipeline.md) | `examples/SeedPacketReader.flow.ts` |
-| Extract document — only when the user names it or the flow holds one; else IxP extraction | `uipath.ixp.extract-document-builder` | — (CLI only) | [extract-document-node.md](references/extract-document-node.md) | `examples/SeedPacketReader.flow.ts` |
+| Extract document | `uipath.ixp.extract-document-builder` | — (CLI only) | [extract-document-node.md](references/extract-document-node.md) | `examples/SeedPacketReader.flow.ts` |
 | Published function | `uipath.core.function.<key>` | `publishedFunction(...)` | [published-function.md](references/published-function.md) | `examples/TideTableConverter.flow.ts` |
 | Conversation message wait | `uipath.conversational.wait-for-message` | `waitForMessage(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
 | Conversational agent | `uipath.agent.conversational` | `conversationalAgent(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
