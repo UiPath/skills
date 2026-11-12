@@ -254,8 +254,7 @@ def sweep_debug_folders() -> list[str]:
     bound to their packages, so the package sweep 409s until the folder goes.
     A folder is touched only when every process in it is a fixture-domain
     package and every one of those versions is older than the leak window;
-    folders carry no timestamp of their own. Returns the swept package keys'
-   
+    folders carry no timestamp of their own. Returns the swept folders' keys.
 
     Hygiene, not a gate: any failure is reported and the seed goes on.
     """
