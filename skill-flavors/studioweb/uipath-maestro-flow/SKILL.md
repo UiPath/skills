@@ -85,7 +85,7 @@ Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRe
 <!--skill-flavor:sdk-connector-discovery:end-->
 
 <!--skill-flavor:sdk-lifecycle:start-->
-Every change — a new flow or an edit — is the same round trip through the target `.flow` ([Project layout](#project-layout)). Merge keeps what the SDK does not model (layout, sidecars); it moves original nodes right or down to make room for added ones: never move them back, and never edit the target `.flow` after merge (change the `.ts` and repeat steps 3-4). Run it from the project folder:
+Every change — a new flow or an edit — is the same round trip through the target `.flow` ([Project layout](#project-layout)). Merge keeps layout and sidecars and moves nodes to make room: never move them back or edit the merged `.flow`. Run it from the project folder:
 
 ```bash
 cd /solution/<Project>
