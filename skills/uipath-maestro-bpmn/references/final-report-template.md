@@ -20,7 +20,7 @@ Reply in this shape, dropping lines that do not apply:
 
 ```text
 <!--skill-flavor:final-first-line:start-->
-<Name>: built, validated<, uploaded><, run> (<draft|auto> mode). <One sentence if you kept the user's Studio Web edits.>
+<Name>: built, validated<, uploaded><, run> (<draft|auto> mode). <One sentence if the upload failed or you kept the user's Studio Web edits.>
 <!--skill-flavor:final-first-line:end-->
 <!--skill-flavor:final-path-line:start-->
 <the Studio Web link (Data.DesignerUrl) on its own line when it uploaded, else the local <Project>/<Name>.bpmn path as plain text, never a link>
@@ -36,6 +36,7 @@ The first line names the mode as literal text, in place of `<draft|auto>`.
 Write `(draft mode)` for any run that stopped at a draft gate, including after *Build it*, and write `(auto mode)` only in a run that never stopped at a gate.
 Never write `(auto mode)` after a draft gate.
 Write `, uploaded` only when this turn's upload succeeded, and `, run` only when this turn ran the process with the user's consent.
+When the upload fails, write the local path on the path line and say in the first line's one sentence that the process is not in Studio Web yet.
 
 When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
 Drop `Needs:` when nothing is missing.

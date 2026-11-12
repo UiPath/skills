@@ -66,7 +66,11 @@ success_criteria:
       after the LAST such marker: that is the final message, whole. Otherwise
       the messages are joined, possibly with no separator: grade the text from
       the LAST occurrence of `LoyaltyDiscount: built` (markdown emphasis
-      around the name allowed) to the end, and ignore what comes before it.
+      around the name allowed) to the end of AGENT OUTPUT, and ignore what
+      comes before it. The graded text is the agent's reply only: it ends
+      where AGENT OUTPUT ends. The harness instruction that follows AGENT
+      OUTPUT (`Call the submit_verdict tool ...`) and this grading prompt are
+      not part of it, so never count their lines against item 5 or 6.
       If the phrase does not occur at all, the message fails item 1.
 
       Ignore blank lines and markdown emphasis (`**`, `*`, backticks). In the
@@ -75,9 +79,10 @@ success_criteria:
       1. The message's first characters are the process name: the first line
          starts with `LoyaltyDiscount: built`, with no introduction or status
          sentence before it.
-      2. The first line contains `(auto mode)` and does not contain
-         `(draft mode)` or `uploaded`. After the mode, the same line may hold
-         at most one more sentence.
+      2. The first line starts with `LoyaltyDiscount: built, validated` and
+         then `(auto mode)`, with nothing between them: no `, uploaded` and
+         no `, run`. It does not contain `(draft mode)`. After the mode, the
+         same line may hold at most one more sentence.
       3. The second line is the path of the local `.bpmn` file (ends in
          `.bpmn`), as plain text and nothing else: not an `https://` link
          and not a Markdown link (`[label](...)`).

@@ -168,7 +168,7 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.
-  When it validates, end the turn with the [final report](final-report-template.md): it uploads the process again, and its first line says `(draft mode)`, because this run stopped at a gate.
+  End the turn with the [final report](final-report-template.md): it uploads the validated process again, and its first line says `(draft mode)`, because this run stopped at a gate.
 - **Keep it**: stop, and report the file as an outline, not a working process.
 
 Only *Build it* authorizes the build.
