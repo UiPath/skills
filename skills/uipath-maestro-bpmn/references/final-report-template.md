@@ -6,10 +6,9 @@ The skeleton's own gate reply is a different template ([gate reply](draft-skelet
 ## Upload the built process
 
 <!--skill-flavor:final-upload:start-->
-When the request allows an upload and the project has a solution (`.uipx`), run the [pre-flight](operate.md#pre-flight-before-any-cloud-action), then `uip solution upload <SolutionDir> --output json` returns the `Data.DesignerUrl`.
+When the built process validates, the request allows an upload and the project has a solution (`.uipx`), run the [pre-flight](operate.md#pre-flight-before-any-cloud-action), which also stops the upload while a connector's enrichment is unresolved, then `uip solution upload <SolutionDir> --output json` returns the `Data.DesignerUrl`.
 When this run's `init` did not scaffold the solution, the upload first needs the user's confirmation and the cloud-copy check that [Studio Web upload](operate.md#studio-web-upload) describes; when either is missing, do not ask in this reply: skip the upload and say in the first line's one sentence that it waits for the user's go-ahead.
 When the request forbids upload, or there is no solution, skip it.
-Do not upload a process whose connector enrichment or binding is still unresolved ([Operate](operate.md#anti-patterns)).
 <!--skill-flavor:final-upload:end-->
 
 ## The reply
