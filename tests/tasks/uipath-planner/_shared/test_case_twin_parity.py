@@ -19,7 +19,7 @@ import re
 import pytest
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..")
-CANONICAL = os.path.join(ROOT, "skills", "uipath-planner", "references", "case", "case-design-layers-guide.md")
+CANONICAL = os.path.join(ROOT, "skills", "uipath-planner", "references", "design", "case-data-and-time-guide.md")
 # The twin was the classic (JSON-authoring) case skill. After the v2 unpin
 # (classic tree removed), the SLA response shapes live in the v2 case-runtime
 # reference. Skip parity tests when the classic twin is absent.
@@ -123,8 +123,7 @@ def test_the_planner_declares_the_twin_relationship():
 
 def test_neither_side_links_into_the_other_skills_files():
     """Self-containment: sibling references are by skill NAME, never by file path."""
-    paths = [CANONICAL,
-             os.path.join(ROOT, "skills", "uipath-planner", "references", "case", "case-design-lane-guide.md")]
+    paths = [CANONICAL]
     if CLASSIC_AVAILABLE:
         paths += [TWIN, TWIN_FIELDS,
                   os.path.join(ROOT, "classic", "skills", "uipath-maestro-case", "SKILL.md")]
