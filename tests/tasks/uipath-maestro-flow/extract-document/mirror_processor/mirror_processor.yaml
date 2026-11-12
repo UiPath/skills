@@ -89,7 +89,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro flow validate passes with no warnings: the new node reads a declared file input, and there is no second author of the processor"
+    description: "uip maestro flow validate passes with no warnings: there is no second author of the processor"
     command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0
