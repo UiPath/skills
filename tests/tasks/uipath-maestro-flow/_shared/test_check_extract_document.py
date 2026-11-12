@@ -576,3 +576,79 @@ def test_copies_of_a_source_the_original_lacks_fails(write, original, capsys):
 def test_copies_with_bad_values_is_a_usage_error(write, values):
     write(_flow())
     assert _run("copies", *values) == 2
+
+
+PROCESSOR_KEY = "5d0b6e3c-2f4a-4c1e-9a7b-8e6f1d2c3b4a"
+
+
+def _keyed_flow(key=PROCESSOR_KEY):
+    flow = _flow()
+    flow["nodes"][1]["inputs"]["processorKey"] = key
+    return flow
+
+
+@pytest.fixture()
+def solution(tmp_path):
+    """The flow's solution root, holding a .uipx, and a writer for its idpProcessor resources."""
+    root = tmp_path / "InvoiceReaderSolution"
+    root.mkdir(exist_ok=True)
+    (root / "InvoiceReaderSolution.uipx").write_text("{}")
+    extraction = root / "resources" / "solution_folder" / "idpProcessor" / "extraction"
+
+    def write_resource(key, kind="idpProcessor", name="Extract Invoice"):
+        extraction.mkdir(parents=True, exist_ok=True)
+        (extraction / f"{name}.json").write_text(json.dumps({"resource": {"name": name, "kind": kind, "key": key}}))
+
+    return write_resource
+
+
+@pytest.mark.parametrize("kind", ["idpProcessor", "IdpProcessor"])
+def test_processor_passes_a_key_the_solution_holds(write, solution, kind):
+    write(_keyed_flow())
+    solution(PROCESSOR_KEY, kind=kind)
+    assert _run("processor") == 0
+
+
+@pytest.mark.parametrize(
+    "key, named",
+    [
+        (None, "inputs.processorKey is null, not a GUID"),
+        ("", 'inputs.processorKey is "", not a GUID'),
+        ("not-a-guid", 'inputs.processorKey is "not-a-guid", not a GUID'),
+    ],
+)
+def test_processor_fails_a_node_without_a_key(write, solution, capsys, key, named):
+    write(_flow() if key is None else _keyed_flow(key))
+    solution(PROCESSOR_KEY)
+    assert _run("processor") == 1
+    assert named in capsys.readouterr().err
+
+
+def test_processor_names_the_keys_the_solution_holds_instead(write, solution, capsys):
+    write(_keyed_flow())
+    solution("0f1e2d3c-4b5a-4968-8776-655443322110")
+    assert _run("processor") == 1
+    assert "idpProcessor keys: 0f1e2d3c-4b5a-4968-8776-655443322110" in capsys.readouterr().err
+
+
+def test_processor_ignores_a_resource_of_another_kind(write, solution, capsys):
+    write(_keyed_flow())
+    solution(PROCESSOR_KEY, kind="process")
+    assert _run("processor") == 1
+    assert "idpProcessor keys: none" in capsys.readouterr().err
+
+
+def test_processor_passes_a_keyed_flow_outside_a_solution(write):
+    write(_keyed_flow())
+    assert _run("processor") == 0
+
+
+def test_processor_fails_a_keyless_flow_outside_a_solution(write, capsys):
+    write(_keyed_flow(None))
+    assert _run("processor") == 1
+    assert "not a GUID" in capsys.readouterr().err
+
+
+def test_processor_takes_no_values(write):
+    write(_keyed_flow())
+    assert _run("processor", "extra") == 2
