@@ -19,7 +19,7 @@ Use this as a router: read only the capability reference you need, then let Type
 
 **Design first:** when the request is to build or create a case and no `sdd.md` exists, invoke `uipath-planner`'s `design` verb (Case Management) in this conversation (the Skill tool, never a subagent) before any other step. The lane owns the design, its one review, and the `sdd.md` write; then continue at step 0 with that `sdd.md`. Never overwrite an existing `sdd.md`. If the planner is unavailable, say so once, ask for an `sdd.md` or an approved design, and stop. A targeted edit of an existing plan or `<Name>.case.ts` needs no SDD. An `sdd.md` from an earlier session is approved when its `## Planner Handoff` table reads `Template validation` `passed`; otherwise send it back through the planner.
 
-**Never use `sdd convert` as the build path.** `uip maestro case sdd convert` produces a draft with flat connector inputs and unresolved references — `validate` rejects it. The build path is: `case init` → decompile → author TypeScript → check → compile → validate. If `sdd convert` was run, decompile its output and continue from step 5.
+**Never use `sdd convert` as the build path.** Its output has flat connector inputs and unresolved references — `validate` rejects it. If convert was run, decompile its output and continue from step 5.
 
 0. When the input is an approved `sdd.md` that names published resources, resolve them first: `registry pull`, then `sdd resolve` into `tasks/registry-resolved.json`, then ask the user about what it leaves ([Registry resolution](references/registry-resolution.md)). Stop there when the request is Phase 1 only.
 <!--skill-flavor:workflow-scaffold:start-->
@@ -114,11 +114,7 @@ uip solution resources refresh --solution-folder <solution> --output json
 validation owns the compiled Case contract. Do not repair emitted JSON by hand;
 change the TypeScript source and rebuild.
 
-> **`uip maestro case sdd convert` is a seed, not a build path.** Its output
-> has flat connector inputs (`CASE_MGMT_CONNECTOR_INPUT_FLATTENED`), unresolved
-> cross-task references, and no `registry prepare`. Never submit a convert-only
-> plan to `validate` — it will fail. Always decompile the convert output, author
-> the TypeScript source, then run check → compile → validate.
+> **`sdd convert` is a seed, not a build path** — see the Workflow section above.
 
 The build is complete only when `validate --strict` passes. When the request
 supplies an `sdd.md`, add `--sdd <path>`: it audits the plan against the SDD.
