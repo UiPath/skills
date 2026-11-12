@@ -310,7 +310,7 @@
     "allow": [],
     "ceiling": {
       "login": 2,
-      "or": 26,
+      "or": 27,
       "or kb": 6,
       "or kb archive": 1,
       "or kb build": 1,
