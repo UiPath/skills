@@ -190,6 +190,11 @@
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 /tests/tasks/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-dashboards-flows.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-dashboards-lifecycle.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-dashboards-setup-admin-folder.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-validate-action-schema.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/support/coded-apps-dashboards-fake-tools.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 
 # Connector Builder skill
 /skills/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
