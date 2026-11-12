@@ -1,6 +1,6 @@
 # RPA Product Guide
 
-Load this guide when Level 1 of the [Product Selection Guide](product-selection-guide.md) selects **RPA**, or when a Solution composition at Level 1.75 includes one or more RPA projects.
+Load this guide when Level 1 of the [Product Selection Guide](../shared/product-selection-guide.md) selects **RPA**, or when a Solution composition at Level 1.75 includes one or more RPA projects.
 
 This file is the **canonical home** for RPA-specific levels:
 
@@ -10,7 +10,7 @@ This file is the **canonical home** for RPA-specific levels:
 - **R-07 naming convention** — `<PROCESS_SHORT_NAME_PASCAL>_<ROLE_SUFFIX>`
 - **REFramework guidance** — when to use REFramework vs Sequence
 
-Cross-product levels live in the [Product Selection Guide](product-selection-guide.md):
+Cross-product levels live in the [Product Selection Guide](../shared/product-selection-guide.md), [Solution Composition Guide](solution-composition-guide.md) and [Component Placement Guide](../shared/component-placement-guide.md):
 
 - Level 1 (primary scope)
 - Level 1.75 (Solution composition)
@@ -81,7 +81,7 @@ Pick the default from the sub-type signals above:
 
 ### User confirmation
 
-Always confirm the sub-type via `AskUserQuestion` with the numbered-choice format, even when only one signal set matches:
+In interactive mode, confirm the sub-type via a structured question with the numbered-choice format, even when only one signal set matches (autonomous mode takes the recommended sub-type and records it in Decisions Made):
 
 > This RPA project looks like a **<DEFAULT_SUBTYPE>**. Which sub-type should I use?
 >
@@ -157,7 +157,9 @@ If **fewer than two** are true and the body is >70% UI, recommend XAML. The "cle
 
 Apply these signals **to every RPA Process project** in the scope. Skip for RPA Library, RPA Test Automation, and non-RPA products — those are always one project each.
 
-Walk through the signals — they are *evidence*, not the decision. **2+ matches → candidate Master Project**; confirm each proposed split earns a **boundary**: at least one of independent scaling (different robot counts/speeds per stage), independent failure recovery (queue-isolated per-stage retry/replay), separate ownership or deployment cadence, or independent scheduling. No boundary need → **Single Project** with internal phases (transactional processing + ordinary end-of-run reporting alone is usually ONE project). 0–1 matches → Single Project.
+**Start from one project; every split earns its boundary.** A sub-project exists only when §10 can name the fact that requires it: (a) **scaling** — the §16 sizing needs a different robot count per stage; (b) **failure isolation** — a stage's retry or replay must not repeat another stage's side effect (a costly re-extraction, a posting, a sent message); (c) **a long wait** — a stage holds an item for hours (a person's validation) while the other stages must keep moving; (d) **ownership or cadence** — another team, schedule or release cycle. The signals below are where to look, counted once per fact (a DU validation wait is one fact, not two signals), never a boundary by themselves. A shape the PDD itself names — its scheduling table lists `X_Dispatcher` and `X_Performer` — is the starting point; departing from it is a Decisions Made row. No boundary → **Single Project** with internal phases.
+
+**Reporting is never a reason to split.** A report reads the outcomes the processing stage already records (queue item status and output, a run record); a reporting queue filled only to be read back once a day is a data store, not a hand-off.
 
 > Queue design is independent of decomposition: a **Single Project** that is queue-triggered, consumes an existing queue, or self-dispatches still fills §12 Queue Architecture in the RPA template — only a project with no queue involvement omits it.
 
@@ -167,8 +169,7 @@ Walk through the signals — they are *evidence*, not the decision. **2+ matches
 | 2 | Transactional processing where items can fail independently and must be retried per item | Queue-based retry requires Performer projects consuming from Orchestrator queues using REFramework |
 | 3 | Document Understanding or AI extraction with human validation (Action Centre) | DU + validation is a distinct processing stage that benefits from its own project and queue |
 | 4 | Different processing speeds per stage (e.g., fast email download vs. slow DU extraction) | Independent projects allow different robot counts per stage for throughput balancing |
-| 5 | Reporting requirements (Excel report, email summary, dashboard data) | Dedicated Reporting project reads from a reporting queue populated by all other stages |
-| 6 | Multiple output channels from a single input (e.g., XML to MQ + files to FTP + report to email) | Separate Performer per output channel avoids coupling unrelated integrations |
+| 5 | Multiple output channels from a single input (e.g., XML to MQ + files to FTP + report to email) | Separate Performer per output channel avoids coupling unrelated integrations |
 
 ### Common decomposition patterns
 
@@ -177,29 +178,23 @@ Walk through the signals — they are *evidence*, not the decision. **2+ matches
 Use when the process collects items from a source (email, folder, spreadsheet, API) and then processes each item transactionally.
 
 ```text
-[Dispatcher] → Queue → [Performer] → Reporting Queue → [Reporting]
+[Dispatcher] → Queue → [Performer]
 ```
 
 - **Dispatcher**: collects items, creates queue items with all required data. Runs as a simple sequence (no REFramework).
-- **Performer**: processes one transaction item at a time. Uses **REFramework** for retry, logging, and state management.
-- **Reporting** (optional): reads from a reporting queue, generates reports. Runs on a schedule or after Performer completes.
+- **Performer**: processes one transaction item at a time. Uses **REFramework** for retry, logging, and state management; its end-of-run step writes any report from the items' outcomes.
 
-#### Dispatcher / DU Performer / Output Performer
+#### Dispatcher / DU Performer
 
-Use when the process has Document Understanding with human validation as a middle stage.
+Use when the process extracts documents with human validation (boundary (c)).
 
 ```text
-[Dispatcher] → DU Queue → [DU Performer] → Output Queue → [Output Performer]
-                                ↓                              ↓
-                          Action Centre                  Reporting Queue
-                                                               ↓
-                                                         [Reporting]
+[Dispatcher] → DU Queue → [DU Performer] ─ Action Center
 ```
 
 - **Dispatcher**: downloads emails/files, creates queue items.
-- **DU Performer**: runs DU extraction, sends low-confidence items to Action Centre, pushes validated results to the output queue. Uses REFramework.
-- **Output Performer**: generates output (XML, CSV, API calls), uploads to target systems. Uses REFramework.
-- **Reporting**: aggregates outcomes from all stages.
+- **DU Performer**: extracts, sends low-confidence items to Action Center, then writes the output. Uses REFramework.
+- A separate **Output Performer** behind an output queue only when boundary (b) holds — the output's retry must not repeat the extraction or the validation.
 
 ### RPA Process (single-product scope) — narrower project list
 
@@ -208,16 +203,15 @@ When the primary scope is RPA Process (not a Solution), Part A directly produces
 | # | Project Name | Role | Framework | Input Queue | Output Queue |
 |---|---|---|---|---|---|
 | 1 | `<NAME>_Dispatcher` | Collect items from source, dispatch to processing queue | Sequence | — | `<QUEUE_1>` |
-| 2 | `<NAME>_Performer` | Process each transaction item | REFramework | `<QUEUE_1>` | `<REPORTING_QUEUE>` |
-| 3 | `<NAME>_Reporting` | Generate reports from processing outcomes | Sequence | `<REPORTING_QUEUE>` | — |
+| 2 | `<NAME>_Performer` | Process each transaction item | REFramework | `<QUEUE_1>` | — |
 
-Queue definitions for the `<QUEUE_1>` and `<REPORTING_QUEUE>` placeholders are authored in §12 of the RPA template (`assets/templates/rpa-sdd-template.md`). §12 is the single source of truth for queue shape — `Queue Definitions` table + one `Queue Item Schema` subsection per queue. Do not invent a different column layout in Part A or Part B.
+Queue definitions for the `<QUEUE_1>` placeholder are authored in §12 of the RPA template (`assets/templates/rpa-sdd-template.md`). §12 is the single source of truth for queue shape — `Queue Definitions` table + one `Queue Item Schema` subsection per queue. Do not invent a different column layout in Part A or Part B.
 
-For Solutions, feed the rows produced by Part A into Level 2.5 Part B of [product-selection-guide.md](product-selection-guide.md#part-b--merge-into-the-final-project-list) to merge with the non-RPA projects.
+For Solutions, feed the rows produced by Part A into Level 2.5 Part B of [solution-composition-guide.md](solution-composition-guide.md#part-b--merge-into-the-final-project-list) to merge with the non-RPA projects.
 
 ### Sub-project naming convention (rule R-07)
 
-Every row in the project list uses the pattern:
+Every row of a Master Project's project list uses the pattern (a Single Project takes the short name alone):
 
 ```
 <PROCESS_SHORT_NAME_PASCAL>_<ROLE_SUFFIX>
@@ -232,7 +226,6 @@ Every row in the project list uses the pattern:
 | `_Performer` | Consumes queue items and processes each transactionally (REFramework) |
 | `_DUPerformer` | Performer variant dedicated to Document Understanding extraction + validation |
 | `_OutputPerformer` | Performer variant that consumes validated data and writes to a downstream system (API, file, message bus) |
-| `_Reporting` | Reads a reporting queue and generates reports / dashboards / summary emails |
 | `_SharedUtils` | RPA Library containing reusable workflows called by other projects in the Solution |
 
 Worked example — PDD: "Weekly Vendor Invoice Ingestion". Short-name: `VendorInvoice`. Unified project list:
@@ -242,8 +235,7 @@ Worked example — PDD: "Weekly Vendor Invoice Ingestion". Short-name: `VendorIn
 | 1 | `VendorInvoice_Dispatcher` | Download vendor emails + attachments, enqueue |
 | 2 | `VendorInvoice_DUPerformer` | Classify + extract invoice fields, send to Action Centre on low confidence |
 | 3 | `VendorInvoice_OutputPerformer` | Post validated invoices to the ERP API |
-| 4 | `VendorInvoice_Reporting` | Aggregate outcomes into the weekly ops email |
-| 5 | `VendorInvoice_SharedUtils` | Shared vendor lookup + currency conversion helpers |
+| 4 | `VendorInvoice_SharedUtils` | Shared vendor lookup + currency conversion helpers |
 
 For RPA Library and RPA Test Automation projects in a Solution that are **not** queue-connected sub-projects of a Master Project, use the same short-name prefix but pick a role suffix that reflects the project's purpose (e.g., `_SharedUtils`, `_Regression`, `_SmokeTests`).
 
@@ -277,7 +269,6 @@ The defining criterion is **per-item independence**: one failing item must not b
 | Performer (in-memory transactions or UI-row iteration, no Orchestrator queue) | **REFramework** | Each row / record is a transaction with independent success/failure; queue presence is not required to justify the framework |
 | Dispatcher — atomic collect-then-commit (e.g., single SQL query, single folder scan) | **Sequence** | Collection is one unit of work; no per-item retry semantics required |
 | Dispatcher — retryable items (e.g., paginated API, flaky source where individual pages/items can fail) | **REFramework** | Each retrieved item is itself a transaction; per-item retry + state tracking justify REFramework |
-| Reporting (reads queue, generates output) | **REFramework** *(default)* or Sequence | Use REFramework when per-item reporting failures must be tracked, or when the reporting queue can exceed ~10 items per run (typical for daily/weekly aggregation over a Master Project). Use Sequence only for atomic end-of-run aggregation of a small, fixed set of items where a single failure can fail the whole run without loss. |
 | Single Project (no queues, but iterates discrete items) | **REFramework** | REFramework gives per-item retry + state tracking even without a queue. Lifecycle just becomes Init → GetTransactionData (loads from memory / UI / file system) → Process → SetTransactionStatus. |
 | Single Project (no iteration at all) | **Sequence** | Linear pipeline, no transactions, no retry semantics. |
 | Process with an in-flight human approval / async wait (single process, not cross-product) | **Sequence or REFramework, + Persistence = YES** | Persistence is a modifier on the chosen framework, not a framework: suspend the job, release the robot, resume on Action Center completion — see [Long-running workflows](#long-running-workflows-persistence--action-center) |
@@ -288,31 +279,9 @@ The defining criterion is **per-item independence**: one failing item must not b
 
 When REFramework is selected for a project, the project structure in §11 of the RPA template must use the REFramework folder layout (Init, GetTransactionData, Process states) instead of a custom framework.
 
-### Worked example — Performer reading WI rows from a web UI, no queue
+### Independence, not volume or queues, decides
 
-**Scenario:** A web app shows a list of Work Items. The robot logs in, filters the list, then for each row: opens the WI, reads fields, computes an output, writes the result back, marks the WI processed. No Orchestrator queue. Volume is small (~15 items/day).
-
-**Decision:** **REFramework.** Justification:
-- Each WI row is a discrete unit of work with independent success/failure.
-- A failed WI must not block the remaining items — REFramework's per-transaction exception handling delivers this for free.
-- Per-item retry on system errors (selector failure, browser glitch) is the right behaviour — REFramework retries the failed transaction without restarting the run.
-- Lower volume does not change the analysis. "Only 15 items" is irrelevant; the question is whether items are independent, not how many there are.
-
-**Anti-pattern:** picking Sequence with a custom try/catch loop around the iteration. The custom loop will re-implement state tracking, retry counts, exception routing, and Init/teardown — all of which REFramework provides out of the box, more robustly.
-
-**Sources of transactions per the Performer's `GetTransactionData`:**
-- For this scenario: read the next row from the web UI's WI list (via UIA `NGetText` or table extraction).
-- No queue dependency: `GetTransactionData` returns the next un-processed WI from the UI's current state.
-
-### Anti-pattern: "no queue, so no REFramework"
-
-Reasoning along the lines of "this process has ~15 items/day, no Orchestrator queue, no peak load — REFramework is overkill" is wrong on every count:
-
-- Volume is not the criterion — independence is.
-- Queue is not the criterion — independence is.
-- REFramework's overhead is fixed (folder layout + states). The per-item benefits — retry, exception isolation, state tracking — apply whether items come from a queue or the UI.
-
-If you find yourself rejecting REFramework on volume or queue-absence grounds, re-read the "Use REFramework when…" criteria above before committing to Sequence + custom loop.
+A robot that works ~15 work items a day from a web UI list, with no Orchestrator queue, is still REFramework: each item fails, retries and is tracked on its own, and `GetTransactionData` reads the next unprocessed item from the source itself. Rejecting REFramework on volume or queue absence and hand-writing a try/catch loop re-implements the framework's state tracking, retry counts, exception routing and Init / teardown, less robustly.
 
 ## Long-running workflows (persistence + Action Center)
 
@@ -320,6 +289,7 @@ RPA handles asynchronous human interaction **inside a single process** — do no
 
 - **Mechanism:** Studio long-running workflow (Persistence activities — Create Form Task / Wait for Task and Resume). The job **suspends**, the robot is **released** (no license burned while waiting), and the job **resumes** — potentially on a different robot — when the Action Center task completes.
 - **Use when:** one process needs an in-flight approval, data validation, or async wait (task completion, queue item, job) and the rest of the coordination is within that process.
-- **Do NOT use when:** the wait spans **multiple products** (RPA + agents + APIs) or needs formal gateways/events — that is Maestro territory ([Product Selection Guide → Maestro disambiguation](product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case)).
+- **Do NOT use when:** the wait spans **multiple products** (RPA + agents + APIs) or needs formal gateways/events — that is Maestro territory ([Product Selection Guide → Maestro disambiguation](../shared/product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case)).
+- **A waiting job works one item.** A suspended job keeps every queue item it took In Progress, so a queue-triggered performer that can suspend takes one item per job, and its retry is the queue's: the item stays In Progress until the job resumes and finishes it — never mark it Successful before the wait. Several waits on one item (two validations in sequence) stay in one job; a wait on a stage the item has already left is a split (boundary (c)).
 - **Identities & licensing:** record three separate decisions — the **start identity** (an attended user start is supported, not just unattended), the **resume identity** (typically an unattended robot; resume may land on a different robot than the start), and the **licensing implication** of each. Attended-start + unattended-resume is a valid, common shape (§11 Attendance column).
 - **SDD impact:** Persistence = YES in §11 Project Mode Decision (framework stays Sequence/REFramework); mark suspend/resume points in the Workflow Inventory; the approval task is flagged as an Action Center touchpoint, not a `uipath-human-in-the-loop` task.

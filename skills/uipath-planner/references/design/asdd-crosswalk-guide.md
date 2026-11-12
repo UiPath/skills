@@ -11,7 +11,7 @@ The markdown SDD this skill writes is the **agent-first** artifact: implementati
    Stop and wait for the path. Do not assume or invent the official section layout.
 
 2. **Read the template's section structure:**
-   - `.docx` → run `bash <SKILL_DIR>/scripts/docx-extract.sh "<TEMPLATE>.docx"` and take the heading list (the **Contents** page lists the numbered sections).
+   - `.docx` → run `node "<SKILL_DIR>/scripts/sdd-to-docx.mjs" --headings "<TEMPLATE>.docx"` and take the heading list it prints. `<SKILL_DIR>` is the folder holding planner's `SKILL.md`.
    - `.md` → read the headings directly.
 
    Match against the standard layout in the crosswalk below. The user's file wins on any naming or ordering difference — follow its sections.
@@ -20,13 +20,15 @@ The markdown SDD this skill writes is the **agent-first** artifact: implementati
 
 4. **Compute missing pieces.** For a template section with no direct SDD source, derive it from SDD data when present; when it needs information the SDD does not hold, write the literal marker `[SME REVIEW]` followed by what is needed, and add the item to a list the user must fill. Never fabricate.
 
-   > **Marker discipline (see SKILL.md Critical Rule 10).** `[SME REVIEW]` and `[DEFAULT]` are the only gap markers, written verbatim with nothing else inside the brackets — the note goes after the closing bracket (`[SME REVIEW] repository not recorded in the source SDD`). Do not invent a second vocabulary (`[PLACEHOLDER]`, `[TBD]`, `<fill in>`) and do not decorate the marker (`[SME REVIEW — …]`); both are invisible to the reviewer grepping the client document for open items. **Markers already in the source SDD copy through byte-for-byte** — this crosswalk relocates content, it never re-words a gap the SDD author recorded.
+   > **Marker discipline (SKILL.md § Critical Rules, gap markers).** `[SME REVIEW]` and `[DEFAULT]` are the only gap markers, written verbatim with nothing else inside the brackets — the note goes after the closing bracket (`[SME REVIEW] repository not recorded in the source SDD`). Do not invent a second vocabulary (`[PLACEHOLDER]`, `[TBD]`, `<fill in>`) and do not decorate the marker (`[SME REVIEW — …]`); both are invisible to the reviewer grepping the client document for open items. **Markers already in the source SDD copy through byte-for-byte** — this crosswalk relocates content, it never re-words a gap the SDD author recorded.
 
 5. **Assemble** the matched + computed content into the template's section order, then convert:
 
    ```bash
-   bash <SKILL_DIR>/scripts/sdd-to-docx.sh "<ASSEMBLED>.md" --reference-doc "<TEMPLATE>.docx"
+   node "<SKILL_DIR>/scripts/sdd-to-docx.mjs" "<ASSEMBLED>.md" "<OUTPUT>.docx" --reference-doc "<TEMPLATE>.docx"
    ```
+
+   Exit `2`: pandoc is not installed — keep the assembled `.md` and tell the user the conversion needs pandoc. Exit `3`: pandoc could not convert — keep the `.md` and report the error. Never hand-build a `.docx`. Mermaid blocks stay as code in the `.docx`; say so when the SDD has diagrams.
 
 ## Default crosswalk — standard UiPath SDD/ASDD template
 

@@ -24,10 +24,10 @@ Use this matrix to infer packages from §9 Application Inventory. Match on the *
 | Access Method in §9 | Package(s) | Required Assets | Common Pitfalls |
 |---|---|---|---|
 | IMAP | `UiPath.Mail.Activities` | Credential asset (username + app password); server host + port as text assets | Do not default to O365 — check PDD for protocol. IMAP needs app password, not user password, on 2FA accounts. |
-| POP3 | `UiPath.Mail.Activities` | Credential asset; host + port | Rarely used — prefer IMAP or Graph API if available. |
+| POP3 | `UiPath.Mail.Activities` | Credential asset; host + port | Rarely used — use IMAP or Graph API when available. |
 | Exchange / EWS | `UiPath.Mail.Activities` | Credential asset; EWS URL | Being deprecated by Microsoft — confirm the tenant still allows EWS. |
 | O365 Graph API | `UiPath.MicrosoftOffice365.Activities` | App registration client ID + tenant ID (text assets); certificate or secret (credential asset) | Different activity set from `UiPath.Mail.Activities`. Requires admin consent for mail scopes. |
-| Gmail API | `UiPath.GSuite.Activities` | OAuth client JSON (credential asset) | Integration Service alternative exists — prefer the connector unless the PDD requires specific activity packages. |
+| Gmail API | `UiPath.GSuite.Activities` | OAuth client JSON (credential asset) | Integration Service alternative exists — use the connector unless the PDD requires specific activity packages. |
 
 ### Microsoft Office files
 
@@ -53,7 +53,7 @@ Use this matrix to infer packages from §9 Application Inventory. Match on the *
 |---|---|---|
 | SAP GUI | `UiPath.SAP.BAPI.Activities` | BAPI function calls (RFC). |
 | SAP Fiori (web) | `UiPath.UIAutomation.Activities` | UI automation — no SAP package. |
-| Salesforce (native activities) | `UiPath.Salesforce.Activities` | Only when Integration Service is not available. Prefer the connector. |
+| Salesforce (native activities) | `UiPath.Salesforce.Activities` | Only when Integration Service is not available; otherwise use the connector. |
 | ServiceNow | `UiPath.ServiceNow.Activities` | Only when Integration Service is not available. |
 | Workday | `UiPath.Workday.Activities` | Only when Integration Service is not available. |
 
@@ -97,11 +97,10 @@ These two mechanisms both provide access to third-party systems, but they are **
 
 ### Decision
 
-1. If Orchestrator has a configured **Integration Service** connection for the target system AND the PDD does not require specific native-package activities → use the **Integration Service connector**.
-2. If a catalog connector exists but no connection is configured yet → still use the **Integration Service connector**; list creating the connection as a prerequisite.
-3. If no catalog connector exists and the target is a REST+JSON API → **build a custom connector** (`uipath-connector-builder`) and budget it as a plan task.
-4. Otherwise → use the matching **NuGet package**, or a direct authenticated call (key in a `Credential` asset) with a written justification in the SDD.
-5. If both paths are listed in §9 for the same application, pick Integration Service for the primary path and note the NuGet package as a fallback in §14.
+1. The access method is chosen once, in [component-placement-guide.md](../shared/component-placement-guide.md) § Level 3 — Capability Add-ons (Integration Service): a connector in the catalog for the target system, and no PDD requirement for native-package activities → the **Integration Service connector**. A connector with no configured connection yet is still this path — the connection is a provisioning `[SME REVIEW]` item, never a reason to switch to NuGet.
+2. No connector and the target is a REST+JSON API → **build a custom connector** (`uipath-connector-builder`) and budget it as a plan task.
+3. Otherwise → the matching **NuGet package**, or a direct authenticated call (key in a `Credential` asset) with a written justification in the SDD.
+4. If both paths are listed in §9 for the same application, pick Integration Service for the primary path and note the NuGet package as a fallback in §14.
 
 ### Side-by-side
 
@@ -132,9 +131,9 @@ These two mechanisms both provide access to third-party systems, but they are **
 
 | Package | Version | Purpose |
 |---|---|---|
-| `UiPath.IntegrationService.Activities` | pin at build | Runtime host for Integration Service connector activities |
+| `UiPath.IntegrationService.Activities` | Latest | Runtime host for Integration Service connector activities |
 
-> `pin at build` is the template's literal sentinel — version unknowable at design time; the build skill resolves and writes the exact version back. See [rpa-sdd-template.md §14 Packages](../assets/templates/rpa-sdd-template.md).
+> Version rule: Pitfall 1 below.
 
 ### Example — Salesforce via NuGet native package
 
@@ -148,20 +147,22 @@ These two mechanisms both provide access to third-party systems, but they are **
 
 | Package | Version | Purpose |
 |---|---|---|
-| `UiPath.Salesforce.Activities` | pin at build | Native Salesforce activities — used because Integration Service connector not available in this tenant |
+| `UiPath.Salesforce.Activities` | Latest | Native Salesforce activities — used because Integration Service connector not available in this tenant |
 
 ## Per-Product Dependency Manager
 
-SDD templates across the 6 products use different dependency mechanisms. List dependencies under the correct mechanism; do not cross them.
+SDD templates use different dependency mechanisms per product. List dependencies under the correct mechanism; do not cross them.
 
 | Product | Dependency Manager | Where Declared in SDD | Notes |
 |---|---|---|---|
 | RPA (Process, Library, Test Automation) | NuGet | §14 Packages table | Covered by this guide. |
 | Case Management | Downstream Case project dependencies | Not declared as a planner-only Packages subsection; resource/package resolution belongs to `uipath-maestro-case` from the Case Blueprint | Keep package hints in the `uipath-maestro-case` task prompt only when the SDD's Section 2/4 resource choices require them. |
-| Maestro Flow | Connector references + RPA step packages | Integrated Components section | Flow itself has no packages. Each RPA step called from the flow uses the RPA template's §14. |
+| Maestro Flow / Maestro BPMN | Connector references + RPA step packages | Integrated Components section | The flow or BPMN process itself has no packages. Each RPA step it calls uses the RPA template's §14. |
 | Agents | C# tool packages (subset of NuGet) | Tool Packages table in the Agent template | Declare only packages whose activities are wrapped as Agent tools. |
 | Coded Apps | **npm** (not NuGet) | Dependencies subsection in the Coded App template | Use `package.json` semantics. Do not list NuGet packages. |
 | API Workflows | Integration Service connector references | Connectors section in the API Workflow template | API Workflows are hosted in Orchestrator — no package file. |
+
+**An application with no row here** (a message bus, a niche system): name the integration, never a guessed package — `<package resolved at build>` with an `[SME REVIEW]` item; the owning build skill's discovery finds it.
 
 ## Selection Checklist
 
@@ -174,11 +175,11 @@ Before finalising a Packages table:
 5. Every PDD step with "approval", "action centre", "long-running" has `UiPath.Persistence.Activities`.
 6. No Integration Service connector slug is listed in §14 by mistake.
 7. For Master Project: a separate §14 table per sub-project. A Dispatcher that only downloads email does not need Excel packages.
-8. For Coded App: the dependency list uses npm package names (e.g., `@uipath/apps-sdk`), not NuGet.
+8. For Coded App: the dependency list uses npm package names (e.g., `@uipath/uipath-typescript`), not NuGet.
 
 ## Pitfalls
 
-1. **Guessing package versions.** Default to `Latest` in SDDs. Version resolution happens at build time (`uip` / Studio) — the SDD should not pin versions unless the PDD explicitly requires a specific feature gate.
+1. **Guessing package versions.** Write `Latest` for every package. Pin a version only when the PDD, the AS-IS or the TO-BE names it — then write that exact version. Never invent a version.
 2. **Listing `UiPath.Mail.Activities` and `UiPath.MicrosoftOffice365.Activities` together "just in case".** They provide overlapping activities and will confuse implementers. Pick one per email access method.
 3. **Mixing IntegrationService slug names with NuGet package names.** The slug `salesforce` is not a package; the package is `UiPath.Salesforce.Activities`.
 4. **Forgetting `UiPath.Persistence.Activities` for HITL.** Any workflow using `WaitForFormTaskAndResume`, `CreateFormTask`, or `CreateExternalTask` needs it. The Persistence package also requires `supportsPersistence: true` in `project.json` — call out in §14.
