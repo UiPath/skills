@@ -21,7 +21,7 @@ Never put a secret in an environment variable. The value is served in a public f
 
 The text is dotenv syntax, one `NAME=value` per line, and the platform validates it on deploy, on edit and in the solution deploy wizard:
 
-- Every name starts with `UIPATH_CLIENT_` and appears once. Other names are refused on deploy; the CLI and the dev plugin skip them silently when they read a `.env` file, so the developer's private names never reach the app.
+- Every name starts with `UIPATH_CLIENT_` and appears once. Other names are refused on deploy; the CLI and the dev plugin skip them silently when they read a `.env` file, so the developer's private names never reach the app. `UIPATH_CLIENT_ID` and `UIPATH_CLIENT_SECRET` are the platform's OAuth credential names and are refused everywhere, even though they carry the prefix.
 - Blank lines and `#` comments are allowed. **A blank value (`UIPATH_CLIENT_REGION=`) leaves the variable unset**, so `env.UIPATH_CLIENT_REGION ?? 'EU'` falls back; it does not read as an empty string.
 - A value fits on one line. Quote a value that contains `#` (`UIPATH_CLIENT_ACCENT='#0f2f27'`): unquoted, dotenv reads `#` as a comment and the value is refused rather than published cut.
 - No `%ASSETS/...%` references: for an agent that syntax resolves a secret server-side; in a public file it would expose it, so it is refused.
