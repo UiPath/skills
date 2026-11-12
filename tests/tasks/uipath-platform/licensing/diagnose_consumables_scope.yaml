@@ -150,10 +150,13 @@ success_criteria:
       check for a mismatch that might remain, still scores 1.0 when the
       verdict states that conclusion for both observations.
 
+      A direct yes/no answer to "Is consumption reporting broken?" is the
+      conclusion; if it answers yes, score 0.0 regardless of later reasoning.
+
       Score 0.0 if the verdict concludes that reporting is broken (including
       when a later sentence overturns an earlier "not broken"), declines to
       decide (for example "not confirmed", "inconclusive", "cannot say"),
-      says the evidence is insufficient to decide whether either observation
-      is a defect, leaves the conclusion as an unfilled placeholder, or only
-      says that some component other than consumption reporting is not
-      broken.
+      refuses to conclude because the evidence is insufficient to decide
+      whether either observation is a defect, states no overall conclusion,
+      leaves the conclusion as an unfilled placeholder, or only says that
+      some component other than consumption reporting is not broken.
