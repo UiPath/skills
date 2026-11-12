@@ -396,10 +396,12 @@ import { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import './DocumentTab.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc =
-  `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Same-origin worker, emitted into the app's own build output by Vite.
+// Never a CDN URL: versions drift and a customer network or CSP can block it.
+pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 interface DocumentTabProps {
   // blob: URL or direct URL to the PDF. The parent fetches the file
