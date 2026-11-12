@@ -2,7 +2,7 @@
 
 > Reached from
 > [Step 5 of activity-generation.md (author the min.json)](../activity-generation.md#5-author-the-minjson) and
-> [Compile the metadata](../activity-generation.md#6-compile-the-metadata) — both
+> [Step 6 of activity-generation.md (compile the metadata)](../activity-generation.md#6-compile-the-metadata) — both
 > come **after the script has run**, because the response you observed is the only
 > source for the output half. The contract below is the same one the platform
 > enforces wherever the metadata is built.

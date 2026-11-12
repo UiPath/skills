@@ -195,7 +195,7 @@ These steps assume the consuming skill has already loaded the trigger's `filterF
 
 1. For each user-intent condition, pick a matching `name` from `filterFields.fields` — using an unknown field name will be rejected by the CLI at configure time.
 <!--skill-flavor:flow-sdk-trigger-operators:start-->
-2. Choose an operator based on the user's intent and the field type (see the operator table in the consuming skill; for a Flow, the `uipath-maestro-flow` skill).
+2. Choose an operator based on the user's intent and the field type (see the operator table in the consuming skill; for a Flow, the filter operators section of the `uipath-maestro-flow` skill).
 <!--skill-flavor:flow-sdk-trigger-operators:end-->
 <!--skill-flavor:flow-sdk-trigger-filter-shape:start-->
    **Builder-SDK Flow (`.flow.ts`): stop after step 2.** Write `filters: [{ field: '<name>', <operator>: <value> }]` on `onEvent(...)` / `waitForEvent(...)` — the `uipath-maestro-flow` skill covers the operators; `check` validates each field and operator. Steps 3–6 describe the classic structured tree.
