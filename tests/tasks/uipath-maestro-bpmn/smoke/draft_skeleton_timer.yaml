@@ -68,6 +68,8 @@ success_criteria:
     files:
       - NightlyReportSketch/NightlyReportSketch.bpmn
       - NightlyReportSketchSolution/NightlyReportSketch/NightlyReportSketch.bpmn
+      # Studio Web: the solution export, whose main file is Process.bpmn.
+      - NightlyReportSketch/NightlyReportSketch/Process.bpmn
     weight: 2.0
     pass_threshold: 1.0
     prompt: |
@@ -91,7 +93,9 @@ success_criteria:
       2. The second line is the path of the local `.bpmn` file (ends in
          `.bpmn`), and nothing else. A Markdown link whose target is that
          path (`[label](<path ending in .bpmn>)`, a space after `(` allowed)
-         counts as the path: the chat client renders it as the file.
+         counts as the path: the chat client renders it as the file. In
+         Studio Web, where the skeleton is on the canvas, this line is
+         exactly `The outline is on the canvas` instead.
       3. Next come the box lines, each starting with `- `. The attached
          `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
          box has exactly one line, and every line names one task box (its
@@ -105,7 +109,9 @@ success_criteria:
          line explaining a variable. There is no line
          for a start event, timer, gateway, branch, or end event. Each line is
          one short clause, under about 200 characters.
-      4. Next is exactly the line `Is this the process you want?`.
+      4. Next is exactly the line `Is this the process you want?`, or, when
+         item 2's line is `The outline is on the canvas`, exactly
+         `Accept the canvas change to keep this outline, then pick one:`.
       5. Then exactly three numbered options, in this order: `1.` Build it,
          `2.` Change it, `3.` Keep it, each with any short description. Nothing
          follows the third option.
