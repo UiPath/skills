@@ -147,15 +147,34 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Only a re-login counts: bare `login` (with or without flags) or
+  # `login refresh`. Read-only `login status` / `login which` are allowed;
+  # `cli_called` cannot say "no subcommand", so this reads the call log.
+  - type: run_command
+    description: "Did NOT treat the 404 as a login problem (no re-login or token refresh)"
+    command: >-
+      python3 -c "import json,os,sys; p=\"cli_mocks/calls.jsonl\";
+      rows=[json.loads(l) for l in open(p) if l.strip()] if os.path.exists(p) else [];
+      bad=[r[\"argv\"] for r in rows if r.get(\"tool\",\"uip\")==\"uip\" and r[\"argv\"][:1]==[\"login\"]
+      and not {\"--help\",\"-h\"}&set(r[\"argv\"])
+      and (len(r[\"argv\"])==1 or r[\"argv\"][1].startswith(\"-\") or r[\"argv\"][1]==\"refresh\")];
+      print(bad); sys.exit(1 if bad else 0)"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # A content 404 is a stop, not a cue to try the other content routes.
+  # One look at the file the user named is tolerated; more is a retry loop.
   - type: cli_called
-    description: "Did NOT treat the 404 as a login problem"
-    verb: "login"
+    description: "Did NOT loop over the other content commands after the 404"
+    verb_any_of: ["or kb file", "or kb versions", "or kb archive"]
     tool: "uip"
     flags:
       help: {absent: true, aliases: [h]}
     min_count: 0
-    max_count: 0
-    weight: 1.5
+    max_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   # Stopping before trying would bank every guard above. Pinned to the key,
