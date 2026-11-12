@@ -38,12 +38,12 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 
    When the scan finds one, stop and ask the user which to use, as a pick list if the host has one: one option per solution found, named by its folder, plus "Create a new solution".
    Do not run `init` until the user answers, and never silently adopt an existing solution: `init` registers the project in a solution above it without asking.
-   Say in the question that adopting a solution means a later upload overwrites its cloud copy, because this is the only point where that is still the user's choice.
+   Unless the request forbids upload, say in the question that adopting a solution means a later upload overwrites its cloud copy, because this is the only point where that is still the user's choice.
    Ask this for a draft and for a plain build alike; an edit of an existing `.bpmn` runs no `init` and skips the scan.
    Do not ask when the request names the solution to use (an existing one, or a new one by name), or when the only solution found is one this run created.
    When the request asks for a new solution without naming it, ask only for its name, offering `<Name>Solution` as the default.
    When the request says nobody will answer questions, do not ask: put the project in a new solution, never an existing one, and say so in the reply.
-   When the user named where the `.bpmn` goes, ask only when a directory above that path holds a `.uipx`, then follow the table below; pass `--skip-solution-registration` when the user chose a new solution.
+   When the user named where the `.bpmn` goes, ask only when a directory above that path holds a `.uipx`, then follow the table below; when the user chose a new solution, pass `--skip-solution-registration` and create the solution as [Operate](references/operate.md#studio-web-upload) says.
    When the scan finds nothing, run `init` without asking.
    On the answer, for an existing solution, run `init` from that solution's directory, so the project lands in it as `<SolutionDir>/<Name>/`.
    For a new solution, run `uip solution init <SolutionName> --output json` (the user's name, else `<Name>Solution`), then run `init` from inside `<SolutionName>/`; this works even inside another solution, which stays untouched.
@@ -126,7 +126,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 <!--skill-flavor:workflow-merge:start-->
 8. Edit an existing process with `merge`, which takes the edited source and the original: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
    No `.bpmn` other than the target goes in the workspace: no intermediate copy, probe or second scaffold.
-   When the project sits in a solution this run did not scaffold, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
+   When the project sits in a solution this run did not create, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
 
 ## Draft first

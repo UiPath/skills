@@ -29,11 +29,13 @@ initial_prompt: |
 success_criteria:
   # The question comes before any scaffolding: `init` would already have
   # chosen a solution (joined one above it, or scaffolded a new one beside
-  # HarborOps). `--help` scaffolds nothing.
+  # HarborOps). `--help` scaffolds nothing. Anchored to the start of a
+  # command segment, so a `grep 'uip maestro bpmn init' SKILL.md` lookup
+  # does not count as running it.
   - type: command_not_executed
     description: "Agent did not run bpmn init before the user chose a solution"
     tool_name: "Bash"
-    command_pattern: '(?:\buip|\$UIP)\s+maestro\s+bpmn\s+init\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    command_pattern: '(?:^|[\n;&|(])\s*(?:\w+=\S*\s+)*(?:\buip|\$UIP)\s+maestro\s+bpmn\s+init\b(?![^\n;&|]*\s(?:--help|-h)\b)'
     weight: 3.0
     pass_threshold: 1.0
 
