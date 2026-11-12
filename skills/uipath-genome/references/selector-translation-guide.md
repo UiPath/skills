@@ -88,7 +88,7 @@ How the selector engine reads what a translation writes — properties of the en
    | ends with | `*value` |
    | contains | `*value*` |
    | regular expression that must match the whole value | `matching:<attr>='regex'` with the pattern as the value |
-   | regular expression that searches the text (matches anywhere in it — what most frameworks' "matches" does) | `matching:<attr>='regex'` with `[\s\S]*(?:<pattern>)[\s\S]*` — the engine anchors, so the bare pattern would have to equal the whole value; `^…$` anchors the source wrote stay as written |
+   | regular expression that searches the text (matches anywhere in it — what most frameworks' "matches" does) | `matching:<attr>='regex'` with `[\s\S]*(?:<pattern>)[\s\S]*` — the engine anchors, so the bare pattern would have to equal the whole value. An anchored end (`^`, `$`) takes `\s*` instead, since the live value may be padded where the source's text was not: `^Status` is `\s*Status[\s\S]*` |
    | case-insensitive | `casesensitive:<attr>='false'` (also in regex mode) |
    | equals after whitespace normalisation (the source collapses runs of spaces, turns line breaks into spaces, trims the ends before comparing) | verbatim only on an attribute whose live value holds the text without padding or line breaks; otherwise `matching:<attr>='regex'` with `\s*` at both ends and `\s+` for each inner space — never `*value*`, which turns equals into contains |
    | not equal, does not contain, does not start with, is not empty | no equivalent — drop the attribute and name it in the element description |
@@ -159,6 +159,19 @@ How the selector engine reads what a translation writes — properties of the en
 
     The identity each role exposes on the web, Workday's widgets as the worked example, and the traps that follow from them: [selector-translation-web-guide.md § Rule 16](selector-translation-web-guide.md).
 
+17. **How the source finds an element is part of its criteria.** A locator's value is what the source asked for. The mechanism that resolves it decides the rest, the same way for every locator it serves: a locator engine's defaults, a recorder's replay rules, or a finder the export defines itself (a helper function, a keyword, a script run inside the application). Read the mechanism once before translating its locators — the framework pack's selectors guide for an engine or a recorder, the finder's own code where the export defines one — and carry each thing it decides:
+
+    | The mechanism decides | Carried as |
+    |---|---|
+    | where it searches: the frames, shadow roots, windows or container it enters | the tag chain and scope that reach the same places (rules 1 and 9) |
+    | which elements qualify: visible ones only, given types or roles, enabled ones, ones on screen | a criterion on the tag where the technology has an attribute for it, the `tag` for a type (rule 14); a condition with no attribute (enabled, not covered, at rest) is the acting activity's own wait and its verification, named in the description |
+    | which text it compares: the element's own, its descendants' included, the accessible name, a label, a value | the attribute that holds that text on the target's node (rules 4 and 5), compared as rule 2 gives |
+    | which match it takes when several qualify: the first, the n-th, the innermost or the shortest, one chosen by its place on screen (rightmost, nearest another element) | the first: the selector's own first match, which is the first in document order; the n-th: `idx` (rule 7); the innermost: the leaf pin of rule 5; by place on screen: workflow logic that collects the matches ([ui-target-migration-guide.md § Composite interactions](ui-target-migration-guide.md)), compares their place and keeps the one the source kept, stated in the description and checked as a run row |
+    | which node it returns: the match, an ancestor that takes the click, a descendant that takes the keys, a neighbour | the target is the returned node (rule 14), with the matched text on an attribute that node holds (a container inherits inner text, rule 5) or on the tag a path starts from (rule 6) |
+    | how long it waits, what it tries next | the acting activity's timeout and the alternatives the workflow tries; never the selector |
+
+    Only the screen settles whether the first match in document order is the node the source reached: a live-check row names that node ([ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md)). A translation that keeps the locator's value and drops what the mechanism decided matches nodes the source never did: a hidden copy, a wrapper, another element holding the same text. The healing pass reduces what was carried to what the node needs ([live-application-guide.md § Live healing pass](live-application-guide.md)). [selector-translation-web-guide.md § Rule 17](selector-translation-web-guide.md) gives each decision's form on `webctrl`.
+
 ## Checking a definition
 
 Most of these rules are decidable from a definition file alone; the rest need one live command. Read a batch of definitions back by hand, or with a throwaway script written for the run when there are hundreds. A passing structural check proves shape, not that anything matches the screen.
@@ -180,6 +193,7 @@ A throwaway checker has to encode each rule's **scope**, or it reports this guid
 | `SearchSteps` has `FuzzySelector` and `Anchors` is empty; a definition authored without a live capture carries `Anchors` | definition | 12 |
 | `matching:<a>='fuzzy'` without `fuzzylevel:<a>` | attributes | § Matching semantics |
 | A `matching:<a>='regex'` pattern carried from a source regex that searched, without the `[\s\S]*…[\s\S]*` wrap; an exact caption the source compared whitespace-normalised, written verbatim on `aaname` | attributes + the source criterion + one live attribute listing | 2 |
+| A target carrying only the locator's text, where the source's finder skipped hidden elements, entered frames or shadow roots, or chose by place on screen | attributes + the finder | 17 |
 | Any attribute the node does not expose | live selector evaluator (rejects the selector outright) | 15 |
 | Uniqueness, including invisible twins | live selector evaluator | 15 |
 | The node a `<nav>` path lands on | target validation against the live application | 6, 15 |
