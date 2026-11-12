@@ -89,7 +89,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 
 ## Steps
 
-1. Before `init`, scan for an existing solution as step 1 of [SKILL.md](../SKILL.md#workflow) says; when it finds one, stop and ask which solution to use, and run `init` only after the user answers.
+1. Before `init`, run the solution scan in step 1 of [SKILL.md](../SKILL.md#workflow), and ask which solution to use when that step says to; run `init` only once the solution is settled.
    Run `uip maestro bpmn init <Name> --output json` and take the project directory from its `Data.Path`; the commands below write it as `<Project>`.
    It is not always `<Name>/`: outside a solution, `init` scaffolds one and the project lands at `<Name>Solution/<Name>/`.
    When the user named where the `.bpmn` goes, run the `init` command that step 1 of [SKILL.md](../SKILL.md#workflow) gives for that path instead.
