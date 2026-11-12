@@ -20,7 +20,8 @@ The gate below then comes after the file validates, as it does outside plan mode
 A skeleton is not a working process and must never be reported as one.
 
 1. **Every activity is a bare `.task(id, { name })`.**
-   Pass `name` and nothing else: no `set`, no body callback.
+   Pass `name` and nothing else, except `loop` on a box that runs once per item (rule 8): no `set`.
+   Give a box a body callback only to declare its `onError` or `onTimer` handlers (rule 4).
    It compiles to a plain `<bpmn:task>` with no `uipath:activity` payload.
 2. **Use no typed activity method** — not `scriptTask`, `humanTask`, `http`, `connector`, `externalAgent`, `externalWorkflow`, `dataService`, `businessRule`, the Orchestrator start/execute/queue methods, or `activity`.
    The label carries the kind (rule 5).
@@ -35,6 +36,9 @@ A skeleton is not a working process and must never be reported as one.
      Write a parallel split with `.fork()`.
      Arms rejoin at the next statement through a join gateway the builder adds, so every branch converges on one end event unless the request names separate outcomes.
      Do not simplify the branch structure the request describes.
+   - When the request names a failure or a deadline on a step, declare it in that box's body callback: `onError((h) => ...)` for a failure, `onTimer('PT10M', (h) => ...)` for a deadline that cancels the step.
+     A deadline that escalates while the step keeps running is non-interrupting: `onTimer('PT10M', { interrupting: false }, (h) => ...)`.
+     A non-interrupting handler's path must end in its own `.endEvent()`; `check` rejects one that falls through.
 5. **Label each box with the action first and its kind last, in brackets** — `Extract invoice data [RPA workflow]`, `Manager review [Action app]`, `Classify ticket [Agent]`, `Notify the team [Slack]`.
    Take the kind from [Box kinds](#box-kinds).
    When several kinds could fit, pick the one a Studio Web user would most likely choose; the user changes it at the gate if they disagree.
@@ -44,6 +48,52 @@ A skeleton is not a working process and must never be reported as one.
    The basis a gateway routes on is part of what the user approves: three arms out of a diamond with no stated basis could mean anything.
    A skeleton reads a variable but cannot assign it, because the assignment lives in the payload of the node that produces it.
    Name the producer in the box upstream instead: `Classify ticket [Agent] → category`.
+8. **Mark a step that runs once per item on its own box.**
+   When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')`.
+   Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
+   When the step stops early ("stop at the first failed document"), add `completion: '=vars.<flag>'` and declare that boolean flag too.
+   Do not hand-roll a loop from a gateway and a `.goto()`, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
+9. **An interrupting error path out of a `.fork()` branch must end the process or merge back onto its own branch before the join.**
+   A parallel join fires only when every incoming flow has delivered a token.
+   An interrupting `onError` or `onTimer` handler whose path does not end rejoins at the statement after the activity, and for a branch's last activity that statement is the fork's join.
+   The handler's path then becomes an extra input to the join: the activity's own flow never delivers because the handler cancelled it, so the join waits forever.
+   `check` and `validate` both pass this shape, so you must write the safe one yourself:
+   - When the failure stops the process, end the handler's path in `.endEvent(<id>, { name, terminate: true })`.
+   - When the process carries on, write another statement on the same branch after the activity, such as the next box, so the handler's path rejoins there and the branch reaches the join on one flow. A bare `.exclusiveGateway()` inside a branch does not compile, so merge on a box.
+
+   A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so this rule does not apply to it.
+
+### Per-item boxes and fork exits
+
+"Verify the new hire's documents one at a time and stop at the first failure. Then set up accounts and payroll in parallel: if account setup fails, IT creates them by hand; if payroll fails, stop the onboarding; chase payroll after an hour. Welcome every team the hire joins."
+
+```ts
+// standard imports, .name(), .metadata() and .flowMode() omitted
+  .var('documents', 'array')
+  .var('documentFailed', 'boolean')
+  .var('teams', 'array')
+  .startEvent('Event_start', { name: 'New hire submitted' })
+  .task('verifyDoc', {
+    name: 'Verify document [Action app] → documentFailed',
+    loop: { collection: '=vars.documents', itemVar: 'document', sequential: true, completion: '=vars.documentFailed' },
+  })
+  .fork('setup', [
+    (b) => b
+      .task('createAccounts', { name: 'Create accounts [RPA workflow]' }, (a) => a
+        .onError((h) => h.task('createByHand', { name: 'Create accounts by hand [Action app]' })))
+      .task('confirmAccounts', { name: 'Confirm accounts [Execute script]' }),
+    (b) => b
+      .task('registerPayroll', { name: 'Register in payroll [API workflow]' }, (a) => a
+        .onError((h) => h.task('alertHr', { name: 'Alert HR [Connector]' }).endEvent('stopped', { name: 'Onboarding stopped', terminate: true }))
+        .onTimer('PT1H', { interrupting: false }, (h) => h.task('chasePayroll', { name: 'Chase payroll [Connector]' }).endEvent('chased', { name: 'Payroll chased' }))),
+  ])
+  .task('welcome', { name: 'Welcome the hire [Connector]', loop: { collection: '=vars.teams', itemVar: 'team' } })
+  .endEvent('done', { name: 'Onboarded' })
+  .build();
+```
+
+`createByHand` rejoins at `confirmAccounts`, so the first branch reaches `setup_join` on one flow.
+Without `confirmAccounts`, the compiled file carries `createByHand → setup_join` beside `createAccounts → setup_join`, and the join never fires after a failure.
 
 ### Box kinds
 
@@ -120,8 +170,9 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 
 ### Expected findings — do not chase them
 
-A skeleton validates as **Valid** with one warning per variable a decision reads: `Variable "vars.<id>" is read but never assigned; it will be empty at run time`.
+A skeleton validates as **Valid** with one warning per declared variable it reads — each variable a decision reads, and each collection or stop flag a multi-instance box reads: `Variable "vars.<id>" is read but never assigned; it will be empty at run time`.
 That is correct for a skeleton, whose producers are blank boxes.
+When an error path merges onto a box (rule 9), `check` also warns `"<box>" has 2 incoming flows; the platform accepts this, but joining with a gateway is clearer`; that is the intended merge.
 Act only on errors, and do not report the warning: it appears on every skeleton, so it gets no line in the reply.
 
 ## Show the shape and stop
