@@ -1,7 +1,7 @@
 # The Standard resource (SR)
 
 > Reached from
-> [Author the min.json](../activity-generation.md#5-author-the-minjson) and
+> [Step 5 of activity-generation.md (author the min.json)](../activity-generation.md#5-author-the-minjson) and
 > [Compile the metadata](../activity-generation.md#6-compile-the-metadata) — both
 > come **after the script has run**, because the response you observed is the only
 > source for the output half. The contract below is the same one the platform
