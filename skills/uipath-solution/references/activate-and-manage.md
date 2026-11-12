@@ -252,6 +252,8 @@ uip solution packages download "MySolution" --package-version "1.0.0" --destinat
 
 Use `--destination <path>` for the local output file or directory. Reserve `--output json` for the CLI response format when you need to parse the command result.
 
+On CLIs that report it, `Data.SolutionId` is the ID of the solution the package was packed from (the `.uipx` `SolutionId`). It is how a deployed package leads back to its source: when that solution is in Studio Web, `uip solution download <SolutionId> --extract` exports it. Find the package of a deployment with `uip solution deploy list` (`PackageName`, `PackageVersion`). A CLI that predates the field never reports it; a newer one leaves it out only when the archive carries no solution ID.
+
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<package-name>` | Published solution package name | -- |
