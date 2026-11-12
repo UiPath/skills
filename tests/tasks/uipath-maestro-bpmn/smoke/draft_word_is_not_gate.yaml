@@ -1,0 +1,72 @@
+task_id: skill-bpmn-smoke-draft-word-is-not-gate
+description: >
+  The user says "draft project" but asks for a source-only deliverable to
+  import later, with no upload and no run. That is a build, not the draft
+  gate: the agent authors real typed nodes, validates the project, and ends
+  without asking "Is this the process you want?" or which mode to take.
+  draft-skeleton.md "When"; ported from the classic skill's Modes table
+  ("judge the intent, not the word").
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Could you put together a draft project for a BPMN process called
+  "ShippingQuote" that I can import into Studio Web later? It takes a
+  package's weight in kg and works out the shipping cost: 5 dollars base plus
+  2 dollars per kg, and anything over 20 kg gets a 10 dollar surcharge on
+  top. I only need the project files: no upload, and don't run it.
+
+success_criteria:
+  - type: run_command
+    description: "ShippingQuote has at least one typed (non-bare) activity and validates"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_word_build.py ShippingQuote"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final message reports a built process; it does not stop at a draft approval gate or ask which mode"
+    include_reference: false
+    include_agent_output: true
+    weight: 2.0
+    pass_threshold: 1.0
+    prompt: |
+      The user asked for a "draft project" they can import later, with no
+      upload and no run. That asks for finished project files, so the agent
+      should build the process and report it, not stop to have the user
+      approve an outline.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent. If
+      it contains a `[RESULT - ...]` marker, grade the text after the LAST such
+      marker. Otherwise grade the agent's last message.
+
+      Check every item:
+
+      1. It does not ask "Is this the process you want?" or any similar
+         request to approve the shape before building.
+      2. It does not offer the approval-gate options (Build it / Change it /
+         Keep it), and does not otherwise end by waiting for approval of an
+         outline or skeleton.
+      3. It does not ask the user whether to draft, sketch or build, or which
+         mode to use.
+
+      A closing offer of optional follow-up work (for example uploading
+      later) is fine. Score 1.0 only if every item holds; otherwise 0.0. In
+      findings, list each failed item by number and quote the offending text.

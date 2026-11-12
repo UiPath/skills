@@ -6,6 +6,9 @@ It makes no registry calls.
 **When.** The user wants to see the shape before it is built: *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or a session in plan mode.
 A request to build the process outright skips the draft and authors real nodes directly.
 A brownfield edit (the shape already exists) and a discovery-only question (nothing is authored) skip it too.
+Never ask the user whether to draft or build, and never block on that choice: decide from the request.
+Judge the intent, not the word: a "draft project" or "draft handoff" that asks for a source-only deliverable (files to import or hand off later, with no upload or run) is a build, not the draft gate.
+Plan mode is the host's state: never enter it yourself to satisfy "show me first".
 
 **The deliverable is a file.**
 A mermaid or ASCII diagram in chat is not a draft, and neither is a prose outline: the draft is the compiled, formatted, validated `<Project>/<Name>.bpmn`, which opens on the canvas.
