@@ -18,7 +18,7 @@ description: >
   e2e_04_build_mechanics.yaml's job. Because the cut lands before any project
   exists, there is no snapshot-diff criterion and no `.flow` to validate here.
 
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:setup, shape:multi-node, node:ixp]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:setup, shape:multi-node, node:ixp, studio-web-unsupported, studio-web-unsupported:ixp-handoff]
 
 # driver: docker (NOT tempdir) is required. `uip ixp` ships as the separate
 # @uipath/ixp-tool plugin, pre-baked only into skills-image:latest (see
