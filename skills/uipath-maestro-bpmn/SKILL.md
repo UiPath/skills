@@ -108,9 +108,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    When the project sits in a solution this run did not scaffold, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
 9. **End every build with the final report.**
-   End the turn with the reply in **[`references/final-report-template.md`](references/final-report-template.md)**, also when validation still fails because tenant resources are missing, or for another reason after you have fixed every error the source can fix.
-   Its first section says when to upload the validated process to Studio Web before replying, and when to skip it.
-   This applies to a plain request to build or edit a process, which never stops at a gate (`(auto mode)`), as much as to *Build it* after a [draft gate](#draft-first) (`(draft mode)`).
+   A plain request to build or edit a process (`(auto mode)`) and *Build it* after a [draft gate](#draft-first) (`(draft mode)`) both end the turn with **[`references/final-report-template.md`](references/final-report-template.md)**, which also says when to upload first.
+   It ends the turn too when validation fails only because tenant resources are missing.
 
 ## Draft first
 
