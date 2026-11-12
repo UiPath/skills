@@ -1,13 +1,14 @@
-"""Unit tests for the skill's scripts/check-genome.py, the checker the genome tasks grade with:
-the skill's own worked examples pass the strict profile, a format slip fails strict but not core,
-and a broken contract fails core.
+"""Unit tests for the skill's scripts/check-genome.mjs, the checker the genome tasks grade with:
+the known-good genomes kept with the tests pass the strict profile, a format slip fails strict but not core,
+and a broken contract fails core. The checker is Node (users need no Python); these tests drive it
+through `node`, so the CI job needs Node >= 20 on the runner.
 
-Run: pytest tests/tasks/uipath-genome/_shared/ -v
+Run: pytest tests/tasks/uipath-planner/_shared/test_genome_check.py -v
 """
 
-import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -15,15 +16,50 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
-_spec = importlib.util.spec_from_file_location("genome_check", REPO / "skills" / "uipath-genome" / "scripts" / "check-genome.py")
-genome_check = importlib.util.module_from_spec(_spec)
-sys.modules["genome_check"] = genome_check
-_bytecode, sys.dont_write_bytecode = sys.dont_write_bytecode, True  # no __pycache__ inside the shipped skill
-_spec.loader.exec_module(genome_check)
-sys.dont_write_bytecode = _bytecode
+CHECKER = REPO / "skills" / "uipath-genome" / "scripts" / "check-genome.mjs"
 
-EXAMPLES = REPO / "skills" / "uipath-genome" / "assets" / "examples"
-MAPPING_GUIDE = REPO / "skills" / "uipath-genome" / "references" / "skill-mapping-guide.md"
+
+def node(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["node", str(CHECKER), *args], capture_output=True, text=True, encoding="utf-8")
+
+
+def node_call(function: str, *args):
+    """Call one of the checker's exported functions with JSON arguments; returns its JSON result."""
+    script = (f"import * as c from {json.dumps(CHECKER.as_uri())};"
+              f"process.stdout.write(JSON.stringify(c.{function}(...{json.dumps(list(args))})));")
+    r = subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, encoding="utf-8", check=True)
+    return json.loads(r.stdout)
+
+
+class genome_check:
+    """The checker's surface as these tests use it."""
+
+    @staticmethod
+    def main(argv: list[str]) -> int:
+        r = node(*argv)
+        sys.stdout.write(r.stdout)
+        return r.returncode
+
+    @staticmethod
+    def context(path: Path) -> dict:
+        return node_call("context", str(path))
+
+    @staticmethod
+    def check_export(genomes, processes, recordsets):
+        errors, notes = node_call("checkExport", [[str(p), lib] for p, lib in genomes], processes, recordsets)
+        return errors, notes
+
+    @staticmethod
+    def workflow_steps(text: str) -> list[str]:
+        return node_call("workflowSteps", text)
+
+    @staticmethod
+    def skills() -> dict:
+        return json.loads(node("skills").stdout)
+
+
+EXAMPLES = HERE / "genome-examples"  # known-good genomes, kept with the tests; the skill ships the templates only
+MAPPING_GUIDE = REPO / "skills" / "uipath-planner" / "references" / "shared" / "skill-mapping-guide.md"
 COMPONENT_EXAMPLE = EXAMPLES / "purchase-requisition-entry-genome.md"  # transactional, two units of work
 PROCESS_EXAMPLE = EXAMPLES / "invoice-processing-genome.md"
 
@@ -193,14 +229,15 @@ def test_unit_is_read_from_the_unit_of_work_line_only(tmp_path):
 def test_skill_lists_cover_the_shipped_skills():
     shipped = {p.name for root in (REPO / "skills", REPO / "preview" / "skills") if root.is_dir()
                for p in root.iterdir() if (p / "SKILL.md").is_file()}
-    listed = genome_check.VALID_SKILLS | genome_check.OPERATE_SKILLS | {"uipath-genome"}
+    names = genome_check.skills()
+    listed = set(names["build"]) | set(names["operate"]) | {"uipath-genome"}
     assert shipped - listed == set(), "add each new skill to VALID_SKILLS or OPERATE_SKILLS"
     assert listed - shipped == set(), "a listed skill no longer ships"
 
 
 def test_mapping_guide_names_every_build_skill():
     guide = MAPPING_GUIDE.read_text(encoding="utf-8")
-    assert {s for s in genome_check.VALID_SKILLS if f"`{s}`" not in guide} == set()
+    assert {s for s in genome_check.skills()["build"] if f"`{s}`" not in guide} == set()
 
 
 def test_checker_reads_rules_not_lookalikes(tmp_path):
@@ -234,12 +271,14 @@ def test_split_option_cell_holds_its_letter_only(tmp_path):
 STEP_ROW = "| {n} | `Step_{n}` ({pid}, lines 1–9) | {data} | 0 | |"
 
 
-def extracted(steps: int, rows: list[str] | None = None) -> str:
+def extracted(steps: int, rows: list[str] | None = None, framework: str | None = "UiPath — Studio 26.0") -> str:
     """The component example as an extracted genome: its Source Map with a step table of one row per step."""
     text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
     rows = rows if rows is not None else [STEP_ROW.format(n=n, pid=100 + n, data="none") for n in range(1, steps + 1)]
     table = "| Step | Source objects | Data sets | Captures | Notes |\n|---|---|---|---|---|\n" + "\n".join(rows)
-    return text.rstrip() + "\n\n## Source Map\n\n| Row | Source artifact | Notes |\n|---|---|---|\n| Dead code | none | |\n\n### Steps\n\n" + table + "\n"
+    framework_row = f"| Source framework | {framework} | |\n" if framework else ""
+    return (text.rstrip() + "\n\n## Source Map\n\n| Row | Source artifact | Notes |\n|---|---|---|\n" + framework_row
+            + "| Dead code | none | |\n\n### Steps\n\n" + table + "\n")
 
 
 def example_steps() -> int:
@@ -304,4 +343,246 @@ def test_heading_case_and_wording_variants_pass_core(tmp_path):
     text = text.replace("This is a UiPath automation blueprint", "this is a UiPath Automation Blueprint", 1)
     text = re.sub(r"`(uipath-rpa)`", r"\1", text)
     assert run(tmp_path, text, profile="core") == 0
+    assert run(tmp_path, text, profile="strict") == 1
+
+
+@pytest.mark.parametrize("legacy", ["uipath-genome", "uipath-genome-builder"])
+def test_preamble_naming_a_legacy_builder_still_passes(tmp_path, legacy):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome", legacy)
+    assert run(tmp_path, text, profile="strict") == 0
+
+
+# context: the facts the read plans branch on, read once from the file
+
+SALESFORCE_EXAMPLE = EXAMPLES / "salesforce-accounts-and-contacts-genome.md"
+
+
+@pytest.mark.parametrize("path, level, mode, transactional", [
+    (PROCESS_EXAMPLE, "process", "build", False),
+    (COMPONENT_EXAMPLE, "component", "build", True),
+    (SALESFORCE_EXAMPLE, "component", "refactor", False),
+])
+def test_context_reads_level_mode_and_shape_from_the_file(path, level, mode, transactional):
+    ctx = genome_check.context(path)
+    assert (ctx["level"], ctx["build_mode"], ctx["transactional"]) == (level, mode, transactional)
+    assert ctx["check"]["ok"], ctx["check"]["errors"]
+
+
+def test_context_lists_a_process_genomes_components():
+    components = genome_check.context(PROCESS_EXAMPLE)["components"]
+    assert len(components) == 3
+    assert all(set(c) == {"path", "library"} and c["library"] is False for c in components)
+    assert all(Path(c["path"]).is_file() for c in components)
+
+
+def test_context_fingerprint_changes_with_any_byte(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text(COMPONENT_EXAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+    before = genome_check.context(genome)["sha256"]
+    genome.write_text(genome.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    assert genome_check.context(genome)["sha256"] != before
+
+
+def test_context_without_marker_fails_the_check(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text("# not a genome\n", encoding="utf-8")
+    ctx = genome_check.context(genome)
+    assert ctx["level"] is None and not ctx["check"]["ok"]
+
+
+def test_context_cli_prints_json(capsys):
+    assert genome_check.main(["context", str(COMPONENT_EXAMPLE)]) == 0
+    assert json.loads(capsys.readouterr().out)["level"] == "component"
+
+
+# context: extracted, framework and shape facts
+
+def test_context_extracted_needs_a_source_map_table(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text(COMPONENT_EXAMPLE.read_text(encoding="utf-8").rstrip() + "\n\n## Source Map\n\n*Extraction only.*\n", encoding="utf-8")
+    assert genome_check.context(genome)["extracted"] is False
+    genome.write_text(extracted(example_steps(), framework=None), encoding="utf-8")
+    ctx = genome_check.context(genome)
+    assert ctx["extracted"] is True and ctx["source_framework"] is None and ctx["build_mode"] == "unknown"
+
+
+def test_context_reads_the_framework_row_of_a_process_source_map(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").rstrip()
+    genome = tmp_path / "x-genome.md"
+    genome.write_text(text + "\n\n## Source Map\n\n| Component | Source artifact | Notes |\n|---|---|---|\n| Source framework | Other Framework — 7.1 | |\n", encoding="utf-8")
+    assert (genome_check.context(genome)["source_framework"], genome_check.context(genome)["build_mode"]) == ("Other Framework", "migration")
+
+
+def test_context_build_mode_is_refactor_when_the_framework_names_uipath(tmp_path):
+    text = SALESFORCE_EXAMPLE.read_text(encoding="utf-8").replace("| Source framework | UiPath —", "| Source framework | Studio (UiPath) —", 1)
+    genome = tmp_path / "x-genome.md"
+    genome.write_text(text, encoding="utf-8")
+    assert genome_check.context(genome)["build_mode"] == "refactor"
+
+
+def test_context_transactional_is_null_without_level_or_section(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text("# not a genome\n", encoding="utf-8")
+    assert genome_check.context(genome)["transactional"] is None
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    start, end = text.index("## Transactional Shape"), text.index("## Acceptance Criteria")
+    genome.write_text(text[:start] + text[end:], encoding="utf-8")
+    assert genome_check.context(genome)["transactional"] is None
+
+
+def test_source_map_without_framework_row_fails_strict_only(tmp_path):
+    n = example_steps()
+    assert run(tmp_path, extracted(n, framework=None), profile="core") == 0
+    assert run(tmp_path, extracted(n, framework=None), profile="strict") == 1
+    assert run(tmp_path, extracted(n), profile="strict") == 0
+
+
+# command line
+
+def test_flag_equals_value_is_accepted(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    assert run(tmp_path, text, extra=["--shape=transactional", "--unit=requisition", "--flows=1"]) == 0
+    target = tmp_path / "sample-genome.md"
+    assert genome_check.main(["component", str(target), "--profile=strict"]) == 0
+
+
+def test_help_prints_usage_and_exits_zero():
+    for flag in ("-h", "--help"):
+        r = node(flag)
+        assert r.returncode == 0 and "usage:" in r.stdout
+
+
+@pytest.mark.parametrize("bad", [["--flows", "1.5"], ["--flows=x"], ["--min-steps", "3x"], ["--min", "abc"], ["--files", ""]])
+def test_numbers_are_validated_strictly(bad):
+    assert node("component", str(COMPONENT_EXAMPLE), *bad).returncode == 2
+
+
+def test_missing_inventory_is_a_fail_line(tmp_path):
+    r = node("component", str(COMPONENT_EXAMPLE), "--processes", str(tmp_path / "no.json"), "--recordsets", str(tmp_path / "no2.json"))
+    assert r.returncode == 1 and r.stdout.startswith("FAIL:") and "Error" not in r.stderr
+
+
+def test_invalid_utf8_is_a_fail_line(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_bytes(COMPONENT_EXAMPLE.read_bytes() + b"\n\xff\xfe broken\n")
+    for argv in (["component", str(genome)], ["context", str(genome)]):
+        r = node(*argv)
+        assert r.returncode == 1 and "FAIL:" in r.stdout and "not valid UTF-8" in r.stdout and "Error" not in r.stderr
+
+
+@pytest.mark.parametrize("legacy", ["uipath-genome", "uipath-genome-builder"])
+def test_legacy_builder_name_is_a_known_skill(tmp_path, legacy):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("## Platform Dependencies", f"Built through `{legacy}`.\n\n## Platform Dependencies", 1)
+    target = tmp_path / "sample-genome.md"
+    target.write_text(text, encoding="utf-8")
+    assert f"unknown skill name '{legacy}'" not in node("component", str(target)).stdout
+    assert run(tmp_path, text, profile="core") == 0
+
+
+def test_duplicate_heading_fails_strict_only(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").rstrip() + "\n\n## Tags\n\nagain\n"
+    assert run(tmp_path, text, profile="core") == 0
+    assert run(tmp_path, text, profile="strict") == 1
+
+
+def test_duplicate_component_link_fails_strict_only(tmp_path):
+    folder = PROCESS_EXAMPLE.with_suffix("")
+    copy = tmp_path / folder.name
+    copy.mkdir()
+    for f in folder.glob("*-genome.md"):
+        (copy / f.name).write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+    text = PROCESS_EXAMPLE.read_text(encoding="utf-8")
+    rows = [l for l in text.splitlines() if l.startswith("| 1 ") and "-genome.md)" in l]
+    assert rows, "the process example's first component row"
+    process = tmp_path / PROCESS_EXAMPLE.name
+    process.write_text(text.replace(rows[0], rows[0] + "\n" + rows[0].replace("| 1 ", "| 9 ", 1), 1), encoding="utf-8")
+    assert genome_check.main(["process", str(process), "--skills", "uipath-rpa"]) == 0
+    assert genome_check.main(["process", str(process), "--profile", "strict"]) == 1
+
+
+# context: facts of extracted parts, links and packaging
+
+def test_context_part_takes_the_framework_of_its_process_genome(tmp_path):
+    (tmp_path / "parent-genome.md").write_text(
+        "<!-- UIPATH-AUTOMATION-GENOME: process -->\n\n## Source Map\n\n| Component | Source artifact | Notes |\n|---|---|---|\n"
+        "| Source framework | Other Framework — 7.1 | |\n", encoding="utf-8")
+    part = tmp_path / "parts" / "x-genome.md"
+    part.parent.mkdir()
+    text = extracted(example_steps(), framework=None)
+    text = text.replace("\n\n", "\n\n> Part of: [Parent](../parent-genome.md) — reads the items.\n\n", 1)
+    part.write_text(text, encoding="utf-8")
+    ctx = genome_check.context(part)
+    assert (ctx["source_framework"], ctx["build_mode"]) == ("Other Framework", "migration")
+    (tmp_path / "parent-genome.md").unlink()
+    ctx = genome_check.context(part)
+    assert (ctx["source_framework"], ctx["build_mode"]) == (None, "unknown")
+
+
+def test_context_finds_the_marker_where_the_checks_find_it(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    genome.write_text("\n" + COMPONENT_EXAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+    assert genome_check.main(["component", str(genome), "--profile", "strict"]) == 0
+    ctx = genome_check.context(genome)
+    assert ctx["level"] == "component" and ctx["check"]["ok"], ctx["check"]["errors"]
+
+
+def test_one_unreadable_component_keeps_the_process_context(tmp_path):
+    root = tmp_path / "invoice-processing-genome.md"
+    root.write_text(PROCESS_EXAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+    parts = tmp_path / "invoice-processing-genome"
+    parts.mkdir()
+    for src in (EXAMPLES / "invoice-processing-genome").glob("*-genome.md"):
+        (parts / src.name).write_bytes(src.read_bytes())
+    bad = sorted(parts.glob("*-genome.md"))[0]
+    bad.write_bytes(b"\xff\xfe not utf-8")
+    ctx = genome_check.context(root)
+    assert ctx["level"] == "process" and len(ctx["components"]) == 3 and ctx["independent_packages"] is False
+    assert not ctx["check"]["ok"] and any("not valid UTF-8" in e for e in ctx["check"]["errors"])
+
+
+def test_context_resolves_designed_in_against_the_genome(tmp_path):
+    folder = tmp_path / "out"
+    folder.mkdir()
+    genome = folder / "x-genome.md"
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    genome.write_text(text.replace("\n\n", "\n\n> Designed in: [Design](../sdd/x-sdd.md)\n\n", 1), encoding="utf-8")
+    ctx = genome_check.context(genome)
+    assert ctx["designed_in_link"] == "../sdd/x-sdd.md"
+    assert Path(ctx["designed_in"]) == (tmp_path / "sdd" / "x-sdd.md").resolve()
+    assert (ctx["designed_in_fingerprint"], ctx["designed_in_current"]) == (None, None)
+
+
+def test_context_tells_whether_the_sdd_changed_since_its_fingerprint(tmp_path):
+    sdd = tmp_path / "x-sdd.md"
+    sdd.write_text("# SDD\r\n\r\n## Planner Handoff\r\n\r\n| **Status** | ready |\r\n| **Tasks file** | `x-tasks.md` (written by plan) |\r\n", encoding="utf-8")
+    recorded = node_call("sddFingerprint", str(sdd))
+    genome = tmp_path / "x-genome.md"
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    genome.write_text(text.replace("\n\n", f"\n\n> Designed in: [Design](x-sdd.md) · sdd-sha256 {recorded}\n\n", 1), encoding="utf-8")
+    assert (genome_check.context(genome)["designed_in_fingerprint"], genome_check.context(genome)["designed_in_current"]) == (recorded, True)
+    # the rows plan and author write after the genome leave the fingerprint unchanged
+    sdd.write_text(sdd.read_text(encoding="utf-8").replace(" (written by plan)", "") + "| **Genome** | `x-genome.md` |\n", encoding="utf-8")
+    assert genome_check.context(genome)["designed_in_current"] is True
+    sdd.write_text(sdd.read_text(encoding="utf-8").replace("ready", "draft"), encoding="utf-8")
+    assert genome_check.context(genome)["designed_in_current"] is False
+    sdd.unlink()
+    assert genome_check.context(genome)["designed_in_current"] is None
+
+
+def test_context_reports_test_components_and_packaging(tmp_path):
+    genome = tmp_path / "x-genome.md"
+    text = PROCESS_EXAMPLE.read_text(encoding="utf-8")
+    ctx = genome_check.context(PROCESS_EXAMPLE)
+    assert ctx["test_components"] is False and ctx["independent_packages"] is False
+    text = re.sub(r"^- \*\*Packaging:\*\*.*$", "- **Packaging:** independent packages", text, count=1, flags=re.M)
+    genome.write_text(text, encoding="utf-8")
+    assert genome_check.context(genome)["independent_packages"] is True
+    component = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    genome.write_text(re.sub(r"^1\. \*\*", "1. **Test case: ", component, count=1, flags=re.M), encoding="utf-8")
+    ctx = genome_check.context(genome)
+    assert ctx["test_components"] is True and ctx["independent_packages"] is None
+
+
+def test_preamble_names_the_builder_as_a_whole_word(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome", "uipath-genomes")
     assert run(tmp_path, text, profile="strict") == 1
