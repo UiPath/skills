@@ -15,6 +15,10 @@ all but the reads need `uip login`.
 > **Where you came from.** The project is authored in `<Name>.bpmn.ts`, compiled into `<Project>/<Name>.bpmn`, formatted and validated (SKILL.md).
 > A failed or stuck run is investigated in [diagnose.md](diagnose.md), and the fix goes back into the `.bpmn.ts`.
 
+<!--skill-flavor:upload-consent:start-->
+The one exception is the Studio Web upload of a project this run created: a request to build or draft the process authorizes the upload that shows it ([Studio Web upload](#studio-web-upload)).
+<!--skill-flavor:upload-consent:end-->
+
 ## Pre-flight, before any cloud action
 
 <!--skill-flavor:preflight-target:start-->
@@ -83,11 +87,38 @@ The project's solution directory is what `bpmn init` scaffolded around it
 A project initialized with `--skip-solution-registration` has no solution, and upload and deploy both require one.
 Create one beside it with `uip solution init <SolutionName> --output json`, `cd <SolutionName>`, run `uip solution projects import <project-path> --output json` with `<project-path>` relative to that folder (for example `../A/B`), and upload the solution.
 Ask before doing this when the user named the project's path, because the uploaded copy lives in the new solution folder, not at that path.
-When the solution declares resource dependencies, refresh
-them with the solution tooling the installed CLI offers (check `uip solution
---help` rather than inventing a verb) and confirm the generated resource files
-match. Report the Studio Web URL or solution id; when the CLI returns none,
-write `Studio Web URL: <not returned by CLI>` rather than omitting it.
+When the solution declares resource dependencies, refresh them with the solution tooling the installed CLI offers (check `uip solution --help` rather than inventing a verb) and confirm the generated resource files match.
+Report the Studio Web URL (`Data.DesignerUrl`) or solution id; when the CLI returns none, write `Studio Web URL: <not returned by CLI>` rather than omitting it.
+
+**Consent.** Unless the request forbids upload, a request to build or draft the process authorizes the upload that shows it, so upload without asking when this run's `bpmn init` scaffolded the solution.
+Confirm first when it did not — the project went into a solution that already existed, or an existing project was edited in place — because `upload` overwrites the cloud solution that matches the `SolutionId` in the local `.uipx`.
+Ask once, before the first upload, and say in the question that the upload replaces the Studio Web copy.
+
+**Each later upload overwrites the same solution.**
+The first upload writes the cloud solution id back into the local `.uipx`, so each upload after it reports `Data.Action: "Overwritten"` with the same `SolutionId` and `DesignerUrl`.
+`"Imported"` on a later upload means that id was lost and a second cloud solution was just created: stop and fix that before continuing.
+
+### Check the cloud copy before editing
+
+An upload replaces the cloud copy with the local one, so it would erase edits made in Studio Web.
+Check the cloud copy before you start editing a project in a solution this run did not scaffold, so you build on the current copy, and again before each edit after this run's own first upload: the user may have changed the canvas between turns.
+Download the solution by the `SolutionId` in its `.uipx`, into a fresh directory outside the workspace:
+
+```bash
+uip solution download <SOLUTION_ID> --extract -d "$(mktemp -d)" --output json
+```
+
+- A failure whose `Instructions` say "Studio Web API returned 404" means there is no cloud copy yet (`init` writes a `SolutionId` before any upload): upload.
+- A failure for another reason (offline, not logged in, a timeout): the cloud copy is unchecked, and an upload would replace whatever is there.
+  You may keep working on the local files, but do not upload until a download and comparison succeed, or until the user, told that the check failed and that the upload would replace the Studio Web copy unseen, says to replace it.
+  Retry the download before the upload; when it still fails, ask, and say in the reply that nothing was uploaded.
+- Otherwise compare each project's `.bpmn` in the download with the local one.
+  Studio Web reformats the `.uipx` and `project.uiproj` and adds `SolutionStorage.json`, so only the `.bpmn` files tell real edits apart.
+  When they match, carry on.
+
+When they differ, ask which copy to keep, unless the user is answering a draft gate this run showed: then they edited the outline you uploaded, so build on their copy without asking, and say so in the reply.
+To build on the Studio Web copy, treat it as the original of a [brownfield edit](bpmn-runtime.md#brownfield-editing): copy its `.bpmn` from the download directory over `<Project>/<Name>.bpmn`, decompile that file to `<Name>.bpmn.ts` with `uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested`, make the edit in the source, and merge it back with `uip maestro bpmn merge <Name>.bpmn.ts --original <Project>/<Name>.bpmn`, so the user's layout and the elements you did not touch stay as they drew them.
+Decompile after the copy, not before: the source's first line records the file it came from, and `merge` refuses a source decompiled from the local copy the download replaced.
 
 ## Orchestrator deployment
 
@@ -103,6 +134,20 @@ uip solution publish <PackageZip> --output json
 
 Activation and the `uip solution deploy` steps that follow are the platform
 skill's; this skill stops at the BPMN project and package boundary.
+
+### Standalone process publish
+
+When the user explicitly asks to publish one BPMN project as an Orchestrator process, without a solution, use `process publish`.
+It packs the project, uploads it to the tenant feed, and creates the release in the folder.
+It does not run `bpmn refresh`: run that first.
+
+```bash
+uip maestro bpmn process publish <project-path> --folder-key <FOLDER_KEY> --wait --output json
+```
+
+`--folder-key` is required. `--wait` returns once the entry points are available.
+`Data.ProcessKey`, `Data.ProcessVersion` and `Data.ReleaseKey` feed `process run`; `<PROCESS_KEY>` is `<ProcessKey>:<ProcessVersion>`.
+Anything shipped with a solution still goes through the solution path above.
 <!--skill-flavor:ship:end-->
 
 ## Debug — a controlled Studio Web run

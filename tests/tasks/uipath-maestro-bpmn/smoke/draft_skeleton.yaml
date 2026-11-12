@@ -27,10 +27,17 @@ initial_prompt: |
   or run anything yet.
 
 success_criteria:
+  # Both skills' draft guidance makes no registry lookup before the gate (v1
+  # phase-2-skeleton-guide.md rule 3, v2 draft-skeleton.md rule 3), so the guard
+  # covers v1's `uip maestro bpmn registry` and v2's `uip maestro registry`
+  # spellings, and v2's `prepare` / `describe` as well as `pull` / `search` / `get`.
+  # Excluded: v1's phase 1a preflight `uip maestro bpmn registry list` (the box
+  # kind list, which runs before the skeleton by design), and `--help`, which
+  # looks nothing up.
   - type: command_not_executed
     description: "Agent made no registry discovery before the shape was approved (the preflight kind list is allowed)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|search|get)'
+    command_pattern: '(?:\buip|\$UIP)\s+maestro\s+(?:bpmn\s+)?registry\s+(?:pull|search|get|prepare|describe)\b(?![^\n;&|]*\s(?:--help|-h)\b)'
     weight: 2.0
     pass_threshold: 1.0
 
@@ -62,6 +69,8 @@ success_criteria:
     files:
       - InvoiceIntakeSketch/InvoiceIntakeSketch.bpmn
       - InvoiceIntakeSketchSolution/InvoiceIntakeSketch/InvoiceIntakeSketch.bpmn
+      # Studio Web: the solution export, whose main file is Process.bpmn.
+      - InvoiceIntakeSketch/InvoiceIntakeSketch/Process.bpmn
     weight: 2.0
     pass_threshold: 1.0
     prompt: |
@@ -83,17 +92,27 @@ success_criteria:
          does not say `uploaded`. After that, the same line may hold at most
          one more sentence, about a lookup that failed or changes kept.
       2. The second line is the path of the local `.bpmn` file (ends in
-         `.bpmn`), and nothing else.
+         `.bpmn`), and nothing else. A Markdown link whose target is that
+         path (`[label](<path ending in .bpmn>)`, a space after `(` allowed)
+         counts as the path: the chat client renders it as the file. In
+         Studio Web, where the skeleton is on the canvas, this line is
+         exactly `The outline is on the canvas` instead.
       3. Next come the box lines, each starting with `- `. The attached
          `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
          box has exactly one line, and every line names one task box (its
          action words, with or without the bracketed kind), optionally
          followed by `: ` and the box's resource status (a resource name, a
          which-of-two question, `none yet, create it or name one`, `not
-         checked`, or `no resource needed`). There is no line
+         checked`, or `no resource needed`). The task box's label may end
+         with ` → <variable>` (the variable that box produces, which the
+         skill puts in the label itself), so a line may carry that suffix
+         too: it is part of the box's name, not a resource status and not a
+         line explaining a variable. There is no line
          for a start event, timer, gateway, branch, or end event. Each line is
          one short clause, under about 200 characters.
-      4. Next is exactly the line `Is this the process you want?`.
+      4. Next is exactly the line `Is this the process you want?`, or, when
+         item 2's line is `The outline is on the canvas`, exactly
+         `Accept the canvas change to keep this outline, then pick one:`.
       5. Then exactly three numbered options, in this order: `1.` Build it,
          `2.` Change it, `3.` Keep it, each with any short description. Nothing
          follows the third option.

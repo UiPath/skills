@@ -1,0 +1,91 @@
+task_id: skill-coded-apps-action-schema-unique-root-names-smoke
+description: >
+  Smoke test: agent authors an `action-schema.json` whose requirements invite
+  reusing one field name across root sections — a read-only `status` from the
+  automation plus a reviewer-set `status`, and an invoice total the reviewer
+  may correct. The Apps service rejects a first publish that reuses a root
+  name across inputs / outputs / inOuts / outcomes (HTTP 400), and the
+  skill's validator mirrors that. Verifies the agent keeps both status
+  concepts under distinct names, models the correctable total as one inOuts
+  field, and ends with a schema the validator accepts.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+
+reference:
+  directory: ../../../skills/uipath-coded-apps/scripts
+
+initial_prompt: |
+  Author `action-schema.json` at the sandbox root for a new UiPath Coded
+  Action App named `invoice-review`, ready for its first publish.
+
+  The automation passes in the invoice number and the invoice's current
+  `status` (both read-only for the reviewer), plus the extracted invoice
+  total, which the reviewer may correct before submitting. The reviewer sets
+  a new `status` for the invoice and can add a comment. The task submits
+  with Approve or Reject.
+
+  This is an automated test — do not pause for clarifying questions. Do NOT
+  run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "action-schema.json was created"
+    path: "action-schema.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No root field name appears in more than one of inputs / outputs / inOuts / outcomes (service rejects it on first publish)"
+    command: "python3 -c \"import json,sys,collections; d=json.load(open('action-schema.json')); c=collections.Counter(k for s in ('inputs','outputs','inOuts','outcomes') for k in d.get(s,{}).get('properties',{})); sys.exit(1 if [k for k,n in c.items() if n>1] else 0)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both status concepts kept: a status-like field in inputs and a status-like field in outputs or inOuts"
+    command: "python3 -c \"import json,sys; d=json.load(open('action-schema.json')); has=lambda s: any('status' in k.lower() for k in d.get(s,{}).get('properties',{})); sys.exit(0 if has('inputs') and (has('outputs') or has('inOuts')) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Correctable invoice total modelled as an inOuts field (pre-filled and editable), not split across inputs and outputs"
+    command: "python3 -c \"import json,sys; d=json.load(open('action-schema.json')); sys.exit(0 if any(w in k.lower() for k in d.get('inOuts',{}).get('properties',{}) for w in ('total','amount')) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final action-schema.json passes the skill's validator in default (new app) mode"
+    command: "node $REFERENCE_DIR/validate-action-schema.js action-schema.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "outcomes.properties contains an approve-style and a reject-style outcome"
+    command: "python3 -c \"import json,sys; n=[k.lower() for k in json.load(open('action-schema.json'))['outcomes']['properties']]; sys.exit(0 if any('approv' in x for x in n) and any('reject' in x for x in n) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the skill's action-schema validator before finishing"
+    tool_name: "Bash"
+    command_pattern: 'node\s+\S*validate-action-schema\.js'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use --upgrade for a new app (that flag only tolerates shared names on an already-published app)"
+    tool_name: "Bash"
+    command_pattern: 'validate-action-schema\.js.*--upgrade'
+    weight: 1.5
+    pass_threshold: 1.0

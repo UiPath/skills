@@ -91,6 +91,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 
 1. Run `uip maestro bpmn init <Name> --output json` and take the project directory from its `Data.Path`; the commands below write it as `<Project>`.
    It is not always `<Name>/`: outside a solution, `init` scaffolds one and the project lands at `<Name>Solution/<Name>/`.
+   When the user named where the `.bpmn` goes, run the `init` command that step 1 of [SKILL.md](../SKILL.md#workflow) gives for that path instead.
    Then seed `<Name>.bpmn.ts` from the stub with `uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested`, as in [SKILL.md](../SKILL.md#workflow).
 2. Rewrite the chain as the skeleton, in one write, keeping the seeded process id, `entryPointId` and start event id.
 3. Run the loop:
@@ -106,8 +107,16 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
    `validate` must report `Status: Valid`.
    Because the start event kept the id `Event_start`, the `init`-generated `entry-points.json` still matches and the skeleton needs no `refresh`.
    If `validate` fails with `entry-points.json references start event "Event_start"`, the id was renamed: put `Event_start` back.
-4. Do not upload, pack, debug or run anything.
+<!--skill-flavor:draft-upload:start-->
+4. **Upload it, so the user sees it on the canvas**, unless the request forbids upload: `uip solution upload <SolutionDir> --output json`, where `<SolutionDir>` is the solution `init` scaffolded (`<Name>Solution/`) or registered the project in.
+   The gate reply carries the returned `Data.DesignerUrl`.
+   Do not ask first when this run's `init` scaffolded the solution: the request to draft the process authorizes the upload that shows it, and a consent question per iteration would defeat the draft.
+   Confirm first when the solution already existed, and check its cloud copy before uploading over it, as [Studio Web upload](operate.md#studio-web-upload) says.
+   The skeleton needs none of that section's other pre-flight steps: it keeps `Event_start`, so it needs no `refresh`, and it binds no resource.
+   When the request forbids upload, or the project has no solution (`init` ran with `--skip-solution-registration`), do not upload and do not create a solution to show a draft: the gate reply carries the local path.
+   Do not pack, debug or run anything.
    Those are separate decisions, and the user has not approved the shape yet.
+<!--skill-flavor:draft-upload:end-->
 
 ### Expected findings — do not chase them
 
@@ -120,8 +129,12 @@ Act only on errors, and do not report the warning: it appears on every skeleton,
 Reply in this shape, and end the turn:
 
 ```text
-<Name>: outline ready (draft mode).
-<the local <Project>/<Name>.bpmn path>
+<!--skill-flavor:gate-first-line:start-->
+<Name>: outline ready<, uploaded> (draft mode). <One sentence if the upload failed or you kept the user's Studio Web edits.>
+<!--skill-flavor:gate-first-line:end-->
+<!--skill-flavor:gate-path-line:start-->
+<the Studio Web link (Data.DesignerUrl) on its own line when it uploaded, else the local <Project>/<Name>.bpmn path as plain text, never a link>
+<!--skill-flavor:gate-path-line:end-->
 
 - <each box's label, in order>
 
@@ -132,20 +145,65 @@ Is this the process you want?
 ```
 
 The reply is the template and nothing else: no line before it, between its parts or after it.
-That rules out a status or validation line (`Valid`, `zero errors`), an explanation of a warning, a note about a default you chose, and a question of your own (a time zone, which app); anything the user should settle waits for *Change it*.
+<!--skill-flavor:gate-uploaded-rule:start-->
+Write `, uploaded` only when this turn's upload succeeded.
+<!--skill-flavor:gate-uploaded-rule:end-->
+When the path line is the local path, write the plain path, such as `InvoiceIntake/InvoiceIntake.bpmn`, not as a Markdown link with the file name as its text.
+That rules out a status or validation line (`Valid`, `zero errors`, `Uploaded`), an explanation of a warning, a note about a default you chose, and a question of your own (a time zone, which app); anything the user should settle waits for *Change it*.
 List every task box, in order, and nothing else: not the start event, a gateway or the end event.
 A box line is the box's label exactly as its `.task()` name spells it, `→ variable` suffix included, and never a branch condition, an arm label or a route: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`.
 Unlike v1, which appends `: <resource status>` to a box label, v2 adds no status suffix after the label.
 Add no drawn diagram, no table and no step log; the file is the picture.
 Ask the question in the message, not with a pick-list or question tool, and wait for the user's answer.
+A pending question keeps the turn open, and Studio Web locks the canvas while a turn runs, so the user could not review the shape they are asked to approve.
 
 ## After the answer
 
-- **Change it**: edit the skeleton and run the loop again.
+<!--skill-flavor:draft-cloud-copy:start-->
+When you uploaded the skeleton, the user may have changed it on the canvas before answering.
+Before you edit it again, download the cloud copy and compare it, as [Check the cloud copy](operate.md#check-the-cloud-copy-before-editing) says; when it differs, build on their copy without asking, and say so in the reply's one sentence.
+<!--skill-flavor:draft-cloud-copy:end-->
+
+- **Change it**: edit the skeleton, run the loop again, and show it again as step 4 does.
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.
+  End the turn with the [final report](#the-final-report-after-build-it).
 - **Keep it**: stop, and report the file as an outline, not a working process.
 
 Only *Build it* authorizes the build.
 Until then the skeleton is an outline, and calling it a finished process misreports it.
+
+## The final report after Build it
+
+<!--skill-flavor:final-upload:start-->
+When the built process validates, run the [pre-flight](operate.md#pre-flight-before-any-cloud-action), which a built process needs and a skeleton did not, and upload it again, as step 4 did: `uip solution upload <SolutionDir> --output json` returns the `Data.DesignerUrl`.
+Skip the upload when the request forbids it or the project has no solution.
+The *Build it* answer does not authorize uploading a process that is not ready: when a connector's enrichment or a binding is still unresolved, do not upload ([Operate](operate.md#anti-patterns)).
+<!--skill-flavor:final-upload:end-->
+Then reply in this shape, dropping lines that do not apply:
+
+```text
+<!--skill-flavor:final-first-line:start-->
+<Name>: built, validated<, uploaded> (draft mode). <One sentence if you kept the user's Studio Web edits.>
+<!--skill-flavor:final-first-line:end-->
+<!--skill-flavor:final-path-line:start-->
+<the Studio Web link (Data.DesignerUrl) on its own line when it uploaded, else the local <Project>/<Name>.bpmn path>
+<!--skill-flavor:final-path-line:end-->
+
+- <what changed, one line each, at most 5 lines in all>
+
+Needs: <...>
+Assumed: <...>  Unverified: <...>
+```
+
+The first line names the mode: the run stopped at a draft gate, so it says `(draft mode)`, never `(auto mode)`.
+When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (draft mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
+Drop `Needs:` when nothing is missing.
+
+Write every line in the user's words: say what each step now does.
+No element type ids (`Orchestrator.StartAgentJob`), connector keys, object or operation names, payload, binding or placeholder terms, and no file names other than the path line.
+
+This reply is your whole final message, and its first characters are the process name: no status sentence or introduction before the `<Name>:` line.
+Send nothing beyond these lines: no extra sections, headings, tables, numbered lists, questions or suggested next steps.
+Write at most five change lines; when there are more, merge related steps, and fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.

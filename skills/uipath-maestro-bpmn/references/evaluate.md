@@ -91,6 +91,9 @@ A simulation is scoped to one **data point inside one set**, so all three comman
 `add` also requires `--strategy` and `--component-type`: `agent`, `connector`, `hitl`, `process`, or `Node` (the type Studio Web writes), matched exactly, case included.
 A `uip` with cli#5928 rejects any other value, such as `subprocess`, with exit 3; an older one accepted any text.
 
+`--mock-value` is the element's raw `result`: its top-level keys are the ones the element's `outputs` read as `=result.<key>`.
+Match them: an output read as `=result.response.ok` needs `{"response":{"ok":true}}`, and an `Actions.HITL` task whose output reads `=result.Action` needs `{"Action":"<outcome name>", "<fieldId>": <value>}`.
+
 Always use the BPMN simulation commands shown below, **never the `maestro flow eval` verb** on a BPMN project.
 The flow verb skips the `--output-schema` requirement described below, so a flow-verb `Llm` simulation silently bypasses the one behavior that makes BPMN simulations correct.
 
@@ -98,7 +101,7 @@ The flow verb skips the `--output-schema` requirement described below, so a flow
 # Static — returns --mock-value verbatim
 uip maestro bpmn eval simulation add <component-id> \
   --set "Smoke Tests" --data-point <id> \
-  --strategy Static --component-type connector --mock-value '{"ok":true}' \
+  --strategy Static --component-type connector --mock-value '{"response":{"ok":true}}' \
   --path <Project> --output json
 
 # Llm — generates from instructions; --output-schema is REQUIRED

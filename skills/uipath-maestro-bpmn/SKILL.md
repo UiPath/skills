@@ -31,14 +31,28 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 1. Scaffold the project first with `uip maestro bpmn init <Name> --output json`, and take the project directory from `Data.Path`.
    Below, `<Project>` means that directory.
    It holds `<Name>.bpmn` plus `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, and `package-descriptor.json` — the layout `bpmn pack` and product tooling require.
-   `init` takes a name, not a path, and writes under the current directory:
+   Without `--path`, `init` writes under the current directory:
    - inside a solution (a `.uipx` here or in a parent): `./<Name>/`, registered in that solution;
    - outside one: `./<Name>Solution/<Name>/`, inside a solution it scaffolds;
    - with `--skip-solution-registration`: `./<Name>/`, with no solution.
 
-   **When the user names where the project or its `.bpmn` goes** (`A/B/B.bpmn` names project directory `A/B`), `mkdir -p A`, run `init B` from `A`, and pass `--skip-solution-registration` unless `A` or a parent already holds a `.uipx`.
-   When the file name differs from its directory (`A/B/C.bpmn`), `init B` writes `B.bpmn`, so ask the user which of the two to rename before choosing.
-   Check `Data.Path` against the requested path before writing anything, and compile to that path, not to a copy elsewhere.
+   **When the user names where the `.bpmn` goes**, the directory holding it is the project directory, and `init --path <dir>` writes the project files straight into it.
+   Match the path to one row and run that row's command from the workspace root, with the user's names in place of `X`, `A`, `B` and `C`:
+
+   | Path named | Project directory | Command, from the workspace root |
+   |---|---|---|
+   | `X.bpmn` (workspace root) | `.` | `uip maestro bpmn init X --path . --output json` |
+   | `A/A.bpmn` | `A` | `uip maestro bpmn init A --path A --output json` |
+   | `A/B/B.bpmn` (also `A/A/A.bpmn`, or deeper) | `A/B` | `uip maestro bpmn init B --path A/B --output json` |
+   | `A/B/C.bpmn` (file named apart from its directory) | `A/B` | `uip maestro bpmn init C --path A/B --output json` |
+   | nothing named | `Data.Path` | `uip maestro bpmn init <Name> --output json`, as above |
+
+   `--path` uses the directory as given and creates it, and any missing parents, when it does not exist; `init` writes `<Name>.bpmn` there, named after the project, not after the directory.
+   It scaffolds no `<Name>Solution`: the project is registered in a solution only when a parent directory already holds a `.uipx`, and `--skip-solution-registration` stops even that when the project does not belong in it.
+   The directory may already hold unrelated files (`package.json`, `.git`, notes), but `init` refuses one that holds a project file (`project.uiproj`, `project.json`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json` or `<Name>.bpmn`, matched case-insensitively).
+   That refusal means a project is already there: if it is the process the user means, edit it as an existing process (step 8), and ask before passing `--force`, which overwrites those files.
+   `init` refuses a directory holding a `.uipx` even with `--force`.
+   Check that `Data.Path` is the requested project directory before writing anything, and compile to `<Project>/<Name>.bpmn`, not to a copy elsewhere.
    A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.88.1 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version).
    Write `<Name>.bpmn.ts` in the workspace root (the directory you started in), not inside the solution or project folder, even when you ran `init` from the solution folder.
@@ -89,7 +103,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    the diagram out first (`format`) or it fails with `MISSING_DI_SHAPE`, and it needs an
    init-generated project — with no `project.uiproj` it has nothing to regenerate.
 <!--skill-flavor:workflow-merge:start-->
-8. Use the merge pipeline for targeted edits to an existing process.
+8. Edit an existing process with `merge`, which takes the edited source and the original: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
+   No `.bpmn` other than the target goes in the workspace: no intermediate copy, probe or second scaffold.
+   When the project sits in a solution this run did not scaffold, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
 
 ## Draft first
@@ -97,6 +113,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
 The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
+<!--skill-flavor:draft-upload-summary:start-->
+Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with a second upload and a final report.
+<!--skill-flavor:draft-upload-summary:end-->
 
 ## API index
 
@@ -126,9 +145,9 @@ Match one name — do not read either end to end — then read the span it gives
 | Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Decision, parallel split, or wait-for-first, written in place | `choose`, `fork`, `race`, `goto` | [ChooseArm](#api-index) | `examples/InvoiceEscalation.bpmn.ts` |
 | Safety net for a whole scope | `eventSubProcess` | [Event sub-process scope](references/bpmn-runtime.md#events-and-timers) | `examples/InvoiceEscalation.bpmn.ts` |
-| Script and assignment tasks | `scriptTask`, `task` | [Script tasks](references/bpmn-runtime.md#script-tasks) | `examples/NotifyChannel.bpmn.ts` |
-| HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
-| Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
+| Script and assignment tasks | `scriptTask`, `task` | [Script tasks](references/bpmn-runtime.md#script-tasks) | `examples/ContractRegistry.bpmn.ts` |
+| HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/InvoiceEscalation.bpmn.ts` |
+| Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/InvoiceApproval.bpmn.ts` |
 | A deployed business rule | `businessRule` | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | — |
 | Human work — always an inline form; the SDK cannot yet write an app-backed task | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/InvoiceEscalation.bpmn.ts` |
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connectors](references/connectors.md) | `examples/NotifyChannel.bpmn.ts` |
@@ -136,7 +155,7 @@ Match one name — do not read either end to end — then read the span it gives
 | A connector step in a draft with no connection (offline, or no real ids allowed) | `connector` with symbolic bindings, or a bare `task` | [Unresolved connector draft](references/connectors.md#7-draft-with-an-unresolved-connector) | — |
 | Data Fabric records and file fields | `dataService` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/ContractRegistry.bpmn.ts` |
 | Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
-| Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
+| Existing BPMN | `bpmn decompile`, `check`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 | Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
 | Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | `uip maestro bpmn eval` | [Evaluate](references/evaluate.md) | — |
@@ -259,13 +278,10 @@ required input, an unresolved `lookup()`, an unprepared object or a self-naming 
 ## Operating a process
 
 <!--skill-flavor:operating:start-->
-Refresh the package metadata, pack, upload to Studio Web (what "publish" means
-unless the user names Orchestrator), debug a real run, run a deployed process,
-inspect a job, and drive an instance's lifecycle. All of it needs `uip login`;
-`uip maestro bpmn refresh <project-path>` comes before every cloud action, and
-`bpmn debug` is a REAL run, not a validation step. Every mutation needs the
-user's decision for that action. Read
-**[`references/operate.md`](references/operate.md)**.
+Refresh the package metadata, pack, upload to Studio Web (what "publish" means unless the user names Orchestrator), debug a real run, run a deployed process, inspect a job, and drive an instance's lifecycle.
+All of it needs `uip login`; `uip maestro bpmn refresh <project-path>` comes before every cloud action, and `bpmn debug` is a REAL run, not a validation step.
+Every mutation needs the user's decision for that action, except the Studio Web upload of a project this run created, which a request to build or draft the process authorizes.
+Read **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:operating:end-->
 
 ## Evaluating a process

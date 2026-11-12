@@ -166,6 +166,10 @@ def bracket_candidates(name: str) -> list[str]:
 def find_bpmn(name: str) -> str:
     paths = [p for p in sorted(glob.glob("**/*.bpmn", recursive=True)) if "node_modules" not in p]
     hinted = [p for p in paths if os.path.basename(p).lower() == f"{name.lower()}.bpmn"]
+    if not hinted:
+        # Studio Web names the main file Process.bpmn, in a project folder named after the task's name.
+        hinted = [p for p in paths
+                  if os.path.basename(p) == "Process.bpmn" and Path(p).parent.name.lower() == name.lower()]
     in_project = [p for p in hinted if (Path(p).parent / "project.uiproj").is_file()]
     chosen = in_project or hinted
     if not chosen:
