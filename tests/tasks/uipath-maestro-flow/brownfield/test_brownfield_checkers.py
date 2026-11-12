@@ -730,6 +730,19 @@ def test_added_node_right_of_its_successor_on_another_row_fails(tmp_path: Path) 
     assert layout_of(tmp_path, original, final) == 1
 
 
+@pytest.mark.parametrize("r_x, expected", [pytest.param(672, 0, id="pushed-clear-of-the-added-node"), pytest.param(1200, 1, id="pushed-further")])
+def test_added_node_pushes_the_original_node_it_points_to(tmp_path: Path, r_x: int, expected: int) -> None:
+    original = row_flow({"a": (0, 0), "r": (384, 160)}, [("a", "r")])
+    final = row_flow({"a": (0, 0), "n": (480, -16), "r": (r_x, 160)}, [("a", "r"), ("a", "n"), ("n", "r")])
+    assert layout_of(tmp_path, original, final) == expected
+
+
+def test_original_node_moved_by_an_edge_from_a_kept_node_fails(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "b": (192, 0), "r": (384, 160)}, [("a", "b")])
+    final = row_flow({"a": (0, 0), "b": (192, 0), "r": (576, 160)}, [("a", "b"), ("b", "r")])
+    assert layout_of(tmp_path, original, final) == 1
+
+
 def test_node_left_of_the_insertion_gets_no_room_from_it(tmp_path: Path) -> None:
     original = row_flow({"a": (0, 0), "p": (500, 0), "o": (200, 100)}, [("a", "p")])
     final = row_flow({"a": (0, 0), "p": (500, 0), "n": (692, 0), "o": (900, 100)}, [("a", "p"), ("p", "n")])
