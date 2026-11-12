@@ -1,10 +1,11 @@
 # Extract document node
 
-*Commands: `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
+*Commands: `uip maestro flow extraction check`, `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
 
 An Extract document node (`uipath.ixp.extract-document-builder`) pulls named fields out of a document using a taxonomy it carries inline, in the `.flow` file itself. There is no trained model or IXP project behind it. This guide covers getting the node into the flow: adding it, wiring the file it reads, and validating. Designing what it extracts is the taxonomy, in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 ```bash
+uip maestro flow extraction check --output json
 uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --output json
 uip maestro flow validate <file> --output json
 ```
@@ -43,17 +44,47 @@ uip maestro flow validate Flow/Flow.flow --output json
 0. **Find the flow.** Everything here edits a `.flow` on disk. When the user describes a flow they are already building and none exists locally, they may be referring to one
 that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 <!--skill-flavor:extract-find-flow:end-->
-1. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This is what makes `$vars.start.output.invoice` resolve, so it comes before the node that reads it.
-2. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`.
-3. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
-4. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
-5. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
-6. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
-7. **Report** what was added, where it reads its file from, what it extracts, and what `nodes create` reported about its processor: inside a solution the resource file was written under `resources/` and travels with the `.flow`, and outside one it is still to be created ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
+1. **Check the tenant can run it:** `uip maestro flow extraction check --output json`. Anything other than `Available` stops the loop here ([Check the tenant can run it](#check-the-tenant-can-run-it)).
+2. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This is what makes `$vars.start.output.invoice` resolve, so it comes before the node that reads it.
+3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`.
+4. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
+5. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
+6. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
+7. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
+8. **Report** what was added, where it reads its file from, what it extracts, and what `nodes create` reported about its processor: inside a solution the resource file was written under `resources/` and travels with the `.flow`, and outside one it is still to be created ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
 
-## Not available everywhere
+## Check the tenant can run it
 
-The feature is new and tenant-gated, so not every tenant has it yet. Nothing in the CLI shows the difference — creating and validating succeed either way, and `registry search` reports `AvailableOnTenant: false` for this node on every tenant — but the Studio Web node picker lists **Extract document** where it is enabled. Keep the gating in mind as a possible cause of errors. Where the tenant turns out not to have the feature, or on Automation Suite, where structured extraction ships switched off, go to [When Extract document is not available](#when-extract-document-is-not-available).
+Document extraction is enabled per tenant, and the models it extracts with are granted per tenant too. Ask before you author:
+
+```bash
+uip maestro flow extraction check --output json
+```
+
+`Data.Status` is the answer, and only `Available` means the node is worth adding:
+
+| Status | What it means |
+| --- | --- |
+| `Available` | document extraction is on for this tenant, and it has a model to extract with |
+| `FeatureDisabled` | a tenant administrator has to turn document extraction on |
+| `ServiceUnavailable` | this environment serves no document extraction |
+| `ModelUnavailable` | extraction is on, but the tenant has no model to extract with |
+| `Unknown` | a service answered without settling it, so nothing is proven |
+
+The command reports on the signed-in tenant, and `-t <tenant-name>` checks for another tenant. On anything other than `Available`, go to [When Extract document is not available](#when-extract-document-is-not-available). That includes `Unknown`, which leaves the question open rather than answering it.
+
+Nothing else in the CLI answers this, so do not read one of these in its place. `nodes create` and `validate` are local file edits, so they succeed on any tenant. `registry search` reports `AvailableOnTenant: false` for this node on every tenant, because the node reaches the canvas from a builder rather than from the tenant's node catalogue.
+
+**`Available` is not a promise that a run succeeds.** It covers the two gates the check can read. Extraction can still be refused later, at deploy or on the first run, for a reason no read-only call shows beforehand:
+
+- the environment does not run structured extraction, which a stock Automation Suite install does not
+- the model this node is configured with is not among the ones the tenant is granted, which the check does not look at — it asks only whether the tenant has any
+- model-based attribution, full layout parsing or an OCR language pack is configured and not granted, each being a separate grant
+- the user cannot run it in the target folder
+
+Treat any of these the same way as a check that came back unavailable: report what the service said and go to [When Extract document is not available](#when-extract-document-is-not-available). Do not hand over a flow with the node still in it as working, and do not try folders in turn looking for one that passes.
+
+Where the refusal names the model, say which one the node carries and that the tenant is not granted it. Never swap in another model quietly: which model extracts is the user's choice, and changing it is not something this guide does ([Unsupported Capabilities](#unsupported-capabilities)). Where the user never named a model, say that another of the tenant's models may suit and let them choose. Where they asked for that model by name, the answer is that this tenant cannot run it.
 
 ## Adding the node
 
@@ -210,6 +241,8 @@ When the flow has been through Studio Web since it was pulled down, pull the sol
 
 ## When Extract document is not available
 
+This covers both answers: a check that came back as anything other than `Available`, and a refusal that arrives later from deploy or a run. Take the reason from whichever reported it — `Data.Reason` from the check, or the service's own message — and keep it in what you say, including when it names something this guide does not describe.
+
 Never add the node anyway, and never substitute a placeholder for it when the user asked for working extraction. Fall back in two steps.
 
 **First, look for a published IXP model.** The user may already have a trained project that does the job:
@@ -218,9 +251,9 @@ Never add the node anyway, and never substitute a placeholder for it when the us
 uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
 ```
 
-If a published model fits what the user described, say that Extract document is not enabled on this tenant, say which model you are using instead and why, and build with it following [ixp.md](ixp.md). The two nodes are not equivalent — a published model extracts the fields it was trained on, so check its taxonomy covers what the user asked for before offering it, and say plainly what it does not cover.
+If a published model fits what the user described, say what the check reported about this tenant, say which model you are using instead and why, and build with it following [ixp.md](ixp.md). The two nodes are not equivalent — a published model extracts the fields it was trained on, so check its taxonomy covers what the user asked for before offering it, and say plainly what it does not cover.
 
-**If there is no published model either, stop and explain.** Say which tenant was checked, that neither Extract document nor a trained model is available on it, and that enabling document extraction is a tenant administrator action covered in the UiPath product documentation. Do not scaffold a solution, do not write a flow file, and do not put a `mock()` in the extraction position — a placeholder is only for a validate-only topology whose stated purpose is to show where extraction belongs, and it is never a stand-in for extraction the user expects to run.
+**If there is no published model either, stop and explain.** Say which tenant was checked and what the check reported — `Data.Reason` says it in a sentence — that no trained model is available on it either, and that enabling document extraction is a tenant administrator action covered in the UiPath product documentation. Do not scaffold a solution, do not write a flow file, and do not put a `mock()` in the extraction position — a placeholder is only for a validate-only topology whose stated purpose is to show where extraction belongs, and it is never a stand-in for extraction the user expects to run.
 
 ## Unsupported Capabilities
 
