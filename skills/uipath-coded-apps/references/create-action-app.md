@@ -431,7 +431,7 @@ Add `react-pdf` to `dependencies` in `package.json` and install it:
 npm install react-pdf
 ```
 
-`react-pdf` bundles `pdfjs-dist` as a peer dependency; the worker URL is set at module level via the unpkg CDN (no extra webpack/vite config needed).
+`react-pdf` installs `pdfjs-dist`; the template sets the worker URL at module level from the app's own bundle (`pdfjs-dist/build/pdf.worker.min.mjs?url`) — no CDN and no extra Vite config. Do not replace it with a CDN URL.
 
 #### Component & styles — copy from the template
 

@@ -17,6 +17,8 @@ Call IS connector activities (Slack, Jira, Web Search, …) from a coded Python 
 
 Integration Service discovery — connector → connection → ping → describe, reference-field resolution, parent-driven custom fields — is owned by the **`uipath-platform`** skill. Run its IS discovery workflow before authoring any `invoke_activity` create/update call; do not infer the shape from the worked examples below. If those reads fail, stop and surface — do not improvise.
 
+List connections with `uip is connections list "<CONNECTOR_KEY>" --all-folders --output json` — without `--all-folders` the CLI searches only the default scope and misses connections in shared folders.
+
 Discovery is auth-gated (`uip login` + connection selection precede `describe`). **Coded consequence:** you can't author `body_fields` / `ActivityMetadata` without `describe` output, so for IS-using agents do auth + discovery *before* Build, not after.
 
 Read these from the `uipath-platform` skill (`references/integration-service/`) — required even for tenant-free / shape-only authoring (you read them for the workflow, field-resolution, and error-recovery contract regardless of tenant; only the live `describe` step and `uip login` defer when no tenant is available).

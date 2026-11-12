@@ -4,6 +4,7 @@
 
 An inline agent's capabilities are ARTIFACT nodes hanging off its own handles — tools on `tool`, a context index on `context`, an escalation on `escalation` — not steps in the control flow.
 Each is authored as an entry on `inlineAgent`, and the compiler emits the node and the edge.
+`voiceAgent` and `conversationalAgent` take the same `tools`, `context` and `escalation` options, with the same rules ([below](#voice-and-conversational-agents)); `memory` is the inline agent's alone.
 Context index: [inline-agent.md](inline-agent.md#context-grounding).
 
 ```ts
@@ -31,7 +32,7 @@ Context index: [inline-agent.md](inline-agent.md#context-grounding).
 | `ixp` | A published IxP project | `projectId` + `name` |
 | `mcp` | An MCP server's tools | `name` + `key`; `slug` is what the runtime resolves |
 | `a2a` | A remote agent to delegate to | `name` + `key` + `slug` (required) |
-| `clientside` | The CALLING application runs it | `name`, plus the `inputs`/`returns` contract |
+| `clientside` | The CALLING application runs it | `name`, plus the `inputs`/`returns` contract, or `inputSchema`/`outputSchema` for a whole JSON schema (property descriptions, `items`, `required`); not both |
 | `httpRequest` | The built-in HTTP tool | nothing — see below |
 
 For `mcp`, `a2a` and the per-instance resource kinds, the node TYPE is
@@ -89,3 +90,34 @@ calls an MCP server, delegates to a remote agent, or asks a
 client application to run a tool. Offline `validate` proves the minted node
 types, the wiring to the right handle, and the declared contracts. Whether the
 resources exist and what they return is platform evidence.
+
+## Voice and conversational agents
+
+<!--skill-flavor:voice-conversational-resources-sdk-version:start-->
+**Needs `@uipath/maestro-builder-sdk` 6.88.2 or later.** An older SDK accepts
+these options with no finding and compiles the agent with no tool, context or
+escalation nodes. Upgrade the copy in use: `npm install
+@uipath/maestro-builder-sdk@latest` in a workspace that has its own
+`node_modules` copy (it is used before the global one), else `npm install -g
+@uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:voice-conversational-resources-sdk-version:end-->
+
+- **`check` codes.** The inline agent's rules, under codes all three agents
+  share: `FLOW_AGENT_TOOL_*`, `FLOW_AGENT_ESCALATION_*`, `FLOW_AGENT_RESOURCE_*`,
+  `FLOW_AGENT_CONTEXT_*`. Each message names the agent's kind (`Voice agent step
+  "a" …`). An SDK older than 6.88.2 prints the same rules for an inline agent
+  as `INLINE_AGENT_TOOL_*`, `INLINE_AGENT_ESCALATION_*`, `INLINE_AGENT_RESOURCE_*`
+  and `AGENT_CONTEXT_*`.
+- **Voice agent definitions.** Compile writes each resource's definition with
+  the voice agent as an allowed source, as the designer does; the built-in
+  tools and the app escalation go out at 1.2 for that reason.
+- **What decompile does not carry back yet.** These get a `TODO` for their edge:
+  - a connector tool;
+  - a built-in tool at a version other than the one compile writes for that
+    agent, and an HTTP request tool at a version other than 1.0;
+  - an escalation at a version compile does not write: a quick-form other than
+    1.2, or an app escalation other than 1.1 (1.2 on a voice agent).
+
+  Recompiling that source drops the tool or escalation. Do not recompile such a
+  flow from its decompiled source; edit the `.flow` instead.
+

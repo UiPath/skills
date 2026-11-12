@@ -7,7 +7,9 @@ and run it under /bin/sh (dash in the base image), so they test the text that
 ships.
 """
 
+import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -59,3 +61,59 @@ def test_anything_else_fails_the_build(version):
     run = _resolve(version)
     assert run.returncode == 1
     assert "CONNECTORS_LIBRARY_VERSION must be 'latest' or a build number" in run.stderr
+
+
+# --- /etc/coder-eval/image-versions.json, the run header coder-eval 1.x shows ---
+
+
+def _image_versions_filter() -> str:
+    start = TEXT.index("RUN mkdir -p /etc/coder-eval")
+    block = TEXT[start:TEXT.index("/etc/coder-eval/image-versions.json", start)]
+    return re.search(r"\n\s+'([^']+)' \\\n", block).group(1)
+
+
+def _status(registry_status: str, requested: str = "latest", library_hash: str | None = "abc123") -> dict:
+    return {
+        "sdk": {"requestedVersion": "latest", "resolvedVersion": "6.87.1", "status": "available"},
+        "registry": {"requestedVersion": requested, "libraryHash": library_hash, "status": registry_status},
+        "sourceCheck": {"status": "passed"},
+    }
+
+
+def _image_versions(status: dict, cli: str = "1.205.0") -> dict:
+    run = subprocess.run(
+        ["jq", "-c", "--arg", "cli", cli, _image_versions_filter()],
+        input=json.dumps(status), capture_output=True, text=True, check=True,
+    )
+    return json.loads(run.stdout)
+
+
+needs_jq = pytest.mark.skipif(shutil.which("jq") is None, reason="jq is not installed")
+
+
+@needs_jq
+def test_latest_registry_reports_only_the_snapshot_hash():
+    assert _image_versions(_status("available")) == {
+        "uip-cli": "1.205.0", "flow-sdk": "6.87.1", "connectors-library-sha": "abc123",
+    }
+
+
+@needs_jq
+def test_pinned_registry_reports_the_build_and_the_hash():
+    versions = _image_versions(_status("available", requested="connectors-library-2026.09.9"))
+    assert versions["connectors-library"] == "connectors-library-2026.09.9"
+    assert versions["connectors-library-sha"] == "abc123"
+
+
+@needs_jq
+@pytest.mark.parametrize("registry_status", ["failed", "skipped"])
+def test_unavailable_registry_reports_no_connectors_library(registry_status):
+    versions = _image_versions(_status(registry_status, requested="connectors-library-2026.09.9"))
+    assert versions == {"uip-cli": "1.205.0", "flow-sdk": "6.87.1"}
+
+
+@needs_jq
+def test_unresolved_values_are_left_out():
+    status = _status("skipped", library_hash=None)
+    status["sdk"]["resolvedVersion"] = None
+    assert _image_versions(status, cli="") == {}

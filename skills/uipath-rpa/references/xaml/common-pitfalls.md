@@ -26,7 +26,7 @@ These activities **must** be placed inside a specific parent scope:
 
 | Activity | Recommended Parent | Notes |
 |----------|-------------------|-------|
-| ExcelApplicationCard | `ExcelProcessScopeX` | Warning if outside process scope |
+| ExcelApplicationCard | `ExcelProcessScopeX` | Warning if outside process scope ([§ Use Excel File Outside an Excel Process Scope](#use-excel-file-outside-an-excel-process-scope)) |
 | DeleteRowsX | NOT inside `ExcelForEachRowX` | Deleting rows during iteration causes unexpected behavior |
 
 **Nesting restrictions:**
@@ -36,6 +36,12 @@ These activities **must** be placed inside a specific parent scope:
 | SequenceX | Another `SequenceX` or `ExcelProcessScopeX` | Validation error |
 | VerifyControlAttribute | Another `VerifyControlAttribute` | Validation error |
 | InvokeVBAX | Max 20 child `InvokeVBAArgumentX` | Validation error if exceeded |
+
+## Use Excel File Outside an Excel Process Scope
+
+`Use Excel File` (`ExcelApplicationCard`) with no `ExcelProcessScopeX` or `SequenceX` around it raises `UiPath recommends using “Use Excel File” inside an “Excel Process Scope"`. It is a validation warning of the activity, reported by `validate` and not by `build`, and not a numbered analyzer rule; an enclosing scope clears it whatever its `ProcessMode`. The scope's properties and modes: [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
+
+Put the Use Excel File activities of one step inside one scope: one Excel process serves them. At its end the scope quits that process if it started it and no workbook is left open; an Excel it reused keeps running.
 
 ## Conflicting Property Pairs
 
@@ -249,8 +255,8 @@ The path is relative to the project root directory. Use backslashes for subfolde
 <ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
     DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)" UnSafe="False">
   <ui:InvokeWorkflowFile.Arguments>
-    <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
-    <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument1">someValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Argument2">anotherValue</InArgument>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
 ```
@@ -558,24 +564,24 @@ Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/
   <!-- Legacy (.NET Framework 4.6.1):
        xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
        xmlns:s="clr-namespace:System;assembly=mscorlib" -->
-  <Variable x:TypeArguments="sd:DataTable" Name="dt" Default="[New System.Data.DataTable()]" />
+  <Variable x:TypeArguments="sd:DataTable" Name="dt_Data" Default="[New System.Data.DataTable()]" />
   ...
   <InvokeMethod MethodName="Add">
     <InvokeMethod.TargetObject>
-      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt_Data.Columns]</InArgument>
     </InvokeMethod.TargetObject>
     <InArgument x:TypeArguments="x:String">Name</InArgument>
     <InArgument x:TypeArguments="s:Type">[GetType(System.String)]</InArgument>
   </InvokeMethod>
   <InvokeMethod MethodName="Add">
     <InvokeMethod.TargetObject>
-      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt_Data.Columns]</InArgument>
     </InvokeMethod.TargetObject>
     <InArgument x:TypeArguments="x:String">Amount</InArgument>
     <InArgument x:TypeArguments="s:Type">[GetType(System.Decimal)]</InArgument>
   </InvokeMethod>
   ```
-  `TargetObject` MUST be the typed property-element form (`InArgument x:TypeArguments="sd:DataColumnCollection"`) — the attribute shorthand `TargetObject="[dt.Columns]"` fails validation with `Set property 'InvokeMethod.TargetObject' threw an exception` because overload resolution can't see `Add` on the untyped target.
+  `TargetObject` MUST be the typed property-element form (`InArgument x:TypeArguments="sd:DataColumnCollection"`) — the attribute shorthand `TargetObject="[dt_Data.Columns]"` fails validation with `Set property 'InvokeMethod.TargetObject' threw an exception` because overload resolution can't see `Add` on the untyped target.
   **C# XAML** (`expressionLanguage: CSharp`): replace bracket-shorthand expressions with `<CSharpValue x:TypeArguments="T">...</CSharpValue>` / `<CSharpReference x:TypeArguments="T">...</CSharpReference>` wrappers inside the `<InArgument>`/`<Default>` elements. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the full binding form per property.
 
   Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
@@ -851,5 +857,5 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 When reading Excel data with `ReadRangeX`, column types in the resulting `DataTable` may be `String` even when the Excel cells contain numbers. This causes `DataTable.Select("[Amount] > 1000")` to perform string comparison instead of numeric comparison (e.g., `"4200" < "800"` alphabetically), silently dropping rows.
 
 **Workarounds:**
-- Use LINQ with explicit conversion: `dtData.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
+- Use LINQ with explicit conversion: `dt_Data.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
 - Convert the column type after reading: loop through rows and convert values, or clone the DataTable with the correct column types

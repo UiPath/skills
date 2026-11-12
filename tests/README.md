@@ -103,7 +103,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
 | **lifecycle** | `lifecycle:X`, required | Coding Agents Scorecard lifecycle phase | `discover` (read-only exploration: list/get/inspect existing state), `generate` (produce a new local artifact: pack, scaffold, render), `setup` (mutate tenant state: create/edit/delete resources, deploy, configure) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
-| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (omit `script`/`http` — ubiquitous) |
+| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (a published IXP model), `extract-document` (the Extract document node and its inline taxonomy) (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
@@ -193,7 +193,7 @@ criteria that passed.
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
-| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
+| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow, Case and BPMN all promoted) | 200 | 1200s | 900s |
 | `use-case-tiers.yaml` | docker | Opt-in A/B for the `uipath-agents` use-case tasks: `assisted` vs `unassisted` (lower-tier helper text stripped) | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
@@ -223,14 +223,15 @@ SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run \
 
 `flow-v2-preview.yaml` runs the three builder-SDK skills
 `uipath-maestro-{flow,case,bpmn}` as the ONLY skill catalog, so a run measures the
-Flow v2 authoring path rather than a mix of both generations. Flow has been
-promoted: its tree lives in `skills/uipath-maestro-flow` (the default catalog, so
-`nightly.yaml` runs it too), and `preview/skills/uipath-maestro-flow` is a relative
-symlink to it so this arm keeps loading all three. Case and BPMN are still
-`preview/`-only. The previous Flow generation lives in
-`classic/skills/uipath-maestro-flow` (shipped only in the Studio Web flavor). It is
-in no plugin catalog, but the read-only repo mount leaves it readable from inside
-eval containers, so a prompt must not name a v1 Flow reference file. `preview/` is a Claude Code
+Flow v2 authoring path rather than a mix of both generations. Flow, Case and BPMN
+have all been promoted: their trees live in `skills/uipath-maestro-{flow,case,bpmn}`
+(the default catalog, so `nightly.yaml` runs them too), and
+`preview/skills/uipath-maestro-{flow,case,bpmn}` are relative symlinks to them so this
+arm keeps loading all three. The previous Case and BPMN generations live in
+`classic/skills/uipath-maestro-{case,bpmn}` (shipped only in the Studio Web flavor).
+They are in no plugin catalog, but the read-only repo mount leaves them readable
+from inside eval containers, so a prompt must not name a v1 Case or BPMN reference
+file. `preview/` is a Claude Code
 **plugin root** (`preview/.claude-plugin/plugin.json` + `preview/skills/<name>/SKILL.md`),
 which is the one layout every harness loads: Claude Code requires it, the
 Delegate SDK appends `/skills` to it, Codex and Antigravity accept it. Skills load
@@ -357,6 +358,50 @@ Two traps:
   `_resolve_backend_route`, which *does* demand `ANTHROPIC_API_KEY`. Absent
   and inherited succeeds where explicit and identical fails.
 
+## Tenant dependency catalog
+
+`tests/scripts/tenant_catalog.py` lists the cloud-tenant resources the tasks
+depend on. It reads `tests/tasks/` on every run, so the list is never
+maintained by hand.
+
+```bash
+python3 tests/scripts/tenant_catalog.py --skill uipath-maestro-case --format md
+```
+
+The script puts each task in one of three tiers:
+
+| Tier | Meaning |
+|---|---|
+| `hard` | A `pre_run` command or a grader calls the tenant. |
+| `soft` | The grader is local, but the prompt or a `command_executed` criterion sends the agent to the tenant. |
+| `local` | Nothing reaches the tenant. |
+
+Each dependency gets one disposition, with its reason and the tenant services it needs:
+
+| Disposition | Meaning |
+|---|---|
+| `creatable` | Automation Suite can hold it, and a script can create it. |
+| `substitutable` | A third-party SaaS account reached through Integration Service. The eval needs a local stand-in. |
+| `unavailable` | No equivalent exists on Automation Suite. The tasks that depend on it cannot run there. |
+
+The dependency kinds are:
+- Integration Service connectors and their pinned connection ids
+- solution resources from SDD task details, caseplan bindings and registry ledgers
+- folders
+- Data Fabric entities
+- setup helpers that call the tenant
+
+A dependency that no rule covers is `unclassified`. `--strict` exits 1 on a tenant task's
+unclassified dependency, and
+`test_tenant_catalog.py` fails on it for the case suite. When you add a tenant
+dependency to a task, add its rule in the same change.
+
+Known limits:
+- A resource that is named only in prose, or only in a grader's literal
+  assertion, is not caught.
+- A runtime state that a task needs, such as a faulted instance, is not caught.
+- Resources that must *not* exist on the tenant are not caught.
+
 ## Lifecycle E2E tests (uipath-platform pattern)
 
 `tests/tasks/uipath-platform/{orchestrator,resources}/` and
@@ -392,6 +437,11 @@ success_criteria:
   - type: run_command
     command: "python3 $REFERENCE_DIR/check_asset_scoping.py"
 ```
+
+coder-eval 1.x stages only `reference.directory` itself, so a grader that
+imports a sibling (`../_shared`) needs `directory: ..` and
+`$REFERENCE_DIR/<subdir>/check_*.py` commands. When a task changes its
+`reference.directory`, update any grader docstring that states what is staged.
 
 A single helper script (`tests/tasks/uipath-platform/_setup/seed.py`) writes
 `seed.json` with a fresh `uuid8` and — when `E2E_PROCESS_KEY` is set —
@@ -435,6 +485,7 @@ folders) persist on the tenant across runs.
 3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly, not to hand-hold it.
 4. Tag every task using the [Tag Taxonomy](#tag-taxonomy): required `skill` + `tier` + `mode:*`, plus optional `shape`, `node`, `resource`, `connector`, and `feature` where applicable.
 5. Stick to the closed-vocabulary values. Propose new tags in the PR — do not invent them inline.
+6. When a prompt or grader note cites a skill doc (`references/<file>.md`, or `skills/<other-skill>/references/<file>.md`), the file must exist in `skills/` or `preview/skills/` for that skill (the trees an eval catalog loads; a doc only `classic/skills/` has does not count in a task YAML). A grader script or fixture beside the task may also cite a `classic/skills/` doc whose rule it still enforces. A `#section` must match a heading of the cited file. `python3 scripts/check-task-doc-citations.py` checks every `.yaml`, `.py` and `.json` under `tests/tasks/` in CI. When a doc is renamed or retired, point the task at the doc that now states the rule, or name the rule instead of the file.
 
 ### Task ID Convention
 

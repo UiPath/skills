@@ -126,7 +126,7 @@ For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which run
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
 node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
 # edit .flow-sdk/<Name>.flow.ts narrowly; no .layout() for added steps (builder-sdk#1320)
-uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error
+uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error; `unknown option`: brownfield.md
 node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
 ```
 
@@ -182,9 +182,8 @@ The table is the authoritative router; read a node's `Reference` before writing 
 | Form trigger | `core.trigger.form` | `formTrigger(...)` | [form-trigger.md](references/form-trigger.md) | `examples/BakeOffEntryForm.flow.ts` |
 | Conversation trigger | `core.trigger.conversation` | `conversationTrigger(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
 | Voice trigger | `core.trigger.voice` | `voiceTrigger(...)` | [voice.md](references/voice.md) | `examples/HarbourRadioLine.flow.ts` |
-| Standalone HTTP | `core.action.http` | `http({ managed: false, ... })` | [http.md](references/http.md) | `examples/LighthouseSignal.flow.ts` |
-| Managed HTTP | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) | `examples/ObservatorySeeing.flow.ts` |
-| Script | `core.action.script` | `script(fn)`, SDK ≥ 6.57.0; `script({ code })` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
+| HTTP (`managed: false` no longer runs) | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) | `examples/ObservatorySeeing.flow.ts` |
+| Script | `core.action.script` | `script(fn)`, SDK ≥ 6.57.0 (`$metadata` parameter ≥ 6.72.0); `script({ code })` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
 | Transform | `core.action.transform` | `transform(...)` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |

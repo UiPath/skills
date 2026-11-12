@@ -42,7 +42,7 @@ initial_prompt: |
   Migrate the UiPath project in ./MailMigration with the Activity Migrator.
   Use the Integration Service connection 4f1c9a2e-7b3d-4e58-9c61-a0d2f8b6e713
   for Outlook 365 and target Microsoft 365 Activities 3.12.10. Do not run the
-  migrated project.
+  migrated project. Download the Activity Migrator if it is not installed.
 
   The `uip` CLI is available and authenticated in this sandbox.
 

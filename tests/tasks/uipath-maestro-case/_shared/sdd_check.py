@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mechanical check on a case-design ``sdd.md`` (markdown only).
 
-Case design (the uipath-planner Case Design Lane) stops at the approved
+Case design (the uipath-planner case design path) stops at the approved
 ``sdd.md`` — no caseplan exists yet — so these checks parse the markdown
 directly to confirm the SDD is sound enough to *deliver downstream* (the
 build's planning pass trusts it verbatim). Domain sense is graded separately
@@ -45,13 +45,13 @@ TASK_TYPES = {
     "action", "agent", "rpa", "process", "api-workflow", "function",
     "business-rule", "execute-connector-activity", "wait-for-connector",
     "wait-for-timer", "case-management", "http-request", "flow-process",
-    "external-agent", "external-workflow", "document-extraction",
+    "external-agent", "external-workflow", "document-extraction", "script",
 }
 # The CLI declaration's other two lists (`uip maestro case task-types list`):
 # real types an SDD cannot declare, and names from other layers that are no task
 # type at all, each with the plan type meant. test_task_types.py holds both to
 # the snapshot, so a spelling is added upstream, never here first.
-STUDIO_WEB_ONLY = {"script"}
+STUDIO_WEB_ONLY: set[str] = set()  # empty since `script` became authorable
 NOT_TASK_TYPES = {
     "connector-activity": "execute-connector-activity",
     "connector-trigger": "wait-for-connector",
@@ -66,8 +66,8 @@ STAGE_EXIT = {"selected-tasks-completed", "wait-for-connector"}          # Marks
 TASK_ENTRY = {"current-stage-entered", "selected-tasks-completed",
               "wait-for-connector", "adhoc", "runs-sequentially",
               # the `start-task` SLA response; CLI-verified valid on task entry
-              # (uip 1.198.0-preview.102). See skills/uipath-maestro-case/
-              # references/sla-response-shapes.md section 3.
+              # (uip 1.198.0-preview.102). See
+              # classic/skills/uipath-maestro-case/references/sla-response-shapes.md section 3.
               "sla-status-change"}
 CASE_COMPLETION = {"required-stages-completed", "wait-for-connector"}    # Marks: Yes
 CASE_EXIT = {"selected-stage-completed", "selected-stage-exited",
@@ -92,6 +92,7 @@ TASK_DETAIL_MARKERS = {
     "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**", "**Timer:**"),
     "case-management": ("Child Case Task Detail", "**Child Case:**"),
     "http-request": ("HTTP Request Task Detail", "**Method:**", "**URL:**"),
+    "script": ("Script Task Detail", "```js", "```javascript"),
     "document-extraction": ("Document Extraction Task Detail", "**IXP Deployment:**", "**Model Name:**"),
     "process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "agent": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
@@ -112,7 +113,7 @@ def _find_sdd() -> str:
 
 
 def _rule_token(cell: str) -> str | None:
-    """Leading rule keyword from a WHEN cell (``case-entered``, ``adhoc``, …)."""
+    """Leading rule keyword from a WHEN cell (``case-entered``, `adhoc`, …)."""
     m = re.match(r"`?\s*([a-z][a-z]+(?:-[a-z]+)*)", cell.strip())
     return m.group(1) if m else None
 
