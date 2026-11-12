@@ -61,7 +61,7 @@ Start from [schema-resource-template.json](assets/templates/schema-resource-temp
 
 Every change, column, type, value, `where`, and precondition rule: [changes-reference.md](references/changes-reference.md).
 
-Several Schema resources in one solution: give each a `spec.order` (`"order": 10`, `"order": 20`, …) so the resource that creates a table installs before those that change it.
+Several Schema resources in one solution: give each a `spec.order` (`"order": 10`, `"order": 20`, …) so the resource that creates a table installs before those that change it. A hotfix for an older release can take a decimal order between two released ones (`2.1`), the same on every branch.
 
 ### 3. Change an installed schema
 
