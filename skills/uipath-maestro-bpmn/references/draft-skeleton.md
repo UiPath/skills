@@ -61,7 +61,9 @@ A skeleton is not a working process and must never be reported as one.
    The handler's path then becomes an extra input to the join: the activity's own flow never delivers because the handler cancelled it, so the join waits forever.
    `check` and `validate` both pass this shape, so you must write the safe one yourself:
    - When the failure stops the process, end the handler's path in `.endEvent(<id>, { name, terminate: true })`.
-   - When the process carries on, write another statement on the same branch after the activity, such as the next box, so the handler's path rejoins there and the branch reaches the join on one flow. A bare `.exclusiveGateway()` inside a branch does not compile, so merge on a box.
+     A plain `.endEvent()` ends only the handler's path, so the join still waits.
+   - When the process carries on, write another statement on the same branch after the activity, such as the next box, so the handler's path rejoins there and the branch reaches the join on one flow.
+     A bare `.exclusiveGateway()` inside a branch does not compile, so merge on a box.
 
    A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so this rule does not apply to it.
 
@@ -158,7 +160,7 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
 
    `validate` must report `Status: Valid`.
    Before you compile, check every `.fork()` in the `check --graph` output, which neither `check` nor `validate` does for you.
-   Under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` must have an `Incoming` equal to the number of `Outgoing` entries on the `<fork>` node.
+   Under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` must have an `Incoming` no larger than the number of `Outgoing` entries on the `<fork>` node.
    A larger `Incoming` means a handler's path flows into the join, the stall rule 9 describes; the join's extra source is a box inside an `onError` or `onTimer` handler.
    Fix it as rule 9 says before you compile.
    Because the start event kept the id `Event_start`, the `init`-generated `entry-points.json` still matches and the skeleton needs no `refresh`.
