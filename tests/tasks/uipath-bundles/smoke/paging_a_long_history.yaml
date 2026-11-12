@@ -1,4 +1,4 @@
-task_id: skill-kb-paging-a-long-history-smoke
+task_id: skill-bundles-kb-paging-a-long-history-smoke
 description: >
   Smoke: a file's history is longer than one window. `history`, `versions`
   and `change-proposal list` each answer a row window bounded by
@@ -7,7 +7,7 @@ description: >
   answered from a window whose oldest row is not the oldest row there is.
   The agent must read `HasMore` and either fetch the rest or say the answer
   is not in what it has; concluding from the first window is the failure.
-tags: [uipath-knowledge-bundles, smoke, mode:operate]
+tags: [uipath-bundles, smoke, mode:operate]
 
 run_limits:
   expected_turns: 5

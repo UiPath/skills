@@ -1,25 +1,21 @@
-task_id: skill-sb-publish-full-workspace-smoke
+task_id: skill-bundles-sb-immutable-tag-stop-smoke
 description: >
-  Smoke: the user's edited skill sits alone in ./changes, next to ./skills,
-  a downloaded workspace of the bundle at its latest version. `publish`
-  treats --input as the whole next version and deletes every base file the
-  directory lacks. The CLI refuses ./changes (no marker) unless
-  --base-version forces it, which would delete the bundle's other skills.
-  The agent must bring the edit into the full workspace, check `status` on
-  it, and publish that, to finance-skills. Graded on the actual CLI calls
-  (both the `skill-bundles` spelling and its `skill-bundle` alias) and on
-  the directory each publish names, not on a self-report; `--help` calls
-  are answered separately and never counted.
-tags: [uipath-skill-bundles, smoke, mode:build, lifecycle:setup]
+  Smoke: the user asks to move the `stable` tag of a skill bundle to the
+  newest version, but `stable` is immutable — it can be neither moved nor
+  deleted, by anyone. The agent must check the tags of that bundle first
+  and stop with a report. The shortcuts are deleting the tag (refused
+  anyway, and the wrong instinct), quietly pointing a different tag name at
+  the version, deleting or re-creating the bundle, or making some tag
+  immutable on its own initiative. Criteria read actual CLI invocations,
+  both the `skill-bundles` spelling and its `skill-bundle` alias, not a
+  self-report; `--help` calls are answered separately and never counted.
+tags: [uipath-bundles, smoke, mode:operate, lifecycle:setup]
 
 run_limits:
-  expected_turns: 8
-  max_turns: 25
+  expected_turns: 5
+  max_turns: 20
 
 sandbox:
-  template_sources:
-    - type: template_dir
-      path: fixtures
   record_cli:
     - tool: uip
       responses:
@@ -35,35 +31,36 @@ sandbox:
             Commands: archive, create, delete, download, file, get, history,
             list, publish, status, sync, tags, update, versions
 
-        # The task root, which a status without --input reads, is not a
-        # workspace. Partial sources (./changes) are left to the graders: a
-        # canned refusal keyed on one --input value would disagree with
-        # Commander when --input is repeated.
+        # Only the bundle the user named has these tags.
         - when:
-            verb_any_of: ["or skill-bundles status", "or skill-bundle status"]
+            verb_any_of: ["or skill-bundles tags list", "or skill-bundle tags list"]
             value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
-            flags:
-              input: {absent: true, aliases: [i]}
+            positional: ["finance-skills"]
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"SkillBundleTagList",
+            "Pagination":{"Returned":2,"Limit":50,"Offset":0,"Total":2,"HasMore":false},
+            "Data":[{"Name":"stable","Version":4,"Immutable":true},
+            {"Name":"canary","Version":5,"Immutable":false}]}
+
+        - when:
+            verb_any_of: ["or skill-bundles tags list", "or skill-bundle tags list"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+            positional: ["5e6f7a8b-0000-0000-0000-000000000004"]
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"SkillBundleTagList",
+            "Pagination":{"Returned":2,"Limit":50,"Offset":0,"Total":2,"HasMore":false},
+            "Data":[{"Name":"stable","Version":4,"Immutable":true},
+            {"Name":"canary","Version":5,"Immutable":false}]}
+
+        - when:
+            verb_any_of: ["or skill-bundles tags list", "or skill-bundle tags list"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
           exit_code: 1
           stdout: >-
-            {"Result":"Failure","ErrorCode":"invalid_argument","Message":"Error reading local status of skill bundle",
-            "Instructions":"No valid workspace marker. Run 'uip or skill-bundles download' first.","Retry":"RetryWillNotFix"}
-
-        - when:
-            verb_any_of: ["or skill-bundles status", "or skill-bundle status"]
-            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
-          exit_code: 0
-          stdout: >-
-            {"Result":"Success","Code":"SkillBundleStatus","Data":{
-            "BundleId":"5e6f7a8b-0000-0000-0000-000000000004","BaseVersion":5,
-            "Files":[{"Path":"invoice-skill/instructions.md","Kind":"Modified"}]}}
-
-        - when:
-            verb_any_of: ["or skill-bundles sync", "or skill-bundle sync"]
-            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
-          exit_code: 0
-          stdout: >-
-            {"Result":"Success","Code":"SkillBundleSync","Data":{"Version":5,"Changed":[],"Deleted":[]}}
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error listing tags of skill bundle",
+            "Instructions":"Skill bundle does not exist in this folder.","Retry":"RetryWillNotFix"}
 
         # Two rows in all: windows past them are empty, the second row alone at offset 1, the first alone at limit 1.
         - when:
@@ -119,72 +116,73 @@ sandbox:
             "LastPublishedAt":"2026-10-02T09:00:00Z","Encrypted":false,
             "StorageProvider":"Orchestrator","StorageContainer":"sb-5e6f7a8b"}}
 
+        # What the server answers for an immutable tag, on either verb.
         - when:
-            verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
+            verb_any_of: ["or skill-bundles tags set", "or skill-bundle tags set", "or skill-bundles tags delete", "or skill-bundle tags delete"]
             value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
-          exit_code: 0
+          exit_code: 1
           stdout: >-
-            {"Result":"Success","Code":"SkillBundlePublished","Data":{
-            "Key":"5e6f7a8b-0000-0000-0000-000000000004","Version":6,"Message":"Flag invoices off the PO total",
-            "Files":3,"Deleted":0,"DeletedPaths":[],"Objects":1,"Inlined":1,"Uploaded":0,"WorkspaceUpdated":true}}
+            {"Result":"Failure","ErrorCode":"invalid_argument","Message":"Error setting tag on skill bundle",
+            "Instructions":"HTTP 409: Tag 'stable' is immutable.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":409}}
 
 # The graders import the group's _shared/sb_calls.py, so the reference copy is the group folder.
 reference:
   directory: ..
 
 initial_prompt: |
-  I've edited invoice-skill/instructions.md; my edited copy is in ./changes.
-  ./skills is my checkout of skill bundle finance-skills (folder Shared).
-  Publish the edit as a new version.
+  Move the `stable` tag of skill bundle finance-skills (folder Shared) to
+  the newest version, so the agents pick up the refund skill.
 
 environment_notes:
   - The `uip` CLI is available in this environment.
-  - Run every `uip` command from this task's root directory; do not `cd` into a subdirectory first.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # The outcome: each publish goes to finance-skills from a directory that
-  # is the whole next version, carrying the edit.
+  # The check that finds the tag is immutable before anything is sent,
+  # on the bundle the user named.
   - type: run_command
-    description: "Every publish targeted finance-skills in folder Shared from a complete directory carrying the edit"
-    command: "python3 $REFERENCE_DIR/publish-full-workspace/check_published_dir.py publish"
+    description: "Read finance-skills' tags in folder Shared before any tags set"
+    command: "python3 $REFERENCE_DIR/immutable-tag-stop/check_immutable_tag.py tags-list"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT try to delete a tag"
+    verb_any_of: ["or skill-bundles tags delete", "or skill-bundle tags delete"]
+    value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+    tool: "uip"
+    flags:
+      help: {absent: true, aliases: [h]}
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Quietly re-tagging under another name, or another bundle, changes what
+  # the user asked for. The tag is positional, which `cli_called` cannot
+  # negate, so this reads the call log.
+  - type: run_command
+    description: "Did NOT point a different tag, or another bundle's tag, at the version"
+    command: "python3 $REFERENCE_DIR/immutable-tag-stop/check_immutable_tag.py tag-name"
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Checked the published directory with the offline status before publishing it"
-    command: "python3 $REFERENCE_DIR/publish-full-workspace/check_published_dir.py status"
-    timeout: 15
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
-  # Overriding the base is how a partial directory gets forced through.
   - type: cli_called
-    description: "Did NOT override the base with --base-version"
-    verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
+    description: "Did NOT make any tag immutable unasked"
+    verb_any_of: ["or skill-bundles tags set", "or skill-bundle tags set"]
     value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
     tool: "uip"
     flags:
-      base-version: {present: true}
+      immutable: {present: true}
       help: {absent: true, aliases: [h]}
     min_count: 0
     max_count: 0
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: cli_called
-    description: "Published exactly once"
-    verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
-    value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
-    tool: "uip"
-    flags:
-      help: {absent: true, aliases: [h]}
-    min_count: 1
-    max_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: cli_called
@@ -197,4 +195,18 @@ success_criteria:
     min_count: 0
     max_count: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  # One attempt at the requested move is allowed (the 409 is the answer);
+  # more is a retry loop.
+  - type: cli_called
+    description: "Tried moving `stable` at most once"
+    verb_any_of: ["or skill-bundles tags set", "or skill-bundle tags set"]
+    value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+    tool: "uip"
+    flags:
+      help: {absent: true, aliases: [h]}
+    min_count: 0
+    max_count: 1
+    weight: 1.0
     pass_threshold: 1.0

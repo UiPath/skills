@@ -65,6 +65,14 @@
       },
       "last_synced": null
     },
+    "uipath-bundles": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-coded-apps": {
       "status": "stable",
       "confluence": {
@@ -131,14 +139,6 @@
     },
     "uipath-ixp": {
       "status": "stable",
-      "confluence": {
-        "page_id": null,
-        "url": null
-      },
-      "last_synced": null
-    },
-    "uipath-knowledge-bundles": {
-      "status": "preview",
       "confluence": {
         "page_id": null,
         "url": null
@@ -219,14 +219,6 @@
     },
     "uipath-rules": {
       "status": "in-development",
-      "confluence": {
-        "page_id": null,
-        "url": null
-      },
-      "last_synced": null
-    },
-    "uipath-skill-bundles": {
-      "status": "preview",
       "confluence": {
         "page_id": null,
         "url": null

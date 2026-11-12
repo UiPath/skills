@@ -1,4 +1,4 @@
-task_id: skill-kb-status-before-proposing-smoke
+task_id: skill-bundles-kb-status-before-proposing-smoke
 description: >
   Smoke: the workspace holds the intended edit and a file that drifted into
   it — a zip an earlier command wrote there. A change proposal carries the
@@ -7,7 +7,7 @@ description: >
   see the change set without sending it, and it reports the stray as
   `Added`. The agent must read the state before proposing and must not
   propose the zip into the bundle.
-tags: [uipath-knowledge-bundles, smoke, mode:operate]
+tags: [uipath-bundles, smoke, mode:operate]
 
 run_limits:
   expected_turns: 6

@@ -4,7 +4,7 @@
 # skip:false once the eval tenant has the feature on and the eval image's
 # `uip` includes cli#6015. Even unskipped, the pre_run preflight fails the run
 # as ERROR on a tenant without the feature — it can never score by default.
-task_id: skill-sb-e2e-publish-tag-read
+task_id: skill-bundles-sb-e2e-publish-tag-read
 description: >
   E2E: the full direct-publish lifecycle on a live tenant. Create a uniquely
   named scratch skill bundle in folder Shared and publish ./seed as version
@@ -14,7 +14,7 @@ description: >
   naming the newest, the rule present at `stable` and absent from v1, and
   the untouched files still in the newest version. post_run deletes the
   scratch bundle, best effort.
-tags: [uipath-skill-bundles, e2e, mode:build, lifecycle:setup]
+tags: [uipath-bundles, e2e, mode:build, lifecycle:setup]
 skip: true
 
 run_limits:

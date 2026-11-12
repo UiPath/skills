@@ -1,4 +1,4 @@
-task_id: skill-kb-content-404-is-a-permission-stop-smoke
+task_id: skill-bundles-kb-content-404-is-a-permission-stop-smoke
 description: >
   Smoke: content commands run on Orchestrator's generic /api/bundles routes,
   which hide a bundle kind the caller cannot access. A caller who holds the
@@ -9,7 +9,7 @@ description: >
   the bundle, logging in again, or re-running the download are the
   failures. Criteria read actual CLI invocations, not a self-report; `--help`
   calls are answered separately and never counted.
-tags: [uipath-knowledge-bundles, smoke, mode:diagnose, lifecycle:discover]
+tags: [uipath-bundles, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
   expected_turns: 5

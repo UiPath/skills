@@ -306,18 +306,18 @@
       "login tenant set": 2
     }
   },
-  "uipath-knowledge-bundles": {
+  "uipath-bundles": {
     "allow": [],
     "ceiling": {
       "login": 2,
-      "or kb": 4,
+      "or": 26,
+      "or kb": 6,
       "or kb archive": 1,
       "or kb build": 1,
-      "or kb change-proposal": 2,
       "or kb change-proposal add-comment": 1,
       "or kb change-proposal close": 1,
-      "or kb change-proposal create": 2,
-      "or kb change-proposal diff": 1,
+      "or kb change-proposal create": 1,
+      "or kb change-proposal diff": 2,
       "or kb change-proposal get": 1,
       "or kb change-proposal list": 1,
       "or kb change-proposal list-comments": 1,
@@ -326,25 +326,17 @@
       "or kb change-proposal update": 1,
       "or kb create": 2,
       "or kb delete": 1,
-      "or kb download": 4,
+      "or kb download": 2,
       "or kb file": 1,
       "or kb get": 1,
-      "or kb history": 2,
+      "or kb history": 1,
       "or kb list": 1,
       "or kb publish": 1,
       "or kb share": 1,
       "or kb status": 2,
       "or kb sync": 2,
       "or kb update": 1,
-      "or kb versions": 2
-    }
-  },
-  "uipath-skill-bundles": {
-    "allow": [],
-    "ceiling": {
-      "login": 1,
-      "or": 28,
-      "or kb": 4
+      "or kb versions": 1
     }
   },
   "uipath-maestro-bpmn": {

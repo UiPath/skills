@@ -64,7 +64,7 @@ export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / De
   "uipath-platform", "uipath-tasks", "uipath-test", "uipath-admin", "uipath-insights",
   "uipath-troubleshoot", "uipath-governance", "uipath-review", "uipath-planner", "uipath-aops",
   "uipath-automationhub", "uipath-feedback",
-  "uipath-activity-migrator", "uipath-knowledge-bundles", "uipath-skill-bundles", "uipath-vertical-solutions",
+  "uipath-activity-migrator", "uipath-bundles", "uipath-vertical-solutions",
 ]);
 const RETIRED_SKILLS = ["uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"];
 // the skill a genome's preamble routes its build to
