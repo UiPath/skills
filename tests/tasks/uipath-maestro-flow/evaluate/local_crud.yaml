@@ -80,6 +80,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "The project holds one .flow, with the flow built in it"
+    command: "python3 $REFERENCE_DIR/_shared/check_single_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Exact-match evaluator artifact exists"
     command: "python3 $REFERENCE_DIR/evaluate/check_local_crud.py --check evaluator"
     timeout: 10
