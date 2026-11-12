@@ -10,7 +10,7 @@ Per-deployment configuration for a coded app: values such as a region, a brand c
 
 | Need | Use | Why |
 |------|-----|-----|
-| A value that differs per deployment and is fine for anyone to see (region, brand colour, API base URL, a customer's feature toggle) | **Environment variable** (`UIPATH_CLIENT_*`) | Set at deploy, changed without a redeploy, readable before sign-in |
+| A value that differs per deployment and is fine for anyone to see (region, brand colour, API base URL, a customer's feature toggle) | **Environment variable** (`UIPATH_APPS_*`) | Set at deploy, changed without a redeploy, readable before sign-in |
 | A value that is the same everywhere | A constant in the code | No configuration needed |
 | A value a signed-in user may see, but not the public | **Text asset** read with `Assets.getByName` | Needs an authenticated call, so it is not public |
 | A value the browser must never hold (API key, password, token) | **Secret asset** read inside a coded function (`uip function`, `Functions.invoke()` from the app) | The function runs server-side and returns only the result |
@@ -21,9 +21,9 @@ Never put a secret in an environment variable. The value is served in a public f
 
 The text is dotenv syntax, one `NAME=value` per line, and the platform validates it on deploy, on edit and in the solution deploy wizard:
 
-- Every name starts with `UIPATH_CLIENT_` and appears once. Other names are refused on deploy; the CLI and the dev plugin skip them silently when they read a `.env` file, so the developer's private names never reach the app. `UIPATH_CLIENT_ID` and `UIPATH_CLIENT_SECRET` are the platform's OAuth credential names and are refused everywhere, even though they carry the prefix.
-- Blank lines and `#` comments are allowed. **A blank value (`UIPATH_CLIENT_REGION=`) leaves the variable unset**, so `env.UIPATH_CLIENT_REGION ?? 'EU'` falls back; it does not read as an empty string.
-- A value fits on one line. Quote a value that contains `#` (`UIPATH_CLIENT_ACCENT='#0f2f27'`): unquoted, dotenv reads `#` as a comment and the value is refused rather than published cut.
+- Every name starts with `UIPATH_APPS_` and appears once. Other names are refused on deploy; the CLI and the dev plugin skip them silently when they read a `.env` file, so the developer's private names never reach the app.
+- Blank lines and `#` comments are allowed. **A blank value (`UIPATH_APPS_REGION=`) leaves the variable unset**, so `env.UIPATH_APPS_REGION ?? 'EU'` falls back; it does not read as an empty string.
+- A value fits on one line. Quote a value that contains `#` (`UIPATH_APPS_ACCENT='#0f2f27'`): unquoted, dotenv reads `#` as a comment and the value is refused rather than published cut.
 - No `%ASSETS/...%` references: for an agent that syntax resolves a secret server-side; in a public file it would expose it, so it is refused.
 - The whole text is at most 4000 characters.
 
@@ -32,8 +32,8 @@ The text is dotenv syntax, one `NAME=value` per line, and the platform validates
 ```typescript
 import { env } from '@uipath/uipath-typescript';
 
-const region = env.UIPATH_CLIENT_REGION ?? 'EU';            // property access
-const accent = env.get('UIPATH_CLIENT_ACCENT') ?? '#0f2f27'; // same read as a method
+const region = env.UIPATH_APPS_REGION ?? 'EU';            // property access
+const accent = env.get('UIPATH_APPS_ACCENT') ?? '#0f2f27'; // same read as a method
 ```
 
 `env` is synchronous and needs no `UiPath` instance, so it works before sign-in, in a router basename, in the first render. A name the deployment did not set reads as `undefined`; always give a fallback. To type the names the app uses, augment `UiPathEnvironment`:
@@ -41,8 +41,8 @@ const accent = env.get('UIPATH_CLIENT_ACCENT') ?? '#0f2f27'; // same read as a m
 ```typescript
 declare module '@uipath/uipath-typescript' {
   interface UiPathEnvironment {
-    UIPATH_CLIENT_REGION?: string;
-    UIPATH_CLIENT_ACCENT?: string;
+    UIPATH_APPS_REGION?: string;
+    UIPATH_APPS_ACCENT?: string;
   }
 }
 ```
@@ -51,19 +51,19 @@ The `env` export exists from `@uipath/uipath-typescript` 1.8.2. Read `node_modul
 
 ## Local development
 
-`@uipath/coded-apps-dev` injects the `UIPATH_CLIENT_*` values from `.env.local`, `.env.development` and `.env.development.local` (later files win, as in Vite) into the dev server's page, so `env` reads the same way locally and deployed. Plain `.env` is not read for app variables; it holds `UIPATH_PROJECT_ID` and other CLI settings. `create-vite`'s `.gitignore` already ignores `*.local`, so `.env.local` stays on the machine.
+`@uipath/coded-apps-dev` injects the `UIPATH_APPS_*` values from `.env.local`, `.env.development` and `.env.development.local` (later files win, as in Vite) into the dev server's page, so `env` reads the same way locally and deployed. Plain `.env` is not read for app variables; it holds `UIPATH_PROJECT_ID` and other CLI settings. `create-vite`'s `.gitignore` already ignores `*.local`, so `.env.local` stays on the machine.
 
-> The plugin reads these files from the release after `@uipath/coded-apps-dev` 1.0.0-beta.1. On an older plugin `env` is empty locally and every read falls back; check `grep -l UIPATH_CLIENT_ node_modules/@uipath/coded-apps-dev/dist/*.js` and update the plugin if it prints nothing.
+> The plugin reads these files from the release after `@uipath/coded-apps-dev` 1.0.0-beta.1. On an older plugin `env` is empty locally and every read falls back; check `grep -l UIPATH_APPS_ node_modules/@uipath/coded-apps-dev/dist/*.js` and update the plugin if it prints nothing.
 
 ## `.env.example`: list the names once
 
-Commit a `.env.example` that lists every `UIPATH_CLIENT_*` variable the app reads, with a comment and the default a deployment should start from (or blank for "the deployer fills this in"):
+Commit a `.env.example` that lists every `UIPATH_APPS_*` variable the app reads, with a comment and the default a deployment should start from (or blank for "the deployer fills this in"):
 
 ```bash
 # Region the app serves: EU or US
-UIPATH_CLIENT_REGION=EU
+UIPATH_APPS_REGION=EU
 # Shown in the footer; set per customer
-UIPATH_CLIENT_SUPPORT_EMAIL=
+UIPATH_APPS_SUPPORT_EMAIL=
 ```
 
 `uip codedapp init` scaffolds a commented starter. Values in this file are the defaults every deployment starts from, so keep real defaults there, never placeholders or secrets. For an in-solution app, `uip codedapp push` reads the file (or `.env.template`) and adds its names and values to the app resource's environment variables in the solution, so the deploy wizard shows what can be configured instead of an empty field. Push only adds names the solution does not list yet: a value edited in Studio Web is never changed, and a name removed from the file stays until someone removes it there.
@@ -73,11 +73,11 @@ UIPATH_CLIENT_SUPPORT_EMAIL=
 The **Deploy app** form in Orchestrator has an Environment variables field; **Edit app details** shows the current text and saves changes to the running version. From the CLI:
 
 ```bash
-# Publish the UIPATH_CLIENT_* variables in a .env file; other names in it are skipped
+# Publish the UIPATH_APPS_* variables in a .env file; other names in it are skipped
 uip codedapp deploy -n <APP_NAME> --folder-key <FOLDER_KEY> --env-vars-file .env.production
 
 # Add or override single values on top of the file; repeatable
-uip codedapp deploy -n <APP_NAME> --folder-key <FOLDER_KEY> --env UIPATH_CLIENT_REGION=EU --env UIPATH_CLIENT_SUPPORT_EMAIL=<SUPPORT_EMAIL>
+uip codedapp deploy -n <APP_NAME> --folder-key <FOLDER_KEY> --env UIPATH_APPS_REGION=EU --env UIPATH_APPS_SUPPORT_EMAIL=<SUPPORT_EMAIL>
 ```
 
 - Omit both flags to keep the deployed values. An empty file clears them on purpose; a file whose names are all private is refused, so a typo cannot wipe the values.
@@ -90,7 +90,7 @@ The app resource carries the defaults (the Environment variables field on the ap
 
 ```bash
 uip solution deploy config get "<PACKAGE_NAME>" -d config.json --output json
-uip solution deploy config set config.json <APP_RESOURCE_NAME> environmentVariables "UIPATH_CLIENT_REGION=US"
+uip solution deploy config set config.json <APP_RESOURCE_NAME> environmentVariables "UIPATH_APPS_REGION=US"
 uip solution deploy run -n "<DEPLOYMENT_NAME>" \
   --package-name "<PACKAGE_NAME>" --package-version "<VERSION>" \
   --folder-name "<FOLDER_NAME>" --config-file config.json --output json
@@ -107,9 +107,9 @@ Do not set a solution-installed app's variables through the standalone **Edit ap
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `env.UIPATH_CLIENT_X` is `undefined` after a deploy | Name lacks the prefix, is misspelled, or was left blank | Check the deployed text; a blank value is unset by design |
-| Value is cut, or a colour is empty | Unquoted `#` in the value | Quote it: `UIPATH_CLIENT_ACCENT='#0f2f27'` |
+| `env.UIPATH_APPS_X` is `undefined` after a deploy | Name lacks the prefix, is misspelled, or was left blank | Check the deployed text; a blank value is unset by design |
+| Value is cut, or a colour is empty | Unquoted `#` in the value | Quote it: `UIPATH_APPS_ACCENT='#0f2f27'` |
 | New values do not show after an edit | Edge cache, up to about 60 seconds | Reload after a minute; `env.js` is served with `no-cache`, so the browser itself does not keep it |
 | Edit saved but the app never loads the values | Version deployed before it had variables, so `index.html` does not link `env.js` | Deploy a new version |
 | Deploy refused: `not enabled for this tenant` | Feature is off for the tenant | Remove the variables; use a constant or an asset until the tenant has the feature |
-| Deploy refused: `must start with UIPATH_CLIENT_` | A private name in `--env`, or in the solution's text | Rename it, or move it to `.env.local` if it is only for local dev |
+| Deploy refused: `must start with UIPATH_APPS_` | A private name in `--env`, or in the solution's text | Rename it, or move it to `.env.local` if it is only for local dev |
