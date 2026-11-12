@@ -28,7 +28,24 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 ## Workflow
 
 <!--skill-flavor:workflow-scaffold:start-->
-1. Scaffold the project first with `uip maestro bpmn init <Name> --output json`, and take the project directory from `Data.Path`.
+1. **Before the first `init`, ask which solution to use when one already exists.**
+   Look for a `.uipx` up to two levels below the working directory and in every directory above it:
+
+   ```bash
+   find . -maxdepth 2 -type f -name '*.uipx' -print
+   d="$PWD"; while [ "$d" != / ]; do d=$(dirname "$d"); ls "$d"/*.uipx 2>/dev/null; done
+   ```
+
+   When the scan finds one, stop and ask the user which to use, as a pick list if the host has one: one option per solution found, named by its folder, plus "Create a new solution".
+   Do not run `init` until the user answers, and never silently adopt an existing solution: `init` registers the project in a solution above it without asking.
+   Say in the question that adopting a solution means a later upload overwrites its cloud copy, because this is the only point where that is still the user's choice.
+   Ask this for a draft and for a plain build alike; an edit of an existing `.bpmn` runs no `init` and skips the scan.
+   When the scan finds nothing, run `init` without asking.
+   On the answer, for an existing solution, run `init` from that solution's directory, so the project lands in it as `<SolutionDir>/<Name>/`.
+   For a new solution, run `init` from the working directory when nothing above it holds a `.uipx`, so it scaffolds `<Name>Solution/`; otherwise pass `--skip-solution-registration` and create the solution as [Operate](references/operate.md#studio-web-upload) says.
+   Upload without confirming only to a solution this run's `init` scaffolded; adopting an existing one keeps the confirmation [Operate](references/operate.md#studio-web-upload) requires.
+
+   Then scaffold the project with `uip maestro bpmn init <Name> --output json`, and take the project directory from `Data.Path`.
    Below, `<Project>` means that directory.
    It holds `<Name>.bpmn` plus `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, and `package-descriptor.json` — the layout `bpmn pack` and product tooling require.
    Without `--path`, `init` writes under the current directory:
