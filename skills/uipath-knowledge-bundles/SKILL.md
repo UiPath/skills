@@ -34,10 +34,10 @@ uip or kb --help
 - **`unknown command`** → the installed `uip` is a stable build. These commands register only on a prerelease build (`preview` / `dev` channel). Tell the user that plainly and stop — do not substitute bucket, asset or context-grounding commands, and do not guess an older command name.
 - **A command runs but the platform refuses it** → the tenant does not have the knowledge-bundles feature enabled. Say so and stop; only an administrator can change it. A `403`/feature failure is not a login problem — never "fix" it by re-running `uip login`.
 - **A content command answers 404 `BundleDto does not exist.`** (`versions`, `download`, `archive`, `file`, `build`, `history`, `sync`, `publish`, `create --input`, or the upload step of `change-proposal create`/`update`) → that alone cannot tell a bundle hidden from you from a missing one. Run `get` once, on the same key in the same folder, and branch on its envelope:
-- **`This key is not a knowledge bundle.`** (`invalid_argument`, before any content is read) → the key names a skill bundle, which `uipath-skill-bundles` handles. Do not retry with this command group.
   - **Success** → you hold the bundle record but not knowledge-bundle content permission. Stop and report that; never re-create the bundle or retry.
   - **`ErrorCode: not_found`** → the key or the folder may be wrong. Ask the user which folder holds the bundle before listing any other folder; never re-create it.
   - **Any other failure** (`permission_denied`, a feature refusal, `server_error`, a network error) → stop and report it as it came. It does not show the bundle is missing.
+- **`This key is not a knowledge bundle.`** (`invalid_argument`, before any content is read) → the key names a skill bundle, which `uipath-skill-bundles` handles. Do not retry with this command group.
 
 ## Every command is folder-scoped
 
