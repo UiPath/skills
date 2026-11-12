@@ -28,6 +28,34 @@ TYPED_ACTIVITIES = ("serviceTask", "sendTask", "receiveTask", "scriptTask", "use
                     "businessRuleTask", "manualTask", "callActivity")
 
 
+def _payloads(root):
+    """Yield (parent, uipath:activity) for every payload in the document."""
+    for parent in root.iter():
+        ext = parent.find("bpmn:extensionElements", NS)
+        if ext is None:
+            continue
+        for act in ext.findall("uipath:activity", NS):
+            yield parent, act
+
+
+def _is_error_capture(pair) -> bool:
+    """An error boundary's capture of the caught error is not wiring.
+
+    A decision that routes on the error code reads it from a variable, and the
+    builder SDK's onError({ errorVar }) writes that capture as a bare
+    uipath:Activity payload holding one Error output row.
+    """
+    parent, act = pair
+    if parent.tag != f"{{{NS['bpmn']}}}boundaryEvent" or parent.find("bpmn:errorEventDefinition", NS) is None:
+        return False
+    kids = list(act)
+    types = [k for k in kids if k.tag == f"{{{NS['uipath']}}}type"]
+    outputs = [k for k in kids if k.tag == f"{{{NS['uipath']}}}output"]
+    return (len(types) == 1 and attr(types[0], "value") == "uipath:Activity"
+            and len(outputs) == 1 and attr(outputs[0], "name") == "Error"
+            and len(kids) == 2)
+
+
 def require_multi_instance(root) -> None:
     """One sequential multi-instance box that stops early, one parallel one.
 
@@ -159,7 +187,7 @@ def main() -> None:
     for tag in TYPED_ACTIVITIES:
         if root.findall(f".//bpmn:{tag}", NS):
             fail(f"skeleton contains a typed bpmn:{tag}; draft mode must stop before wiring")
-    if root.findall(".//uipath:activity", NS):
+    if any(not _is_error_capture(a) for a in _payloads(root)):
         fail("skeleton contains a uipath:activity payload; draft mode must stop before wiring")
 
     flows = one_or_more(root, "sequenceFlow")
