@@ -1,6 +1,6 @@
 # SDD / ASDD (Client Deliverable) Generation
 
-The markdown SDD this skill writes is the **agent-first** artifact: implementation-oriented, the input to task derivation. The official Word **SDD / ASDD** is the **client-facing** deliverable, in the customer's own section structure. Generate the client document only when the user asks for it (client doc, "official template", `.docx`). The markdown SDD already exists and stays as-is — do not restructure it.
+The markdown SDD this skill writes is the **agent-first** artifact: implementation-oriented, the input to the genome. The official Word **SDD / ASDD** is the **client-facing** deliverable, in the customer's own section structure. Generate the client document only when the user asks for it (client doc, "official template", `.docx`). The markdown SDD already exists and stays as-is — do not restructure it.
 
 ## Procedure
 

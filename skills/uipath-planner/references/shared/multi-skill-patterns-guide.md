@@ -1,6 +1,28 @@
 # Multi-skill Patterns Guide
 
-Common request shapes that span more than one specialist skill. Use this guide when deciding whether a request is single-skill (load one specialist directly) or multi-skill (emit a plan).
+Which specialist owns what, and the common request shapes that span more than one of them. Use this guide when assigning tasks to specialists and when deciding whether a request is single-skill (load one specialist directly) or multi-skill (emit a plan).
+
+## Skill capability map — which specialist owns what
+
+What each specialist owns, for the plans `decompose` writes; genomes take their Build With names from [skill-mapping-guide.md](skill-mapping-guide.md). **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
+
+| Skill | What it owns | Handles auth? | Handles deploy? |
+|---|---|---|---|
+| `uipath-rpa` | RPA workflows (XAML and C# coded): create, edit, build, run, debug. Owns **all** UI automation authoring end-to-end, including live-app exploration and probing. | No (relies on Studio) | **No** — defer to `uipath-solution` for `.uipx` multi-project, `uipath-platform` for single non-solution packages |
+| `uipath-agents` | AI agents — code-based (LangGraph / LlamaIndex / OpenAI Agents) and low-code (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
+| `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
+| `uipath-functions` | Coded Functions — Python (`uip function new -l py`; Pydantic typed I/O) or TypeScript/JavaScript (`-l ts / js`, TypeScript default; `defineFunction` + schema-first typed I/O) — atomic deterministic logic: transforms, custom-auth API calls, ERP/IS-connection queries. Runs serverless or on an RPA robot; a JS/TS function is delivered as a run-as-job function or an HTTP endpoint (Coded App backends) — one calling mode per function. Invoked from Maestro (Flow/BPMN), agents-as-tools, Orchestrator API, or its HTTP trigger. No LLM/agent loop (that → `uipath-agents`) | Yes (`uip login`) | **Yes** — `uip function pack/publish` |
+| `uipath-rules` | Business Rules projects — one `.dmn` decision table (DMN 1.5) per project: `uip rules init`, `refresh`, `validate`, `debug`. Called by BPMN business rule tasks, Case `business-rule` tasks, and RPA | Yes (`uip login` for `debug`) | **No** — `uip solution pack/publish/deploy` via `uipath-solution` |
+| `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — Orchestrator deploy of `.uipx`-wrapped solutions → `uipath-solution`; non-solution single package → `uipath-platform` |
+| `uipath-maestro-bpmn` | `.bpmn` files — standards-based BPMN 2.0 process orchestration (gateways, events, boundary timeouts, subprocesses, multi-instance) over RPA, agents, APIs, HITL. Authors its own inline userTask/HITL nodes. | Yes (`uip login`) | **Yes** — packages, uploads, publishes/deploys, and runs via `uip maestro bpmn`; Orchestrator deploy of `.uipx`-wrapped solutions → `uipath-solution` |
+| `uipath-maestro-case` | Case Management authoring — `caseplan.case` from an SDD (`case pack` compiles it to `caseplan.case.bpmn`; authoring `.bpmn` directly is `uipath-maestro-bpmn`) | Yes (`uip login`) | **Partial** — publishes to Studio Web and Orchestrator itself; `.uipx` solution deploy → `uipath-solution` |
+| `uipath-api-workflow` | API Workflows (JSON `document.dsl`): author, run locally (`uip api-workflow run`), connector activities | Yes (`uip login`) | **No** — `uip solution pack/publish` via `uipath-solution` |
+| `uipath-human-in-the-loop` | HITL node authoring — approval gates, escalations, write-back validation inside **Flow** projects. Coded-agent HITL → `uipath-agents`; BPMN / Case / RPA own theirs inline (userTask / task type / Action Center) | No (authoring only) | **No** — ships inside the host project |
+| `uipath-platform` | Auth (`uip login`), Orchestrator (folders, processes, jobs, machines, users, roles), resources (assets, queues, storage buckets + bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), Data Fabric entities/records/files/choice-sets (`uip df`), traces, licensing | Yes (auth hub) | **Yes** — for every project outside a solution (`Packaging: standalone`) and Orchestrator-side post-deploy ops |
+| `uipath-ixp` | Document Understanding / IXP — extraction from semi-structured documents (invoices, forms): taxonomy, model, classify / extract / validate. Standalone project, or the extraction step a primary consumes | Yes (`uip login`) | **Partial** — model publish/tag via `uip ixp`; consumed by the host project |
+| `uipath-connector-builder` | Integration Service **custom connector** authoring (REST+JSON) on disk via `uip is connectors builder` — build a connector when the catalog has none for a required integration, for any project type, RPA included. See [Integration mechanism](component-placement-guide.md#integration-mechanism--connection-before-raw-api-call) | Yes (`uip login`) | **Yes** — import/publish is deployment (`uip is connectors`) |
+| `uipath-mcp-servers` | UiPath AgentHub MCP server registration (6 types: `uipath`, `coded`, `command`, `remote`, `swagger`, `platform`) and resource-tool authoring on `uipath`-type servers (`automation`, `agent`, `agentic-process`, `api-workflow`). Wraps Orchestrator resources, external HTTP MCP endpoints, OpenAPI specs, published coded agents, local subprocess commands, or first-party UiPath services as MCP tools. NOT for FastMCP / Python `mcp` SDK work. | Yes (`uip login`) | **Yes** — registration is deployment (posts directly to AgentHub) |
+| `uipath-solution` | `uip solution` lifecycle (init, pack, publish, deploy, activate) for `.uipx` solutions. | Yes (`uip login`) | **Yes** — for every project inside a solution (`Packaging: solution`) |
 
 ## When to emit a multi-skill plan
 
@@ -29,12 +51,13 @@ A request is **single-skill** when:
 ```
 1. uipath-rpa      → create / edit, validate, build the workflow
 2. uipath-rpa      → testing (mandatory)
-3. uipath-solution → pack, publish, deploy to Orchestrator (`uip solution` lifecycle)
+3. uipath-platform → publish the package and create the process   (project outside a solution — Packaging: standalone)
+   uipath-solution → pack, publish, deploy the `.uipx`             (project inside a solution — Packaging: solution)
 ```
 
-`uipath-rpa` does not deploy. Deploy to Orchestrator for solution-bundled RPA goes through `uipath-solution` (`uip solution pack/publish/deploy`). For raw single-package Orchestrator ops not wrapped in a `.uipx`, defer to `uipath-platform`.
+`uipath-rpa` does not deploy. The deploy skill follows the project, never a default: outside a solution → `uipath-platform`; inside a solution → `uipath-solution`.
 
-> **Attended re-auth handoff is inside the RPA build step, not a separate skill.** When the SDD carries a §9 *Interactive Authentication / Re-auth Handoff* subsection (human-only login — hardware token, smart card, biometric), the `uipath-rpa` build task implements the pause/handoff/state-verified-resume per [attended-reauth-pattern-guide.md](attended-reauth-pattern-guide.md). Pass the handoff contract as business intent; do not split it into its own task or describe the activities.
+> **Attended re-auth handoff is inside the RPA build step, not a separate skill.** When the request needs an attended re-auth handoff (human-only login — hardware token, smart card, biometric), the `uipath-rpa` build task implements the pause/handoff/state-verified-resume per [attended-reauth-pattern-guide.md](../design/attended-reauth-pattern-guide.md). Pass the handoff contract as business intent; do not split it into its own task or describe the activities.
 
 ## Pattern 2 — Flow with local resources
 
@@ -110,31 +133,9 @@ Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution
 2. uipath-mcp-servers → register the server with asset-substituted headers
 ```
 
-## Pattern routing for PDD-driven lane
-
-When deriving tasks from an SDD, the planner picks a pattern based on the SDD's project list:
-
-| SDD shape | Pattern(s) used |
-|---|---|
-| Single RPA project, no deploy mention | Pattern: simple `uipath-rpa` build + testing |
-| Single RPA project, deploy to Orchestrator | Pattern 1 |
-| Single-host SDD with absorbed components (e.g., RPA-primary consuming an IXP model, custom connector, or API Workflow in-process) | Leaf-first: build each consumed component via its skill (`uipath-ixp` / `uipath-connector-builder` / `uipath-api-workflow`) + testing, deploy leaves, then the host project per Pattern 1 — **no orchestrator task** |
-| RPA Master Project (multiple sub-projects, queue-connected) | Pattern 1 applied per sub-project, then cross-project deploy via `uipath-solution` (single `.uipx`) |
-| Solution with Flow + RPA + Agents, components built fresh in this session | Pattern 2 expanded across all included products |
-| Solution with Flow consuming pre-published Orchestrator resources | Pattern 3 |
-| BPMN orchestrating components built fresh in this session | Pattern 2 expanded, substituting `uipath-maestro-bpmn` for `uipath-maestro-flow` |
-| BPMN consuming pre-published Orchestrator resources | Pattern 3, substituting `uipath-maestro-bpmn` |
-| Solution overview SDD | Compose multiple patterns; respect cross-product integration order from §Cross-Project Data Flow |
-| API Workflow (single product) | `uipath-api-workflow` + `uipath-solution` for deploy + testing |
-| Agent with RPA tools in §3 Tools | Pattern 5 |
-
-> **Deploy routing is constraint-gated.** When the plan's delivery model blocks Solutions (`.uipx`) per [platform-availability-guide.md](platform-availability-guide.md) — standalone, Automation Suite older than 2.2510, or a user exclusion — every `uipath-solution` deploy/publish step in the table above becomes per-package Orchestrator publish routed to `uipath-platform`.
-
-Cross-project integration order (general rule): **dependencies before dependents**. Build callable resources (RPA processes, API Workflows, agents-as-tools) before the products that consume them (Flows, Cases, parent agents).
-
 ## Pattern composition for Solutions
 
-Solution-scope SDDs produce a unified project list. The planner walks the list and emits one pattern segment per project, then sequences them so that integrated components are built before their consumers:
+A multi-project plan emits one pattern segment per project, then sequences them so that integrated components are built before their consumers:
 
 1. Build all leaf resources (libraries, custom connectors, IXP models, Coded Functions, callable API Workflows, RPA processes used as agent tools).
 2. Run testing for each leaf.
