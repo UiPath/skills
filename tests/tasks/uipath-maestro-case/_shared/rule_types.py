@@ -21,7 +21,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SNAPSHOT = HERE / "rule_types.json"
-GUIDE = HERE.parents[3] / "skills" / "uipath-planner" / "references" / "case" / "case-design-layers-guide.md"
+GUIDE = HERE.parents[3] / "skills" / "uipath-planner" / "references" / "design" / "case-product-guide.md"
 
 # The layers guide's § Lifecycle gates row label for each declared scope.
 GUIDE_ROWS = {
