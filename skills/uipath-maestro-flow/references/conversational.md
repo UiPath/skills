@@ -71,6 +71,9 @@ It defaults to `true`, as the designer sets on a new trigger; set `false` to sho
 The appearance is the trigger's 1.3 definition, which `conversationTrigger()` writes by default.
 Decompiled source of an older flow pins `{ version: '1.0' }`, which has no appearance, and compile refuses one there (`CONVERSATION_TRIGGER_APPEARANCE_VERSION`); drop the pin to add one, and set `personalWorkspaceConnectionsOnly: false` to keep the chat's full connection menu as it was.
 
+Rebuilding a low-code conversational agent as a Flow: carry its chat's appearance over, or the Flow's chat loses it.
+Copy `agent.json` → `appearance` onto `conversationTrigger({...})`: `welcomeTitle`, `welcomeDescription`, `personalWorkspaceConnectionsOnly` when set, and each starting prompt's `displayPrompt` and `actualPrompt`.
+
 ## Conversations, exchanges, and messages
 
 Three nested things, and the field names follow them:
