@@ -49,7 +49,7 @@ sandbox:
           stdout: >-
             {"Result":"Success","Code":"SkillBundleStatus","Data":{
             "BundleId":"5e6f7a8b-0000-0000-0000-000000000004","BaseVersion":5,
-            "Files":[{"Path":"invoice-skill/SKILL.md","Kind":"Modified"}]}}
+            "Files":[{"Path":"invoice-skill/instructions.md","Kind":"Modified"}]}}
 
         - when:
             verb: "or skill-bundles sync"
@@ -100,7 +100,7 @@ reference:
   directory: .
 
 initial_prompt: |
-  I've edited invoice-skill/SKILL.md; my edited copy is in ./changes.
+  I've edited invoice-skill/instructions.md; my edited copy is in ./changes.
   ./skills is my checkout of skill bundle finance-skills (folder Shared).
   Publish the edit as a new version.
 

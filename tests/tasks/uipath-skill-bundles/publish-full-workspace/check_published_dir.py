@@ -3,8 +3,8 @@
 
 `publish` treats `--input` as the complete next version: a base file the directory lacks
 is published as a deletion. So each published directory must still hold the files the
-bundle already has (README.md, refund-skill/SKILL.md) and carry the user's edit to
-invoice-skill/SKILL.md. Publishing ./changes, which holds only the edited file, fails here.
+bundle already has (README.md, refund-skill/instructions.md) and carry the user's edit to
+invoice-skill/instructions.md. Publishing ./changes, which holds only the edited file, fails here.
 
 Exit codes: 0 every publish names a complete directory, 1 one does not or none happened,
 2 the log cannot be read.
@@ -17,7 +17,7 @@ LOG = Path("cli_mocks/calls.jsonl")
 VERB = ["or", "skill-bundles", "publish"]
 ALIAS = ["or", "skill-bundle", "publish"]
 GLOBAL_VALUE_OPTIONS = {"--output", "--output-filter", "--log-level", "--log-file", "--profile"}
-REQUIRED = ("README.md", "refund-skill/SKILL.md", "invoice-skill/SKILL.md")
+REQUIRED = ("README.md", "refund-skill/instructions.md", "invoice-skill/instructions.md")
 EDIT = "more than 2%"
 
 
@@ -87,8 +87,8 @@ def main() -> int:
         if missing:
             problems.append(f"--input {raw} lacks {missing}; they would be published as deletions")
             continue
-        if EDIT not in (root / "invoice-skill/SKILL.md").read_text(errors="replace"):
-            problems.append(f"--input {raw} does not carry the edit to invoice-skill/SKILL.md")
+        if EDIT not in (root / "invoice-skill/instructions.md").read_text(errors="replace"):
+            problems.append(f"--input {raw} does not carry the edit to invoice-skill/instructions.md")
     if problems:
         print("\n".join(problems))
         return 1

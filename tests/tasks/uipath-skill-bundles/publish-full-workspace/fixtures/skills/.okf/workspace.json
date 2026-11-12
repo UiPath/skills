@@ -10,12 +10,12 @@
       "size": 72
     },
     {
-      "path": "invoice-skill/SKILL.md",
+      "path": "invoice-skill/instructions.md",
       "sha256": "b99be6e08519e77b9d0c6d36f6845be96ee8aaf6908fa05bb29def1ac9ef22c8",
       "size": 181
     },
     {
-      "path": "refund-skill/SKILL.md",
+      "path": "refund-skill/instructions.md",
       "sha256": "0e6ad41116ae8acd1bf53790c625b08bdb133875f5beb94a97a4dbe03a2c7fcd",
       "size": 144
     }
