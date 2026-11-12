@@ -214,7 +214,7 @@ Created by `publish`, consumed by `deploy`. Contains `appName`, `systemName`, `a
 
 ### Action Schema (`action-schema.json`)
 
-Action apps define a data contract between the form and the Maestro/Agent workflow. It has four sections: `inputs` (read-only data from automation), `outputs` (user-filled fields), `inOuts` (pre-populated but editable), and `outcomes` (submission buttons like Approve/Reject).
+Action apps define a data contract between the form and the Maestro/Agent workflow. It has four sections: `inputs` (read-only data from automation), `outputs` (user-filled fields), `inOuts` (pre-populated but editable), and `outcomes` (submission buttons like Approve/Reject). A root field name can appear in only one section — first publish of a schema that reuses one fails with HTTP 400. Validate with `scripts/validate-action-schema.js`; rules in [references/create-action-app.md](references/create-action-app.md).
 
 ## Troubleshooting
 
@@ -227,6 +227,7 @@ See [references/debug.md](references/debug.md) for detailed diagnosis steps.
 | `Published app with package name '<name>' and version '<version>' already exists` | Same name+version already published (registration rejects duplicates) | Bump `--version` and re-publish |
 | `Folder key required` / deploy hangs on prompt | Missing folder for CLI deploy | Resolve folder name → key via `uip or folders list --output json` (match on `Name`, read `Key`), then run `uip codedapp deploy --folder-key <GUID> ...`. See [pack-publish-deploy.md](references/pack-publish-deploy.md#folder-key). |
 | `Folder key '<GUID>' was not found among folders accessible to your account` (folder exists) | `--folder-key` pre-check works from an incomplete copy of the account's folder list | Re-run once as `UIPATH_FOLDER_KEY=<GUID> uip codedapp deploy ...` without `--folder-key`; never sleep-and-retry (Rule 11). See [pack-publish-deploy.md](references/pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible). |
+| `The action schema uses the same property name more than once: '<name>' in <sections>` (publish 400) | Root field name reused across `inputs` / `outputs` / `inOuts` / `outcomes` on a new app or first publish | Rename the duplicate (pre-filled editable field → one `inOuts` field), re-run `scripts/validate-action-schema.js`, republish. Existing published app → keep names, validate with `--upgrade`. See [create-action-app.md](references/create-action-app.md#validate-the-schema-required-before-proposing-it). |
 | `No packages found` | No `.nupkg` in `.uipath/` | Run `pack` first |
 | Login fails / redirect error | OAuth misconfiguration | See [debug.md](references/debug.md) |
 | API calls fail with 401/CORS | Wrong base URL | Use `https://api.uipath.com` not `cloud.uipath.com` |

@@ -56,6 +56,10 @@ The **authoritative** list of supported types/formats and structural rules lives
 
 Every field also supports an optional `description` string.
 
+**Root field names share one scope.** A root field name may appear only once across `inputs`, `outputs`, `inOuts`, and `outcomes` — all become members of one generated action class, and the Apps service rejects a first publish that reuses one (HTTP 400: `The action schema uses the same property name more than once: 'status' in inputs and outputs`). Nested names only need to be unique under their own parent (`turnover.entries` and `cost.entries` are fine). When collecting fields:
+- Field the automation pre-fills and the reviewer edits → one `inOuts` field, never the same name in `inputs` and `outputs`.
+- Field name equals an outcome button name (output `Approve` + outcome `Approve`) → rename the field (e.g. `approvalNote`).
+
 For each field collect: **name** (camelCase), **type**, **required** (yes/no), optional **description**, optional **format** (if type=`string`), the **items type** if type=`array`, and the nested **properties** if type=`object`.
 
 #### Q3-doc — Document / file handling (whenever the use case involves a file, document, or storage bucket)
@@ -123,7 +127,9 @@ node <skill-dir>/scripts/validate-action-schema.js <path-to-action-schema.json>
 # or pipe it:  echo '<schema-json>' | node <skill-dir>/scripts/validate-action-schema.js -
 ```
 
-Exit `0` = valid. On exit `1`, fix every reported `path: message` (it flags unsupported types, `format` on non-`string`, missing `items` on arrays, nested arrays, missing/malformed sections) and re-run, for at most 3 rounds; if errors remain, show them to the user and ask how to proceed (usually a field type the schema cannot express). Never propose or write an `action-schema.json` that has not passed the validator.
+Exit `0` = valid. On exit `1`, fix every reported `path: message` (it flags unsupported types, `format` on non-`string`, missing `items` on arrays, nested arrays, missing/malformed sections, root field names shared across sections) and re-run, for at most 3 rounds; if errors remain, show them to the user and ask how to proceed (usually a field type the schema cannot express). Never propose or write an `action-schema.json` that has not passed the validator.
+
+**Existing published action app only:** if the schema already shipped with a root name shared across sections, do NOT rename it — renaming breaks tasks created against the published schema. Run the validator with `--upgrade`: shared names become warnings (exit `0`), matching the service, which skips the check when publishing a new version of an existing action app or upgrading its solution. Never use `--upgrade` for a new app, a first publish, a Web app being republished as an Action app, or a fresh solution install — those still fail with the 400.
 
 #### Confirm the schema
 Once it validates, show the complete `action-schema.json` and explain the structure:
