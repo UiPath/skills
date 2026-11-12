@@ -111,7 +111,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 <!--skill-flavor:draft-upload:start-->
 4. **Upload it, so the user sees it on the canvas**, unless the request forbids upload: `uip solution upload <SolutionDir> --output json`, where `<SolutionDir>` is the solution `init` scaffolded (`<Name>Solution/`) or registered the project in.
    The gate reply carries the returned `Data.DesignerUrl`.
-   Do not ask first when this run created the solution (`init` scaffolded it, or `uip solution init` made it at the user's answer): the request to draft the process authorizes the upload that shows it, and a consent question per iteration would defeat the draft.
+   Do not ask first when this run created the solution (its `init` or `uip solution init` made it): the request to draft the process authorizes the upload that shows it, and a consent question per iteration would defeat the draft.
    Confirm first when the solution already existed, and check its cloud copy before uploading over it, as [Studio Web upload](operate.md#studio-web-upload) says.
    The skeleton needs none of that section's other pre-flight steps: it keeps `Event_start`, so it needs no `refresh`, and it binds no resource.
    When the request forbids upload, or the project has no solution (`init` ran with `--skip-solution-registration`), do not upload and do not create a solution to show a draft: the gate reply carries the local path.
