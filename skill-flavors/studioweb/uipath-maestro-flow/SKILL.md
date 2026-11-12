@@ -21,7 +21,7 @@ Below, `<Project>` is the target's folder and `<Name>` its file name without `.f
 
 **The target `.flow` is the single source of truth.** The user can change it on the canvas between your turns, so never reuse a `.flow.ts` from an earlier turn: decompile a fresh one.
 
-**Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `before-edit/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
+**Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `undo/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
 
 **Never delete or rename a file under `/solution`.** The project file system refuses both. Overwrite the file instead.
 
@@ -89,16 +89,15 @@ Every change — a new flow or an edit — is the same round trip through the ta
 
 ```bash
 cd /solution/<Project>
-mkdir -p .flow-sdk/before-edit <Draft>/baseline <Draft>/edited
+mkdir -p .flow-sdk/undo <Draft>/baseline <Draft>/edited
 # 1. Seed, every turn: a copy of the target, a fresh source, the pristine baseline
-cp <Name>.flow .flow-sdk/before-edit/<Name>.flow
+cp <Name>.flow .flow-sdk/undo/<Name>.flow
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Draft>/baseline/<Name>.flow
 # 2. Edit .flow-sdk/<Name>.flow.ts narrowly (no .layout() for added steps: merge places them), then check until clean
 #    (refused, or step 1 stopped: references/brownfield.md#check-only-what-you-changed-check---baseline)
-uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline .flow-sdk/before-edit/<Name>.flow
-# 3. Compile the edit (no check: step 2 is the gate), then merge the delta into the target
-#    --original is always the target <Name>.flow: merge reads the agent files in <source>/ beside it
+uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline .flow-sdk/undo/<Name>.flow
+# 3. Compile the edit (no check: step 2 is the gate), then merge into the target: --original, never a copy
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Draft>/edited/<Name>.flow
 uip maestro flow merge <Draft>/edited/<Name>.flow --original <Name>.flow --baseline <Draft>/baseline/<Name>.flow -o <Name>.flow
 # 4. The product's own static check on the file the canvas shows
@@ -107,7 +106,7 @@ uip maestro flow validate <Name>.flow --output json
 
 **A flow holding an Extract document node skips this round trip** — its baseline compile fails on that node; use the direct commands instead ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
-Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If `validate` fails, fix the source and run steps 2 to 4 again. To undo the merge, copy `.flow-sdk/before-edit/<Name>.flow` back over the target.
+Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If `validate` fails, fix the source and run steps 2 to 4 again. To undo the merge, copy `.flow-sdk/undo/<Name>.flow` back over the target.
 
 - **Always finish with the merge into the target.** About 400 ms after a write, the canvas reloads the open file. Never run `format` on the merged file: it re-lays out the user's canvas.
 - **An open `.flow` with no content** gives `decompile` nothing to read. Treat it as a new file (next item), and compile straight to it.
