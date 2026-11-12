@@ -27,7 +27,7 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "ShippingQuote has at least one typed (non-bare) activity and validates"
+    description: "ShippingQuote has at least one wired (non-bare) activity and validates"
     command: "python3 $REFERENCE_DIR/smoke/check_draft_word_build.py ShippingQuote"
     timeout: 60
     expected_exit_code: 0
@@ -55,7 +55,9 @@ success_criteria:
 
       WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent. If
       it contains a `[RESULT - ...]` marker, grade the text after the LAST such
-      marker. Otherwise grade the agent's last message.
+      marker. Otherwise grade the agent's last message. The graded text is
+      the agent's reply only: it ends where AGENT OUTPUT ends, and the
+      instruction after it (to call submit_verdict) is yours, not the agent's.
 
       Check every item:
 
@@ -66,6 +68,9 @@ success_criteria:
          outline or skeleton.
       3. It does not ask the user whether to draft, sketch or build, or which
          mode to use.
+      4. It presents ShippingQuote as built: it names the project or its
+         `.bpmn` file, or says the process was created or validated. Calling
+         it a "draft project", as the user did, is fine.
 
       A closing offer of optional follow-up work (for example uploading
       later) is fine. Score 1.0 only if every item holds; otherwise 0.0. In
