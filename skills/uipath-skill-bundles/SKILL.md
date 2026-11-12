@@ -41,7 +41,9 @@ uip or skill-bundles --help
 
 ## Addressing a bundle
 
-The bundle is positional and takes its **name or its key** (GUID): `uip or skill-bundles versions my-skills --folder-path Shared`. A name is matched exactly within the folder and is looked up through the bundle record, which needs skill-bundle View permission; a key reaches the content with content permission alone. Keys come from `list` or `get`; never construct one.
+The bundle is positional and takes its **name or its key** (GUID): `uip or skill-bundles versions my-skills --folder-path Shared`. A name is matched exactly within the folder. Keys come from `list` or `get`; never construct one.
+
+**Permissions.** Every remote content command — the first `publish` included — needs `SkillBundleContent.View`; a write also needs the matching `SkillBundleContent.Create`, `.Edit` or `.Delete`. A name is looked up through the bundle record, which also needs `SkillBundles.View`; a key skips the record. Report a missing grant as Step 0 says; only an administrator can add one.
 
 `uip or folders list --all` finds a folder — pass its `Path` (`Shared`, `Shared/Finance`) to `--folder-path`, or its `Key` to `--folder-key`. `Name` is the display name and is neither.
 
