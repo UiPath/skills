@@ -1,8 +1,6 @@
 # Symbolic connector bindings
 
-`bindings.json` maps the short connection and folder names in authored
-TypeScript to tenant resource keys. It lives in the SDK's work directory,
-`.flow-sdk/`, beside the `<Name>.flow.ts` file.
+`.flow-sdk/bindings.json` maps authored TypeScript connection and folder names to tenant resource keys beside `<Name>.flow.ts` in the SDK work directory.
 
 ## Project layout
 
@@ -20,38 +18,26 @@ TypeScript to tenant resource keys. It lives in the SDK's work directory,
         ...generated descriptor data...
 ```
 
-`uip maestro registry prepare` writes `.flow-sdk/bindings.json` and prints the
-import for `./connectors-local/<connector-key>.ts`, relative to the source.
-The generated descriptor data lives below `connectors-local/descriptors/`; do
-not import it directly. `bindings.json` is independent of that descriptor
-overlay. Studio Web reads none of these files, and `uip solution pack`/`upload`
-leave `.flow-sdk/` out.
+Run `uip maestro registry prepare` to write `.flow-sdk/bindings.json` and print the source-relative import for `./connectors-local/<connector-key>.ts`. Generated descriptor data is under `connectors-local/descriptors/`; do not import it directly. `bindings.json` is independent of that overlay. Studio Web reads neither; `uip solution pack` and `upload` omit `.flow-sdk/`.
 
 ## Schema
 
-Use `schemaVersion: "1"` and a `bindings` array. Version `1` is the current
-authored-file format marker. The current loader does not branch on this value,
-but including it keeps the file explicit and compatible with shipped examples.
+Use `schemaVersion: "1"` and a `bindings` array. Version `1` is the current authored-file format marker; the current loader does not branch on it, but it keeps the file explicit and compatible with shipped examples.
 
-Each connector entry should carry the complete shape below. Resolution needs a
-matching `name` or `id` and a `resourceKey` or `default`; the other fields keep
-the resource kind and emitted binding purpose explicit.
+Each connector entry should carry the complete shape below. Each entry resolves when a matching `name` or `id` and a `resourceKey` or `default` exist; the other fields identify resource kind and purpose.
 
 | Field | Required for resolution | Meaning |
 |---|:---:|---|
-| `id` | one of `id` / `name` | Stable binding identifier; may be used as the symbolic source name. |
-| `name` | one of `id` / `name` | Symbolic name normally passed to `connection` or `folder`. |
-| `resource` | no | `"Connection"` for Integration Service connection and folder entries. |
-| `resourceKey` | one of `resourceKey` / `default` | Tenant connection id or folder key. This value wins when both value fields exist. |
-| `default` | one of `resourceKey` / `default` | Fallback when `resourceKey` is absent. Shipped examples repeat the resource key here. |
-| `propertyAttribute` | no | `"ConnectionId"` for a connection or `"FolderKey"` for a folder. |
+| `id` | one of `id` / `name` | Stable binding identifier; may be the symbolic source name. |
+| `name` | one of `id` / `name` | Symbol passed to `connection` or `folder`. |
+| `resource` | no | Use `"Connection"` for Integration Service connection and folder entries. |
+| `resourceKey` | one of `resourceKey` / `default` | Tenant connection id or folder key; wins when both value fields exist. |
+| `default` | one of `resourceKey` / `default` | Fallback when `resourceKey` is absent; shipped examples repeat the resource key here. |
+| `propertyAttribute` | no | Use `"ConnectionId"` for a connection and `"FolderKey"` for a folder. |
 
 ## Where both values come from
 
-**Usually you do not fill these in at all.**
-`uip maestro registry prepare <connector-key> --action <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
-Reach for the manual route below only when you are authoring bindings without
-running `prepare`.
+Usually do not fill values manually. Run `uip maestro registry prepare <connector-key> --action <action>` to discover the connection and write both entries; see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values). Use the manual route only without `prepare`.
 
 If you are doing it by hand: `uip is connections list --all-folders` returns the
 connection id **and its folder key** on the same record, so one call answers both.
@@ -75,54 +61,19 @@ uip is connections list --all-folders --output json
 }
 ```
 
-`Id` is the connection binding's `resourceKey`; **`FolderKey` is the folder
-binding's**. Never fill either with a made-up GUID or with the binding's own
-name. `compile` refuses two shapes, and `check` reports both first: a binding
-whose `resourceKey` is its own name (`BINDING_SELF_NAME`), and a `connection:` /
-`folder:` label that a `bindings.json` with entries does not declare
-(`BINDING_UNDECLARED` — for example the source says `mySlack` while the file
-declares `slack` and `shared`). It warns `CONNECTION_STUB` on an all-zero GUID,
-an `<angle-bracket>` placeholder or any other non-GUID value, and on a label when
-no `bindings.json` is loaded or it declares no entries (the run would fault at
-dispatch — `'Connection' has an invalid GUID value` or a `401 Invalid
-Organization or User secret`). A plausible-looking but wrong GUID still compiles
-and faults at run time. Only an id read from the tenant is right.
+The connection `Id` is the connection binding's `resourceKey`; `FolderKey` is the folder binding's. Never invent a GUID or use the binding's name.
 
-Several connections often share one name (a team tenant can hold three Slack
-connections all named `is-sandboxes`, in different folders). A name then cannot
-pick one: `prepare … --connection <name>` lists each candidate with its
-`--connection-id <id>` and folder — pass the id of the one in the folder you mean,
-and `prepare` still writes both entries into `bindings.json`.
+`compile` refuses a binding whose `resourceKey` is its own name (`BINDING_SELF_NAME`) and a `connection:` / `folder:` label that an entries-containing `bindings.json` does not declare (`BINDING_UNDECLARED`; e.g. source `mySlack` versus declared `slack` and `shared`). `check` reports both first. It warns `CONNECTION_STUB` for an all-zero GUID, an `<angle-bracket>` placeholder, any other non-GUID value, or a label when no `bindings.json` is loaded or it has no entries. Such a run faults at dispatch with `'Connection' has an invalid GUID value` or `401 Invalid Organization or User secret`. A plausible but wrong GUID compiles and faults at run time; use only an id read from the tenant.
 
-`prepare` binds one connection from your own folder, `--connection-folder` or
-the solution's record, and prints `connection: <Name> (<id>)` and why. When it
-refuses with several candidates, ask a user who can answer. Headless, pass
-`--connection-folder` for the folder the request names. With no folder named,
-or when that refuses (no match or several), pass the first candidate line's
-`--connection-id`: that connection is guessed. Do not debug on it, report the
-flow unverified, and list the pick under Open questions as **[REQUIRED]**
-([completion output](author.md#completion-output)).
+If several connections share a name, run `prepare … --connection <name>`; it lists candidates with `--connection-id <id>` and folders. Pass the id in the intended folder; `prepare` still writes both entries.
 
-`Folder` is the folder's own name, not its path. A requested
-`Shared/uipath-maestro-flow` is the row whose `Folder` is `uipath-maestro-flow`,
-not `Shared`. When the request names a folder, pass that last segment to
-`prepare` as `--connection-folder uipath-maestro-flow`; by hand, pick that row.
-If that name matches more than one of the connector's rows (`prepare` refuses
-and lists them), get the requested folder's `Data.Key` with
-`uip or folders get "Shared/uipath-maestro-flow" --output json`, then pass
-`--connection-folder <Key>` or pick the row whose `FolderKey` equals it.
+`prepare` binds one connection from your folder, `--connection-folder`, or the solution record, and prints `connection: <Name> (<id>)` plus the reason. When it refuses with several candidates, ask a user who can answer. Headless, pass `--connection-folder` for the folder the request names. With no folder named, or when that refuses (no match or several), pass the first candidate line's `--connection-id`: that connection is guessed. Do not debug on it, report the flow unverified, and list the pick under Open questions as **[REQUIRED]** ([completion output](author.md#completion-output)).
 
-**Do not go looking in Orchestrator for the folder** beyond that one
-`folders get`. A folder binding wants the folder the CONNECTION lives in, which
-you already have. Measured on the eval corpus: an
-agent that had already listed the connection went on to spend three to four
-further calls on `uip or --help`, `uip or folders --help` and `folders list`,
-searching for a folder matching the symbolic name in its prompt. The symbolic
-name (`slack`, `shared`) is just the label you pass to `connector()`; it is never
-something to search the tenant for.
+`Folder` is the folder's own name, not its path. For `Shared/uipath-maestro-flow`, use the row whose `Folder` is `uipath-maestro-flow`; pass `--connection-folder uipath-maestro-flow` to `prepare`, or select that row manually. If that name matches multiple connector rows, run `uip or folders get "Shared/uipath-maestro-flow" --output json`, obtain `Data.Key`, then pass `--connection-folder <Key>` or select the row whose `FolderKey` equals it.
 
-Copy this two-connector, one-folder example and replace all three placeholders
-with values from the connection listing above:
+**Do not go looking in Orchestrator for the folder** beyond that one `folders get`. The folder binding uses the folder containing the CONNECTION, which the connection listing provides. Measured on the eval corpus: an agent that had already listed the connection spent three to four further calls on `uip or --help`, `uip or folders --help` and `folders list`, searching for a folder matching the symbolic name in its prompt. The symbolic name (`slack`, `shared`) is only the label passed to `connector()` and is never a tenant search target.
+
+Use unique `id` and `name` values. Copy this two-connector, one-folder example and replace all three placeholders with values from the connection listing above:
 
 ```json
 {
@@ -156,24 +107,11 @@ with values from the connection listing above:
 }
 ```
 
-Use unique `id` and `name` values. The resolver takes the first entry whose
-`name` or `id` matches the authored symbol.
-
-Give `connection:` and `folder:` different labels (`slack` / `shared`). With one
-label for both, `prepare` writes one `FolderKey` entry, the connection resolves
-to the folder key, and the run faults `401 Invalid Organization or User
-secret`, although `check`, `compile` and `validate` pass. An emitted node whose
-`connectionId` equals its `connectionFolderKey` is this collision: rename the
-`folder:` label in the source and re-run `prepare`.
+The resolver uses the first entry whose `name` or `id` matches the authored symbol. Give `connection:` and `folder:` different labels (`slack` / `shared`). If they share one label, `prepare` writes one `FolderKey` entry, the connection resolves to the folder key, and the run faults `401 Invalid Organization or User secret`, although `check`, `compile` and `validate` pass. An emitted node whose `connectionId` equals its `connectionFolderKey` proves the collision: rename the `folder:` label and re-run `prepare`.
 
 ## Resolution and precedence
 
-The compile commands load `--bindings <file>` when supplied. Otherwise they
-load `.flow-sdk/bindings.json` under the current directory when it exists. A
-workspace laid out before `.flow-sdk/` existed, with only a root-level
-`./bindings.json`, keeps using that file; when both exist the `.flow-sdk/` one
-wins and stderr names the ignored root file. `emitFlow()` uses the same
-default unless `bindingsFile` or a `Bindings` instance is supplied.
+Compile commands load `--bindings <file>` when supplied; otherwise load `.flow-sdk/bindings.json` under the current directory if present. A pre-`.flow-sdk/` workspace with only root `./bindings.json` continues using that file. If both exist, `.flow-sdk/` wins and stderr names the ignored root file. `emitFlow()` follows the same default unless `bindingsFile` or a `Bindings` instance is supplied.
 
 ```ts
 .step('notify', connector(SendMessage, {
@@ -182,22 +120,10 @@ default unless `bindingsFile` or a `Bindings` instance is supplied.
 }, { connection: 'slack', folder: 'shared' }))
 ```
 
-During emission, `connection: 'slack'` matches the entry whose `name` or `id`
-is `slack`; `folder: 'shared'` is resolved the same way. For each match,
-`resourceKey` wins over `default`. An unmatched symbol is emitted unchanged, so
-do not treat a successful compile as proof that an invented id exists.
+During emission, each `connection` or `folder` symbol matches `name` or `id`; `resourceKey` wins over `default`. An unmatched symbol is emitted unchanged, so successful compilation does not prove an invented id exists.
 
-Only compile/emission reads the authored file. `uip maestro flow validate`,
-solution resource refresh, and product debug read the emitted `.flow`, not
-`.flow-sdk/bindings.json`. A compile regenerates the artifact from the authored
-mapping. A later direct edit to the artifact remains in effect only until the
-next compile.
+Only compile/emission reads the authored file. `uip maestro flow validate`, solution resource refresh, and product debug read the emitted `.flow`, not `.flow-sdk/bindings.json`. Compilation regenerates the artifact from the authored mapping; a direct artifact edit lasts only until the next compile.
 
 ## Emitted-artifact bindings
 
-`uip maestro flow binding add` edits bindings inside an already emitted `.flow`;
-it does not create or update `.flow-sdk/bindings.json`. SDK-authored Integration
-Service actions and managed HTTP nodes should instead keep symbolic names in
-source plus `bindings.json`, so recompilation deterministically restores the
-same node detail and product bindings. Use direct artifact edits only for a
-brownfield `.flow` with no source representation.
+`uip maestro flow binding add` edits bindings inside an emitted `.flow`; it does not create or update `.flow-sdk/bindings.json`. SDK-authored Integration Service actions and managed HTTP nodes should keep symbolic names in source plus `bindings.json`, so recompilation deterministically restores node detail and product bindings. Use direct artifact edits only for a brownfield `.flow` with no source representation.

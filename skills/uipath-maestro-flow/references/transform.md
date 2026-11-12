@@ -2,7 +2,7 @@
 
 *Exact signatures, fields, and defaults: `transform()`.*
 
-Transform applies filter, map, or group-by operations to an array.
+Transform applies `filter`, `map`, or `group-by` to an array without custom JavaScript.
 
 Signature:
 `transform({ collection, operations, variant?: 'filter' | 'map' | 'group-by' })`.
@@ -17,22 +17,12 @@ Operations are the SDK's `filter`, `map`, and `groupBy` discriminated shapes.
 
 ## At a glance
 
-Filter, map, group, or chain operations over an array without custom JavaScript.
-
-Prefer a named variant for one operation and generic Transform for a chain; verify chain order against real fields.
+Use a named variant for one operation, generic Transform for a chain, and Script when the calculation does not fit these operations.
 
 ## Choosing the shape
 
-Prefer a named variant for one standard operation so the canvas communicates
-intent. Use generic Transform for a chain; use Script when the requested
-calculation does not fit the transform operations.
+Prefer a named variant for one standard operation so the canvas communicates intent: set `variant: 'map' | 'filter' | 'group-by'` with exactly one `operations` entry. Omit `variant` for the generic node.
 
 ## Data-dependent review
 
-Operations run in order. A map can remove a field that a later filter or group
-expects, and a plausible misspelled field on untyped input can yield empty
-rows without a structural failure. Review the chain against representative
-items and assert the resulting values, not merely that the node ran.
-
-Omit `variant` for the generic node. Set `variant: 'map' | 'filter' | 'group-by'`
-for a single-purpose node; `operations` must then contain exactly one entry.
+Operations run in order. A map may remove fields needed by a later filter or group, and a misspelled field on untyped input may yield empty rows without structural failure. Review chains against representative items and assert resulting values, not merely that the node ran.

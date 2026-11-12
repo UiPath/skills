@@ -2,13 +2,13 @@
 
 *Exact signatures, fields, and defaults: `onEvent()`, `waitForEvent()`.*
 
-The same subscription can start a Flow or pause an already-running path.
+The same subscription can start a Flow or pause an existing path.
 
 Signatures:
 
 - `.trigger(onEvent({ connector, event, where?, filters?, connection, folder, version? }))`
 - `.step(name, waitForEvent({ connector, event, where?, filters?, connection, folder, version? }))`
-- both also accept a generated trigger descriptor plus options.
+- Both also accept a generated trigger descriptor plus options.
 
 ```ts
 .step('reply', waitForEvent({
@@ -19,15 +19,11 @@ Signatures:
 }))
 ```
 
-`connection` and `folder` are bindings.json labels, and both are required: without
-them the node compiles to `connectionId: null`, which `uip maestro flow validate`
-refuses, so `check` reports `BINDING_MISSING` first.
+`connection` and `folder` are required `bindings.json` labels. Without them, compilation emits `connectionId: null`, which `uip maestro flow validate` refuses; `check` therefore reports `BINDING_MISSING` first.
 
 ## At a glance
 
-Start on, or pause for, an Integration Service event subscription.
-
-Signatures: `.trigger(onEvent(subscription))`; `.step(name, waitForEvent(subscription))`.
+Start on or pause for an Integration Service event with `.trigger(onEvent(subscription))` or `.step(name, waitForEvent(subscription))`.
 
 ```ts
 const mail = { connector: 'uipath-microsoft-outlook365',
@@ -37,9 +33,9 @@ export default flow('mail').trigger(onEvent(mail))
   .step('reply', script({ code: 'return $vars.start.output.subject;' })).build();
 ```
 
-An id-valued `where` parameter is a `lookup()` token: `registry prepare <key> --action <event>` resolves it, writes bindings, and stores the vocabulary `check` validates `where`/`filters` against (a wrong-case filter field is an error — the platform drops it silently).
-A generic event (`record-created`/`record-updated`) needs `object: '<Entity>'` — never put it in `where`.
-Use the reference's completion contract before debugging: an injected start payload exercises downstream wiring but is not a subscription witness.
+Use `lookup()` for every id-valued parameter; run `registry prepare <key> --action <event>` to resolve ids, write bindings, and store `where`/`filters` vocabulary. `check` reports a wrong-case filter field as an error — the platform drops it silently. Generic `record-created`/`record-updated` events require `object: '<Entity>'`, never `object` in `where`.
+
+An injected start payload tests downstream wiring, not subscription delivery; use the completion contract before debugging.
 
 ## Tenant discovery — `check` names it, `prepare` does it
 
@@ -50,12 +46,8 @@ pasted id — and one `prepare` discharges everything `check` names:
 ```ts
 .trigger(onEvent({
   connector: 'uipath-microsoft-outlook365', event: 'email-received',
-  where: {
-    parentFolderId: lookup({ connector: 'uipath-microsoft-outlook365', event: 'email-received' },
-      'parentFolderId').by('displayName', 'Inbox'),
-  },
-  filters: [{ field: 'subject', contains: 'Approval' }],
-  connection: 'outlook', folder: 'shared',
+  where: { parentFolderId: lookup({ connector: 'uipath-microsoft-outlook365', event: 'email-received' }, 'parentFolderId').by('displayName', 'Inbox') },
+  filters: [{ field: 'subject', contains: 'Approval' }], connection: 'outlook', folder: 'shared',
 }))
 ```
 
@@ -64,101 +56,68 @@ uip maestro registry prepare uipath-microsoft-outlook365 --action email-received
   --resolve parentFolderId:displayName=Inbox
 ```
 
-That one command replaces the old manual sequence end to end: it discovers the
-connection and writes both `bindings.json` entries (connection id AND folder
-key — the same stage a connector-action prepare runs), fetches the event's
-connection-scoped definition, records the object decision for a generic event
-(`--object <name>`, the same matching ladder actions use), stores the
-where/filter vocabulary in `.flow-sdk/connectors-local/` so `check` works offline, and
-records each `--resolve` in `resolutions.json` for `compile` to substitute.
-`check` then validates every `where` key and every `filters[].field` against
-the prepared vocabulary — an unknown filter leaf is an ERROR
-(`EVENT_FILTER_UNKNOWN_FIELD`), because the platform silently drops it and the
-deployed trigger fires on events the filter should exclude.
+That one command does all of this itself — do not do these steps by hand: it discovers the connection and writes both `bindings.json` entries (connection id AND folder key, as connector-action prepare does), fetches the connection-scoped event definition, records a generic event's object decision (`--object <name>`, using the same matching ladder as actions), stores `where`/filter vocabulary in `.flow-sdk/connectors-local/` so `check` works offline, and records each `--resolve` in `resolutions.json` for `compile` to substitute.
 
-Two facts prepare surfaces before they can hurt: an event object that requires
-a BYOA (bring-your-own-app) connection is refused with the connections that
-would work, instead of faulting at runtime with an unrelated webhook error;
-and a `webhooks`-mode event prints the URL-registration step — it cannot be
-debugged locally, so deploy to test it.
+`check` validates every `where` key and `filters[].field` against that vocabulary. An unknown filter leaf is an ERROR (`EVENT_FILTER_UNKNOWN_FIELD`) because the platform silently drops it and may trigger on excluded events.
 
-Do not run `uip is triggers objects` / `triggers describe` /
-`resources run list` by hand and paste ids into `where`: prepare runs the same
-calls deterministically, and a pasted id is meaningless in review and wrong
-after a connection move.
-Before finishing, inspect the emitted node's `inputs.detail.eventParameters`
-and confirm it contains the selected id and the connection/folder bindings refer
-to the same connection used for discovery.
+Prepare refuses an event object that requires a BYOA (bring-your-own-app) connection and shows which connections work, rather than allowing an unrelated runtime webhook fault. For a `webhooks`-mode event, prepare prints the URL-registration step; it cannot be debugged locally, so deploy to test it.
 
-`contains` uses case-sensitive substring matching, so preserve scenario casing.
-If a known tenant event is absent after refreshing the registry/cache, report a
-cache-generation gap instead of inventing a node type, binding, or field. Do
-not patch a prebuilt sample/cache entry to make the missing event appear.
+Do not run `uip is triggers objects` / `triggers describe` / `resources run list` by hand or paste ids into `where`: prepare runs those calls deterministically, and pasted ids are meaningless in review and wrong after a connection move.
+
+Before finishing, inspect the emitted node's `inputs.detail.eventParameters`; confirm it contains the selected id and that connection/folder bindings use the same discovered connection. `contains` is case-sensitive substring matching, so preserve scenario casing.
+
+If a known tenant event is absent after refreshing the registry/cache, report a cache-generation gap; do not invent a node type, binding, or field, or patch a prebuilt sample/cache entry to make it appear.
 
 ## Generic events: name the object
 
-Most connectors expose their record events generically — `record-created`,
-`record-updated` (Data Fabric, Salesforce, ServiceNow, Jira, Dynamics, …).
-One node type covers every object of the connection, so the subscription must
-say which one with `object`. It is not an event parameter: these operations
-take none, so `where` stays empty and `check` refuses a subscription that
-omits `object` (`EVENT_GENERIC_NO_OBJECT`) or puts the object in `where`.
+Most connectors expose generic `record-created` and `record-updated` events (Data Fabric, Salesforce, ServiceNow, Jira, Dynamics, …). Specify the bound connection's object with `object`; these operations take no event parameters, so `where` stays empty. `check` refuses a missing object (`EVENT_GENERIC_NO_OBJECT`) or an object in `where`.
 
 ```ts
 <!--skill-flavor:generic-event-import:start-->
 import { RecordCreated, RecordUpdated } from './connectors/uipath-uipath-dataservice.ts';
 <!--skill-flavor:generic-event-import:end-->
 
-// Start when a ContractRegistry record is created with dueDate before 2026-08-04.
 .trigger(onEvent(RecordCreated, {
-  object: 'ContractRegistry',
-  filters: [{ field: 'dueDate', lessThan: '2026-08-04' }],
+  object: 'ContractRegistry', filters: [{ field: 'dueDate', lessThan: '2026-08-04' }],
   connection: 'dataFabric', folder: 'shared',
 }))
-
-// Pause until a FileUploadVerify_20260618 record is updated.
 .step('updated', waitForEvent(RecordUpdated, {
   object: 'FileUploadVerify_20260618', connection: 'dataFabric', folder: 'shared',
 }))
 ```
 
-The objects come from the bound connection, never from a guess:
+Get objects from the bound connection, never by guessing. Run:
 
 ```bash
 uip is triggers objects uipath-uipath-dataservice CREATED --connection-id <id> --output json
 ```
 
-The emitted node carries the object as `inputs.detail.objectName` (and inside
-`configuration`), its event as `eventType`, and the platform-declared
-`eventMode`. A curated event (Outlook `email-received`, OneDrive `file-created`)
-has its object built in — passing `object` there is an error.
+The emitted node carries the object in `inputs.detail.objectName` and `configuration`, the event as `eventType`, and the platform-declared `eventMode`. Curated events (Outlook `email-received`, OneDrive `file-created`) have a built-in object; passing `object` is an error.
 
 ## Started by an HTTP call
 
 A caller that starts the flow over HTTP, such as another system's webhook or a script, reaches it through the HTTP Webhook connector: `onEvent({ connector: 'uipath-http-webhook', event: 'http-webhook', connection, folder })`. The caller's authentication is set on the connection when it is created in Integration Service. With header authentication, Integration Service answers 401 to a request whose header is missing or wrong, and no run starts.
 
-The event is webhook-mode. Read the URL callers post to with:
+This is a webhook-mode event. Read the caller URL by running:
 
 ```bash
 uip is webhooks config uipath-http-webhook --connection-id <CONNECTION_ID> --element-instance-id <ELEMENT_INSTANCE_ID> --output json
 ```
 
-Both ids come from `uip is connections list --all-folders --output json` (`Id`, `ElementInstanceId`). The URL answers 404 until the flow is deployed with its trigger active.
+Both ids come from `uip is connections list --all-folders --output json` (`Id`, `ElementInstanceId`). The URL returns 404 until the flow is deployed with its trigger active.
 
-The trigger's output holds the request. Read it with `out('start', …)`:
+Read the request from trigger output with `out('start', …)`:
 
-- a JSON body's top-level fields, directly;
-- the parsed `body` and `headers` (header names lower-case);
-- `request_body` and `request_headers` as JSON text, which are also the fields `filters` take;
+- JSON-body top-level fields directly;
+- parsed `body` and `headers` (header names lower-case);
+- `request_body` and `request_headers` as JSON text, also accepted by `filters`;
 - `eventType`.
 
 Query-string parameters are not delivered. The headers include the authentication header itself, so never log or return `headers` whole. The caller gets only the acceptance (200 with a `webhookEventId`), never the flow's output, so a caller that needs the run's result is not served by this trigger.
 
 ## Filter operators
 
-A filter is `{ field, <operator>: value }` with exactly one operator. The
-vocabulary is the designer's, and each form compiles to the same
-`filterExpression` the canvas would write:
+A filter is `{ field, <operator>: value }` with exactly one operator. The designer vocabulary compiles to the canvas `filterExpression`:
 
 | Operator | Value | Emitted expression |
 |---|---|---|
@@ -167,43 +126,23 @@ vocabulary is the designer's, and each form compiles to the same
 | `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual` | number, or an ISO date string | ``priority>`3` ``, `to_number(dueDate)<to_number('2026-08-04')` |
 | `is`, `isNot` | always `true` | ``hasAttachments==`true` ``, ``isRead!=`true` `` |
 
-`is` / `isNot` are the designer's boolean tests ("Is" / "Is not" on the
-canvas). They always test against `true`, so `isNot: true` also matches an
-event that lacks the field. For "is false" write `equals: false`; any other
-value for `is` / `isNot` is refused (`EVENT_FILTER_BAD_VALUE`).
+`is`/`isNot` are the canvas "Is"/"Is not" boolean tests and always compare with `true`; `isNot: true` also matches a missing field. For "is false", use `equals: false`. Any other value is refused (`EVENT_FILTER_BAD_VALUE`).
 
-Ordering a plain string is refused (`EVENT_FILTER_BAD_VALUE`): JMESPath
-compares numbers only, so the subscription would match nothing. Write the
-value as a number or an ISO-8601 date, or use a text operator.
+Ordering a plain string is refused (`EVENT_FILTER_BAD_VALUE`): JMESPath compares numbers only. Use a number, an ISO-8601 date, or a text operator.
 
-A backslash at the end of a filter or `where` value, or before another `\` or
-a `'`, is refused (`EVENT_FILTER_BACKSLASH`). JMESPath engines read `\\`
-differently (the specification as one backslash, the reference libraries as
-two), so the subscription could silently never match. A backslash before any
-other character (`C:\tmp`, `Finance\Q3`) is kept as written and reads the same
-everywhere.
+A backslash at the end of a filter or `where` value, or before another `\` or `'`, is refused (`EVENT_FILTER_BACKSLASH`) because JMESPath engines disagree (`\\` is one backslash in the specification and two in reference libraries). A backslash before any other character (`C:\tmp`, `Finance\Q3`) is preserved and reads identically.
 
 ## Evidence boundary
 
-A local start-trigger run injects a payload; it does not fire a subscription.
-For a wait, seed both matching and nonmatching payloads to establish routing.
-Only a platform event occurrence proves the connection, scope, and subscription
-actually receive the intended event.
+A local start-trigger run injects a payload; it does not fire a subscription. For a wait, seed both matching and nonmatching payloads to establish routing. Only a platform event occurrence proves the connection, scope, and subscription receive the intended event.
 
 ## Completion contract
 
-Unless the request explicitly requires a live subscription witness, a
-connector-event start is done after the last edit when both of these facts hold:
+Unless the request explicitly requires a live subscription witness, a connector-event start is complete after the last edit when both hold:
 
 - `uip maestro flow validate` returns `Valid` for the emitted Flow.
-- The emitted `.flow` carries the intended start-trigger type, scope/filter inputs,
-  bindings, and downstream edges.
+- The emitted `.flow` has the intended start-trigger type, scope/filter inputs, bindings, and downstream edges.
 
-At most one bounded direct-input debug may be used to answer a downstream
-behavior question; stop when it answers that question. It is not subscription
-proof. Do not poll or sleep on debug instances, create a scratch solution, or
-upload seed content solely to manufacture a trigger event.
+Use at most one bounded direct-input debug for a downstream behavior question, and stop when answered; it is not subscription proof. Do not poll or sleep on debug instances, create a scratch solution, or upload seed content solely to manufacture a trigger event.
 
-When the stated acceptance bar does require live delivery, cause one real
-platform event and record that witness once. If the environment cannot provide
-it, report that boundary instead of substituting repeated debug launches.
+If acceptance requires live delivery, cause one real platform event and record that witness once. If the environment cannot provide it, report that boundary instead of repeating debug launches.

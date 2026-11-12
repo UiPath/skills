@@ -1,13 +1,6 @@
 # Error Handling
 
-An error handler is a separate path from the immediately preceding action.
-
-Signature: `.step(name, action).onError(handler => ...)`.
-Read the failure with `h.err(field)` — or `err(step, field)` if you prefer to name the step — where field is one of `code`, `message`, `detail`, `category`, `status` (plus `response` and `element`, present at run time though undeclared).
-
-`element` is the failing step's canvas **label** (`display.label`), not its id. The two are equal only when the step sets no `label`: `.step('failA', script(…), { label: 'Fail A' })` fails with `element: "Fail A"`, not `"failA"`. A label is display text anyone editing the canvas can change, so route on `code` or `message`, never on `element`.
-
-A handler may `.return(...)`, `.terminate(...)`, or `.stepToRef(target)`.
+An error handler is separate from the preceding action: use `.step(name, action).onError(handler => ...)`. Read failures with `h.err(field)` or `err(step, field)`, where `field` is `code`, `message`, `detail`, `category`, or `status`, plus runtime-only `response` and `element`. `element` is the failing step's canvas `display.label`, not its id. The two are equal only when the step sets no `label`: `.step('failA', script(…), { label: 'Fail A' })` fails with `element: "Fail A"`, not `"failA"`. Labels are editable, so route on `code` or `message`, never `element`. A handler may `.return(...)`, `.terminate(...)`, or `.stepToRef(target)`.
 
 ```ts
 .step('fetch', http({ url, managed: true }))
@@ -18,18 +11,11 @@ A handler may `.return(...)`, `.terminate(...)`, or `.stepToRef(target)`.
 
 ## At a glance
 
-Route the immediately preceding action's failure through a handler path.
-
-Signature: `.step(name, action).onError(handler => ... )`; the handler reads the failure with `h.err(field)` (or `err(step, field)`) and may `stepToRef(target)`. `.stepToList(port, fn)` runs a path from any port; `.stepToRef(port, target)` is a side exit that leaves the success path running. Never read the failed step's `out(...)` inside its own handler — that output was never written.
-
-Choose deliberately between handling, rejoining, returning, terminating, and failing loud; test success and failure.
+Route failures through a handler path. `.stepToList(port, fn)` runs a path from any port; `.stepToRef(port, target)` is a side exit that leaves success running. `.stepToRef(target)` uses default `output`, HANDS THE PATH OFF, and must be the list's final operation; its target may be anywhere in the same scope, including BACKWARD of the naming step. Never read failed-step `out(...)` in its handler: success output was never written (`ERROR_ENVELOPE_VIA_OUTPUT`). Choose deliberately between handling, rejoining, returning, terminating, and failing loud; test success and failure.
 
 ## Reading the failure
 
-`err()` writes ONE shape — `$vars.<step>.error.<field>` — and the compiler resolves where that family actually publishes the envelope.
-Do not hand-write either prefix, and do not read the failed step's `out(...)` inside its own handler: that path runs because the step failed, so its success output was never written (`ERROR_ENVELOPE_VIA_OUTPUT`).
-
-Which variable holds the envelope is a per-node-family runtime fact, measured one debug run per family (2026-09-10):
+`err()` writes `$vars.<step>.error.<field>`; the compiler resolves the family-specific publication location. Never hand-write either prefix. Bare `err(step)` tests failure, is never rewritten, and is truthy for every family, including envelope values.
 
 | family | envelope in | `<step>.error` is |
 | --- | --- | --- |
@@ -40,57 +26,28 @@ Which variable holds the envelope is a per-node-family runtime fact, measured on
 | `core.action.queue.create` | `<step>.error` | the envelope |
 | `core.action.http.v2` (`managed: true`) | `<step>.output` | the boolean `true` |
 
-`serialize` rewrites the read for the exception families, so authored source stays uniform and a family moving is a table edit rather than a fleet-wide rewrite.
-A bare `err(step)` is the did-this-fail test and is never rewritten: it reads truthy on every family, the envelope object included.
+`serialize` rewrites exception-family reads, keeping authored source uniform; update the family table rather than fleet-wide source. `flow validate` warns `EXPRESSION_DIAGNOSTIC` for runtime-filled but undeclared `element` and `response` on any family (`Property 'element' does not exist on type '<Step>_Error'`), and for every managed HTTP envelope field because rewritten `<step>.output` is typed only as `{ error }` (`Property 'output' does not exist on type '{ error: <Step>_Error; }'`). Accept exactly these diagnostics on reads written with `err()` or `h.err()`; any other `EXPRESSION_DIAGNOSTIC` resolves to nothing.
 
-`flow validate` warns `EXPRESSION_DIAGNOSTIC` on two kinds of `err()` read the runtime does fill: `element` and `response` on any family, which no manifest declares (`Property 'element' does not exist on type '<Step>_Error'`), and every field of a managed HTTP step's envelope, whose rewritten `<step>.output` read the validator types only as `{ error }` (`Property 'output' does not exist on type '{ error: <Step>_Error; }'`). Accept exactly these, on reads written with `err()` or `h.err()`; any other `EXPRESSION_DIAGNOSTIC` is a read that resolves to nothing.
+When a handled step fails, a script step still applies its own `{ updates }`; a sub-flow and `.loop()` container do not. Put success-only updates on the following step.
 
-When a step with a handler fails, a script step still applies its own `{ updates }`; a sub-flow step does not, and neither does a `.loop()` container. An update that must happen only on success goes on the step after it.
+Plain `http({ managed: false })` no longer runs: the tenant answers 500 `No handler registered for extension type 'Intsvc.HttpExecution'` and its registry serves only `core.action.http.v2`. `check` warns `HTTP_V1_RETIRED` and refuses a handler there (`HTTP_ONERROR_V1`). Moving to the managed node makes non-2xx fail instead of reaching success with `statusCode`; read the status branch in a handler with `err(step, 'status')`.
 
-Plain `http({ managed: false })` no longer runs: the tenant answers 500 `No handler registered for extension type 'Intsvc.HttpExecution'` and its registry serves only `core.action.http.v2`. `check` warns `HTTP_V1_RETIRED` and refuses a handler there (`HTTP_ONERROR_V1`).
-Moving to the managed node is a behaviour change, not a rename: a non-2xx stops arriving on the success path with `statusCode` and fails the step instead, so a status branch becomes a handler reading `err(step, 'status')`.
+A `.loop()` may carry a handler: `.onError()` after `.loop(...)` wires the container error port; body failures route there, and the instance completes with the body's message in `detail` and failing body label in `element`. Read it with `h.err('detail')`. Inside a loop body, end a step handler with `.continue()` to skip the item and continue to the next ([`loops.md`](loops.md#loop-options)).
 
-A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's canvas label in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
-Inside a loop body, end a step's handler with `.continue()` to skip the item and go on to the next one ([`loops.md`](loops.md#loop-options)).
+A sub-flow handler catches any child-step failure; the instance completes with the inner message in `detail`, inner canvas label in `element`, and generic family `message` (`Error invoking script task`). For one failure path, put steps in one child flow, call it as the parent's single step, and attach one `.onError()` there instead of handling each step.
 
-A sub-flow step's handler catches a failure in any step of its child the same way: measured, `detail` carries the inner step's message, `element` the failing inner step's label, `message` the family's generic text (`Error invoking script task`), and the instance completes. That is how a run gets one failure path: put its steps in one child flow, call it as the parent's single step, and attach one `.onError()` there, instead of a handler on every step.
+A `.doWhile()` may carry a handler like `.loop()`: `.onError()` after `.doWhile(...)` wires its error port. Although `core.logic.dowhile@1.0` lists no `error` handle, it sets `supportsErrorHandling: true`, so the product adds one; body failures route with body message in `detail` and canvas label in `element`.
 
-A `.doWhile()` container can carry a handler the same way as a `.loop()`: `.onError()` after `.doWhile(...)` wires the container's error port. `core.logic.dowhile@1.0` lists no `error` handle, but it sets `supportsErrorHandling: true`, and the product adds the handle from that flag. A body step that throws routes to the handler with the same envelope (`detail` the body's message, `element` the failing body step's canvas label).
-
-`.onError(...)` is the `error` port case of `.stepToList(port, handler)`, which
-runs a path from any named port. When the failure needs no work of its own, name
-the target directly — `.stepToRef('error', 'refund')` — which is a SIDE EXIT: the
-success path continues, so chaining carries on after it.
-
-A `.stepToRef(target)` with no port leaves the default `output` port and HANDS THE
-PATH OFF, so nothing may follow it in that list. The target may sit anywhere in the
-same scope, including BACKWARD of the step that names it — Flow JSON can express
-that, so this can author it.
+`.onError(...)` is the `error`-port form of `.stepToList(port, handler)`, which runs a path from any named port. If no work is needed, name the target directly with `.stepToRef('error', 'refund')`; this SIDE EXIT leaves success running, so chaining continues afterward.
 
 ## Choosing the path
 
-Do not add recovery merely because an error port exists. Decide whether the
-business operation should fail loud, return an alternate answer, stop all work,
-or compensate and rejoin. An exhausted handler ends separately; use
-`.stepToRef(...)` only when the failure path should deliberately resume shared
-success-path work.
+Do not add recovery merely because an error port exists. Decide whether the operation should fail loud, return an alternate answer, stop all work, or compensate and rejoin. An exhausted handler ends separately; use `.stepToRef(...)` only when failure should deliberately resume shared success work.
 
-That separate End maps each flow output from its variable, like every End. So a
-handler that sets the outputs with `{ updates }` still answers with them, and
-one that leaves an output unset gets a `NO_RETURN` warning naming it: set it
-with `{ updates }`, end with `.return({ … })`, or hand back with `.stepToRef(...)`.
+That separate End maps each flow output from its variable, like every End. A handler that sets outputs with `{ updates }` still answers with them; an unset output produces a `NO_RETURN` warning naming it. Set it with `{ updates }`, end with `.return({ … })`, or hand back with `.stepToRef(...)`.
 
-Two limits `check` enforces on a ref, and one it only warns about. It refuses an
-unknown target, a target inside another port's path, and a target inside a LOOP
-BODY — a loop reads `currentItem` / `currentIteration` per iteration, and an edge
-arriving from outside carries no iteration. It WARNS when a ref leaves a loop body
-(a break, which Flow has no node for) or crosses a parallel arm boundary (the Merge
-waits for every branch it forked). Those are best effort: verify them with
-`uip maestro flow validate`.
+`check` refuses a ref to an unknown target, a target inside another port's path, or a target inside a LOOP BODY: a loop reads `currentItem` / `currentIteration` per iteration, while an outside edge carries no iteration. It WARNS when a ref leaves a loop body (a break, which Flow has no node for) or crosses a parallel arm boundary (Merge waits for every forked branch). These are best effort; run `uip maestro flow validate` to verify them.
 
 ## Evidence
 
-Test both sides. The failure case should prove the handler receives the expected
-service error and reaches its intended terminal or ref behavior. The success
-case should prove normal continuation still bypasses the handler. A single green
-case cannot establish both paths.
+Test both sides. The failure case must prove the handler receives the expected service error and reaches its intended terminal or ref behavior; the success case must prove normal continuation bypasses the handler. One green case cannot establish both paths.

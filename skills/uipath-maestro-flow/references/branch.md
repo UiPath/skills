@@ -1,9 +1,6 @@
 # Branch
 
-Branch makes a two-way runtime decision.
-
-Signature: `.branch(name, condition, thenFn, elseFn?)`. Each callback receives a
-sub-builder and may use `.label(text)` for its edge label.
+Use `.branch(name, condition, thenFn, elseFn?)` for a two-way runtime decision; each callback receives a sub-builder and may use `.label(text)` for its edge label.
 
 ```ts
 .branch('large', js`${input('amount')} > 1000`,
@@ -11,14 +8,8 @@ sub-builder and may use `.label(text)` for its edge label.
   (no) => no.step('approve', script({ code: 'return "approved";' })))
 ```
 
-Use Branch when the scenario has two paths. Whether each arm should end locally
-or fall through to shared work is a business-flow choice.
-
-The two sequence ports are `true` and `false`. Arm `.label(text)` values become
-`trueLabel` and `falseLabel`, defaulting to `True` and `False`.
+Sequence ports are `true` and `false`; arm labels map to `trueLabel` and `falseLabel`, defaulting to `True` and `False`.
 
 ## At a glance
 
-Split runtime control into true and false paths.
-
-Use branch for a two-way decision; decide whether arms return or ref back into shared work.
+Arms may end locally or fall through to shared work.
