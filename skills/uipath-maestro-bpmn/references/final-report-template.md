@@ -8,14 +8,15 @@ The skeleton's own gate reply is a different template ([gate reply](draft-skelet
 <!--skill-flavor:final-upload:start-->
 When the built process validates, upload it unless the request forbids upload or the project has no solution (the project is not registered in a `.uipx` in its directory or a parent: `init` ran with `--skip-solution-registration`, or with `--path` outside any solution).
 Run the [pre-flight](operate.md#pre-flight-before-any-cloud-action) first, with the Studio Web upload as its target; then `uip solution upload <SolutionDir> --output json` returns the `Data.DesignerUrl`.
-Do not ask first when this run's `init` scaffolded the solution: the request to build the process authorizes the upload that shows it ([Studio Web upload](operate.md#studio-web-upload)).
-Upload when the solution already existed or an existing project was edited in place only if the user confirmed an upload earlier in this run, such as before the skeleton's upload; ask once per run.
+Do not ask first when this run's `init` scaffolded the solution ([Studio Web upload](operate.md#studio-web-upload)).
+When the solution already existed or an existing project was edited in place, upload only if the user confirmed an upload earlier in this run, such as when asked before the skeleton's upload.
 An explicit request in this run to upload or publish to Studio Web counts as that confirmation, once the cloud-copy check before the edit succeeded or returned a 404 (no cloud copy yet).
 When no confirmation was given in this run (none was asked for, none was requested, or the user declined), do not stop to ask: skip the upload, write the local path, and say in the first line's one sentence that the upload waits for the user's go-ahead, and that it would replace the Studio Web copy when the check found one.
 When a cloud-copy check applied, it ran before the edit ([Check the cloud copy](operate.md#check-the-cloud-copy-before-editing)); do not compare it with the built file before uploading, because the two always differ.
 When that check failed for a reason other than a 404 and the user has not said to replace the Studio Web copy, do not upload: write the local path, and say in the first line's one sentence that nothing was uploaded because the Studio Web copy could not be checked.
 Do not upload a process that is not ready: when a connector's enrichment or a binding is still unresolved, do not upload ([Operate](operate.md#anti-patterns)).
 When you skip the upload because there is no solution, do not create one to show the process.
+When the user explicitly asked to upload or publish to Studio Web and there is no solution, follow [Studio Web upload](operate.md#studio-web-upload) to create one, asking first when the user named the project's path; until then, write the local path and say in the first line's one sentence that the process needs a solution before it can be uploaded.
 <!--skill-flavor:final-upload:end-->
 
 ## The reply
@@ -46,7 +47,7 @@ When you kept the user's Studio Web edits, say so in that sentence; when more th
 Never write `validated` for a process that did not validate.
 
 When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
-When validation still fails for another reason, the first line reads `<Name>: built, not valid yet (<draft|auto> mode).` and `Needs:` names what still fails, in the user's words.
+When validation still fails for another reason after you have fixed every error the source can fix, the first line reads `<Name>: built, not valid yet (<draft|auto> mode).` and `Needs:` names what still fails, in the user's words.
 Drop `Needs:` when nothing is missing.
 
 The path line belongs to this final message.
