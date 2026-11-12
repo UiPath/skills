@@ -278,7 +278,7 @@ Write the confirmed schema (the one that passed [scripts/validate-action-schema.
 
 ### `src/uipath.ts`
 
-Copy the without-/with-SDK setup verbatim from the template's [`src/uipath.ts` section](../assets/templates/action-app-template.md). For the "with SDK services" variant, uncomment only the service exports the app uses (e.g. `Entities`, `Attachments`).
+Copy the without-/with-SDK setup verbatim from the `src/uipath.ts` section of [../assets/templates/action-app-template.md](../assets/templates/action-app-template.md). For the "with SDK services" variant, uncomment only the service exports the app uses (e.g. `Entities`, `Attachments`).
 
 > **NEVER call `sdk.initialize()` in an action app** (Critical Rule 17). Construct `new UiPath()` (no args, no `.env`) and use it directly — the SDK authenticates silently from the config Action Center injects into the page. `sdk.initialize()` starts an *interactive* PKCE redirect, which only works in a standalone web app and cannot complete inside the iframe.
 
