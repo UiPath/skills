@@ -2,7 +2,7 @@
 
 The reply that ends a draft-mode turn at the approval gate. Read this file in full before you write that reply; the skeleton and its loop are in [draft-skeleton.md](draft-skeleton.md).
 
-Reply in this shape, dropping lines that do not apply; the question and its three options are fixed:
+Reply in this shape and keep every line; only the first line's second sentence is optional, and the question and its three options are fixed:
 
 ```text
 <!--skill-flavor:gate-first-line:start-->
@@ -36,7 +36,7 @@ A progress note belongs in a message before your last tool call; the message aft
 
 ## The path line
 
-When the path line is the local path, write the plain path, such as `InvoiceIntake/InvoiceIntake.bpmn`, never a Markdown link with the file name as its text.
+When the path line is the local path, write the plain path, such as `InvoiceIntake/InvoiceIntake.bpmn`, never a Markdown link, whatever its text.
 
 ## The box lines
 

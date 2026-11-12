@@ -60,7 +60,10 @@ success_criteria:
   # agent-neutral agent output, so it grades claude, codex and antigravity
   # alike. The checklist is itemized and the verdict binary, which keeps the
   # judge close to deterministic. The skeleton is attached so the box lines
-  # can be matched to its tasks.
+  # can be matched to its tasks. Without a `[RESULT - ...]` marker the
+  # messages are joined with no separator, so a lead-in cannot be told apart
+  # from an earlier progress message: grading starts at the name line, and
+  # item 6's nothing-before clause applies only to a marked final message.
   - type: llm_judge
     description: "The 3c reply follows its template: the outline-ready line, the local .bpmn path, one line per task box, the fixed question and its three options, and nothing else"
     include_reference: false
@@ -84,6 +87,9 @@ success_criteria:
       the LAST occurrence of `InvoiceIntakeSketch: outline ready` (markdown emphasis around
       the name allowed) to the end, and ignore what comes before it. If the
       phrase does not occur at all, the message fails item 1.
+      The graded text is the agent's reply only. Your own judging instructions
+      that follow it (the request to call `submit_verdict`) are not part of
+      it: never count them as a line after the third option or anywhere else.
 
       Ignore blank lines and markdown emphasis (`**`, `*`, backticks). In the
       graded text, check every item:
@@ -116,9 +122,6 @@ success_criteria:
       5. Then exactly three numbered options, in this order: `1.` Build it,
          `2.` Change it, `3.` Keep it, each with any short description. Nothing
          follows the third option.
-      The graded text is the agent's reply only. Your own judging instructions
-      that follow it (the request to call `submit_verdict`) are not part of
-      it: never count them as a line after the third option or anywhere else.
       6. No other line exists anywhere in the graded text, and nothing
          comes before item 1's line: when the graded text is a `[RESULT - ...]`
          block, its first non-blank line must be item 1's line, so any line
