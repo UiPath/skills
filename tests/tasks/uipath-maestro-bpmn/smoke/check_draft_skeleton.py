@@ -60,25 +60,31 @@ def require_multi_instance(root) -> None:
 def require_fork_exits_safe(root, flows) -> None:
     """No path out of a joined parallel fork may stall its join.
 
-    A parallel join waits for one token per branch its fork opened. A path
-    that leaves a branch for a plain end event, or an interrupting error or
-    timer path that flows straight into the join as an extra input, leaves
-    the instance running forever. Terminate and error end events end the
-    instance, so they are safe. Nested fork/join pairs are tracked by depth,
-    so a plain end between an inner join and the outer join is caught.
+    A parallel join waits for one token on each of its incoming flows. Each
+    branch the fork opens is checked on its own:
+
+    - A plain end event the branch can reach, by sequence flow or through an
+      interrupting boundary, swallows the branch's token. Terminate and error
+      end events end the instance, so they are safe.
+    - An interrupting boundary path must merge back onto its own branch: if it
+      reaches the join through a sibling branch or as an extra join input, the
+      branch's own join input never delivers.
+    - A non-interrupting boundary path adds a token while the branch's own
+      token still reaches the join, so it may end separately, but it must not
+      add a join input that only delivers when it fires.
+
+    Nested fork/join pairs are tracked by depth.
     """
     succ: dict[str, list[str]] = {}
     incoming: dict[str, int] = {}
     for f in flows:
         succ.setdefault(attr(f, "sourceRef"), []).append(attr(f, "targetRef"))
         incoming[attr(f, "targetRef")] = incoming.get(attr(f, "targetRef"), 0) + 1
-    # A non-interrupting boundary leaves its activity's token on the way to
-    # the join, so it neither stalls nor feeds the join.
-    boundary_succ: dict[str, list[str]] = {}
+    interrupting: dict[str, list[str]] = {}
+    non_interrupting: dict[str, list[str]] = {}
     for b in elements(root, "boundaryEvent"):
-        if attr(b, "cancelActivity") == "false":
-            continue
-        boundary_succ.setdefault(attr(b, "attachedToRef"), []).append(attr(b, "id"))
+        kind = non_interrupting if attr(b, "cancelActivity") == "false" else interrupting
+        kind.setdefault(attr(b, "attachedToRef"), []).append(attr(b, "id"))
     parallels = elements(root, "parallelGateway")
     joins = {attr(g, "id") for g in parallels if incoming.get(attr(g, "id"), 0) > 1}
     forks = [attr(g, "id") for g in parallels if len(succ.get(attr(g, "id"), [])) > 1]
@@ -92,43 +98,53 @@ def require_fork_exits_safe(root, flows) -> None:
     fork_set = set(forks)
     cap = len(forks) + 1
 
-    def walk(fork: str, with_boundaries: bool):
+    def walk(stack, with_boundaries: bool):
         seen: set[tuple[str, int]] = set()
-        nodes: set[str] = set()
-        entries: set[tuple[str, str]] = set()  # (source, join) where the walk closes
-        stack = [(n, 1, fork) for n in succ[fork]]
+        entries: set[str] = set()  # sources whose flow closes the walk at its join
         while stack:
             node, depth, src = stack.pop()
             if node in joins:
                 depth -= 1
                 if depth == 0:
-                    entries.add((src, node))
+                    entries.add(src)
                     continue
             if (node, depth) in seen:
                 continue
             seen.add((node, depth))
-            nodes.add(node)
             if node in fork_set:
                 depth = min(depth + 1, cap)
             nxt = list(succ.get(node, []))
             if with_boundaries:
-                nxt += boundary_succ.get(node, [])
+                nxt += interrupting.get(node, [])
             stack.extend((n, depth, node) for n in nxt)
-        return nodes, entries
+        return seen, entries
 
     for fork in forks:
-        normal, _ = walk(fork, False)
-        full, entries = walk(fork, True)
-        if not entries:
+        branches = []
+        for first in succ[fork]:
+            normal, own = walk([(first, 1, fork)], False)
+            branches.append((first, {n for n, _ in normal}, own))
+        if not any(own for _, _, own in branches):
             continue
-        stuck = sorted(full & plain_ends)
-        if stuck:
-            fail(f"a path out of parallel fork {fork} stops at plain end event(s) {stuck} while the join "
-                 "waits; end it with a terminate end event or merge it back onto its own branch")
-        extra = sorted(src for src, _ in entries if src not in normal and src != fork)
-        if extra:
-            fail(f"an error or timer path from {extra} flows straight into the join of fork {fork}, which then "
-                 "waits for an input that never comes; merge it onto its own branch before the join")
+        for first, normal, own in branches:
+            full, entries = walk([(first, 1, fork)], True)
+            stuck = sorted({n for n, _ in full} & plain_ends)
+            if stuck:
+                fail(f"a path out of parallel fork {fork} stops at plain end event(s) {stuck} while the join "
+                     "waits; end it with a terminate end event or merge it back onto its own branch")
+            foreign = sorted(entries - own)
+            if foreign:
+                fail(f"an error or timer path on branch {first} of fork {fork} reaches the join through {foreign} "
+                     "instead of its own branch, so its own join input never delivers; merge it onto its own "
+                     "branch before the join")
+            for node, depth in sorted(full):
+                for b in non_interrupting.get(node, []):
+                    _, extra = walk([(b, depth, node)], True)
+                    added = sorted(extra - own)
+                    if added:
+                        fail(f"a non-interrupting path from {b} on fork {fork} feeds the join through {added}, "
+                             "an input that only delivers when it fires; end it separately or merge it onto "
+                             "its own branch")
 
 
 def main() -> None:
