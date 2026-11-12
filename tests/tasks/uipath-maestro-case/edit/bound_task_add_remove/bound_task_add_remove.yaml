@@ -10,7 +10,7 @@ description: >
   else looks correct while the declarations linger and later break Studio Web
   provisioning. The prompt never mentions the resource inventory: the cleanup
   has to come from the skill. Local-only, no debug.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:edit]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:edit, "skip:studio-web"]
 max_iterations: 1
 
 run_limits:
