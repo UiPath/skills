@@ -82,21 +82,28 @@ An SDD's `Activation Mode` column maps to the SDK's `runs-sequentially` rule and
 | `parallel-after-predecessor` | `rule('runs-sequentially')` | shared index across siblings | Siblings share one set and start together after the predecessor set completes. |
 | `sequential` | `rule('runs-sequentially')` | omit (each task in its own set) | Strict chain: each task waits for the previous set. |
 
-`lane` is the set index in `data.tasks[][]`. Tasks with `runs-sequentially` that share the same `lane` value are grouped into one set. A task without `runs-sequentially` always gets its own set regardless of `lane`.
+`lane` is the set index in `data.tasks[][]`. **Omitting `lane` always puts a task alone in its own set** — the default is isolation, not grouping. Only tasks that share the same `lane` value AND have `runs-sequentially` are merged into one set. A task without `runs-sequentially` always gets its own set regardless of `lane`.
+
+Pass `{ lane: N }` as the second argument to `.task()` (after the builder callback) ONLY on the siblings that start together. Every other task in the stage omits it:
 
 ```ts
 .stage('Issuing Permit', s => s
+  // Set 0: predecessor, alone (no lane)
   .task('Collect Fees', t => t.process('collect').required()
     .entryWhen(rule('runs-sequentially')))
+  // Set 1: two siblings grouped by lane: 1 — start together after set 0
   .task('Wait For Confirmation', t => t.waitForTimer({ duration: 'PT1H' }).required()
     .entryWhen(rule('runs-sequentially')), { lane: 1 })
   .task('Track Deadline', t => t.waitForTimer({ duration: 'P5D' }).required()
     .entryWhen(rule('runs-sequentially')), { lane: 1 })
+  // Set 2: downstream, alone (no lane) — waits for set 1
   .task('Generate Permit', t => t.process('generate').required()
     .entryWhen(rule('runs-sequentially'))))
 ```
 
-Emits `tasks: [[Collect Fees], [Wait, Track], [Generate]]` — three sets, with the two siblings grouped in set 1.
+Emits `tasks: [[Collect Fees], [Wait, Track], [Generate]]` — three sets. Tasks without `{ lane }` (Collect Fees, Generate Permit) each get their own set. The two siblings sharing `{ lane: 1 }` merge into set 1.
+
+**Anti-pattern:** giving every task in the stage the same `lane` or omitting `lane` on all of them. Either collapses siblings into one flat chain or one flat group, losing the parallel-after-predecessor structure.
 
 ## Document extraction
 
