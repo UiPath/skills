@@ -114,7 +114,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
    Do not ask first when this run created the solution (its `init` or `uip solution init` made it): the request to draft the process authorizes the upload that shows it, and a consent question per iteration would defeat the draft.
    Confirm first when the solution already existed, and check its cloud copy before uploading over it, as [Studio Web upload](operate.md#studio-web-upload) says.
    The skeleton needs none of that section's other pre-flight steps: it keeps `Event_start`, so it needs no `refresh`, and it binds no resource.
-   When the request forbids upload, or the project has no solution (`init` ran with `--skip-solution-registration`), do not upload and do not create a solution to show a draft: the gate reply carries the local path.
+   When the request forbids upload, or the project has no solution (the user named its path and chose none), do not upload and do not create a solution to show a draft: the gate reply carries the local path.
    Do not pack, debug or run anything.
    Those are separate decisions, and the user has not approved the shape yet.
 <!--skill-flavor:draft-upload:end-->
