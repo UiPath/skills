@@ -45,7 +45,7 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: json_check
-    description: "One new Extract document node mirrors Extract Invoice's processor: read-only, with the same processorKey"
+    description: "One new Extract document node mirrors Extract Invoice's processor: read-only, with the same processorKey, and Extract Invoice stays its author"
     path: "InvoiceReader/InvoiceReader/InvoiceReader.flow"
     assertions:
       - expression: "length(nodes[?type=='uipath.ixp.extract-document-builder' && id!='extractInvoice1' && inputs.processorReadOnly])"
@@ -54,6 +54,9 @@ success_criteria:
       - expression: "nodes[?type=='uipath.ixp.extract-document-builder' && id!='extractInvoice1'].inputs.processorKey == nodes[?id=='extractInvoice1'].inputs.processorKey"
         operator: equals
         expected: true
+      - expression: "length(nodes[?id=='extractInvoice1' && inputs.processorReadOnly])"
+        operator: equals
+        expected: 0
     weight: 3.0
     pass_threshold: 1.0
 
