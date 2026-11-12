@@ -270,7 +270,7 @@ Open `http://localhost:5173`. The app redirects to UiPath login on first load. A
 
 If login fails, see [debug.md](debug.md).
 
-Per-deployment values the app reads with `env` (`env.UIPATH_PUBLIC_REGION ?? 'EU'`) come from `.env.local` during local dev, injected by `@uipath/coded-apps-dev`; list the names the app uses in a committed `.env.example`. See [environment-variables.md](environment-variables.md).
+Per-deployment values the app reads with `env` (`env.UIPATH_CLIENT_REGION ?? 'EU'`) come from `.env.local` during local dev, injected by `@uipath/coded-apps-dev`; list the names the app uses in a committed `.env.example`. See [environment-variables.md](environment-variables.md).
 
 ---
 
