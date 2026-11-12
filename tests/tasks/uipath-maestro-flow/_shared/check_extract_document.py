@@ -383,7 +383,9 @@ def _find_solution_dir(flow_path: str) -> str | None:
 
 
 def _list_processor_keys(solution_dir: str) -> list[str]:
-    """Keys of the idpProcessor resources, matched on ``kind`` as the CLI does, never on a path."""
+    """Keys of the idpProcessor resources, matched on ``kind`` as the CLI does: the
+    file's path comes from the processor's name and type, and the platform moves
+    wrong-cased files, so only the resource header identifies it."""
     keys = []
     for root, _, names in os.walk(os.path.join(solution_dir, "resources")):
         for name in names:
