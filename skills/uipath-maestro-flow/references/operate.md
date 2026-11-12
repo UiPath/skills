@@ -40,6 +40,12 @@ re-lays out every node and discards them. Upload or debug the merged file as
 `merge` wrote it.
 <!--skill-flavor:operate-format:end-->
 
+`nodes create` without `--position`, or a hand edit that adds nodes, leaves every new
+node at `layout.nodes[<id>].position` 0,0. After such an edit to a file with no
+author-chosen layout, run `format`, then confirm each node in `layout.nodes` has a
+distinct position. With an author-chosen layout, skip `format` and pass
+`--position <x>,<y>` to each `nodes create`.
+
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
 
 The builder can place the nodes itself, so the emitted file never needs `format` — provided every node that is not 96 × 96 carries its size (rule 1).
@@ -121,8 +127,10 @@ there:
 uip maestro flow pack <project-path> <OutputDir>
 ```
 
-then `uip solution publish` — see the `uipath-solution` skill. When the target is
-genuinely ambiguous, ask before packing.
+then `uip solution publish` — see the `uipath-solution` skill. `uip maestro flow
+publish <project-path>` packs and uploads the `.nupkg` to Orchestrator packages
+in one step (`--folder-key` or `--folder-path` picks a folder feed). When the
+target is genuinely ambiguous, ask before packing.
 <!--skill-flavor:operate-publish:end-->
 
 ## Debug — a real end-to-end run
@@ -173,15 +181,17 @@ Operational constraints, each of which has its own failure:
   delete the copy afterwards, and report the run as the copy's.
 <!--skill-flavor:operate-debug-scratch-copy:end-->
 - **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into your
-  personal workspace; a shared folder fails `HTTP 500` at
-  `Stage: prepare-custom-debug` with no instance started.
+  personal workspace; any other folder fails `403` at
+  `Stage: prepare-custom-debug`, even for a trivial flow, and a personal
+  workspace `--folder-key` gives `404`. No instance starts.
 <!--skill-flavor:debug-shared-resources:start-->
   Shared resources reach
   the run through `resources refresh`, not through the debug folder.
 <!--skill-flavor:debug-shared-resources:end-->
-  Use the flag
-  only when the account has no personal workspace, or the flow needs
-  folder-scoped assets or queues.
+  Exception: an account with no personal workspace (a service-principal or CI
+  token gets `403` at `get-personal-folder`) passes `--folder-id <number>`, which
+  skips that lookup. `prepare-custom-debug` for a non-personal folder may still
+  `403`; if it does, tell the user.
 
 Inputs, for a flow with `.input(...)` parameters:
 
@@ -270,14 +280,22 @@ UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flo
 ## Trigger a deployed process
 
 ```bash
-uip maestro flow process list --output json
+uip maestro flow process list --folder-key <folder-key> --output json
 uip maestro flow process run <process-key> <folder-key> --output json \
   --inputs '{"numberA": 5}' --attachment <inputName>=<localPath>
 ```
 
+`process list` also takes `--folder-path <path>` in place of `--folder-key`. For `process list`, take
+`<folder-key>` from the user or the `Key` of `uip or folders list --output json`. For `process run`, the
+list entry's `folderKey` also works.
+
 On `process run` only, `--attachment` overrides `--inputs` on a key collision,
 and `--validate` accepts pre-uploaded attachment references for file slots —
 they pass the JSON-schema check even though the slot's nominal type is `string`.
+`--validate` is not a dry run: after the check passes it starts a real job.
+
+Give a Flow's `types.file` input with `flow process run --attachment`, never
+`uip or jobs start --attachment`.
 
 `--entry-point <triggerNodeId>` starts the job at that root, and `--validate`
 then checks the inputs against that root's schema. A wrong id exits 3 and lists
@@ -296,7 +314,9 @@ uip maestro flow job traces <job-key> --output json
 ```
 
 Traces are the full execution timeline and are verbose. They are a last resort,
-not a starting point.
+not a starting point, except for per-iteration timing: `elementExecutions`
+aggregates per element, so a loop body shows one row. The spans stream to
+stderr, one JSON line each (`--pretty` for readable lines).
 
 ## Instance lifecycle
 
@@ -313,6 +333,9 @@ uip maestro flow instance resume <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro flow instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro flow instance retry  <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
+
+`-f` does not filter `instance list`: do not assume every listed instance is
+in that folder.
 
 Never `retry` a faulted instance before reading why it faulted — the fault cause
 is in the debug response or the incident, and retrying without it repeats the

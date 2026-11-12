@@ -107,6 +107,13 @@ means the SDK is too old,
 <!--skill-flavor:check-baseline-sdk-upgrade:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
+<!--skill-flavor:check-baseline-uip-version:start-->
+For `unknown option '--baseline'`, check the SDK version first
+(`npm ls -g @uipath/maestro-builder-sdk`, or the project's `node_modules`). Below
+6.64.0, upgrade it. Only when it is 6.64.0 or later and the error persists is
+`uip` too old (1.205.0 is). Until a newer `uip` is installed, run `check --source`
+without `--baseline` and fix only the errors on nodes you changed.
+<!--skill-flavor:check-baseline-uip-version:end-->
 
 ```
 $ uip maestro flow check <Name>.flow.ts --source --baseline <original>.flow
@@ -184,7 +191,7 @@ An agent's context index or tool lives in
 flow-merge: wrote <source-uuid>/resources/<new-dir>/resource.json (carries added resource)
 flow-merge: wrote <source-uuid>/resources/<dir>/resource.json (carries settings.resultCount)
 flow-merge: remove <project>/<source-uuid>/resources/<dir> from the project: the edit removed this agent resource, and copying the candidate cannot delete it
-flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derived as compile does)
+flow-merge: wrote bindings_v2.json (connection and agent resource rows, re-derived as compile does)
 ```
 
 <!--skill-flavor:resource-install:start-->
@@ -196,19 +203,31 @@ flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derive
 - A resource another `.flow` in the project still uses is kept
   (`flow-merge: kept <source>/resources/<dir>: <Other>.flow still references it`).
   No action needed: do not delete it.
-- In a Flow project, merge also writes `bindings_v2.json` with the changed
-  agent's rows re-derived, so a removed index is no longer declared.
+- In a Flow project, merge also writes `bindings_v2.json` with the merged
+  flow's connection rows and its agents' rows re-derived, so a removed index or
+  a swapped connection is no longer declared. Copy it with the merged `.flow`.
+- A connection label the original carries as a stub (`connection: "jira"`)
+  resolves through `bindings.json` in the edited source. Edit the label to the
+  connection id, or fill `bindings.json`, and merge writes the id and drops the
+  stub rows.
 
 ## Flows with draft nodes: let merge compile
 
 <!--skill-flavor:draft-nodes:start-->
 A canvas-saved flow often holds **draft** nodes: a connector with no connection
-yet, a required input left empty, or a generic operation with no object picked
-(connector action steps only; a draft trigger, `waitForEvent` or connector tool
-still refuses and must be finished first). Decompile carries the definition
-of each draft the canvas saved, so `compile` writes it with a warning
-(`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on this
-page get past it. Three cases still stop `compile`, and with it the pipeline
+yet, a required input left empty, a generic operation with no object picked, a
+`waitForEvent` with no connection, a Transform with no collection, or a
+decision with no condition (a draft trigger or connector tool still refuses and
+must be finished first). Decompile carries the definition of each draft the
+canvas saved and marks its step `{ draft: true }`, so `compile` writes it with a
+warning (`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on
+this page get past it. For instance a decision saved with no condition
+decompiles as `.branch("decision1", undefined, (t) => ..., (e) => ..., { draft: true })`
+and a Transform with no collection as `transform({ operations: [] })` with
+`{ draft: true }`: leave those as written unless the user asked you to finish
+the node. The `waitForEvent`, Transform and decision drafts need `@uipath/maestro-builder-sdk`
+6.86.5 or later; an older one refuses them (`BINDING_MISSING`,
+`TRANSFORM_COLLECTION_LITERAL`, `EXPR_SYNTAX`). Three cases still stop `compile`, and with it the pipeline
 and the by-hand loop below: a generic operation with no object
 (`CONNECTOR_OBJECT_REQUIRED`), a draft you wrote yourself (no carried
 definition), and an untouched node the SDK cannot compile (`check --baseline`
@@ -365,11 +384,13 @@ Leave these as they are. Removing them makes compile name the node
 `<agent>Context` / `Tool` / `Escalation` (with `2`, `3`, ... for more than one)
 with a new directory, so merge drops the original node and adds a different
 one. Do not add them to a resource you create, including one copied from a
-decompiled entry. `check` reports `INLINE_AGENT_RESOURCE_NODE_ID` for a blank
+decompiled entry. `check` reports `FLOW_AGENT_RESOURCE_NODE_ID` for a blank
 `nodeId` or one another node has (or that compile derives for another
-resource), `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
-uuid, and `INLINE_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
-with the same `source`: both would write one `resource.json`. Delete both
+resource), `FLOW_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
+uuid, and `FLOW_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
+with the same `source`: both would write one `resource.json`. (An SDK older
+than 6.88.2 spells these three
+`INLINE_AGENT_RESOURCE_*`.) Delete both
 `nodeId` and `source` from a copied entry.
 Needs `@uipath/maestro-builder-sdk`
 6.33.0 or later; an older SDK's decompile omits these fields and compile renames
@@ -479,6 +500,8 @@ function script_normalize($vars: FlowVars) {
 ```
 
 Edit the script in the function's body; the text between its braces is exactly the node's script, so an untouched script compiles back byte for byte.
+A script that reads `$metadata` gets a second parameter, `$metadata: FlowMetadata`; when it reads a key the engine does not set (one a case sets), the type is `FlowMetadata & Record<string, any>`, so the module still type-checks.
+An SDK older than 6.72.0 (its `dist/api-index.md` does not list `FlowMetadata`) has no metadata parameter, and keeps such a script as `script({ code: "…" })`, with the warning below naming `$metadata`.
 The rules in [script.md](script.md#writing-the-script-as-a-function) apply to the edit: the function may read only what the script runtime has.
 
 A script that cannot be printed as a function stays `script({ code: "…" })`, and decompile warns once for each: `flow-decompile: warning: step "<id>": script kept as a string: <why>`.

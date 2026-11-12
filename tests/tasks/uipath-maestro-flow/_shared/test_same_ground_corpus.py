@@ -14,13 +14,9 @@ from pathlib import Path
 FLOW_TASKS = Path(__file__).resolve().parent.parent
 
 # Post-sweep upstream arrivals, carried as-is until their own alignment pass:
-# - evaluate/child_simulation (#2965, 2026-09-02) gates on `uip solution init`
-#   and `uip maestro flow init` telemetry.
 # - ixp/e2e_03_project_creation_handoff (#2809, 2026-09-02) gates on two
 #   skill_triggered criteria and tells the agent not to run `flow debug`.
-V1_AUTHORING_ALLOWLIST = {
-    "evaluate/child_simulation/child_simulation_crud.yaml",
-}
+V1_AUTHORING_ALLOWLIST: set[str] = set()
 
 SKILL_TELEMETRY_ALLOWLIST = {
     "ixp/e2e_03_project_creation_handoff/e2e_03_project_creation_handoff.yaml",

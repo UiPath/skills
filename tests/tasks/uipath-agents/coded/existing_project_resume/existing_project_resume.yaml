@@ -7,7 +7,7 @@ description: >
   regenerate the schema from the existing code, and edit `main.py`
   in place — without ever running `uip codedagent new` (which
   would clobber the existing project).
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:edit, feature:framework-langgraph, feature:schema-sync]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:edit, feature:framework-langgraph, feature:schema-sync, studio-web-unsupported, studio-web-unsupported:coded-agent]
 max_iterations: 1
 
 sandbox:
@@ -21,7 +21,7 @@ reference:
 
 pre_run:
   - command: "bash -c 'cd mood-meter && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
-    timeout: 180
+    timeout: 300
 
 initial_prompt: |
   I've got a half-built UiPath coded agent under `mood-meter/` that

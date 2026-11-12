@@ -2,7 +2,7 @@
 
 Resources represent the data objects available through a connector (e.g., Salesforce Account, Contact, Opportunity). Each resource supports a set of CRUD operations.
 
-> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: `uip is --help`, and `--help` on each subcommand. Domain-specific usage patterns are shown inline below.
 
 ## Contents
 - Listing and Describing Resources
@@ -128,7 +128,7 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 
 Some parent fields pick a **solution resource** rather than a plain value — a Data Fabric folder entity is the common case, but any kind works the same way. Spot them in the describe output's `Method` JSON: the parameter's `design` carries `"solutionResourceKind"` (the resource kind, e.g. `"entity"`) and usually `"component": "Resources"`.
 
-Pass the resource **name** with `-f` like any other parent value; the CLI resolves it by `solutionResourceKind`:
+First run the describe without `-f` (same `--connection-id` and `--operation`) and find the picker in its `Method` JSON; the field names in the example below are only an illustration. Then pass the resource **name** with `-f` like any other parent value; the CLI resolves it by `solutionResourceKind`:
 
 ```bash
 # Create Entity Record: folderEntityName is an entity picker

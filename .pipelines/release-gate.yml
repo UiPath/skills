@@ -6,7 +6,9 @@ name: $(Date:yyMMdd)$(Rev:.r)-gate
 #
 # It runs FOSSA against the release, the one thing that cannot be done from
 # GitHub Actions: the FOSSA secrets are reachable only through an Azure DevOps
-# service connection.
+# service connection. It also packs the release and scans the tarball for
+# customer-blocked content (scripts/check-sensitive-content.py), so the gate
+# verdict covers that scan independently of the publish job's own copy.
 #
 # Publishing deliberately stays in GitHub Actions: npm mints provenance
 # attestations only for GitHub Actions and GitLab CI identities, so the tarball
@@ -43,13 +45,17 @@ parameters:
     displayName: 'FOSSA agent pool'
     type: string
     default: 'Security-Linux'
+  - name: scanPoolName
+    displayName: 'Sensitive-content scan agent pool'
+    type: string
+    default: 'Security-Linux'
 
 resources:
   repositories:
     - repository: fossa
       type: github
       name: UiPath/AzurePipelinesTemplates
-      ref: refs/tags/uipath.security.fossa.3.2.5
+      ref: refs/heads/stable/uipath.security.scans-v3
       endpoint: github.com_UiPath
 
 stages:
@@ -61,3 +67,10 @@ stages:
       azureServiceConnection: ${{ parameters.azureServiceConnection }}
       poolName: ${{ parameters.fossaPoolName }}
       blockOnIssue: ${{ eq(parameters.channel, 'latest') }}
+
+  # Sensitive-content scan blocks every channel: a value a customer DLP gate
+  # rejects is a rejected package whether it ships as preview or latest.
+  - template: jobs/ci.security.sensitive-content.yml
+    parameters:
+      poolName: ${{ parameters.scanPoolName }}
+      sourceCommit: ${{ parameters.sourceCommit }}

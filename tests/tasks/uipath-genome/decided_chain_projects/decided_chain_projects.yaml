@@ -1,0 +1,81 @@
+task_id: skill-genome-decided-chain-projects
+description: >
+  E2E: the uipath-genome skill builds a component genome (Invoice Dispatch — a CSV export
+  queued per invoice, checked and filed, then registered in Excel; no user interface) whose one flow
+  carries `Decided: B, one invoice — the SDD §10: InvoiceDispatcher → InvoicePerformer → InvoiceReporter`,
+  on an unattended run that takes every default. Grades that the build creates exactly those three RPA
+  projects under those names, that they compile, that the genome is left unchanged, and that nothing is
+  published or deployed.
+tags: [uipath-genome, windows, e2e, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 80
+  max_turns: 200
+  task_timeout: 7200  # the turn plus the criteria's grading
+  turn_timeout: 6600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# run_command goes through cmd.exe on Windows, so every check calls _shared/execute_check.py
+# through `python -c` and reads REFERENCE_DIR from the environment. REFERENCE_DIR (..) also holds
+# the untouched copy of the genome under decided_chain_projects/fixtures/.
+reference:
+  directory: ..
+
+initial_prompt: |
+  Build the automation described in `invoice-dispatch-genome.md` in this folder.
+  This is an unattended run: take the default for every question. Do not publish or
+  deploy anything.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The projects' location is the agent's choice (a solution folder or the sandbox root): the check
+  # finds every RPA project.json and matches its folder name or its project name.
+  - type: run_command
+    description: "The build creates exactly the projects the Decided: chain names"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'projects', '--expect',
+      'InvoiceDispatcher', 'InvoicePerformer', 'InvoiceReporter']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every project built from the genome compiles (uip rpa build exits 0)"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'build', '--all']))"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The build leaves the genome unchanged"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'genome-unchanged',
+      'invoice-dispatch-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'decided_chain_projects', 'fixtures', 'invoice-dispatch-genome.md')]))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing is published or deployed"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(publish|deploy|upload)|rpa\s+publish|or\s+packages\s+upload)'
+    weight: 1.0
+    pass_threshold: 1.0
