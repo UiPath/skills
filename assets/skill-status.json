@@ -74,7 +74,7 @@
       "last_synced": null
     },
     "uipath-connector-builder": {
-      "status": "in-development",
+      "status": "preview",
       "confluence": {
         "page_id": null,
         "url": null
