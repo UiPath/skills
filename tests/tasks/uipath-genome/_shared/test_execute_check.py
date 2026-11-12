@@ -150,3 +150,27 @@ def test_handoff_open_items_beside_it_fail(project):
     handoff_folder(project.parent)
     (project.parent / "sales-open-items.md").write_text(f"# Open items: Sales\n\n{' '.join(NAMES)}\n", encoding="utf-8")
     assert handoff("--open-items") == 1
+
+
+def projects(*names: str) -> int:
+    return execute_check.cmd_projects(argparse.Namespace(expect=list(names)))
+
+
+def rpa_project(parent: Path, folder: str, name: str | None = None) -> None:
+    (parent / folder).mkdir(parents=True)
+    (parent / folder / "project.json").write_text(json.dumps({"name": name or folder, "main": "Main.xaml"}), encoding="utf-8")
+
+
+def test_named_projects_count_by_folder_or_project_name(project):
+    rpa_project(project.parent / "Solution", "Dispatcher")
+    rpa_project(project.parent / "Solution", "perf", name="Performer")
+    assert projects("Sales", "Dispatcher", "Performer") == 0
+
+
+def test_a_missing_project_fails(project):
+    assert projects("Sales", "Dispatcher") == 1
+
+
+def test_an_unexpected_project_fails(project):
+    rpa_project(project.parent, "Reporter")
+    assert projects("Sales") == 1

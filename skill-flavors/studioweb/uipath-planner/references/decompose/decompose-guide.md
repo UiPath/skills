@@ -3,19 +3,14 @@
 <!--skill-flavor:single-skill-exit-no-plan:end-->
 
 <!--skill-flavor:approach-behavior:start-->
-**If "explore first, then plan":**
 - Call `EnterPlanMode` as soon as the user picks this option — before any further discovery, the Step 4 UI batch, or any plan writing. The host then names the plan file paths and attaches its plan-authoring contract.
 - Inside plan mode, run only non-mutating discovery: reading `project.json` and other project files, `uip` commands that only list or read.
 - Do NOT run commands that mutate the project (create files, register targets, install packages) — those belong to execution. While plan mode is active, the only files you may write are the host's two plan files.
 - Run Step 4 inside plan mode, author the plan per Step 5, then present it per Step 6 (`ExitPlanMode`).
-
-**If "explore, plan, and execute simultaneously":**
-- Emit the plan as text in Step 5. The main agent loads the first specialist skill immediately and follows that skill's own workflow.
-- Do NOT call `EnterPlanMode`.
 <!--skill-flavor:approach-behavior:end-->
 
 <!--skill-flavor:write-plan-target:start-->
-Compose the plan per the schema in [plan-and-tasks-format.md → `decompose`](../shared/plan-and-tasks-format.md#decompose-featuremd). Plan body holds the task list in the task row schema. Where it goes depends on Q1:
+Where it goes depends on Q1:
 
 - **Explore first, then plan:** author it inside plan mode as the host plan — at the paths the plan-mode context names, in the format its plan-authoring contract sets, mapped per [plan-and-tasks-format.md → Plan-mode integration](../shared/plan-and-tasks-format.md#plan-mode-integration). Do NOT write `<feature>.md` or anything under `docs/plans/`; skip Save location below.
 - **Explore, plan, and execute simultaneously:** write `<feature>.md` per Save location below. **Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of that file; a bare "this plan" leaves a resumed task with no way to find its values.
