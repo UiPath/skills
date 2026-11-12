@@ -101,7 +101,7 @@ The first upload writes the cloud solution id back into the local `.uipx`, so ea
 ### Check the cloud copy before editing
 
 An upload replaces the cloud copy with the local one, so it would erase edits made in Studio Web.
-Check the cloud copy before you start editing a project in a solution this run did not scaffold, so you build on the current copy, and again before each edit after this run's own first upload: the user may have changed the canvas between turns.
+Check the cloud copy before you start editing a project in a solution this run did not create, so you build on the current copy, and again before each edit after this run's own first upload: the user may have changed the canvas between turns.
 Download the solution by the `SolutionId` in its `.uipx`, into a fresh directory outside the workspace:
 
 ```bash

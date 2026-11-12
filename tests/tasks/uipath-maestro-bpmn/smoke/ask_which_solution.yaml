@@ -31,12 +31,12 @@ success_criteria:
   # chosen a solution (joined one above it, or scaffolded a new one beside
   # HarborOps). `--help` scaffolds nothing. Anchored to the start of a
   # command segment, so a `grep 'uip maestro bpmn init' SKILL.md` lookup
-  # does not count as running it; `-lc '` / `-c "` covers Codex's
-  # `/bin/bash -lc '...'` wrapper.
+  # does not count as running it; `bash -lc` / `sh -c`, quoted or not,
+  # covers Codex's `/bin/bash -lc '...'` wrapper and its unquoted argv join.
   - type: command_not_executed
     description: "Agent did not run bpmn init before the user chose a solution"
     tool_name: "Bash"
-    command_pattern: '(?:^|[\n;&|(]|-l?c\s+[''"])\s*(?:\w+=\S*\s+)*(?:\buip|\$UIP)\s+maestro\s+bpmn\s+init\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    command_pattern: '(?:^|[\n;&|(]|\b(?:ba|z)?sh\s+-l?c\s+[''"]?)\s*(?:\w+=\S*\s+)*(?:\buip|\$UIP)\s+maestro\s+bpmn\s+init\b(?![^\n;&|]*\s(?:--help|-h)\b)'
     weight: 3.0
     pass_threshold: 1.0
 
