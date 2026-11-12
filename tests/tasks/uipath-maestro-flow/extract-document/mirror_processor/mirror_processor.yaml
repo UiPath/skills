@@ -1,0 +1,105 @@
+task_id: skill-flow-extract-document-mirror-processor
+description: >
+  The user wants a second Extract document node that uses the same model as
+  the existing one, which Studio Web offers as "In this solution" when adding
+  an Extract node. Tests that the agent creates it as a read-only mirror of
+  Extract Invoice's processor: the same `processorKey` with
+  `inputs.processorReadOnly: true`, and no processor resource of its own.
+  Either half of the pair alone fails validate: the key
+  without the flag makes a second author of the same processor, and the flag
+  without the key names nothing to run.
+
+  `pre_run` provisions Extract Invoice with the CLI, so the source has a real
+  key and resource file. Extract Invoice's taxonomy and every other original
+  node stay as seeded.
+
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, node:extract-document]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/InvoiceReader
+      mount_point: InvoiceReader
+reference:
+  directory: ../..
+
+pre_run:
+  - command: 'uip maestro flow nodes provision InvoiceReader/InvoiceReader/InvoiceReader.flow --node-id extractInvoice1 --output json'
+    timeout: 120
+
+initial_prompt: |
+  In my InvoiceReader flow, add an Extract document node named "Extract
+  Archived Invoice" that reads a new archived invoice file input and uses the
+  same model as Extract Invoice. Make sure the flow validates.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: json_check
+    description: "One new Extract document node mirrors Extract Invoice's processor: read-only, with the same processorKey, and Extract Invoice stays its author"
+    path: "InvoiceReader/InvoiceReader/InvoiceReader.flow"
+    assertions:
+      - expression: "length(nodes[?type=='uipath.ixp.extract-document-builder' && id!='extractInvoice1' && inputs.processorReadOnly])"
+        operator: equals
+        expected: 1
+      - expression: "nodes[?type=='uipath.ixp.extract-document-builder' && id!='extractInvoice1'].inputs.processorKey == nodes[?id=='extractInvoice1'].inputs.processorKey"
+        operator: equals
+        expected: true
+      - expression: "length(nodes[?id=='extractInvoice1' && inputs.processorReadOnly])"
+        operator: equals
+        expected: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The mirror has no processor resource of its own: the solution still holds one"
+    command: "test \"$(grep -rliE '\"kind\": *\"idpProcessor\"' InvoiceReader/resources | wc -l)\" -eq 1"
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Extract Invoice still authors its processor: a processorKey with its idpProcessor resource in the solution"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader --node-id extractInvoice1 processor
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Extract Invoice's taxonomy equals the seeded one"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader --node-id extractInvoice1 unchanged
+      $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader/InvoiceReader.flow
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every other original node, edge, variable and definition is unchanged (Extract Invoice gained its key in pre_run)"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader --project InvoiceReader/InvoiceReader --changed-node extractInvoice1"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes with no warnings: there is no second author of the processor"
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 12
+  max_turns: 25
+  task_timeout: 900

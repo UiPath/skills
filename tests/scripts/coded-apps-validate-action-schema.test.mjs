@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const SCRIPT = resolve(here, '../../skills/uipath-coded-apps/scripts/validate-action-schema.js')
 const require = createRequire(import.meta.url)
-const { validateActionSchema, SUPPORTED_TYPES, SUPPORTED_FORMATS } = require(SCRIPT)
+const { validateActionSchema, findSharedRootNames, SUPPORTED_TYPES, SUPPORTED_FORMATS } = require(SCRIPT)
 
 const empty = () => ({ type: 'object', properties: {} })
 const schema = (over = {}) => ({ inputs: empty(), outputs: empty(), inOuts: empty(), outcomes: empty(), ...over })
@@ -132,6 +132,56 @@ test('nested object properties are validated recursively', () => {
   assert.equal(errors[1], '  - inOuts.properties.badProps.properties: properties must be an object')
 })
 
+test('a root field name shared across sections is rejected, naming the sections', () => {
+  const str = { type: 'string' }
+  const shared = schema({
+    inputs: { type: 'object', properties: { status: str, id: str } },
+    outputs: { type: 'object', properties: { status: str } },
+    inOuts: { type: 'object', properties: { status: str, id: str } },
+  })
+  assert.deepEqual(findSharedRootNames(shared), [
+    { name: 'status', sections: ['inputs', 'outputs', 'inOuts'] },
+    { name: 'id', sections: ['inputs', 'inOuts'] },
+  ])
+  assert.deepEqual([...validateActionSchema(shared)], [
+    "  - status: 'status' is used in inputs, outputs and inOuts; a root field name can be used only once across inputs, outputs, inOuts and outcomes (rename it, or model a pre-filled editable field as one inOuts field)",
+    "  - id: 'id' is used in inputs and inOuts; a root field name can be used only once across inputs, outputs, inOuts and outcomes (rename it, or model a pre-filled editable field as one inOuts field)",
+  ])
+})
+
+test('an outcome sharing a field name is rejected', () => {
+  const errors = [...validateActionSchema(schema({
+    outputs: { type: 'object', properties: { Approve: { type: 'boolean' } } },
+    outcomes: { type: 'object', properties: { Approve: { type: 'string' } } },
+  }))]
+  assert.equal(errors.length, 1)
+  assert.match(errors[0], /^ {2}- Approve: 'Approve' is used in outputs and outcomes;/)
+})
+
+test('the same nested name under different parents, or in different sections, is fine', () => {
+  const entries = { type: 'array', items: { type: 'string' } }
+  assert.deepEqual([...validateActionSchema(schema({
+    inputs: { type: 'object', properties: { turnover: { type: 'object', properties: { entries } } } },
+    outputs: { type: 'object', properties: { cost: { type: 'object', properties: { entries } } } },
+  }))], [])
+})
+
+test('upgrade mode reports shared root names as warnings, not errors', () => {
+  const str = { type: 'string' }
+  const result = validateActionSchema(schema({
+    inputs: { type: 'object', properties: { status: str } },
+    outputs: { type: 'object', properties: { status: str } },
+  }), { upgrade: true })
+  assert.deepEqual([...result], [])
+  assert.equal(result.warnings.length, 1)
+  assert.match(result.warnings[0], /^ {2}- status: 'status' is used in inputs and outputs;/)
+})
+
+test('malformed sections are skipped by the shared-name scan', () => {
+  assert.deepEqual(findSharedRootNames(schema({ inputs: 'nope', outputs: { type: 'object', properties: [] } })), [])
+  assert.deepEqual(findSharedRootNames(null), [])
+})
+
 // ── CLI ─────────────────────────────────────────────────────────────────────
 
 test('CLI: a valid file exits 0 and says so', () => {
@@ -156,6 +206,21 @@ test('CLI: "-" reads the schema from stdin', () => {
   assert.match(bad.stderr, /inputs: missing required section/)
 })
 
+test('CLI: shared root names fail by default and warn with --upgrade', () => {
+  const str = { type: 'string' }
+  const shared = schema({
+    inputs: { type: 'object', properties: { status: str } },
+    outputs: { type: 'object', properties: { status: str } },
+  })
+  const strict = runFile(shared)
+  assert.equal(strict.status, 1)
+  assert.match(strict.stderr, /- status: 'status' is used in inputs and outputs;/)
+  const upgrade = run(['--upgrade', '-'], JSON.stringify(shared))
+  assert.equal(upgrade.status, 0)
+  assert.match(upgrade.stderr, /^Warning \(kept because --upgrade/)
+  assert.equal(upgrade.stdout, 'action-schema.json is valid.\n')
+})
+
 test('CLI: malformed JSON exits 2', () => {
   const r = runFile('{ not json')
   assert.equal(r.status, 2)
@@ -173,7 +238,7 @@ test('CLI: no arguments or too many arguments is a usage error (exit 2)', () => 
   for (const args of [[], ['a.json', 'b.json']]) {
     const r = run(args)
     assert.equal(r.status, 2)
-    assert.equal(r.stderr, 'usage: validate-action-schema.js <action-schema.json | ->\n')
+    assert.equal(r.stderr, 'usage: validate-action-schema.js [--upgrade] <action-schema.json | ->\n')
   }
 })
 
