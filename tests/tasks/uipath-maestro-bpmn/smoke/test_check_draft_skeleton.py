@@ -157,7 +157,6 @@ class MultiInstanceTests(unittest.TestCase):
                           "inputCollection")
 
 
-
 CAPTURE = ('<uipath:activity version="v1"><uipath:type value="uipath:Activity" version="v1" />'
            '<uipath:output name="Error" type="jsonSchema" source="=Error" var="failure" /></uipath:activity>')
 
