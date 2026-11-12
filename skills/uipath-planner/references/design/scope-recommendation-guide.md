@@ -31,18 +31,20 @@ A Solution produces **one SDD file per project in the Level 2.5 unified project 
 
 For RPA projects in the Solution, use the RPA template once per RPA *group* — if the Level 2.5 Part A decomposition produced a Master Project (e.g., Dispatcher + Performer + Reporting), those sub-projects share one RPA SDD file (§10/§11 cover the sub-projects). If two RPA projects are unrelated (e.g., a Library not called by the Performer), they each get their own RPA SDD file.
 
-**Component rows get no SDD file.** Project-list rows whose product is a component (Coded Function, IXP model, custom connector) do NOT get a per-project SDD file — their contract is the host SDD's table (`### Coded Functions`, `### IXP / Document Understanding Models`, connector rows) plus their row in the solution overview's Project Inventory. `plan` derives their build tasks from those rows, ordered before their consumers.
+**Component rows get no SDD file.** Project-list rows whose product is a component (Coded Function, IXP model, custom connector) do NOT get a per-project SDD file — their contract is the host SDD's table (`### Coded Functions`, `### IXP / Document Understanding Models`, connector rows) plus their row in the solution overview's Project Inventory. The genome makes each a component of its own from those rows, built before its consumers.
 
 ### Solution overview SDD structure
 
 The solution overview SDD includes:
 
 1. Solution Overview (objective, business context)
-2. Planner Handoff — solution-level handoff header with `Project SDD role: root`, `Solution ID: <SOLUTION_NAME_KEBAB>`, `Solution root SDD: <its own filename>`, and the canonical `Tasks file: <SOLUTION_NAME_KEBAB>-tasks.md` (the ONE tasks file every child also names), plus cross-project ordering notes (integrated components built before their consumers) for `plan` to consume. Position 2 keeps the header inside the first ~50 lines § Choosing the Verb reads — do not move it lower. Do not include a task list here — `plan` owns task generation.
+2. Planner Handoff — solution-level handoff header with `Project SDD role: root`, `Solution ID: <SOLUTION_NAME_KEBAB>`, `Solution root SDD: <its own filename>`, plus cross-project ordering notes (integrated components built before their consumers) for the solution's one genome to carry. Position 2 keeps the header inside the first ~50 lines § Choosing the Verb reads — do not move it lower. Do not include a task list here.
 3. Project Inventory — the unified project list from Level 2.5 Part B
 4. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
 5. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
 6. Per-Project SDD Index — filename + one-line scope per project
+
+Put the `<!-- planner-sdd-body:v1 -->` line on its own directly above item 3: items 1–2 are the overview's front matter ([caller-request-guide.md](caller-request-guide.md) § SDD Signals a Caller's Host May Read).
 
 ## Gap Handling for Agent / Coded App
 

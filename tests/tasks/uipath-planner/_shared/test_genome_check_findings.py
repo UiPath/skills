@@ -135,6 +135,20 @@ def test_blockquote_naming_a_legacy_builder_passes(check, legacy):
     assert check(text, profile="strict")[0] == 0
 
 
+def designed_in(text, line):
+    return re.sub(r"^(> \*\*This is a UiPath automation blueprint\.\*\*.*)$", lambda m: f"{m[1]}\n\n{line}", text, count=1, flags=re.M)
+
+
+def test_designed_in_line_without_fingerprint_fails_strict_only(check):
+    text = designed_in(COMPONENT, "> Designed in: [Design](x-sdd.md)")
+    assert text != COMPONENT
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Designed in: line has no sdd-sha256 fingerprint" in out
+    assert check(designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {'a' * 64}"), profile="strict")[0] == 0
+
+
 def test_retired_skill_name_fails_core(check):
     rc, out = check(COMPONENT + "\nOlder drafts used uipath-coded-agents.\n")
     assert rc == 1
