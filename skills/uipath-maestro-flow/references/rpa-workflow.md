@@ -65,12 +65,12 @@ and the deployed contract rather than copying values from a different folder.
 
 ## Which entry point runs
 
-The step starts the process its `key` names. An Orchestrator process runs one
-entry point: the workflow set as main in Studio, unless another was picked for
-the process
+The step starts a job of the process its `key` names, and the job runs that
+process's entry point: the workflow set as main in Studio, unless another was
+picked for the process
 ([Managing processes](https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/managing-processes)).
-No `rpaWorkflow()` field selects another. When the flow calls several entry
-points of one RPA project:
+No `rpaWorkflow()` field passes another. When the flow calls an entry point
+other than main, or several entry points of one RPA project:
 
 1. **Published process:** create one Orchestrator process per entry point and
    give each step the `Data.Key` of its own process. Take `<ENTRY_POINT_PATH>`
@@ -84,15 +84,17 @@ points of one RPA project:
    ```
 
 2. **In-solution sibling:** the solution holds one process per project, and its
-   resource records no entry point; `uip solution resources edit` ignores an
-   entry-point field and still reports success. The deployed process runs the
-   project's main workflow. Make that workflow a dispatcher, or split the entry
-   points into one project each. The dispatcher's arguments are all `String`:
-   In `entryPoint` (the entry point's path, e.g. `Approve.xaml`), In
-   `argumentsJson` (its In and InOut arguments as one JSON object), Out
-   `resultJson` (its Out and InOut arguments as one JSON object). It runs that
-   entry point in the same job and fails on an unknown path. Each step that
-   calls it passes both inputs:
+   entry-point fields are read-only: `uip solution resources edit` skips them
+   and still reports success. The deployed process runs the project's main
+   workflow: for one entry point, set it as main. For several, split them into
+   one project each, so each keeps the typed `returns` that `check` verifies.
+   When they must stay in one project, make the main workflow a dispatcher. Its
+   arguments are all `String`: In `entryPoint` (the entry point's path, e.g.
+   `Approve.xaml`), In `argumentsJson` (its In and InOut arguments as one JSON
+   object), Out `resultJson` (its Out and InOut arguments as one JSON object).
+   It runs that entry point in the same job, converting each value to that
+   workflow's argument type, and fails on an unknown path. Each step that calls
+   it passes both inputs:
 
    ```ts
    .step('approve', rpaWorkflow({ key: localResourceKey, name: '<RpaProject>',
