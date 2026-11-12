@@ -75,7 +75,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 
 ## The loop
 
-1. **Collect samples.** Use decoded Studio Web files ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)); otherwise ask which documents are representative. Prefer varied layouts to duplicates.
+1. **Collect the samples.** Check for documents uploaded to the node; they need decoding first ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). With none, ask for a few representative documents, even when the user listed the fields — variety over volume. With none supplied, design from the stated fields and say so in the report.
 2. **Read them.** Perform one full `Read` per decoded document; it returns text and image for digital and scanned files, so no PDF tooling is needed.
 3. **Design** the taxonomy under the rules below and save it as JSON.
 4. **Write it:** run `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.

@@ -30,7 +30,7 @@ The processor variant points to a solution processor and is a different node typ
 Add and label the node, wire `fileRef`, write taxonomy, bind the result, and validate. It does not extract until the user saves the flow once in Studio Web ([Making it actually extract](#making-it-actually-extract)). `fileRef` is the only author-supplied input and is required for validation.
 
 ```bash
-uip maestro flow nodes create Flow/Flow.flow uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.start.output.invoice"}' --output json
+uip maestro flow nodes create Flow/Flow.flow uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --output json
 uip maestro flow nodes list Flow/Flow.flow --output json
 uip maestro flow validate Flow/Flow.flow --output json
 ```
@@ -40,8 +40,8 @@ uip maestro flow validate Flow/Flow.flow --output json
 <!--skill-flavor:extract-find-flow:start-->
 0. **Find the flow.** Edit a `.flow` on disk. If it exists only in Studio Web, ask for its URL or solution id; nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 <!--skill-flavor:extract-find-flow:end-->
-1. **Declare the file input** unless it exists: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This makes `$vars.start.output.invoice` resolve before use.
-2. **Add the node** with descriptive `--label` and `--input` containing `fileRef`.
+1. **Declare the file input** unless it exists: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is the `<trigger>` in `$vars.<trigger>.output.invoice`, so it comes before the node that reads it.
+2. **Add the node** with descriptive `--label` and `--input` containing `fileRef`, laid out per [operate.md](operate.md#lay-out-the-emitted-flow-first).
 3. **Connect it** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
 4. **Write the taxonomy** in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 5. **Bind the result to a flow output** ([Returning the result](#returning-the-result)).
@@ -67,18 +67,18 @@ The node supplies `inputs.schemaDocument` (empty taxonomy with six built-in fiel
 `fileRef` is a runtime reference to an upstream output or flow variable, not a value:
 
 ```json
-"fileRef": "=js:$vars.start.output.invoice"
+"fileRef": "=js:$vars.<trigger>.output.invoice"
 ```
 
 Set it during creation when possible:
 
 ```bash
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.start.output.invoice"}' --output json
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --output json
 ```
 
 Use the plain `=js:$vars.…` string. The structured form `{"type":"jsExpression","expression":"$vars.…","fieldType":"object"}` also validates, but `fieldType` is required; without it validation rejects the value. Do not use a literal filename or hand-built attachment object.
 
-For connector events, read the trigger output contract for the file-reference field (for example, `ReferenceID` wires as `$vars.start.output.ReferenceID`); do not guess or add a download step. For a direct document input, declare it first:
+For connector events, read the trigger output contract for the file-reference field (for example, `ReferenceID` wires as `$vars.<trigger>.output.ReferenceID`); do not guess or add a download step. For a direct document input, declare it first:
 
 ```bash
 uip maestro flow variables create <file> invoice -d in -t file --description 'The invoice document to extract' --output json
@@ -111,7 +111,7 @@ The `error` port carries failures. Wire it with `edges create --source-port erro
 
 ## Returning the result
 
-Declare an output, create an End node, wire the extract node to it, then write the binding directly into the End node's `outputs` block; there is no CLI command for that final edit:
+Declare an output, create an End node ([laid out](operate.md#lay-out-the-emitted-flow-first)), wire the extract node to it, then write the binding directly into the End node's `outputs` block; there is no CLI command for that final edit:
 
 ```bash
 uip maestro flow variables create <file> extractedData -d out -t object --description 'The structured data extracted from the document' --output json

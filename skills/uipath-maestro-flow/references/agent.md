@@ -71,7 +71,10 @@ mkdir -p <SolutionName>/<AgentProject>
 
 **Install the framework package BEFORE `new`.** `new` defaults to `--type auto` and selects its template from the installed framework package; without one it creates a coded FUNCTION. Verify that `<framework>.json` is beside `main.py` (`langgraph.json` for `uipath-langchain`). If `uipath.json` instead has a `functions` map and no `<framework>.json`, install the package, delete the generated files, and re-run `new`.
 
-Scaffold from INSIDE the agent directory. Do not run `codedagent new` from the solution root: it writes `main.py`, `pyproject.toml`, and `<framework>.json` there and requires manual cleanup.
+Scaffold from INSIDE the agent directory: the venv holding the framework
+package must exist there before `new`. Run from the solution root itself (the
+directory holding the `.uipx`), `uip codedagent new <AgentName>` creates
+`<AgentName>/`; from any other directory it scaffolds in place.
 
 Implement the project, then from that directory run:
 

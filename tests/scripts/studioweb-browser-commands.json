@@ -443,6 +443,36 @@
         "file": "references/licensing/diagnose/references/troubleshooting-guide.md",
         "command": "or licenses",
         "reason": "Tree-diagram label naming a separate surface, not a command."
+      },
+      {
+        "file": "references/llmgateway/custom-connector/custom-connector-guide.md",
+        "command": "login",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` and `uip update` command: the host signs the user in and its CLI is the one available. The canonical terminal steps keep them, and Studio Web runs every other step with `uip` (steps 6 and 7 through the Connector Builder and `uip is resources run create`)."
+      },
+      {
+        "file": "references/llmgateway/custom-connector/custom-connector-guide.md",
+        "command": "login refresh",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` and `uip update` command: the host signs the user in and its CLI is the one available. The canonical terminal steps keep them, and Studio Web runs every other step with `uip` (steps 6 and 7 through the Connector Builder and `uip is resources run create`)."
+      },
+      {
+        "file": "references/llmgateway/custom-connector/custom-connector-guide.md",
+        "command": "login status",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` and `uip update` command: the host signs the user in and its CLI is the one available. The canonical terminal steps keep them, and Studio Web runs every other step with `uip` (steps 6 and 7 through the Connector Builder and `uip is resources run create`)."
+      },
+      {
+        "file": "references/llmgateway/custom-connector/custom-connector-guide.md",
+        "command": "update",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` and `uip update` command: the host signs the user in and its CLI is the one available. The canonical terminal steps keep them, and Studio Web runs every other step with `uip` (steps 6 and 7 through the Connector Builder and `uip is resources run create`)."
+      },
+      {
+        "file": "references/llmgateway/custom-connector/connections-guide.md",
+        "command": "login",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` and `uip update` command: the host signs the user in and its CLI is the one available. The canonical terminal steps keep them, and Studio Web runs every other step with `uip` (steps 6 and 7 through the Connector Builder and `uip is resources run create`)."
+      },
+      {
+        "file": "references/llmgateway/custom-connector/connections-guide.md",
+        "command": "login refresh",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` and `uip update` command: the host signs the user in and its CLI is the one available. The canonical terminal steps keep them, and Studio Web runs every other step with `uip` (steps 6 and 7 through the Connector Builder and `uip is resources run create`)."
       }
     ],
     "ceiling": {

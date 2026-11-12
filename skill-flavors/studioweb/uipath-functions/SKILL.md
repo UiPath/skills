@@ -6,3 +6,6 @@
 Everything else in this skill applies. Read and edit the function project's files directly — `pyproject.toml` / `package.json`, `uipath.json`, entrypoints, typed contracts and the function source — following the authoring rules below. What you cannot do here is scaffold, serve, run, test, pack, publish or deploy, so do not run those commands or report a function as run, tested or published. Make the edit, then tell the user which step to run with the Node CLI on their machine. Diagnosing a deployed failure works from the project files plus the families that *are* bundled (`uip or`, `uip traces`).
 
 <!--skill-flavor:host-scope:end-->
+
+<!--skill-flavor:python-scaffold-location:start-->
+<!--skill-flavor:python-scaffold-location:end-->

@@ -1,0 +1,32 @@
+{
+  "id": "ecs_embeddings_gemini_probe",
+  "description": "One document instance with outputDimensionality 10; the answer must hold exactly one non-empty embedding.",
+  "source": "ProductDefinedProbes/Payloads/ecs_embeddings_gemini_probe.json",
+  "apiFlavor": "GeminiEmbeddings",
+  "optIn": true,
+  "order": 10,
+  "path": "/models/{{model}}:predict",
+  "body": {
+    "instances": [
+      {
+        "task_type": "RETRIEVAL_DOCUMENT",
+        "content": "What is the meaning of life?"
+      }
+    ],
+    "parameters": {
+      "outputDimensionality": 10
+    }
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "predictions is an array holding exactly one item",
+      "jq": "((.predictions // []) | type) == \"array\" and ((.predictions // []) | length) == 1"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "the embedding values are a non-empty array of numbers",
+      "jq": "((.predictions[0].embeddings.values // []) | length) > 0 and all(.predictions[0].embeddings.values[]; type == \"number\")"
+    }
+  ]
+}
