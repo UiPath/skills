@@ -52,13 +52,17 @@ A genome says what the automation does, not how the source did it. However close
 | In the source | In the UiPath build |
 | --- | --- |
 | One automation whose parts need different UiPath products, such as a flow that starts robot work | A project per product: a coordinator and the processes it starts, each built by its own UiPath skill |
-| The same procedure copied into several automations | One library, published to a feed and installed as a package, when it is more than one or a few activities do |
+| The same procedure copied into several automations | One library, published to a feed and installed as a package, when it takes more than one or a few activities |
 | A loop over items with hand-made retries and status | Split as you choose: one process, a producer and a consumer, or one process with a queue; REFramework when picked |
 | A target recorded per step or per window | One Object Repository element per control, shared by every step that uses it; a widget that repeats on many fields is one element that takes the field's label |
 | A wait-and-check step after each action | Verification on the action itself; a separate check only where the outcome changes what happens next. A test's checkpoints stay assertions |
 | Passwords and hosts in files or code | One credential asset per account; per-environment values as settings |
 
-Kept as the source has it: every business rule, outcome and log line, the schedule and every output; the source's own log file is rebuilt only when a step reads it or you ask. What changes is listed with its reason: a source defect fixed because the source states what was meant or you ruled so, a refactor answer, or a platform limit. So the build is a rebuild, not a translation, yet easy to compare with the source: a [rebuild as it is](#rebuilding-an-existing-automation) also keeps the step names, and the shape wherever UiPath's way does not differ, and by default a correspondence table records every step renamed, merged, split or dropped.
+Kept as the source has it: every business rule, outcome and log line, the schedule and every output. The source's own log file is rebuilt only when a step reads it or you ask.
+
+What changes is listed with its reason: a source defect fixed because the source states what was meant or you ruled so, a refactor answer, or a platform limit.
+
+So the build is a rebuild, not a translation, yet easy to compare with the source. A [rebuild as it is](#rebuilding-an-existing-automation) also keeps the step names, and the shape wherever UiPath's way does not differ; by default a correspondence table records every step renamed, merged, split or dropped.
 
 ## Why it holds up
 
@@ -137,7 +141,7 @@ The applications were out of reach, so nothing was run: every verdict is static,
 
 *Session logs of one run · 7–8 Oct 2026 · agents per 10 minutes of active time*
 
-This run was checked in code, not on screen: no app was reachable. The live-run loop comes from a smaller run (7 steps, three live runs), where the agent fixed every failure itself and your part was under a minute of decisions.
+This run was checked in code, not on screen: no app was reachable. The live-run loop comes from a separate 7-step run with three live runs, where the agent fixed every failure itself and your part was under a minute of decisions.
 
 The chart is measured from the session logs of one run: an 84-case test suite and 2 shared libraries, rebuilt from an existing test suite. Your 7 minutes count only the time from each question to your answer. Not counted: the notes and answers files prepared before the run, the time spent reviewing the genome, and the decisions handed back after.
 
@@ -214,7 +218,7 @@ You get:
 
 Before it builds, the agent asks whether it can reach the application, or a comparable test copy of it, and how far it may go there. The recommended answers are the cautious ones: not reachable, and a read-only check with no runs. [Live healing pass](live-healing-pass.md) lists what to tell it, what to ask before the first run, how to question a failure and what the final report must say.
 
-**Prepare:** open the app in a test environment and sign in yourself, since the agent never types a password. Then keep off the mouse and keyboard: the agent takes over the screen, so a VM or a spare machine works best. When the application is only on another machine, the RPA skill can work on an Orchestrator unattended robot there through a remote session. In your answer, name the window or URL it may use and what it must never close.
+**Prepare:** open the app in a test environment and sign in yourself, since the agent never types a password. Then keep off the mouse and keyboard: the agent takes over the screen, so a VM or a spare machine works best. When the application is only on another machine, ask for a remote session: the RPA skill then works on an Orchestrator unattended robot there. In your answer, name the window or URL it may use and what it must never close.
 
 **The targets are checked.** Once the workflows are built, the agent goes through every Object Repository element on its screens without saving anything: it opens pages, menus and lists, types to show a popup, then cancels. It repairs each selector that doesn't match and lists the elements it could not reach. Some screens only appear with data the workflows pull from other systems, such as a record an upstream feed creates; the runs check those.
 
