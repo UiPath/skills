@@ -21,7 +21,7 @@ Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via
 - User wants to create a new solution (`uip solution init`), add or remove projects, or refresh solution resources
 <!--skill-flavor:when-to-use-create:end-->
 <!--skill-flavor:when-to-use-existing:start-->
-- User wants to work on a solution that already exists in Studio Web, or move one to another org or tenant — start with `uip solution download` ([Start From an Existing Solution](#start-from-an-existing-solution))
+- User wants to work on a solution that already exists in Studio Web, recover the source of a deployed solution, or move one to another org or tenant — start with `uip solution download` ([Start From an Existing Solution](#start-from-an-existing-solution))
 <!--skill-flavor:when-to-use-existing:end-->
 - User asks to set up a CI/CD pipeline that builds, publishes, and deploys a UiPath solution
 - User mentions deploy configs, environment promotion, or activating a deployed solution
@@ -118,9 +118,25 @@ When the solution already exists in Studio Web, download its source instead of r
 uip solution download <solution-id> --destination <dir> --extract --output json
 ```
 
-- `<solution-id>` is the Studio Web solution GUID. Ask the user for it when they have not given it.
+- `<solution-id>` is the Studio Web solution GUID. Ask the user for it when they have not given it. A project key, process key, deployment key or package name is not a solution ID: the export answers `ErrorCode: not_found` (older CLIs: `Studio Web API returned 404`).
 - Work inside `Data.ExtractedTo`. It holds the `.uipx` and the project folders. Read the `AGENTS.md` / `CLAUDE.md` there first; `--extract` adds them when the archive has none. Extract into a new or empty folder: `--extract` writes over existing files, so re-running it on a copy you have edited loses those edits. Confirm with the user first.
-- The extracted `.uipx` keeps the Studio Web `SolutionId`, and `uip solution upload` overwrites the solution that has that id in the org you are logged into, or imports a new one when there is none ([Develop a Solution § upload](references/develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds)). To move the solution to another org or tenant, log in there and `upload` it, or `pack` → `publish` → `deploy run` there.
+- The extracted `.uipx` keeps the Studio Web `SolutionId`, and `uip solution upload` overwrites the solution that has that id in the org you are logged into, or imports a new one when there is none ([Develop a Solution § upload](references/develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds)). Studio Web solutions belong to the organization, not to a tenant: every tenant of the org sees the same solutions, so an upload after `uip login tenant set` to another tenant of the same org still overwrites the original. To copy the solution to another org, log in there and `upload` it. For a separate copy in the same org (for example a dev copy next to a demo), replace the `SolutionId` in the `.uipx` with a fresh GUID before the upload. To run the solution in another tenant, `pack` → `publish` → `deploy run` there.
+
+### A solution known only by its deployment
+
+When the user points at a deployed solution (an Orchestrator folder, a deployment, a process) rather than a Studio Web solution, find its source through the package it was deployed from:
+
+```bash
+uip solution deploy list --folder-path <parent-folder> --output json
+uip solution packages download <PackageName> <PackageVersion> --destination <dir> --output json
+uip solution download <SolutionId> --destination <dir> --extract --output json
+```
+
+1. `deploy list` reports each deployment's `PackageName` and `PackageVersion`. `--folder-path` is the folder the solution folder sits in, not the solution folder itself.
+2. `packages download` writes the published package `.zip`. On CLIs that report it, `Data.SolutionId` is the solution the package was packed from.
+3. When that solution is in Studio Web (built there, or uploaded with `uip solution upload`), `solution download <SolutionId> --extract` gives the editable source.
+
+When the download answers `not_found`, the solution is not in Studio Web, and the package `.zip` is the only copy the tenant holds. The same holds when the CLI reports `Data.SolutionId` for other packages but not this one. A CLI that predates the field never reports it: ask the user for the Studio Web solution ID. Tell the user before rebuilding anything from the `.zip`. Do not hand a project key or deployment key to `solution download`.
 <!--skill-flavor:existing-solution:end-->
 
 ## Reference Navigation
@@ -132,6 +148,7 @@ uip solution download <solution-id> --destination <dir> --extract --output json
 | [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resources refresh / resources add / resources remove / resources edit`; field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
 | [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run / feeds list`, targeting a non-tenant feed (`--feed` / `--personal-workspace`), deploy configs, CI/CD pipeline patterns |
+| [Folder Runtime Check](references/deploy-folder-runtimes.md) | The `Data.Warnings` a deploy or upgrade gives when the folder has no runtime for a process's unattended jobs, and the `uip or machines assign` fix |
 | [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / upgrade / uninstall / delete`, in-place version upgrades, environment management |
 | [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions |
 

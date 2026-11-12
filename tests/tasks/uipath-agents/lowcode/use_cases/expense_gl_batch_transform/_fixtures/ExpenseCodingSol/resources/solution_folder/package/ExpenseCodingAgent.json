@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ExpenseCodingAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6d1d6fd9-8a4d-48b2-80cd-547ae498ac5f",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ExpenseCodingAgent"
+    },
+    "locks": [],
+    "key": "90886325-95e0-4960-b8da-f080f2ce960c",
+    "files": []
+  }
+}

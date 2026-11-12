@@ -1,8 +1,10 @@
 task_id: skill-bpmn-integration-service-boundary
 description: >
-  Integration Service boundary eval: agent creates BPMN source shape and an
-  explicit CLI-enrichment handoff without hand-authoring connector-owned
-  connection metadata or running cloud-side commands.
+  Source-only draft eval: agent creates a BPMN source shape whose generated
+  package files stay absent because the deliverable is source-only, while the
+  Integration Service node exercises the element-level CLI-enrichment handoff
+  without hand-authoring connector-owned connection metadata or running
+  cloud-side commands.
 tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, connector, feature:connections]
 
 run_limits:
@@ -36,7 +38,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "BPMN source was created"
-    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('SlackDigestBoundaryBpmn.bpmn')) else 'SlackDigestBoundaryBpmn.bpmn missing')\""
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py SlackDigestBoundaryBpmn"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -49,3 +51,14 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+  # Advisory (pass_threshold 0): the notes name the four CLI-owned blockers, in any
+  # phrasing. It counts toward the weighted score but never fails the task; the
+  # boundary criterion above grades the artifact.
+  - type: run_command
+    description: "Notes name the CLI-owned blockers (advisory)"
+    command: "python3 $REFERENCE_DIR/_shared/check_integration_service_boundary.py --notes-vocabulary"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

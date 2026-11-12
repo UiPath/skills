@@ -1,0 +1,43 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "APMailboxInvoiceBot",
+    "kind": "process",
+    "type": "process",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "abd4b2e0-4817-41c3-8d9e-894bb9b8700e",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "APMailboxInvoiceBot"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Process",
+      "name": "APMailboxInvoiceBot",
+      "package": {
+        "key": "943eb252-0f15-4057-9b5e-ebe72aac181e"
+      },
+      "jobPriority": "Medium",
+      "jobRecording": "Disabled",
+      "targetFrameworkValue": "Portable",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "0b1acfa1-f03f-400f-b36a-50a3e2c39971",
+    "files": []
+  }
+}

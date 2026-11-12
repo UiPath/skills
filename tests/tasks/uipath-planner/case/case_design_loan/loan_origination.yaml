@@ -1,6 +1,6 @@
-task_id: skill-case-phase-0-loan-origination
+task_id: skill-planner-case-design-loan-origination
 description: >
-  CASE DESIGN ONLY (planner Case Design Lane) — simulated interview → sdd.draft.md for a
+  CASE DESIGN ONLY (planner `design`, Case Management) — simulated interview → sdd.draft.md for a
   commercial-loan origination case at a mid-market bank. Tests whether the design conversation captures a logically coherent design: 6 primary stages in
   order (Intake → Loan Setup → Underwriting → QA/QC → Closing → Resolved), 4
   exception lanes (Customer Comms, Escalation, Withdrawn, Rejected), and the
@@ -51,12 +51,12 @@ initial_prompt: |
   build it later, so don't polish or validate it yet, just capture the design.
 
 success_criteria:
-  # The run grades the captured DESIGN, in whichever file the design lane leaves it:
+  # The run grades the captured DESIGN, in whichever file the `design` verb leaves it:
   # sdd.draft.md if it stopped at the draft, or sdd.md if it finalized. All
   # content criteria read whichever exists, so the test does not hinge on the
   # agent stopping at exactly the draft step.
   - type: run_command
-    description: "design lane produced a design document (draft or finalized)"
+    description: "`design` produced a case design document (draft or finalized)"
     command: "ls sdd.draft.md sdd.md 2>/dev/null | grep -q ."
     timeout: 10
     expected_exit_code: 0
@@ -112,7 +112,7 @@ success_criteria:
     include_agent_output: false
     include_reference: false
     prompt: |
-      You are reviewing a design-lane draft document for a COMMERCIAL LOAN
+      You are reviewing a case design draft document for a COMMERCIAL LOAN
       ORIGINATION case. The design is in whichever file is attached —
       `sdd.draft.md` (a pre-finalization draft) or `sdd.md` (the finalized
       version); grade whichever is present. Do NOT penalize unresolved connector

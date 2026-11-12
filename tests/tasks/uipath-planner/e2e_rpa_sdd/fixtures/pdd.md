@@ -1,4 +1,4 @@
-# Process Design Document: Employee Onboarding Data Entry
+# Process Definition Document: Employee Onboarding Data Entry
 
 ## 1. Introduction
 - **Process Name:** Employee Onboarding Data Entry

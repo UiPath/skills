@@ -38,7 +38,19 @@ jobs:
 
       - name: Detect changed Windows-tagged skills and map to test tasks
         id: detect
+        env:
+          DISABLE_SMOKE: ${{ vars.DISABLE_SMOKE }}
         run: |
+          # Kill switch: repo variable DISABLE_SMOKE=true skips the smoke tests
+          # (e.g. while coder-eval runs fail on expired registry tokens rather
+          # than on skill regressions). Emitting skip=true keeps this required
+          # check (and the gated one) green. Unset or any other value: run.
+          if [ "$DISABLE_SMOKE" = "true" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Smoke tests disabled (vars.DISABLE_SMOKE == 'true') — skipping"
+            exit 0
+          fi
+
           BASE_REF="${{ github.base_ref }}"
           if [ -z "$BASE_REF" ]; then BASE_REF="main"; fi
           CHANGED=$(git diff --name-only origin/$BASE_REF...HEAD)
@@ -87,6 +99,27 @@ jobs:
             echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
             echo "Will test: $GLOBS"
           fi
+
+      # The Windows smoke job installs coder-eval on the host (tempdir driver,
+      # no Docker), so it can't read the agent image itself. Freeze the pinned
+      # image's deps here on Linux and hand them over as an artifact.
+      - name: Freeze coder-eval-agent deps as install constraints
+        if: steps.detect.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          img="ghcr.io/uipath/coder-eval-agent:$(tr -d '[:space:]' < tests/.coder-eval-version)"
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$img"
+          docker run --rm --entrypoint pip "$img" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
+          docker logout ghcr.io
+
+      - name: Upload coder-eval constraints
+        if: steps.detect.outputs.skip != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: ce-constraints
+          path: ${{ runner.temp }}/ce-constraints.txt
+          retention-days: 1
 
   smoke:
     needs: detect
@@ -137,22 +170,34 @@ jobs:
       # wheel for this platform and take the newest one that has it — no
       # per-release denylist, no upper cap. The check below fails fast if a
       # wheel ever arrives without the bundled binary.
+      #
+      # Constrained to the pinned agent image's frozen deps (frozen by the
+      # detect job). claude-agent-sdk is dropped from them so --only-binary
+      # keeps picking a release that ships a win_amd64 wheel.
+      - name: Download coder-eval constraints
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: ce-constraints
+          path: ${{ runner.temp }}
+
       - name: Install coder-eval
         shell: bash
+        env:
+          VERSION: ${{ steps.ceref.outputs.version }}
         run: |
+          set -euo pipefail
+          grep -v '^claude-agent-sdk' "$RUNNER_TEMP/ce-constraints.txt" > "$RUNNER_TEMP/ce-constraints-win.txt"
           uv pip install --system --only-binary claude-agent-sdk \
-            "coder-eval==${{ steps.ceref.outputs.version }}"
+            -c "$RUNNER_TEMP/ce-constraints-win.txt" "coder-eval==$VERSION"
           python3 -c "import pathlib, sys, claude_agent_sdk as s; exe = pathlib.Path(s.__file__).parent / '_bundled' / 'claude.exe'; print(f'claude-agent-sdk {s.__version__}: {exe}'); sys.exit(0 if exe.is_file() else f'::error::claude-agent-sdk {s.__version__} has no bundled claude.exe')"
 
+      # The feed allows anonymous reads, so it is added without credentials.
       - name: Configure NuGet feed for Helm packages
         shell: bash
         run: |
           dotnet nuget add source \
             "https://uipath.pkgs.visualstudio.com/Public.Feeds/_packaging/UiPath-Internal/nuget/v3/index.json" \
-            --name UiPath-Internal \
-            --username az \
-            --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
-            --store-password-in-clear-text
+            --name UiPath-Internal
 
       # Install from GitHub Packages `@dev` — the live prerelease train
       # published on every push to `cli/main`. Public npm mirrors the same
@@ -309,18 +354,10 @@ jobs:
           # Route the agent through AWS Bedrock. The Anthropic workspace
           # hit its API usage limit (resets 2026-05-01), so DirectRoute
           # is blocked. Bedrock has a separate quota.
-          #
-          # ANTHROPIC_API_KEY stays set for the LLM reviewer (lightweight
-          # token spend — coder_eval's reviewer only supports Anthropic
-          # direct or UiPath LLM Gateway, not Bedrock). If the shared
-          # workspace quota is still drained when the reviewer fires,
-          # orchestrator._run_final_llm_review swallows the error and
-          # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ vars.AWS_REGION }}
           BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # The gate's agent model, passed on the command line rather than pinned in
           # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal
           # fallback: an unset variable fails the guard step above rather than gating a

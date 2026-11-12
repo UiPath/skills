@@ -48,9 +48,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent described the activity with the entity on the folderEntityName picker"
+    description: "Agent resolved the entity on the folderEntityName picker (describe -f, or the V2 element's --input-details)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+describe(?:(?!uip\s)[^&;|])*CreateEntityRecord_V3(?:(?!uip\s)[^&;|])*folderEntityName=["'']?SkillPickerEvalEntity'
+    command_pattern: '(?:uip\s+is\s+resources\s+describe(?:(?!uip\s)[^&;|])*CreateEntityRecord_V3(?:(?!uip\s)[^&;|])*folderEntityName=["'']?SkillPickerEvalEntity|uip\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution(?:(?!uip\s)[^&;|])*--input-details(?:(?!uip\s)[^&;|])*SkillPickerEvalEntity)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

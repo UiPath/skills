@@ -1,0 +1,191 @@
+task_id: skill-test-perf-scenario-history-integration
+description: >
+  Integration test (read-only for the agent): agent uses the uipath-test skill
+  to answer how many dry runs a performance (load-test) scenario has had and
+  which Orchestrator packages the project's automated test cases use. The
+  test case is linked the legacy way (`link-automation`), so it carries no
+  `AutomationId`: `list-dry-run-reports` cannot resolve the scenario UUID that
+  `executions list --scenario-id` needs, and the agent must read the run
+  history from `perf-scenario executions list` without it. The same link can
+  report `IsAutomated: false`, which must not be read as "no automation";
+  `testcases list-packages` answers the package question. pre_run seeds a throwaway project per run
+  (`EVFX-PERFHIST-*`, key `EVPH<4 hex>`) holding EVFX-PERFHIST-TC1 linked to
+  TestCase_CrossPlatform_VB_Tests and a scenario with one load group for it
+  (name in scenario-name.txt), never run; post_run deletes the project.
+  Graded on the tenant: runs.txt equals the live dry-run count, packages.txt
+  names the linked package, and nothing was executed.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, outcome-graded]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+# Dedicated fixture, see tests/tasks/uipath-test/fixtures/README.md. The shared
+# run-package script checks the tenant, uploads TestCase_CrossPlatform_VB_Tests
+# to uipath-test-folder-feed when it is missing, and creates a throwaway
+# project per run (key in project-key.txt). The second step links
+# EVFX-PERFHIST-TC1 to the package and builds the scenario with its load group.
+# Nothing is executed, so no licence units are spent.
+pre_run:
+  - command: >-
+      python3 _setup/run_package_fixture.py seed --folder uipath-test-folder-feed
+      --package TestCase_CrossPlatform_VB_Tests --nupkg TestCase_CrossPlatform_VB_Tests.1.0.0.nupkg
+      --prefix EVFX-PERFHIST- --key-prefix EVPH
+    timeout: 240
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      FOLDER, PACKAGE, TEST, TC = "uipath-test-folder-feed", "TestCase_CrossPlatform_VB_Tests", "TestCase", "EVFX-PERFHIST-TC1"
+      P = open("project-key.txt").read().strip()
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          except Exception:
+              return {"Result": "Failure", "Message": (r.stdout + r.stderr)[:300]}
+
+      def not_ready(msg):
+          print(f"TENANT NOT READY — environment failure, not an agent failure: {msg}", file=sys.stderr)
+          sys.exit(1)
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:400]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      lic = call("tm", "perf-scenario", "licenses", "get", "--project-key", P)
+      if lic.get("Result") != "Success":
+          not_ready(f"this login cannot use performance testing in {P}: {lic.get('ErrorCode')} {lic.get('Message')}")
+      tc = need(call("tm", "testcases", "create", "--project-key", P, "--name", TC), f"create {TC}")
+      key = tc.get("TestCaseKey")
+      folder = (call("or", "folders", "list", "-n", FOLDER, "--all").get("Data") or [{}])[0].get("Key")
+      link = call("tm", "testcases", "link-automation", "--project-key", P, "--test-case-key", key,
+                  "--folder-key", folder or "", "--package-name", PACKAGE, "--test-name", TEST)
+      if link.get("Result") != "Success":
+          not_ready(f"could not link {TC} to {PACKAGE} in {FOLDER}: {link.get('Message')}")
+
+      name = f"EVFX-PERFHIST-{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      sc = need(call("tm", "perf-scenario", "create", "--project-key", P, "--name", name), f"create scenario {name}")
+      need(call("tm", "perf-scenario", "load-groups", "add", "--scenario-key", sc["ScenarioKey"],
+                "--test-case-key", key, "--folder-key", folder or "", "--package-name", PACKAGE),
+           f"add load group to {sc['ScenarioKey']}")
+      open("scenario-name.txt", "w").write(name + "\n")
+      for stale in ("runs.txt", "packages.txt"):
+          try:
+              __import__("os").remove(stale)
+          except FileNotFoundError:
+              pass
+      print(f"SEEDED {TC} ({key}) in {P}, linked to {PACKAGE}; scenario {name} ({sc['ScenarioKey']}), never run")
+      PYEOF
+    timeout: 180
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  before I start load testing in the Test Manager project whose key is in
+  project-key.txt: how many dry runs has the performance scenario named in
+  scenario-name.txt had so far? and which Orchestrator packages do the
+  project's automated test cases use? put the dry-run count in runs.txt (just
+  the number) and the package names in packages.txt, one per line. don't run
+  anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rules 1 + 2)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent found the scenario with `perf-scenario list`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+perf-scenario\s+list\b'
+    require_success: true
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the run history with `perf-scenario executions list` (must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+perf-scenario\s+executions\s+list\b'
+    require_success: true
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "runs.txt holds the live dry-run count of this run's scenario"
+    command: |
+      python3 - <<'PYEOF'
+      import json, re, subprocess, sys
+      def data(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          out = json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          if out.get("Result") != "Success":
+              print("grader call failed:", a, out); sys.exit(1)
+          return out.get("Data") or {}
+      P = open("project-key.txt").read().strip()
+      # The project is per-run and holds only this scenario, so every dry-run
+      # execution in it is this scenario's.
+      rows = data("tm", "perf-scenario", "executions", "list", "--project-key", P,
+                  "--execution-type", "dryRun", "--limit", "100").get("Data") or []
+      want = str(len(rows))
+      try:
+          got = re.sub(r"\s", "", open("runs.txt").read())
+      except FileNotFoundError:
+          print("runs.txt missing"); sys.exit(1)
+      print("runs.txt:", got, "live:", want)
+      sys.exit(0 if got == want else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the project's automation packages with `testcases list-packages`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+list-packages\b'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "packages.txt names exactly TestCase_CrossPlatform_VB_Tests"
+    command: |
+      python3 - <<'PYEOF'
+      import sys
+      try:
+          lines = {l.strip() for l in open("packages.txt") if l.strip()}
+      except FileNotFoundError:
+          print("packages.txt missing"); sys.exit(1)
+      print(sorted(lines))
+      sys.exit(0 if lines == {"TestCase_CrossPlatform_VB_Tests"} else 1)
+      PYEOF
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent ran nothing (`perf-scenario execute`, `testcases run`, `testsets run`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+(perf-scenario\s+execute|testcases\s+run|testsets\s+run)\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
+    weight: 1.5
+    pass_threshold: 1.0

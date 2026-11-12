@@ -47,12 +47,13 @@ on:
         description: 'coder-eval version (blank = tests/.coder-eval-version pin).'
         type: string
         default: ''
-      # The private repo UiPath/coder_eval_uipath supplies two things here, and
-      # NEITHER is installed into coder-eval's environment: the delegate docker
-      # overlay (Linux, `agent: delegate` only) and the evalboard uploader. The
-      # delegate agent itself is a coder-eval built-in.
+      # The private repo UiPath/coder_eval_uipath supplies three things here: the
+      # delegate / studio-web docker overlay (Linux), the evalboard uploader, and,
+      # on a studio-web run only, the plugin that registers the studio-web agent.
+      # The delegate agent itself is a coder-eval built-in, so a delegate run
+      # installs nothing from it into coder-eval's environment.
       coder_eval_uipath_ref:
-        description: 'coder_eval_uipath git ref (blank = main). Delegate overlay + evalboard uploader.'
+        description: 'coder_eval_uipath git ref (blank = main). Delegate/Studio Web overlay, Studio Web plugin, evalboard uploader.'
         type: string
         default: ''
       # Decouples the GHCR agent image from the wheel version, so an ad-hoc /
@@ -72,6 +73,12 @@ on:
       # with its own delegate-stdio install, ROPC user token, and shared interop —
       # ports of coder_eval_uipath's daily.sh / daily-windows.ps1 wiring.
       #
+      # studio-web = the browser-hosted Studio Web Autopilot, driven through the
+      # @uipath/studioweb-stdio bridge (a headless Chromium) by coder_eval_uipath's
+      # plugin agent. Linux only: windows-tagged tasks are the desktop-RPA suite,
+      # which that surface cannot run, so they are dropped with a warning. Its
+      # backend picks the model, so the run is labelled `studio-web-default`.
+      #
       # codex is the DEFAULT: it is the harness the nightly runs daily (claude runs
       # twice a week), and codex on the cheap tier measures at pass-rate parity with
       # claude-sonnet-5 for a fraction of the cost. An ad-hoc run should reproduce the
@@ -84,6 +91,7 @@ on:
           - claude
           - antigravity
           - delegate
+          - studio-web
         default: codex
       # Overrides the model for ANY agent. Blank keeps that harness's own repo
       # variable (CLAUDE_CODE_MODEL / CODEX_MODEL / ANTIGRAVITY_MODEL) — which is
@@ -156,6 +164,7 @@ jobs:
         env:
           INPUT_GLOBS: ${{ inputs.task_globs }}
           CONFIRMED:   ${{ inputs.confirm_large_run }}
+          AGENT:       ${{ inputs.agent }}
         run: |
           set -euo pipefail
           if [ -z "$INPUT_GLOBS" ]; then
@@ -166,6 +175,7 @@ jobs:
           cd tests
           LINUX=()
           WINDOWS=()
+          DROPPED=0
           for pat in $INPUT_GLOBS; do
             for f in $pat; do
               [ -f "$f" ] || continue
@@ -173,12 +183,19 @@ jobs:
               # Word boundary keeps `feature:windows-foo` (hypothetical)
               # from matching.
               if grep -qE '^tags:.*\bwindows\b' "$f"; then
-                WINDOWS+=("$f")
+                if [ "$AGENT" = "studio-web" ]; then
+                  DROPPED=$((DROPPED + 1))
+                else
+                  WINDOWS+=("$f")
+                fi
               else
                 LINUX+=("$f")
               fi
             done
           done
+          if [ "$DROPPED" -gt 0 ]; then
+            echo "::warning::studio-web: dropped $DROPPED windows-tagged task(s); the desktop-RPA suite does not run under Studio Web"
+          fi
           LCOUNT=${#LINUX[@]}
           WCOUNT=${#WINDOWS[@]}
           TOTAL=$((LCOUNT + WCOUNT))
@@ -196,6 +213,29 @@ jobs:
           echo "windows_globs=${WINDOWS[*]:-}" >> "$GITHUB_OUTPUT"
           echo "linux_count=$LCOUNT"            >> "$GITHUB_OUTPUT"
           echo "windows_count=$WCOUNT"          >> "$GITHUB_OUTPUT"
+
+      # run-windows installs coder-eval on the host (tempdir driver, no
+      # Docker), so it can't read the agent image itself. Freeze the image's
+      # deps here on Linux and hand them over as an artifact.
+      - name: Freeze coder-eval-agent deps as install constraints
+        if: steps.split.outputs.windows_count != '0'
+        env:
+          CE_IMAGE_TAG: ${{ steps.ceref.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          img="ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$img"
+          docker run --rm --entrypoint pip "$img" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
+          docker logout ghcr.io
+
+      - name: Upload coder-eval constraints
+        if: steps.split.outputs.windows_count != '0'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: ce-constraints
+          path: ${{ runner.temp }}/ce-constraints.txt
+          retention-days: 1
 
   run-linux:
     needs: partition
@@ -236,15 +276,15 @@ jobs:
       # uv tool environment and imports no coder-eval code.
       #
       # Non-fatal on purpose: a stale PAT must cost the evalboard link, not the
-      # eval. delegate still fails loudly: the overlay step asserts the checkout
-      # is present before it builds.
+      # eval. delegate and studio-web still fail loudly: the overlay step asserts
+      # the checkout is present before it builds.
       #
       # Needs a repo-read token — GH_PACKAGES_TOKEN is packages-only, so this is
       # the one step that requires GH_PAT. persist-credentials: false keeps that
       # PAT out of .git/config: this checkout doubles as the overlay docker build
       # context below.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
-        if: inputs.agent == 'delegate' || env.EVALBOARD_UPLOAD_ENABLED == 'true'
+        if: inputs.agent == 'delegate' || inputs.agent == 'studio-web' || env.EVALBOARD_UPLOAD_ENABLED == 'true'
         continue-on-error: true
         with:
           repository: UiPath/coder_eval_uipath
@@ -298,8 +338,12 @@ jobs:
         env:
           CE_IMAGE_TAG: ${{ needs.partition.outputs.image_tag }}
         run: |
+          set -euo pipefail
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
+          # Host coder-eval (installed by the action below) is constrained to
+          # the image's frozen deps so host and container resolve the same.
+          docker run --rm --entrypoint pip "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
 
       # Build the skills extension image (`@uipath/cli`, its tool plugins, and
       # `@uipath/maestro-builder-sdk` on top of coder-eval-agent). Matches
@@ -340,19 +384,48 @@ jobs:
       # Dockerfile for why), and fails the build when the image's coder-eval does
       # not register `delegate`. `preview` is the dist-tag the nightly tracks.
       # Mirrors daily.sh in coder_eval_uipath.
-      - name: Overlay skills image for delegate
-        if: inputs.agent == 'delegate'
+      #
+      # studio-web adds the overlay's optional layers: the plugin that registers
+      # the agent in-container, the @uipath/studioweb-stdio bridge with its
+      # Chromium, and the interop's `Testing` environment (the testbench page
+      # calls it without a token). The bridge version is resolved to an exact
+      # build first so the log records what ran; the STUDIOWEB_STDIO_VERSION repo
+      # variable overrides the `preview` dist-tag.
+      - name: Overlay skills image for delegate / studio-web
+        if: inputs.agent == 'delegate' || inputs.agent == 'studio-web'
         env:
           DOCKER_BUILDKIT: "1"
           GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+          AGENT: ${{ inputs.agent }}
+          STUDIOWEB_STDIO_VERSION_VAR: ${{ vars.STUDIOWEB_STDIO_VERSION }}
         run: |
+          set -euo pipefail
           if [ ! -f coder_eval_uipath/eval_runner/scripts/ci/delegate-overlay.Dockerfile ]; then
-            echo "::error::coder_eval_uipath checkout is missing — delegate needs it for the docker overlay. Check the GH_PAT secret."
+            echo "::error::coder_eval_uipath checkout is missing — $AGENT needs it for the docker overlay. Check the GH_PAT secret."
             exit 1
+          fi
+          studio_args=()
+          if [ "$AGENT" = "studio-web" ]; then
+            requested="${STUDIOWEB_STDIO_VERSION_VAR:-preview}"
+            npmrc="$(mktemp)"
+            printf '@uipath:registry=https://npm.pkg.github.com/\n//npm.pkg.github.com/:_authToken=%s\n' "$GH_NPM_REGISTRY_TOKEN" > "$npmrc"
+            resolved="$(NPM_CONFIG_USERCONFIG="$npmrc" npm view "@uipath/studioweb-stdio@$requested" version 2>/dev/null | tail -n 1 || true)"
+            rm -f "$npmrc"
+            if [ -z "$resolved" ]; then
+              echo "::warning::could not resolve @uipath/studioweb-stdio@$requested to an exact version; building with the tag as given"
+              resolved="$requested"
+            fi
+            echo "::notice title=studioweb-stdio::@uipath/studioweb-stdio@$resolved (requested '$requested')"
+            studio_args=(
+              --build-arg INSTALL_UIPATH_PLUGIN=1
+              --build-arg "STUDIOWEB_STDIO_VERSION=$resolved"
+              --build-arg INTEROP_ASPNET_ENV=Testing
+            )
           fi
           docker build \
             --build-arg BASE_IMAGE=skills-image:latest \
             --build-arg DELEGATE_STDIO_VERSION=preview \
+            ${studio_args[@]+"${studio_args[@]}"} \
             --secret id=gh_npm,env=GH_NPM_REGISTRY_TOKEN \
             -t skills-image:latest \
             -f coder_eval_uipath/eval_runner/scripts/ci/delegate-overlay.Dockerfile \
@@ -404,7 +477,6 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ vars.AWS_REGION }}
           BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           E2E_PROCESS_KEY:          ${{ vars.E2E_PROCESS_KEY }}
           E2E_LONG_PROCESS_KEY:     ${{ vars.E2E_LONG_PROCESS_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
@@ -455,7 +527,7 @@ jobs:
           # the model if agent.model is unset. Values must be single-line.
           env_lines=()
           for name in SKILLS_REPO_PATH API_BACKEND AWS_BEARER_TOKEN_BEDROCK AWS_REGION \
-                      BEDROCK_MODEL ANTHROPIC_API_KEY E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
+                      BEDROCK_MODEL E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
                       TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL \
                       CLAUDE_CODE_MODEL CODEX_MODEL ANTIGRAVITY_MODEL DELEGATE_MODEL \
                       CODEX_API_KEY CODEX_BASE_URL GEMINI_API_KEY; do
@@ -480,6 +552,7 @@ jobs:
           # install: the action's tool environment shadows every other
           # coder-eval on PATH.
           extras="litellm"
+          extra_packages=""
           if [ "$AGENT" = "codex" ]; then
             model="${AGENT_MODEL:-${CODEX_MODEL:?unset — set the CODEX_MODEL repo variable}}"
             args+=(--type codex)
@@ -488,23 +561,43 @@ jobs:
             model="${AGENT_MODEL:-${ANTIGRAVITY_MODEL:?unset — set the ANTIGRAVITY_MODEL repo variable}}"
             args+=(--type antigravity)
             extras="antigravity,litellm"
-          elif [ "$AGENT" = "delegate" ]; then
-            # Default kimi-k2-7-code (hyphenated id — the delegate host converts
-            # it to the backend's underscored form); the optional DELEGATE_MODEL
-            # repo variable or the agent_model input overrides it. The inherited
-            # claude default is rejected by the alpha Delegate backend, so a
-            # model must always be passed.
-            model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
-            args+=(--type delegate)
-            # Alpha backend rate limits: the reference pipeline caps delegate
-            # at -j 6 (eval_runner cli.py HARNESS_CONCURRENCY — at -j 20 retry
-            # backoff blew task timeouts into TIMEOUT waves, build 12599458).
+          elif [ "$AGENT" = "delegate" ] || [ "$AGENT" = "studio-web" ]; then
+            if [ "$AGENT" = "studio-web" ]; then
+              # The Studio Web backend picks the model and the bridge logs a
+              # requested one as "not enforced", so the default is a label for
+              # what actually ran (daily.sh's); agent_model still wins.
+              model="${AGENT_MODEL:-studio-web-default}"
+              args+=(--type studio-web)
+              # The agent is coder_eval_uipath's plugin, registered through an
+              # entry point that is found only inside coder-eval's own tool
+              # environment. The overlay bakes it in-container; this is the host.
+              extra_packages="$SKILLS_REPO_PATH/coder_eval_uipath"
+              # Each task runs its own headless Chromium on a 4-vCPU runner.
+              max_j=4
+              # The shared alpha backend sometimes stalls a first round-trip
+              # with no output; after 240 s of silence the studio-web agent
+              # respawns the bridge and resends once (daily.sh's value, set
+              # above the host's own SSE watchdogs so those fire first).
+              env_lines+=("DELEGATE_STALL_TIMEOUT_S=240")
+            else
+              # Default kimi-k2-7-code (hyphenated id — the delegate host converts
+              # it to the backend's underscored form); the optional DELEGATE_MODEL
+              # repo variable or the agent_model input overrides it. The inherited
+              # claude default is rejected by the alpha Delegate backend, so a
+              # model must always be passed.
+              model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
+              args+=(--type delegate)
+              # Alpha backend rate limits: the reference pipeline caps delegate
+              # at -j 6 (eval_runner cli.py HARNESS_CONCURRENCY — at -j 20 retry
+              # backoff blew task timeouts into TIMEOUT waves, build 12599458).
+              # Per-task isolation needs no cap: each container spawns its own
+              # supervised interop on its own network namespace (overlay entrypoint).
+              max_j=6
+            fi
             # Clamp rather than fail so a large `parallelism` input still runs.
-            # Per-task isolation needs no cap: each container spawns its own
-            # supervised interop on its own network namespace (overlay entrypoint).
-            if [ "$j" -gt 6 ]; then
-              echo "::notice::delegate: clamping -j $j to 6 (alpha Delegate backend rate limits)"
-              j=6
+            if [ "$j" -gt "$max_j" ]; then
+              echo "::notice::$AGENT: clamping -j $j to $max_j"
+              j=$max_j
             fi
             # Cloud env slug for the Delegate backend, sent as the host's `env`
             # init option (mirrors daily.sh in coder_eval_uipath).
@@ -552,12 +645,14 @@ jobs:
             # frozen DELEGATE_AUTH_TOKEN env copy stops mattering past the ~1h
             # ROPC TTL, PROVIDED the file stays fresh. This workflow mints the token once
             # (no refresher loop like the nightly's), so runs longer than ~1h can
-            # still hit token expiry on late tasks.
+            # still hit token expiry on late tasks. A refresher here would need a
+            # foreground step: masks registered from a background process never
+            # reach the job log, and this repo's logs are public.
             env_lines+=("DELEGATE_AUTH_TOKEN_FILE=/.uipath/.auth:$AUTH_FILE")
             # Docker forwards only an env allowlist into the container; append
             # the delegate auth/env vars to nightly.yaml's own list (MergeField
             # append-semantics). Same list as run.py in coder_eval_uipath, less
-            # DELEGATE_STALL_TIMEOUT_S (only its studio-web agent reads it):
+            # DELEGATE_BACKEND_URL (unused here).
             # USER_ID is included for parity — the delegate host reads it when
             # the environment provides one, and it is simply unset (harmless)
             # here. DELEGATE_STDIO_PATH is deliberately NOT forwarded: the
@@ -566,7 +661,7 @@ jobs:
             delegate_env="DELEGATE_AUTH_TOKEN,DELEGATE_AUTH_TOKEN_FILE,DELEGATE_TENANT_ID"
             delegate_env="$delegate_env,DELEGATE_ORG_ID,USER_ID,DELEGATE_ORG_SLUG"
             delegate_env="$delegate_env,DELEGATE_TENANT_SLUG,DELEGATE_ENV,USE_LLM_GATEWAY_FOR_FIREWORKS"
-            delegate_env="$delegate_env,DELEGATE_STDIO_VERBOSE,DELEGATE_STDIO_LOG_MAX_CHARS"
+            delegate_env="$delegate_env,DELEGATE_STDIO_VERBOSE,DELEGATE_STDIO_LOG_MAX_CHARS,DELEGATE_STALL_TIMEOUT_S"
             args+=(-D "sandbox.docker.env_passthrough_extra=[$delegate_env]")
           else
             model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
@@ -592,6 +687,7 @@ jobs:
           delim="ghaout$RANDOM$RANDOM$RANDOM"
           {
             echo "extras=$extras"
+            echo "extra_packages=$extra_packages"
             echo "args<<$delim"
             printf '%s\n' "${args[@]}"
             echo "$delim"
@@ -618,6 +714,10 @@ jobs:
           version: ${{ needs.partition.outputs.coder_eval_version }}
           working-directory: tests
           extras: ${{ steps.prep.outputs.extras }}
+          extra-packages: ${{ steps.prep.outputs.extra_packages }}
+          # Frozen from the agent image by the pull step above.
+          install-flags: |
+            --constraints=${{ runner.temp }}/ce-constraints.txt
           args: ${{ steps.prep.outputs.args }}
           env: ${{ steps.prep.outputs.env_block }}
           run-dir: /tmp/runs
@@ -643,7 +743,6 @@ jobs:
         if: always()
         env:
           AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
           CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
           GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
           E2E_PROCESS_KEY:           ${{ vars.E2E_PROCESS_KEY }}
@@ -655,13 +754,12 @@ jobs:
           import os
           import pathlib
 
-          # Every secret this job forwards into the run, not just the three
+          # Every secret this job forwards into the run, not just the ones
           # smoke-skills.yml strips. It matters more here than there: this report
           # is uploaded twice (a GitHub artifact and, when the identity is wired,
           # an evalboard blob) and its run.md is echoed into the job summary.
           names = (
               "AWS_BEARER_TOKEN_BEDROCK",
-              "ANTHROPIC_API_KEY",
               "CODEX_API_KEY",
               "GEMINI_API_KEY",
               "E2E_PROCESS_KEY",
@@ -910,7 +1008,14 @@ jobs:
           dotnet-version: '8.0.x'
 
       # Host coder-eval CLI at the version the partition job resolved. Windows
-      # tasks run under the tempdir driver — no agent image.
+      # tasks run under the tempdir driver — no agent image here; the
+      # partition job froze its deps into the constraints artifact.
+      - name: Download coder-eval constraints
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: ce-constraints
+          path: ${{ runner.temp }}
+
       - name: Install coder-eval
         shell: bash
         env:
@@ -918,6 +1023,11 @@ jobs:
           CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
         run: |
           set -euo pipefail
+          # The agent SDKs below are picked per platform on purpose (Windows
+          # wheels, the openai-codex pre-release), so they stay out of the
+          # Linux image's pins.
+          grep -vE '^(claude-agent-sdk|openai-codex|google-antigravity)' "$RUNNER_TEMP/ce-constraints.txt" > "$RUNNER_TEMP/ce-constraints-win.txt"
+          export UV_CONSTRAINT="$RUNNER_TEMP/ce-constraints-win.txt"
           # Windows runs the tempdir driver (agent on host), so the codex SDK
           # installed here is what the codex agent actually uses. openai-codex
           # 0.1.0b3 (verified against coder-eval 0.6.2) pulls a pre-release
@@ -936,15 +1046,13 @@ jobs:
           esac
           python -c 'from importlib.metadata import version; print("coder-eval resolved to", version("coder-eval"))'
 
+      # The feed allows anonymous reads, so it is added without credentials.
       - name: Configure NuGet feed for Helm packages
         shell: bash
         run: |
           dotnet nuget add source \
             "https://uipath.pkgs.visualstudio.com/Public.Feeds/_packaging/UiPath-Internal/nuget/v3/index.json" \
-            --name UiPath-Internal \
-            --username az \
-            --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
-            --store-password-in-clear-text
+            --name UiPath-Internal
 
       # Single-feed install: `@uipath/cli` AND the RPA tool plugins come from the
       # internal GitHub Packages feed on the same prerelease train (default `dev`),
@@ -1146,7 +1254,6 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ vars.AWS_REGION }}
           BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
@@ -1322,7 +1429,6 @@ jobs:
         shell: bash
         env:
           AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
           CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
           GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
           E2E_PROCESS_KEY:           ${{ vars.E2E_PROCESS_KEY }}
@@ -1339,7 +1445,6 @@ jobs:
 
           names = (
               "AWS_BEARER_TOKEN_BEDROCK",
-              "ANTHROPIC_API_KEY",
               "CODEX_API_KEY",
               "GEMINI_API_KEY",
               "E2E_PROCESS_KEY",

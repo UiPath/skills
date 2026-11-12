@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
@@ -21,12 +22,16 @@ from bpmn_assertions import (  # noqa: E402
     elements,
     fail,
     load_bpmn,
+    local,
 )
-from graph import edges, ids, reachable, reaches  # noqa: E402
+from graph import edges, ids, parent_map, reachable, reaches  # noqa: E402
 
 BPMN = "VendorOnboarding/VendorOnboarding.bpmn"
 OUTCOME_RE = re.compile(r"vars\.([A-Za-z_][A-Za-z0-9_]*)")
 SIDE_EFFECT_KINDS = ("serviceTask", "sendTask")
+REJECT_ROUTE_KINDS = ("exclusiveGateway", "sendTask", "intermediateThrowEvent")
+ERROR_DEF = f"{{{BPMN_NS}}}errorEventDefinition"
+TERMINATE_DEF = f"{{{BPMN_NS}}}terminateEventDefinition"
 
 
 def gates_stage(
@@ -37,6 +42,152 @@ def gates_stage(
     if review_id in reachable(root, join_id, blocked={gate_id}):
         return False
     return bool(reachable(root, gate_id, blocked=reviews) & end_ids)
+
+
+def catches(definition, error_ref: str) -> bool:
+    handled = definition.attrib.get("errorRef")
+    return not handled or handled == error_ref
+
+
+def _nearest_catch(root, end, parents, error_ref: str):
+    node = end
+    while node in parents:
+        node = parents[node]
+        for sub in node.findall(f"{{{BPMN_NS}}}subProcess"):
+            if sub.attrib.get("triggeredByEvent") != "true":
+                continue
+            for start in sub.findall(f"{{{BPMN_NS}}}startEvent"):
+                definition = start.find(ERROR_DEF)
+                if definition is not None and catches(definition, error_ref):
+                    return start
+
+        for boundary in elements(root, "boundaryEvent"):
+            definition = boundary.find(ERROR_DEF)
+            if definition is None or boundary.attrib.get("attachedToRef", "") != node.attrib.get("id"):
+                continue
+            if catches(definition, error_ref):
+                return boundary
+    return None
+
+
+def error_caught(root, end, parents, later: set[str]) -> bool:
+    error_ref = end.find(ERROR_DEF).attrib.get("errorRef")
+    declared = {e.attrib.get("id"): e.attrib.get("errorCode") for e in elements(root, "error")}
+    if not error_ref or not declared.get(error_ref):
+        return False
+
+    # The nearest enclosing catch takes the error. A handler inside an embedded
+    # subprocess completes that subprocess, which then continues on its outgoing
+    # flow, so only a process-level one stops the instance.
+    catch = _nearest_catch(root, end, parents, error_ref)
+    if catch is None:
+        return False
+    if local(catch.tag) == "startEvent":
+        return catch.attrib.get("isInterrupting") != "false" and local(parents[parents[catch]].tag) == "process"
+    if catch.attrib.get("cancelActivity") == "false":
+        return False
+    return not reachable(root, catch.attrib.get("id", "")) & later
+
+
+def stopping_ends(root, later: set[str]) -> set[str]:
+    # A plain end in one parallel branch leaves the join waiting on the other,
+    # and an uncaught error end faults the instance instead of rejecting it.
+    parents = parent_map(root)
+    stopping = set()
+    for end in elements(root, "endEvent"):
+        if end.find(TERMINATE_DEF) is not None:
+            stopping.add(end.attrib.get("id", ""))
+        elif end.find(ERROR_DEF) is not None and error_caught(root, end, parents, later):
+            stopping.add(end.attrib.get("id", ""))
+    return stopping
+
+
+def _terminal_ends(root) -> set[str]:
+    sources = {source for source, _target in edges(root)}
+    return ids(elements(root, "endEvent")) - sources
+
+
+def rejects_before_join(root, gate_id: str, join_id: str, end_ids: set[str]) -> bool:
+    exits = [target for source, target in edges(root) if source == gate_id]
+    skips = [e for e in exits if join_id not in {e} | reachable(root, e)]
+    if not skips:
+        return False
+    return all(({e} | reachable(root, e)) & end_ids for e in skips)
+
+
+def gated_before_join(
+    root, fork_id: str, join_id: str, gate_ids: set[str], task_ids: set[str], later: set[str]
+) -> bool:
+    if join_id in reachable(root, fork_id, blocked=gate_ids):
+        return False
+    fork_exits = [target for source, target in edges(root) if source == fork_id]
+    if not all(reaches(root, e, join_id) for e in fork_exits):
+        return False
+
+    branch = {t for t in reachable(root, fork_id, blocked={join_id}) & task_ids if reaches(root, t, join_id)}
+    if not branch:
+        return False
+
+    # Everything the fork reaches before the join finishes only at ends that
+    # stop the instance. Where it shares the joined chain, that part may only
+    # merge and notify, before any of the chain's side effects (the guide's
+    # shared reject_merge, not fulfilment).
+    stop_ids = stopping_ends(root, later)
+    end_ids = _terminal_ends(root)
+    region = reachable(root, fork_id, blocked={join_id})
+    joined = reachable(root, join_id) - ids(elements(root, "endEvent"))
+    reject_route = ids([e for kind in REJECT_ROUTE_KINDS for e in elements(root, kind)])
+    effects = ids([e for kind in SIDE_EFFECT_KINDS for e in elements(root, kind)])
+    after_effects = reachable(root, joined & effects)
+    if not (region & joined) <= reject_route - after_effects or not (region & end_ids) <= stop_ids:
+        return False
+
+    gates_of = {r: verdict_gates(root, r, gate_ids, task_ids) for r in branch}
+    seen: set[str] = set()
+    for review_id, gates in gates_of.items():
+        if join_id in reachable(root, review_id, blocked=gate_ids):
+            return False
+        if not gates or gates & seen:
+            return False
+        seen |= gates
+        if not all(rejects_before_join(root, g, join_id, end_ids) for g in gates):
+            return False
+        others = set().union(*(g for r, g in gates_of.items() if r != review_id))
+        if _crosses_branch(root, gates, join_id, others):
+            return False
+    return True
+
+
+def _crosses_branch(root, gates: set[str], join_id: str, others: set[str]) -> bool:
+    # An exit into another branch's gate sends two tokens down one join input.
+    for source, exit_id in edges(root):
+        if source in gates and ({exit_id} | reachable(root, exit_id, blocked={join_id})) & others:
+            return True
+    return False
+
+
+def _add_completion_flows(root) -> None:
+    # Only an error end leaves an embedded subprocess without completing it;
+    # any other end lets reachability follow the subprocess's outgoing flow.
+    for sub in elements(root, "subProcess"):
+        targets = [t for source, t in edges(root) if source == sub.attrib.get("id")]
+        for end in sub.findall(f"{{{BPMN_NS}}}endEvent"):
+            if end.find(ERROR_DEF) is not None:
+                continue
+            for target in targets:
+                ET.SubElement(sub, f"{{{BPMN_NS}}}sequenceFlow", sourceRef=end.attrib.get("id", ""), targetRef=target)
+
+
+def _common_next_gates(root, verdicts: set[str], gate_ids: set[str]) -> set[str]:
+    # A gate every verdict exit reaches re-reads the verdict, as the risk-tiered
+    # layout's approved gate does after its chain subprocess.
+    shared = set()
+    for gate_id in verdicts:
+        exits = [t for source, t in edges(root) if source == gate_id]
+        if not exits:
+            continue
+        shared |= set.intersection(*({t} | reachable(root, t) for t in exits)) & gate_ids
+    return shared
 
 
 def verdict_gates(root, review_id: str, gate_ids: set[str], reviews: set[str]) -> set[str]:
@@ -71,6 +222,7 @@ def out_degree(root, node_id: str) -> int:
 
 def main() -> None:
     root = load_bpmn(BPMN)
+    _add_completion_flows(root)
 
     user_tasks = elements(root, "userTask")
     if len(user_tasks) < 3:
@@ -112,22 +264,29 @@ def main() -> None:
         fail("no review task follows the join — the third approver does not act after the other two")
 
     # The chain can stop at any step: between the join and each later review,
-    # an exclusive gateway must be able to exit to an end without any later review.
+    # an exclusive gateway must be able to exit to an end without any later review,
+    # or every parallel review has its own gate before the join whose other exits stop the instance.
     exclusive = elements(root, "exclusiveGateway")
     gate_ids = ids(exclusive)
-    end_ids = ids(elements(root, "endEvent"))
+    end_ids = _terminal_ends(root)
     side_effect_ids = ids([e for kind in SIDE_EFFECT_KINDS for e in elements(root, kind)])
+    fork_id = forks[0].attrib.get("id", "")
+    pre_join = gated_before_join(root, fork_id, join_id, gate_ids, task_ids, sequential)
     for review_id in sorted(sequential):
-        if not any(gates_stage(root, join_id, g, review_id, sequential, end_ids) for g in gate_ids):
+        if not pre_join and not any(gates_stage(root, join_id, g, review_id, sequential, end_ids) for g in gate_ids):
             fail(
                 f"{review_id} is reachable from {join_id} without an exclusive gateway "
-                "that can exit to an end past every later review, so a parallel rejection still reaches it"
+                "that can exit to an end past every later review, or its own gate on each parallel review before "
+                f"{join_id} whose exits that skip the join end only at terminate ends or caught error ends, "
+                "and share the joined chain only to merge and notify, before its side effects, "
+                "so a parallel rejection still reaches it or leaves the join waiting"
             )
 
         # And each later review's own verdict is gated before the process can end.
         if reachable(root, review_id, blocked=gate_ids) & end_ids:
             fail(f"{review_id} reaches an end without an exclusive gateway, so its rejection cannot stop the chain")
         verdicts = verdict_gates(root, review_id, gate_ids, sequential)
+        verdicts |= _common_next_gates(root, verdicts, gate_ids)
         if not any(can_reject(root, g, end_ids, side_effect_ids) for g in verdicts):
             fail(f"no exclusive gateway after {review_id} offers a second route to an end, so its rejection has no exit")
         acted_before_verdict = reachable(root, review_id, blocked=gate_ids) & side_effect_ids
@@ -135,7 +294,7 @@ def main() -> None:
             fail(f"{sorted(acted_before_verdict)} run after {review_id} before its verdict gateway, so a rejection lands too late")
 
         only_via_review = reachable(root, review_id) - reachable(root, join_id, blocked={review_id})
-        if not (only_via_review & end_ids):
+        if not (only_via_review & ids(elements(root, "endEvent"))):
             fail(f"every end is reachable from {join_id} without {review_id}, so the process can finish without its approval")
 
     # Per-approver outcomes: conditions must read more than one distinct

@@ -1,0 +1,105 @@
+{
+  "id": "agents-tool-call",
+  "description": "Agents forces one call to tool2 with the arguments the prompt gives. The gateway sends tool2, not tool1, because EnableByoGeminiForAgents is on in every environment; it accepts one or two calls because EnableParallelToolCallsExemption is on.",
+  "source": "AgentsChatCompatibilityProbe",
+  "apiFlavor": "OpenAiChatCompletions",
+  "excludeFeatures": [
+    "agents-autopilot"
+  ],
+  "replaces": [
+    "base-chat"
+  ],
+  "order": 90,
+  "path": "/v1/chat/completions",
+  "body": {
+    "max_tokens": 2048,
+    "messages": [
+      {
+        "content": "Please process the following:\n1. A string input: \"This is a test.\"\n2. A numeric input: 42",
+        "role": "user"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "tool2",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "parameter1": {
+                "type": "string",
+                "enum": [
+                  "option1",
+                  "option2"
+                ]
+              },
+              "parameter2": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "parameter1",
+              "parameter2"
+            ]
+          },
+          "description": "Processes a generic user input, either string or numeric. Use option1 for string input and option2 for numeric input."
+        }
+      }
+    ],
+    "tool_choice": "required",
+    "parallel_tool_calls": false,
+    "model": "{{model}}"
+  },
+  "retries": [
+    {
+      "status": 400,
+      "ifBodyContains": [
+        "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."
+      ],
+      "edit": "with_entries(if .key == \"max_tokens\" then .key = \"max_completion_tokens\" else . end)",
+      "why": "the model wants max_completion_tokens; the gateway sends it once more with that field"
+    },
+    {
+      "status": 400,
+      "ifBodyContains": [
+        "tool_choice: type",
+        "are not supported for this model"
+      ],
+      "edit": ".tool_choice = \"auto\"",
+      "why": "the model refuses a forced tool choice; the gateway sends it once more with tool choice auto"
+    }
+  ],
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "choices is an array; each message's content is a string and each tool call's arguments a string",
+      "jq": "(.choices | type) == \"array\" and all(.choices[]; ((.message.content // \"\") | type) == \"string\" and all((.message.tool_calls // [])[]; (.function.arguments | type) == \"string\"))"
+    },
+    {
+      "reason": "MULTIPLE_RESPONSES",
+      "says": "exactly one choice, index 0",
+      "jq": "(.choices | length) == 1 and (.choices[0].index // 0) == 0"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "the choice has a message",
+      "jq": ".choices[0].message != null"
+    },
+    {
+      "reason": "INCORRECT_RESPONSE",
+      "says": "the answer comes from the assistant",
+      "jq": ".choices[0].message.role == \"assistant\""
+    },
+    {
+      "reason": "MISSING_TOOL_CALL",
+      "says": "the answer calls a tool",
+      "jq": ".choices[0].message.tool_calls != null"
+    },
+    {
+      "reason": "INCORRECT_TOOL_CALL",
+      "says": "every call is tool2; one call carries one of the two expected argument sets, two calls carry both",
+      "jq": "[.choices[0].message.tool_calls[]? | {name: .function.name, args: (.function.arguments | fromjson? // null)}] as $calls | [{\"parameter1\": \"option1\", \"parameter2\": \"This is a test.\"}, {\"parameter1\": \"option2\", \"parameter2\": \"42\"}] as $expected | ($calls | length) as $n | $n > 0 and all($calls[]; .name == \"tool2\" and .args != null) and (if $n == 1 then any($expected[]; . == $calls[0].args) elif $n == 2 then ($calls | map(.args) | sort) == ($expected | sort) else false end)"
+    }
+  ]
+}

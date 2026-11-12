@@ -1,4 +1,4 @@
-task_id: skill-sdd-smoke-file-reading
+task_id: skill-planner-design-file-reading
 description: >
   Smoke test: the skill workflow uses the Read tool on a provided PDD file
   rather than relying on inline prompt content. Round-trip verification with
@@ -16,7 +16,7 @@ initial_prompt: |
   Use the exact content; do not modify, summarise, or add anything.
 
   --- BEGIN PDD CONTENT ---
-  # Process Design Document: ZEBRACAKE-7472
+  # Process Definition Document: ZEBRACAKE-7472
   ## Process Overview
   - **Process Name:** ZEBRACAKE-7472
   - **Sentinel:** QXR-9118-PURPLE

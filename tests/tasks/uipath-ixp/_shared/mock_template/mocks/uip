@@ -23,8 +23,7 @@ Two sinks, deliberately (see ../README.md § Call log for the record schema):
 Standard input is deliberately NOT recorded. Reading it here would block
 whenever the sandbox leaves stdin attached to an open pipe, hanging the task
 until its timeout. No IXP command reads stdin — the skill passes payloads as
-flag VALUES (`--updates "$(cat f.json)"`), which `argv` captures in full. Add
-the field if that ever changes; a new key breaks no existing criterion.
+files (`--updates-file f.json`), whose content `read_file_flags` records.
 
 Python, not sh, because sh cannot emit correct JSON without hand-rolled
 escaping. Requires `python3` on PATH — already true of the smoke image, which
@@ -47,6 +46,20 @@ STDERR_MESSAGE = "uip (mock): not connected to a tenant in this sandbox; offline
 EXIT_CODE = 1
 
 
+def read_file_flags(args):
+    """Content of each readable `--<name>-file <path>`, keyed by path, so criteria
+    can grade a JSON payload passed as a file. Logged right after the path."""
+    files = {}
+    for flag, value in zip(args, args[1:]):
+        if flag.startswith("--") and flag.endswith("-file"):
+            try:
+                with open(value, encoding="utf-8", errors="replace") as f:
+                    files[value] = f.read()
+            except OSError:
+                pass
+    return files
+
+
 def record(tool, args, exit_code):
     """Append this invocation to both sinks.
 
@@ -58,7 +71,9 @@ def record(tool, args, exit_code):
     # `uip %s` of the space-joined args with CR/LF folded to spaces — so a
     # heredoc-expanded JSON argument stays ONE record. Same transform the sh
     # mock did with `printf | tr '\r\n' '  '`.
-    flat = "{} {}".format(tool, " ".join(args)).replace("\r", " ").replace("\n", " ")
+    files = read_file_flags(args)
+    shown = [arg + " " + files[arg] if arg in files else arg for arg in args]
+    flat = "{} {}".format(tool, " ".join(shown)).replace("\r", " ").replace("\n", " ")
     try:
         with open(FLAT_LOG, "a", encoding="utf-8", errors="replace", newline="\n") as f:
             f.write(flat + "\n")
@@ -78,6 +93,8 @@ def record(tool, args, exit_code):
         "argv": list(args),
         "exit": exit_code,
     }
+    if files:
+        call["files"] = files
     try:
         # ensure_ascii (the default) escapes non-ASCII and any stray surrogate
         # from undecodable argv bytes, so an exotic argument can never make

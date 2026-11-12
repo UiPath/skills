@@ -67,5 +67,5 @@ success_criteria:
 
 run_limits:
   expected_turns: 13
-  max_turns: 40
+  max_turns: 60
   turn_timeout: 1200

@@ -2,8 +2,8 @@
 * @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
 
 # CI workflows and review config
-/.github/ @uipreliga @bai-uipath @akshaylive
-/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive
+/.github/ @uipreliga @bai-uipath @akshaylive @CarlesUIPath
+/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive @CarlesUIPath
 
 # Azure Pipelines (nightly FOSSA scan, release gate that signs the hooks)
 /.pipelines/ @RaduAna-Maria @gabrielavaduva
@@ -19,18 +19,24 @@
 
 # Studio Web flavor overrides
 /skill-flavors/studioweb/ @astridstaicu
+/skill-flavors/studioweb/uipath-maestro-bpmn/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-maestro-case/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-maestro-flow/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-rules/ @astridstaicu @UiPath/maestro-cli-team
+/preview/skill-flavors/studioweb/ @astridstaicu
 
 # preview skills
-/preview/skills/uipath-maestro-case/ @dmetzgar @tmatup
-/preview/skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+/preview/skills/uipath-maestro-case @dmetzgar @tmatup @UiPath/maestro-cli-team
+/preview/skills/uipath-maestro-bpmn @dmetzgar @tmatup @UiPath/maestro-cli-team
+/preview/skills/uipath-maestro-flow @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
 # RPA skill (coded + XAML workflows)
-/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
+/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii @danmunteanu1 @alexandru-petrescu
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
-/tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
+/tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii @danmunteanu1 @alexandru-petrescu
 
 # Activity Migrator skill (Windows-Legacy → Windows, classic → modern activities)
 /skills/uipath-activity-migrator/ @costin-uipath @MarinRzv @liviusanduuip @dmorosanu
@@ -42,6 +48,7 @@
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 /skills/uipath-platform/references/data-fabric/ @UiPath/DatafabricCodingAgent
 /skills/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
+/skill-flavors/studioweb/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
 /skills/uipath-platform/references/licensing/ @biftime @mihai-stef-uipath @dinud-uipath @bogdan-alexandru-uipath @raresgrm @cristiansinescu7-uipath
 
 # Knowledge bundles skill (preview — tracks `uip or knowledge-bundles`)
@@ -57,8 +64,8 @@
 /tests/tasks/uipath-platform/licensing/ @biftime @mihai-stef-uipath @dinud-uipath @bogdan-alexandru-uipath @raresgrm @cristiansinescu7-uipath
 
 # Agents skill (coded + low-code)
-/skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
-/tests/tasks/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
+/skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip @UiPath/team-agents-cli
+/tests/tasks/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip @UiPath/team-agents-cli
 /tests/tasks/uipath-agents/lowcode/conversational/ @maxduu @andrewwan-uipath
 
 # Context grounding capabilities — DeepRAG + BatchTransform (uipath-agents) and index-management CLI (uipath-platform)
@@ -76,23 +83,15 @@
 /tests/tasks/uipath-platform/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 
 # Guardrails capability docs
-/skills/uipath-agents/references/lowcode/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
-/skills/uipath-agents/references/coded/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+/skills/uipath-agents/references/lowcode/capabilities/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
+/skills/uipath-agents/references/coded/capabilities/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
 # Guardrails tests (folder-level ownership)
-/tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
-/tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
+/tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
 # Guardrails in lowcode/conversational (more specific than /lowcode/conversational/ above — wins via last-match)
-/tests/tasks/uipath-agents/lowcode/conversational/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
-# Guardrail checkers relocated to _shared/ during the host-path-removal migration (test: d61fa9d52) —
-# still owned by the guardrails team, not the broader _shared/ default.
-/tests/tasks/uipath-agents/_shared/check_byog_middleware.py @apetraru-uipath @valentinabojan @ctiliescuuipath
-/tests/tasks/uipath-agents/_shared/check_escalation.py @apetraru-uipath @valentinabojan @ctiliescuuipath
-/tests/tasks/uipath-agents/_shared/check_intellectual_property_coded.py @apetraru-uipath @valentinabojan @ctiliescuuipath
-/tests/tasks/uipath-agents/_shared/check_llm_as_judge.py @apetraru-uipath @valentinabojan @ctiliescuuipath
-/tests/tasks/uipath-agents/_shared/check_pii_middleware.py @apetraru-uipath @valentinabojan @ctiliescuuipath
-/tests/tasks/uipath-agents/_shared/check_recommend_all.py @apetraru-uipath @valentinabojan @ctiliescuuipath
-/tests/tasks/uipath-agents/_shared/check_recommend_scoped.py @apetraru-uipath @valentinabojan @ctiliescuuipath
-/tests/tasks/uipath-agents/_shared/check_user_prompt_attacks_middleware.py @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/lowcode/conversational/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
+# Guardrail checkers and the helpers they share (more specific than /tests/tasks/uipath-agents/ above — wins via last-match)
+/tests/tasks/uipath-agents/_shared/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
 
 # Functions skill (JS/TS → @lucarachiteanu, Python → @UiPath/team-agents-cli; shared surfaces → both)
 /skills/uipath-functions/ @lucarachiteanu @UiPath/team-agents-cli
@@ -104,38 +103,71 @@
 /tests/tasks/activation/uipath-functions.jsonl @lucarachiteanu @UiPath/team-agents-cli
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
-/skills/uipath-planner/ @RaduAna-Maria
-/tests/tasks/uipath-planner/ @RaduAna-Maria
-/skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/skills/uipath-planner/ @RaduAna-Maria @roberts-cliff
+/skills/uipath-planner/scripts/check-genome.mjs @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/ @RaduAna-Maria @roberts-cliff
+/skills/uipath-planner/references/design/case-product-guide.md @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/skills/uipath-planner/assets/templates/case-sdd-template.md @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/skills/uipath-planner/references/design/case-data-and-time-guide.md @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/skills/uipath-planner/references/design/case-review-and-conformance-guide.md @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/skills/uipath-planner/assets/templates/case-sdd-task-details-template.md @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
+/tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
+/skills/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/activation/uipath-genome.jsonl @danmunteanu1 @vlad-coteanu-uipath
+/skill-flavors/studioweb/uipath-genome/ @astridstaicu @danmunteanu1 @vlad-coteanu-uipath
+# uipath-planner genome verbs (author, extract, edit, check), their guides, templates and checker: the genome owners, after the planner lines above
+/skills/uipath-planner/references/author/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/extract/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/edit/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/genome-format-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/skill-mapping-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/transactional-shape-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/defect-verification-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/extracted-genome-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/shared/extraction-parts-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/assets/templates/component-genome-template.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/assets/templates/process-genome-template.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/genome-examples/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/test_genome_contract.py @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/test_sdd_fingerprint.py @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/test_genome_check.py @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/_shared/test_genome_check_findings.py @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/author_component/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/extract_component/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/extract_solution/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/genome_from_sdd/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/tests/tasks/uipath-planner/check_genome/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/.claude/rules/genome.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/docs/guides/live-healing-pass.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/docs/guides/working-with-uipath-genome.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 
-# Genome skill (extract / author / execute automation blueprints)
-/skills/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
-/tests/tasks/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
-/tests/tasks/activation/uipath-genome.jsonl @danmunteanu1 @vlad-coteanu-uipath
-
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
-# Previous Flow generation (JSON authoring), kept only because the Studio Web
-# flavor pins it (skill-flavors/studioweb/uipath-maestro-flow/.canonical).
-/classic/skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team @astridstaicu
 # Flow test tasks (general) — more specific subfolder rules below override this
 /tests/tasks/uipath-maestro-flow/ @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-maestro-flow.jsonl @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 
 # Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
 /skills/uipath-maestro-flow/references/summarize.md @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
 /skills/uipath-maestro-flow/references/batch-transform.md @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
 
+# IXP team — Extract document node tasks + their _shared checkers
+/tests/tasks/uipath-maestro-flow/extract-document/ @Chibionos @samuelfekete @richsilv @misupantea-uipath @cezara98t @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/_shared/check_extract_document.py @Chibionos @samuelfekete @richsilv @misupantea-uipath @cezara98t @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/_shared/test_check_extract_document.py @Chibionos @samuelfekete @richsilv @misupantea-uipath @cezara98t @UiPath/maestro-cli-team
+
 # Maestro BPMN skill
-/skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
-/tests/tasks/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+/skills/uipath-maestro-bpmn/ @dmetzgar @tmatup @UiPath/maestro-cli-team
+/classic/skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-bpmn/ @dmetzgar @tmatup @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-maestro-bpmn.jsonl @dmetzgar @tmatup @UiPath/maestro-cli-team
 
 # Rules skill
 /skills/uipath-rules/ @UiPath/maestro-cli-team
@@ -151,12 +183,19 @@
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
-/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517
-/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517
+/skills/uipath-maestro-case/ @dmetzgar @tmatup @UiPath/maestro-cli-team
+/classic/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517 @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517 @dmetzgar @tmatup @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-maestro-case.jsonl @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517 @dmetzgar @tmatup @UiPath/maestro-cli-team
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 /tests/tasks/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-dashboards-flows.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-dashboards-lifecycle.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-dashboards-setup-admin-folder.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-validate-action-schema.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/support/coded-apps-dashboards-fake-tools.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 
 # Connector Builder skill
 /skills/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
@@ -183,6 +222,10 @@
 /skills/uipath-maestro-flow/references/ixp.md @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
 
+# Extract document — the node and the taxonomy it carries inline
+/skills/uipath-maestro-flow/references/extract-document-node.md @UiPath/communications-mining @cezara98t @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/extract-document-taxonomy.md @UiPath/communications-mining @cezara98t @UiPath/maestro-cli-team
+
 # Chat — inline conversational agent node + the conversation trigger and message nodes
 /skills/uipath-maestro-flow/references/conversational.md @UiPath/jarvis @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/conversational/ @UiPath/jarvis @UiPath/maestro-cli-team
@@ -193,11 +236,11 @@
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
-/skills/uipath-review/references/agents/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+/skills/uipath-review/references/agents/guardrails/ @apetraru-uipath @valentinabojan @andreizdrali-uipath @daniel-joica
 /tests/tasks/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
 # Legacy RPA — merged into uipath-rpa
-/skills/uipath-rpa/references/legacy/ @roalexandru @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
+/skills/uipath-rpa/references/legacy/ @roalexandru @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii @danmunteanu1 @alexandru-petrescu
 
 # Troubleshooting
 /skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
@@ -236,9 +279,6 @@
 /skills/uipath-insights/ @UiPath/insights
 /tests/tasks/uipath-insights/ @UiPath/insights
 /tests/tasks/activation/uipath-insights.jsonl @UiPath/insights
-
-# Automation Discovery skill
-/skills/uipath-automation-discovery/ @uisherif
 
 # Process Mining skill (process apps, data ingestion, dbt transformations)
 /skills/uipath-process-mining/ @UiPath/team-backendhoven

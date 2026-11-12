@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AgentsCaseTriageAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9fa1bd71-0541-4485-b1ff-080716b1984f",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "AgentsCaseTriageAgent"
+    },
+    "locks": [],
+    "key": "94df4ad1-ad0e-47c3-8d04-0845e8bce4e3",
+    "files": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "reshape",
+   "type": "core.action.script",
+   "inputs": {
+    "script": "return $vars.start.output.rows.map(r => ({ transactionId: r.id, amountCents: Math.round(r.amount * 100), currency: r.currency.toUpperCase() }));"
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "reshape",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "reshape",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ]
+}

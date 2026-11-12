@@ -6,15 +6,15 @@ description: >
   Interactive-mode variant of init-validate. The working directory already
   contains two existing solutions (SolarReports, TideTracker). When asked to
   create a new Flow project, the skill's greenfield rule
-  (`author/references/greenfield.md` — "Check for existing solutions with
-  `find . -maxdepth 2 -type f -name '*.uipx' -print`") requires the agent to
+  (SKILL.md, "Look for an existing solution before `uip solution init`":
+  `find . -maxdepth 2 -name '*.uipx'`) requires the agent to
   STOP and present a dropdown via
   the interaction mechanism available in its runtime (one option per
   discovered solution + "Create a new solution" + "Something else") instead of
   guessing. A simulated user answers the prompt with a non-default solution
   name. The resulting artifact proves that the agent used that answer before
   building and validating the Flow.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, simulation]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, simulation, studio-web-unsupported, studio-web-unsupported:solution-selection]
 
 agent:
   # Make the structured-question tool available to runtimes that support it.

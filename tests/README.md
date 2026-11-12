@@ -11,11 +11,12 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
    ```
    The Makefile composes these into `UV_EXTRA_INDEX_URL` for `uv pip install`. If either variable is empty, install continues against public PyPI only and prints a notice.
 
-2. **coder-eval** — install from GitHub (creates a local `.venv`, requires Python 3.13+):
+2. **coder-eval** — install the version pinned in `.coder-eval-version` (creates a local `.venv`, requires Python 3.13+):
    ```bash
    cd tests
    make install
    ```
+   Dependencies are constrained to the `pip freeze` of the pinned `ghcr.io/uipath/coder-eval-agent` image, the same constraints CI uses. Needs Docker; without it the install prints a warning and runs unconstrained.
 
 3. **uip CLI** — the UiPath CLI must be available:
    ```bash
@@ -102,7 +103,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
 | **lifecycle** | `lifecycle:X`, required | Coding Agents Scorecard lifecycle phase | `discover` (read-only exploration: list/get/inspect existing state), `generate` (produce a new local artifact: pack, scaffold, render), `setup` (mutate tenant state: create/edit/delete resources, deploy, configure) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
-| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (omit `script`/`http` — ubiquitous) |
+| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (a published IXP model), `extract-document` (the Extract document node and its inline taxonomy) (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
@@ -192,7 +193,8 @@ criteria that passed.
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
-| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
+| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow, Case and BPMN all promoted) | 200 | 1200s | 900s |
+| `use-case-tiers.yaml` | docker | Opt-in A/B for the `uipath-agents` use-case tasks: `assisted` vs `unassisted` (lower-tier helper text stripped) | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -203,16 +205,33 @@ runner. The image build passes the package credential as
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
 
+`use-case-tiers.yaml` runs the `uipath-agents` use-case tasks
+(`tasks/uipath-agents/lowcode/use_cases/`) in two variants. Those prompts carry
+guidance meant only for lower-tier models between `<!-- helper:start -->` and
+`<!-- helper:end -->`. Every other experiment sends the prompt unchanged, helper
+included. The `unassisted` variant strips the block with a regex
+`prompt_mutation`, so a higher-tier model gets only the context, the user's
+request and the closing autonomy line. Helper text is never graded, so both
+variants share the same success criteria. A task without the markers runs
+identically in both variants. The "Run Coder Eval" workflow always passes
+`-e experiments/nightly.yaml`, so run this experiment locally:
+
+```bash
+SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run \
+  tasks/uipath-agents/lowcode/use_cases/*/*.yaml -e experiments/use-case-tiers.yaml
+```
+
 `flow-v2-preview.yaml` runs the three builder-SDK skills
 `uipath-maestro-{flow,case,bpmn}` as the ONLY skill catalog, so a run measures the
-Flow v2 authoring path rather than a mix of both generations. Flow has been
-promoted: its tree lives in `skills/uipath-maestro-flow` (the default catalog, so
-`nightly.yaml` runs it too), and `preview/skills/uipath-maestro-flow` is a relative
-symlink to it so this arm keeps loading all three. Case and BPMN are still
-`preview/`-only. The previous Flow generation lives in
-`classic/skills/uipath-maestro-flow` (shipped only in the Studio Web flavor). It is
-in no plugin catalog, but the read-only repo mount leaves it readable from inside
-eval containers, so a prompt must not name a v1 Flow reference file. `preview/` is a Claude Code
+Flow v2 authoring path rather than a mix of both generations. Flow, Case and BPMN
+have all been promoted: their trees live in `skills/uipath-maestro-{flow,case,bpmn}`
+(the default catalog, so `nightly.yaml` runs them too), and
+`preview/skills/uipath-maestro-{flow,case,bpmn}` are relative symlinks to them so this
+arm keeps loading all three. The previous Case and BPMN generations live in
+`classic/skills/uipath-maestro-{case,bpmn}` (shipped only in the Studio Web flavor).
+They are in no plugin catalog, but the read-only repo mount leaves them readable
+from inside eval containers, so a prompt must not name a v1 Case or BPMN reference
+file. `preview/` is a Claude Code
 **plugin root** (`preview/.claude-plugin/plugin.json` + `preview/skills/<name>/SKILL.md`),
 which is the one layout every harness loads: Claude Code requires it, the
 Delegate SDK appends `/skills` to it, Codex and Antigravity accept it. Skills load
@@ -236,12 +255,25 @@ docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 
-`agent.allowed_tools` is an **auto-approval** list, not a restriction: it reaches
-`ClaudeAgentOptions.allowed_tools`, which names the tools that skip a permission
-prompt. A tool left off it is still callable — on 2026-09-08 flow runs used
-`Agent` and `TaskOutput`, neither of which is listed, and one spent 420s of a
-900s turn blocked on `TaskOutput`. Use `agent.disallowed_tools` to actually
-withhold a tool.
+The experiments set no `agent.allowed_tools` and no `agent.permission_mode`, so each
+harness uses its own defaults. On Claude Code the agent is offered the CLI's own tool
+set and runs `bypassPermissions`.
+
+On Claude Code, `agent.allowed_tools` **restricts and pre-approves**: the agent is
+offered only the listed built-in tools, and they run without a prompt. Set it on a
+task only when the restriction is part of what the task measures, because a shorter
+list changes what the agent does (with only 7 tools it calls `Skill` first more
+often). A task that stages the plugin must keep `Skill` on its list, or `coder-eval
+plan` refuses it. `Glob` and `Grep` are not in the CLI's own set; name them on the
+list if the task needs them. Use `agent.disallowed_tools` to withhold a tool from
+the full set.
+
+On codex, opencode, pi and antigravity, `allowed_tools` and `permission_mode` are
+ignored with a warning, and `--strict` refuses them.
+
+coder-eval 0.12.x differs: there `allowed_tools` only pre-approves, so a tool left
+off the list is still offered, and its own default experiment adds
+`permission_mode: acceptEdits` and the 7-tool list under every experiment.
 
 Task files should **not** duplicate the full `agent:` block — the experiment provides the defaults. Only specify fields that differ from the experiment:
 
@@ -326,6 +358,50 @@ Two traps:
   `_resolve_backend_route`, which *does* demand `ANTHROPIC_API_KEY`. Absent
   and inherited succeeds where explicit and identical fails.
 
+## Tenant dependency catalog
+
+`tests/scripts/tenant_catalog.py` lists the cloud-tenant resources the tasks
+depend on. It reads `tests/tasks/` on every run, so the list is never
+maintained by hand.
+
+```bash
+python3 tests/scripts/tenant_catalog.py --skill uipath-maestro-case --format md
+```
+
+The script puts each task in one of three tiers:
+
+| Tier | Meaning |
+|---|---|
+| `hard` | A `pre_run` command or a grader calls the tenant. |
+| `soft` | The grader is local, but the prompt or a `command_executed` criterion sends the agent to the tenant. |
+| `local` | Nothing reaches the tenant. |
+
+Each dependency gets one disposition, with its reason and the tenant services it needs:
+
+| Disposition | Meaning |
+|---|---|
+| `creatable` | Automation Suite can hold it, and a script can create it. |
+| `substitutable` | A third-party SaaS account reached through Integration Service. The eval needs a local stand-in. |
+| `unavailable` | No equivalent exists on Automation Suite. The tasks that depend on it cannot run there. |
+
+The dependency kinds are:
+- Integration Service connectors and their pinned connection ids
+- solution resources from SDD task details, caseplan bindings and registry ledgers
+- folders
+- Data Fabric entities
+- setup helpers that call the tenant
+
+A dependency that no rule covers is `unclassified`. `--strict` exits 1 on a tenant task's
+unclassified dependency, and
+`test_tenant_catalog.py` fails on it for the case suite. When you add a tenant
+dependency to a task, add its rule in the same change.
+
+Known limits:
+- A resource that is named only in prose, or only in a grader's literal
+  assertion, is not caught.
+- A runtime state that a task needs, such as a faulted instance, is not caught.
+- Resources that must *not* exist on the tenant are not caught.
+
 ## Lifecycle E2E tests (uipath-platform pattern)
 
 `tests/tasks/uipath-platform/{orchestrator,resources}/` and
@@ -361,6 +437,11 @@ success_criteria:
   - type: run_command
     command: "python3 $REFERENCE_DIR/check_asset_scoping.py"
 ```
+
+coder-eval 1.x stages only `reference.directory` itself, so a grader that
+imports a sibling (`../_shared`) needs `directory: ..` and
+`$REFERENCE_DIR/<subdir>/check_*.py` commands. When a task changes its
+`reference.directory`, update any grader docstring that states what is staged.
 
 A single helper script (`tests/tasks/uipath-platform/_setup/seed.py`) writes
 `seed.json` with a fresh `uuid8` and — when `E2E_PROCESS_KEY` is set —
@@ -404,6 +485,7 @@ folders) persist on the tenant across runs.
 3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly, not to hand-hold it.
 4. Tag every task using the [Tag Taxonomy](#tag-taxonomy): required `skill` + `tier` + `mode:*`, plus optional `shape`, `node`, `resource`, `connector`, and `feature` where applicable.
 5. Stick to the closed-vocabulary values. Propose new tags in the PR — do not invent them inline.
+6. When a prompt or grader note cites a skill doc (`references/<file>.md`, or `skills/<other-skill>/references/<file>.md`), the file must exist in `skills/` or `preview/skills/` for that skill (the trees an eval catalog loads; a doc only `classic/skills/` has does not count in a task YAML). A grader script or fixture beside the task may also cite a `classic/skills/` doc whose rule it still enforces. A `#section` must match a heading of the cited file. `python3 scripts/check-task-doc-citations.py` checks every `.yaml`, `.py` and `.json` under `tests/tasks/` in CI. When a doc is renamed or retired, point the task at the doc that now states the rule, or name the rule instead of the file.
 
 ### Task ID Convention
 

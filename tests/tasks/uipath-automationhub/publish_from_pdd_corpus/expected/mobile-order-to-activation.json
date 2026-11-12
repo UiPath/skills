@@ -30,5 +30,13 @@
   ],
   "Service Compass": []
  },
+ "optional_systems": {
+  "Swiftline Logistics": [
+   "swiftline"
+  ],
+  "Courier": [
+   "courier"
+  ]
+ },
  "allow_other_category": true
 }

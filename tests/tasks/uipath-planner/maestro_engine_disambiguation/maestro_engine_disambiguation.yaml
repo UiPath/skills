@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-maestro-engine-disambiguation
+task_id: skill-planner-design-maestro-engine-disambiguation
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill to analyze a
   PDD with formal BPMN control-flow structure (parallel fork/join, boundary
@@ -7,7 +7,7 @@ description: >
   use the Maestro BPMN template, not Flow (plain pipeline) or Case.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 initial_prompt: |
-  Analyze the following Process Design Document and generate a Solution Design
+  Analyze the following Process Definition Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints. Assume
   UiPath Automation Cloud as the delivery model.
 
@@ -18,7 +18,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Vendor Onboarding Orchestration
+  # Process Definition Document: Vendor Onboarding Orchestration
 
   ## Process Overview
   - **Process Name:** Vendor Onboarding Orchestration
@@ -130,7 +130,7 @@ success_criteria:
 
 run_limits:
   expected_turns: 16
-  # Full Phase D SDD authoring runs in one unbroken autonomous turn. Raise BOTH
+  # Full `design` SDD authoring runs in one unbroken autonomous turn. Raise BOTH
   # caps like product_selection.yaml: task_timeout for end-to-end wall clock,
   # turn_timeout for the long authoring turn.
   task_timeout: 2700

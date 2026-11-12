@@ -17,8 +17,10 @@ cannot make: which node, which topology, what an output means, and what to ask.
 1. **Choose the node before writing it, from a search, never from a brand
    name.** For an external service run `uip maestro registry search
    '<service>'` and prefer, in order: a curated connector, managed HTTP in
-   connector mode, manual HTTP for an API with no connector, and an RPA
-   workflow only when there is no API at all (a desktop app, a terminal). For a
+   connector mode, a connector you build with `uip is connectors builder` for
+   an authenticated REST+JSON API with no connector, manual HTTP otherwise (it
+   keeps the credential in the flow, outside `uip is connections list`), and an
+   RPA workflow only when there is no API at all (a desktop app, a terminal). For a
    tenant resource (agent, process, API workflow, IxP model) run the family's
    `uip maestro flow registry search`; it only returns published resources, so
    `uip maestro flow registry pull --force` first, and check the solution's own
@@ -37,14 +39,26 @@ cannot make: which node, which topology, what an output means, and what to ask.
    question. `resources.md` covers reference-field lookups; finish its
    pagination loop before reporting "not found".
 4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit
-   with `compile -o`. Never hand-edit the emitted `.flow`, `content/*.bpmn`,
-   `bindings_v2.json`, `entry-points.json`, `operate.json` or
-   `package-descriptor.json` — the CLI regenerates them, and the next compile
-   silently undoes a hand edit. Brownfield JSON goes through `decompile`
-   ([`brownfield.md`](brownfield.md)).
+   with `compile -o` for a new flow; a non-empty `.flow` that existed before this
+   turn is re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)).
+   Never hand-edit the emitted `.flow`, `content/*.bpmn`, `bindings_v2.json`,
+   `entry-points.json`, `operate.json` or `package-descriptor.json` — the CLI
+   regenerates them, and the next compile silently undoes a hand edit.
+   Brownfield JSON goes through `decompile` ([`brownfield.md`](brownfield.md)).
+   Non-interactive runs take the same route: nobody can approve a script over the
+   `.flow`, so write a large node definition into the source. A node the builder
+   cannot express is an SDK gap to report, not JSON to splice, unless its
+   reference names a CLI route.
 5. **Run the loop once the source is complete.** `check --source` is cheap, so
    use it freely while writing; `compile` and `validate` run on the finished
-   source, and again after the last edit. Treat every `validate` warning as a
+   source, and again after the last edit. `compile` does not run `check`, so a
+   clean `check` comes before every `compile` (in a brownfield edit, with
+   `--baseline <original.flow>`: [`brownfield.md`](brownfield.md#check-only-what-you-changed-check---baseline)).
+   The exception is an error whose message says when to ignore it, in a case
+   that applies (a false positive such as `INLINE_AGENT_PROMPT_JSON_TEXT` on a
+   prompt that mentions JSON only as data).
+   Emit-only mode is the exception: there `check` refuses and `validate` is
+   the gate. Treat every `validate` warning as a
    failure unless the loop reference names it as reviewed.
 6. **Bind every declared output on every path.** Each `.return({...})` must
    name every key in `.output({...})`. `check` does not catch a missing one:
@@ -55,24 +69,41 @@ cannot make: which node, which topology, what an output means, and what to ask.
    for invalid input", "handle timeouts"); an unhandled failure must fault the
    run. A handler either genuinely recovers or reaches a terminal the caller
    can tell apart from success — a distinct `.return`, or `.terminate`.
-8. **Never invent the business meaning of a named output — ask.** When a
-   request names an output (`caseKey`, `severity`, `ticketId`) without saying
-   how to derive it, whether it passes through or is reformatted is the
-   user's rule. Ask, or state the assumption and confirm it. A guessed format
-   compiles and validates and returns the wrong value.
+   Likewise add a human task (`hitl`) only when the request has the run wait for
+   a person. A person who reviews the output afterward, such as a drafted reply,
+   is not one. This overrides `uipath-human-in-the-loop` Step 2b and its
+   pattern guide: a signal the request did not state goes under Open questions.
+8. **Never invent the business meaning of a named output or an uncovered
+   input case — ask.** When a request names an output (`caseKey`, `severity`,
+   `ticketId`) without saying how to derive it, whether it passes through or
+   is reformatted is the user's rule. Ask, or state the assumption and confirm
+   it. A guessed format compiles and validates and returns the wrong value.
+   Rules that cover only some input values, ranges, or combinations leave the
+   rest open: `High` for refunds over $500 and `Low` under $50 leave $50 to
+   $500 unassigned; `Expedite` for an overdue order from a Gold customer
+   leaves overdue orders from every other tier unassigned. Check coverage over
+   the valid values of the inputs the stated rules read; invalid input stays
+   under rule 7. List each uncovered case and ask; never fold it into a stated
+   value or a default the user did not give. When the request says no one will
+   answer (headless, CI), the no-folding rule lifts: map each uncovered case
+   to the most defensible stated value rather than stopping, and list each
+   under Open questions as **[REQUIRED]**.
 9. **Present a finite decision as a list of options, with "Something else"
    last.** Which solution, which connector, which trigger, which resource to
    bind: ask with the enumerated choices, never as an open question. Without a
    structured-question tool, ask in chat as a numbered list. With nobody to ask
    (CI, headless), take the recommended option and record it prominently in
    the final report; if none is recommended, stop and report the open
-   decision. Consent gates — destructive operations, tenant writes — are never
+   decision, except an uncovered rule case (rule 8), which you still decide.
+   Consent gates — destructive operations, tenant writes — are never
    auto-answered.
+<!--skill-flavor:solution-lookup:start-->
 10. **Look for an existing solution before `uip solution init`.** Run
     `find . -maxdepth 2 -name '*.uipx'`. If one exists, ask which to use (one
     option per solution, "Create a new solution", then "Something else"); do
     not silently adopt, re-initialize, or repair it. The scaffold itself is in
     [SKILL.md](../SKILL.md#project-layout).
+<!--skill-flavor:solution-lookup:end-->
 11. **Never invoke another skill on your own.** When the flow needs an RPA
     process, an agent, or an app that does not exist, name the gap and hand
     the user what they need to switch skills.
@@ -124,6 +155,49 @@ branching or parallel paths, SLAs, cross-product composition, or per-case
 visibility. A single-wait, mostly linear process may be simpler as a queue plus
 Action Center; say so before designing topology.
 
+### Patterns
+
+Six topologies the Flow canvas also inserts. When a new flow or an edit has one
+of these shapes, or finishes one the canvas inserted ([`brownfield.md`](brownfield.md)),
+read its guide before choosing nodes. With two or more, also read
+[composing-guide.md](patterns/composing-guide.md).
+
+| Pattern | Reach for it when | Guide |
+| --- | --- | --- |
+| `ai-decision-human-review` | An agent decides or proposes an action, and a person reviews or approves it before the flow acts | [guide](patterns/ai-decision-human-review-guide.md) |
+| `routing-triage` | Emails, tickets or claims are classified and routed by category, with a person catching low-confidence or unmatched items | [guide](patterns/routing-triage-guide.md) |
+| `batch-ai` | An agent handles each item of a list, and one bad item must not stop the rest | [guide](patterns/batch-ai-guide.md) |
+| `conversational-intake` | A chat or chatbot answers or gathers a request over several turns | [guide](patterns/conversational-intake-guide.md) |
+| `parallel-agents` | Several AI agents work one input at once, and one agent merges them | [guide](patterns/parallel-agents-guide.md) |
+| `voice-agents` | A phone call or call line is handled by voice agents | [guide](patterns/voice-agents-guide.md) |
+
+Not for a linear pipeline, a single node, a human approval with no agent
+deciding, an agent that classifies with no person in the request
+(`inlineAgent()` plus `.branch()` or `.switch()`), a switch on a field, or an
+edit that adds none of these. `summarize()` and `batchTransform()` are single
+nodes, not patterns.
+
+1. Adapt counts and branches to the request, but keep what the guide's "Why it
+   works" names, or say you are building something else.
+2. A shape table marks each step **Entry**, **Mechanism** or **Placeholder**.
+   Entry steps are the pattern's own start and end: drop an Entry start when
+   the flow already has one, and drop an Entry End when steps follow, wiring
+   its inbound edge to them. Keep every Mechanism step. Choose a Placeholder
+   like any node (rule 1), or skip it when the flow already does that work.
+3. An agent step is a published agent the search found, else an
+   `inlineAgent()`; never `mock()`. Write its prompt; never decide its runtime
+   answer while authoring.
+4. A threshold the request leaves out is an open question (rule 8): ask, or
+   headless, use the guide's value and list it as **[REQUIRED]**.
+
+## Variable types
+
+Inputs, outputs and vars take one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`.
+
+- `float`, `double`, `date`, `datetime` and `jsonSchema` are Case-only. The Flow builder refuses them: a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build. Write a date as `types.string`, a decimal as `types.number`, and a `jsonSchema` as `types.object` or `types.array` with its shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. A decompiled `.flow` that already carries one: [brownfield](brownfield.md#a-case-only-variable-type) (`date`/`datetime` come back as `types.string`; the others stop merge until you retype them).
+- `types.integer` builds and packs as an integer, but Workbench does not offer it, so prefer `types.number`.
+- `types.any` is the untyped declaration: use it only when a value really has no fixed type.
+
 ## Anti-patterns
 
 - **Never replace a registered connector with `mock()` or a script because it
@@ -147,6 +221,13 @@ Action Center; say so before designing topology.
 - **Never use `console.log` in a script.** The script runtime has no
   `console`, and `check` does not flag it. Return the value to inspect:
   `return { debug: value }`.
+- **Never put every `$vars` reference of an expression inside double quotes.**
+  An End-node `=js:` expression like `'No results for "' + $vars.start.output.topic + '".'`
+  evaluates to null, with no warning. Keep at least one reference outside the
+  quotes.
+- **Never rely on a dotted JSON key surviving `$vars`.** Read through `$vars`,
+  `{"5.3.0":"x"}` becomes `{"5":{"3":{"0":"x"}}}`. Pass the JSON as a string and
+  `JSON.parse` it in a script.
 - **Never treat a green `validate` as proof of business correctness.** It
   checks structure. Named outputs, reference ids and connector field values
   are only proven by the evidence in [`CLI-LOOP.md`](CLI-LOOP.md#bounded-completion).
@@ -160,13 +241,19 @@ When authoring is done, report:
 3. **Loop status** — the last `check`, `compile` and `validate` results,
    including any warning you judged acceptable and why.
 4. **Placeholders** — each `mock()` and the capability it stands for.
-5. **Missing connections or pending prepares** — per connector.
+5. **Connections** — per connector, the `connection: <Name> (<id>)` line
+   `prepare` printed and its folder (from the candidate line, or
+   `uip is connections list <connector-key> --all-folders --output json`), or
+   what is missing or still to prepare. A guessed connection
+   ([bindings.md](bindings.md#where-both-values-come-from)) also goes under Open questions as **[REQUIRED]**.
 6. **Open questions** — every decision the request left open, each marked
    **[REQUIRED]** or **[OPTIONAL]**.
+<!--skill-flavor:completion-next:start-->
 7. **What's next** — when the request did not already say, ask with rule 9:
    upload to Studio Web, debug the flow, deploy to Orchestrator, or "Something
    else". Each hands off to [`operate.md`](operate.md). A request that already
    named the next step ("publish it", "debug it") is the selection; act on it.
+<!--skill-flavor:completion-next:end-->
 
 ## Narration and progress
 

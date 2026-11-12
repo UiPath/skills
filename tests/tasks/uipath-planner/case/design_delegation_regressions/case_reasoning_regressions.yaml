@@ -1,4 +1,4 @@
-task_id: skill-case-phase-0-case-reasoning-regressions
+task_id: skill-planner-case-design-reasoning-regressions
 description: >
   Design-only run for a case that combines the known task-sequencing
   regressions: parallel tasks after a predecessor, payment obligation racing,
@@ -22,7 +22,7 @@ run_limits:
   # Every passing task in this suite runs a simulator capped at 8-12 turns
   # (picker 8, reject 8, finalize 10, loan 10, response_map 12). This task
   # was capped at 35 and procurement at 30 — the only two that fail. The
-  # lane holds exactly ONE Case Review confirmation, so a 35-turn allowance
+  # design holds exactly ONE Case Review confirmation, so a 35-turn allowance
   # buys an interview the lane never asks for: run 35545625376 ended on
   # task_timeout (4200s) and NOT turn_timeout (3600s), i.e. no single turn
   # was over-long — 18 bounded turns simply summed past the budget. The
@@ -32,8 +32,8 @@ run_limits:
   max_turns: 150
   turn_timeout: 3600
 
-# Inherit agent from the experiment; override only allowed_tools. The lane's
-# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Inherit agent from the experiment; override only allowed_tools. The case
+# SDD Conformance Checklist runs its 37-item walk in ONE subagent when the
 # Agent tool is present. Run 35267119510 measured the alternative: every task
 # without Agent was killed at exactly its turn wall (picker 1500.0s,
 # response-map 3600.0s, regressions 2700.0s) with 4-6 tool calls, while both

@@ -14,7 +14,7 @@ Before starting, understand the limits of prompt iteration:
 
 **Neither prompts nor reviewing can fix:**
 
-- **OCR quality issues** — if the OCR consistently garbles a field's text, no instruction will fix it. However, during the review step, OCR-mangled predictions can be corrected using `labellings confirm --corrections` (keeps the reference, fixes the text). If many fields are OCR-mangled across multiple documents, report this to the user as a data quality issue rather than burning prompt iterations.
+- **OCR quality issues** — if the OCR garbles a field's text, no instruction will fix it. During review those predictions are NOT CONFIRMED and stay unannotated. Report every OCR-garbled field to the user as a data quality issue, even a single one, and do not spend prompt iterations on it.
 - **Missing fields** — if a field simply doesn't exist in the documents, no instruction will conjure it.
 
 ## How prompt updates work
@@ -22,8 +22,8 @@ Before starting, understand the limits of prompt iteration:
 Prompts live at three levels and are edited by three separate commands:
 
 - **`uip ixp projects update-prompt <project> --prompt "<text>"`** — the project's **Overall extraction instructions**, seen on every extraction for every field.
-- **`uip ixp groups update-prompts <project> --updates <json>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
-- **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name and fails if either combination is not found.
+- **`uip ixp groups update-prompts <project> --updates-file <path>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
+- **`uip ixp fields update-prompts <project> --updates-file <path>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name and fails if either combination is not found.
 
 `groups update-prompts` and `fields update-prompts` match by their supplied identity and update only the named entries, preserving every definition you didn't change. `projects update-prompt` overwrites the entire project prompt, so always submit the full text. To update more than one level in the same iteration, run the commands back-to-back.
 
@@ -78,7 +78,7 @@ A read that fails counts against the budget like any other attempt, and never re
 If documents were just labelled (or uploaded, or the taxonomy was edited), wait out the resulting retrain before reading metrics — apply the bounded wait in [Waiting for retrain](#waiting-for-retrain).
 
 ```bash
-mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,prompts}
+mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,payloads}
 uip ixp projects get-metrics <project-name> --model-version latest --output json
 ```
 
@@ -111,7 +111,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 
 Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. Output is `{ status, dataset: { entity_defs, label_groups } }` (raw snake_case); each `dataset.label_groups[]` holds `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each prompt update (v2, v3, …).
 
-The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"Invoice Number"`) are what you pass to `fields update-prompts --updates` as `group` and `name`.
+The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"Invoice Number"`) are what you pass to `fields update-prompts --updates-file` as `group` and `name`.
 
 ### 1d. Read sample documents (2-3 documents)
 
@@ -212,7 +212,7 @@ Focus on **what** to extract and **where** to find it. Do NOT specify format —
 Use the parent **field group name** and exact **field name** in each field-update object; use the **label_def/group name** in each group-update object:
 
 ```bash
-cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'FIELDS_EOF'
+cat > /tmp/ixp/<project-name>/payloads/field_updates.json << 'FIELDS_EOF'
 [
   {"group": "Invoice", "name": "Invoice Number", "instructions": "The unique document identifier, found in the header area top-right. Example: 2106732, QC006."},
   {"group": "Invoice", "name": "Invoice Date", "instructions": "The date the invoice was issued. Found near the invoice number."}
@@ -220,18 +220,18 @@ cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'FIELDS_EOF'
 FIELDS_EOF
 
 uip ixp fields update-prompts <project-name> \
-  --updates "$(cat /tmp/ixp/<project-name>/prompts/field_updates.json)" \
+  --updates-file /tmp/ixp/<project-name>/payloads/field_updates.json \
   --output json
 
 # If group instructions also need updating, run a second command.
-cat > /tmp/ixp/<project-name>/prompts/group_updates.json << 'GROUPS_EOF'
+cat > /tmp/ixp/<project-name>/payloads/group_updates.json << 'GROUPS_EOF'
 [
   {"name": "Invoice", "instructions": "General invoice header fields including number, dates, payment terms, and totals."}
 ]
 GROUPS_EOF
 
 uip ixp groups update-prompts <project-name> \
-  --updates "$(cat /tmp/ixp/<project-name>/prompts/group_updates.json)" \
+  --updates-file /tmp/ixp/<project-name>/payloads/group_updates.json \
   --output json
 
 # Only if the project prompt needs changing
@@ -303,12 +303,12 @@ If any fields regressed, do a selective rollback:
 
 ```bash
 # Only include the regressed fields, not the whole iteration
-cat > /tmp/ixp/<project-name>/prompts/rollback.json << 'FIELDS_EOF'
+cat > /tmp/ixp/<project-name>/payloads/rollback.json << 'FIELDS_EOF'
 [{"group": "Invoice", "name": "Vendor Address", "instructions": "previous instruction for this field only"}]
 FIELDS_EOF
 
 uip ixp fields update-prompts <project-name> \
-  --updates "$(cat /tmp/ixp/<project-name>/prompts/rollback.json)" \
+  --updates-file /tmp/ixp/<project-name>/payloads/rollback.json \
   --output json
 ```
 

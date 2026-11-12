@@ -106,3 +106,71 @@ def test_brief_naming_the_tokens_does_not_count(project):
 def test_open_items_inside_the_project_fail(project):
     (project / "open-items.md").write_text(f"# Open items: Sales\n\n{' '.join(NAMES)}\n", encoding="utf-8")
     assert open_items() == 1
+
+
+def handoff(*flags: str) -> int:
+    return execute_check.cmd_handoff(argparse.Namespace(open_items="--open-items" in flags))
+
+
+def handoff_folder(parent: Path, readme: str | None = "# Sales: hand-off\n\n## Status\n- ok\n\n## Configuration answers\n") -> Path:
+    folder = parent / "sales-handoff"
+    folder.mkdir()
+    if readme is not None:
+        (folder / "README.md").write_text(readme, encoding="utf-8")
+    return folder
+
+
+def test_handoff_readme_counts(project):
+    handoff_folder(project.parent)
+    assert handoff() == 0
+
+
+def test_handoff_without_status_fails(project):
+    handoff_folder(project.parent, "# Sales: hand-off\n\n## Configuration answers\n")
+    assert handoff() == 1
+
+
+def test_handoff_without_readme_fails(project):
+    handoff_folder(project.parent, None)
+    assert handoff() == 1
+
+
+def test_handoff_inside_the_project_fails(project):
+    handoff_folder(project)
+    assert handoff() == 1
+
+
+def test_handoff_open_items_inside_it_count(project):
+    folder = handoff_folder(project.parent)
+    (folder / "open-items.md").write_text(f"# Open items: Sales\n\n{' '.join(NAMES)}\n", encoding="utf-8")
+    assert handoff("--open-items") == 0
+
+
+def test_handoff_open_items_beside_it_fail(project):
+    handoff_folder(project.parent)
+    (project.parent / "sales-open-items.md").write_text(f"# Open items: Sales\n\n{' '.join(NAMES)}\n", encoding="utf-8")
+    assert handoff("--open-items") == 1
+
+
+def projects(*names: str) -> int:
+    return execute_check.cmd_projects(argparse.Namespace(expect=list(names)))
+
+
+def rpa_project(parent: Path, folder: str, name: str | None = None) -> None:
+    (parent / folder).mkdir(parents=True)
+    (parent / folder / "project.json").write_text(json.dumps({"name": name or folder, "main": "Main.xaml"}), encoding="utf-8")
+
+
+def test_named_projects_count_by_folder_or_project_name(project):
+    rpa_project(project.parent / "Solution", "Dispatcher")
+    rpa_project(project.parent / "Solution", "perf", name="Performer")
+    assert projects("Sales", "Dispatcher", "Performer") == 0
+
+
+def test_a_missing_project_fails(project):
+    assert projects("Sales", "Dispatcher") == 1
+
+
+def test_an_unexpected_project_fails(project):
+    rpa_project(project.parent, "Reporter")
+    assert projects("Sales") == 1

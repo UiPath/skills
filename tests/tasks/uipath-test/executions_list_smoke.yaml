@@ -2,11 +2,12 @@ task_id: skill-test-executions-list-smoke
 description: >
   Smoke test: an agent is asked for the executions on a project's test set and
   the pass/fail totals of the most recent finished one. Exercises the read side
-  of the executions surface — `executions list` (scoped to a test set) to find
-  the run, then `executions get-stats` for its aggregate — with no mutation. The
-  skill, not the prompt, must teach that the per-run totals come from `get-stats`
-  (the `executions list` rows carry no Passed/Failed aggregate) and that a run is
-  located under its test set, not by guessing an id.
+  of the executions surface — `executions list` scoped to a test set — with no
+  mutation. Each list row carries the run's `Passed`/`Failed`/`None` (equal to
+  `executions get-stats`), so the list call alone answers both questions;
+  `get-stats` / `report get` are optional and not graded. The skill, not the
+  prompt, must teach that a run is located under its test set, not by guessing
+  an id.
 tags: [uipath-test, smoke, mode:diagnose, lifecycle:discover, feature:test-case]
 
 run_limits:
@@ -142,14 +143,6 @@ success_criteria:
     description: "Agent listed the executions for the named test set, not a guessed id"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+executions?\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--test-set-id\s+\S)'
-    min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent read the run's aggregate with get-stats or report get (list rows carry no totals; the skill names both as sources)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+(?:executions?\s+get-stats|report\s+get)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

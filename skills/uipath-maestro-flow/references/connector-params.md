@@ -53,8 +53,10 @@ source. The loop is:
    - `CONNECTOR_NOT_IN_LIBRARY` — the library has no such operation (or
      connector, or version). The message lists the connector's operations and
      a `Closest:` match. The operation is the node type's slug, not the
-     tenant's `objectName` (`send-email`, not `send-mail-v2`). If the operation
-     is newer than the library, run `uip maestro registry pull`.
+     tenant's `objectName` (`send-email`, not `send-mail-v2`).
+<!--skill-flavor:not-in-library-pull:start-->
+     If the operation is newer than the library, run `uip maestro registry pull`.
+<!--skill-flavor:not-in-library-pull:end-->
    - `CONNECTOR_OBJECT_REQUIRED` — a generic operation covers many objects;
      add `{ object: '<name>' }`. The message lists the objects.
    - `CONNECTOR_OBJECT_NOT_GENERIC` — `object` on a single, non-generic
@@ -90,6 +92,7 @@ plausible Flow compiles but loses the intended runtime or Studio Web contract:
 
 ## Discovering operations and fields
 
+<!--skill-flavor:library-discovery:start-->
 `$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
 (machine-readable, for compiling) point at a connector library staged by the
 environment. It is not baked into the npm package, so when those variables are
@@ -115,6 +118,7 @@ The four library verbs are `pull`, `search`, `path` and `prepare`.
 Like the authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace.
 `uip` is the entry point and is what delivers these skills, so it is present wherever this guidance is being read.
 (The package also exposes a `flow-sdk` bin for invoking the same commands directly, which is what the printed remedies fall back to when nothing sets `FLOW_SDK_INVOKED_AS`.)
+<!--skill-flavor:library-discovery:end-->
 
 **`uip maestro registry` is not `uip maestro flow registry`.** The names are one
 word apart and the jobs are unrelated: this one is the connector library the
@@ -124,6 +128,7 @@ references reach for (`uipath.core.function`, `uipath.core.agent.<name>`). A
 connector operation is never in the node registry and a node type is never in
 the library, so a miss in one is not evidence about the other.
 
+<!--skill-flavor:library-search:start-->
 Search that library for static contracts:
 
 ```bash
@@ -131,6 +136,7 @@ jq '.entries[] | select(.label | test("send email"; "i")) | {label,nodeType,path
   "$FLOW_SDK_LIBRARY_MD/index.json"
 sed -n '1,220p' "$FLOW_SDK_LIBRARY_MD/<path-from-index>"
 ```
+<!--skill-flavor:library-search:end-->
 
 When `check` refuses a connection-specific field as unknown — or warns the
 schema is unprepared — materialize the live schema rather than guessing or
@@ -157,6 +163,7 @@ it would write an overlay with no fields and the next compile would still
 reject every input as unknown — the refusal is the only signal that says
 "connection", not "field".
 
+<!--skill-flavor:descriptor-imports:start-->
 Descriptors from either tree are imported with their real `.ts` extension — a
 `.js` specifier does not resolve, because these are sources rather than compiled
 output. The paths are relative to the source, which sits in `.flow-sdk/` beside
@@ -166,6 +173,7 @@ both trees:
 import { CreateInvoiceShare } from './connectors-local/uipath-salesforce-sfdc.ts';
 import { SendMessageToChannel } from './connectors/uipath-salesforce-slack.ts';
 ```
+<!--skill-flavor:descriptor-imports:end-->
 
 Older environments provide the same tool as a bare `prepare-connector` on
 `PATH`. The arguments are identical apart from one name: a connector version is
@@ -411,9 +419,24 @@ The `connectors-local/` overlay is authoring input; emitted Flow is self-contain
 Prefer curated operations for their stable contract. Use the connector's raw
 `*-http-request` operation only for raw/generic needs the curated surface lacks.
 
-File uploads are multipart Flow inputs. If the static catalog omits an upload
-field, prepare the operation against its connection, then pass the upstream file
-like any other connector input:
+Preparation requires a working live connection. When a task explicitly uses
+offline/validate-only evidence and does not require connection-specific fields,
+use the baked descriptor with its published static inputs; do not run discovery
+with a placeholder connection or invent fields that were not measured. If the
+published input list is empty, pass `{}`; offline evidence then proves operation
+identity and control-flow routing, not the provider payload or dispatch.
+
+[`bindings.json`](bindings.md) names symbolic connection/folder bindings used by
+the source. Its reference defines the schema, compile-time resolution rules,
+and boundary with emitted-artifact bindings. Populate its resource keys from
+the live connection and folder listings. A plausible GUID is not proof that a
+resource exists or belongs to the intended tenant; resource refresh and product
+debug are the evidence.
+
+### File uploads are multipart Flow inputs
+
+If the static catalog omits an upload field, prepare the operation against its
+connection, then pass the upstream file like any other connector input:
 
 ```ts
 .step('upload', connector(SendFileToChannel, {
@@ -440,20 +463,6 @@ the part itself; the compiler lists the part without a value, as the designer do
 }, { connection: 'teams', folder: 'shared' }))
 ```
 
-Preparation requires a working live connection. When a task explicitly uses
-offline/validate-only evidence and does not require connection-specific fields,
-use the baked descriptor with its published static inputs; do not run discovery
-with a placeholder connection or invent fields that were not measured. If the
-published input list is empty, pass `{}`; offline evidence then proves operation
-identity and control-flow routing, not the provider payload or dispatch.
-
-[`bindings.json`](bindings.md) names symbolic connection/folder bindings used by
-the source. Its reference defines the schema, compile-time resolution rules,
-and boundary with emitted-artifact bindings. Populate its resource keys from
-the live connection and folder listings. A plausible GUID is not proof that a
-resource exists or belongs to the intended tenant; resource refresh and product
-debug are the evidence.
-
 ## Resolving connection-scoped reference values
 
 Fields such as Slack channels and mailbox folders store ids, not display names.
@@ -476,6 +485,14 @@ channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 Do not carry an alias from the first row into the second.
 There is no table to generate it from, so `lookup('k', 'a', 'f').byEmail(…)` throws.
 Write `.by('profile.email', …)` there instead — the names a field is searchable by are in the descriptor's `LOOKUP:` header and in every `check` diagnostic about the field.
+
+A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top of the tree or one level below. For anything deeper, give the path from the root picker's own top entry, not from the drive root (`<folder>/<file>` fails at its first segment):
+
+```ts
+referenceID: lookup(DownloadFile, 'referenceID').by('FullName', 'OneDrive/<folder>/<file>')
+```
+
+Expect a walk to take four to six minutes. A wrong first segment fails within seconds, but a wrong file name fails only after that walk, naming the segment it stopped at (`stops at segment 3, '<file>'`). So confirm the name first: list the folder through the picker's `childPath`, `uip is resources run list uipath-microsoft-onedrive EventFolderPicker --connection-id <connection-id> --query '{"parentReference":"<folder ReferenceID>","includeFiles":"true"}' --output json` (drop `parentReference` for the top level).
 
 When the flow is written, `check` reports each token still unresolved
 (`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,
@@ -518,9 +535,10 @@ connection, so that is reported for you to choose.
 **So do not go crawling Integration Service when a lookup fails.** The failure
 message names the connection it read and, once every candidate has been tried,
 the one command that shows what the collection holds. Tenant discovery is still
-not a phase of this loop. When the candidates share a name, pick one
-by the `--connection-id <id>` each candidate line prints; `bindings.json` is
-written on that route too. The entries are named after the `connection:` and
+not a phase of this loop. When the candidates share a name or several resolve,
+choose as [bindings.md](bindings.md#where-both-values-come-from) says, and pass
+the `--connection-id <id>` its candidate line prints; `bindings.json` is written
+on that route too. The entries are named after the `connection:` and
 `folder:` labels your source already uses for this connector, which
 [must differ](bindings.md#where-both-values-come-from); a source
 that uses none gets `<connector's last segment>`
@@ -548,6 +566,7 @@ value for is resolved with its helper, not filled from a look-alike input. Run
 `check` before compiling: it finds everything else that is wrong first, so the
 one expensive call is spent last.
 
+<!--skill-flavor:connection-user:start-->
 **When the task names nobody for a person-shaped required field** (`reporter`,
 `requester`, `owner`), the value is the connection's own user: take the account
 from `uip login status` and resolve by **display name**. Search only by the
@@ -556,6 +575,7 @@ raw collections. Jira in particular hides e-mail addresses from user search, so
 an `emailAddress=` query returns nothing for a user that plainly exists, while
 `displayName=` finds them; the field's spec (`matches on displayName |
 accountId`) already told you e-mail was not searchable.
+<!--skill-flavor:connection-user:end-->
 
 Each operation's markdown page lists its lookup fields, the helper for each, and
 what it can be searched by. The generated descriptor carries the same facts as a
@@ -624,6 +644,13 @@ the record does not exist. The parameter name is `nextPage`, not
 
 A get-by-id not-found is a service error. Add `.onError(...)` when the scenario
 wants a not-found answer; otherwise failing loud can be intentional.
+
+<!--skill-flavor:output-names:start-->
+Output field names are case-sensitive and `check` does not verify them:
+`out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is
+`webUrl`. Copy each name from the operation's `## Outputs` in
+`$FLOW_SDK_LIBRARY_MD`.
+<!--skill-flavor:output-names:end-->
 
 For a response with no declared fields, read the whole output into a script
 local before inspecting service-specific properties:

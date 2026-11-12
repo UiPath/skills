@@ -80,7 +80,7 @@ Tool wiring lives outside `skills/`:
 | Cursor IDE | `.cursor/rules/*.mdc` | Scoped MDC rules: `token-optimization` (always-apply), `skill-structure` + `content-quality` (glob-scoped), `skill-review` + `pr-review` (agent-requested) |
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
 
-The repo relies on symlinks: `AGENTS.md`, `.agents/skills/`, and `preview/skills/uipath-maestro-flow` (→ the promoted `skills/uipath-maestro-flow`). On Windows, enable them before cloning (`git config --global core.symlinks true`, with Developer Mode or an elevated shell); otherwise each link checks out as a small text file.
+The repo relies on symlinks: `AGENTS.md`, `.agents/skills/`, and `preview/skills/uipath-maestro-{flow,case,bpmn}` (each → its promoted `skills/uipath-maestro-*` tree). On Windows, enable them before cloning (`git config --global core.symlinks true`, with Developer Mode or an elevated shell); otherwise each link checks out as a small text file.
 
 When adding a skill, put its canonical files under `skills/uipath-<name>/`.
 Every custom flavor includes that canonical skill automatically. Review the
@@ -471,7 +471,7 @@ Before submitting your PR, verify:
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
-- [ ] The skill router table fits within the first 220 lines of the skill so agents can see the whole table in the first read. Enforced only for the builder-SDK skills: `skills/uipath-maestro-flow/SKILL.md` and `preview/skills/*/SKILL.md`.
+- [ ] The skill router table fits within the first 220 lines of the skill so agents can see the whole table in the first read. Enforced only for the builder-SDK skills: `skills/uipath-maestro-flow/SKILL.md`, `skills/uipath-maestro-case/SKILL.md`, `skills/uipath-maestro-bpmn/SKILL.md`, and `preview/skills/*/SKILL.md`.
 - [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
 - [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`) — and on a rename or removal, the old name is gone from it too
 
@@ -557,6 +557,21 @@ head SHA. Keep that expression when editing a `concurrency:` block.
 
 `required-check contract guard` (in `test-helpers.yml`) fails on the first two. The
 current set, the rationale, and how to change it: [docs/REQUIRED-CHECKS.md](docs/REQUIRED-CHECKS.md).
+
+### skill-lint PR check
+
+`No new skill-lint errors` lints every same-repo PR with the internal [skill-linter](https://github.com/UiPath/skill-linter). It compares the PR with the commit it branched from and reports only what the PR adds: as annotations on the changed lines, and as one PR comment that is updated on every push. Findings already on `main` are never reported. Fork PRs are not linted, because they get no secrets.
+
+- **Phase 1 (now):** the check stays green; new errors and warnings are only reported. Later, new errors will fail it, and new warnings never will.
+- **Rule severities** live in [`.skill-lint.yaml`](.skill-lint.yaml). The check always reads it from `main`, so an edit applies once merged; the PR that edits it only checks that it loads.
+- **Silencing a finding:** add an HTML comment with a reason. Silenced findings are still listed in the PR comment for reviewers.
+
+  ```markdown
+  <!-- skill-lint-disable-next-line CODE-FENCE-LANG reason="plain console output" -->
+  ```
+
+  `skill-lint-disable-line RULE` works on the same line, and `skill-lint-disable RULE` covers the whole file.
+- **Running it locally** needs access to the internal repository: `skill-lint lint . -c .skill-lint.yaml --compare-to <checkout-of-main>`.
 
 ## Style Guide
 

@@ -1,4 +1,4 @@
-task_id: skill-case-sla-sdd-response-map
+task_id: skill-planner-case-sla-response-map
 description: >
   T6 of the SLA-response battery — the SDD-layer contract, graded on sdd.md with no build.
   Three SLA statements in one requirement must land as three different responses in the SLA
@@ -15,8 +15,8 @@ run_limits:
   max_turns: 90
   turn_timeout: 3600
 
-# Inherit agent from the experiment; override only allowed_tools. The lane's
-# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Inherit agent from the experiment; override only allowed_tools. The case
+# SDD Conformance Checklist runs its 37-item walk in ONE subagent when the
 # Agent tool is present. Run 35267119510 measured the alternative: every task
 # without Agent was killed at exactly its turn wall (picker 1500.0s,
 # response-map 3600.0s, regressions 2700.0s) with 4-6 tool calls, while both
@@ -65,8 +65,8 @@ success_criteria:
   # the FIRST rung of the ladder and not a harmless line count: in both the loan and sla
   # runs that same `wc` is immediately followed by `sed` range reads of the whole file.
   # The Grep and Glob rows close the tool surface rather than a measured escape: no run had
-  # yet reached the validator through them, but nothing stopped it, and Grep is this lane's
-  # heaviest reader (10 calls in the original skill-case-phase-0-finalize-draft failure,
+  # yet reached the validator through them, but nothing stopped it, and Grep is this verb's
+  # heaviest reader (10 calls in the original skill-planner-case-finalize-draft failure,
   # all aimed at the guides and template rather than the validator).
   - type: command_not_executed
     description: "Advisory: no gate script is read — the § Validation gate is a checklist, not a file"
@@ -112,7 +112,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-# The Case Design Lane gates on one Case Review approval. Without a simulator the
+# `design` gates a case on one Phase 2 Case Review approval. Without a simulator the
 # agent has nobody to approve it and the prompt's old "do NOT call AskUserQuestion"
 # ban left it no legal way to ask, so the whole ask-walk collapsed into one thinking
 # turn: run 2026-08-31_04-15-47 spent 57.1m of 57.8m generation thinking across 20
@@ -129,5 +129,4 @@ simulation:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, SLA targets, or the three SLA responses."
     - "When shown the design confirmation, approve it on the first pass and ask the assistant to stop at the approved sdd.md."
     - "Do not authorize creating a case plan, scaffolding a solution, running, publishing, or deploying."
-    - "Decline any optional HTML-preview offer."
   max_turns: 12

@@ -123,7 +123,7 @@ success_criteria:
   # the low weight keeps it from dominating the score.
   - type: run_command
     description: "Project/BPMN process is named CustomerEscalation (elicited from the user)"
-    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('CustomerEscalation.bpmn')) else 1)\""
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py CustomerEscalation"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0

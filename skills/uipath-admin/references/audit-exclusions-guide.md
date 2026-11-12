@@ -73,10 +73,16 @@ Reaching for `uip admin audit tenant exclusions` yields `unknown command`. <!-- 
 
 | Operation | Needs |
 |---|---|
-| `list`, `get` | audit-read permission (`Audit.Read` scope on the token) |
-| `create`, `update`, `delete` | a **user** token whose identity is in the organization's Administrators group |
+| `list`, `get` | an `Audit.Read`, `Audit`, `PM.Audit.Read` or `PM.Audit` scope on the token |
+| `create`, `update`, `delete` | **both**: an `Audit` or `PM.Audit` scope — the `.Read` variants are refused — **and** a user token whose identity is in the organization's Administrators group |
 
-A service-to-service (client-credentials / external-app) token reads rules but is refused on every write. On a 403 from a write, check the token type before checking group membership.
+Writes check scope and group independently, and the common 403 is the scope half:
+an ordinary `uip login` has carried `Audit.Read` but not `Audit`, which reads
+rules and cannot write one. Group membership is the *less* likely cause, and it
+is never the agent's to change — see Critical Rule 34.
+
+A service-to-service (client-credentials / external-app) token reads rules but is
+refused on every write, whatever its scope.
 
 ## Step 1 — Probe availability before promising anything
 
@@ -92,6 +98,7 @@ uip admin audit org exclusions list --output json
 | `unknown command 'exclusions'` | The installed CLI predates the feature. | Report the CLI is too old and tell the user to upgrade `@uipath/cli`. Do **not** guess another verb, and do **not** fall back to `uip or audit-logs` — it has no exclusion surface. |
 | `HTTP 404` on `list` | The CLI has the command; the audit service in this organization does not yet expose `/api/EventConfig/rules`. | Report that exclusion rules are unavailable in this organization and stop. Retrying and re-wording the command will not change it. |
 | `HTTP 401` | Token lacks `Audit.Read`. | Tell the user to run `uip logout && uip login`. Never retry a 401 (Critical Rule 29). |
+| `HTTP 403` on a **write** | The token lacks the `Audit` / `PM.Audit` scope, or the identity is not in Administrators, or it is a service-to-service token. | Report which of the three it is and **stop**. Do **not** add anyone to a group, grant a role, or change any permission to get past it — that is Critical Rule 34, and it has already caused one outage. Reading `uip login status --detailed` to name the missing scope is the whole of the diagnosis. |
 
 ## Step 2 — Discover the selector ids
 

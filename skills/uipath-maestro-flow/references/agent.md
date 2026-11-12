@@ -72,13 +72,14 @@ at author time.
 
 ## Task-created in-solution coded agent
 
+<!--skill-flavor:agent-scaffold:start-->
 1. Scaffold the solution and Flow project.
 2. Scaffold and implement the coded agent as a sibling directory.
 3. Register the sibling with `uip solution projects add`.
 4. Read the two identifiers back, then author the Flow with `agent({
    location: 'in-solution', ... })`.
 5. Compile into the nested Flow project, validate, refresh resources, and
-   debug the Flow.
+   debug the Flow ([ask first](operate.md#debug--a-real-end-to-end-run)).
 
 ```bash
 uip solution init <SolutionName> --output json
@@ -103,10 +104,10 @@ A `uipath.json` carrying a `functions` map and no `<framework>.json` is the
 function fallback — install the package, delete the generated files, and re-run
 `new`.
 
-Scaffold from INSIDE the agent directory.
-Run `codedagent new` from the solution root and it writes `main.py`,
-`pyproject.toml` and `<framework>.json` into the solution root, which then has
-to be cleaned up by hand.
+Scaffold from INSIDE the agent directory: the venv holding the framework
+package must exist there before `new`. Run from the solution root itself (the
+directory holding the `.uipx`), `uip codedagent new <AgentName>` creates
+`<AgentName>/`; from any other directory it scaffolds in place.
 
 Implement the project, then from that directory:
 
@@ -163,6 +164,7 @@ resolved to.
 wiring: re-adding the project or hand-editing `uipath.json` will not change it,
 so read the identifiers and wire the Flow rather than trying to correct it
 first.
+<!--skill-flavor:agent-scaffold:end-->
 
 ```ts
 .step('analyze', agent({

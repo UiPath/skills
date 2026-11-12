@@ -30,7 +30,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 ## Critical Rules
 
 1. **Windows only.** Check the OS before anything else. On macOS or Linux, stop and tell the user to run the migration from a Windows machine that holds the project. The tool is a .NET 8 desktop process and cannot run elsewhere.
-2. **Never run the tool in console mode.** Always pass `--output-format sarif` and redirect stdout to a file. Console mode opens an HTML report in the browser and prints no machine-readable result.
+2. **Never run the tool in console mode.** Always pass `--output-format sarif` and redirect stdout to a file. Console mode opens an HTML report in the browser and prints no machine-readable result. This holds for diagnostic runs too: to look into a result, read the SARIF, the `.err` file and the `project-<id>.log` the tool writes under `<PROJECT_DIR>/.upgrade`, never a console or `-v` rerun.
 3. **Never trust the exit code.** The tool exits 0 whether the migration succeeded, partially succeeded, or failed. Status comes only from the SARIF results, classified per [sarif-triage-guide.md](references/sarif-triage-guide.md).
 4. **Analyze before upgrade, every time.** Run `analyze`, triage it, and only then run `upgrade`. When the analyze triage shows no stop condition, proceed to `upgrade` without asking, unless the user asked only for an analysis, a report or a plan: then stop after the triage, present the findings with the proposed treatment of each needs-attention item, and run `upgrade` only on the user's go. Any request whose deliverable is information rather than a migrated project counts as that: analysis, report, plan, dry run, "can this be migrated", "what would change"; when the wording leaves it open, ask one yes/no before `upgrade`. Rule 13 governs a treatment the user chooses there. One exception: a Step 4 rerun that the build guide or a package guide prescribes with an added flag reuses the Step 3 analyze; it counts as one build-fix iteration (Rule 10), and the skill deletes the `<OUTPUT_DIR>` it created in this session without asking.
 5. **Never write into the source project.** `upgrade` writes to a fresh sibling folder. Never point `--output-path` at `<PROJECT_DIR>`, never copy the output back over the source, never delete the source, and never edit a file in it, `project.json` included. This holds for every source project the task touches, including a library's source project. Two folders inside the source are the only exception: `.upgrade/`, which holds the tool's reports and the logs, summaries and config files this skill's steps write there, and `.local/`, the tool's restore cache.
@@ -43,6 +43,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 12. **Mark every edit.** Every construct the skill edits or adds outside the tool, in the post-migration fix guide, the build loop, the runtime loop, a plan treatment or an edit delegated to the RPA authoring skill, carries the annotation line `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <what changed>` in its `sap2010:Annotation.AnnotationText` attribute, never in an XML comment, which Studio drops on save. It replaces the matching `[PostMigration Action Required]` line when there is one and is added as a new annotation otherwise; when the edit removes a construct, the construct that takes its place carries the line. Write it as part of the edit itself, so an undone fix loses it with the backup restore and a standing fix keeps it whatever happens next. One exception: a construct whose only edit is the fix guide's rewrite of an annotation line to `Verified healthy by uipath-activity-migrator` carries that line as its mark and gets no Remediated line. A later failure at a construct carrying either line is this skill's to diagnose.
 13. **Plan-mode treatments.** When the user asked for a plan (Rule 4), the treatment their go names is the edit, even when it differs from the one proposed, and the go is its yes: it goes through the runtime guide's fix and rerun loop as a `requested` fix, edit 1, applied before the first run when the go names everything it needs ([Step 5a](#step-5a--apply-a-plan-chosen-treatment-before-the-run)) and right after the run that supplies a missing name otherwise. A proposal leaves open any name only a run can reveal, such as the exception an activity actually throws ("retype the Catch to the exception the run reports"); it never guesses one, and a treatment no run informs is reported as a needs-attention item. The plan names the remaining steps as this file names them, upgrade, build, the opt-in runtime check with `uip rpa run`, and never calls any of them a debug run or a debug session.
 14. **Sources.** A name or fact a proposal or an edit needs beyond the two projects' files, the run log and this skill's guides comes from two places only: the packages the latest analyze or upgrade run resolved, read as documentation and file names under `%USERPROFILE%\.nuget\packages\<package>\<version>\` for `<UIA_VERSION>` and the versions in that run's `.local/AllDependencies.json` (`<PROJECT_DIR>/.local/` after analyze, `<OUTPUT_DIR>/.local/` after upgrade); and the one page a `[PostMigration Action Required]` annotation on the construct links, that page alone and nothing it links to. Never another cached version, never the web beyond that page, never the contents of a binary, never a program written to read assembly metadata. Validate and build confirm every name an edit introduces, so a candidate is enough to propose. This holds from the first proposal, a plan treatment included.
+15. **Never download the tool unasked.** The acquisition script fetches `UiPath.Upgrade.exe` only on `--install` (or `--force`), and the skill passes that flag only after the user chose the download in Step 0's install question, asked once per task when the script reports `missing`. An earlier explicit request in the same task to download or install the tool counts as that choice, and so does the user's go to a re-download after a `verify-failed` result; the question is then not asked. Never pass the flag on your own to get past a `missing`, `offline-missing` or `verify-failed` result, and never set `UIPATH_ACTIVITY_MIGRATOR_OFFLINE`, `UIPATH_ACTIVITY_MIGRATOR_URL` or `UIPATH_ACTIVITY_MIGRATOR_DIR` beyond the value the user named: those variables carry a decision of the user or their administrator.
 
 ## Workflow
 
@@ -50,7 +51,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 
 ### Step 0 — Preflight and acquire the tool
 
-Run the acquisition script with `node`, which Steps 2 to 4 already use for their scripts; the same command works in bash and in PowerShell. It executes no PowerShell or shell script file, so script execution policies and hosts that gate a script invocation do not apply. The script locates a cached tool, downloads and extracts it when missing, checks the .NET Desktop Runtime 8, and prints one JSON object on its last stdout line. Any run can download the archive, a first install or an update, a few hundred MB: give the command at least 10 minutes, not the host's default timeout. Every other shell command in this skill assumes Git Bash, which the Bash tool uses on Windows: the redirections and the `grep` pipelines are not translated, and the only PowerShell alternative given is Rule 8's variable.
+Run the acquisition script with `node`, which Steps 2 to 4 already use for their scripts; the same command works in bash and in PowerShell. It executes no PowerShell or shell script file, so script execution policies and hosts that gate a script invocation do not apply. Without a flag the script locates a cached tool, checks the .NET Desktop Runtime 8, verifies the tool answers, and prints one JSON object on its last stdout line; it never downloads (Rule 15). Every other shell command in this skill assumes Git Bash, which the Bash tool uses on Windows: the redirections and the `grep` pipelines are not translated, and the only PowerShell alternative given is Rule 8's variable.
 
 ```bash
 node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
@@ -58,9 +59,11 @@ node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
 
 | `status` | Action |
 |---|---|
-| `ok` | Record `exe` as `<MIGRATOR_EXE>` and `version`. Continue. |
+| `ok` | Record `exe` as `<MIGRATOR_EXE>` and `version`. When the object carries `update: true`, say once that UiPath published a newer build and that the script installs it when rerun with `--install`; do not ask, do not install, continue with the cached tool. |
+| `missing` | No tool is installed and nobody has approved a download. Ask the install question in [acquisition-guide.md § Install question](references/acquisition-guide.md#install-question), once, and act on the answer as that section says. |
 | `error`, `code: not-windows` | Rule 1. Stop. |
 | `error`, `code: runtime-missing` | Relay the script's message; it names the fix. Stop. |
+| `error`, `code: offline-missing` | The machine is configured never to download. Relay the message and the manual steps from [acquisition-guide.md § Manual placement](references/acquisition-guide.md#manual-placement); do not offer a download. Stop. |
 | `error`, `code: download-failed` | Relay the script's message, which names each downloader's error, and give the manual steps from [acquisition-guide.md § Manual placement](references/acquisition-guide.md#manual-placement). Stop. |
 | `error` with an `env` field | Put that assignment, as is, at the start of this script's command and of every `"<MIGRATOR_EXE>"` command from here on, then rerun the script. In PowerShell write it as `$env:<NAME> = '<value>';` in the same command. Never drop or alter the assignment. |
 | any other `error` | Show `message`. Stop. |
@@ -213,7 +216,7 @@ Match `project.json` dependencies to guides; the dependency is the only routing 
 |---|---|---|
 | `UiPath.UIAutomation.Activities` | `UiAutomationActivities` | [packages/uia-guide.md](references/packages/uia-guide.md) |
 | `UiPath.Mail.Activities` | `MailActivities` | [packages/mail-guide.md](references/packages/mail-guide.md) |
-| `UiPath.GSuite.Activities` (classic line) | `GSuiteActivities` (preview-gated) | [packages/gsuite-guide.md](references/packages/gsuite-guide.md) |
+| `UiPath.GSuite.Activities` | `GSuiteActivities` | [packages/gsuite-guide.md](references/packages/gsuite-guide.md) |
 | `Microsoft.Activities.Extensions`, `Microsoft.Activities` | `MicrosoftActivitiesExtension` | [packages/microsoft-activities-guide.md](references/packages/microsoft-activities-guide.md) |
 
 The framework flip, package restore, reference fixing, and type checking are core steps and run for every project with no routing.
@@ -222,7 +225,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 
 | File | Read when |
 |---|---|
-| [acquisition-guide.md](references/acquisition-guide.md) | Step 0 fails, the machine is offline or behind a proxy, or the user asks where the tool lives or how to update it |
+| [acquisition-guide.md](references/acquisition-guide.md) | Step 0 reports `missing` or fails, the machine is offline, behind a proxy or managed by an administrator, or the user asks where the tool lives or how to update it |
 | [tool-behavior-guide.md](references/tool-behavior-guide.md) | Behavior `--help` cannot tell you: option binding, exit code, output streams, the `.upgrade` and output folders, restore version selection, the Orchestrator hand-off template, `bulk` |
 | [sarif-triage-guide.md](references/sarif-triage-guide.md) | Every analyze and upgrade run: status mapping, core rule IDs, summarizer usage |
 | [build-verification-guide.md](references/build-verification-guide.md) | Step 5: build and validate loop, expected warnings, fix policy |
@@ -238,6 +241,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 
 ## Anti-patterns
 
+- Downloading or updating `UiPath.Upgrade.exe` without the user's choice in the install question (Rule 15)
 - Running `UiPath.Upgrade.exe` without `--output-format sarif`, or reading its exit code as a verdict
 - Running `upgrade` without an `analyze` triage first, or pointing `--output-path` at the source project
 - Pasting a PAT or client secret into a command line
@@ -250,6 +254,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Pre-scanning the XAML for classic activities (`grep` on `<ui:` prefixes) before or after `analyze`; the SARIF is the only complete inventory, and the `ui:` prefix also covers System and Excel activities
 - Skipping the package guides and passing no package flags for a project that uses Outlook classic or GSuite classic activities
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output
+- Reporting `build passed` before `uip rpa build` returned its JSON, for instance when the host handed a long-running command back before it finished
 - Running the migrated project without the user's yes, or repairing and rerunning outside the runtime guide's fix and rerun loop; every fix and every rerun sits behind one yes/no. The runtime check's other anti-patterns are in [runtime-verification-guide.md § Anti-patterns](references/runtime-verification-guide.md#anti-patterns), read with that guide
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
 - Researching a fix on the web, in a cached package version the project did not resolve, or by reading binaries; the resolved packages' docs and the annotation's own page are the only sources (Rule 14)

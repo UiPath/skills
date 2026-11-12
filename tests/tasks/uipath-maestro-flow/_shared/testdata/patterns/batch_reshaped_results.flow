@@ -1,0 +1,132 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "processBatch",
+   "type": "core.logic.loop",
+   "inputs": {
+    "collection": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.invoices",
+     "fieldType": "array"
+    },
+    "parallel": false,
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "processItem",
+   "type": "uipath.agent.autonomous",
+   "parentId": "processBatch",
+   "inputs": {
+    "source": "4a1f2bdb-fff7-401d-8497-82979efb8585",
+    "agentInputVariables": [
+     {
+      "id": "processBatch__currentItem",
+      "type": "string",
+      "binding": "=js:$vars.processBatch.currentItem"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "result",
+      "type": "string"
+     },
+     {
+      "id": "status",
+      "type": "string"
+     }
+    ],
+    "errorHandlingEnabled": true
+   }
+  },
+  {
+   "id": "collectResults",
+   "type": "core.action.script",
+   "inputs": {
+    "script": "const invoices = $vars.start.output.invoices || [];\nconst results = $vars.processBatch.output || [];\nreturn invoices.map((inv, i) => ({ id: inv && inv.id, vendor: inv && inv.vendor, result: results[i] }));"
+   }
+  },
+  {
+   "id": "synthesize",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "cb2dc809-24c9-49c9-a691-0fb1e31c4071",
+    "agentInputVariables": [
+     {
+      "id": "collectResults__output",
+      "type": "string",
+      "binding": "=js:$vars.collectResults.output"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "summary",
+      "type": "string"
+     },
+     {
+      "id": "exceptions",
+      "type": "array"
+     },
+     {
+      "id": "processed",
+      "type": "number"
+     }
+    ]
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "processBatch",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "processBatch",
+   "sourcePort": "start",
+   "targetNodeId": "processItem",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "processItem",
+   "sourcePort": "error",
+   "targetNodeId": "processBatch",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "processItem",
+   "sourcePort": "success",
+   "targetNodeId": "processBatch",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "processBatch",
+   "sourcePort": "success",
+   "targetNodeId": "collectResults",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "collectResults",
+   "sourcePort": "success",
+   "targetNodeId": "synthesize",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "synthesize",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ]
+}

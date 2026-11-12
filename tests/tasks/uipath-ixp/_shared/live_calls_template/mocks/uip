@@ -27,10 +27,26 @@ FLAT_LOG = os.path.join(MOCK_DIR, "calls.log")
 JSON_LOG = os.path.join(MOCK_DIR, "calls.jsonl")
 
 
+def read_file_flags(args):
+    """Content of each readable `--<name>-file <path>`, keyed by path, so criteria
+    can grade a JSON payload passed as a file. Logged right after the path."""
+    files = {}
+    for flag, value in zip(args, args[1:]):
+        if flag.startswith("--") and flag.endswith("-file"):
+            try:
+                with open(value, encoding="utf-8", errors="replace") as f:
+                    files[value] = f.read()
+            except OSError:
+                pass
+    return files
+
+
 def record(tool, args, exit_code):
     """Append this invocation to both sinks. Best-effort — a failed write never
     breaks the delegated command, matching the sh wrapper's `|| true`."""
-    flat = "{} {}".format(tool, " ".join(args)).replace("\r", " ").replace("\n", " ")
+    files = read_file_flags(args)
+    shown = [arg + " " + files[arg] if arg in files else arg for arg in args]
+    flat = "{} {}".format(tool, " ".join(shown)).replace("\r", " ").replace("\n", " ")
     try:
         with open(FLAT_LOG, "a", encoding="utf-8", errors="replace", newline="\n") as f:
             f.write(flat + "\n")
@@ -43,6 +59,8 @@ def record(tool, args, exit_code):
         "argv": list(args),
         "exit": exit_code,
     }
+    if files:
+        call["files"] = files
     try:
         with open(JSON_LOG, "a", encoding="utf-8", newline="\n") as f:
             f.write(json.dumps(call) + "\n")

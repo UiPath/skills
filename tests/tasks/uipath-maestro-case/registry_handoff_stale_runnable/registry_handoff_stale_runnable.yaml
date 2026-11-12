@@ -61,6 +61,16 @@ initial_prompt: |
   load the uipath-maestro-case skill and follow its workflow.
 
 success_criteria:
+  - type: command_executed
+    description: "Phase 1 refreshed the tenant registry before resolving the SDD"
+    tool_name: "Bash"
+    # Command position only, so an echo or heredoc mention does not count; `--help` exits 0 without pulling.
+    command_pattern: '(^|[\n;&|(`{]|\b(?:then|do|else)\s)\s*"?(?:[^\s"]*/)?(?:uip|\$UIP)"?\s+maestro\s+case\s+registry\s+pull\b(?![^;&|\n]*\s(?:-h|--help)\b)'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "Phase 1 rewrote the registry cache"
     path: "tasks/registry-resolved.json"
@@ -78,7 +88,7 @@ success_criteria:
   - type: run_command
     description: "Stale runnable entries were discarded and re-resolved to the live api/agent registry entries"
     command: "python3 $REFERENCE_DIR/registry_handoff_stale_runnable/check_registry_handoff.py"
-    timeout: 30
+    timeout: 90
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0

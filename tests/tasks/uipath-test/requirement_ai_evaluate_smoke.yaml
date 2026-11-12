@@ -7,7 +7,8 @@ description: >
   suggestions" is `evaluate --activity-id <id> --more-suggestions` on the
   first job and not a second evaluation (rule 1), and that applying a
   suggestion is a `requirements update --description` built from the
-  current text (evaluate itself changes nothing). Graded on tenant state:
+  current text (evaluate itself changes nothing), whether typed as shell text
+  or as a quoted argv list handed to a subprocess. Graded on tenant state:
   the description differs from the seeded one and is longer. The task owns
   the EVFX-AIEVAL-* namespace; pre_run writes the thin description back
   every run. Spends two AI jobs per run (the evaluation and its re-run).
@@ -85,9 +86,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent applied the suggestion with `requirements update --description`"
+    # Also matches the verb as a quoted argv list
+    # (`["uip", "tm", "requirements", "update", ..., "--description", text]`): gemini
+    # wrapped the call in `python3 -c` + subprocess to dodge shell quoting of a long
+    # description (2026-10-21), applied it correctly, and the shell-text pattern missed it.
+    description: "Agent applied the suggestion with `requirements update --description` (shell text or a quoted argv list)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+requirements?\s+update\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--description\s+\S)'
+    command_pattern: '(?:uip\s+tm\s+requirements?\s+update\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--description[\s=]+\S)|["\x27]uip["\x27]\s*,\s*["\x27]tm["\x27]\s*,\s*["\x27]requirements?["\x27]\s*,\s*["\x27]update["\x27](?=[^\]]*["\x27]--description["\x27]))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

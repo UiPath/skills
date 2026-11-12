@@ -6,7 +6,7 @@ description: >
   two LLM-judge evaluators in a single eval set (one that scores the
   output, one that scores the trajectory) and run them locally with
   reproducible LLM responses.
-tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 34

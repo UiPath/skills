@@ -8,9 +8,11 @@ evaluated.
 Every `eval` command takes `--path <project-dir>` — the directory holding
 `project.uiproj`.
 
+<!--skill-flavor:eval-login:start-->
 **Local `add` / `list` / `remove` edit project files and need no login.**
 Starting a run does — `uip login` first, and it needs a matching solution in
 Studio Web.
+<!--skill-flavor:eval-login:end-->
 
 Probe the installed CLI once, then let it write the JSON formats and generated
 file references rather than hand-authoring them:
@@ -93,13 +95,13 @@ simulation is scoped to one **data point inside one set**, not to the project,
 so all three commands require `--set` and `--data-point`. `add` also requires
 `--strategy`: `Static` returns `--mock-value` verbatim, `Llm` generates a
 response from `--simulation-instructions`. And it requires `--component-type`
-naming what the component is — `connector`, `agent`, `subflow` — unless
+naming what the component is — `connector`, `agent`, `hitl`, `Node` — unless
 `--parent <agent-id>` adds a child tool simulation, which defaults it to `Node`.
 
 ```bash
 uip maestro flow eval simulation add <component-id> \
   --set "Smoke Tests" --data-point <id> \
-  --strategy Static --component-type connector --mock-value '{"ok":true}' \
+  --strategy Static --component-type connector --mock-value '{"response":{"ok":true}}' \
   --path ./MySolution/MyFlow --output json
 
 uip maestro flow eval simulation list \
@@ -107,6 +109,17 @@ uip maestro flow eval simulation list \
 uip maestro flow eval simulation remove <component-id> \
   --set "Smoke Tests" --data-point <id> --path ./MySolution/MyFlow --output json
 ```
+
+`--mock-value` is the component's raw `result`, so its top-level keys are the
+ones the node's `outputs` read as `=result.<key>`. Open the node and match them:
+
+- Connector and inline-agent nodes read `=result.response`. Pass `{"response": <value>}`.
+- A `hitl` quick form maps `output` to `=result` and `status` to `=result.Action`.
+  Pass `{"Action":"<outcome name>", "<fieldId>": <value>}`; `Action` is the
+  outcome's `name`, not its id.
+
+`{"status":"Approve","output":{…}}` is wrong for a quick form: `status` and
+`output` both come back null.
 
 Simulate every side-effecting component before running a set more than once. An
 unsimulated connector step really sends — once per eval, every run.
@@ -130,11 +143,17 @@ have.
 
 ## Never upload as part of an eval workflow
 
+<!--skill-flavor:eval-no-upload:start-->
 **Never run `uip solution upload` automatically here. Always ask first.**
 
 `eval run start` needs the solution in Studio Web, and when it cannot resolve
 one it fails with `solution-id could not be resolved` or a variant. That error
-is not licence to upload.
+is not licence to upload. `eval run start` itself re-uploads, overwriting the matching Studio
+Web solution, unless `--solution-id` and `--project-id` are passed, so ask before
+it too. When Studio Web assigns the solution another id, `eval run start` and
+`flow debug` repoint the local `.uipx` `SolutionId` and report
+`Data.LocalSolutionIdUpdated` (`Path`, `From`, `To`). Keep that change and commit
+it; reverting it makes the next upload create a second solution.
 
 `uip solution upload` writes to Studio Web: it creates, or **overwrites**, the
 solution matching the local `.uipx` `SolutionId`. No flag is needed and no
@@ -152,6 +171,7 @@ passed, but recovery is browser-only, after the fact, by the user, and it does
 not undo case 1. Ask, and offer the two real options: upload now with the user's
 acknowledgement, or pass `--solution-id` and `--project-id` for an existing
 Studio Web solution and plumb them through to `eval run start`.
+<!--skill-flavor:eval-no-upload:end-->
 
 ## Confirm what was written
 

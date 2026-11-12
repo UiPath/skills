@@ -11,6 +11,7 @@
  *   - .codex-plugin/plugin.json    .version (== plugin.json — Codex channel)
  *   - .agents/plugins/marketplace.json .plugins[0].version (== plugin.json)
  *   - .cursor-plugin/plugin.json   .version (== plugin.json — Cursor channel)
+ *   - gemini-extension.json        .version (== plugin.json — Gemini CLI channel)
  *
  * `targetCli` is derived as the matching @uipath/cli minor line
  * (`^MAJOR.MINOR.0`). A skills release tracks the CLI minor line it ships
@@ -22,14 +23,14 @@
  * alpha stamp from publish.yml) are NOT propagated: plugin auto-update wants
  * plain versions, and the plugin channel is a git ref, not the npm tarball.
  * `.claude-plugin/plugin.json` is the canonical plugin version; the
- * marketplace, Codex, and Cursor manifests mirror it. Rules enforced here:
+ * marketplace, Codex, Cursor, and Gemini manifests mirror it. Rules enforced here:
  *   - plugin version != package.json base version -> rewrite to the base
  *     version (errors out if package.json's base version is BELOW the plugin
  *     version — plugin auto-update never downgrades, so a lower version
  *     would freeze users)
- *   - both marketplace manifests' .plugins[0].version, .codex-plugin/plugin.json
- *     .version, and .cursor-plugin/plugin.json .version must always equal
- *     .claude-plugin/plugin.json .version
+ *   - both marketplace manifests' .plugins[0].version, and the .version of
+ *     .codex-plugin/plugin.json, .cursor-plugin/plugin.json and
+ *     gemini-extension.json, must always equal .claude-plugin/plugin.json .version
  * See docs/RELEASE.md.
  *
  * Usage:
@@ -61,6 +62,7 @@ const PATHS = {
   codexPlugin: join(ROOT, ".codex-plugin", "plugin.json"),
   codexMarketplace: join(ROOT, ".agents", "plugins", "marketplace.json"),
   cursorPlugin: join(ROOT, ".cursor-plugin", "plugin.json"),
+  geminiExtension: join(ROOT, "gemini-extension.json"),
 };
 
 // `--list-paths` prints every file this script owns -- the authoritative
@@ -169,18 +171,21 @@ function syncMarketplaceVersion(label, path) {
   }
 }
 
+/** Sync a channel manifest's top-level `version` to the canonical plugin version. */
+function syncTopLevelVersion(label, path) {
+  const doc = readJson(path);
+  if (doc.version !== pluginVersion) {
+    drift.push(`${label}: ${doc.version} -> ${pluginVersion}`);
+    doc.version = pluginVersion;
+    writes.push(() => writeJson(path, doc));
+  }
+}
+
 // .claude-plugin/marketplace.json — must equal plugin.json exactly.
 syncMarketplaceVersion(".claude-plugin/marketplace.json", PATHS.marketplace);
 
 // .codex-plugin/plugin.json — Codex distribution channel; must equal plugin.json.
-const codexPlugin = readJson(PATHS.codexPlugin);
-if (codexPlugin.version !== pluginVersion) {
-  drift.push(
-    `.codex-plugin/plugin.json: ${codexPlugin.version} -> ${pluginVersion}`,
-  );
-  codexPlugin.version = pluginVersion;
-  writes.push(() => writeJson(PATHS.codexPlugin, codexPlugin));
-}
+syncTopLevelVersion(".codex-plugin/plugin.json", PATHS.codexPlugin);
 
 // .agents/plugins/marketplace.json — the marketplace entry Codex CLI reads via
 // `codex plugin marketplace add UiPath/skills`; must equal plugin.json. This is
@@ -189,14 +194,12 @@ if (codexPlugin.version !== pluginVersion) {
 syncMarketplaceVersion(".agents/plugins/marketplace.json", PATHS.codexMarketplace);
 
 // .cursor-plugin/plugin.json — Cursor distribution channel; must equal plugin.json.
-const cursorPlugin = readJson(PATHS.cursorPlugin);
-if (cursorPlugin.version !== pluginVersion) {
-  drift.push(
-    `.cursor-plugin/plugin.json: ${cursorPlugin.version} -> ${pluginVersion}`,
-  );
-  cursorPlugin.version = pluginVersion;
-  writes.push(() => writeJson(PATHS.cursorPlugin, cursorPlugin));
-}
+syncTopLevelVersion(".cursor-plugin/plugin.json", PATHS.cursorPlugin);
+
+// gemini-extension.json — Gemini CLI extension manifest; must equal plugin.json.
+// Gemini detects updates from git commits or GitHub Releases rather than this
+// field, but the gallery and `gemini extensions list` display it.
+syncTopLevelVersion("gemini-extension.json", PATHS.geminiExtension);
 
 if (CHECK) {
   if (drift.length > 0) {

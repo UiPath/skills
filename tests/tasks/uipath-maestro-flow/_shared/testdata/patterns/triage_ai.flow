@@ -1,0 +1,289 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "classifyItem",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "341bb011-a5ce-4437-b90a-eb4934b707d3",
+    "agentInputVariables": [
+     {
+      "id": "start__output__subject",
+      "type": "string",
+      "binding": "=js:$vars.start.output.subject"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "category",
+      "type": "string"
+     },
+     {
+      "id": "confidence",
+      "type": "number"
+     },
+     {
+      "id": "reason",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "confidenceFloor",
+   "type": "core.logic.decision",
+   "inputs": {
+    "trueLabel": "True",
+    "falseLabel": "False",
+    "expression": "$vars.classifyItem.output.confidence < 0.7"
+   }
+  },
+  {
+   "id": "routeByCategory",
+   "type": "core.logic.switch",
+   "inputs": {
+    "cases": [
+     {
+      "id": "case_1",
+      "label": "Case \"billing\"",
+      "expression": "$vars.category === \"billing\""
+     },
+     {
+      "id": "case_2",
+      "label": "Case \"technical\"",
+      "expression": "$vars.category === \"technical\""
+     },
+     {
+      "id": "case_3",
+      "label": "Case \"account\"",
+      "expression": "$vars.category === \"account\""
+     }
+    ],
+    "hasDefault": true
+   }
+  },
+  {
+   "id": "handleBilling",
+   "type": "core.logic.mock",
+   "inputs": {}
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  },
+  {
+   "id": "handleTechnical",
+   "type": "core.logic.mock",
+   "inputs": {}
+  },
+  {
+   "id": "end2",
+   "type": "core.control.end",
+   "inputs": {}
+  },
+  {
+   "id": "handleAccount",
+   "type": "core.logic.mock",
+   "inputs": {}
+  },
+  {
+   "id": "end3",
+   "type": "core.control.end",
+   "inputs": {}
+  },
+  {
+   "id": "picked",
+   "type": "core.logic.decision",
+   "inputs": {
+    "trueLabel": "True",
+    "falseLabel": "False",
+    "expression": "!!$vars.pickCategory.output"
+   }
+  },
+  {
+   "id": "end4",
+   "type": "core.control.end",
+   "inputs": {}
+  },
+  {
+   "id": "pickCategory",
+   "type": "uipath.human-in-the-loop.quick-form",
+   "inputs": {
+    "title": "Pick the category",
+    "priority": "Low",
+    "recipient": {
+     "channels": [
+      "Email",
+      "ActionCenter"
+     ],
+     "connections": {},
+     "assignee": {
+      "type": "group"
+     }
+    },
+    "schema": {
+     "schemaId": "bc2ef71b-bf21-5254-b7f9-695fc06f1c01",
+     "fields": [
+      {
+       "id": "reason",
+       "label": "Agent reason",
+       "type": "string",
+       "direction": "input",
+       "binding": "vars.classifyItem.output.reason"
+      }
+     ],
+     "outcomes": [
+      {
+       "id": "billing",
+       "name": "billing",
+       "type": "string",
+       "isPrimary": true,
+       "action": "Continue"
+      },
+      {
+       "id": "technical",
+       "name": "technical",
+       "type": "string",
+       "isPrimary": false,
+       "action": "Continue"
+      },
+      {
+       "id": "account",
+       "name": "account",
+       "type": "string",
+       "isPrimary": false,
+       "action": "Continue"
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "classifyItem",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "classifyItem",
+   "sourcePort": "success",
+   "targetNodeId": "confidenceFloor",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "confidenceFloor",
+   "sourcePort": "false",
+   "targetNodeId": "routeByCategory",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeByCategory",
+   "sourcePort": "case-case_1",
+   "targetNodeId": "handleBilling",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "handleBilling",
+   "sourcePort": "output",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeByCategory",
+   "sourcePort": "case-case_2",
+   "targetNodeId": "handleTechnical",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "handleTechnical",
+   "sourcePort": "output",
+   "targetNodeId": "end2",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeByCategory",
+   "sourcePort": "case-case_3",
+   "targetNodeId": "handleAccount",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "handleAccount",
+   "sourcePort": "output",
+   "targetNodeId": "end3",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "routeByCategory",
+   "sourcePort": "default",
+   "targetNodeId": "picked",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "picked",
+   "sourcePort": "true",
+   "targetNodeId": "end4",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "confidenceFloor",
+   "sourcePort": "true",
+   "targetNodeId": "pickCategory",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "picked",
+   "sourcePort": "false",
+   "targetNodeId": "pickCategory",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "pickCategory",
+   "sourcePort": "outcome-billing",
+   "targetNodeId": "routeByCategory",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "pickCategory",
+   "sourcePort": "outcome-technical",
+   "targetNodeId": "routeByCategory",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "pickCategory",
+   "sourcePort": "outcome-account",
+   "targetNodeId": "routeByCategory",
+   "targetPort": "input"
+  }
+ ],
+ "variables": {
+  "variableUpdates": {
+   "classifyItem": [
+    {
+     "variableId": "category",
+     "expression": {
+      "type": "jsExpression",
+      "expression": "$vars.classifyItem.output.category",
+      "fieldType": "string"
+     }
+    }
+   ],
+   "pickCategory": [
+    {
+     "variableId": "category",
+     "expression": {
+      "type": "jsExpression",
+      "expression": "$vars.pickCategory.output.Action",
+      "fieldType": "string"
+     }
+    }
+   ]
+  }
+ }
+}

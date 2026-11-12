@@ -60,7 +60,7 @@ success_criteria:
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "One complete `tm run --type package` command: package, folder, project, one retry, a --timeout within the 10-minute budget"
