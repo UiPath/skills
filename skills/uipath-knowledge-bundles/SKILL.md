@@ -123,12 +123,10 @@ Both walk the directory, hash every file, and publish the manifest with the file
 
 `Author` on a version, a proposal or a comment is an opaque actor id — `user:<guid>` for a person, `agent/<producer>` for an agent. There is no CLI call that resolves it to a name or email, so report it as it comes rather than hunting for one.
 
-`Failure` envelopes carry `Context.HttpStatus`. Three worth recognizing:
+`Failure` envelopes carry `Context.HttpStatus`. Two worth recognizing (for a content 404, see Step 0):
 
 - **409 on `create` without `Data.RecordCreated`** → that name is already used in the folder; nothing was created. (With `Data.RecordCreated: true` the record exists — follow Publishing.) Pick another; do not retry. Names are unique per folder and other agents publish into the same folders, so give a generated bundle a distinguishing suffix rather than a bare word.
 - **409 on `publish`** → the bundle already has content. Stop; this needs a change proposal — unless you are finishing a `create --input` that reported `RecordCreated: true`, where it means version 1 landed (Publishing).
-- **404 `BundleDto does not exist.` on a content command** → does not prove the bundle is missing. Run Step 0's `get` check before acting on it.
-
 `file` returns the content inline when it decodes as UTF-8 text, and refuses binary without `--destination <file>` — pass it rather than trying to read bytes from the envelope.
 
 ## Changing published content: `uip or kb change-proposal`

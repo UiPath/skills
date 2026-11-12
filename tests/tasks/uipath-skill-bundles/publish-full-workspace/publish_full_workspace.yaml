@@ -128,8 +128,9 @@ sandbox:
             "Key":"5e6f7a8b-0000-0000-0000-000000000004","Version":6,"Message":"Flag invoices off the PO total",
             "Files":3,"Deleted":0,"DeletedPaths":[],"Objects":1,"Inlined":1,"Uploaded":0,"WorkspaceUpdated":true}}
 
+# The graders import the group's _shared/sb_calls.py, so the reference copy is the group folder.
 reference:
-  directory: .
+  directory: ..
 
 initial_prompt: |
   I've edited invoice-skill/instructions.md; my edited copy is in ./changes.
@@ -146,7 +147,7 @@ success_criteria:
   # is the whole next version, carrying the edit.
   - type: run_command
     description: "Every publish targeted finance-skills in folder Shared from a complete directory carrying the edit"
-    command: "python3 $REFERENCE_DIR/check_published_dir.py publish"
+    command: "python3 $REFERENCE_DIR/publish-full-workspace/check_published_dir.py publish"
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
@@ -154,7 +155,7 @@ success_criteria:
 
   - type: run_command
     description: "Checked the published directory with the offline status before publishing it"
-    command: "python3 $REFERENCE_DIR/check_published_dir.py status"
+    command: "python3 $REFERENCE_DIR/publish-full-workspace/check_published_dir.py status"
     timeout: 15
     expected_exit_code: 0
     weight: 1.5

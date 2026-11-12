@@ -33,7 +33,6 @@ LOGIN_VALUE_SHORT = {"-f", "-s", "-t"}
 
 HELP = {"--help", "-h"}
 LOGIN_SUBCOMMANDS = {"profiles", "refresh", "status", "tenant", "which"}
-RELOGIN = {None, "refresh"}
 
 
 def strip_globals(argv: list[str]) -> list[str]:
@@ -55,16 +54,13 @@ def strip_globals(argv: list[str]) -> list[str]:
     return out
 
 
-def login_subcommand(args: list[str]) -> tuple[bool, str | None]:
-    """First positional after `login`, skipping login's options and their values.
-
-    Returns (is a subcommand position reached, the token). (False, None) is bare login.
-    """
+def login_subcommand(args: list[str]) -> str | None:
+    """First positional after `login`, skipping login's options and their values; None is bare login."""
     i = 0
     while i < len(args):
         tok = args[i]
         if tok == "--":
-            return (True, args[i + 1]) if i + 1 < len(args) else (False, None)
+            return args[i + 1] if i + 1 < len(args) else None
         if tok.startswith("--"):
             # `--opt=value` is one token; `--opt value` consumes the next one.
             i += 2 if tok in LOGIN_VALUE_LONG else 1
@@ -73,8 +69,8 @@ def login_subcommand(args: list[str]) -> tuple[bool, str | None]:
             # `-t value` consumes the next token; `-tvalue` is one token.
             i += 2 if tok in LOGIN_VALUE_SHORT else 1
             continue
-        return True, tok
-    return False, None
+        return tok
+    return None
 
 
 def classify(argv: list[str]) -> str:
@@ -84,11 +80,11 @@ def classify(argv: list[str]) -> str:
     args = strip_globals(argv)
     if not args or args[0] != "login":
         return "other"
-    found, sub = login_subcommand(args[1:])
-    if not found:
+    sub = login_subcommand(args[1:])
+    if sub is None or sub == "refresh":
         return "relogin"
     if sub in LOGIN_SUBCOMMANDS:
-        return "relogin" if sub in RELOGIN else "readonly"
+        return "readonly"
     # Commander refuses an unknown subcommand / excess argument: nothing logs in.
     return "other"
 

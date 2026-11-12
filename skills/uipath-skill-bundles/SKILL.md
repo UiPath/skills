@@ -125,7 +125,7 @@ A tag names one version; every read accepts it in place of a number. Names: up t
 | `confirmation_required` on `publish` | Plain directory with `--base-version` would delete `Data.DeletedPaths`; nothing was sent | Show the user `DeletedPaths` and ask; re-run with `--yes` only on their approval |
 | `--base-version must match this workspace's base.` | Workspace marker disagrees with `--base-version` | Drop the flag, or download that version into a fresh workspace |
 | `The source is already a workspace.` | `create --input` on a downloaded workspace | Copy the content into a plain directory first |
-| `Data.RecordCreated: true`, `PublicationConfirmed: false` (any status, 409 included) | `create --input` made the record; its publish was not confirmed | No `Data.Key`: `list --search <NAME>` in the same folder for the exact name's key first. Then `versions` on the key: v1 → done; 404 `has no content yet.` or an empty list → `publish` that key; any other failure → Step 0 |
+| `Data.RecordCreated: true`, `PublicationConfirmed: false` (any status, 409 included) | `create --input` made the record; its publish was not confirmed | Recover as Publishing describes for `create --input`; never repeat `create` |
 | 404 `BundleDto does not exist.` | Content hidden from you, or a wrong key or folder | Step 0: run `get` and branch on its answer |
 | `invalid_argument` before any request | Bad version selector, path, or missing folder | Fix the argument; retrying unchanged will not help |
 

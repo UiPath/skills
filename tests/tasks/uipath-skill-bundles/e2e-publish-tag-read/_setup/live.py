@@ -32,10 +32,10 @@ NAME_FILE = Path("bundle-name.txt")
 NAME_SHAPE = re.compile(r"^sb-e2e-[0-9a-f]{12}$")
 # The protected reference copy of the seed, beside this script; the agent's ./seed may have changed.
 SEED = Path(__file__).resolve().parent.parent / "seed"
-SEED_FILES = ("README.md", "invoice-skill/instructions.md", "refund-skill/instructions.md")
-UNTOUCHED = ("README.md", "refund-skill/instructions.md")
-RULE = "more than 2%"
 INVOICE = "invoice-skill/instructions.md"
+SEED_FILES = ("README.md", INVOICE, "refund-skill/instructions.md")
+UNTOUCHED = tuple(p for p in SEED_FILES if p != INVOICE)
+RULE = "more than 2%"
 
 
 def uip(*args, timeout=120):
@@ -68,13 +68,18 @@ def seed(path):
     return (SEED / path).read_text(encoding="utf-8")
 
 
+def preview(content, raw, n):
+    """What a failure message shows: the file content, or the CLI output when there is none."""
+    return (content if content is not None else raw)[:n]
+
+
 def read_file(bundle, path, version):
-    code, env, raw = uip("or", "skill-bundles", "file", bundle, "--folder-path", FOLDER, "--path", path, "--version", version)
+    _, env, raw = uip("or", "skill-bundles", "file", bundle, "--folder-path", FOLDER, "--path", path, "--version", version)
     return (env["Data"].get("Content") if ok(env) else None), raw
 
 
 def latest(bundle):
-    code, env, raw = uip("or", "skill-bundles", "versions", bundle, "--folder-path", FOLDER)
+    _, env, raw = uip("or", "skill-bundles", "versions", bundle, "--folder-path", FOLDER)
     if not ok(env):
         raise SystemExit(f"FAIL: versions refused: {raw[:300]}")
     rows = env.get("Data") or []
@@ -86,7 +91,7 @@ def preflight():
     if code != 0:
         print(f"FAIL: this uip has no `or skill-bundles` (needs a prerelease build with UiPath/cli#6015): {raw[:300]}")
         return 1
-    code, env, raw = uip("or", "skill-bundles", "list", "--folder-path", FOLDER, "--limit", "1")
+    _, env, raw = uip("or", "skill-bundles", "list", "--folder-path", FOLDER, "--limit", "1")
     if not ok(env):
         print(f"FAIL: skill bundles unavailable in folder {FOLDER} (session, Features.SkillBundles, or permission): {raw[:300]}")
         return 1
@@ -107,7 +112,7 @@ def versions():
 def stable():
     bundle = name()
     newest, _ = latest(bundle)
-    code, env, raw = uip("or", "skill-bundles", "tags", "list", bundle, "--folder-path", FOLDER)
+    _, env, raw = uip("or", "skill-bundles", "tags", "list", bundle, "--folder-path", FOLDER)
     if not ok(env):
         print(f"FAIL: tags list refused: {raw[:300]}")
         return 1
@@ -135,16 +140,16 @@ def intact():
     for path in SEED_FILES:
         content, raw = read_file(bundle, path, "1")
         if content != seed(path):
-            problems.append(f"v1 {path} is not the seed file: {(content if content is not None else raw)[:160]!r}")
+            problems.append(f"v1 {path} is not the seed file: {preview(content, raw, 160)!r}")
     for path in UNTOUCHED:
         content, raw = read_file(bundle, path, "latest")
         if content != seed(path):
-            problems.append(f"newest {path} differs from the seed it was never meant to change: {(content if content is not None else raw)[:160]!r}")
+            problems.append(f"newest {path} differs from the seed it was never meant to change: {preview(content, raw, 160)!r}")
     newest, raw = read_file(bundle, INVOICE, "latest")
     base = seed(INVOICE).splitlines()
     lines = (newest or "").splitlines()
     if lines[:len(base)] != base or not any(RULE in line for line in lines[len(base):]):
-        problems.append(f"newest {INVOICE} is not the seed plus the rule: {(newest if newest is not None else raw)[:200]!r}")
+        problems.append(f"newest {INVOICE} is not the seed plus the rule: {preview(newest, raw, 200)!r}")
     if problems:
         print("FAIL: " + "; ".join(problems))
         return 1
