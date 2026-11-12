@@ -58,6 +58,7 @@ Pick the builder auth type that matches the vendor; the builder writes the confi
 | Standard OAuth2 client credentials | `auth set --auth-type oauth2ClientCredentials --token-url <TOKEN_URL> --scope '<SCOPES>'` |
 | AWS SigV4 (Bedrock-compatible endpoint) | `auth set --auth-type awsv4` |
 | A non-standard token exchange (custom or JSON body, extra fields, returned host) | `auth set --auth-type custom` + `onProvision` and `onRefresh` system resources whose hooks fetch the token, patched to `GET /onProvision` and `POST /onRefresh`, and no `provisionAuthValidation` — recipe in [hook-authoring-guide.md](hook-authoring-guide.md) §"Custom token exchange" |
+| A token exchange that takes several calls, each using the previous answer (Apple OIDC: authenticate → JWT → OAuth token) | The same, with `--next-resource 'POST:/<step>'` on `onProvision` and `onRefresh` and one step resource per further call (request chaining) — [hook-authoring-guide.md](hook-authoring-guide.md) §"Chained token exchange" |
 | No auth (private network endpoint) | `init --auth none` |
 
 Rules that hold for every type:
@@ -81,6 +82,7 @@ When the user supplies a zip, or names an AI Gateway template to start from, use
 2. Read `app/element/element.json` (`resources[]`, `configuration[]`, `parameters[]`, `hooks[]`) and every `standard-resources/*.json`. Hook code may be inline (`hooks[].body`, a JSON string — unescape it) or in `app/element/hooks/*.js`.
 3. In the fresh scaffold: one `activity create` per resource path you need, then `activity hook create` per hook body (saved as a `.js` file first), then `state patch element.json/configuration/<KEY>` per non-auth config entry the hooks read. Re-create auth with `auth set` rather than copying auth config entries.
 4. Copy `element-metadata.json:tags` into the new metadata.
+5. Look for `nextResource` on every resource (`jq '.resources[] | select(.nextResource) | {path, nextResource}'`): a chained token exchange. Re-create each link with `--next-resource` and each step resource with `activity create`, and check every resource that holds a token is reached by some chain — [hook-authoring-guide.md](hook-authoring-guide.md) §"Chained token exchange".
 
 Do not import the reference itself: AI Gateway templates share one key (`design-entity-customaigatewaybyomtemplate`), and an old zip carries its owner's key — importing either updates a connector that is not yours. Do not rename the key by hand either; `init` derives it from your login. A template also fails `builder validate` as shipped (its standard-resource file names do not match its resource names, its parameters lack `source`), which is one more reason to rebuild instead.
 
@@ -96,4 +98,4 @@ Run after `builder validate` passes, before the first `import` (the version chec
 6. **No secret defaults** — no encrypted or `PASSWORD` config entry has a non-empty `defaultValue`; `base.url` holds the vendor host, not a placeholder such as `https://example.com`.
 7. **Hook-written config** — every config entry a hook writes back has no `configScreenType`.
 8. **Hints** — every `pre` / `pre-optional` config entry has a `hintText`.
-9. **Token exchange** (custom auth only) — `GET /onProvision` with `vendorMethod: "POST"`, `POST /onRefresh` (not `/on-refresh`), each with its hook pair and no orphaned hook file from an earlier method or path; no `provisionAuthValidation`; `custom.auth.header` hidden with an empty default unless the vendor uses it.
+9. **Token exchange** (custom auth only) — `GET /onProvision` with `vendorMethod: "POST"`, `POST /onRefresh` (not `/on-refresh`), each with its hook pair and no orphaned hook file from an earlier method or path; no `provisionAuthValidation`; `custom.auth.header` hidden with an empty default unless the vendor uses it. A chained exchange: both lifecycle resources carry the same `nextResource`, the step resource it names exists, its preRequest hook refuses a `null` `request_previous_response`, and the step holding the final token persists it (the lifecycle resources may then have a preRequest hook only).

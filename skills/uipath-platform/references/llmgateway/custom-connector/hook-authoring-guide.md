@@ -6,7 +6,7 @@ Hooks are where a BYO LLM connector does its work: the **preRequest** hook turns
 
 - Hooks run in Integration Service's sandboxed JavaScript engine: modern syntax (`const`, arrow functions, `?.`, `??`, destructuring, spread) and `async`/`await` work, and `require()` loads a small fixed set (`axios`, `crypto`, `url`, `querystring`, `buffer`, `lodash`, …).
 - Every code path ends in `done()` or `done({...})` — a hook returns through it, not through `return`. Put `return;` after a `done()` that is not the last statement.
-- Keep the resource hooks synchronous and free of secondary HTTP calls: they sit on the hot path of every product call. Do token work in the token-exchange resources instead (§"Custom token exchange").
+- Keep the resource hooks synchronous and free of secondary HTTP calls: they sit on the hot path of every product call. Do token work in the token-exchange resources instead (§"Custom token exchange"), and chain them when the exchange takes several calls (§"Chained token exchange").
 - No `console.log`, ever — there is no logger and the output can leak into responses. Never place prompts, completions, headers or tokens in `response_error_message`, `response_body` errors, or `connection_identity`.
 - Register each file with `uip is connectors builder activity hook create --resource-name <NAME> --method POST --hook-type preRequest|postRequest --custom-code-file <FILE>`. The builder stores it under `app/element/hooks/` and derives the `contextParams` allow-list from the variables your code reads — a variable not referenced is not injected. Re-run the command after editing the file.
 
@@ -182,6 +182,58 @@ done({
 ```
 
 The resource preRequest hook then sends `Authorization: Bearer ${configuration['accessToken']}` (or the vendor's own token header). `clientId` / `clientSecret` / `tokenUrl` are `pre` config entries the user fills in (the secret encrypted, as `PASSWORD`); `accessToken` (encrypted), `expires_in` and `authentication.time` are hidden entries with **no** `configScreenType`.
+
+### Chained token exchange (request chaining)
+
+Some vendors need several calls before the first token exists, each using what the previous one returned. Apple's OIDC sign-in is one: authenticate the account (password plus a TOTP code) to get a corporate JWT, then trade that JWT at the OAuth token endpoint for the access token Endor takes. Integration Service runs such a sequence itself, through **request chaining**: a resource names the resource to run after it, and that resource's hooks read the previous call's answer. The calls still run only when the connection is provisioned or refreshed, never on the product's hot path, so this is the way to do a multi-call exchange, not `axios` inside the flavor resource's hook.
+
+| Piece | What it is |
+|---|---|
+| `nextResource` on a resource | `"<METHOD>:<path>"` of the resource Integration Service runs after this one, for example `"POST:/oidcToken"`. Set it with `--next-resource 'POST:/oidcToken'` on `auth system create` or `activity create`, or patch the field into the entry |
+| `request_previous_response` | Readable in the next resource's hooks: the previous call's response body (map or list; `null` when the resource was not reached through a chain). `request_previous_response_headers` holds its headers |
+| The step resource | An ordinary `api` resource made with `activity create` (its own `standard-resources` file, like `Auth2.json` in Apple's OIDC + A3 connector), with the next token service as its vendor URL |
+
+Shape, as in Apple's OIDC + A3 connector: `onProvision` and `onRefresh` both carry `"nextResource": "POST:/<step>"`. Their preRequest hook sends the first call (authenticate) and they have no postRequest hook. The step resource's preRequest hook reads `request_previous_response` and sends the second call, and its postRequest hook persists the token and its lifetime on the connection. Create the step resource first, then the lifecycle resources with `--next-resource` pointing at it. Keep `nextResource` when you re-create `onRefresh` at `/onRefresh` (Rule 13's patch): the queried entry already has it, or add it in the same `jq`:
+
+```bash
+uip is connectors builder activity create --name oidc_token --display-name 'OIDC token' \
+  --resource-path /oidcToken --vendor-path /auth/oauth2/token --methods POST --no-curate --output json
+uip is connectors builder auth system create --type onProvision --method GET \
+  --vendor-path /service/authservice/authenticate --next-resource 'POST:/oidcToken' --output json
+uip is connectors builder auth system create --type onRefresh --method POST \
+  --vendor-path /service/authservice/authenticate --next-resource 'POST:/oidcToken' --output json
+# then the Rule 13 patches; on the onRefresh entry: jq '.Data.Value | .path = "/onRefresh" | .nextResource = "POST:/oidcToken"'
+```
+
+```javascript
+// preRequest on the step resource (/oidcToken): trade the previous call's JWT for the access token
+const prev = request_previous_response;
+if (!prev || !prev.corpJwt) {
+    // Reached directly, not through the chain, or the first call returned no JWT: never call the token service
+    done({ continue: false, response_status_code: 502, response_body: { error: { message: 'The sign-in step returned no token.' } } });
+    return;
+}
+done({
+    request_vendor_method: 'POST',
+    request_vendor_path: `${String(configuration['oidc.token.service.url']).replace(/\/+$/, '')}/auth/oauth2/token`,
+    request_vendor_headers: { 'Content-Type': 'application/json' },
+    request_vendor_body: {
+        client_id: configuration['oidc.client.id'],
+        client_secret: configuration['oidc.client.secret'],
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: prev.corpJwt,
+        scope: 'default',
+    },
+});
+```
+
+The step's postRequest hook is the token-exchange postRequest above, writing the token it receives (`userToken` there). Rules on top of §"Custom token exchange":
+
+- **The last step persists.** Write `configuration` in the postRequest hook of the step that has the final token, and carry earlier values forward through `request_previous_response`, not through `configuration`: an earlier step's `configuration` write is not shown to reach a later step.
+- **Guard the step resource.** It is an ordinary resource, so anyone who can call the connection can call its path directly, with `request_previous_response` `null`. Refuse that before any vendor call (as above), and give the postRequest hook `if (response_iserror) { done(); return; }`: without the `return`, an error falls through and overwrites the stored token with `undefined`. Name its path so it never collides with a flavor path.
+- **Every host is a field.** Each token service the chain calls is its own `pre` config entry (Apple: the IdMS authenticate host, the OAuth token host, the A3 host), never a URL written into the hook. One host left at a value the cloud cannot reach fails the connection with "Failed to execute API … during provisioning", naming that host.
+- **Every secret is encrypted.** Each password, client secret and TOTP seed is a `PASSWORD` entry with `encrypt: true`. Apple's OIDC + A3 template ships them with `encrypt: false`: fix that when porting it. Stored tokens are hidden entries with `encrypt: true` too.
+- **Independent tokens.** A vendor that needs two unrelated tokens (Apple: the OIDC access token and the A3 app token, sent together as `X-Apple-OIDC-Access-Token` and `X-Apple-IDMS-A3-Token`) needs both persisted. The template shows only one hop (`onProvision`/`onRefresh` → one step); its `Auth3` (A3) resource is defined but nothing chains to it, so `a3Token` stays empty. Whether a step resource's own `nextResource` runs a third call, and whether a write made in one step survives the next, are not verified. Check both on the draft before relying on them: after connecting the test connection, a call that needs both tokens must pass, and again after a refresh (short `expires_in`, as above).
 
 ### Model in the path
 
