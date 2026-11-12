@@ -4,12 +4,14 @@ description: >
   another in the same flow. Tests that the target ends up with the source's
   whole taxonomy (prompt, a nested repeating group, fields, types, a Choice and
   instructions) and that only the taxonomy moves: the target keeps its own
-  label, file input, extraction source and model settings, and gets a
-  processor of its own rather than the source's. Ids are not graded: the guide
-  does not say whether a copy keeps the source's ids or gets new ones.
+  label, file input, extraction source and model settings, and takes no
+  processorKey from the source. Ids are not graded: the guide does not say whether a copy keeps the
+  source's ids or gets new ones. The processor is graded: writing the taxonomy
+  provisions the target's own, so it ends up with a processorKey that is not
+  the source's.
 
-  No `flow debug`: a CLI-authored Extract document node extracts nothing
-  until the flow is saved once in Studio Web.
+  No `flow debug`: the task is offline authoring, and nothing in it deploys or
+  runs the flow.
 
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
 
@@ -75,12 +77,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Extract Credit Note does not take Extract Invoice's processorKey, so it does not run Invoice's processor"
+    description: "Extract Credit Note ends up with a processorKey of its own, and never Extract Invoice's: writing a taxonomy to a node that has no processor provisions one, and a copied key would name the source's processor, which pack refuses as a duplicate author."
     path: "BillingDocs/BillingDocs/BillingDocs.flow"
     assertions:
-      - expression: "length(nodes[?id=='extractCreditNote1' && inputs.processorKey=='3f6b2a9e-8c41-4d7a-9b25-61e0c4d8f713'])"
+      # The literal is the source node's key in
+      # _fixtures/BillingDocs/BillingDocs/BillingDocs.flow — keep them in step.
+      - expression: "length(nodes[?id=='extractCreditNote1' && inputs.processorKey && inputs.processorKey!='3f6b2a9e-8c41-4d7a-9b25-61e0c4d8f713'])"
         operator: equals
-        expected: 0
+        expected: 1
     weight: 1.5
     pass_threshold: 1.0
 
