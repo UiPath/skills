@@ -188,13 +188,18 @@ jobs:
                 else
                   WINDOWS+=("$f")
                 fi
+              # skip:studio-web — task cannot pass on Studio Web (e.g. TypeCache
+              # pull is unavailable in the SW sandbox). Dropped with the same
+              # counter so the warning names both reasons.
+              elif [ "$AGENT" = "studio-web" ] && grep -qE '^tags:.*\bskip:studio-web\b' "$f"; then
+                DROPPED=$((DROPPED + 1))
               else
                 LINUX+=("$f")
               fi
             done
           done
           if [ "$DROPPED" -gt 0 ]; then
-            echo "::warning::studio-web: dropped $DROPPED windows-tagged task(s); the desktop-RPA suite does not run under Studio Web"
+            echo "::warning::studio-web: dropped $DROPPED task(s) tagged windows or skip:studio-web"
           fi
           LCOUNT=${#LINUX[@]}
           WCOUNT=${#WINDOWS[@]}

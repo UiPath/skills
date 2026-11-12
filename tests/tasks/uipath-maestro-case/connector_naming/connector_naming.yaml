@@ -23,7 +23,7 @@ description: >
   TENANT PRECONDITION: the two connections in fixtures/sdd.md must exist and be
   Enabled. Neither task needs a resource lookup - `send_as` and `channel` take
   literal values and the trigger declares no event parameters.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, connector, shape:multi-node]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, connector, shape:multi-node, skip:studio-web]
 
 # One harness "turn" is the ENTIRE agent query stream, so turn_timeout caps the
 # whole session, not a single exchange — it must exceed the full build. A first
