@@ -26,7 +26,7 @@ Is this the process you want?
 ```
 
 This reply is your whole final message, and its first characters are the
-process name: no sentence about which skill you are using, no diagram. When the lookup call returns, do not comment on its result:
+process name: no sentence about which skill you are using. When the lookup call returns, do not comment on its result:
 your next words are the `<Name>:` line. Write nothing before that line:
 not a status sentence ("Valid, zero errors", "Lookups complete", "No
 matching processes found", "Presenting the gate"), not an introduction
@@ -39,11 +39,11 @@ it holds the 3c reply and nothing else.
 Give every task box its own line, in order, including a script step that
 needs no resource (`no resource needed`): the box
 lines are the outline, so a box left off is a step the user never sees.
-List task boxes only, never the start event, a timer, a gateway, or the
-end event. Copy each box's `name` from the `.bpmn` as written, including its
+List task boxes and a connector trigger start only, never a manual or
+timer start event, a gateway, or the end event. Copy each box's `name` from the `.bpmn` as written, including its
 `[kind]`: do not reword it or append the branch condition that leads to it.
-After the colon, write one of the template's statuses word for word: the
-resource and its folder, the two candidates to choose between, `none yet,
+After the colon, write the resource and its folder, the two candidates to
+choose between, or one of the fixed statuses word for word: `none yet,
 create it or name one`, `not checked`, or `no resource needed`. Never reword
 a fixed status ("no matching app", "choose the orders system"), and add
 no element type ids, no

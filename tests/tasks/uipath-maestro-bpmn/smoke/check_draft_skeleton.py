@@ -29,29 +29,43 @@ TYPED_ACTIVITIES = ("serviceTask", "sendTask", "receiveTask", "scriptTask", "use
 
 
 def require_multi_instance(root) -> None:
-    """One sequential multi-instance box that stops early, one parallel one."""
+    """One sequential multi-instance box that stops early, one parallel one.
+
+    A sequential box stops early through a completionCondition or through an
+    interrupting error boundary on the box itself.
+    """
+    stoppers = {
+        attr(b, "attachedToRef") for b in elements(root, "boundaryEvent")
+        if b.find("bpmn:errorEventDefinition", NS) is not None and attr(b, "cancelActivity") != "false"
+    }
     seq_stop = par = False
-    for mi in root.iter(f"{{{NS['bpmn']}}}multiInstanceLoopCharacteristics"):
+    for act in root.iter():
+        mi = act.find("bpmn:multiInstanceLoopCharacteristics", NS)
+        if mi is None:
+            continue
         loop = mi.find("bpmn:extensionElements/uipath:loopCharacteristics", NS)
         if loop is None or not attr(loop, "inputCollection"):
             fail("a multi-instance marker has no uipath:loopCharacteristics inputCollection")
         if attr(mi, "isSequential") == "true":
             cond = mi.find("bpmn:completionCondition", NS)
-            seq_stop |= cond is not None and bool((cond.text or "").strip())
+            seq_stop |= (cond is not None and bool((cond.text or "").strip())) or attr(act, "id") in stoppers
         else:
             par = True
     if not seq_stop:
-        fail("expected a sequential multi-instance box with a completionCondition (stop at the first failing item)")
+        fail("expected a sequential multi-instance box that stops early (a completionCondition or an error boundary)")
     if not par:
         fail("expected a parallel multi-instance box (one run per item, all at once)")
 
 
 def require_fork_exits_safe(root, flows) -> None:
-    """No path out of a joined parallel fork may stop at a plain end event.
+    """No path out of a joined parallel fork may stall its join.
 
-    A parallel join waits for every branch it forked, so a branch that leaves
-    for a plain end event leaves the instance running forever. Walk each fork's
-    branches, following error and timer boundaries, up to the join.
+    A parallel join waits for one token per branch its fork opened. A path
+    that leaves a branch for a plain end event, or an interrupting error or
+    timer path that flows straight into the join as an extra input, leaves
+    the instance running forever. Terminate and error end events end the
+    instance, so they are safe. Nested fork/join pairs are tracked by depth,
+    so a plain end between an inner join and the outer join is caught.
     """
     succ: dict[str, list[str]] = {}
     incoming: dict[str, int] = {}
@@ -59,11 +73,12 @@ def require_fork_exits_safe(root, flows) -> None:
         succ.setdefault(attr(f, "sourceRef"), []).append(attr(f, "targetRef"))
         incoming[attr(f, "targetRef")] = incoming.get(attr(f, "targetRef"), 0) + 1
     # A non-interrupting boundary leaves its activity's token on the way to
-    # the join, so a plain end on that path cannot deadlock it.
+    # the join, so it neither stalls nor feeds the join.
+    boundary_succ: dict[str, list[str]] = {}
     for b in elements(root, "boundaryEvent"):
         if attr(b, "cancelActivity") == "false":
             continue
-        succ.setdefault(attr(b, "attachedToRef"), []).append(attr(b, "id"))
+        boundary_succ.setdefault(attr(b, "attachedToRef"), []).append(attr(b, "id"))
     parallels = elements(root, "parallelGateway")
     joins = {attr(g, "id") for g in parallels if incoming.get(attr(g, "id"), 0) > 1}
     forks = [attr(g, "id") for g in parallels if len(succ.get(attr(g, "id"), [])) > 1]
@@ -72,24 +87,48 @@ def require_fork_exits_safe(root, flows) -> None:
     plain_ends = {
         attr(e, "id") for e in elements(root, "endEvent")
         if e.find("bpmn:terminateEventDefinition", NS) is None
+        and e.find("bpmn:errorEventDefinition", NS) is None
     }
-    for fork in forks:
-        seen: set[str] = set()
-        stack = list(succ[fork])
-        reached_join = False
+    fork_set = set(forks)
+    cap = len(forks) + 1
+
+    def walk(fork: str, with_boundaries: bool):
+        seen: set[tuple[str, int]] = set()
+        nodes: set[str] = set()
+        entries: set[tuple[str, str]] = set()  # (source, join) where the walk closes
+        stack = [(n, 1, fork) for n in succ[fork]]
         while stack:
-            node = stack.pop()
-            if node in seen:
-                continue
-            seen.add(node)
+            node, depth, src = stack.pop()
             if node in joins:
-                reached_join = True
+                depth -= 1
+                if depth == 0:
+                    entries.add((src, node))
+                    continue
+            if (node, depth) in seen:
                 continue
-            stack.extend(succ.get(node, []))
-        stuck = sorted(seen & plain_ends)
-        if reached_join and stuck:
+            seen.add((node, depth))
+            nodes.add(node)
+            if node in fork_set:
+                depth = min(depth + 1, cap)
+            nxt = list(succ.get(node, []))
+            if with_boundaries:
+                nxt += boundary_succ.get(node, [])
+            stack.extend((n, depth, node) for n in nxt)
+        return nodes, entries
+
+    for fork in forks:
+        normal, _ = walk(fork, False)
+        full, entries = walk(fork, True)
+        if not entries:
+            continue
+        stuck = sorted(full & plain_ends)
+        if stuck:
             fail(f"a path out of parallel fork {fork} stops at plain end event(s) {stuck} while the join "
-                 "waits; end it with a terminate end event or route it back into the join")
+                 "waits; end it with a terminate end event or merge it back onto its own branch")
+        extra = sorted(src for src, _ in entries if src not in normal and src != fork)
+        if extra:
+            fail(f"an error or timer path from {extra} flows straight into the join of fork {fork}, which then "
+                 "waits for an input that never comes; merge it onto its own branch before the join")
 
 
 def main() -> None:
@@ -110,20 +149,18 @@ def main() -> None:
     flows = one_or_more(root, "sequenceFlow")
     # A per-item shape needs no decision; every other shape routes on one.
     if "--multi-instance" not in sys.argv:
-        # An inclusive gateway ("picking, packing, or both") may condition
-        # every branch with no default; an exclusive one needs its default.
+        # Only the fork-exits shape ("picking, packing, or both") may use an
+        # inclusive gateway; every branching exclusive gateway needs a default.
         exclusive = elements(root, "exclusiveGateway")
-        inclusive = elements(root, "inclusiveGateway")
+        inclusive = elements(root, "inclusiveGateway") if "--fork-exits-safe" in sys.argv else []
         if not exclusive and not inclusive:
-            fail("missing a bpmn:exclusiveGateway or bpmn:inclusiveGateway")
-        out: dict[str, list] = {}
+            fail("missing a bpmn:exclusiveGateway" + (" or bpmn:inclusiveGateway" if "--fork-exits-safe" in sys.argv else ""))
+        out: dict[str, int] = {}
         for f in flows:
-            out.setdefault(attr(f, "sourceRef"), []).append(f)
+            out[attr(f, "sourceRef")] = out.get(attr(f, "sourceRef"), 0) + 1
         for g in exclusive:
-            branches = out.get(attr(g, "id"), [])
-            if len(branches) > 1 and not attr(g, "default") and all(
-                    f.find("bpmn:conditionExpression", NS) is not None for f in branches):
-                fail(f"exclusive gateway {attr(g, 'id')} conditions every branch and has no default sequence flow")
+            if out.get(attr(g, "id"), 0) > 1 and not attr(g, "default"):
+                fail(f"exclusive gateway {attr(g, 'id')} branches without a default sequence flow")
         if not any(f.find("bpmn:conditionExpression", NS) is not None for f in flows):
             fail("no sequence flow carries a condition")
     require_sequence_integrity(root)

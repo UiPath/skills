@@ -5,7 +5,7 @@ description: >
   packing steps, and draws the error handling so no path out of the fork stops
   at a plain end event while the join waits (it ends in terminate or rejoins).
   No registry call; stops at the approval gate instead of wiring real nodes.
-tags: [uipath-maestro-bpmn, smoke, "mode:build"]
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:approval-gate"]
 
 run_limits:
   expected_turns: 25
@@ -30,7 +30,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent made no registry discovery before the shape was approved (the preflight kind list is allowed)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|search|get)'
+    command_pattern: '(?:\buip|\$UIP)\s+maestro\s+(?:bpmn\s+)?registry\s+(?:pull|search|get|prepare|describe)\b(?![^\n;&|]*\s(?:--help|-h)\b)'
     weight: 2.0
     pass_threshold: 1.0
 

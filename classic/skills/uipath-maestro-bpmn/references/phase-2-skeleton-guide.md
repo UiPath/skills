@@ -29,7 +29,8 @@ in. It is not a working process and must never be reported as one.
    [Draw the trigger the user named](#draw-the-trigger-the-user-named)),
    `bpmn:exclusiveGateway` and `bpmn:parallelGateway`, `bpmn:sequenceFlow`s,
    boundary events (`errorEventDefinition`, `timerEventDefinition`) when the
-   request names a failure or a deadline on a step, and end events: one that every branch converges on, unless the request
+   request names a failure or a deadline on a step (a deadline that escalates
+   while the step keeps running is `cancelActivity="false"`), and end events: one that every branch converges on, unless the request
    names separate outcomes. Branches converge through a join gateway, never
    as two flows into the end event (`FAKE_JOIN`, see
    [structural-bpmn.md](structural-bpmn.md#gateways)). A skeleton returns no
@@ -66,7 +67,12 @@ in. It is not a working process and must never be reported as one.
    boundary or a gateway exit leaves one branch for a plain end event, the
    join never fires and the instance never completes. End that path in a
    terminate end event (`<bpmn:terminateEventDefinition />`) when it stops
-   the process, or route it back into the join when the process carries on.
+   the process. When the process carries on, merge the path back onto its own
+   branch through an exclusive gateway placed before the join, so the join
+   keeps exactly one incoming flow per forked branch; a flow from the error
+   path straight into the join adds an input the join waits for forever.
+   This applies to interrupting boundaries only: a non-interrupting one
+   leaves the step running on its branch.
 
 The kind is enough for a label; the type's template is resolved in phase 4.
 The resource each box will use is looked up at 3c.
@@ -126,7 +132,7 @@ A skeleton validates as **Valid** with warnings, and those warnings are correct
 for a skeleton. Fix nothing that appears here:
 
 - `Variable "vars.<id>" is read but never assigned; it will be empty at run
-  time` — one, at process level.
+  time` — one per declared variable, at process level.
 - `VARIABLE_NOT_SET: Variable '<name>' is not set at this point in the flow` —
   one per conditioned branch flow. These read like errors and are not.
 
@@ -207,7 +213,10 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
     Agent `agent`, Maestro BPMN `processOrchestration`, Maestro Case
     `CaseManagement`, Maestro Flow `Flow`, Function `function`.
   - **Connections:** run this once when any box is a connector box or a Data
-    Fabric entity box, including when the user named no provider. Skip it
+    Fabric entity box, including when the user named no provider. A
+    connector trigger start (`Invoice updated [Data Fabric]`) counts as a
+    connector box: give it its own line, labelled with its start event's
+    `name`. Skip it
     when no box is either, since the filter has no service to test. No
     connector key is needed, and the command has no `--limit`, so the
     `--output-filter` row filter keeps the output to the boxes' connectors:
