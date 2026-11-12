@@ -10,13 +10,13 @@ user-invocable: true
 
 A skill bundle is a folder-scoped Orchestrator entity holding a versioned file tree of agent skills. Versions are immutable and numbered (v1, v2, …). Reads take a number, a tag, or `latest`. Content is addressed by hash, so transfers move only what changed. `uip or skill-bundle` is an alias.
 
-Knowledge bundles are a different kind with a different lifecycle: their later versions come only from reviewed change proposals, through `uip or kb`. Neither command group reaches the other kind's bundles.
+Knowledge bundles are a different kind with a different lifecycle: their later versions come only from reviewed change proposals, through `uip or kb`. This command group refuses a knowledge bundle's key (Step 0); use each group for its own kind.
 
 ## Critical Rules
 
 1. **Preflight before anything else.** Run `uip or skill-bundles --help` once. `unknown command` means a stable build; a command the platform refuses means the tenant's skill-bundles feature is off. Both are stop conditions — say so and stop, never substitute `uip or kb`, bucket or asset commands.
-2. **Every remote command needs a folder.** Pass `--folder-path <path>` or `--folder-key <guid>` every time, inside a workspace too. Only `status` runs without one.
-3. **Publish only from a full workspace.** `publish` treats the directory as the whole next version: a file the base version has and the directory lacks is **deleted**. Download the version into a directory, edit there, publish that directory. Never publish a directory holding only the files you changed.
+2. **Every remote command needs a folder.** Pass `--folder-path <FOLDER_PATH>` or `--folder-key <FOLDER_KEY>` every time, inside a workspace too. Only `status` runs without one.
+3. **Publish only from a full workspace.** `publish` treats the directory as the whole next version: a file the base version has and the directory lacks is **deleted** — hidden (dot-prefixed) files excepted, see Publishing. Download the version into a directory, edit there, publish that directory. Never publish a directory holding only the files you changed.
 4. **A `publish` conflict is never solved by deleting the bundle.** A 409 means a file you touched changed after your base (or, on a first publish, that the bundle meanwhile got content). Download `latest` into a fresh directory, re-apply the edit, publish again. Deleting and re-creating destroys the version history and every tag.
 5. **`--immutable` is permanent.** An immutable tag can never be moved or deleted, by anyone. Pass it only when the user asked for an immutable tag in those words.
 6. **Moving a tag changes what every reader of it gets.** Confirm the target version with `versions` before `tags set`, and report the old and new version.
@@ -36,7 +36,7 @@ uip or skill-bundles --help
   - **Success** → you hold the bundle record but not skill-bundle content permission. Stop and report that.
   - **`not_found`** → the key or the folder is wrong. Ask the user which folder holds the bundle before listing any other folder.
   - **Any other failure** (`permission_denied`, a feature refusal, `server_error`) → stop and report it as it came. It does not show the bundle is missing.
-- **`Skill bundle '<name>' does not exist in this folder.`** (`not_found`) → the name or the folder is wrong. Names match exactly, case included. Ask the user which folder holds the bundle before listing any other folder; never create one to fill the gap.
+- **`Skill bundle '<NAME>' does not exist in this folder.`** (`not_found`) → the name or the folder is wrong. Names match exactly, case included. Ask the user which folder holds the bundle before listing any other folder; never create one to fill the gap.
 - **`This key is not a skill bundle.`** → the GUID names a knowledge bundle. Those belong to `uip or kb`, a different skill.
 
 ## Addressing a bundle
@@ -47,36 +47,36 @@ The bundle is positional and takes its **name or its key** (GUID): `uip or skill
 
 `uip or folders list --all` finds a folder — pass its `Path` (`Shared`, `Shared/Finance`) to `--folder-path`, or its `Key` to `--folder-key`. `Name` is the display name and is neither.
 
-`list --search` is a contains match on the name only. `list` reports no total, so `HasMore` is a guess from a full page: keep paging with `--limit` / `--offset` until a page comes back short. On `versions`, `history` and `tags list` the window is cut from the whole answer, so `--offset` counts rows.
+`list --search` is a contains match on the name only. `list` reads one row past the page, so its `HasMore` is exact; page with `--limit` / `--offset` while it is `true`. On `versions`, `history` and `tags list` the window is cut from the whole answer: `Pagination.Total` is exact and `--offset` counts rows.
 
 ## Commands
 
 | Goal | Command |
 |---|---|
-| Find bundles | `uip or skill-bundles list --folder-path <p> [--search <text>] [--limit <n>] [--offset <n>] [--all-fields]` |
-| One bundle's record | `uip or skill-bundles get <bundle> --folder-path <p>` |
-| Create, empty | `uip or skill-bundles create <name> --folder-path <p> [-d <text>]` |
-| Create + publish v1 from a directory | `uip or skill-bundles create <name> --folder-path <p> --input <dir> -m <message>` |
-| Publish the next version | `uip or skill-bundles publish <bundle> --folder-path <p> --input <dir> -m <message>` |
-| Rename / re-describe | `uip or skill-bundles update <bundle> --folder-path <p> [--name <name>] [-d <text>]` |
-| Remove from a folder | `uip or skill-bundles delete <bundle> --folder-path <p> --yes` |
-| Version history | `uip or skill-bundles versions <bundle> --folder-path <p> [--limit <n>] [--offset <n>]` |
-| Unpack a version into a workspace | `uip or skill-bundles download <bundle> --folder-path <p> --destination <empty-dir> [--version <v>]` |
-| Whole version as a zip | `uip or skill-bundles archive <bundle> --folder-path <p> --destination <file>.zip [--version <v>]` |
-| One file's content | `uip or skill-bundles file <bundle> --folder-path <p> --path <file> [--version <v>] [--destination <file>]` |
-| One file across versions | `uip or skill-bundles history <bundle> --folder-path <p> --path <file> [--version <v>] [--limit <n>] [--offset <n>]` |
-| What I changed since download | `uip or skill-bundles status [--input <dir>]` |
-| What a workspace needs to match a version | `uip or skill-bundles sync <bundle> --folder-path <p> [--input <dir>] [--version <v>]` |
-| List tags | `uip or skill-bundles tags list <bundle> --folder-path <p>` |
-| Create or move a tag | `uip or skill-bundles tags set <tag> --bundle <bundle> --folder-path <p> --version <n> [--immutable]` |
-| Delete a mutable tag | `uip or skill-bundles tags delete <tag> --bundle <bundle> --folder-path <p> --yes` |
+| Find bundles | `uip or skill-bundles list --folder-path <FOLDER_PATH> [--search <TEXT>] [--limit <LIMIT>] [--offset <OFFSET>] [--all-fields]` |
+| One bundle's record | `uip or skill-bundles get <BUNDLE> --folder-path <FOLDER_PATH>` |
+| Create, empty | `uip or skill-bundles create <NAME> --folder-path <FOLDER_PATH> [-d <TEXT>]` |
+| Create + publish v1 from a directory | `uip or skill-bundles create <NAME> --folder-path <FOLDER_PATH> --input <DIRECTORY> -m <MESSAGE>` |
+| Publish the next version | `uip or skill-bundles publish <BUNDLE> --folder-path <FOLDER_PATH> --input <DIRECTORY> -m <MESSAGE>` |
+| Rename / re-describe | `uip or skill-bundles update <BUNDLE> --folder-path <FOLDER_PATH> [--name <NAME>] [-d <TEXT>]` |
+| Remove from a folder | `uip or skill-bundles delete <BUNDLE> --folder-path <FOLDER_PATH> --yes` |
+| Version history | `uip or skill-bundles versions <BUNDLE> --folder-path <FOLDER_PATH> [--limit <LIMIT>] [--offset <OFFSET>]` |
+| Unpack a version into a workspace | `uip or skill-bundles download <BUNDLE> --folder-path <FOLDER_PATH> --destination <EMPTY_DIRECTORY> [--version <VERSION>]` |
+| Whole version as a zip | `uip or skill-bundles archive <BUNDLE> --folder-path <FOLDER_PATH> --destination <ZIP_FILE> [--version <VERSION>]` |
+| One file's content | `uip or skill-bundles file <BUNDLE> --folder-path <FOLDER_PATH> --path <PATH> [--version <VERSION>] [--destination <FILE>]` |
+| One file across versions | `uip or skill-bundles history <BUNDLE> --folder-path <FOLDER_PATH> --path <PATH> [--version <VERSION>] [--limit <LIMIT>] [--offset <OFFSET>]` |
+| What I changed since download | `uip or skill-bundles status [--input <DIRECTORY>]` |
+| What a workspace needs to match a version | `uip or skill-bundles sync <BUNDLE> --folder-path <FOLDER_PATH> [--input <DIRECTORY>] [--version <VERSION>]` |
+| List tags | `uip or skill-bundles tags list <BUNDLE> --folder-path <FOLDER_PATH>` |
+| Create or move a tag | `uip or skill-bundles tags set <TAG> --bundle <BUNDLE> --folder-path <FOLDER_PATH> --version <VERSION_NUMBER> [--immutable]` |
+| Delete a mutable tag | `uip or skill-bundles tags delete <TAG> --bundle <BUNDLE> --folder-path <FOLDER_PATH> --yes` |
 
-`<v>` is a version number, a tag, a `sha256:` tree digest, or `latest` (the default). On `tags set` and `tags delete` the tag is positional and the bundle is `--bundle`; `tags set --version` takes a number only. Add `--output json` when you parse the result; it is separate from `--destination`, which is where a command writes files. Skill bundles are not shared between folders from the CLI — there is no `share` command.
+`<VERSION>` is a version number, a tag, a `sha256:` tree digest, or `latest` (the default). On `tags set` and `tags delete` the tag is positional and the bundle is `--bundle`; `tags set --version` takes a number only. Add `--output json` when you parse the result; it is separate from `--destination`, which is where a command writes files. Skill bundles are not shared between folders from the CLI — there is no `share` command.
 
 ## Reading a bundle
 
 ```bash
-uip or skill-bundles download <bundle> --folder-path <p> --destination ./skills --version <v>
+uip or skill-bundles download <BUNDLE> --folder-path <FOLDER_PATH> --destination ./skills --version <VERSION>
 ```
 
 `--destination` must be an empty directory or a new path. The command pins the selector to one version number first, so a tag that moves mid-download cannot mix two versions, and writes `./skills/.okf/workspace.json`, the marker recording the bundle, the version and its manifest. Read the files straight from disk. Do not write or edit the marker by hand: it is the base the next `publish` diffs against.
@@ -86,17 +86,17 @@ To see whether a workspace is current, `sync` it (against `latest` unless `--ver
 ## Publishing
 
 ```bash
-uip or skill-bundles download <bundle> --folder-path <p> --destination ./skills
+uip or skill-bundles download <BUNDLE> --folder-path <FOLDER_PATH> --destination ./skills
 # ...edit files under ./skills...
 uip or skill-bundles status --input ./skills            # offline: every path you are about to publish
-uip or skill-bundles publish <bundle> --folder-path <p> --input ./skills -m "<what changed>"
+uip or skill-bundles publish <BUNDLE> --folder-path <FOLDER_PATH> --input ./skills -m "<MESSAGE>"
 ```
 
 - **The base comes from the marker.** In a downloaded workspace, `publish` diffs against the marker's version and sends only what changed, with every base file missing from the directory as a deletion (`DeletedPaths` in the result lists them; check it against what you meant to remove). A directory without a marker is accepted only for the first version: on a bundle with content it is refused with `This bundle already has content.` — download a workspace instead.
 - **Run `status` first and account for every path.** `Kind: Added`, `Modified` or `Deleted` per path, computed offline. A path you did not touch — command output, an archive, an editor backup — would be published. Remove it from the workspace or tell the user; never publish a path you cannot explain. Write command output outside the workspace.
-- **`--base-version <n>`** sets the base of a directory without a marker. Use it only when the user names the base explicitly; every file of version `<n>` the directory lacks is deleted. In a workspace it must equal the marker's version — to publish against another version, download that version into a fresh workspace.
+- **`--base-version <BASE_VERSION>`** sets the base of a directory without a marker. Use it only when the user names the base explicitly; every non-hidden file of version `<BASE_VERSION>` the directory lacks is deleted. In a workspace it must equal the marker's version — to publish against another version, download that version into a fresh workspace.
 - **Read `WorkspaceUpdated` after a publish.** `true`: the workspace's marker now records the new version, and it is ready for the next edit. `false`: the version was published, but the server's tree differs from your copy (someone else's disjoint edit landed with it), the marker could not be written, or the directory was never a workspace (a plain directory never gets one) — follow `NextStep` and `download` a fresh workspace before editing again.
-- **What the walk skips.** Dot-prefixed files unless `--include-hidden`; `.okf/`, `.git/` and `_refs/` always.
+- **Hidden files are left out on both sides by default.** A dot-prefixed file in the directory is not published, a dot-prefixed base file the directory lacks is kept rather than deleted, and `status` reports neither. To add, edit or delete hidden content on purpose, pass `--include-hidden` to both `status` and `publish`. `.okf/`, `.git/` and `_refs/` are never published.
 - **`create --input` creates the record, then publishes v1** from a plain directory. A directory that is already a workspace, or holds no files, is refused before the record is created. If the publish half fails, the empty bundle remains: finish with `publish` on that bundle, not another `create` (the name is taken, 409).
 
 `Objects` is how many distinct objects the change set named, `Inlined` how many travelled in the commit, `Uploaded` how many needed their own request (files past the 16 MiB inline limit). A non-zero `Uploaded` is a fact about size, not a problem.
@@ -107,7 +107,7 @@ A tag names one version; every read accepts it in place of a number. Names: up t
 
 1. `tags list` to see what exists and whether each is `Immutable`.
 2. `versions` to confirm the version the user means.
-3. `tags set <tag> --bundle <bundle> --version <n>` creates or moves it; either needs skill-bundle content edit permission.
+3. `tags set <TAG> --bundle <BUNDLE> --version <VERSION_NUMBER>` creates or moves it; either needs skill-bundle content edit permission.
 4. A 409 on `tags set` or `tags delete` means the tag is immutable. Stop and report it; do not delete the tag or pick another name without being asked.
 
 ## Failures worth recognizing

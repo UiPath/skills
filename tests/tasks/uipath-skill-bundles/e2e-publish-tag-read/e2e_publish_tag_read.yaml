@@ -1,0 +1,86 @@
+# skip:true, feature-gated. Prepared but NOT executed: the `or skill-bundles`
+# commands ship with UiPath/cli#6015 (prerelease), and the eval tenant has
+# Features.SkillBundles off, so every live call would be refused. Flip
+# skip:false once the eval tenant has the feature on and the eval image's
+# `uip` includes cli#6015. Even unskipped, the pre_run preflight fails the run
+# as ERROR on a tenant without the feature — it can never score by default.
+task_id: skill-sb-e2e-publish-tag-read
+description: >
+  E2E: the full direct-publish lifecycle on a live tenant. Create a uniquely
+  named scratch skill bundle in folder Shared and publish ./seed as version
+  1; download it, change one skill, publish the next version from that
+  workspace, and point a mutable `stable` tag at it. Graded on what the
+  server holds afterwards, read back through `uip`: two versions, `stable`
+  naming the newest, the rule present at `stable` and absent from v1, and
+  the untouched files still in the newest version. post_run deletes the
+  scratch bundle, best effort.
+tags: [uipath-skill-bundles, e2e, mode:build, lifecycle:setup]
+skip: true
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40
+  task_timeout: 1500
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: seed
+      mount_point: seed
+
+reference:
+  directory: .
+
+# Preconditions: a prerelease `uip` with `or skill-bundles`, the current
+# session's tenant with Features.SkillBundles on, and skill-bundle record and
+# content permissions in folder Shared. Missing any of them aborts as ERROR.
+pre_run:
+  - command: "python3 _setup/live.py preflight"
+    timeout: 120
+
+post_run:
+  - command: "python3 _setup/live.py cleanup"
+    timeout: 120
+
+initial_prompt: |
+  ./bundle-name.txt holds the name to use. In Orchestrator folder Shared,
+  create a skill bundle with that name and publish the contents of ./seed as
+  its first version.
+
+  Then add this line as step 3 of invoice-skill/instructions.md and publish
+  it as the next version of the same bundle:
+
+  3. Flag the invoice for review when its total differs from the PO total by more than 2%.
+
+  Finally, point a tag named `stable` at that new version.
+
+  Do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: run_command
+    description: "The scratch bundle has the initial version and the edit as separate versions"
+    command: "python3 $REFERENCE_DIR/_setup/live.py versions"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A mutable `stable` tag names the newest version, which carries the rule"
+    command: "python3 $REFERENCE_DIR/_setup/live.py stable"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The second publish kept the untouched files, and v1 predates the edit"
+    command: "python3 $REFERENCE_DIR/_setup/live.py intact"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

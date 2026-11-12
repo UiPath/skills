@@ -4,11 +4,12 @@ description: >
   a downloaded workspace of the bundle at its latest version. `publish`
   treats --input as the whole next version and deletes every base file the
   directory lacks. The CLI refuses ./changes (no marker) unless
-  --base-version forces it, which would delete the bundle's other skills. The agent must
-  bring the edit into the full workspace, check `status`, and publish that.
-  Graded on the actual CLI calls and on the directory each publish names,
-  not on a self-report; `--help` calls are answered separately and never
-  counted.
+  --base-version forces it, which would delete the bundle's other skills.
+  The agent must bring the edit into the full workspace, check `status` on
+  it, and publish that, to finance-skills. Graded on the actual CLI calls
+  (both the `skill-bundles` spelling and its `skill-bundle` alias) and on
+  the directory each publish names, not on a self-report; `--help` calls
+  are answered separately and never counted.
 tags: [uipath-skill-bundles, smoke, mode:build, lifecycle:setup]
 
 run_limits:
@@ -23,28 +24,42 @@ sandbox:
     - tool: uip
       responses:
         - when:
-            verb: "or skill-bundles"
+            verb_any_of: ["or skill-bundles", "or skill-bundle"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
             flags:
               help: {present: true, aliases: [h]}
           exit_code: 0
           stdout: >-
-            Usage: uip or skill-bundles [options] [command]
+            Usage: uip or skill-bundles|skill-bundle [options] [command]
 
-            Commands: list, get, create, update, delete, publish, versions,
-            download, archive, file, build, history, status, sync, tags
+            Commands: archive, create, delete, download, file, get, history,
+            list, publish, status, sync, tags, update, versions
 
-        # ./changes has no marker: `status` and `sync` refuse it, as the CLI does.
+        # ./changes has no marker, and neither has the task root a status
+        # without --input reads: both are refused, as the CLI does.
         - when:
-            verb_any_of: ["or skill-bundles status", "or skill-bundles sync"]
+            verb_any_of: ["or skill-bundles status", "or skill-bundle status"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
             flags:
-              input: {matches_regex: "(^|/)changes/?$", aliases: [i]}
+              input: {matches_regex: "^(\\./)?changes/?$", aliases: [i]}
           exit_code: 1
           stdout: >-
             {"Result":"Failure","ErrorCode":"invalid_argument","Message":"Error reading local status of skill bundle",
             "Instructions":"No valid workspace marker. Run 'uip or skill-bundles download' first.","Retry":"RetryWillNotFix"}
 
         - when:
-            verb: "or skill-bundles status"
+            verb_any_of: ["or skill-bundles status", "or skill-bundle status"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+            flags:
+              input: {absent: true, aliases: [i]}
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"invalid_argument","Message":"Error reading local status of skill bundle",
+            "Instructions":"No valid workspace marker. Run 'uip or skill-bundles download' first.","Retry":"RetryWillNotFix"}
+
+        - when:
+            verb_any_of: ["or skill-bundles status", "or skill-bundle status"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
           exit_code: 0
           stdout: >-
             {"Result":"Success","Code":"SkillBundleStatus","Data":{
@@ -52,21 +67,24 @@ sandbox:
             "Files":[{"Path":"invoice-skill/instructions.md","Kind":"Modified"}]}}
 
         - when:
-            verb: "or skill-bundles sync"
+            verb_any_of: ["or skill-bundles sync", "or skill-bundle sync"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
           exit_code: 0
           stdout: >-
             {"Result":"Success","Code":"SkillBundleSync","Data":{"Version":5,"Changed":[],"Deleted":[]}}
 
         - when:
-            verb: "or skill-bundles versions"
+            verb_any_of: ["or skill-bundles versions", "or skill-bundle versions"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
           exit_code: 0
           stdout: >-
             {"Result":"Success","Code":"SkillBundleVersionList",
-            "Pagination":{"Returned":1,"Limit":50,"Offset":0,"HasMore":true},
+            "Pagination":{"Returned":1,"Limit":50,"Offset":0,"Total":5,"HasMore":true},
             "Data":[{"Version":5,"Message":"Add the refund skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-10-02T09:00:00Z"}]}
 
         - when:
-            verb: "or skill-bundles get"
+            verb_any_of: ["or skill-bundles get", "or skill-bundle get"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
           exit_code: 0
           stdout: >-
             {"Result":"Success","Code":"SkillBundleGet","Data":{
@@ -78,9 +96,10 @@ sandbox:
         # ./changes has no marker and the bundle has content: the CLI refuses
         # before any request unless --base-version forces it through.
         - when:
-            verb: "or skill-bundles publish"
+            verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
             flags:
-              input: {matches_regex: "(^|/)changes/?$", aliases: [i]}
+              input: {matches_regex: "^(\\./)?changes/?$", aliases: [i]}
               base-version: {absent: true}
           exit_code: 1
           stdout: >-
@@ -89,7 +108,8 @@ sandbox:
             "Retry":"RetryWillNotFix"}
 
         - when:
-            verb: "or skill-bundles publish"
+            verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
           exit_code: 0
           stdout: >-
             {"Result":"Success","Code":"SkillBundlePublished","Data":{
@@ -106,34 +126,33 @@ initial_prompt: |
 
 environment_notes:
   - The `uip` CLI is available in this environment.
+  - Run every `uip` command from this task's root directory; do not `cd` into a subdirectory first.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # The outcome: each published directory is the whole next version.
+  # The outcome: each publish goes to finance-skills from a directory that
+  # is the whole next version, carrying the edit.
   - type: run_command
-    description: "Every publish named a complete directory carrying the edit (no base file left out)"
-    command: "python3 $REFERENCE_DIR/check_published_dir.py"
+    description: "Every publish targeted finance-skills from a complete directory carrying the edit"
+    command: "python3 $REFERENCE_DIR/check_published_dir.py publish"
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: cli_called
-    description: "Did NOT publish the partial ./changes directory"
-    verb: "or skill-bundles publish"
-    tool: "uip"
-    flags:
-      input: {matches_regex: "(^|/)changes/?$", aliases: [i]}
-      help: {absent: true, aliases: [h]}
-    min_count: 0
-    max_count: 0
-    weight: 3.0
+  - type: run_command
+    description: "Checked the published directory with the offline status before publishing it"
+    command: "python3 $REFERENCE_DIR/check_published_dir.py status"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
     pass_threshold: 1.0
 
-  # Overriding the marker's base is how a partial directory gets forced through.
+  # Overriding the base is how a partial directory gets forced through.
   - type: cli_called
-    description: "Did NOT override the workspace base with --base-version"
-    verb: "or skill-bundles publish"
+    description: "Did NOT override the base with --base-version"
+    verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
+    value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
     tool: "uip"
     flags:
       base-version: {present: true}
@@ -144,17 +163,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Checked the change set with the offline status before publishing"
-    verb: "or skill-bundles status"
-    tool: "uip"
-    flags:
-      help: {absent: true, aliases: [h]}
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: cli_called
-    description: "Published to the named folder"
-    verb: "or skill-bundles publish"
+    description: "Published exactly once, to the named folder"
+    verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
+    value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
     tool: "uip"
     flags:
       folder-path: "Shared"
@@ -166,7 +177,8 @@ success_criteria:
 
   - type: cli_called
     description: "Did NOT delete or re-create the bundle"
-    verb_any_of: ["or skill-bundles delete", "or skill-bundles create"]
+    verb_any_of: ["or skill-bundles delete", "or skill-bundle delete", "or skill-bundles create", "or skill-bundle create"]
+    value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
     tool: "uip"
     flags:
       help: {absent: true, aliases: [h]}
