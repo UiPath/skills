@@ -104,17 +104,18 @@ while `validate` still passes. On such a file:
 6. For each node or flow you delete, delete its shape or edge, and remove the
    node's `bpmn:flowNodeRef` from its lane.
 7. After the last write, and before `validate`, compare `<SNAPSHOT_PATH>` with
-   the edited file. Studio Web has no Python, so check by hand that, apart
-   from the ids you deleted:
+   the edited file. Studio Web has no Python, so check by hand with `grep`
+   and Read (do not write a script) that, apart from the ids you deleted:
+   - each id you deleted is really gone from the model;
    - the `BPMNPlane` still targets the same `bpmnElement`;
    - every pool and lane still has its shape, and every lane keeps its
      `bpmn:flowNodeRef`s;
    - every annotation and group survives, with its shape;
    - every surviving shape and edge keeps its color attributes;
-   - every surviving node shape keeps its size (only pools, lanes and
-     expanded subprocesses may grow);
-   - surviving node shapes either stay put or all move by one common offset;
-   - every surviving flow still has its `BPMNEdge`.
+   - every surviving node, annotation and group shape keeps its size (only
+     pools, lanes and expanded subprocesses may grow);
+   - those shapes either stay put or all move by one common offset;
+   - every surviving flow and association still has its `BPMNEdge`.
 
    For each loss: if the user asked for that diagram change, keep it and name
    it in the summary; otherwise restore the entry from the snapshot. Re-check
