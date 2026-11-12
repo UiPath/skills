@@ -120,14 +120,14 @@ Hidden fields are included in `action-schema.json` and in the `FormData` interfa
 
 #### Validate the schema (required before proposing it)
 
-Before showing the schema to the user, **validate it** with the schema validator — the single source of truth for what is and isn't supported:
+**Validate every `action-schema.json` you write or edit** — before proposing it, and again after writing it to disk. Applies in every mode: interactive, non-interactive, "write it directly, no questions", edits to an existing app. Skipping the confirmation step never skips validation. Validator is the single source of truth for what is and isn't supported. `<skill-dir>` = directory holding this skill's `SKILL.md`:
 
 ```bash
 node <skill-dir>/scripts/validate-action-schema.js <path-to-action-schema.json>
 # or pipe it:  echo '<schema-json>' | node <skill-dir>/scripts/validate-action-schema.js -
 ```
 
-Exit `0` = valid. On exit `1`, fix every reported `path: message` (it flags unsupported types, `format` on non-`string`, missing `items` on arrays, nested arrays, missing/malformed sections, root field names shared across sections) and re-run, for at most 3 rounds; if errors remain, show them to the user and ask how to proceed (usually a field type the schema cannot express). Never propose or write an `action-schema.json` that has not passed the validator.
+Exit `0` = valid. On exit `1`, fix every reported `path: message` (it flags unsupported types, `format` on non-`string`, missing `items` on arrays, nested arrays, missing/malformed sections, root field names shared across sections) and re-run, for at most 3 rounds; if errors remain, show them to the user and ask how to proceed (usually a field type the schema cannot express). Never propose, write, or report done on an `action-schema.json` that has not passed the validator in this session.
 
 **Existing published action app only:** if the schema already shipped with a root name shared across sections, do NOT rename it — renaming breaks tasks created against the published schema. Run the validator with `--upgrade`: shared names become warnings (exit `0`), matching the service, which skips the check when publishing a new version of an existing action app or upgrading its solution. Never use `--upgrade` for a new app, a first publish, a Web app being republished as an Action app, or a fresh solution install — those still fail with the 400.
 
