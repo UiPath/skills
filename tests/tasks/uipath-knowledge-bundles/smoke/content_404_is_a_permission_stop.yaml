@@ -1,0 +1,140 @@
+task_id: skill-kb-content-404-is-a-permission-stop-smoke
+description: >
+  Smoke: content commands run on Orchestrator's generic /api/bundles routes,
+  which hide a bundle kind the caller cannot access. A caller who holds the
+  bundle record but not knowledge-bundle content permission (or a tenant with
+  skill bundles but not knowledge bundles enabled) gets 404
+  `BundleDto does not exist.` from `download`, while `get` still shows the
+  bundle. The agent must check with `get`, then stop and report missing
+  permission or feature. Re-creating or deleting the bundle, logging in
+  again, or re-running the download are the failures. Criteria read actual
+  CLI invocations, not a self-report.
+tags: [uipath-knowledge-bundles, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 5
+  max_turns: 20
+
+sandbox:
+  record_cli:
+    - tool: uip
+      responses:
+        # The record route still answers: the caller can see the bundle.
+        - when:
+            verb: "or kb get"
+          stdout: >-
+            {"Result":"Success","Code":"KnowledgeBundleGet","Data":{
+            "Key":"a1b2c3d4-0000-0000-0000-000000000001","Name":"platform-concepts",
+            "Description":"How the platform fits together","LatestVersion":4,
+            "LastPublishedAt":"2026-09-16T10:12:00Z","Encrypted":false,
+            "StorageProvider":"Orchestrator","StorageContainer":"kb-a1b2c3d4",
+            "CreationTime":"2026-09-01T09:00:00Z"}}
+
+        - when:
+            verb: "or kb list"
+          stdout: >-
+            {"Result":"Success","Code":"KnowledgeBundleList","Data":[{
+            "Key":"a1b2c3d4-0000-0000-0000-000000000001","Name":"platform-concepts",
+            "Description":"How the platform fits together","LatestVersion":4,
+            "LastPublishedAt":"2026-09-16T10:12:00Z"}]}
+
+        # Every content route hides the bundle from this caller.
+        - when:
+            verb: "or kb download"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error downloading version",
+            "Instructions":"HTTP 404: BundleDto does not exist.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":404}}
+
+        - when:
+            verb: "or kb file"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error reading file",
+            "Instructions":"HTTP 404: BundleDto does not exist.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":404}}
+
+        - when:
+            verb: "or kb versions"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error listing versions",
+            "Instructions":"HTTP 404: BundleDto does not exist.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":404}}
+
+        - when:
+            verb: "or kb archive"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error downloading archive",
+            "Instructions":"HTTP 404: BundleDto does not exist.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":404}}
+
+        # Step 0 preflight. Last, so a verb rule above claims `<verb> --help`.
+        - when:
+            verb: "or kb"
+            flags:
+              help: {present: true}
+          stdout: >-
+            Usage: uip or kb [options] [command]
+
+            Commands: list, get, create, publish, update, delete, share,
+            versions, history, download, archive, file, build, status, sync,
+            change-proposal
+
+initial_prompt: |
+  Download knowledge bundle a1b2c3d4-0000-0000-0000-000000000001 from folder
+  Shared into ./kb, then tell me what concepts/queues.md says about retries.
+
+environment_notes:
+  - The `uip` CLI is available in this environment.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # The shortcut that destroys history: "it does not exist, so make it".
+  - type: cli_called
+    description: "Did NOT create a bundle to replace one the content route hid"
+    verb: "or kb create"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT delete the bundle"
+    verb: "or kb delete"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The check that tells a hidden bundle from a missing one.
+  - type: cli_called
+    description: "Checked the bundle record with kb get after the 404"
+    verb: "or kb get"
+    tool: "uip"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT treat the 404 as a login problem"
+    verb: "login"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Stopping before trying would bank every guard above. Downloading again
+  # is the retry the skill forbids.
+  - type: cli_called
+    description: "Attempted the download exactly once"
+    verb: "or kb download"
+    tool: "uip"
+    min_count: 1
+    max_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

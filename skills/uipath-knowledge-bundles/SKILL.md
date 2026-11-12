@@ -16,7 +16,7 @@ A knowledge bundle is a folder-scoped Orchestrator entity holding a versioned tr
 2. **Every command needs a folder.** `--folder-path <path>` or `--folder-key <guid>` on all of them. There is no tenant-wide listing to fall back on.
 3. **Bundle keys come from `list`, never from you.** Same for proposal ids, which come from `change-proposal list`. Do not construct, guess, or carry one over from another folder.
 4. **`publish` and `create --input` only ever make version 1.** Every later version comes from merging a change proposal. A 409 means the bundle already has content — never delete and re-create to get around it, that destroys the version history and the review record.
-5. **A 403 or a feature refusal is not a login problem.** Do not "fix" it by re-running `uip login`; only an administrator can change it.
+5. **A refusal is not a login problem, and a content 404 is not a missing bundle.** A 403, a feature refusal, and a 404 `BundleDto does not exist.` on a bundle `get` still shows all need an administrator. Never re-run `uip login`, retry, or re-create the bundle — stop and report (Step 0).
 6. **`diff` before `merge`.** A merge publishes a version that cannot be edited afterwards.
 7. **Inside a workspace, omit the key and the folder** — but read the stderr line that says which workspace answered, and pass `--folder-path` explicitly after switching tenants.
 8. **Paths are bundle-relative and cannot climb.** A `--path` or `--artifact` containing a `.` or `..` segment is refused before any request is sent; pass the path as the manifest lists it.
@@ -33,6 +33,7 @@ uip or kb --help
 - **Succeeds** → continue.
 - **`unknown command`** → the installed `uip` is a stable build. These commands register only on a prerelease build (`preview` / `dev` channel). Tell the user that plainly and stop — do not substitute bucket, asset or context-grounding commands, and do not guess an older command name.
 - **A command runs but the platform refuses it** → the tenant does not have the knowledge-bundles feature enabled. Say so and stop; only an administrator can change it. A `403`/feature failure is not a login problem — never "fix" it by re-running `uip login`.
+- **A content command answers 404 `BundleDto does not exist.`** (`versions`, `download`, `archive`, `file`, `build`, `history`, `sync`, `publish`, `create --input`, or the upload step of `change-proposal create`/`update`) → run `uip or kb get <bundle-key>` in the same folder. If `get` shows the bundle, the caller holds the bundle record but not knowledge-bundle content permission, or the tenant has skill bundles enabled but not knowledge bundles. Same stop as above: report the missing permission or feature — never conclude the bundle is gone, re-create it, or retry. If `get` fails too, the bundle is not in that folder; find its key with `list`.
 
 ## Every command is folder-scoped
 
@@ -116,10 +117,11 @@ Both walk the directory, hash every file, and publish the manifest with the file
 
 `Author` on a version, a proposal or a comment is an opaque actor id — `user:<guid>` for a person, `agent/<producer>` for an agent. There is no CLI call that resolves it to a name or email, so report it as it comes rather than hunting for one.
 
-`Failure` envelopes carry `Context.HttpStatus`. Two worth recognizing:
+`Failure` envelopes carry `Context.HttpStatus`. Three worth recognizing:
 
 - **409 on `create`** → that name is already used in the folder. Pick another; do not retry. Names are unique per folder and other agents publish into the same folders, so give a generated bundle a distinguishing suffix rather than a bare word.
 - **409 on `publish`** → the bundle already has content. Stop; this needs a change proposal.
+- **404 `BundleDto does not exist.` on a content command** → not proof the bundle is gone. Check with `get`, then follow Step 0.
 
 `file` returns the content inline when it decodes as UTF-8 text, and refuses binary without `--destination <file>` — pass it rather than trying to read bytes from the envelope.
 
