@@ -67,8 +67,7 @@ initial_prompt: |
   leaving a step out or stopping to ask; pick a sensible default for any
   missing detail and state it in your final report. Do not iterate on validation errors to make the flow
   runnable — a broken skeleton is acceptable, as long as the `.flow` file has
-  been produced. Never `cd` to, or create anything in, a parent
-  directory.
+  been produced.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
