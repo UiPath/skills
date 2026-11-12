@@ -81,7 +81,9 @@ def package_version_key(zip_path: Path):
         except (json.JSONDecodeError, UnicodeDecodeError):
             return None
     spec = meta.get("spec") if isinstance(meta, dict) else None
-    return spec.get("packageVersionKey") if isinstance(spec, dict) else None
+    key = spec.get("packageVersionKey") if isinstance(spec, dict) else None
+    # Only a string counts as a version key; any other type is treated as missing.
+    return key if isinstance(key, str) else None
 
 
 # Cwd is the sandbox working directory the agent packed into. Skip hidden dirs
