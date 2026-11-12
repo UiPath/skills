@@ -68,15 +68,15 @@ Calendars define non-working days (holidays, company shutdowns). Time triggers r
 
 | Command | What it does |
 |---------|--------------|
-| `uip or calendars list` | List calendars (returns Id, Name, TimeZoneId). |
+| `uip or calendars list` | List calendars (returns Id, Name, TimeZoneId — the tenant time zone). |
 | `uip or calendars get <key>` | Get calendar details including excluded dates. |
-| `uip or calendars create <name>` | Create a calendar. Use `--time-zone` (defaults to UTC). |
-| `uip or calendars update <key>` | Update name or timezone (`--name`, `--time-zone`). |
+| `uip or calendars create <name>` | Create a calendar. It takes no time zone (see Gotchas). |
+| `uip or calendars update <key>` | Rename a calendar (`--name`). |
 | `uip or calendars delete <key>` | Delete a calendar. |
 
 ```bash
 # Create a calendar for US holidays
-uip or calendars create "US Holidays" --time-zone "America/New_York" --output json
+uip or calendars create "US Holidays" --output json
 # Save the returned Key (GUID)
 
 # Use the calendar key when creating a time trigger
@@ -212,7 +212,7 @@ uip or attachments download "<attachment-id>" -d error-screenshot.png
 ## Gotchas
 
 - **Settings keys are dot-notation.** Use `settings list` to discover valid keys -- do not guess. Example: `Abp.Timing.TimeZone`, not `timezone` or `TimeZone`.
-- **Calendar timezone affects trigger scheduling.** A trigger using a calendar will skip dates according to the calendar's timezone, which may differ from the trigger's own timezone. Keep them aligned.
+- **A calendar has no time zone of its own.** Orchestrator ignores any time zone sent on calendar create or update, and every calendar reports the tenant time zone (`Abp.Timing.TimeZone`) as `TimeZoneId`. Never pass `--time-zone` to `calendars create` / `update`: older CLIs exit 0 and drop it, newer ones reject it with a `ValidationError`. Excluded dates are matched against the run's date in the **trigger's** `--time-zone`, so that is the one to set.
 - **Audit log export is async.** The `--export` flag triggers a server-side export job. The CLI polls until the CSV is ready, then downloads it. Large exports may take a few seconds.
 - **Audit log export spends a daily quota.** The AuditLogs Export endpoint is limited to 100 requests per day per tenant. Use `audit-logs list --output json` with `--limit` / `--offset` for reads, and export only when the user asks for a CSV file. See [api-limits.md](api-limits.md).
 - **Credential store keys are numeric**, not GUIDs. This is an exception to the usual GUID convention in the Orchestrator CLI.
