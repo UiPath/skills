@@ -120,7 +120,7 @@ Hidden fields are included in `action-schema.json` and in the `FormData` interfa
 
 #### Validate the schema (required before proposing it)
 
-**Validate every `action-schema.json` you write or edit** — before proposing it, and again after writing it to disk. Applies in every mode: interactive, non-interactive, "write it directly, no questions", edits to an existing app. Skipping the confirmation step never skips validation. Validator is the single source of truth for what is and isn't supported. `<skill-dir>` = directory holding this skill's `SKILL.md`:
+**Validate every `action-schema.json` you write or edit** — before proposing it, and again after writing it to disk. Applies in every mode: interactive, non-interactive, "write it directly, no questions", edits to an existing app. Skipping the confirmation step never skips validation. Validator is the single source of truth for what is and isn't supported:
 
 ```bash
 node <skill-dir>/scripts/validate-action-schema.js <path-to-action-schema.json>
