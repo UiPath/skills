@@ -16,6 +16,7 @@ Known gameability, accepted deliberately: result.json is written by the agent, s
 an agent could record a fake id. check.py already trusts the same file.
 """
 import json
+import re
 import subprocess
 import sys
 
@@ -43,6 +44,10 @@ def uip_json(*args):
     return out
 
 
+def is_default(v):
+    return v is True or (isinstance(v, str) and v.strip().lower() in ("yes", "true"))
+
+
 def main():
     if len(sys.argv) != 2 or sys.argv[1] not in OBJECT_TYPES:
         fail(f"usage: check_record_deleted.py <{'|'.join(OBJECT_TYPES)}>")
@@ -58,11 +63,12 @@ def main():
     if not rec_id or not seed.get("project_key"):
         fail(f"no {obj} id in result.json or no project_key in seed.json")
 
-    conns = [c for c in uip_json("is", "connections", "list", CONNECTOR).get("Data") or []
-             if c.get("State") == "Enabled"]
+    data = uip_json("is", "connections", "list", CONNECTOR).get("Data")
+    conns = [c for c in (data if isinstance(data, list) else [])
+             if isinstance(c, dict) and c.get("State") == "Enabled" and c.get("Id")]
     if not conns:
-        fail(f"no enabled {CONNECTOR} connection to verify with")
-    conn = next((c for c in conns if c.get("IsDefault") == "Yes"), conns[0])["Id"]
+        fail(f"no usable enabled {CONNECTOR} connection to verify with")
+    conn = next((c for c in conns if is_default(c.get("IsDefault"))), conns[0])["Id"]
 
     proj = uip_json("is", "resources", "run", "get", CONNECTOR, "GetProjectByPrefix", "--connection-id", conn,
                     "--query", json.dumps({"projectPrefix": seed["project_key"]}))
@@ -75,7 +81,7 @@ def main():
     if got.get("Result") == "Success":
         fail(f"{obj} {rec_id} still exists: the delete did not run or did not succeed")
     detail = f"{got.get('Message') or ''} {got.get('Instructions') or ''}"
-    if (got.get("ErrorCode") == "not_found" or '"providerErrorCode":404' in detail) and "itemNotFound" in detail:
+    if (got.get("ErrorCode") == "not_found" or re.search(r'"providerErrorCode"\s*:\s*404\b', detail)) and "itemNotFound" in detail:
         print(f"OK: {obj} {rec_id} no longer exists")
         return
     fail(f"could not verify the delete: {got.get('ErrorCode')} {(got.get('Message') or '')[:120]}")
