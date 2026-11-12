@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { browserSurface } from "../../scripts/build-uip-browser-catalog.mjs";
 import {
@@ -15,6 +17,7 @@ import {
   mentionCommand,
   mentionKind,
   RATCHET,
+  rekeyRatchet,
   resolves,
   scanStudioweb,
   staleAllowEntries,
@@ -29,7 +32,8 @@ import {
 // studioweb tree against what the bundle runs, so the next one is found by CI.
 // See scripts/studioweb-browser-commands.mjs for the rules and its limits.
 
-const tokens = (line) => extractVerbTokens(line.replace(/^uip/, ""));
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const tokens = (line) =>extractVerbTokens(line.replace(/^uip/, ""));
 
 test("a command the bundle registers but refuses does not count as runnable", () => {
   const browser = usableBrowserCommands({
@@ -160,6 +164,77 @@ test("the scheduled refresh lowers a ceiling but never raises one", () => {
 
   assert.deepEqual(withCeilings(ratchet, counts, { lowerOnly: true }).s.ceiling, { login: 1, "rpa pack": 2 });
   assert.deepEqual(withCeilings(ratchet, counts).s.ceiling, { login: 1, "rpa pack": 5, "solution pack": 4 });
+});
+
+const at = (skill, file, line, command) => ({ skill, file, line, column: 0, command });
+
+test("the catalog refresh moves ceilings with their mentions, at an unchanged total", () => {
+  // `maestro bpmn eval` joined the catalog: 3 of 5 mentions move key, none are new.
+  const before = [1, 2, 3, 4, 5].map((line) => at("s", "a.md", line, "maestro bpmn"));
+  const after = before.map((m) => ({ ...m, command: m.line <= 3 ? "maestro bpmn eval" : "maestro bpmn" }));
+
+  const out = rekeyRatchet({ s: { allow: [], ceiling: { "maestro bpmn": 5 } } }, before, after);
+  assert.deepEqual(out.s.ceiling, { "maestro bpmn": 2, "maestro bpmn eval": 3 });
+});
+
+test("the catalog refresh drops slack and never absorbs a mention the new catalog added", () => {
+  // Ceiling 9 has slack 8. `uip and` was prose noise; the new catalog has `and`.
+  const before = [at("s", "a.md", 1, "login")];
+  const after = [...before, at("s", "a.md", 2, "and")];
+
+  const out = rekeyRatchet({ s: { allow: [], ceiling: { login: 9 } } }, before, after);
+  assert.deepEqual(out.s.ceiling, { login: 1 });
+  assert.deepEqual(countUnallowed(after, out).s, { login: 1, and: 1 });
+});
+
+test("the catalog refresh moves allow entries with their mentions", () => {
+  const reason = "deliberate Node-only note";
+  const before = [at("s", "a.md", 1, "vss deploy"), at("s", "a.md", 2, "vss deploy"), at("s", "b.md", 1, "vss deploy")];
+  const after = [
+    { ...before[0], command: "vss deploy packages" },
+    before[1],
+    { ...before[2], command: "vss deploy packages" },
+  ];
+  const ratchet = {
+    s: { allow: [{ file: "a.md", command: "vss deploy", reason }], ceiling: { "vss deploy": 1 } },
+  };
+
+  const out = rekeyRatchet(ratchet, before, after);
+  assert.deepEqual(out.s.allow, [
+    { file: "a.md", command: "vss deploy", reason },
+    { file: "a.md", command: "vss deploy packages", reason },
+  ]);
+  assert.deepEqual(out.s.ceiling, { "vss deploy packages": 1 });
+  assert.deepEqual(staleAllowEntries(after, out), []);
+});
+
+test("the catalog refresh refuses a ratchet that already fails under the previous catalog", () => {
+  const before = [at("s", "a.md", 1, "login"), at("s", "a.md", 2, "login")];
+  assert.throws(() => rekeyRatchet({ s: { allow: [], ceiling: { login: 1 } } }, before, before), /login \(2 > 1\)/);
+
+  const stale = { s: { allow: [{ file: "gone.md", command: "login", reason: "x" }], ceiling: { login: 2 } } };
+  assert.throws(() => rekeyRatchet(stale, before, before), /allow entry uip login in gone\.md/);
+});
+
+test("the CLI takes one mode, and --rekey only with --previous-catalog", () => {
+  const script = join(REPO_ROOT, "scripts", "studioweb-browser-commands.mjs");
+  const run = (...args) => spawnSync(process.execPath, [script, ...args], { encoding: "utf8" });
+
+  for (const args of [["--rekey", "--lower-ceiling"], ["--rekey"], ["--write-ceiling", "--previous-catalog", "x"]]) {
+    const result = run(...args);
+    assert.equal(result.status, 2, `${args.join(" ")}: ${result.stderr}`);
+  }
+});
+
+test("the catalog refresh re-keys and stages the ratchet, and auto-merge waits on its test", () => {
+  const workflow = (name) => readFileSync(join(REPO_ROOT, ".github", "workflows", name), "utf8");
+  const refresh = workflow("refresh-uip-catalog.yml");
+  const rekey = refresh.indexOf("--rekey");
+  assert.ok(rekey > 0 && rekey < refresh.indexOf("name: Open PR with updated catalog"));
+  assert.match(refresh, /--previous-catalog "\$RUNNER_TEMP\/previous-uip-catalog\.json"/);
+  assert.match(refresh, /git add assets\/uip-catalog-snapshot\.json tests\/scripts\/studioweb-browser-commands\.json/);
+  assert.match(workflow("refresh-uip-browser-catalog.yml"), /studioweb-browser-commands\.mjs --lower-ceiling/);
+  assert.match(workflow("automerge-catalog-refresh.yml"), /\["Build and inspect every skill package"\]/);
 });
 
 test("ceiling drift reports counts over and under their ceiling, not equal ones", () => {

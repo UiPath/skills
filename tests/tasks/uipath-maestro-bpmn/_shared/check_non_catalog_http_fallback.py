@@ -5,7 +5,7 @@ service (Spotify), through the generic HTTP connector.
 Spotify has no ``uipath-spotify`` IS connector; the only managed path is a
 connection of the generic HTTP connector ``uipath-uipath-http``, which holds
 Spotify's base URL + OAuth. Every HTTP request is ``Intsvc.UnifiedHttpRequest``
-(skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "HTTP requests"),
+(classic/skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "HTTP requests"),
 so the node must be one in connector mode through that connection.
 
 Checks:

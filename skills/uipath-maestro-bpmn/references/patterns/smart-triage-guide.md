@@ -1,87 +1,136 @@
 # Pattern: `smart-triage`
 
-Classify heterogeneous inbound work and dispatch each category to its defined path when volume exceeds manual sorting capacity.
+Heterogeneous inbound work is classified and dispatched to the right handling for its category.
+Use it when volume is too high to sort by hand and the downstream paths are well defined.
 
 ## Why it works
 
-Normalize every trigger to one downstream shape; return category and confidence so the gateway can accept or reject classification; send low-confidence items to human review and dispatch through the same exit using the human-selected category; keep category work in separate processes so triage stays reusable and thin. These four carry the shape. Change one and you are building something else.
+These four carry the shape.
+Change one and you are building something else.
+
+- **The trigger normalizes the payload.** Everything downstream reads one shape, so the same process serves email, tickets, forms, and webhooks.
+  Routing never learns where the item came from.
+- **Classification returns a category and a confidence.** Two values, so one gateway can decide whether to trust the answer and a second can act on it.
+  A classifier returning only a category leaves nothing to gate on.
+- **The human fallback rejoins the same route gateway.** Low-confidence items go to a person who picks the category, then dispatch through the identical exit.
+  One dispatch point, not two, so adding a category is one branch rather than two.
+- **Triage dispatches and ends.** Each category's real work lives in its own process.
+  Keeping handling out of triage is what lets one triage process serve many downstreams without becoming all of them.
 
 ## Shape
 
-AI-based is the base shape. `A`/`B`/`C` are illustrative; create one branch per actual category.
+AI-based is the base shape.
+The categories are illustrative: one arm per category the domain actually has.
 
-| Node | Element | Role |
+```ts
+import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
+
+export default bpmn('smart-triage')
+  .name('SupportTriage')
+  .flowMode('sequence')
+  .var('routeCategory', 'string')
+  .var('aiConfidence', 'number', { default: 0 })
+  .startEvent('start', { name: 'Email received', message: 'SupportEmail' })
+  .startAgent('classify', {
+    name: 'Classify email',
+    process: 'EmailClassifier',
+    folder: 'Shared',
+    outputs: { routeCategory: '=Category', aiConfidence: '=Confidence' },
+  })
+  // The confident arm is empty: it falls straight through to `route`.
+  // The fallback arm sets the category, then falls through to the same `route`.
+  .choose('confGate', [
+    { when: '=vars.aiConfidence >= 0.85', label: 'Above floor', body: (b) => b },
+    {
+      otherwise: true,
+      label: 'Below floor',
+      body: (b) =>
+        b.humanTask('manualTriage', {
+          name: 'Pick a category',
+          form: { fields: [], outcomes: ['Billing', 'Technical', 'Spam'] },
+          outputs: { routeCategory: '=Action' },
+        }),
+    },
+  ])
+  .choose('route', [
+    { when: '=vars.routeCategory == "Billing"', label: 'Billing', body: (b) => b.task('handleBilling').endEvent('routedBilling', { name: 'Billing routed' }) },
+    { when: '=vars.routeCategory == "Technical"', label: 'Technical', body: (b) => b.task('handleTechnical').endEvent('routedTechnical', { name: 'Technical routed' }) },
+    { otherwise: true, label: 'Spam', body: (b) => b.task('handleSpam').endEvent('routedSpam', { name: 'Spam discarded' }) },
+  ])
+  .build();
+```
+
+The load-bearing line is where `route` sits: AFTER `confGate`, not inside either of its arms.
+Both arms fall through, so the builder joins them (`confGate_join`) and the one `route` gateway follows.
+The natural nested form, a `route` choose inside the confident arm and a second copy after `manualTriage`, compiles, validates and passes `check`, and it is the shape this pattern exists to prevent.
+Nothing in the loop reports it; the duplicated branches are the tell.
+
+| Node | Builder | Role |
 | --- | --- | --- |
-| `start` | `bpmn:startEvent` + message event definition | Entry |
-| `extract` | `bpmn:serviceTask` | Placeholder · insertion point |
-| `classify` | `bpmn:serviceTask` | Mechanism |
-| `conf_gate` | `bpmn:exclusiveGateway` | Mechanism |
-| `manual_triage` | `bpmn:userTask` | Mechanism |
-| `route_gate` | `bpmn:exclusiveGateway` | Mechanism |
-| `handle_a..c` | `bpmn:serviceTask` | Placeholder |
-| `routed_a..c` | `bpmn:endEvent` | Mechanism |
+| `start` | `.startEvent()` with `message` | Entry |
+| `classify` | `.startAgent()` | Mechanism · insertion point |
+| `confGate` | `.choose()` | Mechanism |
+| `manualTriage` | `.humanTask()` | Mechanism |
+| `route` | `.choose()` after `confGate` | Mechanism |
+| `handle*` | `.task()` | Placeholder |
+| `routed*` | `.endEvent()`, named | Mechanism |
 
-| Sequence flow | Label | Condition |
-| --- | --- | --- |
-| `start` → `extract` → `classify` → `conf_gate` | | |
-| `conf_gate` → `route_gate` | Above floor | `=vars.aiConfidence >= 0.85` |
-| `conf_gate` → `manual_triage` | Below floor | `=vars.aiConfidence < 0.85` |
-| `manual_triage` → `route_gate` | | |
-| `route_gate` → `handle_a` | Category A | `=vars.routeCategory == "Category A"` |
-| `route_gate` → `handle_b` | Category B | `=vars.routeCategory == "Category B"` |
-| `route_gate` → `handle_c` | Category C | `=vars.routeCategory == "Category C"` |
-| `handle_a..c` → `routed_a..c` | | |
-
-`0.85` is illustrative; set the floor against misroute cost and manual-triage capacity.
+`0.85` is an illustrative floor.
+Set it from how costly a misroute is against how much manual triage you can absorb.
 
 | Variable | Type | Holds |
 | --- | --- | --- |
 | `itemData` | jsonSchema | The normalized item the classifier reads |
 | `routeCategory` | string | The category to dispatch to |
-| `aiConfidence` | double | Classifier confidence, 0–1 |
+| `aiConfidence` | number | Classifier confidence, 0–1 |
 | `ruleMatched` | boolean | Rule-based and hybrid only |
 | `triageNote` | string | The manual triager's note, if any |
+
+`itemData` and `triageNote` are not in the sketch.
+`itemData` is what the trigger delivers and `classify` reads as input; `triageNote` is a form field you add to `manualTriage` when triagers explain their choice.
 
 ## Variants
 
 | Variant | Question it answers | Delta |
 | --- | --- | --- |
 | AI-based | — | The shape above |
-| Rule-based | Are categories decided by stable, auditable rules? | Business rule task and a match gateway |
-| Hybrid | Can rules handle clear cases cheaply? | Rules first; classifier handles the rest |
+| Rule-based | Are the categories decided by stable, auditable rules? | A business rule and a match gate replace the classifier and the confidence gate |
+| Hybrid | Can rules handle the clear cases cheaply? | Rules first; the classifier catches the rest |
 
-**Rule-based.** Replace `classify` and `conf_gate` with `apply_rules` (`bpmn:businessRuleTask`) and `rule_gate` (`bpmn:exclusiveGateway`):
+**Rule-based.** Replace `classify` with `.businessRule('applyRules', …)` and `confGate` with a `ruleGate` choose: `when: '=vars.ruleMatched == true'` falls through, `otherwise` holds `manualTriage`.
+`route` still follows the gate.
 
-| Sequence flow | Label | Condition |
-| --- | --- | --- |
-| `rule_gate` → `route_gate` | Matched | `=vars.ruleMatched == true` |
-| `rule_gate` → `manual_triage` | No match | default |
-
-**Hybrid.** Run rules first; send unmatched items to `classify`; send items unresolved by both to `manual_triage`.
-
-| Sequence flow | Label | Condition |
-| --- | --- | --- |
-| `rule_gate` → `route_gate` | Matched | `=vars.ruleMatched == true` |
-| `rule_gate` → `classify` | No match | default |
-| `conf_gate` → `route_gate` | Above floor | as above |
-| `conf_gate` → `manual_triage` | Below floor | as above |
+**Hybrid.** Keep both.
+`ruleGate`'s `otherwise` arm holds `classify` and the whole `confGate` choose, so an unmatched item reaches the classifier rather than a person, and every arm still falls through to the one `route`.
 
 ## What to bind
 
-- **`classify`** — Bind the runtime classifier, typically a UiPath agent job; never decide categories or write classification logic while authoring.
-- **`apply_rules`** — Bind `Orchestrator.BusinessRules`. Rules live in a separate BusinessRules project (uipath-rules), deployed before BPMN binding (SKILL.md rule 17); do not author rules in-file. This applies to rule-based and hybrid variants.
-- **`extract`** — Bind Document Understanding or another step that extracts classifier inputs from an unstructured source.
-- **`handle_a..c`** — See Adapting; usually dispatch a message rather than perform work here.
-- **`manual_triage`** — Bind `Actions.HITL` and bind its category output to `routeCategory`, the variable read by `route_gate`; otherwise low-confidence items dispatch using the classifier's original guess and review changes nothing.
-
-Fetch payloads through [registry-workflow.md](../registry-workflow.md).
+- **`classify`**: the node that classifies at runtime, typically `.startAgent()`.
+  Place and bind it; never decide the categories or write classification logic while authoring.
+  Its `outputs` keys are the process variables written (`routeCategory`, `aiConfidence`), and each value is an expression read against the agent's result (`'=Category'`, `'=Confidence'`, the agent's output arguments).
+  `confGate` and `route` read those variables, so a key spelled as the agent's argument instead leaves them unset.
+- **`applyRules`**: `.businessRule()`, a deployed BusinessRules package addressed by name; there is no in-file rule authoring.
+  A decision's column reads `=result.<Decision>.<column>` ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
+- **`extract`** (not drawn): Document Understanding, or any step that pulls the fields the classifier needs out of an unstructured source.
+  Insert it before `classify`.
+- **`handle*`**: see Adapting below; usually a message dispatch rather than work done here.
+- **`manualTriage`**: `.humanTask()` as an inline form whose `outcomes` are the categories.
+  Map `=Action` to `routeCategory`, the same variable `route` reads.
+  Mapped anywhere else, low-confidence items dispatch on the classifier's original guess and the review changes nothing.
 
 ## Adapting it
 
-Add or remove category branches as needed; each requires one `route_gate` condition, handler, and end event. Drop `extract` when the trigger already provides structured fields.
+Add or remove category arms to match the domain.
+Each is one `when` on `route` plus its handler and end event.
 
-The `handle_*` nodes are the pattern's main decision: keep them as messages starting separate processes so triage stays thin. Inline handling is legitimate for one or two trivial categories, but makes triage own each category's work.
+Drop `extract` when the trigger already delivers structured fields.
+
+The `handle*` nodes are the pattern's main decision.
+Replacing each with a message that starts a separate process keeps triage thin, which is the intent.
+Filling them inline makes triage own the handling for every category it routes, and that is what the shape is trying to avoid; it is a legitimate choice for one or two trivial categories.
 
 ## Composing
 
-Each category's downstream is usually a separate process reached by message rather than nesting; see [composing-guide.md](composing-guide.md#dispatched-by-message-to-a-separate-process). `approval-chain` is a common downstream. Add `failure-escalation` so classifier or dispatch failures do not vanish.
+Each category's downstream is usually its own process, reached by message rather than nested; see [composing-guide.md](composing-guide.md#dispatched-by-message-to-a-separate-process).
+`approval-chain` is a common downstream.
+Add `failure-escalation` so a classifier or dispatch failure does not vanish.

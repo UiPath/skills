@@ -145,9 +145,11 @@ uip solution
         └── delete <name> <version>       Delete a specific package version
 ```
 
+<!--skill-flavor:feed-flags-pointer:start-->
 `publish`, `deploy run`, `deploy list`, `packages list` and `packages delete` all take
 `--feed <name-or-key>` or `--personal-workspace` to target a feed other than the
 tenant's. See [Pack and Deploy — Publishing to a non-tenant feed](pack-and-deploy.md#publishing-to-a-non-tenant-feed).
+<!--skill-flavor:feed-flags-pointer:end-->
 
 ---
 
