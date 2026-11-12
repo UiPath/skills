@@ -163,6 +163,25 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 {comma-separated: domain, applications, platform features}
 
+## Data Model
+
+{Process level only: the model is shared by every component, so it is described once here and never repeated in a component genome. Summary and contract only — the schema lives in `entities.json` and the solution resources (data-model-guide.md). Each entity gets a Platform Dependencies row here; each component's Handoffs row names the entities it exchanges.}
+
+Derived from `{bundle}` ({n} classes, {n} shapes, {n} triples maps) into {n} entities across {n} component(s), {n} choice set(s). Entity project `{NAME}`, scope {tenant | folder}.
+
+| | |
+|---|---|
+| Artifacts | `entities.json`, `target.r2rml` |
+| Defaults applied | D1 system of record: all but {…} · D2 scope · D3 displayField · D4 choice sets |
+| Deferred | {n} register rows: {n} awaiting a write site, {n} awaiting an access pattern |
+| Not covered | {n} ontology objects, listed in `entities.json` |
+
+| Entity | Component(s) that write it | Component(s) that read it |
+|--------|----------------------------|---------------------------|
+| `{Entity}` | {component names} | {component names} |
+
+*Stub when none: "No ontology bundle: the automation's data lives in the systems named in Actors and Systems."*
+
 ## Source Map
 
 *Extraction only — omit for authored genomes.*
