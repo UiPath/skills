@@ -2,7 +2,7 @@
 """Grade the publish-full-workspace task from the `uip` call log.
 
 Modes:
-  publish  Every `publish` names finance-skills (or its key) and an --input directory that
+  publish  Every `publish` names finance-skills (or its key), folder Shared, and an --input directory that
            holds the whole next version: the files the bundle already has (README.md,
            refund-skill/instructions.md) and the user's edit to invoice-skill/instructions.md.
            `publish` treats --input as the complete next version, so a base file the directory
@@ -24,6 +24,7 @@ from pathlib import Path
 
 LOG = Path("cli_mocks/calls.jsonl")
 BUNDLES = {"finance-skills", "5e6f7a8b-0000-0000-0000-000000000004"}
+FOLDER = "Shared"
 REQUIRED = ("README.md", "refund-skill/instructions.md", "invoice-skill/instructions.md")
 EDIT = "more than 2%"
 
@@ -127,6 +128,9 @@ def check_publish(log):
         bundle = pos[0] if pos else None
         if bundle not in BUNDLES:
             problems.append(f"publish targets {bundle!r}, not finance-skills")
+            continue
+        if opts.get("--folder-path") != FOLDER:
+            problems.append(f"publish goes to folder {opts.get('--folder-path')!r}, not {FOLDER}")
             continue
         raw = opts.get("--input")
         if raw is None:

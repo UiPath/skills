@@ -62,13 +62,46 @@ sandbox:
             {"Result":"Failure","ErrorCode":"not_found","Message":"Error listing tags of skill bundle",
             "Instructions":"Skill bundle does not exist in this folder.","Retry":"RetryWillNotFix"}
 
+        # Two rows in all: windows past them are empty, the second row alone at offset 1, the first alone at limit 1.
+        - when:
+            verb_any_of: ["or skill-bundles versions", "or skill-bundle versions"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+            flags:
+              offset: {matches_regex: "^([2-9]|[1-9][0-9]+)$"}
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"SkillBundleVersionList",
+            "Pagination":{"Returned":0,"Limit":50,"Offset":2,"Total":2,"HasMore":false},"Data":[]}
+
+        # Offset 1: the second row.
+        - when:
+            verb_any_of: ["or skill-bundles versions", "or skill-bundle versions"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+            flags:
+              offset: "1"
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"SkillBundleVersionList",
+            "Pagination":{"Returned":1,"Limit":50,"Offset":1,"Total":2,"HasMore":false},"Data":[{"Version":4,"Message":"Tighten the invoice skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-09-20T14:30:00Z"}]}
+
+        # Limit 1 from the start: the first row, more to come.
+        - when:
+            verb_any_of: ["or skill-bundles versions", "or skill-bundle versions"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+            flags:
+              limit: {any_of: ["1"], aliases: [l]}
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"SkillBundleVersionList",
+            "Pagination":{"Returned":1,"Limit":1,"Offset":0,"Total":2,"HasMore":true},"Data":[{"Version":5,"Message":"Add the refund skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-10-02T09:00:00Z"}]}
+
         - when:
             verb_any_of: ["or skill-bundles versions", "or skill-bundle versions"]
             value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
           exit_code: 0
           stdout: >-
             {"Result":"Success","Code":"SkillBundleVersionList",
-            "Pagination":{"Returned":2,"Limit":50,"Offset":0,"Total":5,"HasMore":true},
+            "Pagination":{"Returned":2,"Limit":50,"Offset":0,"Total":2,"HasMore":false},
             "Data":[{"Version":5,"Message":"Add the refund skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-10-02T09:00:00Z"},
             {"Version":4,"Message":"Tighten the invoice skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-09-20T14:30:00Z"}]}
 

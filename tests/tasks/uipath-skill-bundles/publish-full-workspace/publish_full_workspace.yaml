@@ -35,18 +35,10 @@ sandbox:
             Commands: archive, create, delete, download, file, get, history,
             list, publish, status, sync, tags, update, versions
 
-        # ./changes has no marker, and neither has the task root a status
-        # without --input reads: both are refused, as the CLI does.
-        - when:
-            verb_any_of: ["or skill-bundles status", "or skill-bundle status"]
-            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
-            flags:
-              input: {matches_regex: "^(\\./)?changes/?$", aliases: [i]}
-          exit_code: 1
-          stdout: >-
-            {"Result":"Failure","ErrorCode":"invalid_argument","Message":"Error reading local status of skill bundle",
-            "Instructions":"No valid workspace marker. Run 'uip or skill-bundles download' first.","Retry":"RetryWillNotFix"}
-
+        # The task root, which a status without --input reads, is not a
+        # workspace. Partial sources (./changes) are left to the graders: a
+        # canned refusal keyed on one --input value would disagree with
+        # Commander when --input is repeated.
         - when:
             verb_any_of: ["or skill-bundles status", "or skill-bundle status"]
             value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
@@ -73,14 +65,48 @@ sandbox:
           stdout: >-
             {"Result":"Success","Code":"SkillBundleSync","Data":{"Version":5,"Changed":[],"Deleted":[]}}
 
+        # Two rows in all: windows past them are empty, the second row alone at offset 1, the first alone at limit 1.
+        - when:
+            verb_any_of: ["or skill-bundles versions", "or skill-bundle versions"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+            flags:
+              offset: {matches_regex: "^([2-9]|[1-9][0-9]+)$"}
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"SkillBundleVersionList",
+            "Pagination":{"Returned":0,"Limit":50,"Offset":2,"Total":2,"HasMore":false},"Data":[]}
+
+        # Offset 1: the second row.
+        - when:
+            verb_any_of: ["or skill-bundles versions", "or skill-bundle versions"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+            flags:
+              offset: "1"
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"SkillBundleVersionList",
+            "Pagination":{"Returned":1,"Limit":50,"Offset":1,"Total":2,"HasMore":false},"Data":[{"Version":4,"Message":"Tighten the invoice skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-09-20T14:30:00Z"}]}
+
+        # Limit 1 from the start: the first row, more to come.
+        - when:
+            verb_any_of: ["or skill-bundles versions", "or skill-bundle versions"]
+            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
+            flags:
+              limit: {any_of: ["1"], aliases: [l]}
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"SkillBundleVersionList",
+            "Pagination":{"Returned":1,"Limit":1,"Offset":0,"Total":2,"HasMore":true},"Data":[{"Version":5,"Message":"Add the refund skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-10-02T09:00:00Z"}]}
+
         - when:
             verb_any_of: ["or skill-bundles versions", "or skill-bundle versions"]
             value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
           exit_code: 0
           stdout: >-
             {"Result":"Success","Code":"SkillBundleVersionList",
-            "Pagination":{"Returned":1,"Limit":50,"Offset":0,"Total":5,"HasMore":true},
-            "Data":[{"Version":5,"Message":"Add the refund skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-10-02T09:00:00Z"}]}
+            "Pagination":{"Returned":2,"Limit":50,"Offset":0,"Total":2,"HasMore":false},
+            "Data":[{"Version":5,"Message":"Add the refund skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-10-02T09:00:00Z"},
+            {"Version":4,"Message":"Tighten the invoice skill","Author":"user:8ad2237a-6325-4b26-9d71-a63ace455d6b","CreatedAt":"2026-09-20T14:30:00Z"}]}
 
         - when:
             verb_any_of: ["or skill-bundles get", "or skill-bundle get"]
@@ -92,20 +118,6 @@ sandbox:
             "Description":"Skills the finance agents load","LatestVersion":5,
             "LastPublishedAt":"2026-10-02T09:00:00Z","Encrypted":false,
             "StorageProvider":"Orchestrator","StorageContainer":"sb-5e6f7a8b"}}
-
-        # ./changes has no marker and the bundle has content: the CLI refuses
-        # before any request unless --base-version forces it through.
-        - when:
-            verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
-            value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
-            flags:
-              input: {matches_regex: "^(\\./)?changes/?$", aliases: [i]}
-              base-version: {absent: true}
-          exit_code: 1
-          stdout: >-
-            {"Result":"Failure","ErrorCode":"invalid_argument","Message":"Error publishing skill bundle",
-            "Instructions":"This bundle already has content. Use a downloaded workspace or pass --base-version explicitly; missing base files will be deleted.",
-            "Retry":"RetryWillNotFix"}
 
         - when:
             verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
@@ -133,7 +145,7 @@ success_criteria:
   # The outcome: each publish goes to finance-skills from a directory that
   # is the whole next version, carrying the edit.
   - type: run_command
-    description: "Every publish targeted finance-skills from a complete directory carrying the edit"
+    description: "Every publish targeted finance-skills in folder Shared from a complete directory carrying the edit"
     command: "python3 $REFERENCE_DIR/check_published_dir.py publish"
     timeout: 15
     expected_exit_code: 0
@@ -163,12 +175,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Published exactly once, to the named folder"
+    description: "Published exactly once"
     verb_any_of: ["or skill-bundles publish", "or skill-bundle publish"]
     value_flags: [output, input, i, message, m, tenant, t, folder-path, folder-key, base-version, bundle, version, limit, l, offset, search, destination, path, name, description, d]
     tool: "uip"
     flags:
-      folder-path: "Shared"
       help: {absent: true, aliases: [h]}
     min_count: 1
     max_count: 1

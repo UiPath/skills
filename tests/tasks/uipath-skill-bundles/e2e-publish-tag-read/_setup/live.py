@@ -11,13 +11,17 @@ scratch bundle whose name `preflight` writes to ./bundle-name.txt.
   versions   The bundle has at least two published versions.
   stable     Tag `stable` exists, is mutable, names the newest version, and that version's
              invoice-skill/instructions.md carries the requested rule.
-  intact     The newest version still holds README.md and refund-skill/instructions.md (the
-             second publish deleted nothing it was not asked to), and version 1 lacks the rule.
-  cleanup    Best effort: deletes the scratch bundle. Never fails.
+  intact     Version 1 is the seed byte for byte; the newest version's README.md and
+             refund-skill/instructions.md equal the seed byte for byte (the second publish
+             changed nothing it was not asked to), and its invoice-skill/instructions.md is the
+             seed's plus the rule. The seed is read from the protected reference copy.
+  cleanup    Best effort: deletes the scratch bundle, and only a name of the generated
+             `sb-e2e-<12 hex>` shape (the name file is agent-writable). Never fails.
 
 Exit codes: 0 pass, 1 fail.
 """
 import json
+import re
 import subprocess
 import sys
 import uuid
@@ -25,6 +29,11 @@ from pathlib import Path
 
 FOLDER = "Shared"
 NAME_FILE = Path("bundle-name.txt")
+NAME_SHAPE = re.compile(r"^sb-e2e-[0-9a-f]{12}$")
+# The protected reference copy of the seed, beside this script; the agent's ./seed may have changed.
+SEED = Path(__file__).resolve().parent.parent / "seed"
+SEED_FILES = ("README.md", "invoice-skill/instructions.md", "refund-skill/instructions.md")
+UNTOUCHED = ("README.md", "refund-skill/instructions.md")
 RULE = "more than 2%"
 INVOICE = "invoice-skill/instructions.md"
 
@@ -49,7 +58,14 @@ def ok(envelope):
 def name():
     if not NAME_FILE.exists():
         raise SystemExit(f"FAIL: {NAME_FILE} is missing; preflight did not run")
-    return NAME_FILE.read_text().strip()
+    value = NAME_FILE.read_text().strip()
+    if not NAME_SHAPE.match(value):
+        raise SystemExit(f"FAIL: {NAME_FILE} holds {value!r}, not a name preflight generated")
+    return value
+
+
+def seed(path):
+    return (SEED / path).read_text(encoding="utf-8")
 
 
 def read_file(bundle, path, version):
@@ -116,25 +132,31 @@ def stable():
 def intact():
     bundle = name()
     problems = []
-    for path in ("README.md", "refund-skill/instructions.md"):
+    for path in SEED_FILES:
+        content, raw = read_file(bundle, path, "1")
+        if content != seed(path):
+            problems.append(f"v1 {path} is not the seed file: {(content if content is not None else raw)[:160]!r}")
+    for path in UNTOUCHED:
         content, raw = read_file(bundle, path, "latest")
-        if content is None:
-            problems.append(f"{path} missing from the newest version: {raw[:200]}")
-    first, raw = read_file(bundle, INVOICE, "1")
-    if first is None:
-        problems.append(f"{INVOICE} missing from v1: {raw[:200]}")
-    elif RULE in first:
-        problems.append("v1 already carries the rule: the edit did not go into a later version")
+        if content != seed(path):
+            problems.append(f"newest {path} differs from the seed it was never meant to change: {(content if content is not None else raw)[:160]!r}")
+    newest, raw = read_file(bundle, INVOICE, "latest")
+    base = seed(INVOICE).splitlines()
+    lines = (newest or "").splitlines()
+    if lines[:len(base)] != base or not any(RULE in line for line in lines[len(base):]):
+        problems.append(f"newest {INVOICE} is not the seed plus the rule: {(newest if newest is not None else raw)[:200]!r}")
     if problems:
         print("FAIL: " + "; ".join(problems))
         return 1
-    print("ok: newest version kept the untouched files; v1 predates the edit")
+    print("ok: v1 is the seed; the newest version kept the untouched files byte for byte and adds the rule")
     return 0
 
 
 def cleanup():
-    if NAME_FILE.exists():
-        uip("or", "skill-bundles", "delete", NAME_FILE.read_text().strip(), "--folder-path", FOLDER, "--yes")
+    # Only ever a scratch bundle this run generated: the file is agent-writable.
+    value = NAME_FILE.read_text().strip() if NAME_FILE.exists() else ""
+    if NAME_SHAPE.match(value):
+        uip("or", "skill-bundles", "delete", value, "--folder-path", FOLDER, "--yes")
     return 0
 
 
