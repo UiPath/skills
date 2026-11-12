@@ -1,0 +1,23 @@
+{
+  "@type": "kb.workspace/v1",
+  "schemaVersion": 1,
+  "bundleId": "5e6f7a8b-0000-0000-0000-000000000004",
+  "version": 5,
+  "entries": [
+    {
+      "path": "README.md",
+      "sha256": "afd059d7fe5d9842f1e2eda3ca706a4441bcda9906cd404bcf6a3e777bfd211a",
+      "size": 72
+    },
+    {
+      "path": "invoice-skill/SKILL.md",
+      "sha256": "b99be6e08519e77b9d0c6d36f6845be96ee8aaf6908fa05bb29def1ac9ef22c8",
+      "size": 181
+    },
+    {
+      "path": "refund-skill/SKILL.md",
+      "sha256": "0e6ad41116ae8acd1bf53790c625b08bdb133875f5beb94a97a4dbe03a2c7fcd",
+      "size": 144
+    }
+  ]
+}

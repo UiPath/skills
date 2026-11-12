@@ -339,6 +339,14 @@
       "or kb versions": 2
     }
   },
+  "uipath-skill-bundles": {
+    "allow": [],
+    "ceiling": {
+      "login": 1,
+      "or": 28,
+      "or kb": 4
+    }
+  },
   "uipath-maestro-bpmn": {
     "allow": [],
     "ceiling": {

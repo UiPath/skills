@@ -225,6 +225,14 @@
       },
       "last_synced": null
     },
+    "uipath-skill-bundles": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-solution": {
       "status": "stable",
       "confluence": {
