@@ -131,7 +131,8 @@ Act only on errors, and do not report the warning: it appears on every skeleton,
 A box whose kind runs a deployed resource cannot be built without one: every kind in [Box kinds](#box-kinds) except `Execute script` and `Execute HTTP request`, including Business rule, plus a queue, a Data Fabric entity, and a connector box's connection.
 When this run already found no `uip login` (the upload failed for it), skip the lookup and mark each such box `not checked`.
 Otherwise run every lookup in **one** Bash call.
-It is the turn's last tool call: send any progress note before it, and when it returns, send the gate reply as your next and final message, starting with its first line.
+The lookups only read the tenant, so a request that forbids uploading or running anything does not forbid them.
+It is the turn's last tool call: read [gate-reply-template.md](gate-reply-template.md) and send any progress note before it, and when it returns, send the gate reply as your next and final message, starting with its first line.
 
 - **Processes, queues, apps:** `uip solution resources list --kind <Process|Queue|App> --search "<term>" --output json`.
   It lists what the solution already holds (`Source: Local`) and what the tenant has (`Source: Remote`).

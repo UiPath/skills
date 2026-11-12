@@ -499,6 +499,8 @@ def test_draft_resource_lookup_counts(command: str) -> None:
         "uip maestro bpmn validate InvoiceIntakeSketch/InvoiceIntakeSketch.bpmn --output json",
         "uip is connectors list --output json",
         "uip solution upload InvoiceIntakeSketchSolution --output json",
+        "uip solution resources list --help",
+        "uip is connections list -h",
     ],
 )
 def test_draft_resource_lookup_ignores_other_calls(command: str) -> None:
