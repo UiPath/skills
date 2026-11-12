@@ -1,6 +1,6 @@
 # Draft Gate Reply
 
-The reply that ends a draft-mode turn at the approval gate. Read this file in full before you write that reply; the skeleton, its loop and the resource lookup are in [draft-skeleton.md](draft-skeleton.md#find-the-resources).
+The reply that ends a draft-mode turn at the approval gate. Read this file in full before you write that reply; the skeleton and its loop are in [draft-skeleton.md](draft-skeleton.md), and the resource lookup in its [Find the resources](draft-skeleton.md#find-the-resources).
 
 Reply in this shape and keep every line; only the first line's second sentence is optional, and the question and its three options are fixed:
 
