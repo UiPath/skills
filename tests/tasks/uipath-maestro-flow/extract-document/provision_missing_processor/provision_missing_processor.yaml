@@ -1,0 +1,105 @@
+task_id: skill-flow-extract-document-provision-missing-processor
+description: >
+  Smoke: an Extract document node authored before the CLI provisioned
+  processors has no `processorKey`, so `flow validate` reports it and a deployed
+  run extracts nothing. The user describes one of those symptoms. Tests that
+  the agent gives the node its processor, the key on the node and the
+  idpProcessor resource with that key in the solution, and changes nothing
+  else: the taxonomy, the file input and the extraction source stay as
+  seeded.
+
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/InvoiceReader
+      mount_point: InvoiceReader
+reference:
+  directory: ../..
+
+dataset:
+  rows:
+    - id: empty-result
+      prompt: >-
+        My InvoiceReader flow deploys, but its Extract Invoice step finishes
+        instantly and returns an empty result. Fix the flow so the extraction
+        runs.
+
+    - id: validate-error
+      prompt: >-
+        uip maestro flow validate fails on my InvoiceReader flow at the Extract
+        Invoice node. Fix the flow so it validates.
+
+initial_prompt: |
+  ${row.prompt}
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "Extract Invoice has a processor: a processorKey, and the idpProcessor resource with that key in the solution"
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader processor
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The taxonomy equals the seeded one: prompt, config, group, every field's type, instructions and id, $defs"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader unchanged
+      $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader/InvoiceReader.flow
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Extract Invoice keeps its file input and extraction source"
+    path: "InvoiceReader/InvoiceReader/InvoiceReader.flow"
+    assertions:
+      - expression: "nodes[?id=='extractInvoice1'] | [0].inputs.fileRef"
+        operator: equals
+        expected: "=js:$vars.start.output.invoice"
+      - expression: "nodes[?id=='extractInvoice1'] | [0].inputs.source"
+        operator: equals
+        expected: "7b330239-c3e9-4e5e-99eb-af886f963e30"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every node but Extract Invoice, and every edge, variable and definition, is unchanged"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader --project InvoiceReader/InvoiceReader --changed-node extractInvoice1"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes with no warnings"
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent repaired the node with nodes provision"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+nodes\s+provision\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+run_limits:
+  expected_turns: 10
+  max_turns: 25
+  task_timeout: 900

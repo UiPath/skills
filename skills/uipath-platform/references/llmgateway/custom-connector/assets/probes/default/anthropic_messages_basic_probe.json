@@ -1,0 +1,70 @@
+{
+  "id": "anthropic_messages_basic_probe",
+  "description": "A system prompt and a three-turn conversation in Anthropic Messages format; the answer must hold one text block.",
+  "source": "ProductDefinedProbes/Payloads/anthropic_messages_basic_probe.json",
+  "apiFlavor": "AnthropicMessages",
+  "optIn": true,
+  "order": 10,
+  "path": "/v1/messages",
+  "body": {
+    "max_tokens": 2000,
+    "system": "You are a helpful assistant.",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Which organization holds the leading position in the field of Robotic Process Automation (RPA)?"
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Based on market research and industry analyses, UiPath is generally recognized as the leading organization in Robotic Process Automation (RPA). They consistently rank as a leader in major analyst reports such as Gartner's Magic Quadrant and Forrester Wave for RPA.\n\nOther significant players in the RPA market include:\n- Automation Anywhere\n- Blue Prism\n- Microsoft (Power Automate)\n- IBM\n- NICE\n\nHowever, market positions can shift over time as technology evolves and companies adapt. Different organizations might also lead in specific sectors or use cases within the broader RPA landscape."
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Which are UiPath's competitors?"
+          }
+        ]
+      }
+    ],
+    "model": "{{model}}"
+  },
+  "retries": [
+    {
+      "status": 400,
+      "ifBodyContains": [
+        "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."
+      ],
+      "edit": "with_entries(if .key == \"max_tokens\" then .key = \"max_completion_tokens\" else . end)",
+      "why": "the model wants max_completion_tokens; the gateway sends it once more with that field"
+    }
+  ],
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "content is an array of blocks with a string type",
+      "jq": "(.content | type) == \"array\" and all(.content[]; (.type | type) == \"string\")"
+    },
+    {
+      "reason": "MULTIPLE_RESPONSES",
+      "says": "at most one text block",
+      "jq": "([.content[] | select(.type == \"text\")] | length) <= 1"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "a text block with text",
+      "jq": "([.content[] | select(.type == \"text\")][0].text // null) != null"
+    }
+  ]
+}
