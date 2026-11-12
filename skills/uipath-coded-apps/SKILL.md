@@ -31,6 +31,7 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 |------|-------------|----------------|
 | **Coded Web App** | React/Vue/other frontend hosted on UiPath CDN | User-facing app accessed via a URL |
 | **Coded Action App** | React form wired to UiPath Action Center | Rendered inside human task reviews in Maestro/Agent workflows |
+| **Public Coded Web App** (preview) | Coded Web App that anyone with the link uses **without signing in** | In-solution only; runs as a confidential external app — see [public-coded-app.md](references/public-coded-app.md) |
 
 > **Two lifecycles, two scaffolding entry points.**
 >
@@ -62,11 +63,12 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 19. **Never guess SDK method signatures — read the installed types.** The authoritative reference for method names, parameters, return types, and usage examples is `node_modules/@uipath/uipath-typescript/dist/<subpath>/index.d.ts` (full JSDoc; matches the installed SDK version exactly). Before calling a service you have not used in this session, Read its `.d.ts`. If `node_modules` is absent, run the install step first — the app cannot build without it. The `references/sdk/*.md` files deliberately do NOT list signatures; they cover only scopes, calling conventions, and traps the types cannot express. See [references/sdk/imports.md](references/sdk/imports.md) for the missing-capability protocol. **Boundary: read the `.d.ts`, never the compiled bundle.** `dist/*.mjs` / `*.js` is minified implementation, not API — reading it dead-ends. A grep with no output **confirms absence**; treat a genuine gap as unsupported (use the documented alternative) rather than escalating the search into the bundle.
 20. **A scaffold is not React until `src/main.tsx` exists — assert it before installing anything.** Scaffold both app types by copying the single `create-vite` command from [create-web-app.md](references/create-web-app.md) Step 3.2 or [create-action-app.md](references/create-action-app.md): it passes `--no-interactive` — without which `create-vite` stops on a linter prompt, and exits `0` having created nothing when no one can answer it — and ends in a `node` check that prints `SCAFFOLD_OK`. Never use an `npm create vite` form — `npm create` needs a bare `--` separator to forward flags, and a lost or corrupted separator makes npm swallow `--template` so `create-vite` silently scaffolds its **vanilla TypeScript** template. Never judge a scaffold by its exit code or output: `create-vite` exits `0` on a misparsed template, on a linter prompt it could not show, and on `Operation cancelled` over a non-empty target directory. Nothing in this skill installs `react` explicitly, so a wrong template surfaces minutes later as an unrelated-looking build failure. On failure re-scaffold with `--overwrite`; never convert a vanilla scaffold into a React one by hand.
 21. **Call third-party systems through an Integration Service connector, or build one with `uip is connectors builder`; a direct `fetch` with a key needs a stated reason.** Any key the app holds (source, env var, `uipath.json`) ships in `dist/`. UiPath SDK calls are fine: they use the app's own session.
+22. **Public (no sign-in) apps follow [public-coded-app.md](references/public-coded-app.md) end to end.** When the user wants an app for people without a UiPath account ("public", "anonymous", "customers/guests", "no login"), it must be an in-solution coded app with a confidential external app, no sign-in code, only the supported public calls, and resources declared with `uip resources add` — never a hand-written `bindings_v2.json`.
 
 ## Disambiguation — Apps vs Dashboards
 
 **Route directly to Apps workflow** (sections below) when you see:
-`web app`, `action app`, `codedapp`, `app.config.json`, `action-schema.json`,
+`web app`, `action app`, `public app`, `no sign-in`, `codedapp`, `app.config.json`, `action-schema.json`,
 `scaffold app`, `deploy app`, `pack`, `publish`, `push`, `pull`, `debug app`
 
 **Route directly to [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) when you see:**
@@ -86,6 +88,8 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 |---|---|
 | **Create a new Coded Web App** | [references/create-web-app.md](references/create-web-app.md) |
 | **Create a new Coded Action App** | [references/create-action-app.md](references/create-action-app.md) |
+| **Create a public (no sign-in) coded app** (preview) | [references/public-coded-app.md](references/public-coded-app.md) |
+| **Declare the resources an app uses (`uipath_resources.ts`, `uip resources add`)** | [references/resource-declarations.md](references/resource-declarations.md) |
 | **Debug auth or config issues** | [references/debug.md](references/debug.md) |
 | **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
 | **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
