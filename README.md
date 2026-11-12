@@ -77,6 +77,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | Skill | Description |
 |-------|-------------|
 | **uipath-troubleshoot** | Root-cause investigation across any UiPath product — errors, failures, regressions, stuck jobs, traces, incidents. |
+| **uipath-explorer-engine** | Analyze an agent's traces with `uip explorer-engine`, apply the suggested prompt, tool, memory, rule and BPMN fixes through the owning skill, then accept or dismiss them. |
 | **uipath-feedback** | Submit bug reports and improvement suggestions via `uip feedback send`. |
 
 ### Lifecycle Status
@@ -94,6 +95,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-automationhub` | Stable |
 | `uipath-coded-apps` | Stable |
 | `uipath-connector-builder` | In-development |
+| `uipath-explorer-engine` | Preview |
 | `uipath-feedback` | Stable |
 | `uipath-functions` | Preview |
 | `uipath-genome` | Preview |

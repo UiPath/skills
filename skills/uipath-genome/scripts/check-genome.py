@@ -60,6 +60,7 @@ OPERATE_SKILLS = {  # allowed in Platform Dependencies / Deployment, never in Bu
     "uipath-troubleshoot", "uipath-governance", "uipath-review", "uipath-planner", "uipath-aops",
     "uipath-automationhub", "uipath-feedback",
     "uipath-activity-migrator", "uipath-knowledge-bundles", "uipath-vertical-solutions",
+    "uipath-explorer-engine",
 }
 RETIRED_SKILLS = {"uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"}
 
