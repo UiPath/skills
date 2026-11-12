@@ -9,7 +9,7 @@ description: >
   solution authors itself" on either authoring path (.flow.ts + compile, or
   node add). No tenant entity is created. Needs a CLI with UiPath/cli #4441
   and #4442.
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, feature:entities, studio-web-unsupported, studio-web-unsupported:local-solution-entity]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, feature:entities]
 sandbox:
   template_sources:
     - type: template_dir
