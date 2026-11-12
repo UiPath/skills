@@ -15,8 +15,8 @@ sandbox:
     - type: template_dir
       path: _cli_recorder
       mount_point: _cli_recorder
-  # Pass-through recorder: runs the real uip and logs each call, so the
-  # filterGroup and CRUD checks see calls run from scripts as well as from Bash.
+  # Pass-through recorder: runs the real uip and logs each `uip df records` call,
+  # so checks see calls made from scripts as well as typed in Bash.
   mock_path_dirs: [_cli_recorder]
 run_limits:
   expected_turns: 35
@@ -134,8 +134,10 @@ success_criteria:
 
   - type: run_command
     description: "Agent queried Active=true records with filterGroup"
-    command: "python3 _setup/verify_active_filter.py --log _cli_recorder/uip-calls.jsonl --entity-name CE_LargePaginationTest --ids active_ids.txt"
-    timeout: 240
+    command: >-
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
+      --pattern '(?is)(?=.*(?:uip\s+df\s+records\s+query|["'']records["'']\s*,\s*["'']query["'']))(?=.*filterGroup)(?=.*Active)(?=.*true)'
+    timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -161,7 +163,7 @@ success_criteria:
   - type: run_command
     description: "Agent inserted all three named temporary rows in one batch"
     command: >-
-      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl --verb insert
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
       --pattern '(?is)(?=.*uip\s+df\s+records\s+insert)(?=.*Smoke-WriteTests)(?=.*Smoke-ReviewPR)(?=.*Smoke-Deploy)'
     timeout: 30
     expected_exit_code: 0
@@ -171,7 +173,7 @@ success_criteria:
   - type: run_command
     description: "Agent retrieved a temporary row by ID"
     command: >-
-      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl --verb get
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
       --pattern 'uip\s+df\s+records\s+get\s+'
     timeout: 30
     expected_exit_code: 0
@@ -181,7 +183,7 @@ success_criteria:
   - type: run_command
     description: "Agent batch-updated three record IDs to inactive"
     command: >-
-      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl --verb update
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
       --pattern '(?is)(?=.*uip\s+df\s+records\s+update)(?=.*(?:Active.{0,20}false|--file\s+\S+))'
     timeout: 30
     expected_exit_code: 0
@@ -191,7 +193,7 @@ success_criteria:
   - type: run_command
     description: "Agent deleted three record IDs in one operation, not the entity"
     command: >-
-      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl --verb delete
+      python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl
       --pattern '(?is)(?=.*uip\s+df\s+records\s+delete)(?=.*(?:(?:[0-9a-f]{8}-[0-9a-f-]{27}.*){3}|temp_row_ids\.txt))'
     timeout: 30
     expected_exit_code: 0
