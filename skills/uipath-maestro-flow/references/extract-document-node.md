@@ -41,7 +41,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 
 <!--skill-flavor:extract-find-flow:start-->
 0. **Find the flow.** Everything here edits a `.flow` on disk. When the user describes a flow they are already building and none exists locally, they may be referring to one
-that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
+that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)). **Where the project folder holds `.flow-sdk/`, do not edit its `.flow`:** that flow is compiled from TypeScript source, so the node goes in a separate project ([Adding the node](#adding-the-node)), and every later step runs on that project's `.flow`.
 <!--skill-flavor:extract-find-flow:end-->
 1. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This is what makes `$vars.start.output.invoice` resolve, so it comes before the node that reads it.
 2. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`.
@@ -58,7 +58,13 @@ The feature is new and tenant-gated, so not every tenant has it yet. Nothing in 
 ## Adding the node
 
 <!--skill-flavor:extract-sdk-mixing:start-->
-**These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project initialised with `--sdk-source` generates its `.flow` from a `.flow.ts` by compiling, and the next compile overwrites whatever `nodes create` and `nodes schema set` wrote. Check for a `.flow-sdk/` directory before starting. Where one exists, build the Extract document flow in a separate project without source and keep to the CLI — the SDK's `dynamicExtract()` is not the route here ([document-pipeline.md](document-pipeline.md) explains its limits). Do not alternate between the two and re-apply the CLI edits after each compile.
+**These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project with a `.flow-sdk/` directory generates its `.flow` from `.flow-sdk/<Name>.flow.ts` by compiling, and the next compile — the user's or a later turn's — overwrites whatever `nodes create` and `nodes schema set` wrote. Check for `.flow-sdk/` before starting. Where one exists, even when the user names that flow:
+
+1. Leave that project as it is: no change to its `.flow`, none to its `.flow.ts`.
+2. Build the Extract document flow in a new project in the same solution, without source: `( cd "<Solution>" && uip maestro flow init <NewName> )`, no `--sdk-source`. Keep to the CLI — the SDK's `dynamicExtract()` is not the route here ([document-pipeline.md](document-pipeline.md) explains its limits).
+3. Tell the user why the step is in `<NewName>` and not in their flow: their flow is compiled from its TypeScript source, and the next compile would delete a node added to its `.flow`.
+
+Do not alternate between the two and re-apply the CLI edits after each compile.
 <!--skill-flavor:extract-sdk-mixing:end-->
 
 `--label` sets the canvas name and seeds the node id. Give it a name that says which document and which fields, not "Extract" — a flow with two extraction nodes is common, and the label is what the user reads on the canvas and in a trace. Run `uip maestro flow nodes list <file> --output json` afterwards to get the id that was minted; later commands address the node by that id.

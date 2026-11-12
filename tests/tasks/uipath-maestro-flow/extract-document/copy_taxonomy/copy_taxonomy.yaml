@@ -4,9 +4,11 @@ description: >
   another in the same flow. Tests that the target ends up with the source's
   whole taxonomy (prompt, a nested repeating group, fields, types, a Choice and
   instructions) and that only the taxonomy moves: the target keeps its own
-  label, file input, extraction source and model settings, and takes no
-  processorKey from the source. Ids are not graded: the guide does not say whether a copy keeps the
-  source's ids or gets new ones.
+  label, file input, extraction source and model settings, and does not take
+  the source's processorKey. A CLI that provisions a processor on
+  `nodes schema set` gives the target its own key; one that does not leaves it
+  without one; both pass. Ids are not graded: the guide does not say whether a
+  copy keeps the source's ids or gets new ones.
 
   No `flow debug`: a CLI-authored Extract document node extracts nothing
   until the flow is saved once in Studio Web.
@@ -75,12 +77,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Extract Credit Note has no processorKey: a copied key would name Extract Invoice's processor"
+    description: "Extract Credit Note does not carry Extract Invoice's processorKey: a copied key would name Invoice's processor"
     path: "BillingDocs/BillingDocs/BillingDocs.flow"
     assertions:
-      - expression: "length(nodes[?id=='extractCreditNote1' && inputs.processorKey])"
+      - expression: "nodes[?id=='extractCreditNote1'].inputs.processorKey == nodes[?id=='extractInvoice1'].inputs.processorKey"
         operator: equals
-        expected: 0
+        expected: false
     weight: 1.5
     pass_threshold: 1.0
 
