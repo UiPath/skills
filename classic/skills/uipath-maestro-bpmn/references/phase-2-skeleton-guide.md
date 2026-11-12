@@ -308,8 +308,7 @@ process misreports it.
 
 ## Draw the trigger the user named
 
-The start event shows how the process begins, so the user can check it at the
-gate. When the request names the trigger, turn the generated start event into
+When the request names the trigger, turn the generated start event into
 that trigger in place. Keep its `id` and its `<uipath:entryPointId>`, add no
 second start, and add one plain event definition:
 

@@ -2,7 +2,7 @@ task_id: skill-bpmn-smoke-draft-skeleton-multi-instance
 description: >
   Draft-mode smoke eval for per-item steps: the user asks to see the shape
   first, so the phase 2 skeleton marks one box sequential multi-instance with
-  a completionCondition (stop at the first out-of-stock item) and another
+  a completionCondition (stop at the first failed document) and another
   parallel multi-instance, instead of a hand-rolled loop or a label, makes no
   registry call, and stops at the approval gate instead of wiring real nodes.
 tags: [uipath-maestro-bpmn, smoke, "mode:build"]
@@ -18,11 +18,14 @@ reference:
   directory: ..
 
 initial_prompt: |
-  I want a BPMN process called "StockCheckSketch". For every line item on an
-  order, check stock one at a time and stop as soon as one is out of stock.
-  After that, notify each supplier, all at the same time.
+  Our onboarding team wants a BPMN process called "OnboardingDocsSketch". A new
+  hire brings a list of documents. HR checks them one after another, and if any
+  document fails verification there's no point looking at the rest. Once
+  that's done, every team the hire joins gets a welcome message, and those
+  can all go out together.
 
-  Sketch it for me first. Don't upload or run anything yet.
+  Can I see what that would look like before you build it? Don't upload or
+  run anything yet.
 
 success_criteria:
   - type: command_not_executed
@@ -41,7 +44,7 @@ success_criteria:
 
   - type: run_command
     description: "Skeleton marks a sequential multi-instance box that stops early and a parallel one, with bare boxes, full DI, project metadata, and validates with zero errors"
-    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py StockCheckSketch --multi-instance"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py OnboardingDocsSketch --multi-instance"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

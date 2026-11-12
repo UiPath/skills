@@ -41,9 +41,9 @@ def require_multi_instance(root) -> None:
         else:
             par = True
     if not seq_stop:
-        fail("expected a sequential multi-instance box with a completionCondition (stop at the first out-of-stock item)")
+        fail("expected a sequential multi-instance box with a completionCondition (stop at the first failing item)")
     if not par:
-        fail("expected a parallel multi-instance box (notify every supplier at once)")
+        fail("expected a parallel multi-instance box (one run per item, all at once)")
 
 
 def require_fork_exits_safe(root, flows) -> None:
@@ -58,7 +58,11 @@ def require_fork_exits_safe(root, flows) -> None:
     for f in flows:
         succ.setdefault(attr(f, "sourceRef"), []).append(attr(f, "targetRef"))
         incoming[attr(f, "targetRef")] = incoming.get(attr(f, "targetRef"), 0) + 1
+    # A non-interrupting boundary leaves its activity's token on the way to
+    # the join, so a plain end on that path cannot deadlock it.
     for b in elements(root, "boundaryEvent"):
+        if attr(b, "cancelActivity") == "false":
+            continue
         succ.setdefault(attr(b, "attachedToRef"), []).append(attr(b, "id"))
     parallels = elements(root, "parallelGateway")
     joins = {attr(g, "id") for g in parallels if incoming.get(attr(g, "id"), 0) > 1}
@@ -112,8 +116,14 @@ def main() -> None:
         inclusive = elements(root, "inclusiveGateway")
         if not exclusive and not inclusive:
             fail("missing a bpmn:exclusiveGateway or bpmn:inclusiveGateway")
-        if not inclusive and not any(attr(g, "default") for g in exclusive):
-            fail("exclusive gateway is missing a default sequence-flow reference")
+        out: dict[str, list] = {}
+        for f in flows:
+            out.setdefault(attr(f, "sourceRef"), []).append(f)
+        for g in exclusive:
+            branches = out.get(attr(g, "id"), [])
+            if len(branches) > 1 and not attr(g, "default") and all(
+                    f.find("bpmn:conditionExpression", NS) is not None for f in branches):
+                fail(f"exclusive gateway {attr(g, 'id')} conditions every branch and has no default sequence flow")
         if not any(f.find("bpmn:conditionExpression", NS) is not None for f in flows):
             fail("no sequence flow carries a condition")
     require_sequence_integrity(root)
