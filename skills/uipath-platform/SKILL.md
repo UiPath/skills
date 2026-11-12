@@ -208,7 +208,7 @@ uip or folders list --output json
 
 Choose the appropriate operation from the Task Navigation table below. For `uip solution` ops, load [`uipath-solution`](/uipath:uipath-solution).
 
-**Confirm the target and its key with the user before any delete, unless the user authorized that exact delete.** This covers every `delete` command in the references.
+**Confirm the target and its key with the user before any delete, unless the user authorized that exact delete.** This covers every `delete` command in the references; Data Fabric deletes keep the stricter gate in [`data-fabric.md`](references/data-fabric/data-fabric.md) (Destructive Operations).
 
 ## Task Navigation
 
