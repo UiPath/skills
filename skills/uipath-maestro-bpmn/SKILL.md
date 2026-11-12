@@ -33,17 +33,21 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 
    ```bash
    find . -maxdepth 2 -type f -name '*.uipx' -print
-   d="$PWD"; while [ "$d" != / ]; do d=$(dirname "$d"); ls "$d"/*.uipx 2>/dev/null; done
+   d="$PWD"; while [ "$d" != / ]; do d=$(dirname "$d"); find "$d" -maxdepth 1 -type f -name '*.uipx' -print; done
    ```
 
    When the scan finds one, stop and ask the user which to use, as a pick list if the host has one: one option per solution found, named by its folder, plus "Create a new solution".
    Do not run `init` until the user answers, and never silently adopt an existing solution: `init` registers the project in a solution above it without asking.
    Say in the question that adopting a solution means a later upload overwrites its cloud copy, because this is the only point where that is still the user's choice.
    Ask this for a draft and for a plain build alike; an edit of an existing `.bpmn` runs no `init` and skips the scan.
+   Do not ask when the request already says which solution to use (an existing one by name, or a new one), or when the only solution found is one this run created.
+   When the request says nobody will answer questions, do not ask: put the project in a new solution, never an existing one, and say so in the reply.
    When the scan finds nothing, run `init` without asking.
    On the answer, for an existing solution, run `init` from that solution's directory, so the project lands in it as `<SolutionDir>/<Name>/`.
-   For a new solution, run `init` from the working directory when nothing above it holds a `.uipx`, so it scaffolds `<Name>Solution/`; otherwise pass `--skip-solution-registration` and create the solution as [Operate](references/operate.md#studio-web-upload) says.
-   Upload without confirming only to a solution this run's `init` scaffolded; adopting an existing one keeps the confirmation [Operate](references/operate.md#studio-web-upload) requires.
+   For a new solution the user named, run `uip solution init <SolutionName> --output json`, then run `init` from inside `<SolutionName>/`.
+   For a new solution with no name given, run `init` from the working directory when nothing above it holds a `.uipx`, so it scaffolds `<Name>Solution/`; otherwise pass `--skip-solution-registration` and create the solution as [Operate](references/operate.md#studio-web-upload) says.
+   When the user also named where the `.bpmn` goes, keep that path and use the table below; `init --path` registers the project only in a solution above that path.
+   Upload without confirming only to a solution this run created; adopting an existing one keeps the confirmation [Operate](references/operate.md#studio-web-upload) requires.
 
    Then scaffold the project with `uip maestro bpmn init <Name> --output json`, and take the project directory from `Data.Path`.
    Below, `<Project>` means that directory.
