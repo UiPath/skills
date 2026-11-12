@@ -97,7 +97,7 @@ uip or skill-bundles publish <BUNDLE> --folder-path <FOLDER_PATH> --input ./skil
 - **`--base-version <BASE_VERSION>`** sets the base of a directory without a marker. Use it only when the user names the base explicitly; every non-hidden file of version `<BASE_VERSION>` the directory lacks is deleted. In a workspace it must equal the marker's version — to publish against another version, download that version into a fresh workspace.
 - **Read `WorkspaceUpdated` after a publish.** `true`: the workspace's marker now records the new version, and it is ready for the next edit. `false`: the version was published, but the server's tree differs from your copy (someone else's disjoint edit landed with it), the marker could not be written, or the directory was never a workspace (a plain directory never gets one) — follow `NextStep` and `download` a fresh workspace before editing again.
 - **Hidden files are left out on both sides by default.** A dot-prefixed file in the directory is not published, a dot-prefixed base file the directory lacks is kept rather than deleted, and `status` reports neither. To add, edit or delete hidden content on purpose, pass `--include-hidden` to both `status` and `publish`. `.okf/`, `.git/` and `_refs/` are never published.
-- **`create --input` creates the record, then publishes v1** from a plain directory. A directory that is already a workspace, or holds no files, is refused before the record is created. When the publish half fails, the failure says `Bundle '<KEY>' was created, but its initial publication was not confirmed.` and carries `Data.Key`, `Data.RecordCreated: true` and `Data.PublicationConfirmed: false` — the CLI got no confirmed commit, which does not prove the bundle empty. Run `versions` on `Data.Key` in the same folder (and tenant) first: v1 listed → done; none → `publish` that key with the same `--input`. Never repeat `create` (the name is now taken, 409) and never delete the record to retry.
+- **`create --input` creates the record, then publishes v1** from a plain directory. A directory that is already a workspace, or holds no files, is refused before the record is created. When the publish half fails, the failure says `Bundle '<KEY>' was created, but its initial publication was not confirmed.` and carries `Data.Key`, `Data.RecordCreated: true` and `Data.PublicationConfirmed: false` — the CLI got no confirmed commit, which does not prove the bundle empty. A failure with `Data.RecordCreated: true` is this case whatever its HTTP status, a 409 included. Run `versions` on `Data.Key` in the same folder (and tenant) first: v1 listed → done; 404 `Bundle '<KEY>' has no content yet.` (or a successful empty list) → `publish` that key with the same `--input`; any other `versions` failure → stop and report it (Step 0) — it does not show the bundle is empty. Never repeat `create` (the name is now taken, 409) and never delete the record to retry.
 
 `Objects` is how many distinct objects the change set named, `Inlined` how many travelled in the commit, `Uploaded` how many needed their own request (files past the 16 MiB inline limit). A non-zero `Uploaded` is a fact about size, not a problem.
 
@@ -116,7 +116,7 @@ A tag names one version; every read accepts it in place of a number. Names: up t
 
 | Answer | Meaning | Do |
 |---|---|---|
-| 409 on `create` | Name already used in this folder | Pick another name; give a generated bundle a distinguishing suffix |
+| 409 on `create` without `Data.RecordCreated` | Name already used in this folder; nothing was created | Pick another name; give a generated bundle a distinguishing suffix |
 | `This bundle already has content.` | Plain directory, bundle has versions | Download a workspace and publish from it |
 | 409 on later `publish` | A file you touched changed after your base | Download `latest`, re-apply, publish again (Rule 4) |
 | 409 on `tags set` / `tags delete` | Tag is immutable | Stop and report |
@@ -124,7 +124,7 @@ A tag names one version; every read accepts it in place of a number. Names: up t
 | `The workspace belongs to another bundle.` | Marker names a different bundle | Download this bundle into its own directory |
 | `--base-version must match this workspace's base.` | Workspace marker disagrees with `--base-version` | Drop the flag, or download that version into a fresh workspace |
 | `The source is already a workspace.` | `create --input` on a downloaded workspace | Copy the content into a plain directory first |
-| `RecordCreated: true`, `PublicationConfirmed: false` | `create --input` made the record; its publish was not confirmed | `versions` on `Data.Key` in the same folder: v1 → done; none → `publish` that key |
+| `Data.RecordCreated: true`, `PublicationConfirmed: false` (any status, 409 included) | `create --input` made the record; its publish was not confirmed | `versions` on `Data.Key` in the same folder: v1 → done; 404 `has no content yet.` or an empty list → `publish` that key; any other failure → Step 0 |
 | 404 `BundleDto does not exist.` | Content hidden from you, or a wrong key or folder | Step 0: run `get` and branch on its answer |
 | `invalid_argument` before any request | Bad version selector, path, or missing folder | Fix the argument; retrying unchanged will not help |
 
