@@ -107,6 +107,10 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    No `.bpmn` other than the target goes in the workspace: no intermediate copy, probe or second scaffold.
    When the project sits in a solution this run did not scaffold, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
+9. **End every build with the final report.**
+   When the process validates, upload it to Studio Web unless the request forbids upload or the project has no solution, and end the turn with the reply in **[`references/final-report-template.md`](references/final-report-template.md)**.
+   This applies to a plain request to build or edit a process, which never stops at a gate (`(auto mode)`), as much as to *Build it* after a [draft gate](#draft-first) (`(draft mode)`).
+   Do not ask before uploading when this run's `init` scaffolded the solution; confirm first when it did not, as that file says.
 
 ## Draft first
 

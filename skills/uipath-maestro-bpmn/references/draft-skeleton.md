@@ -168,42 +168,8 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.
-  End the turn with the [final report](#the-final-report-after-build-it).
+  When it validates, end the turn with the [final report](final-report-template.md): it uploads the process again, and its first line says `(draft mode)`, because this run stopped at a gate.
 - **Keep it**: stop, and report the file as an outline, not a working process.
 
 Only *Build it* authorizes the build.
 Until then the skeleton is an outline, and calling it a finished process misreports it.
-
-## The final report after Build it
-
-<!--skill-flavor:final-upload:start-->
-When the built process validates, run the [pre-flight](operate.md#pre-flight-before-any-cloud-action), which a built process needs and a skeleton did not, and upload it again, as step 4 did: `uip solution upload <SolutionDir> --output json` returns the `Data.DesignerUrl`.
-Skip the upload when the request forbids it or the project has no solution.
-The *Build it* answer does not authorize uploading a process that is not ready: when a connector's enrichment or a binding is still unresolved, do not upload ([Operate](operate.md#anti-patterns)).
-<!--skill-flavor:final-upload:end-->
-Then reply in this shape, dropping lines that do not apply:
-
-```text
-<!--skill-flavor:final-first-line:start-->
-<Name>: built, validated<, uploaded> (draft mode). <One sentence if you kept the user's Studio Web edits.>
-<!--skill-flavor:final-first-line:end-->
-<!--skill-flavor:final-path-line:start-->
-<the Studio Web link (Data.DesignerUrl) on its own line when it uploaded, else the local <Project>/<Name>.bpmn path>
-<!--skill-flavor:final-path-line:end-->
-
-- <what changed, one line each, at most 5 lines in all>
-
-Needs: <...>
-Assumed: <...>  Unverified: <...>
-```
-
-The first line names the mode: the run stopped at a draft gate, so it says `(draft mode)`, never `(auto mode)`.
-When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (draft mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
-Drop `Needs:` when nothing is missing.
-
-Write every line in the user's words: say what each step now does.
-No element type ids (`Orchestrator.StartAgentJob`), connector keys, object or operation names, payload, binding or placeholder terms, and no file names other than the path line.
-
-This reply is your whole final message, and its first characters are the process name: no status sentence or introduction before the `<Name>:` line.
-Send nothing beyond these lines: no extra sections, headings, tables, numbered lists, questions or suggested next steps.
-Write at most five change lines; when there are more, merge related steps, and fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
