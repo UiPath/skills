@@ -66,10 +66,10 @@ The bundle is positional and takes its **name or its key** (GUID): `uip or skill
 | What I changed since download | `uip or skill-bundles status [--input <dir>]` |
 | What a workspace needs to match a version | `uip or skill-bundles sync <bundle> --folder-path <p> [--input <dir>] [--version <v>]` |
 | List tags | `uip or skill-bundles tags list <bundle> --folder-path <p>` |
-| Create or move a tag | `uip or skill-bundles tags set <bundle> --folder-path <p> --tag <name> --version <n> [--immutable]` |
-| Delete a mutable tag | `uip or skill-bundles tags delete <bundle> --folder-path <p> --tag <name> --yes` |
+| Create or move a tag | `uip or skill-bundles tags set <tag> --bundle <bundle> --folder-path <p> --version <n> [--immutable]` |
+| Delete a mutable tag | `uip or skill-bundles tags delete <tag> --bundle <bundle> --folder-path <p> --yes` |
 
-`<v>` is a version number, a tag, a `sha256:` tree digest, or `latest` (the default). `tags set --version` takes a number only. Add `--output json` when you parse the result; it is separate from `--destination`, which is where a command writes files. Skill bundles are not shared between folders from the CLI — there is no `share` command.
+`<v>` is a version number, a tag, a `sha256:` tree digest, or `latest` (the default). On `tags set` and `tags delete` the tag is positional and the bundle is `--bundle`; `tags set --version` takes a number only. Add `--output json` when you parse the result; it is separate from `--destination`, which is where a command writes files. Skill bundles are not shared between folders from the CLI — there is no `share` command.
 
 ## Reading a bundle
 
@@ -90,12 +90,12 @@ uip or skill-bundles status --input ./skills            # offline: every path yo
 uip or skill-bundles publish <bundle> --folder-path <p> --input ./skills -m "<what changed>"
 ```
 
-- **The base comes from the marker.** In a downloaded workspace, `publish` diffs against the marker's version and sends only what changed, with every base file missing from the directory as a deletion (`Deleted` in the result counts them). A directory without a marker is accepted only for the first version: on a bundle with content it is refused with `This bundle already has content.` — download a workspace instead.
+- **The base comes from the marker.** In a downloaded workspace, `publish` diffs against the marker's version and sends only what changed, with every base file missing from the directory as a deletion (`DeletedPaths` in the result lists them; check it against what you meant to remove). A directory without a marker is accepted only for the first version: on a bundle with content it is refused with `This bundle already has content.` — download a workspace instead.
 - **Run `status` first and account for every path.** `Kind: Added`, `Modified` or `Deleted` per path, computed offline. A path you did not touch — command output, an archive, an editor backup — would be published. Remove it from the workspace or tell the user; never publish a path you cannot explain. Write command output outside the workspace.
-- **`--base-version <n>`** overrides the marker. Use it only when the user names the base explicitly; with a directory that is not a full copy of version `<n>`, every file it lacks is deleted.
-- **Read `WorkspaceUpdated` after a publish.** `true`: the marker now records the new version, and the workspace is ready for the next edit. `false`: the version was published, but the server's tree differs from your copy (someone else's disjoint edit landed with it) or the marker could not be written — follow `NextStep` and `download` a fresh workspace before editing again.
+- **`--base-version <n>`** sets the base of a directory without a marker. Use it only when the user names the base explicitly; every file of version `<n>` the directory lacks is deleted. In a workspace it must equal the marker's version — to publish against another version, download that version into a fresh workspace.
+- **Read `WorkspaceUpdated` after a publish.** `true`: the workspace's marker now records the new version, and it is ready for the next edit. `false`: the version was published, but the server's tree differs from your copy (someone else's disjoint edit landed with it), the marker could not be written, or the directory was never a workspace (a plain directory never gets one) — follow `NextStep` and `download` a fresh workspace before editing again.
 - **What the walk skips.** Dot-prefixed files unless `--include-hidden`; `.okf/`, `.git/` and `_refs/` always.
-- **`create --input` creates the record, then publishes v1.** If the publish half fails, the empty bundle remains: finish with `publish` on that bundle, not another `create` (the name is taken, 409).
+- **`create --input` creates the record, then publishes v1** from a plain directory. A directory that is already a workspace, or holds no files, is refused before the record is created. If the publish half fails, the empty bundle remains: finish with `publish` on that bundle, not another `create` (the name is taken, 409).
 
 `Objects` is how many distinct objects the change set named, `Inlined` how many travelled in the commit, `Uploaded` how many needed their own request (files past the 16 MiB inline limit). A non-zero `Uploaded` is a fact about size, not a problem.
 
@@ -105,7 +105,7 @@ A tag names one version; every read accepts it in place of a number. Names: up t
 
 1. `tags list` to see what exists and whether each is `Immutable`.
 2. `versions` to confirm the version the user means.
-3. `tags set --tag <name> --version <n>` creates or moves it; either needs skill-bundle content edit permission.
+3. `tags set <tag> --bundle <bundle> --version <n>` creates or moves it; either needs skill-bundle content edit permission.
 4. A 409 on `tags set` or `tags delete` means the tag is immutable. Stop and report it; do not delete the tag or pick another name without being asked.
 
 ## Failures worth recognizing
@@ -120,6 +120,8 @@ A tag names one version; every read accepts it in place of a number. Names: up t
 | 409 on `tags set` / `tags delete` | Tag is immutable | Stop and report |
 | `There are no content changes to publish.` | Directory equals the base | Nothing to do; say so |
 | `The workspace belongs to another bundle.` | Marker names a different bundle | Download this bundle into its own directory |
+| `--base-version must match this workspace's base.` | Workspace marker disagrees with `--base-version` | Drop the flag, or download that version into a fresh workspace |
+| `The source is already a workspace.` | `create --input` on a downloaded workspace | Copy the content into a plain directory first |
 | 404 `BundleDto does not exist.` | Content hidden from you, or a wrong key or folder | Step 0: run `get` and branch on its answer |
 | `invalid_argument` before any request | Bad version selector, path, or missing folder | Fix the argument; retrying unchanged will not help |
 

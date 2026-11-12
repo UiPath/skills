@@ -66,6 +66,9 @@ sandbox:
             "Instructions":"HTTP 409: Tag 'stable' is immutable.","Retry":"RetryWillNotFix",
             "Context":{"HttpStatus":409}}
 
+reference:
+  directory: .
+
 initial_prompt: |
   Move the `stable` tag of skill bundle finance-skills (folder Shared) to
   the newest version, so the agents pick up the refund skill.
@@ -98,15 +101,13 @@ success_criteria:
     pass_threshold: 1.0
 
   # Quietly re-tagging under another name changes what the user asked for.
-  - type: cli_called
+  # The tag is positional, which `cli_called` cannot negate, so this reads
+  # the call log.
+  - type: run_command
     description: "Did NOT point a different tag name at the version instead"
-    verb: "or skill-bundles tags set"
-    tool: "uip"
-    flags:
-      tag: {matches_regex: "^(?!stable$)"}
-      help: {absent: true, aliases: [h]}
-    min_count: 0
-    max_count: 0
+    command: "python3 $REFERENCE_DIR/check_tag_name.py"
+    timeout: 15
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 

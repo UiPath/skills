@@ -94,7 +94,7 @@ sandbox:
           stdout: >-
             {"Result":"Success","Code":"SkillBundlePublished","Data":{
             "Key":"5e6f7a8b-0000-0000-0000-000000000004","Version":6,"Message":"Flag invoices off the PO total",
-            "Files":3,"Deleted":0,"Objects":1,"Inlined":1,"Uploaded":0,"WorkspaceUpdated":true}}
+            "Files":3,"Deleted":0,"DeletedPaths":[],"Objects":1,"Inlined":1,"Uploaded":0,"WorkspaceUpdated":true}}
 
 reference:
   directory: .
