@@ -211,19 +211,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
-*A component of a process genome inherits the Source framework, Source export, Requested change, Inventory, Not covered, Unused and Related resources rows from the process genome, and its Today view; a standalone component genome carries them itself.*
-
-### Today
-
-*Standalone component genome only.* What the rebuild replaces, as the source runs (extracted genome guide § Source Map, the Today view).
-
-```mermaid
-flowchart LR
-  S1["{source process}"] --> SQ[("{source store}")]
-  S1 --> L1["{source library or object}<br/>{n} actions"]
-```
-
-- `{source unit}` ({n} actions) → {this component / folded into its steps / the activities of its callers / not rebuilt: the {row} row} — {why}
+*A component of a process genome inherits the Source framework, Source export, Requested change, Inventory, Not covered, Unused and Related resources rows from the process genome; a standalone component genome carries them itself.*
 
 ### Steps
 
