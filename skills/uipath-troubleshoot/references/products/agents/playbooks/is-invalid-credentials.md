@@ -105,7 +105,7 @@ What to look for:
 
 **If `Element token` invalid — recreate the connection:**
 
-  Element tokens cannot be refreshed in place. Delete the stale connection and create a new one:
+  Element tokens cannot be refreshed in place. Delete the stale connection and create a new one. Confirm the target connection with the user before deleting it, unless the user already authorized that exact delete:
 
   ```bash
   uip is connections delete <connection-id> --output json
@@ -116,7 +116,7 @@ What to look for:
 
 **If the user account was deactivated or connection targets the wrong environment:**
 
-  Delete the stale connection and create a new one in the correct context:
+  Delete the stale connection and create a new one in the correct context. Confirm the target connection with the user before deleting it, unless the user already authorized that exact delete:
 
   ```bash
   uip is connections delete <connection-id> --output json
