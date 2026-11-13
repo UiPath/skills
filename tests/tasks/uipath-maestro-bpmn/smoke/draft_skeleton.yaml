@@ -166,11 +166,12 @@ success_criteria:
   # lookup). It is read-only, so the "don't upload or run anything" request
   # does not forbid it, and a lookup that fails offline still counts: the
   # box is then `not checked`. `--help` looks nothing up, so it does not
-  # count.
+  # count, even on a continued line. `uip` must start a shell command, so
+  # an `echo` of the lookup does not count either.
   - type: command_executed
     description: "Agent looked up the boxes' resources before the gate"
     tool_name: "Bash"
-    command_pattern: '(?:\buip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    command_pattern: '(?:^|[;&|(`\n])\s*(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b(?!(?:\\\n|(?<= )\n|[^\n;&|])*?\s(?:--help|-h)\b)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

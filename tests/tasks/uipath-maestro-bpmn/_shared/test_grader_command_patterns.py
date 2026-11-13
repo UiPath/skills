@@ -487,6 +487,9 @@ def test_draft_gate_guard_allows_the_preflight(task: str, command: str) -> None:
         'uip solution resources list --kind App --search "approval" --output json',
         "uip is connections list --all-folders --output-filter "
         "\"[?contains(ConnectorName,'Slack')].{Connector:ConnectorName}\" --output json",
+        'cd InvoiceIntakeSketchSolution && uip solution resources list --kind Process --search "invoice" --output json',
+        'uip solution resources list \\\n  --kind Process --search "invoice" --output json',
+        'OUT=$(uip solution resources list --kind Process --search "invoice" --output json)',
     ],
 )
 def test_draft_resource_lookup_counts(command: str) -> None:
@@ -501,6 +504,9 @@ def test_draft_resource_lookup_counts(command: str) -> None:
         "uip solution upload InvoiceIntakeSketchSolution --output json",
         "uip solution resources list --help",
         "uip is connections list -h",
+        'echo "uip solution resources list --kind Process --search invoice"',
+        "uip solution resources list \\\n  --help",
+        "uip is connections list \\\n  --all-folders -h",
     ],
 )
 def test_draft_resource_lookup_ignores_other_calls(command: str) -> None:
