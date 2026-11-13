@@ -96,3 +96,5 @@ project GUID), `AGENTIC_LOCAL_HAS_FOLDER` (`folderPath` set as well; drop it,
 or drop `location` to call the published copy). `AGENTIC_NO_FOLDER` applies to
 published steps only. If `check` reports `AGENTIC_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
 add `projectId` from `resource.projectKey`.
+Still set `projectId` on a step you author: Studio Web's Run node reads it
+to deploy the sibling first.

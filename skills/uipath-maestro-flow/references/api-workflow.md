@@ -70,6 +70,8 @@ and `projectId` instead of `folderPath`:
   binding's folder is `''`, filled in at deploy.
   If `check` reports `APIWF_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
   add `projectId` from `resource.projectKey`.
+  Still set `projectId` on a step you author: Studio Web's Run node reads it
+  to deploy the sibling first.
 - A decompiled in-solution step (folder `''`) comes back as
   `location: 'in-solution'`. Keep it that way when editing; never add a
   `folderPath`.

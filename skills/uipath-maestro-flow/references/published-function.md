@@ -103,6 +103,8 @@ is not published yet, so it has no folder. Write it with
   binding's folder is `''`, filled in at deploy.
   If `check` reports `FUNCTION_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
   add `projectId` from `resource.projectKey`.
+  Still set `projectId` on a step you author: Studio Web's Run node reads it
+  to deploy the sibling first.
 
 Needs `@uipath/maestro-builder-sdk` 6.59.0 or later; an older SDK
 has no `location` on `publishedFunction()` and refuses the step as having no
