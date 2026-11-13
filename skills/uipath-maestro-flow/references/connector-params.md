@@ -52,13 +52,14 @@ source. The loop is:
    `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
    Three codes say the operation itself does not resolve, so no prepare
    fixes them; edit the source and re-run `check`:
-   - `CONNECTOR_NOT_IN_LIBRARY` — neither the library nor the tenant has such an operation (or connector, or version).
+   - `CONNECTOR_NOT_IN_LIBRARY` — no library layer has such an operation (or connector, or version), and, with no library pulled, neither does the tenant.
      The message lists the connector's operations and a `Closest:` match.
      The operation is the node type's slug, not the tenant's `objectName` (`send-email`, not `send-mail-v2`).
 <!--skill-flavor:not-in-library-pull:start-->
-     `check` and `compile` have already asked the tenant through `uip` for an operation no library holds, and the message's last sentence says what it answered.
+     With no library pulled, `check` and `compile` have already asked the tenant through `uip`, and the message's last sentence says what it answered.
+     With a pulled library they do not ask: if the operation is newer than the library, refresh it with `uip maestro registry pull`.
      "The tenant was asked … and does not serve it" means the name is wrong or the connector is not available on this tenant: fix the name, or use `http()`.
-     Otherwise the sentence gives `uip`'s own reason, and the fix is that reason's: `uip login` only when it says `uip` is not logged in or the session expired; a missing `uip`, a failed catalog refresh or an unreadable answer is the environment's to fix, and re-running `check` after it retries.
+     Otherwise the sentence gives `uip`'s own reason: run `uip login` only when it says `uip` is not logged in or the session expired; for anything else (a missing `uip`, a failed catalog refresh, an unreadable answer), report the reason to the user and stop.
 <!--skill-flavor:not-in-library-pull:end-->
    - `CONNECTOR_OBJECT_REQUIRED` — a generic operation covers many objects;
      add `{ object: '<name>' }`. The message lists the objects.
@@ -96,7 +97,6 @@ plausible Flow compiles but loses the intended runtime or Studio Web contract:
 ## Discovering operations and fields
 
 <!--skill-flavor:library-discovery:start-->
-The connector library is an optimization, not a requirement.
 `uip maestro registry pull` downloads the published library into a shared cache (`~/.uipath/cache/flow-sdk/library/current/`), and `compile`, `check` and `registry search` resolve it from there with no flag.
 The project gets only `.flow-sdk/connectors/`, holding a descriptor per connector it references.
 

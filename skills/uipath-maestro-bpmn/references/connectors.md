@@ -47,7 +47,7 @@ The **action** is `nodeType`'s last segment — `create-issue` — not the label
 `"total": 0` is a real miss, and means either `http()` or a connector the catalog searched does not carry (see §4).
 <!--skill-flavor:library-pull:start-->
 With no library pulled the search answers from the tenant's live catalog through `uip` (`"source": "tenant"`), and its rows carry no `markdownPath`: read the page with `uip maestro registry describe <nodeType>`, which fetches it.
-A failed search gives `uip`'s reason: log in when that is the problem, not pull.
+A failed search gives `uip`'s reason; fix what it names: log in again for a session problem, or run the upgrade it names for an old SDK.
 <!--skill-flavor:library-pull:end-->
 
 ## 2. Write the node
@@ -123,14 +123,14 @@ These codes are mistakes in your own source, and `prepare` does not close them; 
 
 ## 4. When the connector is not in the library
 
-`check` and `compile` fetch an operation no library holds through `uip` themselves, from the Flow node catalog, so a connector the tenant serves there needs nothing more.
+With no library pulled, `check` and `compile` fetch an operation through `uip` themselves, from the Flow node catalog, so a connector the tenant serves there needs nothing more; with a pulled library they refuse one it lacks, and `uip maestro registry pull` refreshes it.
 What they cannot fetch they refuse, and the refusal's last sentence says why:
 
 ```
 connector not in library: uipath.connector.uipath-uipath-testmanager.create-test-set. … The tenant was asked through uip (`uip maestro flow registry get`) and does not serve it.
 ```
 
-Any other note gives `uip`'s own reason; the fix is that reason's (`uip login` only when the session is the problem), then re-run `check`.
+Any other note gives `uip`'s own reason; fix what it names (log in again only when the session is the problem), then re-run `check`.
 "does not serve it" is either a misspelt action or a connector the Flow node catalog lacks, which `prepare` below covers.
 
 **`uip maestro registry prepare <key> --action <name>` resolves it through the live connection and writes an overlay the compiler reads** — one call per operation, the action named the way the connector's activity catalog spells it in kebab case (`uip is activities list <key> --output json` lists the names: `CreateTestSet` → `create-test-set`, `GetAssignedTestCasesForTestSet` → `get-assigned-test-cases-for-test-set`).
