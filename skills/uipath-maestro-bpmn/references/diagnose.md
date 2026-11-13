@@ -121,10 +121,11 @@ For a binding, entry-point or package fault, correlate the four generated files
 with the deployed BPMN: `entry-points.json` names the BPMN file and the start
 event (`/content/<Name>.bpmn#<start-id>`), `bindings_v2.json` holds the
 resources the executable and connector elements need, `operate.json` names the
-main file, `package-descriptor.json` lists everything under `content/`. These
-are derived: regenerate them with `uip maestro bpmn refresh <project-path>
---output json` (`Data.WrittenFiles` names what was stale) rather than editing
-them, and fix the source when the source is wrong.
+main file and start event, and the `files` map in `package-descriptor.json`
+names each packaged file. These are derived: regenerate them with
+`uip maestro bpmn refresh <project-path> --output json` (`Data.WrittenFiles`
+names what was stale) rather than editing them, and fix the source when the
+source is wrong.
 
 ## Step 7 — traces, last
 

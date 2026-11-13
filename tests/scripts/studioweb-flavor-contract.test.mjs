@@ -338,8 +338,11 @@ test("the studioweb BPMN skill says evals are not available, in the routing tabl
   assert.ok(evaluate.includes("**Not available in Studio Web.**"));
 });
 
-// `debug-instance` is a terminal-CLI alias; the browser bundle registers only
-// `debug-instances`. Operate taught the plural while diagnose taught the alias.
+// `debug-instance` is a terminal-CLI alias of `debug-instances`. The browser
+// snapshot (assets/uip-browser-commands-snapshot.json) lists only the plural,
+// and the studioweb operate page and SKILL.md teach it, so diagnose must too.
+// The singular `instance`/`job`/`incident` reads are the same open question,
+// tracked by the `maestro bpmn` ceiling in studioweb-browser-commands.json.
 test("the studioweb BPMN skill reads a debug run with `debug-instances`, never the alias", (t) => {
   const root = join(buildStudioweb(t), "uipath-maestro-bpmn");
   for (const rel of ["SKILL.md", "references/operate.md", "references/diagnose.md"]) {

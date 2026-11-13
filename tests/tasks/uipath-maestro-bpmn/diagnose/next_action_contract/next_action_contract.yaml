@@ -23,7 +23,7 @@ sandbox:
     - type: template_dir
       path: ../../_shared/mock_template
     - type: template_dir
-      path: fixtures
+      path: ../../operate-diagnose/fixtures
   mock_path_dirs:
     - mocks
 
@@ -58,14 +58,17 @@ success_criteria:
     pass_threshold: 1.0
 
   # The rule under test. The call log (above) counts a looped read like a
-  # literal one, so this has to grade the transcript. Matches a `for`/`while`
+  # literal one, so this has to grade the transcript. The exclude drops the
+  # Bash call that writes diagnosis.md: its heredoc holds prose ("while") and
+  # the named re-check or a deferred retry line, which are not commands run. Matches a `for`/`while`
   # loop whose body runs `uip maestro bpmn`, a shell function wrapping it, and a
   # `uip maestro bpmn` command whose verb, id or folder key is a `$VAR` (text
   # after `>` or `|` is ignored, so `> "$TMP/out.json"` is fine).
   - type: command_executed
     description: "Every diagnostic read is a literal command: no loop, function or variable in its place"
     tool_name: "Bash"
-    command_pattern: '(?s)\b(?:for\s+\w+\s+in|while)\s(?:(?!\bdone\b).)*?\buip\s+maestro\s+bpmn\b|\b\w+\s*\(\)\s*\{[^}]*\buip\s+maestro\s+bpmn\b|\buip\s+maestro\s+bpmn\b[^\n>|;&]*?\$\{?\w'
+    command_pattern: '(?s)\b(?:for\s+\w+\s+in|while)\s(?:(?!\bdone\b).)*?(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\b\w+\s*\(\)\s*\{[^}]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\balias\s+\w+=[^\n]*\buip\s+maestro\b|\bxargs\b[^\n]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b[^\n>|;&]*?\$[{(]?[\w(]'
+    exclude_pattern: '(?:>{1,2}|\btee\s+(?:-a\s+)?)\s*[\x22'']?(?:\./)?diagnosis\.md\b'
     min_count: 0
     max_count: 0
     weight: 2.0
@@ -74,7 +77,8 @@ success_criteria:
   - type: command_executed
     description: "Agent ran no lifecycle, debug, run or ship command"
     tool_name: "Bash"
-    command_pattern: '\buip\s+maestro\s+bpmn\s+(?:instance\s+(?:retry|cancel|pause|resume|migrate|goto)|debug\s|process\s+(?:run|publish))|\buip\s+solution\s+(?:upload|publish|deploy)'
+    command_pattern: '(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:instances?\s+(?:retry|cancel|pause|resume|migrate|goto|variables-set|elements\s+cancel)\b|debug-instances?\s+(?:cancel|continue|variables-set|breakpoints|create)\b|debug\s|process(?:es)?\s+(?:run|publish)\b)|\buip\s+solution\s+(?:upload|publish|deploy)\b'
+    exclude_pattern: '(?:>{1,2}|\btee\s+(?:-a\s+)?)\s*[\x22'']?(?:\./)?diagnosis\.md\b'
     min_count: 0
     max_count: 0
     weight: 2.0
@@ -118,7 +122,7 @@ success_criteria:
     description: "Next action names a literal read-only re-check command"
     path: "diagnosis.md"
     patterns:
-      - pattern: 'uip\s+maestro\s+bpmn\s+(?:instance\s+(?:incidents|get|variables|cursors|element-executions)\s+inst-triage-001|job\s+status\s+job-triage-001)\b[^\n]*(?:-f|--folder-key)[ =]folder-public'
+      - pattern: 'uip\s+maestro\s+bpmn\s+(?:instances?\s+(?:incidents|get|variables|cursors|element-executions|asset)|jobs?\s+status)\b(?=[^\n]*\b(?:inst|job)-triage-001\b)(?=[^\n]*(?:-f|--folder-key)[ =][\x22'']?folder-public\b)'
     weight: 2.0
     pass_threshold: 1.0
 

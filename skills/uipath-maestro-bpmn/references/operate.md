@@ -44,6 +44,13 @@ The one exception is the Studio Web upload of a project this run created: a requ
    that were stale, which is the drift report. Never hand-edit those files and
    never use the deprecated `update-metadata`: it does not materialize `Intsvc.*`
    connection bindings, so a package it wrote validates and faults at run time.
+
+   When the process calls other Orchestrator processes, queues, agents or
+   connections, `bindings_v2.json` must be the versioned object
+   `{ "version": "2.0", "resources": [ … ] }` with one entry per dependency. An
+   empty `resources` array is right only for a process with no dependencies;
+   with dependencies it means the binding never reached the BPMN, so fix the
+   `.binding()` in the source and rebuild rather than writing the entry by hand.
 <!--skill-flavor:preflight-host:start-->
 4. Refresh the solution's declared resources when the project sits in the
    solution `bpmn init` scaffolded (it does unless `--skip-solution-registration`
@@ -53,14 +60,8 @@ The one exception is the Studio Web upload of a project this run created: a requ
    uip solution resources refresh --solution-folder <SolutionDir> --output json
    ```
 
-   When the process calls other Orchestrator processes, queues, agents or
-   connections, confirm the refreshed `bindings_v2.json` is the versioned object
-   `{ "version": "2.0", "resources": [ … ] }` with one entry per dependency, and
-   that `resources refresh` imported each one. An empty `resources` array is
-   right only for a process with no dependencies; with dependencies it means the
-   binding never reached the BPMN, so fix the `.binding()` in the source and
-   rebuild rather than writing the entry by hand. When an expected dependency was
-   not imported, say so in the reply.
+   Confirm `resources refresh` imported each dependency `bindings_v2.json`
+   lists; when one was not imported, say so in the reply.
 
 5. Confirm login:
 
@@ -168,9 +169,9 @@ the four generated files before changing anything:
 | File | Check |
 | --- | --- |
 | `entry-points.json` | non-empty; each `filePath` is `/content/<Name>.bpmn#<start-id>` for a root start event in the compiled BPMN |
-| `bindings_v2.json` | one resource per `=bindings.<id>` the BPMN reads, including each connector's `Connection` |
-| `operate.json` | `main` names the compiled `.bpmn` |
-| `package-descriptor.json` | lists the `.bpmn` and the generated JSON under `content/` |
+| `bindings_v2.json` | one resource per dependency, including each connector's `Connection`; a connection's folder companion and an entity's two bindings are one resource, not two |
+| `operate.json` | `main` is `/content/<Name>.bpmn#<start-id>` for the compiled `.bpmn` |
+| `package-descriptor.json` | its `files` map names the `.bpmn`, `operate.json`, `entry-points.json`, and `bindings.json` → `bindings_v2.json` |
 
 - A file that disagrees with the compiled BPMN is stale: run `refresh` and retry.
 - A file that agrees with a wrong BPMN means the source is wrong: fix the
