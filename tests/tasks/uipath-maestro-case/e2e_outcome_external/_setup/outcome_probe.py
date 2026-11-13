@@ -272,12 +272,16 @@ def _await_instance(since_iso: str) -> dict:
 
 
 def _do_debug(since: str) -> dict:
-    solution_dir = _find_dir("**/*.uipx")
-    project_dir = _find_dir("**/project.uiproj")
-
-    # Studio Web: `resources refresh` is unavailable (no local .uipx).
-    # The agent adds connections with `resources add`; debug works without refresh.
+    # Studio Web: no local .uipx, so glob-based discovery fails.
+    # Branch on host FIRST, then locate artifacts by the right method.
     in_studio_web = os.path.isdir("/solution")
+
+    if in_studio_web:
+        project_dir = _find_dir("/solution/**/project.uiproj")
+        solution_dir = "/solution"
+    else:
+        solution_dir = _find_dir("**/*.uipx")
+        project_dir = _find_dir("**/project.uiproj")
 
     if not in_studio_web:
         # Resource refresh is mandatory: without it the connector resources are

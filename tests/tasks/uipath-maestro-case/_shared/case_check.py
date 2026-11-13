@@ -990,12 +990,16 @@ def start_debug(
     Exits if the debug command fails to launch / does not return parseable
     JSON. A non-Completed ``finalStatus`` is NOT a failure here.
     """
-    project_dir = find_project_dir(project_glob)
-    solution_dir = find_solution_dir(solution_glob)
-
-    # Studio Web: `resources refresh` is not available (no local .uipx).
-    # The agent adds connections with `resources add`; debug works without refresh.
+    # Studio Web: no local .uipx, so glob-based discovery fails.
+    # Branch on host FIRST, then locate artifacts by the right method.
     in_studio_web = os.path.isdir("/solution")
+
+    if in_studio_web:
+        project_dir = find_project_dir("/solution/**/project.uiproj")
+        solution_dir = "/solution"
+    else:
+        project_dir = find_project_dir(project_glob)
+        solution_dir = find_solution_dir(solution_glob)
 
     if not in_studio_web:
         refresh_cmd = [
