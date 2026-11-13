@@ -16,7 +16,10 @@ rewording that keeps the rule passes. When a rule is reworded on purpose,
 update its phrase here in the same PR.
 
 Run from repo root:
-    pytest tests/scripts/test_bpmn_operate_diagnose_contract.py -v
+    pytest tests/tasks/uipath-maestro-bpmn/_shared/test_skill_operate_diagnose_contract.py -v
+
+It lives here, not in tests/scripts/, so the `pytest tests/tasks/uipath-maestro-bpmn/`
+job in test-helpers.yml runs it with no workflow edit.
 """
 
 from __future__ import annotations
@@ -26,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "uipath-maestro-bpmn"
 
 
