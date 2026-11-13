@@ -25,6 +25,8 @@ description: >
   first `bpmn init`, stop and ask which solution to use, and on a named new
   solution run `uip solution init` and `init` inside it. The single-turn
   stop-and-ask half is also graded by smoke/ask_which_solution.yaml.
+  Nothing forbids an upload, so post_run deletes each solution this run
+  uploaded to the eval tenant.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", simulation, studio-web-unsupported, studio-web-unsupported:solution-selection]
 
 agent:
@@ -42,6 +44,9 @@ sandbox:
   template_sources:
     - type: template_dir
       path: fixtures/existing_solutions
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 
 # No initial_prompt — in simulation mode the simulator generates the opening
 # user message from the persona and goal below. A simulated user then answers
@@ -157,3 +162,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120
