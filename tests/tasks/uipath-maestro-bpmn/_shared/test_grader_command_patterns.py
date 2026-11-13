@@ -555,6 +555,11 @@ def test_draft_resource_lookup_counts(command: str) -> None:
             '/bin/bash -lc "echo \'Next; uip solution resources list --kind Process\'"',
             marks=pytest.mark.xfail(strict=True, reason="wrapper-quoted data is not seen"),
         ),
+        # Known limit: a heredoc body is data, but the exclusion reads only quotes.
+        pytest.param(
+            "cat <<EOF\nx; uip solution resources list\nEOF",
+            marks=pytest.mark.xfail(strict=True, reason="heredoc bodies are not seen"),
+        ),
     ],
 )
 def test_draft_resource_lookup_ignores_other_calls(command: str) -> None:
