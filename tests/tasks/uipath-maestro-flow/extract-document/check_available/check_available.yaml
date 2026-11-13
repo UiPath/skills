@@ -5,27 +5,27 @@ description: >
   before it creates the node, then adds `uipath.ixp.extract-document-builder`
   and leaves a flow that validates.
 
-  The verdict is faked: a `uip` shim on PATH (`_setup/extraction_check_shim`)
+  The verdict is faked: the `uip` mock (`_setup/extraction_check_mock`)
   answers `extraction check` with the status pre_run writes and passes every
-  other call to the real CLI, logging each call to `.uip-cmdlog`. That keeps
-  the grade off the CI tenant's configuration and off the CLI release that
-  ships the command. The node's file input, edges and taxonomy are graded by
-  explicit_node and the taxonomy tasks.
+  other call to the real CLI, logging each call to `mocks/calls.log`. That
+  keeps the grade off the CI tenant's configuration and off the CLI release
+  that ships the command. The node's file input, edges and taxonomy are graded
+  by explicit_node and the taxonomy tasks.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
 
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../_setup/extraction_check_shim
+      path: ../../_setup/extraction_check_mock
   mock_path_dirs:
-    - .uip-fake
+    - mocks
 
 reference:
   directory: ../..
 
 pre_run:
-  - command: "printf Available > .uip-fake/extraction-status"
+  - command: "printf Available > mocks/extraction-status"
     timeout: 10
 
 initial_prompt: |
@@ -52,10 +52,11 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
 
-  - type: run_command
-    description: "uip maestro flow extraction check ran before the Extract document node was created (.uip-cmdlog)"
-    command: python3 $REFERENCE_DIR/_shared/check_extraction_check.py before-node
-    expected_exit_code: 0
+  - type: file_matches_regex
+    description: "uip maestro flow extraction check ran before the Extract document node was created"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?ms)^uip maestro flow extraction check\b.*^uip maestro flow nodes (?:create|add)\b[^\n]*uipath\.ixp\.extract-document-builder
     weight: 3.0
     pass_threshold: 1.0
 

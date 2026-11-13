@@ -6,8 +6,8 @@ description: >
   `uipath.ixp.extract-document-builder` node, and looks for a published IXP
   model before it gives up.
 
-  The verdict is faked by the `uip` shim (`_setup/extraction_check_shim`),
-  which logs every call to `.uip-cmdlog`. The registry search goes to the real
+  The verdict is faked by the `uip` mock (`_setup/extraction_check_mock`),
+  which logs every call to `mocks/calls.log`. The registry search goes to the real
   CLI, so whether a fitting published model turns up depends on the tenant:
   the task passes either way, as long as the flow holds no Extract document
   node. Passes whether or not the run produces a `.flow`.
@@ -17,15 +17,15 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, node:extract-
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../_setup/extraction_check_shim
+      path: ../../_setup/extraction_check_mock
   mock_path_dirs:
-    - .uip-fake
+    - mocks
 
 reference:
   directory: ../..
 
 pre_run:
-  - command: "printf FeatureDisabled > .uip-fake/extraction-status"
+  - command: "printf FeatureDisabled > mocks/extraction-status"
     timeout: 10
 
 initial_prompt: |
@@ -45,10 +45,10 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: run_command
-    description: "uip maestro flow extraction check ran (.uip-cmdlog)"
-    command: python3 $REFERENCE_DIR/_shared/check_extraction_check.py ran
-    expected_exit_code: 0
+  - type: file_matches_regex
+    description: "uip maestro flow extraction check ran"
+    path: "mocks/calls.log"
+    pattern: '(?m)^uip maestro flow extraction check\b'
     weight: 2.0
     pass_threshold: 1.0
 
@@ -66,10 +66,10 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Agent looked for a published IXP model before giving up (.uip-cmdlog)"
-    command: python3 $REFERENCE_DIR/_shared/check_extraction_check.py searched-ixp
-    expected_exit_code: 0
+  - type: file_matches_regex
+    description: "Agent looked for a published IXP model before giving up"
+    path: "mocks/calls.log"
+    pattern: '(?m)^uip maestro flow registry (?:search|list)\b[^\n]*ixp'
     weight: 1.0
     pass_threshold: 1.0
 

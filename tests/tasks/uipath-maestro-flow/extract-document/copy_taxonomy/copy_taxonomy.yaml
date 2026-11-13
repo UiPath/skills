@@ -21,17 +21,17 @@ sandbox:
       path: ../_fixtures/BillingDocs
       mount_point: BillingDocs
     - type: template_dir
-      path: ../../_setup/extraction_check_shim
+      path: ../../_setup/extraction_check_mock
   mock_path_dirs:
-    - .uip-fake
+    - mocks
 reference:
   directory: ../..
 
 # The skill runs `uip maestro flow extraction check` before it authors this node.
-# The shim answers it with Available, so the grade does not depend on the
+# The mock answers it with Available, so the grade does not depend on the
 # tenant's configuration or on the CLI release that ships the command.
 pre_run:
-  - command: "printf Available > .uip-fake/extraction-status"
+  - command: "printf Available > mocks/extraction-status"
     timeout: 10
 
 initial_prompt: |
