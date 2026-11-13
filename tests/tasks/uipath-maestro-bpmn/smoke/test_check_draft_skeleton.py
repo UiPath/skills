@@ -104,6 +104,33 @@ class ForkExitTests(unittest.TestCase):
                        "S>F F>A F>B A>G G>J G>Stop B>J J>End")
         skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
 
+    def test_decision_arm_into_a_sibling_branch_stalls(self):
+        # Decompiled source: A → G → J, with G's rejection arm doing .goto('B') into the
+        # sibling branch. Two fork outputs, two join inputs, yet A's input never delivers.
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" />', "S>F F>A F>B A>G G>J G>B B>J J>End")
+        with self.assertRaises(SystemExit) as caught:
+            skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+        self.assertIn("both reach ['B'] before the join", str(caught.exception))
+
+    def test_decision_arm_past_the_join_stalls(self):
+        # G's rejection arm jumps over the join to the box after it.
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" /><bpmn:task id="After" />',
+                       "S>F F>A F>B A>G G>J G>After B>J J>After After>End")
+        with self.assertRaises(SystemExit) as caught:
+            skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+        self.assertIn("runs past the join to ['After', 'End']", str(caught.exception))
+
+    def test_decision_arm_looping_back_on_its_own_branch_passes(self):
+        # A → G → J, with G's retry arm doing .goto('A') on the same branch.
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" />', "S>F F>A F>B A>G G>J G>A B>J J>End")
+        skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+
+    def test_both_branches_sharing_a_terminating_exit_passes(self):
+        # Either branch's failure alerts HR and terminates; the shared path never reaches the join.
+        root = process(FORK + boundary("ErrA", "A") + boundary("ErrB", "B") + '<bpmn:task id="Alert" />'
+                       + end("Stop", "terminate"), FORK_FLOWS + " ErrA>Alert ErrB>Alert Alert>Stop")
+        skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+
     def test_non_interrupting_escalation_to_plain_end_passes(self):
         self.assert_safe(boundary("Late", "A", interrupting=False, kind="timer") + '<bpmn:task id="Esc" />'
                          + end("Escalated"), "Late>Esc Esc>Escalated")
