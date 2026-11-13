@@ -511,6 +511,11 @@ def test_draft_gate_guard_allows_the_preflight(task: str, command: str) -> None:
         'OUT="$(uip solution resources list --kind Process --search invoice --output json)"',
         # An apostrophe in a comment opens no quote.
         "# look up the robot's process\nuip solution resources list --kind Process --search invoice --output json",
+        # An apostrophe inside a word opens no quote, even once the grader strips
+        # the double quotes around it.
+        'echo "Looking up the robot\'s process"; uip solution resources list --kind Process --search invoice --output json',
+        'grep -q "don\'t" f || uip solution resources list --kind Process --search invoice --output json',
+        "cat > notes.md <<'EOF'\nthe robot's job\nEOF\nuip solution resources list --kind Process --search invoice --output json",
         # The codex wrapper's script quote is not data.
         '/bin/bash -lc "cd InvoiceIntakeSketchSolution && uip solution resources list --search invoice --output json"',
     ],
