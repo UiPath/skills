@@ -1,0 +1,12 @@
+{
+  "name": "orders",
+  "description": "Customers, the sales orders they place, and a federated customer directory.",
+  "classes": [
+    { "name": "Customer", "grain": "ONE row per customer." },
+    { "name": "SalesOrder", "grain": "ONE row per order." },
+    { "name": "DirectoryEntry", "grain": "ONE row per customer, read from Customer." }
+  ],
+  "relationships": [
+    "SalesOrder placedBy Customer (SalesOrder.customer = Customer.Id)"
+  ]
+}

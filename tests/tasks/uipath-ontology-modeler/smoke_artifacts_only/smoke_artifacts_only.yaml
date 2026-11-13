@@ -1,0 +1,109 @@
+task_id: skill-ontology-modeler-artifacts-only
+description: >
+  Smoke (Artifacts-only mode): from a confirmed plain-language orders domain,
+  the agent writes the ontology schema, SHACL constraints and YARRRML mapping
+  and checks each with `uip ont artifacts check`, without a solution or
+  entities. Grades the files on disk: every artifact passes the offline check,
+  the mapping carries an xsd range on typed properties, the value list is an
+  `sh:in` with `sh:maxCount 1`, no GUIDs, and no solution or Data Fabric write
+  ran. Needs a CLI that ships `uip ont` (cli#5710); no login.
+tags: [uipath-ontology-modeler, smoke, mode:build, lifecycle:generate]
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  I only want the ontology files for an orders domain, no solution. Name the
+  ontology "orders" and put the files under ./orders.
+
+  - A sales order has an order number (text, required), an order date (date
+    and time), a total amount (decimal) and a status that is one of Open,
+    Shipped or Cancelled.
+  - A customer has a customer name (text).
+  - Each sales order is placed by exactly one customer.
+
+  This model is confirmed; use SalesOrder and Customer as the entity names and
+  OrderStatus as the choice set. Do not ask for further confirmation. The task
+  is not complete until every file passes `uip ont artifacts check`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-ontology-modeler skill"
+    skill_name: uipath-ontology-modeler
+    expected_skill: uipath-ontology-modeler
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Schema written to the ontology's artifact folder"
+    path: "orders/orders.ofn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Constraints written to the ontology's artifact folder"
+    path: "orders/orders-constraints.ttl"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Mapping written to the ontology's artifact folder"
+    path: "orders/orders-mapping.yarrrml.yml"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Mapping reads both entities by name and types the decimal and date-time properties"
+    path: "orders/orders-mapping.yarrrml.yml"
+    includes:
+      - "table: SalesOrder"
+      - "table: Customer"
+      - "xsd:decimal"
+      - "xsd:dateTime"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Status is a single value from the choice set (sh:in + sh:maxCount 1)"
+    path: "orders/orders-constraints.ttl"
+    includes:
+      - "sh:in"
+      - '"Open"'
+      - '"Shipped"'
+      - '"Cancelled"'
+      - "sh:maxCount 1"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Schema uses the ontology's IRI"
+    path: "orders/orders.ofn"
+    includes:
+      - "https://ontology.uipath.com/orders#"
+      - "SalesOrder"
+      - "Customer"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema declares exactly the SalesOrder and Customer classes, each labelled, commented and a property domain"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py classes orders orders SalesOrder Customer --count 2"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every artifact passes `uip ont artifacts check` with no ERROR and holds no GUID"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py artifacts orders orders"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Artifacts-only mode builds no solution and creates no entity or choice set"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(init|pack|publish|deploy)|df\s+(entities|choice-sets|choice-set-values)\s+create|ont\s+create)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--help\b)'
+    weight: 2.0
+    pass_threshold: 1.0

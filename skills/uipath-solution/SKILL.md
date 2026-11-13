@@ -147,7 +147,7 @@ When the download answers `not_found`, the solution is not in Studio Web, and th
 <!--skill-flavor:develop-solution-row:start-->
 | [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resources refresh / resources add / resources remove / resources edit`; field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
-| [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run / feeds list`, targeting a non-tenant feed (`--feed` / `--personal-workspace`), deploy configs, CI/CD pipeline patterns |
+| [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run / feeds list`, targeting a non-tenant feed (`--feed` / `--personal-workspace`), deploy configs, CI/CD pipeline patterns, solutions that carry an ontology (name conflicts, post-deploy check) |
 | [Folder Runtime Check](references/deploy-folder-runtimes.md) | The `Data.Warnings` a deploy or upgrade gives when the folder has no runtime for a process's unattended jobs, and the `uip or machines assign` fix |
 | [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / upgrade / uninstall / delete`, in-place version upgrades, environment management |
 | [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions |

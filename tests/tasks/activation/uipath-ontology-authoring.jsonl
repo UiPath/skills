@@ -1,0 +1,25 @@
+{"id": "uipath-ontology-authoring-001", "prompt": "Create an ontology from docs/order-management-sdd.md and build it as a local solution I can hand to deploy", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-002", "prompt": "Read this PDD and turn its domain into an ontology with local entity definitions in a solution", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-003", "prompt": "Use this design document to create the ontology, its entities by name, the mapping, and a validated local solution", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-004", "prompt": "Generate an ontology from the attached domain specification and build it as a local UiPath solution with its entities", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-005", "prompt": "Create an ontology solution from an SDD, and stop to ask me if any class, field, or relationship in it is unclear", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-006", "prompt": "Turn the attached invoice-processing SDD into a UiPath ontology with its entities in a local solution", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-007", "prompt": "Read docs/claims-pdd.docx and build an ontology solution from the process described in it", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-008", "prompt": "Here's our data dictionary specification for the warehouse system; build an ontology and its entities from it", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-009", "prompt": "Extract the business concepts from maintenance-sdd.md and model them as a UiPath ontology", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-010", "prompt": "The SDD in ./design lists our entities and value lists. Create the ontology solution from it", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-011", "prompt": "Build an ontology from this PDD and walk me through the classes and properties before you create anything", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-012", "prompt": "Our solution design document describes customers, policies and claims. Make a UiPath ontology from it", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-013", "prompt": "From the attached specification, define the classes, relationships and synonyms for an ontology, then build the solution", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-014", "prompt": "Create an ontology from the HR SDD and use the entity tables in it exactly as written", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-015", "prompt": "Convert the domain model section of this design document into a packed local ontology solution", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-016", "prompt": "I have a PDD for vendor onboarding. Derive an ontology from it with labels and descriptions for each class", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-017", "prompt": "Take the SDD below and give me an ontology solution with Data Fabric entities for each concept", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-018", "prompt": "Read the specification in specs/fleet-data.md and create the ontology, its choice sets and its entities locally", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-019", "prompt": "Our SDD says the Shipment status is one of Pending, InTransit or Delivered. Build the ontology solution from that SDD", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-020", "prompt": "Generate a UiPath ontology from the patient-intake PDD; the patient data comes from our EHR connector", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-021", "prompt": "Use the attached design document to build an ontology; confirm the classes with me first", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-022", "prompt": "Build the ontology described in section 4 of the SDD as a local solution, but do not deploy it", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-023", "prompt": "Create an ontology from our product information specification and pack it into a solution", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-024", "prompt": "Here is the SDD for loan servicing. Model its loans, borrowers and payments as an ontology solution", "expected_skill": "uipath-ontology-authoring"}
+{"id": "uipath-ontology-authoring-025", "prompt": "Model the entities and relationships from this PDD as an ontology so agents can query the process data", "expected_skill": "uipath-ontology-authoring"}
