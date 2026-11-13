@@ -78,7 +78,10 @@ export default flow('seed-packet-reader')
   .build();
 
 function summarize($vars: FlowVars) {
-  const extracted = $vars.extractSowing.output;
-  return "type:" + String($vars.classifyPacket.output.ClassificationResult ?? "?")
+  // Both nodes emit the processed-document envelope; the answer is under result.output.
+  // The SDK still types extract as ExtractionResult, so this read draws a validate warning.
+  const extracted = $vars.extractSowing.output?.result?.output;
+  const classified = $vars.classifyPacket.output?.result?.output;
+  return "type:" + String(classified?.document_type ?? "?")
     + " extracted:" + Object.keys(extracted ?? {}).length;
 }
