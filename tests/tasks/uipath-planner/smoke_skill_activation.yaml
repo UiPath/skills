@@ -40,6 +40,7 @@ success_criteria:
       - "decompose"
       - "author"
       - "extract"
-      - "build"
+      - "edit"
+      - "check"
     weight: 3.0
     pass_threshold: 1.0
