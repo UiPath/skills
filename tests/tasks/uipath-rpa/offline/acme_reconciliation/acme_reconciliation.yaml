@@ -1,0 +1,106 @@
+task_id: skill-rpa-acme-reconciliation
+description: >
+  A real-world XAML process rather than one capability: the ACME work-item reconciliation on
+  REFramework, with System 1 and System 3 as file exports so it runs offline. The agent builds a
+  multi-workflow project (paged work-item list, detail pages, statements, a config file, business and
+  system exceptions, retries and a stop rule), and the grader runs it headlessly under CoreWF in six
+  scenarios. Ported from UiPath/builder-sdk typescript/tasks/rpa, where it benchmarks the RPA builder
+  SDK against hand-written XAML; see ../README.md.
+tags: [uipath-rpa, e2e, outcome-graded, mode:build, lifecycle:generate, feature:reframework]
+
+# Studio Web Autopilot's constraints: its host serves only `uip rpa init` and `uip rpa run`, so pre_run
+# puts ../_offline_xaml/_uip/uip (the same two verbs, `run` on the CoreWF runner the grader uses) ahead
+# of skills-image's full `uip` on the agent's PATH. Without them, the skill's validate-and-build loop against a cold Studio Helm took every
+# trial past a 30-minute turn. The whole agent run is one turn.
+run_limits:
+  expected_turns: 40
+  max_turns: 100
+  task_timeout: 1500
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: "../_offline_xaml/_project"
+    - type: template_dir
+      path: "../_offline_xaml/_notes"
+    - type: template_dir
+      path: "../_offline_xaml/_uip"
+      mount_point: ".studio-web/bin"
+    - type: template_dir
+      path: "../_offline_xaml/_runner"
+      mount_point: ".studio-web/runner"
+
+pre_run:
+  # Install the Studio Web `uip` and build the runner it serves `run` with (also what grade.sh grades
+  # with), then remove both sources from the workspace before the agent starts. Only inside the docker
+  # sandbox (skills-image): on a tempdir sandbox it would replace the host's own `uip`.
+  - command: "set -e; [ \"${CODER_EVAL_IN_CONTAINER:-}\" = 1 ] || { echo 'this task needs the docker sandbox (skills-image): run it with experiments/nightly.yaml'; exit 1; }; install -m 755 .studio-web/bin/uip /usr/local/bin/uip; dotnet publish .studio-web/runner/XamlRunner.csproj -c Release -o /opt/xaml-runner --nologo -v quiet; rm -rf .studio-web"
+    timeout: 300
+
+initial_prompt: |
+  We're retiring the UI automation in our ACME work-item reconciliation robot: System 1 and System 3
+  now export files, and the robot should work from those. Can you rebuild it in this project? Keep it
+  on REFramework like our other robots: `Main.xaml` is the state machine (Initialization, Get
+  Transaction Data, Process Transaction, End Process), each work item is one transaction, and
+  `Process.xaml` handles one of them, invoked from `Main.xaml` with Invoke Workflow File. Split the
+  rest into workflows the way you would in Studio.
+
+  `Main.xaml` takes `in_DataFolder` (String), the folder holding the exports, and `in_ConfigFile`
+  (String), and returns `out_Completed`, `out_Rejected` and `out_Failed` (Int32): how many work items
+  ended each way.
+
+  The config file is CSV with the header `Name,Value`, and may have blank lines. It sets
+  `WorkItemType` (the type of work item to process, such as `WI1`), `MaxRetryNumber` and
+  `MaxConsecutiveSystemExceptions`.
+
+  System 1's work-item list is paged: `System1/WorkItems_1.csv`, `System1/WorkItems_2.csv` and so on,
+  up to the first number with no file. Each page has the header `WIID,Description,Type,Status,Date`
+  and no quoted fields. Process the items of the configured type whose `Status` is `Open`, in page
+  order, top to bottom.
+
+  A work item's detail page is `System1/WorkItem_<WIID>.txt`. Its `Account Number: ` line names the
+  client's account, and its `Amount: ` line has the amount as System 1 shows it, such as `$12,345`:
+  the amount is the number its digits make, 12345. System 3's statement for an account is
+  `System3/<account number>.txt`. Its transaction lines are `<yyyy-MM-dd> | <description> | <amount>`,
+  the amount a whole number that may have thousands separators and a leading minus; any other line is
+  a heading. The account's total is the sum of its transaction amounts.
+
+  Record each work item's result in `System1/Updates.csv`, header `WIID,Status,Comment`: create it if
+  it isn't there, and otherwise add to what it has.
+  - `Completed`, with the comment `Difference: <n>`, where n is the absolute difference between
+    System 1's amount and System 3's total.
+  - `Rejected`, when the amount has no digits (comment `Invalid account amount`) or the statement has
+    no transaction lines (comment `No transactions`). These are business exceptions: log a warning
+    that names the work item, and don't retry them.
+  - Anything else that goes wrong, such as a missing detail page or statement, is a system exception:
+    log it as an error that names the work item, one error for each failed try and no others, and
+    retry the item, up to `MaxRetryNumber` times. An item that still fails has failed, and gets no
+    line in `Updates.csv`.
+
+  After `MaxConsecutiveSystemExceptions` system exceptions in a row (every failed try counts, and a
+  completed or rejected item resets the count), stop: fault the job with an exception that says how
+  many there were, and leave the remaining work items alone.
+
+  `UIPATH_XAML.md` has notes on this setup. It's all offline, so there's nothing to publish, and
+  I won't be around for questions: just leave the finished project here.
+
+reference:
+  directory: ".."
+
+success_criteria:
+  - type: run_command
+    description: "Every workflow loads and compiles, Main.xaml matches the argument contract, and it uses a state machine and an Invoke"
+    command: "bash $REFERENCE_DIR/_offline_xaml/grade.sh acme_reconciliation static"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Runs headlessly under CoreWF and behaves as specified in every scenario"
+    command: "bash $REFERENCE_DIR/_offline_xaml/grade.sh acme_reconciliation runtime"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
