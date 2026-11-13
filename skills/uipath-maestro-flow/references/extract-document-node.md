@@ -44,7 +44,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 0. **Find the flow.** Everything here edits a `.flow` on disk. When the user describes a flow they are already building and none exists locally, they may be referring to one
 that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 <!--skill-flavor:extract-find-flow:end-->
-1. **Check the tenant can run it:** `uip maestro flow extraction check --output json`. Anything other than `Available` stops the loop here ([Check the tenant can run it](#check-the-tenant-can-run-it)).
+1. **Check the tenant can run it:** `uip maestro flow extraction check --output json`. An answer other than `Available` stops the loop here, and a check that settles nothing is a question for the user ([Check the tenant can run it](#check-the-tenant-can-run-it)).
 2. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is the `<trigger>` in `$vars.<trigger>.output.invoice`, so it comes before the node that reads it.
 3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#lay-out-the-emitted-flow-first).
 4. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
@@ -55,36 +55,33 @@ that lives in Studio Web and has to be pulled down first — ask them for its UR
 
 ## Check the tenant can run it
 
-Document extraction is enabled per tenant, and the models it extracts with are granted per tenant too. Ask before you author:
+Before adding a new Extract document node, check whether the tenant can run one:
 
 ```bash
 uip maestro flow extraction check --output json
 ```
 
-`Data.Status` is the answer, and only `Available` means the node is worth adding:
+The check answers for the signed-in tenant whether document extraction is switched on, and whether the tenant has any model to extract with. `Data.Status` says what it found and `Data.Reason` says it in a sentence.
 
-| Status | What it means |
+| Status | What it establishes |
 | --- | --- |
-| `Available` | document extraction is on for this tenant, and it has a model to extract with |
-| `FeatureDisabled` | a tenant administrator has to turn document extraction on |
-| `ServiceUnavailable` | this environment serves no document extraction |
-| `ModelUnavailable` | extraction is on, but the tenant has no model to extract with |
-| `Unknown` | a service answered without settling it, so nothing is proven |
+| `Available` | both gates are open |
+| `FeatureDisabled` | extraction is switched off for this tenant, and only a tenant administrator can switch it on |
+| `ModelUnavailable` | extraction is on, and the tenant has no model to extract with |
+| `ServiceUnavailable` | the deployment has no document extraction service to ask |
+| `Unknown` | nothing — a service answered without settling either gate |
 
-The command reports on the signed-in tenant, and `-t <tenant-name>` checks for another tenant. On anything other than `Available`, go to [When Extract document is not available](#when-extract-document-is-not-available). That includes `Unknown`, which leaves the question open rather than answering it.
+The first four are answers, so act on them: carry on with the node on `Available`, and go to [When Extract document is not available](#when-extract-document-is-not-available) on the other three.
 
-Nothing else in the CLI answers this, so do not read one of these in its place. `nodes create` and `validate` are local file edits, so they succeed on any tenant. `registry search` reports `AvailableOnTenant: false` for this node on every tenant, because the node reaches the canvas from a builder rather than from the tenant's node catalogue.
+`Unknown` is not an answer, and neither is a check that exits non-zero — an expired login, or a CLI too old for the verb. Both leave the question exactly where it stood before the check ran, so neither is grounds for reporting the node unavailable. Say what the command reported and ask the user whether to try adding the node anyway. Where nobody is there to answer, add it and report that the check settled nothing.
 
-**`Available` is not a promise that a run succeeds.** It covers the two gates the check can read. Extraction can still be refused later, at deploy or on the first run, for a reason no read-only call shows beforehand:
+The check gates one decision: adding a node the user expects to run on this tenant. The commands that build the flow all edit a local `.flow`, so none of them waits on the answer. A taxonomy edit, a `nodes provision` repair and a validation run on a node the flow already has, whatever the status says. So does authoring that the user will take live later, or on another tenant. Where that is the aim, report what the check said and carry on with the work.
 
-- the environment does not run structured extraction, which a stock Automation Suite install does not
-- the model this node is configured with is not among the ones the tenant is granted, which the check does not look at — it asks only whether the tenant has any
-- model-based attribution, full layout parsing or an OCR language pack is configured and not granted, each being a separate grant
-- the user cannot run it in the target folder
+`Available` establishes those two gates and nothing beyond them. A deploy or a first run can still refuse over something the check never reads: the specific model this node is configured with rather than any model at all, a cluster-wide extraction switch that no read-only call observes, separate grants for model-based attribution, full layout parsing and OCR language packs, or the user's own permissions in the target folder. None of these is visible while authoring, so each arrives as a refusal carrying its own message.
 
-Treat any of these the same way as a check that came back unavailable: report what the service said and go to [When Extract document is not available](#when-extract-document-is-not-available). Do not hand over a flow with the node still in it as working, and do not try folders in turn looking for one that passes.
+Take the fallback below when one arrives. Do not hand over a flow with the node still in it as working, and do not try folders in turn looking for one that passes. Where the refusal names the model, say which one the node carries: another of the tenant's models may suit where the user never named one, and where they asked for that model by name, this tenant cannot run it.
 
-Where the refusal names the model, say which one the node carries and that the tenant is not granted it. Never swap in another model quietly: which model extracts is the user's choice, and changing it is not something this guide does ([Unsupported Capabilities](#unsupported-capabilities)). Where the user never named a model, say that another of the tenant's models may suit and let them choose. Where they asked for that model by name, the answer is that this tenant cannot run it.
+Nothing else in the CLI answers this question, so do not read another command in its place. `registry search` reports `AvailableOnTenant: false` for this node on every tenant, because the node reaches the canvas from a builder rather than from the tenant's node catalogue.
 
 ## Adding the node
 
@@ -241,7 +238,7 @@ When the flow has been through Studio Web since it was pulled down, pull the sol
 
 ## When Extract document is not available
 
-This covers both answers: a check that came back as anything other than `Available`, and a refusal that arrives later from deploy or a run. Take the reason from whichever reported it — `Data.Reason` from the check, or the service's own message — and keep it in what you say, including when it names something this guide does not describe.
+This covers both ways the answer arrives: a check that settled the question against the tenant, and a refusal from deploy or a run. Take the reason from whichever reported it — `Data.Reason` from the check, or the service's own message — and keep it in what you say, including when it names something this guide does not describe.
 
 Never add the node anyway, and never substitute a placeholder for it when the user asked for working extraction. Fall back in two steps.
 
@@ -251,9 +248,9 @@ Never add the node anyway, and never substitute a placeholder for it when the us
 uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
 ```
 
-If a published model fits what the user described, say what the check reported about this tenant, say which model you are using instead and why, and build with it following [ixp.md](ixp.md). The two nodes are not equivalent — a published model extracts the fields it was trained on, so check its taxonomy covers what the user asked for before offering it, and say plainly what it does not cover.
+If a published model fits what the user described, say what the check or the service reported about this tenant, say which model you are using instead and why, and build with it following [ixp.md](ixp.md). The two nodes are not equivalent — a published model extracts the fields it was trained on, so check its taxonomy covers what the user asked for before offering it, and say plainly what it does not cover.
 
-**If there is no published model either, stop and explain.** Say which tenant was checked and what the check reported — `Data.Reason` says it in a sentence — that no trained model is available on it either, and that enabling document extraction is a tenant administrator action covered in the UiPath product documentation. Do not scaffold a solution, do not write a flow file, and do not put a `mock()` in the extraction position — a placeholder is only for a validate-only topology whose stated purpose is to show where extraction belongs, and it is never a stand-in for extraction the user expects to run.
+**If there is no published model either, stop and explain.** Say which tenant this concerns and what the check or the service reported about it, that no trained model is available on it either, and that enabling document extraction is a tenant administrator action covered in the UiPath product documentation. Do not scaffold a solution, do not write a flow file, and do not put a `mock()` in the extraction position — a placeholder is only for a validate-only topology whose stated purpose is to show where extraction belongs, and it is never a stand-in for extraction the user expects to run.
 
 ## Unsupported Capabilities
 
