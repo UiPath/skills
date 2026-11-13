@@ -48,6 +48,7 @@
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 /skills/uipath-platform/references/data-fabric/ @UiPath/DatafabricCodingAgent
 /skills/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
+/skill-flavors/studioweb/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
 /skills/uipath-platform/references/licensing/ @biftime @mihai-stef-uipath @dinud-uipath @bogdan-alexandru-uipath @raresgrm @cristiansinescu7-uipath
 
 # Knowledge bundles skill (preview — tracks `uip or knowledge-bundles`)
@@ -140,6 +141,7 @@
 /tests/tasks/uipath-planner/check_genome/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /.claude/rules/genome.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /docs/guides/live-healing-pass.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/docs/guides/working-with-uipath-genome.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
@@ -189,6 +191,11 @@
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 /tests/tasks/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-dashboards-flows.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-dashboards-lifecycle.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-dashboards-setup-admin-folder.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/coded-apps-validate-action-schema.test.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/scripts/support/coded-apps-dashboards-fake-tools.mjs @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 
 # Connector Builder skill
 /skills/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath

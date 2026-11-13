@@ -7,7 +7,7 @@
 <!--skill-flavor:extract-sdk-mixing:end-->
 
 <!--skill-flavor:extract-processor-sync:start-->
-At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. The CLI provisions it while you author: `nodes create` mints the key and writes the processor's resource file into the open solution, and `nodes schema set` does the same for a node that has none. Saving the flow in the designer regenerates the resource from the node, so the deployed processor matches the taxonomy last written.
+At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. Here the CLI can only give the node its key. Writing the resource file needs the solution the project belongs to, which the CLI finds through a `.uipx` manifest, and this host has none — so `nodes create` and `nodes schema set` report `ResourcePending` instead of a `ResourceFile`, and write nothing under `resources/`. Report what the command reported: the node has its processor, and its resource file is still to be created. The designer is what creates and maintains that file, provisioning the processor as a node is added and regenerating it from the node as the user edits.
 <!--skill-flavor:extract-processor-sync:end-->
 
 <!--skill-flavor:extract-after-save:start-->

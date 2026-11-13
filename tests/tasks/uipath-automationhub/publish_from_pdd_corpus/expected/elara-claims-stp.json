@@ -32,6 +32,9 @@
   ],
   "Notification Service": [
    "notification"
+  ],
+  "Kafka": [
+   "kafka"
   ]
  },
  "allow_other_category": true
