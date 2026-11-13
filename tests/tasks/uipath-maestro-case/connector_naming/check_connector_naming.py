@@ -23,6 +23,9 @@ Checks, in order:
   4. trigger filter field names   -> Filter.Fields[].Name     (structured tree and/or
                                                                 compiled expression)
   5. connection / folder bindings -> root bindings[]          (resolve, complete, not copied)
+  6. activity input container     -> the Inputs.* section     (`send_as` is a query
+                                     declaring each name         parameter: in `body`, the
+                                                                 connector never reads it)
 """
 from __future__ import annotations
 
@@ -40,6 +43,13 @@ ERROR_OUTPUT_NAMES = {"error"}
 ENVELOPE_BODY_KEYS = {"parameters", "filters", "queryParams"}
 # `filters` holds the compiled `expression`, never a request field: check_filter grades it
 FILTER_ENVELOPE_KEY = "filters"
+# Where an activity's spec section lands in its task: `inputs[name=<container>]`.
+# A trigger keeps every bucket inside one `body` envelope, so it has no containers to grade.
+ACTIVITY_INPUT_CONTAINERS = {
+    "PathParameters": "pathParameters",
+    "QueryParameters": "queryParameters",
+    "BodyFields": "body",
+}
 ERROR_ENVELOPE = ["code", "message", "detail", "category", "status", "element"]
 # The exact request fields fixtures/sdd.md declares, keyed by connectorKey (NOT by the
 # node's free-text displayName, which an agent can rename). A count floor was gameable
@@ -235,6 +245,32 @@ def check_inputs(label: str, block: dict, auth: list[str], connector_key: str = 
     elif auth and written_count == 0:
         fail(f"{label}: no request field was written at all — the connector declares "
              f"{len(top_level(auth))} input field(s); an empty request cannot be graded")
+
+
+def check_input_containers(label: str, block: dict, data: dict) -> None:
+    """Each top-level input key sits in the container whose spec section declares it.
+
+    check_inputs pools every section, so it proves a name is spelled right, never that
+    it went where the connector reads it: Slack's `send_as` written into `body` instead
+    of `queryParameters` passes check_inputs and is never sent (UiPath/cli#5754). A key
+    no section declares is check_inputs' to report; a name two sections declare passes
+    in either."""
+    declared: dict[str, set[str]] = {}
+    for section, container in ACTIVITY_INPUT_CONTAINERS.items():
+        for entry in ci(data, "Inputs", section) or []:
+            name = ci(entry, "Name") if isinstance(entry, dict) else None
+            if name:
+                root = name.split(".")[0].replace("[*]", "")
+                declared.setdefault(root, set()).add(container)
+    for entry in block.get("inputs") or []:
+        container, body = entry.get("name"), entry.get("body")
+        if container not in ACTIVITY_INPUT_CONTAINERS.values() or not isinstance(body, dict):
+            continue
+        for written in body:
+            homes = declared.get(written)
+            if homes and container not in homes:
+                fail(f"{label}: input key {written!r} is in {container}, but the connector "
+                     f"contract declares it under {' / '.join(sorted(homes))}")
 
 
 def check_outputs(label: str, block: dict, auth: list[str]) -> None:
@@ -526,6 +562,8 @@ def main() -> int:
             continue
         seen += 1
         check_inputs(label, block, authority_names(data, "inputs"), connector_key or "")
+        if kind == "activity":
+            check_input_containers(label, block, data)
         check_outputs(label, block, authority_names(data, "outputs"))
         check_definitions(label, block, authority_names(data, "outputs"))
         check_shape(label, block, ci(data, "CaseShape", "Outputs") or [])
