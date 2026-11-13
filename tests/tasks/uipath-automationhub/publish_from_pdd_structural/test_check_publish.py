@@ -508,6 +508,36 @@ def test_fallback_repeated_attempt_fails(fallback_sandbox: Path) -> None:
     assert "attempted 2 times" in grade(fallback_sandbox, "fallback").stdout
 
 
+UNREADABLE_FILE_THEN_403 = r'''#!/usr/bin/env python3
+import json, os, sys
+argv = sys.argv[1:]
+args = " ".join(argv)
+if " applications update" in " " + args:
+    path = argv[argv.index("--file") + 1]
+    if not os.path.exists(path):
+        print(json.dumps({"Result": "ValidationError", "Message": "File not found: " + path})); sys.exit(3)
+    print(json.dumps({"Result": "Failure", "Message": "403 Forbidden"})); sys.exit(1)
+if " automations create" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": {"Id": %d}})); sys.exit(0)
+print(json.dumps({"Result": "Success", "Data": {"Id": 901, "FileId": 77}}))
+''' % PROCESS_ID
+
+
+def test_fallback_update_with_an_unreadable_file_is_not_an_attempt(fallback_sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(UNREADABLE_FILE_THEN_403)
+    uip(fallback_sandbox, "ah", "applications", "update", "--file", "./new-apps.json", "--output", "json")
+    fallback_publish(fallback_sandbox, fallback_answers())
+    result = grade(fallback_sandbox, "fallback")
+    assert result.returncode == 0, result.stdout
+
+
+def test_fallback_only_an_unreadable_file_is_no_attempt_at_all(fallback_sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(UNREADABLE_FILE_THEN_403)
+    uip(fallback_sandbox, "ah", "applications", "update", "--file", "./missing.json", "--output", "json")
+    fallback_publish(fallback_sandbox, fallback_answers(), attempts=0)
+    assert "never attempted" in grade(fallback_sandbox, "fallback").stdout
+
+
 def test_fallback_new_applications_key_fails(fallback_sandbox: Path) -> None:
     answers = fallback_answers()
     section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]["new_applications"] = [{"application_name": "Trapets"}]
