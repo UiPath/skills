@@ -102,6 +102,10 @@ def require_fork_exits_safe(root, flows) -> None:
     - A non-interrupting boundary path adds a token while the branch's own
       token still reaches the join, so it may end separately, but it must not
       add a join input that only delivers when it fires.
+    - A fork with more than one incoming flow waits for all of them, so a
+      loop back into the fork itself stalls; every branch must close at the
+      same join, and that join may have no more inputs than the fork has
+      branches, or a branch's second flow into it never delivers.
     - A branch owns the nodes it reaches before the join. Any flow, a
       decision arm included, that runs into a sibling branch's nodes or past
       the join skips the branch's own join input. Join cardinality cannot see
@@ -178,7 +182,12 @@ def require_fork_exits_safe(root, flows) -> None:
         return seen
 
     def beyond(starts, fork):
-        """Nodes reachable after the join, up to a loop back to the fork."""
+        """Nodes reachable after the join, stopping at the fork.
+
+        A flow straight back into the fork fails on its own (the fork then
+        waits for every incoming flow); stopping here only keeps that loop
+        from marking the fork's own branches as past the join.
+        """
         seen: set[str] = set()
         stack = list(starts)
         while stack:
@@ -190,6 +199,9 @@ def require_fork_exits_safe(root, flows) -> None:
         return seen
 
     for fork in forks:
+        if incoming.get(fork, 0) > 1:
+            fail(f"parallel fork {fork} has {incoming[fork]} incoming flows and waits for all of them; "
+                 "enter a loop back through a box before the fork, not the fork itself")
         branches = []
         for first in succ[fork]:
             normal, own, _ = walk([(first, 1, fork)], False)
@@ -223,6 +235,14 @@ def require_fork_exits_safe(root, flows) -> None:
                              "an input that only delivers when it fires; end it separately or merge it onto "
                              "its own branch")
             regions.append((first, region, closed))
+        closing = set().union(*(c for _, _, c in regions))
+        if len(closing) > 1:
+            fail(f"branches of fork {fork} close at different joins {sorted(closing)}; a branch that reaches "
+                 "another fork's join leaves its own join input undelivered")
+        for join in closing:
+            if incoming.get(join, 0) > len(succ[fork]):
+                fail(f"join {join} has {incoming[join]} inputs but fork {fork} opens {len(succ[fork])} branches; "
+                     "a branch with two flows into the join stalls it")
         for i, (first, region, closed) in enumerate(regions):
             for other, other_region, _ in regions[i + 1:]:
                 shared = sorted(region & other_region & feeds(closed, region))

@@ -60,8 +60,7 @@ A skeleton is not a working process and must never be reported as one.
    A parallel join fires only when every incoming flow has delivered a token.
    Three shapes break that, and `check` and `validate` all pass them:
    - A plain `.endEvent()` anywhere inside a branch — on the branch's own path, in a `.choose()` or `.race()` arm such as a rejection, or at the end of an interrupting `onError` or `onTimer` handler — consumes the branch's token, so the join waits forever.
-   - A `.goto()` inside a branch that jumps out of it, to a shared exit past the join or into a sibling branch, takes the branch's token with it, so the branch's own input to the join never delivers and the join waits forever.
-     This holds for a `.goto()` that `decompile` wrote, too.
+   - A `.goto()` inside a branch that jumps into a sibling branch, past the join, or into the join while the branch's own path also reaches it, breaks the join's count: the branch's own input to the join never delivers, or the join gets an input that never delivers, so the join waits forever.
    - An interrupting handler whose path does not end rejoins at the statement after the activity, and for a branch's last activity that statement is the fork's join.
      The handler's path then becomes an extra input to the join: the activity's own flow never delivers because the handler cancelled it, so the join waits forever.
 
@@ -171,12 +170,12 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
 <!--skill-flavor:draft-steps:end-->
    Between `check --graph` and compile, audit every `.fork()` for the stalls rule 9 describes; neither `check` nor `validate` does it for you:
    - In the `.bpmn.ts`, every `.endEvent(` inside a fork branch's callback carries `terminate: true` or `error`, except one ending a non-interrupting handler's path or closing a `.subProcess()` body.
-   - In the `.bpmn.ts`, every `.goto()` that starts inside a fork branch's callback targets either a node on the same branch, one reachable from that branch's first node without passing the join, or `<fork>_join`.
-     A `.goto()` into a sibling branch, or out past the join, fails the audit.
+   - In the `.bpmn.ts`, every `.goto()` that starts inside a fork branch's callback targets a node that only that branch reaches before the join, or `<fork>_join` when that `.goto()` is the branch's only flow into the join.
+     A `.goto()` into a sibling branch, past the join, or into the join while the branch's own path also reaches it fails the audit.
      This holds for source that `decompile` wrote too: its `.goto()` rejoins pass only when they stay on their own branch, and the `check --graph` bullet below cannot prove that, because a jump into a sibling branch leaves the join's `Incoming` count unchanged.
-     A non-interrupting handler's `.goto()` is exempt.
+     A non-interrupting handler's `.goto()` is exempt when its target cannot reach `<fork>_join`.
    - In the `check --graph` output, under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` has an `Incoming` no larger than the number of `Outgoing` entries on the `<fork>` node.
-     A larger `Incoming` means a handler's path flows into the join; the join's extra source is a box inside an `onError` or `onTimer` handler.
+     A larger `Incoming` means an extra path flows into the join; the join's extra source is a box inside an `onError` or `onTimer` handler, or a `.goto()` from a decision arm.
 
    Fix any of them as rule 9 says before you compile.
 <!--skill-flavor:draft-steps-no-refresh:start-->
