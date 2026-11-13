@@ -1,10 +1,11 @@
 # Extract document node
 
-*Commands: `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
+*Commands: `uip maestro flow extraction check`, `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
 
 An Extract document node (`uipath.ixp.extract-document-builder`) pulls named fields out of a document using a taxonomy it carries inline, in the `.flow` file itself. There is no trained model or IXP project behind it. This guide covers getting the node into the flow: adding it, wiring the file it reads, and validating. Designing what it extracts is the taxonomy, in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 ```bash
+uip maestro flow extraction check --output json
 uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --output json
 uip maestro flow validate <file> --output json
 ```
@@ -35,7 +36,7 @@ uip maestro flow nodes list Flow/Flow.flow --output json
 uip maestro flow validate Flow/Flow.flow --output json
 ```
 
-`fileRef` is the one input only the author can supply, and the flow does not validate without it. The taxonomy is written next, in [extract-document-taxonomy.md](extract-document-taxonomy.md), and the node extracts nothing until the user saves the flow once in Studio Web ([Making it actually extract](#making-it-actually-extract)).
+`fileRef` is the one input only the author can supply, and the flow does not validate without it. The taxonomy is written next, in [extract-document-taxonomy.md](extract-document-taxonomy.md). The processor the extraction runs through arrives with the node, and packing keeps it in step ([Making it actually extract](#making-it-actually-extract)).
 
 ## The loop
 
@@ -43,17 +44,44 @@ uip maestro flow validate Flow/Flow.flow --output json
 0. **Find the flow.** Everything here edits a `.flow` on disk. When the user describes a flow they are already building and none exists locally, they may be referring to one
 that lives in Studio Web and has to be pulled down first — ask them for its URL or solution id, since nothing lists them ([Starting from a flow in Studio Web](extract-document-taxonomy.md#starting-from-a-flow-in-studio-web)).
 <!--skill-flavor:extract-find-flow:end-->
-1. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is the `<trigger>` in `$vars.<trigger>.output.invoice`, so it comes before the node that reads it.
-2. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#lay-out-the-emitted-flow-first).
-3. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
-4. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
-5. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
-6. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
-7. **Report** what was added, where it reads its file from, and what it extracts, and tell the user about the Studio Web save ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is their step too.
+1. **Check the tenant can run it:** `uip maestro flow extraction check --output json`. An answer other than `Available` stops the loop here, and a check that settles nothing is a question for the user ([Check the tenant can run it](#check-the-tenant-can-run-it)).
+2. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is the `<trigger>` in `$vars.<trigger>.output.invoice`, so it comes before the node that reads it.
+3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#lay-out-the-emitted-flow-first).
+4. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
+5. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
+6. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
+7. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
+8. **Report** what was added, where it reads its file from, what it extracts, and what `nodes create` reported about its processor: inside a solution the resource file was written under `resources/` and travels with the `.flow`, and outside one it is still to be created ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
 
-## Not available everywhere
+## Check the tenant can run it
 
-The feature is new and tenant-gated, so not every tenant has it yet. Nothing in the CLI shows the difference — creating and validating succeed either way, and `registry search` reports `AvailableOnTenant: false` for this node on every tenant — but the Studio Web node picker lists **Extract document** where it is enabled. Keep the gating in mind as a possible cause of errors. Where the tenant turns out not to have the feature, or on Automation Suite, where structured extraction ships switched off, go to [When Extract document is not available](#when-extract-document-is-not-available).
+Before adding a new Extract document node, check whether the tenant can run one:
+
+```bash
+uip maestro flow extraction check --output json
+```
+
+The check answers for the signed-in tenant whether document extraction is switched on, and whether the tenant has any model to extract with. `Data.Status` says what it found and `Data.Reason` says it in a sentence.
+
+| Status | What it establishes |
+| --- | --- |
+| `Available` | both gates are open |
+| `FeatureDisabled` | extraction is switched off for this tenant, and only a tenant administrator can switch it on |
+| `ModelUnavailable` | extraction is on, and the tenant has no model to extract with |
+| `ServiceUnavailable` | the deployment has no document extraction service to ask |
+| `Unknown` | nothing — a service answered without settling either gate |
+
+The first four are answers, so act on them: carry on with the node on `Available`, and go to [When Extract document is not available](#when-extract-document-is-not-available) on the other three.
+
+`Unknown` is not an answer, and neither is a check that exits non-zero — an expired login, or a CLI too old for the verb. Both leave the question exactly where it stood before the check ran, so neither is grounds for reporting the node unavailable. Say what the command reported and ask the user whether to try adding the node anyway. Where nobody is there to answer, add it and report that the check settled nothing.
+
+The check gates one decision: adding a new node. The commands that build the flow all edit a local `.flow` and call no tenant service, so work on a node the flow already has never waits on the answer. A taxonomy edit, a `nodes provision` repair and a validation go ahead whatever the status says. Report the status alongside what was done and carry on.
+
+`Available` establishes those two gates and nothing beyond them. A deploy or a first run can still refuse over something the check never reads: the specific model this node is configured with rather than any model at all, a cluster-wide extraction switch that no read-only call observes, separate grants for model-based attribution, full layout parsing and OCR language packs, or the user's own permissions in the target folder. None of these is visible while authoring, so each arrives as a refusal carrying its own message.
+
+Take the fallback below when one arrives. Do not hand over a flow with the node still in it as working, and do not try folders in turn looking for one that passes. Where the refusal names the model, say which one the node carries. Changing it is the user's step, in [Switching from one model to another](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#switching-from-one-model-to-another). Where they asked for that model by name, say instead that this tenant cannot run it.
+
+Nothing else in the CLI answers this question, so do not read another command in its place. `registry search` reports `AvailableOnTenant: false` for this node on every tenant, because the node reaches the canvas from a builder rather than from the tenant's node catalogue.
 
 ## Adding the node
 
@@ -70,6 +98,7 @@ The created node already carries everything else it needs:
 | `inputs.schemaDocument` | an empty taxonomy with the six built-in field types defined, so the first taxonomy written to it never has to invent a type shape |
 | `inputs.modelConfig` | working model defaults, so the node runs without being configured |
 | `inputs.source` | a minted identifier for the node's own extraction; nothing for you to supply |
+| `inputs.processorKey` and `inputs.processorName` | the processor the extraction runs through; inside a solution its resource file is written too, and outside one the output says `ResourcePending` and pack creates it later ([Making it actually extract](#making-it-actually-extract)) |
 | `outputs.output` and `outputs.error` | both ports named on the instance, which is what lets a downstream `$vars` read resolve |
 | no top-level `model` block | the slim manifest model belongs in `definitions[]`, and validation rejects a copy on the instance |
 
@@ -174,24 +203,42 @@ For this node, validation enforces that `fileRef` is a `$vars` reference rather 
 
 ## Making it actually extract
 
-A node authored entirely through the CLI validates and deploys, but extracts nothing until the user opens the flow in Studio Web and saves it once. Say this when handing the work over, rather than letting them discover it from a failed run.
+<!--skill-flavor:extract-processor-sync:start-->
+At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. The CLI provisions it while you author: `nodes create` mints the key and writes the processor's resource file into the enclosing solution, `nodes schema set` writes that file for a node that has no processor and updates it in place for one that already has, and `uip solution pack` regenerates it from the node — so the deployed processor matches the taxonomy last written. The `.flow` and the resource file under `resources/` belong together: whatever stores, uploads or versions the solution must carry both, since pack builds from what it is given.
+<!--skill-flavor:extract-processor-sync:end-->
 
-At run time the extraction service resolves which processor to use from `inputs.processorKey`, a tenant-side resource holding its own copy of the taxonomy. Nothing in the CLI provisions one. Running without it faults the instance:
+A node from before the CLI provisioned anything, one written by hand, or one compiled from `.flow.ts` source, arrives without a processor. `validate` reports it as an error, and one command repairs the whole file:
+
+```bash
+uip maestro flow nodes provision <file> --output json
+```
+
+Never write a `processorKey` by hand, and never give a node another node's key as its own: a processor holds exactly one node's extraction definition, and a solution where two nodes define the same one refuses to pack or publish. A node that deliberately runs another node's processor is the one place a key is shared — it takes that node's `processorKey` and sets `inputs.processorReadOnly: true` alongside it, so the key says which processor it reads and the flag says it is not the author. Neither half works without the other: a read-only node carrying no key names nothing to read, and validation rejects it.
+
+A second node that extracts the same fields with the same model settings as an existing one is a node of this kind, rather than a copy of its taxonomy: it runs the processor that node defines, so whatever deploys for one deploys for both. Both inputs go on when the node is created, since nothing adds them to a node that already exists:
+
+```bash
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract credit note' --input '{"fileRef":"=js:$vars.start.output.creditNote","processorKey":"<the authoring node key>","processorReadOnly":true}' --output json
+```
+
+Such a node gets no resource file of its own, and it holds no taxonomy of its own either — the extraction it runs is the one the authoring node defines. Writing a schema to it changes nothing that deploys, which is what `nodes schema set` reports when it is run on one.
+
+A package built from a node without a processor faults at run time:
 
 ```
 errorCode 461008 — Invalid IDP.Extraction node input
 'processorKey' is required and must be a GUID, unless a processor name and folder are provided to resolve one
 ```
 
-Before that fault the node may appear to succeed: the element completes in a fraction of a second and publishes an empty object, which reads as a working step returning nothing rather than as a missing one. Treat an extract step that finishes that fast, or returns `{}`, as unprovisioned rather than as a taxonomy that matched nothing.
-
-The Studio Web save is what provisions the processor; extraction works from then on. Do not synthesise a `processorKey`, and do not copy one from another node — it names a different taxonomy.
+and before that fault the step can look like it worked: it completes in a fraction of a second and publishes an empty object. Treat a deployed extract step behaving that way as shipped without its processor — provision, then pack or publish again — rather than as a taxonomy that matched nothing.
 
 <!--skill-flavor:extract-after-save:start-->
-One thing to expect on the way back. Saving in Studio Web may convert the node to the processor variant (`uipath.ixp.processor.<key>`), which is a different node type from the one that was created. Pull the solution down again before editing it further, so a later CLI write does not overwrite what Studio Web wrote — and where the pulled node is the processor variant, `nodes schema set` refuses it, and the taxonomy is edited in Studio Web from then on.
+When the flow has been through Studio Web since it was pulled down, pull the solution again before editing it further, so a later CLI write does not overwrite what the designer saved — it saves as the user edits, with no save button. The node comes back as it went: the designer keeps its type, its `processorKey` and its resource file. A node the user added there as the processor variant (`uipath.ixp.processor.<key>`) is a different node type — `nodes schema set` refuses it, and its taxonomy is edited in Studio Web.
 <!--skill-flavor:extract-after-save:end-->
 
 ## When Extract document is not available
+
+This covers both ways the answer arrives: a check that settled the question against the tenant, and a refusal from deploy or a run. Take the reason from whichever reported it — `Data.Reason` from the check, or the service's own message — and keep it in what you say, including when it names something this guide does not describe.
 
 Never add the node anyway, and never substitute a placeholder for it when the user asked for working extraction. Fall back in two steps.
 
@@ -201,9 +248,9 @@ Never add the node anyway, and never substitute a placeholder for it when the us
 uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
 ```
 
-If a published model fits what the user described, say that Extract document is not enabled on this tenant, say which model you are using instead and why, and build with it following [ixp.md](ixp.md). The two nodes are not equivalent — a published model extracts the fields it was trained on, so check its taxonomy covers what the user asked for before offering it, and say plainly what it does not cover.
+If a published model fits what the user described, say what the check or the service reported about this tenant, say which model you are using instead and why, and build with it following [ixp.md](ixp.md). The two nodes are not equivalent — a published model extracts the fields it was trained on, so check its taxonomy covers what the user asked for before offering it, and say plainly what it does not cover.
 
-**If there is no published model either, stop and explain.** Say which tenant was checked, that neither Extract document nor a trained model is available on it, and that enabling document extraction is a tenant administrator action covered in the UiPath product documentation. Do not scaffold a solution, do not write a flow file, and do not put a `mock()` in the extraction position — a placeholder is only for a validate-only topology whose stated purpose is to show where extraction belongs, and it is never a stand-in for extraction the user expects to run.
+**If there is no published model either, stop and explain.** Say which tenant this concerns and what the check or the service reported about it, that no trained model is available on it either, and that enabling document extraction is a tenant administrator action covered in the UiPath product documentation. Do not scaffold a solution, do not write a flow file, and do not put a `mock()` in the extraction position — a placeholder is only for a validate-only topology whose stated purpose is to show where extraction belongs, and it is never a stand-in for extraction the user expects to run.
 
 ## Unsupported Capabilities
 
@@ -213,7 +260,6 @@ For an Extract document node setting or resource that this guide does not cover,
 
 | User request | Standard response |
 |--------------|-------------------|
-| "Add a node that uses the same model as the other Extract node" / "reuse the other Extract node's settings or documents" | "I can't link a new node to another Extract node from here. Do that in the flow designer: [Adding an Extract node to a flow](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/managing-extract-nodes#adding-an-extract-node-to-a-flow). I can copy its taxonomy to a new Extract document node. It extracts the same fields, with default model settings and no documents." |
 | "Pick the best model settings for these documents" / "tune the node for speed or accuracy" | "I can't change the node's model configuration from here. See [Model configuration](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model)." |
 | "Use GPT-5 / Gemini Pro" / "change the extraction model" | "I can't change the extraction model of this node from here. See [Choosing the most suitable model](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#choosing-the-most-suitable-model) and [Switching from one model to another](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#switching-from-one-model-to-another)." |
 | "Change the extraction strategy" / "use the Standard / Advanced strategy" | "I can't change the extraction strategy from here. See [Configuring the model](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#configuring-the-model)." |
@@ -222,13 +268,12 @@ For an Extract document node setting or resource that this guide does not cover,
 | "Use Rules-based / Model-based attribution" | "I can't change attribution from here. See [Attribution](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#attribution)." |
 | "Add model overrides" / "set the overrides JSON" | "I can't set model configuration overrides from here. See [Overrides](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#overrides)." |
 | "Import this IXP taxonomy file" (a file with `entity_defs` and `label_groups`) / "Export the taxonomy as an IXP file" | "I can't import or export IXP taxonomy files from here. Use Import/Export in the flow designer: [Importing and exporting taxonomies](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/importing-and-exporting-taxonomies). I can show the taxonomy, replace it from a flow-format file, or copy it from another Extract document node." |
-| "Upload these documents" / "delete a test file" / "tag these documents" / "show the documents not annotated yet" | "I can't manage the node's test documents from here. See [Uploading sample documents](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/uploading-sample-documents)." |
+| "Upload these documents" / "delete a test file" / "tag these documents" / "show the documents not annotated yet" / "reuse the other Extract node's documents" | "I can't manage the node's test documents from here. See [Uploading sample documents](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/uploading-sample-documents)." |
 | "What would it extract from this file?" / "refresh the predictions" | "I can't run or refresh predictions for this node. See [Reviewing predictions](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/generating-and-reviewing-predictions)." |
 | "Confirm these values" / "annotate the documents" | "I can't annotate test documents. See [Validating predicted values](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/validating-extractions)." |
 | "Set up the evaluators" / "how should this field be scored?" | "I can't configure the node's evaluators. See [Running an evaluation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/running-an-evaluation)." |
 | "Run an eval" / "evaluate on this one file" / "what's my score?" / "compare the eval runs" / "improve the accuracy" | "I can't run or read evaluations for this node. See [Running an evaluation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/running-an-evaluation) and [Evaluating model performance](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/evaluating-model-performance)." |
-| "Make the extract node actually run" / "provision the processor" / "set the processorKey" | "I can't create the node's processor from here. Save the flow once in the flow designer; that creates it, and extraction works after you publish and deploy." |
 
 ## Evidence boundary
 
-Everything here is offline file authoring, apart from the registry lookup, which needs login to see what the tenant serves. `validate` proves the node is wired and shaped correctly — that `fileRef` resolves to something upstream, that the ports are named, that the taxonomy is well formed. It proves nothing about what the node extracts: that takes the Studio Web save ([Making it actually extract](#making-it-actually-extract)) and then a run against real documents, which usually sends the taxonomy back for a round of tightening.
+Everything here is offline file authoring, apart from the registry lookup, which needs login to see what the tenant serves. `validate` proves the node is wired and shaped correctly — that `fileRef` resolves to something upstream, that the ports are named, that the taxonomy is well formed, that the node has its processor. It proves nothing about what the node extracts: that takes a deploy and a run against real documents, which usually sends the taxonomy back for a round of tightening.

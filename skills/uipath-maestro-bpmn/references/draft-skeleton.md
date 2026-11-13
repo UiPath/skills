@@ -90,6 +90,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 
 ## Steps
 
+<!--skill-flavor:draft-steps:start-->
 1. Run `uip maestro bpmn init <Name> --output json` and take the project directory from its `Data.Path`; the commands below write it as `<Project>`.
    It is not always `<Name>/`: outside a solution, `init` scaffolds one and the project lands at `<Name>Solution/<Name>/`.
    When the user named where the `.bpmn` goes, run the `init` command that step 1 of [SKILL.md](../SKILL.md#workflow) gives for that path instead.
@@ -108,6 +109,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
    `validate` must report `Status: Valid`.
    Because the start event kept the id `Event_start`, the `init`-generated `entry-points.json` still matches and the skeleton needs no `refresh`.
    If `validate` fails with `entry-points.json references start event "Event_start"`, the id was renamed: put `Event_start` back.
+<!--skill-flavor:draft-steps:end-->
 <!--skill-flavor:draft-upload:start-->
 4. **Upload it, so the user sees it on the canvas**, unless the request forbids upload: `uip solution upload <SolutionDir> --output json`, where `<SolutionDir>` is the solution `init` scaffolded (`<Name>Solution/`) or registered the project in.
    The gate reply carries the returned `Data.DesignerUrl`.
@@ -188,7 +190,9 @@ When you uploaded the skeleton, the user may have changed it on the canvas befor
 Before you edit it again, download the cloud copy and compare it, as [Check the cloud copy](operate.md#check-the-cloud-copy-before-editing) says; when it differs, build on their copy without asking, and say so in the reply's one sentence.
 <!--skill-flavor:draft-cloud-copy:end-->
 
+<!--skill-flavor:draft-change-it:start-->
 - **Change it**: edit the skeleton, run the loop again, and show it again as steps 4 and 5 do.
+<!--skill-flavor:draft-change-it:end-->
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   Bind each box that needs a resource to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
