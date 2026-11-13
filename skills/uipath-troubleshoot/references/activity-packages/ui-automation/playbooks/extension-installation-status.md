@@ -63,9 +63,9 @@ Do NOT run `SetupExtensions.exe` directly, read browser profile folders, or quer
 
 ## Resolution
 
-Report the finding with its evidence: `IsInstalled`, `InstalledVersion`, and the `Name` of each installed method. Quote `Warnings` verbatim when present (for example a Group Policy notice): a policy on the machine can override what the installer set. Do not list commands or the other methods unless asked. This playbook changes nothing on the machine.
+Report the finding with its evidence: `IsInstalled`, `InstalledVersion`, and the `Name` of each installed method. Quote `Warnings` verbatim when present (for example a Group Policy notice): a policy on the machine can override what the installer set. Do not list commands or the other methods unless asked. This playbook changes nothing on the machine; any change goes through [extension-install-uninstall.md](./extension-install-uninstall.md), which asks first.
 
-- **If not installed:** state that the UiPath extension for `<EXTENSION_NAME>` is not installed and that it can be installed on this machine. Stop.
-- **If installed but outdated:** state the installed version and that a newer one is available from the extensions component. Stop.
+- **If not installed:** state that the UiPath extension for `<EXTENSION_NAME>` is not installed and that it can be installed on this machine. Continue with [extension-install-uninstall.md](./extension-install-uninstall.md) from its step 2 to offer the install.
+- **If installed but outdated:** state the installed version and that a newer one is available from the extensions component. Continue with [extension-install-uninstall.md](./extension-install-uninstall.md) from its step 2 to offer the upgrade.
 - **If it cannot be installed:** quote `InstallDisabledReason` verbatim. Stop.
 - **If installed and current:** the installation is not the fault. Continue with the playbook that led here, e.g. [browser-communication-failed.md](./browser-communication-failed.md).
