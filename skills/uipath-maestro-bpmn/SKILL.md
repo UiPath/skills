@@ -105,7 +105,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 <!--skill-flavor:workflow-merge:start-->
 8. Edit an existing process with `merge`, which takes the edited source and the original: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
    No `.bpmn` other than the target goes in the workspace: no intermediate copy, probe or second scaffold.
-   When the project sits in a solution this run did not scaffold, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
+   When the project sits in a solution this run did not create, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
 9. **End every build with the final report.**
    A plain request to build or edit a process (`(auto mode)`) and *Build it* after a [draft gate](#draft-first) (`(draft mode)`) both end the turn with **[`references/final-report-template.md`](references/final-report-template.md)**, which also says when to upload first.

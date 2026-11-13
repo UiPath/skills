@@ -90,7 +90,7 @@ Ask before doing this when the user named the project's path, because the upload
 When the solution declares resource dependencies, refresh them with the solution tooling the installed CLI offers (check `uip solution --help` rather than inventing a verb) and confirm the generated resource files match.
 Report the Studio Web URL (`Data.DesignerUrl`) or solution id; when the CLI returns none, write `Studio Web URL: <not returned by CLI>` rather than omitting it.
 
-**Consent.** Unless the request forbids upload, a request to build or draft the process authorizes the upload that shows it, so upload without asking when this run's `bpmn init` scaffolded the solution.
+**Consent.** Unless the request forbids upload, a request to build or draft the process authorizes the upload that shows it, so upload without asking when this run created the solution (its `bpmn init` or `uip solution init` made it).
 Confirm first when it did not — the project went into a solution that already existed, or an existing project was edited in place — because `upload` overwrites the cloud solution that matches the `SolutionId` in the local `.uipx`.
 Ask once, before the first upload, and say in the question that the upload replaces the Studio Web copy.
 
@@ -101,7 +101,7 @@ The first upload writes the cloud solution id back into the local `.uipx`, so ea
 ### Check the cloud copy before editing
 
 An upload replaces the cloud copy with the local one, so it would erase edits made in Studio Web.
-Check the cloud copy before you start editing a project in a solution this run did not scaffold, so you build on the current copy, and again before each edit after this run's own first upload: the user may have changed the canvas between turns.
+Check the cloud copy before you start editing a project in a solution this run did not create, so you build on the current copy, and again before each edit after this run's own first upload: the user may have changed the canvas between turns.
 Download the solution by the `SolutionId` in its `.uipx`, into a fresh directory outside the workspace:
 
 ```bash
