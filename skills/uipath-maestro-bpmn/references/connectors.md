@@ -104,7 +104,9 @@ It discovers the connection itself (`--connection` or `--connection-folder` pick
 Then re-run `check` and compile.
 `compile` and `check` both auto-detect `./connectors-local/`; `--connectors-local <dir>` names another one.
 
+<!--skill-flavor:prepare-live:start-->
 **`prepare` is a live call.** It reads through a real connection, so it needs `uip login` and a connection on the tenant. Run it when `check` asks for it, not speculatively.
+<!--skill-flavor:prepare-live:end-->
 
 These codes are mistakes in your own source, and `prepare` does not close them; fix the source and re-run `check`:
 

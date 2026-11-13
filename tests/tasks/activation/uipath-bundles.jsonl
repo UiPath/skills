@@ -1,0 +1,37 @@
+{"id": "uipath-bundles-001", "prompt": "Publish the skills in ./agent-skills to the skill bundle finance-skills in Orchestrator folder Shared", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-002", "prompt": "Download the latest version of the finance-skills skill bundle from folder Shared", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-003", "prompt": "Which versions does the skill bundle toolbox have in folder Shared?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-004", "prompt": "Point the stable tag of skill bundle toolbox at version 4", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-005", "prompt": "Create a new skill bundle called support-skills in the Shared folder and upload ./skills as its first version", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-006", "prompt": "List the skill bundles in folder Finance/AP", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-007", "prompt": "Show me what invoice-skill/instructions.md looked like in version 2 of the skill bundle finance-skills", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-008", "prompt": "I edited my downloaded skill bundle workspace; what changed since I downloaded it?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-009", "prompt": "Is my local copy of the skill bundle up to date with the latest published version?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-010", "prompt": "Delete the canary tag from the skill bundle toolbox in Shared", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-011", "prompt": "Rename the skill bundle toolbox to agent-toolbox", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-012", "prompt": "Tag version 6 of finance-skills as release-2026-q4 and make the tag immutable", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-013", "prompt": "Save version 3 of skill bundle finance-skills as a zip file", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-014", "prompt": "Who changed refund-skill/instructions.md in the skill bundle, and in which versions?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-015", "prompt": "Remove the skill bundle legacy-skills from the Shared folder", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-016", "prompt": "uip or skill-bundles publish says the bundle already has content; how do I publish my edit?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-017", "prompt": "Our agents load their skills from an Orchestrator skill bundle. Push my updated skills there as a new version", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-018", "prompt": "Roll the stable tag of finance-skills back to version 5", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-019", "prompt": "When was the skill bundle finance-skills last published, and what is its latest version?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-020", "prompt": "Download the skill bundle version tagged stable into ./skills so I can edit it", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-021", "prompt": "Which tags does the finance-skills skill bundle have, and which of them are immutable?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-022", "prompt": "My skill bundle publish failed with a 409 conflict. What now?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-023", "prompt": "Download the latest version of the ops-handbook knowledge bundle from folder Shared so the agent can read it", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-024", "prompt": "Publish the markdown docs in ./kb-docs to Orchestrator as a new knowledge bundle in folder Shared", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-025", "prompt": "Which version of the knowledge bundle platform-concepts is published in Shared?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-026", "prompt": "Open a change proposal on the knowledge bundle with my edits to concepts/queues.md", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-027", "prompt": "Review change proposal 7 on knowledge bundle a1b2c3d4-0000-0000-0000-000000000001 and leave a comment on line 12", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-028", "prompt": "Merge the open change proposal on our OKF knowledge bundle once the diff looks right", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-029", "prompt": "My change proposal came back Conflicted; how do I land it without losing the review comments?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-030", "prompt": "What changed in my local copy of the knowledge bundle before I propose it?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-031", "prompt": "Is my downloaded knowledge bundle workspace still current with the published version?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-032", "prompt": "Who changed concepts/chargeback.md in the knowledge bundle, and in which version?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-033", "prompt": "Share the knowledge bundle runbooks from Shared into the Finance folder", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-034", "prompt": "Where does the agent read its documentation from? It lives in an Orchestrator knowledge bundle", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-035", "prompt": "uip or kb publish answered 409; what does that mean for my bundle?", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-036", "prompt": "Read the graph.json build artifact of the latest knowledge bundle version", "expected_skill": "uipath-bundles"}
+{"id": "uipath-bundles-037", "prompt": "Export version 3 of the knowledge bundle as a zip", "expected_skill": "uipath-bundles"}
