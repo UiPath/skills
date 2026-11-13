@@ -167,8 +167,8 @@ Then give each box one status:
 - When the user named the resource, or exactly one row fits the box, use it and name it, with its folder when the row has one.
 - When several fit, name the best two and ask which one.
 - When none fits, write `none yet, create it or name one`: the user creates it or names one, or picks *Change it*.
-- `Action app`, `Execute script` and `Execute HTTP request` boxes need no resource: write `no resource needed` and look nothing up for them, even when the user named an app.
-  An Action app box is built as an inline form ([Human task outcomes](bpmn-runtime.md#human-task-outcomes)), so nothing is looked up for it.
+- `Action app`, `Execute script` and `Execute HTTP request` boxes need no resource: write `no resource needed` and look nothing up for them.
+  An Action app box gets it even when the user named an Action App, overriding the first bullet: it is built as an inline form ([Human task outcomes](bpmn-runtime.md#human-task-outcomes)).
 
 A row fits only when both hold: its kind is the box's kind (match `Type` as above), and its name and folder show it does the step the box describes.
 A name that merely shares a keyword does not fit: a process called `invoice-cleanup` in an unrelated project's folder is not the invoice-recording step.
