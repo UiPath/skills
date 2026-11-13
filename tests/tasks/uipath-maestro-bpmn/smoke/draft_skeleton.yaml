@@ -101,9 +101,7 @@ success_criteria:
       2. The second line is the path of the local `.bpmn` file (ends in
          `.bpmn`) as plain text, and nothing else. A Markdown link
          (`[label](<path>)`, whatever its label or target) fails this item:
-         the path is written bare, never as a link. In Studio Web, where the
-         skeleton is on the canvas, this line is exactly
-         `The outline is on the canvas` instead.
+         the path is written bare, never as a link.
       3. Next come the box lines, each starting with `- `. The attached
          `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
          box has exactly one line, and every line names one task box (its
@@ -118,9 +116,7 @@ success_criteria:
          line explaining a variable. There is no line
          for a start event, timer, gateway, branch, or end event. Each line is
          one short clause, under about 200 characters.
-      4. Next is exactly the line `Is this the process you want?`, or, when
-         item 2's line is `The outline is on the canvas`, exactly
-         `Accept the canvas change to keep this outline, then pick one:`.
+      4. Next is exactly the line `Is this the process you want?`.
       5. Then exactly three numbered options, in this order: `1.` Build it,
          `2.` Change it, `3.` Keep it, each with any short description. Nothing
          follows the third option.
