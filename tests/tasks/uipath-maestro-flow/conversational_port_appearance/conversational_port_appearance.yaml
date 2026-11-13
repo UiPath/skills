@@ -67,13 +67,20 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # The rebuilt chat must keep going, as the source agent's did. Same checks as
+  # conversational_chat_loop: node presence alone passes a flow that answers once
+  # and stops, or that reads history off the wrong node.
   - type: run_command
-    description: "Flow contains the conversation trigger, wait-for-message, and the conversational agent"
-    command: >-
-      python3 $REFERENCE_DIR/_shared/flow_contains.py
-      '"core.trigger.conversation"'
-      '"uipath.conversational.wait-for-message"'
-      '"uipath.agent.conversational"'
+    description: "Conversation trigger replaced the manual one, and the agent loops back to the wait node on its continuation port"
+    command: "python3 $REFERENCE_DIR/conversational/check_conversational_flow.py loop"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "conversationalAgentSettings carries all five keys, each a jsExpression off the same wait node's conversationContext"
+    command: "python3 $REFERENCE_DIR/conversational/check_conversational_flow.py settings"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
