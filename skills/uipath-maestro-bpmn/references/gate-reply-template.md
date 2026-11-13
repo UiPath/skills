@@ -14,9 +14,7 @@ Reply in this shape and keep every line; only the first line's second sentence i
 
 - <box label exactly as its .task() name spells it>: <resource and folder | which of two | none yet, create it or name one | not checked | no resource needed>
 
-<!--skill-flavor:gate-question:start-->
 Is this the process you want?
-<!--skill-flavor:gate-question:end-->
 1. **Build it**: make every step work.
 2. **Change it**: tell me what to add, remove, or move.
 3. **Keep it**: stop here with this outline.
