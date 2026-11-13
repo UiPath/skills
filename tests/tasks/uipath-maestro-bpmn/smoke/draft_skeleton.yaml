@@ -179,7 +179,8 @@ success_criteria:
   # quotes still runs; a `sh -c` script quote is a wrapper, not data.
   # Known limit: a lookup quoted inside a `sh -c` script (Codex's `bash -lc`
   # wrapper) still counts, since the wrapper's quote is skipped and the
-  # stripped form has no quotes left.
+  # stripped form has no quotes left. A lookup line inside a heredoc body also
+  # counts, since the exclusion reads quotes, not heredocs.
   - type: command_executed
     description: "Agent looked up the boxes' resources before the gate"
     tool_name: "Bash"
