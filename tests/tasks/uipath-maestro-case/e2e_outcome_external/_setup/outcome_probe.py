@@ -275,17 +275,23 @@ def _do_debug(since: str) -> dict:
     solution_dir = _find_dir("**/*.uipx")
     project_dir = _find_dir("**/project.uiproj")
 
-    # Resource refresh is mandatory: without it the connector resources are not
-    # resolvable at runtime and debug reports "Resource is not configured".
-    r = _uip_json(["solution", "resources", "refresh",
-                   "--solution-folder", solution_dir])
-    if r.get("Result") != "Success":
-        blob = json.dumps(r)
-        # Refresh is not idempotent — re-running it over its own output fails.
-        # When the agent already refreshed, the resource docs are on disk and
-        # debug can proceed; only that exact failure is tolerated.
-        if "Node already added to the graph" not in blob:
-            fail(f"solution resources refresh failed: {blob[:600]}")
+    # Studio Web: `resources refresh` is unavailable (no local .uipx).
+    # The agent adds connections with `resources add`; debug works without refresh.
+    in_studio_web = os.path.isdir("/solution")
+
+    if not in_studio_web:
+        # Resource refresh is mandatory: without it the connector resources are
+        # not resolvable at runtime and debug reports "Resource is not configured".
+        r = _uip_json(["solution", "resources", "refresh",
+                       "--solution-folder", solution_dir])
+        if r.get("Result") != "Success":
+            blob = json.dumps(r)
+            # Refresh is not idempotent — re-running it over its own output
+            # fails.  When the agent already refreshed, the resource docs are
+            # on disk and debug can proceed; only that exact failure is
+            # tolerated.
+            if "Node already added to the graph" not in blob:
+                fail(f"solution resources refresh failed: {blob[:600]}")
 
     # stderr is kept: on a fault the CLI names the incident only there
     # (UiPath/cli#5519), and check_case_ran.py prints it from debug_result.json.
