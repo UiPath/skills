@@ -126,6 +126,21 @@ def test_timer_xml_check_ignores_anything_else(command: str) -> None:
     assert not _hits(_pattern(_TIMER, "well-formed-XML"), command), command
 
 
+def test_timer_xml_check_is_linear_on_a_run_of_backslashes() -> None:
+    # Both branches of the quoted-program loop used to match a backslash, so a long
+    # run of them with no ET.parse after it backtracked exponentially and hung the
+    # grader (skills#4712). A subprocess bounds the check, since a stuck
+    # regex cannot be interrupted in-process.
+    pattern = _pattern(_TIMER, "well-formed-XML").pattern
+    probe = (
+        "import re, sys\n"
+        "rx = re.compile(sys.argv[1], re.DOTALL)\n"
+        "assert not rx.search('python3 -c \"' + '\\\\' * 200 + 'x')\n"
+        "assert not rx.search('python3 -c \"' + '\\\\\\\"' * 200 + 'x')\n"
+    )
+    subprocess.run([sys.executable, "-I", "-c", probe, pattern], check=True, timeout=10)
+
+
 def test_timer_prompt_no_longer_spells_out_the_command() -> None:
     task = yaml.safe_load((_SUITE / _TIMER).read_text(encoding="utf-8"))
     prompt = task["initial_prompt"]
