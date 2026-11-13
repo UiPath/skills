@@ -278,11 +278,11 @@ Three spellings are compile errors here rather than a tenant-side
 | `accountNumber = "ACC123"` | double quotes mark a COLUMN reference | `accountNumber = 'ACC123'` |
 | `status eq 'Open'` | `eq`/`ne`/`gt`/`ge`/`lt`/`le` are OData | `status = 'Open'` |
 
-**A filter built from a runtime value keeps the runtime half only.** The tree
-holds literals, so a `js` template in `where` emits the query and no tree — which
-`validate` rejects. Where the filter must vary per run, filter server-side on
-what is constant and narrow the rest downstream, or accept the design-time gap
-deliberately.
+**A filter built from a runtime value has no filter tree, and that is valid.**
+The tree holds literals only, so a `js` template in `where` (for example
+``js`displayName = '${$vars.start.output.name}'` ``) emits the query with no tree.
+`validate` accepts it, and the runtime resolves the whole value. The only cost is
+at design time: the Studio Web filter widget shows no tree for that step.
 
 ## Schema-dynamic operations: the parent-field loop
 
