@@ -23,7 +23,7 @@ In every reference, `<Project>` is the target's folder, `<Name>` its file name w
 
 **The target `.flow` is the single source of truth.** The user can change it on the canvas between turns, so never reuse an earlier turn's `.flow.ts`: decompile a fresh one.
 
-**Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `original/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` are throw-away: each turn rebuilds them; a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
+**Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `original/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` are throw-away: each turn rebuilds them; a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#inline-agents-merge-carries-agentjson)).
 
 **Never delete or rename a file under `/solution`:** the file system refuses both; overwrite it instead.
 
