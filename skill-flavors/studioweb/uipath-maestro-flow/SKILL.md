@@ -1,7 +1,7 @@
 <!--skill-flavor:sdk-project-layout:start-->
-**In Studio Web the builder SDK is built in.** `uip maestro flow check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm` or Node here. `examples/` holds authored examples, and `references/` the details this guide routes to.
+**In Studio Web the builder SDK is built in.** `check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: no `npm` or Node. `examples/` holds authored examples; `references/` the details this guide routes to.
 
-**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another, and never copy a project out of it. Each project is a folder `/solution/<Project>/`. Create a Flow project only when the user asks for a new project, never because the request names the flow ("a Maestro Automate called CronCop"): `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `.flow`. Run `uip maestro flow init <Project> --automate` when the request names **Maestro Automate** as the product. A project you fill keeps its type: if the request names Maestro Automate and `/solution/<Project>/.maestro_automate` is missing, keep building, then tell the user to switch Build as to Maestro Automate.
+**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another or copy a project out of it. Projects live at `/solution/<Project>/`. Create a project only when asked for a new one, never because the request names the flow ("a Maestro Automate called CronCop"): `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `.flow`. Run `uip maestro flow init <Project> --automate` when the request names **Maestro Automate** as the product. A project you fill keeps its type: if the request names Maestro Automate and `/solution/<Project>/.maestro_automate` is missing, keep building, then tell the user to switch Build as to Maestro Automate.
 
 **Edit the open flow.** Each turn's context gives:
 
@@ -14,12 +14,12 @@ Choose the target `.flow` in order:
 
 1. The user names a file: edit that file.
 2. An edit: edit the `.flow` at `CurrentFile.AbsolutePath`.
-3. A new flow, and `IsCurrentFileEmpty` is `true`, you just created the project, or the project holds only an empty or trigger-only `new.flow`: fill that `.flow`. In a project you created, compile with `-o new.flow`: the flow's name goes in `.name('…')`, and the canvas never opens a `<FlowName>.flow` beside it.
-4. A new flow otherwise: write a new `<Name>.flow` in the open project. Then tell the user to open it in the Explorer: a write refreshes the canvas only for the open file.
+3. A new flow, and `IsCurrentFileEmpty` is `true`, project just created, or it holds only an empty or trigger-only `new.flow`: fill that `.flow`. In a created project, compile with `-o new.flow`: name goes in `.name('…')`, canvas never opens a `<FlowName>.flow` beside it.
+4. A new flow otherwise: write a new `<Name>.flow` in the open project. Tell the user to open it in the Explorer: writes refresh only the open file.
 
 Below, `<Project>` is the target's folder and `<Name>` its file name without `.flow` (`new` for `new.flow`). `<Draft>` is `/tmp/flow-draft/<Project>/<Name>`.
 
-**The target `.flow` is the single source of truth.** The user can change it on the canvas between your turns, so never reuse a `.flow.ts` from an earlier turn: decompile a fresh one.
+**The target `.flow` is the single source of truth.** The user can change it on canvas between turns, so never reuse a `.flow.ts` from an earlier turn: decompile fresh.
 
 **Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `original/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
 
