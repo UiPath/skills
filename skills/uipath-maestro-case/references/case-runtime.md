@@ -116,6 +116,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:case.docextraction.floor -->
 - `uip maestro case validate` needs uip 1.206.0+ for document-extraction
   tasks. Older versions reject with `CASE_MGMT_BINDING_PAIR_INCOMPLETE`.
+  On an older `uip`, report the floor requirement and stop. Do not rewrite
+  bindings or strip the extraction task to silence the error.
 
 ## Connections and external work
 
