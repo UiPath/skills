@@ -286,7 +286,7 @@ baseline and an edited copy and merged them into `.flow-sdk/<Name>.merged.flow`.
 The safe project loop needs none of it. Do not run it: the `.flow` files it
 writes under `.flow-sdk/` are extra deliverables to the project validator.
 Delete any it, or an earlier turn, left there before you decompile:
-`[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name baseline -o -name edited -o -name '<Name>.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +`.
+`[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name 'Deployed.baseline' -o -name 'Deployed.edited' -o -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +`.
 <!--skill-flavor:generated-pipeline:end-->
 
 ## A supplied source
@@ -297,6 +297,7 @@ overwrites that source. A supplied source has no stamp, so compile its baseline
 before the edit, outside the project, and pass it to merge:
 
 ```bash
+[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
 BASE=$(mktemp -d)
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o "$BASE/Deployed.flow"
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
