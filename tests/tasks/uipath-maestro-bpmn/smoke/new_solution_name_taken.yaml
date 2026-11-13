@@ -9,6 +9,9 @@ description: >
   taken folder succeeds but replaces its SolutionId and empties its Projects,
   and a bare `bpmn init` from the root appends to it; both leave side effects
   on the taken `.uipx`, which is what this grades.
+  The classic (v1) arm has no headless rule, so it stops at the solution
+  question and is expected to fail the check_fresh_solution.py criterion: a
+  known gap in classic, not noise.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", studio-web-unsupported, "studio-web-unsupported:solution-selection"]
 
 run_limits:
@@ -54,4 +57,11 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
     pass_threshold: 1.0
