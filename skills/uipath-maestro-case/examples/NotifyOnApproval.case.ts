@@ -9,8 +9,8 @@
  *
  * The connector task needs a `bindings.json` alongside this file (see
  * examples/bindings.json) mapping the symbolic `slack` / `shared` names to a
- * real connection + folder. Compile with the connector library on
- * `$FLOW_SDK_LIBRARY_JSON` or `uip maestro case compile --library` supplies it.
+ * real connection + folder. `uip maestro case compile` resolves the connector
+ * from the pulled library, or fetches it through a logged-in `uip` when none was pulled.
  */
 import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 

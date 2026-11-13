@@ -375,7 +375,6 @@ test("every Flow skill flavor scaffolds Maestro Automate with `--automate`", (t)
 const FLOW_TERMINAL_ONLY = [
   "npm install",
   "FLOW_SDK_LIBRARY",
-  "registry path --library",
   "pipeline.mjs",
   "flow-sdk flow merge",
   "/tmp/flow-sdk",
@@ -505,7 +504,6 @@ const CASE_TERMINAL_ONLY = [
   "--solution-folder",
   "uip login status --output",
   "so upgrade first",
-  "run `uip maestro registry pull`",
 ];
 
 function caseLinesNaming(skillRoot) {

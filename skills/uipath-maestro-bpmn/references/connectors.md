@@ -46,7 +46,8 @@ The **action** is `nodeType`'s last segment — `create-issue` — not the label
 
 `"total": 0` is a real miss, and means either `http()` or a connector the library does not carry (see §4).
 <!--skill-flavor:library-pull:start-->
-A usage error saying no library is cached means `uip maestro registry pull` first.
+With no library pulled the search answers from the tenant's live catalog through `uip` (`"source": "tenant"`), and its rows carry no `markdownPath`: read the page with `uip maestro registry describe <nodeType>`, which fetches it.
+A message about `uip login` means log in, not pull.
 <!--skill-flavor:library-pull:end-->
 
 ## 2. Write the node
