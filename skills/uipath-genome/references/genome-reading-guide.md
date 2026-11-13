@@ -35,7 +35,7 @@ One skill per row names the build skill that owns each component. **The build fi
 
 ## Platform Dependencies
 
-Every Orchestrator or Integration Service resource the build declares or reads: queues, assets, credentials, storage buckets, connections, folders, triggers. The build declares each under the name the genome gives it.
+Every Orchestrator, Integration Service and other UiPath service resource the build declares or reads, one table per kind: queues (item fields, unique reference, retries, who adds and works the items), assets (type, and the fixed value or the Configuration Question that asks it), credentials (account, system), storage buckets, connections (connector, identity), Data Fabric entities, triggers (what each starts, kind, schedule and time zone, runners). The build declares each under the name the genome gives it, and the open items hand each over with the settings its row states. A transactional flow's queues and triggers are its As-is, and the split answers change them. A standalone component genome's `### Runtime and deployment` block holds what a process genome's Deployment holds (§ Deployment). An older genome's single table (`Resource | Type | Purpose`) is read the same way, its missing settings asked or defaulted as before.
 
 **Credentials: one credential asset per login account**, named after the account or persona, with its environment or tenant; never collapse several accounts onto one login. The genome and the data rows name the asset — a password, token or secret value never appears in a genome, a data file or a report. A secret crosses no component boundary: an Interface argument, a Handoffs row and a start argument carry the asset's name, and the component that uses the secret reads it in the scope that uses it, unless a connection holds the secret (an Integration Service connection). A secret with no account behind it (an API key, a token) is a Secret asset. Execution-side declaration: [execution-guide.md § 2.2](execution-guide.md), credentials; naming from a source's accounts: [source-migration-guide.md § Credentials](source-migration-guide.md).
 
@@ -95,7 +95,7 @@ One row per edge between components — mechanism, data schema passed, and what 
 
 ### Deployment
 
-Packaging, entry points, triggers and target folders or environments; the buildable projects are named explicitly. A library is listed with the feed it is published to, apart from the solution's projects. With test components, Deployment names exactly one test project and one Test Manager test set per test component.
+The delivery model, packaging and route, entry points, runtime and machines, robots, folders and environments, and logging and retention — the build creates the projects the packaging names, honours the runtime, and hands the rest over in the open items; the buildable projects are named explicitly. A library is listed with the feed it is published to, apart from the solution's projects. With test components, Deployment names exactly one test project and one Test Manager test set per test component.
 
 ## Design Links
 

@@ -31,11 +31,65 @@
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| {e.g. InvoiceQueue} | {Queue / Asset / Credential / Storage bucket / Connection / Folder} | {what the automation does with it} |
+{One table per kind of resource the automation uses, in this order; leave out a kind it does not use. Used by names the steps. A value the source or description does not show is *[Inferred]*, or the Configuration Question that asks it.}
 
-*Stub when none: "No Orchestrator or Integration Service resources required."*
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| {e.g. InvoiceQueue} | {one invoice} | {InvoiceNumber: Text, Amount: Number} | {InvoiceNumber, on} | {2} | {step 3} | {steps 4–7} |
+
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|-------|------|-------|---------|---------|
+| {e.g. ErpBaseUrl} | {Text / Integer / Bool / Secret} | {fixed value, or Configuration Question N; never a secret} | {steps} | {what it is for} |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| {e.g. ErpApprover} | {the approver account} | {SAP, production} | {steps} |
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+
+### Data Fabric entities
+
+| Entity | Fields | Written by | Read by |
+|--------|--------|------------|---------|
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| {e.g. DailyIntake} | {this process} | {Time / Queue / Event} | {weekdays 07:00, Europe/Berlin; or the queue; or the event} | {1} |
+
+### {Other service: Action Center, Document Understanding, Test Manager, Context Grounding}
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
+
+*Stub when none: "No Orchestrator or Integration Service resources required." — the Runtime and deployment block follows it all the same.*
+
+### Runtime and deployment
+
+*(A standalone component genome only; a component inside a process leaves these to its process genome's Deployment.)*
+
+- **Delivery model:** {Automation Cloud / Automation Suite <version> / standalone Orchestrator}
+- **Packaging and route:** {one package, or the library feed it is published to}
+- **Entry points:** {the entry point; how it starts: Triggers above}
+- **Runtime and machines:** {Windows / cross-platform / serverless; unattended or attended; machine prerequisites}
+- **Robots:** {the robot account, by persona}
+- **Folders and environments:** {the folder and tenant of test and of production; the one whose UI targets this genome describes}
+- **Logging and retention:** {where it logs; data kept out of the logs; log and queue-item retention}
 
 ## Interface
 
@@ -157,7 +211,19 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
-*A component of a process genome inherits the Source framework, Source export, Requested change, Inventory, Not covered, Unused and Related resources rows from the process genome; a standalone component genome carries them itself.*
+*A component of a process genome inherits the Source framework, Source export, Requested change, Inventory, Not covered, Unused and Related resources rows from the process genome, and its Today view; a standalone component genome carries them itself.*
+
+### Today
+
+*Standalone component genome only.* What the rebuild replaces, as the source runs (extracted genome guide § Source Map, the Today view).
+
+```mermaid
+flowchart LR
+  S1["{source process}"] --> SQ[("{source store}")]
+  S1 --> L1["{source library or object}<br/>{n} actions"]
+```
+
+- `{source unit}` ({n} actions) → {this component / folded into its steps / the activities of its callers / not rebuilt: the {row} row} — {why}
 
 ### Steps
 

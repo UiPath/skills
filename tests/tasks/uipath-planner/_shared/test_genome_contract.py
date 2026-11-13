@@ -172,7 +172,7 @@ def test_section_pointers_resolve_in_the_skills_own_files(skill):
 EDIT_REQUESTS = {
     "The SDD was revised: update the genome": ("uipath-planner design", PLANNER / "references" / "design"),
     "Findings from `uipath-genome`": ("uipath-genome", BUILDER / "references"),
-    "Apply the pre-build answers": ("uipath-genome", BUILDER / "references"),
+    "Apply the readiness answers": ("uipath-genome", BUILDER / "references"),
 }
 
 

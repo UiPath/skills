@@ -59,7 +59,30 @@ One skill per row from [skill-mapping-guide.md](skill-mapping-guide.md). Rationa
 **Process genomes with test components:** the Type column of every test component reads "Test-case group in project `<ProcessName>.Tests`", and the Process Map diagram nests the test components inside a subgraph for the test project.
 
 ### Platform Dependencies
-Every Orchestrator or Integration Service resource touched: queues, assets, credentials, storage buckets, connections, folders, triggers. Each row names resource type and purpose. Extracted genomes keep the source resource name; authored genomes propose one.
+Every Orchestrator, Integration Service and other UiPath service resource the automation touches, laid out so that a reader sees what the build declares and hands over for the target environment: one `###` table per kind the automation uses, in this order, a kind it does not use left out. Extracted genomes keep the source resource name and take each field from the source — a UiPath source's from its deployed state ([uipath-source-guide.md § Deployed State](../extract/uipath-source-guide.md)); authored genomes propose names. A field the source or the description does not show is `*[Inferred]*`, or, bound to the environment, the Configuration Question that asks it. *Used by* names steps in a component genome, components in a process genome.
+
+| Kind | Columns |
+|---|---|
+| Queues | Queue · One item is · Item fields (name: type) · Unique reference · Retries · Added by · Worked by |
+| Assets | Asset · Type (Text, Integer, Bool, Secret) · Value (the fixed value, or the Configuration Question that asks it; never a secret) · Used by · Purpose |
+| Credentials | Asset · Account or persona · Signs in to · Used by |
+| Storage buckets | Bucket · Holds · Written by · Read by |
+| Connections | Connection · Connector · Signs in as · Used by |
+| Data Fabric entities | Entity · Fields (name: type) · Written by · Read by |
+| Triggers | Trigger · Starts · Kind (time, queue, event) · When (schedule and time zone, the queue, or the event) · Runners |
+| each other service (Action Center, Document Understanding, Test Manager, Context Grounding) | Resource · Used by · Purpose |
+
+A transactional flow's queues and triggers are its As-is: the split answers can change them ([transactional-shape-guide.md](transactional-shape-guide.md)).
+
+**Runtime and deployment** — how and where the automation runs, beside the projects the build makes: these bullets, each present, each value the source or the description does not settle written as `*[Inferred]*` or as the Configuration Question that asks it. A standalone component genome ends this section with them under `### Runtime and deployment`, after the stub or the tables; a process genome's Deployment holds them, and its component genomes do not repeat them.
+
+- **Delivery model:** Automation Cloud, Automation Suite and its version, or standalone Orchestrator.
+- **Packaging and route:** one solution or independent packages, with the buildable projects named; a library with the feed it is published to and before its consumers, apart from the solution's projects, since it is never one of them; with test components, exactly one test project and one Test Manager test set per test component.
+- **Entry points:** each process's entry point; how each starts is the Triggers table.
+- **Runtime and machines:** Windows, cross-platform or serverless; unattended or attended; the machine prerequisites Target Applications names.
+- **Robots:** the robot account, by persona, each process runs as.
+- **Folders and environments:** the Orchestrator folder and tenant of each environment — test, production — and the one whose UI targets the genome describes.
+- **Logging and retention:** where the run logs, the data kept out of the logs (a source's masked variables), and the log and queue-item retention the source states.
 
 **Credentials: one credential asset per login account**, named after the account or persona, with its environment or tenant. Scenarios often sign in as several accounts with different roles on different tenants; never collapse them onto one login. The asset holds the secret; the genome and the data rows name the asset — a password, token or secret value never appears in a genome, a data file or a report, and dropping the account identity along with the secret loses which role each scenario ran as. A secret crosses no component boundary: an Interface argument, a Handoffs row and a start argument carry the asset's name, and the component that uses the secret reads it in the scope that uses it, unless a connection holds the secret (an Integration Service connection). A secret with no account behind it (an API key, a token) is a Secret asset.
 
@@ -221,7 +244,7 @@ Mermaid cannot render BPMN 2.0 itself; when the customer wants a formal model, a
 One row per edge between components: mechanism (queue item, start job, Flow invoke, event, file drop, Action Center task, a shared store one component writes and another reads when asked — a Data Fabric entity, a database table), data schema passed, and what happens when the receiving side fails. This table is the data contract; component Interface sections must agree with it. When the Transactional Shape's producer and consumer are two phases of one component that form a flow ([transactional-shape-guide.md](transactional-shape-guide.md) rule 12) exchanging items through a store (a database work table, a folder, an in-memory work list the job reads once and then works item by item), add one row for that edge too, marked as intra-component and naming the stages on each side (the sub-projects a `Decided:` line names): it is the data contract the shape cites. Every flow of the Transactional Shape cites the Handoffs row that carries its items. The table follows the Process Map diagram: no rows for people or systems the automation only reads from or acts on (the diagram omits them), a human task a component creates (an Action Center task) keeps its row because it carries a data contract, one row per queue edge naming the queue(s) by name, never "the queues", and one row per call and per file or mail handoff between components.
 
 ### Deployment (process)
-Packaging (one solution vs independent packages), entry points and triggers, target folders or environments. Name the buildable projects explicitly; a library is listed with the feed it is published to, apart from the solution's projects, since it is never one of them; when test components exist, Deployment names exactly one test project and one Test Manager test set per test component.
+The Runtime and deployment bullets of § Platform Dependencies, for the whole process.
 
 ## Design Links
 

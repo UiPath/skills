@@ -4,7 +4,7 @@ Read after [uipath-source-guide.md](uipath-source-guide.md); read the § Signals
 
 ## Signals — XAML
 
-`project.json` fields first: `name`, `main`, `entryPoints[]` (`filePath`, `input`, `output`), `dependencies` (package IDs), `designOptions.outputType` (`Process` / `Library` / `Tests`), `expressionLanguage` (`VisualBasic` / `CSharp`), `targetFramework` (`Windows` / `Portable` / `Legacy`), `runtimeOptions.isAttended`, `runtimeOptions.requiresUserInteraction`, `globalHandler`.
+`project.json` fields first: `name`, `main`, `entryPoints[]` (`filePath`, `input`, `output`), `dependencies` (package IDs), `designOptions.outputType` (`Process` / `Library` / `Tests`), `expressionLanguage` (`VisualBasic` / `CSharp`), `targetFramework` (`Windows` / `Portable` / `Legacy`), every `runtimeOptions` key (`isAttended`, `requiresUserInteraction`, `excludedLoggedData` — the variables the job log masks — `isPausable` and the rest), `globalHandler`.
 
 | Signal | Where | Tells you | Example |
 |---|---|---|---|

@@ -65,9 +65,50 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 ## Platform Dependencies
 
-| Resource | Type | Shared by | Purpose |
-|----------|------|-----------|---------|
-| {e.g. InvoiceQueue} | Queue | {components} | {purpose} |
+{One table per kind of resource the process uses, in this order; leave out a kind it does not use. Added by, Worked by, Used by, Written by and Read by name components. A value the source or description does not show is *[Inferred]*, or the Configuration Question that asks it.}
+
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| {e.g. InvoiceQueue} | {one invoice} | {InvoiceNumber: Text, Amount: Number} | {InvoiceNumber, on} | {2} | {component 1} | {component 2} |
+
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|-------|------|-------|---------|---------|
+| {e.g. ErpBaseUrl} | {Text / Integer / Bool / Secret} | {fixed value, or Configuration Question N; never a secret} | {components} | {what it is for} |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+
+### Data Fabric entities
+
+| Entity | Fields | Written by | Read by |
+|--------|--------|------------|---------|
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| {e.g. DailyIntake} | {component 1} | {Time / Queue / Event} | {weekdays 07:00, Europe/Berlin; or the queue; or the event} | {1} |
+
+### {Other service: Action Center, Document Understanding, Test Manager, Context Grounding}
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
 
 ## Configuration Questions
 
@@ -154,9 +195,13 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 ## Deployment
 
-- **Packaging:** {single solution (`uipath-solution`) / independent packages} — {solution name}
-- **Entry points and triggers:** {schedule, queue trigger, connector trigger, manual}
-- **Environments:** {folders, tenants, feeds}
+- **Delivery model:** {Automation Cloud / Automation Suite <version> / standalone Orchestrator}
+- **Packaging and route:** {single solution (`uipath-solution`) / independent packages} — {solution name}; {each library and the feed it is published to, before its consumers}
+- **Entry points:** {each process's entry point; how each starts: Platform Dependencies, Triggers}
+- **Runtime and machines:** {Windows / cross-platform / serverless; unattended or attended; machine prerequisites}
+- **Robots:** {the robot account, by persona, each process runs as}
+- **Folders and environments:** {the folder and tenant of test and of production; the one whose UI targets this genome describes}
+- **Logging and retention:** {where the runs log; data kept out of the logs; log and queue-item retention}
 
 ## Complexity
 
@@ -182,3 +227,16 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Inventory | {processes, windows, controls (n without a locator), recordsets, rows, credential accounts} | {counts the inventory script reported; execution re-derives the catalogs from the export} |
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
+
+### Today
+
+What the rebuild replaces, as the source runs (extracted genome guide § Source Map, the Today view).
+
+```mermaid
+flowchart LR
+  S1["{source process}"] -->|"{adds items}"| SQ[("{source store}")]
+  SQ -->|"{takes items}"| S2["{source process}"]
+  S2 --> L1["{source library or object}<br/>{n} actions"]
+```
+
+- `{source unit}` ({n} actions) → {component {Name} / folded into {Name}'s steps / the activities of its callers / not rebuilt: the {row} row} — {why}
