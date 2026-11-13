@@ -490,6 +490,9 @@ def test_draft_gate_guard_allows_the_preflight(task: str, command: str) -> None:
         'cd InvoiceIntakeSketchSolution && uip solution resources list --kind Process --search "invoice" --output json',
         'uip solution resources list \\\n  --kind Process --search "invoice" --output json',
         'OUT=$(uip solution resources list --kind Process --search "invoice" --output json)',
+        'for t in invoice record; do uip solution resources list --kind Process --search "$t" --output json; done',
+        'timeout 60 uip solution resources list --kind Process --search "invoice" --output json',
+        'NO_COLOR=1 /usr/local/bin/uip is connections list --all-folders --output json',
     ],
 )
 def test_draft_resource_lookup_counts(command: str) -> None:
@@ -505,6 +508,7 @@ def test_draft_resource_lookup_counts(command: str) -> None:
         "uip solution resources list --help",
         "uip is connections list -h",
         'echo "uip solution resources list --kind Process --search invoice"',
+        'echo "/usr/bin/uip solution resources list --kind Process --search invoice"',
         "uip solution resources list \\\n  --help",
         "uip is connections list \\\n  --all-folders -h",
     ],
