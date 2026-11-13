@@ -168,9 +168,11 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
 
    `validate` must report `Status: Valid`.
 <!--skill-flavor:draft-steps:end-->
-   Before you compile, audit every `.fork()` for the stalls rule 9 describes; neither `check` nor `validate` does it for you:
+   Between `check --graph` and compile, audit every `.fork()` for the stalls rule 9 describes; neither `check` nor `validate` does it for you:
    - In the `.bpmn.ts`, every `.endEvent(` inside a fork branch's callback carries `terminate: true` or `error`, except one ending a non-interrupting handler's path or closing a `.subProcess()` body.
-   - In the `.bpmn.ts`, no `.goto()` inside a fork branch's callback targets an element outside that branch.
+   - In the `.bpmn.ts`, no `.goto()` inside a fork branch's callback jumps out of the branch: its target is on the same branch or is `<fork>_join`.
+     A non-interrupting handler's `.goto()` is exempt.
+     Source that `decompile` wrote uses `.goto()` for ordinary rejoins; for that source, the `check --graph` bullet below decides.
    - In the `check --graph` output, under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` has an `Incoming` no larger than the number of `Outgoing` entries on the `<fork>` node.
      A larger `Incoming` means a handler's path flows into the join; the join's extra source is a box inside an `onError` or `onTimer` handler.
 
