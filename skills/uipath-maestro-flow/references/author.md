@@ -223,9 +223,10 @@ Inputs, outputs and vars take one of the six types the Flow CLI and Workbench of
   own scope; pass values through the `subflow(child, {...})` inputs and read
   them with `input(...)`. `check` does not flag a child script that reads
   `$vars.start.output.*` from the parent — it compiles and resolves to nothing.
-- **Never use `console.log` in a script.** The script runtime has no
-  `console`, and `check` does not flag it. Return the value to inspect:
-  `return { debug: value }`.
+- **Never debug a script with `console.log`.** `console.log` and its
+  siblings exist but do nothing, so the output goes nowhere
+  ([script runtime](script.md#the-javascript-runtime)). Return the value to
+  inspect: `return { debug: value }`.
 - **Never put every `$vars` reference of an expression inside double quotes.**
   An End-node `=js:` expression like `'No results for "' + $vars.start.output.topic + '".'`
   evaluates to null, with no warning. Keep at least one reference outside the
