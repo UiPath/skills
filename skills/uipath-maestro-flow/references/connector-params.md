@@ -58,7 +58,7 @@ source. The loop is:
 <!--skill-flavor:not-in-library-pull:start-->
      `check` and `compile` have already asked the tenant through `uip` for an operation no library holds, and the message's last sentence says what it answered.
      "The tenant was asked … and does not serve it" means the name is wrong or the connector is not available on this tenant: fix the name, or use `http()`.
-     "could not be fetched through uip" means `uip` is not logged in: run `uip login` and re-run `check`.
+     Otherwise the sentence gives `uip`'s own reason, and the fix is that reason's: `uip login` only when it says `uip` is not logged in or the session expired; a missing `uip`, a failed catalog refresh or an unreadable answer is the environment's to fix, and re-running `check` after it retries.
 <!--skill-flavor:not-in-library-pull:end-->
    - `CONNECTOR_OBJECT_REQUIRED` — a generic operation covers many objects;
      add `{ object: '<name>' }`. The message lists the objects.
@@ -110,8 +110,8 @@ When the library cannot be downloaded, or none is published for this environment
 - `registry search` searches the tenant's live catalog.
 - `check`, `compile`, `decompile`, `merge` and `registry describe` fetch an operation no library holds through `uip` into `.flow-sdk/connectors-local/`, then go on.
 
-All of that needs a logged-in `uip`.
-With neither a library nor a login, connector work stops at a message that says so; run `uip login`.
+All of that needs a logged-in `uip`, and an SDK recent enough to fetch: see [CLI-LOOP.md](CLI-LOOP.md#installing-the-package).
+With neither a library nor a working `uip`, connector work stops at a message that gives the reason; fix what it names (`uip login` when the session is the problem).
 `$FLOW_SDK_LIBRARY_JSON`, when an environment sets it, points at a staged library and wins over the cache.
 
 The library verbs are `pull`, `search`, `describe`, `path` and `prepare`.

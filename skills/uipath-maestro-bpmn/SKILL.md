@@ -88,6 +88,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    Check that `Data.Path` is the requested project directory before writing anything, and compile to `<Project>/<Name>.bpmn`, not to a copy elsewhere.
    A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.88.1 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version).
+   When `uip` says the installed SDK cannot fetch connector definitions through uip, it predates that: connector work then needs `uip maestro registry pull` first, or the upgrade its message names (`npm install -g @uipath/maestro-builder-sdk@latest`, or `--save-dev` for a workspace copy).
    Write `<Name>.bpmn.ts` in the workspace root (the directory you started in), not inside the solution or project folder, even when you ran `init` from the solution folder.
    No `package.json` is needed; do not add one (with one, `check` can fail with `Cannot use import statement outside a module`).
 <!--skill-flavor:workflow-scaffold:end-->
