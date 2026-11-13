@@ -67,7 +67,10 @@ not drift to undo. Never move them back. The changes to act on are the
 A refused merge writes nothing, so there is nothing to restore. If validate
 fails after a merge, fix `.flow-sdk/Deployed.flow.ts` and run `check` and
 `merge` again: merge restamped the source, so the same command merges the fix.
-To drop the edit instead, revert it in the source and merge again.
+To drop the edit instead, revert it in the source and merge again. The result
+is equivalent to the original, not byte-identical (edges renumbered, nodes
+moved for the edit stay moved); for a byte-exact undo of a project under
+version control, `git checkout -- Deployed.flow`.
 
 ### The stamp, and when merge refuses
 
@@ -297,20 +300,21 @@ overwrites that source. A supplied source has no stamp, so compile its baseline
 before the edit, outside the project, and pass it to merge:
 
 ```bash
-[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
-BASE=$(mktemp -d)
-uip maestro flow compile .flow-sdk/Deployed.flow.ts -o "$BASE/Deployed.flow"
+[ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name 'Deployed.baseline' -o -name 'Deployed.edited' -o -name baseline -o -name edited -o -name 'Deployed.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} +
+rm -rf /tmp/flow-baseline-Deployed && mkdir -p /tmp/flow-baseline-Deployed
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o /tmp/flow-baseline-Deployed/Deployed.flow
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
 uip maestro flow check .flow-sdk/Deployed.flow.ts --source --baseline Deployed.flow
 uip maestro flow merge .flow-sdk/Deployed.flow.ts --original Deployed.flow \
-  --baseline "$BASE/Deployed.flow" -o Deployed.flow \
-  && uip maestro flow validate Deployed.flow --output json && rm -rf "${BASE:?}"
+  --baseline /tmp/flow-baseline-Deployed/Deployed.flow -o Deployed.flow \
+  && uip maestro flow validate Deployed.flow --output json && rm -rf /tmp/flow-baseline-Deployed
 ```
 
 Merge compiles the edited source itself and writes over the original, agent
-files included, as in [the safe project loop](#the-safe-project-loop). Keep
-`$BASE` in `mktemp -d`, never under the project: a `.flow` there is a second
-deliverable.
+files included, as in [the safe project loop](#the-safe-project-loop). The
+baseline directory is a fixed path, so it survives the separate shell calls
+before and after the edit. Keep it outside the project: a `.flow` there is a
+second deliverable.
 <!--skill-flavor:supplied-source:end-->
 
 ## What decompile reconstructs
@@ -408,7 +412,7 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   dropped or rewired, a node's type changed, a switch case id or human-task
   outcome id renamed, or a binding row added, dropped or duplicated. Merge has
   already written it: if the spot is one you did not mean to change, fix the
-  `.flow.ts` there and merge again, or merge with `--strict` to refuse before
+  `.flow.ts` and merge again, or merge with `--strict` to refuse before
   writing. A warning about a merged edge's handle means `validate` will refuse
   the merged file.
 - `the round trip appends End "<id>" after …` is the one benign line: compile
