@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Grades finishing a triage pattern the Flow canvas inserted: every mock replaced
 by the real step, every placeholder prompt rewritten, the classifier reading the
-item, and each category sent to its own endpoint by the pattern's own routing."""
+item, and each category sent to its own endpoint by the pattern's own routing,
+over plain HTTP: no step bound to an Integration Service connection."""
 
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ from _shared.flow_graph import END, fail, load_graph  # noqa: E402
 
 MOCK = "core.logic.mock"
 HTTP = "core.action.http"
+HTTP_CONNECTION = "uipath-uipath-http connection"
 PLACEHOLDER = "PLACEHOLDER"
 TRIGGER = "start"
 ROUTER = "routeByCategory"
@@ -56,6 +58,11 @@ def main() -> None:
             fail(f"the {host} step is not reached by both the switch and the person's choice")
         if not any(g.type_of(n) == END for s in senders for n in g.reachable(s)):
             fail(f"the {host} step does not end at an End")
+
+    # A managed HTTP step that names no connection leaves resourceKey empty.
+    for binding in g.flow.get("bindings") or []:
+        if binding.get("name") == HTTP_CONNECTION and binding.get("resourceKey"):
+            fail(f"an HTTP step is bound to connection {binding['resourceKey']!r}: the task asks for plain HTTP, no connector")
 
     print(f"PASS: no mocks or placeholder prompts left; {len(HOSTS)} categories sent by {sorted(calls)}")
 

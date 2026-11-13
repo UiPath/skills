@@ -133,14 +133,15 @@ def test_allowing_one_binding_does_not_allow_another(project: Path, capsys) -> N
     assert graph(project, "--added-binding", "FolderKey") == 1
 
 
-def test_allowed_binding_does_not_excuse_a_changed_original(project: Path) -> None:
+def test_allowed_binding_does_not_excuse_a_changed_original(project: Path, capsys) -> None:
     def change(flow: dict) -> None:
-        flow["bindings"][0]["resourceKey"] = "changed"
-        add_bindings(*HTTP_BINDINGS)(flow)
+        original = next(b for b in flow["bindings"] if b["name"] == "FolderKey")
+        original["resourceKey"] = "changed"
 
     mutate(project, change)
 
     assert graph(project, *ALLOW_HTTP_BINDINGS) == 1
+    assert capsys.readouterr().out.strip() == "FAIL: binding removed or altered: 'FolderKey'"
 
 
 def test_credit_cap_edit_passes_only_with_its_allowance(project: Path) -> None:
