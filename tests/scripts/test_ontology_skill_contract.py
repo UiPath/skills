@@ -277,7 +277,8 @@ PER_FILE_RULES = ("OFN-001", "OFN-002", "OFN-004", "OFN-005", "OFN-009", "SHC-00
     "SHC-006", "SHC-007", "SHC-008", "SHC-009", "SHC-010", "MAP-002", "MAP-004", "MAP-005", "MAP-006",
     "CTX-001", "CTX-002", "CTX-003", "CTX-005", "CTX-006", "CTX-007", "SUM-001", "SUM-002")
 C1_CODES = ("NoParentSolution", "OntologyNotFound", "OntologyNameTaken", "InvalidOntologyName", "EntityNotFound",
-    "LocalFlagRequired", "LocalAndFolderKeyConflict", "LocalAndPackageConflict", "InvalidFolderKey",
+    "LocalFlagRequired", "LocalAndFolderConflict", "FolderKeyAndPathConflict", "LocalAndPackageConflict",
+    "InvalidFolderKey", "InvalidFolderPath",
     "ConfirmationRequired", "InvalidArtifactFileName", "ArtifactTypeUnresolved", "ArtifactTypeNotSupported",
     "ArtifactTypeAlreadyPresent", "ArtifactCheckFailed", "ArtifactNotFound", "ResourceFileMissing",
     "InvalidResourceArchive", "InvalidAttachedFile", "FileAttachNotSupported", "ResourceNotFound", "PackageNotFound",

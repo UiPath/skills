@@ -265,8 +265,8 @@ Act on each violation's `rule`, `file` and `suggestion` (`Rule`, `File`, `Sugges
 | `InvalidOntologyName` | CLI | Use a name matching the `ONTOLOGY_NAME` pattern |
 | `EntityNotFound` | CLI | Author it locally with `uip df entities create <E> --local --body '<BODY>'` (Stage 4), or fix the name |
 | `LocalFlagRequired` | CLI | Add `--local` |
-| `LocalAndFolderKeyConflict`, `LocalAndPackageConflict` | CLI | Drop the flag that doesn't belong to the local flow |
-| `InvalidFolderKey` | CLI | The local flow passes no folder key; drop it |
+| `LocalAndFolderConflict`, `FolderKeyAndPathConflict`, `LocalAndPackageConflict` | CLI | Drop the flag that doesn't belong to the local flow |
+| `InvalidFolderKey`, `InvalidFolderPath` | CLI | The local flow passes no folder key or path; drop it |
 | `ConfirmationRequired` | CLI | `uip ont delete` needs `--yes`; ask the user first |
 | `ResourceFileMissing`, `InvalidResourceArchive` | CLI | Rebuild the zip with `uip ont files add` for every artifact |
 | `InvalidAttachedFile`, `FileAttachNotSupported`, `ResourceNotFound` | CLI | The attach was refused; read `Instructions`, fix the solution state, then `files add` again |
