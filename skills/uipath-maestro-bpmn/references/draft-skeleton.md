@@ -55,14 +55,15 @@ A skeleton is not a working process and must never be reported as one.
    When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')`.
    Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
    When the step stops early ("stop at the first failed document"), add `completion: '=vars.<flag>'` and declare that boolean flag too.
-   Do not hand-roll a loop from a gateway and a `.goto()`, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
+   Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
 9. **A path that leaves a `.fork()` branch early must end the process; every other path continues on its own branch to the join.**
    A parallel join fires only when every incoming flow has delivered a token.
-   Three shapes break that, and `check` and `validate` all pass them:
+   Four shapes break that, and `check` and `validate` all pass them:
    - A plain `.endEvent()` anywhere inside a branch — on the branch's own path, in a `.choose()` or `.race()` arm such as a rejection, or at the end of an interrupting `onError` or `onTimer` handler — consumes the branch's token, so the join waits forever.
    - A `.goto()` inside a branch that jumps into a sibling branch, past the join, or into the join while the branch's own path also reaches it, breaks the join's count: the branch's own input to the join never delivers, or the join gets an input that never delivers, so the join waits forever.
    - An interrupting handler whose path does not end rejoins at the statement after the activity, and for a branch's last activity that statement is the fork's join.
      The handler's path then becomes an extra input to the join: the activity's own flow never delivers because the handler cancelled it, so the join waits forever.
+   - A `.goto()` from anywhere, after the join included, that targets the `.fork()` itself gives the fork a second incoming flow; a parallel gateway waits for every incoming flow, so the fork never fires.
 
    Write the safe shape:
    - When the failure or outcome stops the process, end its path in `.endEvent(<id>, { name, terminate: true })`, or in an error end event (`.endEvent(<id>, { name, error: '<ErrorName>' })`) when a caller or an event sub-process handles the error.
@@ -70,6 +71,8 @@ A skeleton is not a working process and must never be reported as one.
    - When the process carries on after a `.choose()` or `.race()` arm, give the arm no end event and no `.goto()`, so it rejoins at the next statement.
    - When the process carries on after a handler, write another statement on the same branch after the activity, such as the next box, so the handler's path rejoins there and the branch reaches the join on one flow.
      A bare `.exclusiveGateway()` inside a branch does not compile, so merge on a box.
+   - To retry the whole parallel block, `.goto()` the box just before the `.fork()`, never the fork: the box merges the loop, and the fork keeps one incoming flow.
+     When the fork directly follows the start event, add that box first, such as the step that prepares the retry.
 
    A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so this rule does not apply to it.
    Nor does it apply to the end event that closes a `.subProcess()` body: the sub-process then continues on its branch.
@@ -170,10 +173,11 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
 <!--skill-flavor:draft-steps:end-->
    Between `check --graph` and compile, audit every `.fork()` for the stalls rule 9 describes; neither `check` nor `validate` does it for you:
    - In the `.bpmn.ts`, every `.endEvent(` inside a fork branch's callback carries `terminate: true` or `error`, except one ending a non-interrupting handler's path or closing a `.subProcess()` body.
-   - In the `.bpmn.ts`, every `.goto()` that starts inside a fork branch's callback targets a node that only that branch reaches before the join, or `<fork>_join` when that `.goto()` is the branch's only flow into the join.
-     A `.goto()` into a sibling branch, past the join, or into the join while the branch's own path also reaches it fails the audit.
+   - In the `.bpmn.ts`, every `.goto()` that starts inside a fork branch's callback targets a node declared inside that same branch's callback, or `<fork>_join` when that `.goto()` is the branch's only flow into the join.
+     A `.goto()` into a sibling branch, past the join, or into the join while the branch's own path also reaches it fails the audit, as does a `.goto()` to the fork or to any node before it.
      This holds for source that `decompile` wrote too: its `.goto()` rejoins pass only when they stay on their own branch, and the `check --graph` bullet below cannot prove that, because a jump into a sibling branch leaves the join's `Incoming` count unchanged.
      A non-interrupting handler's `.goto()` is exempt when its target cannot reach `<fork>_join`.
+   - In the `.bpmn.ts`, no `.goto()` anywhere targets a `.fork()` id; a whole-block retry targets the box before the fork (rule 9).
    - In the `check --graph` output, under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` has an `Incoming` no larger than the number of `Outgoing` entries on the `<fork>` node.
      A larger `Incoming` means an extra path flows into the join; the join's extra source is a box inside an `onError` or `onTimer` handler, or a `.goto()` from a decision arm.
 
