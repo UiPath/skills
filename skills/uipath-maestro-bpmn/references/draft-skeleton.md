@@ -128,16 +128,15 @@ Act only on errors, and do not report the warning: it appears on every skeleton,
 
 ## Find the resources
 
-A box whose kind runs a deployed resource cannot be built without one: every kind in [Box kinds](#box-kinds) except `Execute script` and `Execute HTTP request`, including Business rule, plus a queue, a Data Fabric entity, and a connector box's connection.
+A box whose kind runs a deployed resource cannot be built without one: every kind in [Box kinds](#box-kinds) except `Action app`, `Execute script` and `Execute HTTP request`, including Business rule, plus a queue, a Data Fabric entity, and a connector box's connection.
 When this run already found no `uip login` (the upload failed for it), skip the lookup and mark each such box `not checked`.
 Otherwise run every lookup in **one** Bash call.
 The lookups only read the tenant, so a request that forbids uploading or running anything does not forbid them.
 It is the turn's last tool call: read [gate-reply-template.md](gate-reply-template.md) and send any progress note before it, and when it returns, send the gate reply as your next and final message, starting with its first line.
 
-- **Processes, queues, apps:** `uip solution resources list --kind <Process|Queue|App> --search "<term>" --output json`.
+- **Processes and queues:** `uip solution resources list --kind <Process|Queue> --search "<term>" --output json`.
   It lists what the solution already holds (`Source: Local`) and what the tenant has (`Source: Remote`).
   `--kind Process` returns every process type; match the box's kind on `Type`: RPA workflow `process`, API workflow `api`, Agent `agent`, Maestro BPMN `processOrchestration`, Maestro Case `CaseManagement`, Maestro Flow `Flow`, Function `function`.
-  An Action app box takes `--kind App`.
 - **Connections:** run this once when any box is a connector box or a Data Fabric entity box, including when the user named no provider; skip it when no box is either.
   No connector key is needed, and the command has no `--limit`, so the `--output-filter` row filter keeps the output to the boxes' connectors:
 
@@ -158,7 +157,7 @@ It is the turn's last tool call: read [gate-reply-template.md](gate-reply-templa
 
 Run each lookup exactly as written, adding no flag: `uip` rejects `--output-filter` on `uip solution resources list` without `--limit`, and rejects `--limit` on every `uip is` and `uip df` list.
 `--search` matches names only, and tenants hold thousands of processes, so never list a kind unfiltered, not even after a search came back empty.
-Put every search in the one lookup call: the user's own words for the resource, and one or two keywords from the box's label (`review`, `approval` for `Manager review [Action app]`).
+Put every search in the one lookup call: the user's own words for the resource, and one or two keywords from the box's label (`invoice`, `extract` for `Extract invoice data [RPA workflow]`).
 When a lookup fails, mark its boxes `not checked`, say why in the one sentence the reply's first line allows, and do not retry.
 Mark a box `not checked` only when its lookup ran and exited non-zero, or when this run already found no `uip login`; never write it for a lookup you did not run.
 A failed lookup proves nothing is missing: say "Couldn't check your Slack connections", never "No Slack connection in this tenant", and never name a connector key, a kind or a CLI term.
@@ -168,13 +167,14 @@ Then give each box one status:
 - When the user named the resource, or exactly one row fits the box, use it and name it, with its folder when the row has one.
 - When several fit, name the best two and ask which one.
 - When none fits, write `none yet, create it or name one`: the user creates it or names one, or picks *Change it*.
-- `Execute script` and `Execute HTTP request` boxes need no resource: write `no resource needed` and look nothing up for them.
+- `Action app`, `Execute script` and `Execute HTTP request` boxes need no resource: write `no resource needed` and look nothing up for them.
+  An Action app box is built as an inline form, which travels in the `.bpmn` ([Human task outcomes](bpmn-runtime.md#human-task-outcomes)), so no app on the tenant can be bound to it.
 
-A row fits only when both hold: its kind is the box's kind (match `Type` as above, and an Action app box takes an action app, never a web or other app), and its name and folder show it does the step the box describes.
+A row fits only when both hold: its kind is the box's kind (match `Type` as above), and its name and folder show it does the step the box describes.
 A name that merely shares a keyword does not fit: an app called `review-app` in an unrelated project's folder is not the approval step of an accounts-payable process.
 When you cannot tell that a row serves the step, treat the box as having none, and never bind to that row.
 Run the lookup again at every gate, so a resource the user created since the last gate shows up.
-This gate is the one round for structure and resource questions.
+This gate is the one round for structure and resource questions; a question the skill asks before the skeleton exists, such as which solution to use, still comes before it.
 
 ## Show the shape and stop
 
@@ -191,7 +191,8 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
 - **Change it**: edit the skeleton, run the loop again, and show it again as steps 4 and 5 do.
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
-  Bind each box to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
+  Bind each box except an Action app box to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
+  An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
   A box the gate marked `none yet` gets a placeholder binding: the resource's symbolic name, with no tenant value, as [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) shows for a connection; the final report lists it under `Needs:`.
   An unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
