@@ -1,0 +1,85 @@
+task_id: skill-task-recording-confirm-and-handoff
+description: >
+  Full Record-a-task loop: uipath-task-recording reads the recording, shows
+  "What I saw" and asks to build; once the user confirms, it hands the account
+  to uipath-rpa, which creates and validates the project. The recording
+  folder must stay untouched throughout.
+tags: [uipath-task-recording, e2e, mode:build, lifecycle:generate, windows]
+
+# uipath-rpa's build chains several cold `uip rpa` calls after the handoff.
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/invoice-recording
+      mount_point: recording
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Build an RPA workflow from my task recording: ./recording
+
+simulation:
+  enabled: true
+  persona: |
+    You are a finance clerk who just recorded yourself copying one invoice's
+    amount and due date from the Acme billing portal into the next empty row
+    of Q3 invoices.xlsx, then saving it. You recorded this on Windows.
+  goal: |
+    Get a UiPath workflow built from your recording.
+  constraints:
+    - "When asked whether to build the workflow, choose 'Build the workflow'."
+    - "For any later question, pick the recommended or first option; the automation runs on Windows."
+    - "Keep replies short: one sentence or a single option pick. Never add new steps."
+  max_turns: 10
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-task-recording skill"
+    skill_name: "uipath-task-recording"
+    expected_skill: "uipath-task-recording"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Agent handed the build to uipath-rpa"
+    skill_name: "uipath-rpa"
+    expected_skill: "uipath-rpa"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uipath-rpa created the project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+init\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uipath-rpa ran its validation gate"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+validate\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A workflow file carries the recorded invoice task"
+    command: "grep -rilE --include='*.xaml' --include='*.cs' --exclude-dir=recording --exclude-dir=.local 'invoice' ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The recording folder is unchanged"
+    command: 'diff -r recording "$REFERENCE_DIR/_fixtures/invoice-recording"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
