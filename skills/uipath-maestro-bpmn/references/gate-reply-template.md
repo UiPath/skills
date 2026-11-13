@@ -6,7 +6,7 @@ Reply in this shape and keep every line; only the first line's second sentence i
 
 ```text
 <!--skill-flavor:gate-first-line:start-->
-<Name>: outline ready<, uploaded> (draft mode). <One sentence if the upload or a lookup failed, the upload to an existing solution waits for the user's go-ahead, you kept the user's Studio Web edits, or the new solution took another name because its default was taken.>
+<Name>: outline ready<, uploaded> (draft mode). <One sentence if the upload or a lookup failed, the upload to an existing solution waits for the user's go-ahead, you kept the user's Studio Web edits, or you put the project in a new solution because the request named none, or the new solution took another name because its default was taken.>
 <!--skill-flavor:gate-first-line:end-->
 <!--skill-flavor:gate-path-line:start-->
 <the Studio Web link (Data.DesignerUrl) on its own line when it uploaded, else the local <Project>/<Name>.bpmn path as plain text, never a link>

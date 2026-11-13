@@ -97,10 +97,10 @@ success_criteria:
 
       1. The first line starts with `InvoiceIntakeSketch: outline ready (draft mode).` and
          does not say `uploaded`. After that, the same line may hold at most
-         one more sentence, about a lookup that failed, changes kept, an
-         upload to an existing solution that waits for the user's go-ahead,
-         or a new solution that took another name. A sentence saying the
-         upload was skipped, deferred or not performed fails this item.
+         one more sentence, about a lookup that failed, changes kept, or a
+         new solution that took another name. Any sentence about the upload
+         (skipped, deferred, not performed, or waiting for a go-ahead) fails
+         this item.
       2. The second line is the path of the local `.bpmn` file (ends in
          `.bpmn`) as plain text, and nothing else. A Markdown link
          (`[label](<path>)`, whatever its label or target) fails this item:
