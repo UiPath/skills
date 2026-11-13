@@ -217,16 +217,23 @@ RUN --mount=type=secret,id=npm_auth_token \
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
 # Without it, RPA tasks running under driver: docker fail their build criterion
 # with `spawn dotnet ENOENT`. libicu is a runtime dependency of the SDK.
+# The SDK install is best-effort: when dot.net is unreachable after retries the
+# image builds without dotnet, so only the tasks that need it fail, not the run.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libicu-dev \
         jq \
     && rm -rf /var/lib/apt/lists/* \
-    && curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
-    && bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet \
-    && bash /tmp/dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet \
-    && ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet \
-    && rm /tmp/dotnet-install.sh \
-    && dotnet --version
+    && if curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 30 \
+            https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
+        && bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet \
+        && bash /tmp/dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet \
+        && /usr/share/dotnet/dotnet --version; then \
+         ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet; \
+       else \
+         echo "WARNING: .NET SDK install failed; this image has no dotnet, so RPA build and Helm tasks will fail." >&2; \
+         rm -rf /usr/share/dotnet; \
+       fi \
+    && rm -f /tmp/dotnet-install.sh
 
 ENV DOTNET_ROOT=/usr/share/dotnet \
     DOTNET_NOLOGO=1 \
