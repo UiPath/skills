@@ -32,5 +32,5 @@
 <!--skill-flavor:sdk-http-manual:end-->
 
 <!--skill-flavor:sdk-check-baseline:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later. Studio Web ships its own SDK: when `check` refuses `--baseline` (`needs a @uipath/maestro-builder-sdk release that supports it`, or `unknown option '--baseline'`), this Studio Web build does not have it yet. Run `check --source` without `--baseline` and fix only the errors on elements you changed.
+  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later. Studio Web ships its own SDK: when `check` refuses `--baseline` (`needs a @uipath/maestro-builder-sdk release that supports it`, or `unknown option '--baseline'`), this Studio Web build does not have it yet. Run `check --source` without `--baseline` and fix only the errors on elements you changed. For a probable SDK defect, stop and tell the user, as above.
 <!--skill-flavor:sdk-check-baseline:end-->

@@ -376,7 +376,7 @@ binding half, which is the same for every connector-backed node.
   For instance, an import whose connector tasks name no connection gets one `INTSVC_CONNECTION_MISSING` error per task, and a one-word fix in a script task can never get a clean check.
   With `--baseline`, `check` decompiles the original, checks it the same way, and marks each finding:
 
-  ```
+  ```text
   $ uip maestro bpmn check <Name>.bpmn.ts --source --baseline <Project>/<Name>.bpmn
     ✗ [EXPR_UNDECLARED_REF] in scriptTask "Task_A" input: Expression references `vars.ghost`, ... (edited)
     ⚠ [INTSVC_CONNECTION_MISSING] "Activity_x" (Intsvc.ActivityExecution) names no connection ... (pre-existing, not counted)
@@ -385,13 +385,13 @@ binding half, which is the same for every connector-backed node.
 
   - **`(edited)`** (JSON `origin: "edited"`): fix it. It is on an element you changed or added, or on an untouched element your edit broke (the original does not have it). A renamed element is a new element: its findings count. The exit code is 1 only while one is left.
   - **`(pre-existing, not counted)`**: the original already has it, on an element you did not change. It is a warning. Leave it unless the user asked you to fix it.
-  - **`(pre-existing)` worded as a probable SDK defect** (JSON `class: "lowering"`): `compile` cannot write that element, so `merge` refuses too. Do not edit the element to get around it; tell the user it is a probable SDK defect to report at <https://github.com/UiPath/builder-sdk/issues>.
+  - **`(pre-existing)` worded as a probable SDK defect** (JSON `class: "lowering"`): `compile` cannot write that element, so `merge` refuses too and the edit cannot be finished. Stop, do not edit the element to get around it, name the element, and tell the user it is a probable SDK defect to report at <https://github.com/UiPath/builder-sdk/issues>.
   - **`CHECK_INCOMPLETE`**: check stopped at a refusal about the whole process (two elements with one id), so the rest was not judged. Fix that refusal first, even if the original has it, then check again.
 
   "Unchanged" means the element builds the same from your source as from a fresh decompile of the original, payload included; wiring is not part of it. So keep line 1 of the `.bpmn.ts` (the decompile stamp): `check` decompiles the original with the options it records.
   Pass the original, not a compiled baseline. On the first `check` of an unedited decompile, every finding is pre-existing, so run that one without `--baseline` when you need to see the original's own problems.
 <!--skill-flavor:sdk-check-baseline:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later and `uip` 1.208.0 or later. `uip` refuses an older SDK with `--baseline on bpmn check needs a @uipath/maestro-builder-sdk release that supports it`; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`. An older `uip` answers `error: unknown option '--baseline'`: until it is upgraded, run `check --source` without `--baseline` and fix only the errors on elements you changed.
+  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later and `uip` 1.208.0 or later. `uip` refuses an older SDK with `--baseline on bpmn check needs a @uipath/maestro-builder-sdk release that supports it`; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`. For `error: unknown option '--baseline'`, check the SDK version first (`npm ls -g @uipath/maestro-builder-sdk`): below 6.97.0, upgrade it. Only when it is 6.97.0 or later and the error persists is `uip` too old; until a newer `uip` is installed, run `check --source` without `--baseline` and fix only the errors on elements you changed.
 <!--skill-flavor:sdk-check-baseline:end-->
 
 <!-- RULE:bpmn.brownfield.nested-style -->
