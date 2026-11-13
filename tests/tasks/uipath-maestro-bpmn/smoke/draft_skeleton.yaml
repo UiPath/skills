@@ -20,8 +20,9 @@ reference:
 
 initial_prompt: |
   I need a BPMN process called "InvoiceIntakeSketch" for incoming invoices.
-  Our "Record Invoice" robot records each one. Anything of 1000 or more needs a manager to review it,
-  and the rest go through automatic approval.
+  Our "Record Invoice" robot enters each one into the ledger. Anything of
+  1000 or more needs a manager to review it, and the rest go through
+  automatic approval.
 
   Can you show me what it would look like before you build it? Don't upload
   or run anything yet.
@@ -161,10 +162,11 @@ success_criteria:
   # Both skills look up each box's resource right before the gate (v1 3c,
   # v2 draft-skeleton.md "Find the resources"). The prompt names the "Record
   # Invoice" robot, an RPA workflow box in both arms, so at least one lookup
-  # must run (v2 builds the Action app box as an inline form, with no lookup). It is read-only, so the
-  # "don't upload or run anything" request does not forbid it, and a lookup
-  # that fails offline still counts: the box is then `not checked`. `--help`
-  # looks nothing up, so it does not count.
+  # must run (v2 builds the Action app box as an inline form, with no
+  # lookup). It is read-only, so the "don't upload or run anything" request
+  # does not forbid it, and a lookup that fails offline still counts: the
+  # box is then `not checked`. `--help` looks nothing up, so it does not
+  # count.
   - type: command_executed
     description: "Agent looked up the boxes' resources before the gate"
     tool_name: "Bash"

@@ -167,11 +167,11 @@ Then give each box one status:
 - When the user named the resource, or exactly one row fits the box, use it and name it, with its folder when the row has one.
 - When several fit, name the best two and ask which one.
 - When none fits, write `none yet, create it or name one`: the user creates it or names one, or picks *Change it*.
-- `Action app`, `Execute script` and `Execute HTTP request` boxes need no resource: write `no resource needed` and look nothing up for them.
-  An Action app box is built as an inline form, which travels in the `.bpmn` ([Human task outcomes](bpmn-runtime.md#human-task-outcomes)), so no app on the tenant can be bound to it.
+- `Action app`, `Execute script` and `Execute HTTP request` boxes need no resource: write `no resource needed` and look nothing up for them, even when the user named an app.
+  An Action app box is built as an inline form ([Human task outcomes](bpmn-runtime.md#human-task-outcomes)), so nothing is looked up for it.
 
 A row fits only when both hold: its kind is the box's kind (match `Type` as above), and its name and folder show it does the step the box describes.
-A name that merely shares a keyword does not fit: an app called `review-app` in an unrelated project's folder is not the approval step of an accounts-payable process.
+A name that merely shares a keyword does not fit: a process called `invoice-cleanup` in an unrelated project's folder is not the invoice-recording step.
 When you cannot tell that a row serves the step, treat the box as having none, and never bind to that row.
 Run the lookup again at every gate, so a resource the user created since the last gate shows up.
 This gate is the one round for structure and resource questions; a question the skill asks before the skeleton exists, such as which solution to use, still comes before it.
@@ -193,6 +193,7 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   Bind each box except an Action app box to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
   An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
+  When the user named an Action App, say under `Assumed` that the task is an inline form, not their app, and that Studio Web can switch it to the app.
   A box the gate marked `none yet` gets a placeholder binding: the resource's symbolic name, with no tenant value, as [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) shows for a connection; the final report lists it under `Needs:`.
   An unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).

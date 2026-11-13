@@ -482,7 +482,7 @@ def test_draft_gate_guard_allows_the_preflight(task: str, command: str) -> None:
 @pytest.mark.parametrize(
     "command",
     [
-        'uip solution resources list --kind App --search "review" --output json',
+        'uip solution resources list --kind Process --search "Record Invoice" --output json',
         'uip solution resources list --kind Process --search "invoice" --output json; '
         'uip solution resources list --kind App --search "approval" --output json',
         "uip is connections list --all-folders --output-filter "
