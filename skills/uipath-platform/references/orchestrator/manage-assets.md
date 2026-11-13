@@ -107,10 +107,21 @@ uip or assets get <asset-key> --output json
 
 Returns the decrypted asset value for the current user. Requires `--folder-path` or `--folder-key`.
 
+The positional is the asset **name or key (GUID)**. When you know the asset's name and folder, pass the name directly. Do not run `assets list` first just to get the key. A GUID is always read as a key. Anything else is matched against the asset names in the given folder only.
+
 ```bash
-uip or assets get-asset-value <asset-key> \
+# By name, in the folder the asset lives in
+uip or assets get-asset-value "<ASSET_NAME>" \
+  --folder-path "Finance" --output json
+
+# By key
+uip or assets get-asset-value <ASSET_KEY> \
   --folder-path "Finance" --output json
 ```
+
+If the folder has no asset with that name, the command fails with `ErrorCode: not_found` (`No asset named '<name>' in folder '<folder>'`). Then run `uip or assets list --folder-path "<FOLDER_PATH>" --name "<PART_OF_NAME>" --output json` to find the right name or key, and stop if the asset is not listed.
+
+If a name fails with `Invalid asset key ... Expected a UUID`, the installed CLI only takes keys here. Get the key from that `assets list` call and pass it instead.
 
 This is the only way to retrieve credential/secret values from the CLI. The response includes the resolved value based on the current user's context (relevant for PerRobot-scoped assets).
 
@@ -185,8 +196,8 @@ uip or assets share <new-key> --folder-path "Production" --output json
 #    (or update the original asset in-place if the name must stay the same)
 uip or assets update <original-key> "new-s3cret" --output json
 
-# 4. Verify the new value resolves correctly
-uip or assets get-asset-value <asset-key> \
+# 4. Verify the new value resolves correctly (by name or key)
+uip or assets get-asset-value "DbPassword" \
   --folder-path "Finance" --output json
 
 # 5. Delete the old version (if you created a new asset instead of updating)
@@ -223,8 +234,8 @@ uip or assets share <api-key-asset-key> \
 # Verify sharing
 uip or assets get-folders <api-key-asset-key> --output json
 
-# Confirm value is accessible from Production
-uip or assets get-asset-value <api-key-asset-key> \
+# Confirm value is accessible from Production (by name, now that it is shared there)
+uip or assets get-asset-value "ApiKey" \
   --folder-path "Production" --output json
 ```
 
@@ -252,7 +263,7 @@ uip or assets create "WinCred" "DOMAIN\\user:p@ssw0rd" \
 |---------|-----------------|
 | `list` | Yes (`--folder-path` or `--folder-key`), or pass `--all-folders` to list across all accessible folders |
 | `create` | Yes |
-| `get-asset-value` | Yes |
+| `get-asset-value` | Yes (takes the asset name or key; a name is looked up in that folder) |
 | `get` | No (cross-folder) |
 | `update` | No (cross-folder) |
 | `delete` | No (cross-folder) |
