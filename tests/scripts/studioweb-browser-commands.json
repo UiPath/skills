@@ -401,7 +401,18 @@
     }
   },
   "uipath-mcp-servers": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "or folders explore",
+        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "or folders stop-exploring",
+        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
+      }
+    ],
     "ceiling": {
       "login": 1,
       "mcp serve": 2

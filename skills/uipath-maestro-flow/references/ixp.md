@@ -20,7 +20,7 @@ Run a published Intelligent eXtraction Platform project on an attachment.
 
 Signature: `ixpExtract({ project, modelName, name, folderName, fileRef, pageRange?, versionTag?, folderPath? })`.
 
-Copy identity fields from a freshly pulled tenant registry; never construct them.
+Copy identity fields from what the tenant registry returns; never construct them.
 
 Asking WHICH models exist ("what document extractors can I add?") is read-only Q&A, not a build: one `registry search 'uipath.ixp'` is the whole answer, and `registry get` is never fanned out across its hits.
 
@@ -33,7 +33,6 @@ One search answers them:
 <!--skill-flavor:ixp-list-commands:start-->
 ```bash
 uip login status --output json      # without login, tenant IxP nodes are hidden
-uip maestro flow registry pull --force
 uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
 ```
 <!--skill-flavor:ixp-list-commands:end-->
@@ -45,7 +44,7 @@ Rules for the listing path:
 
 - **Do NOT call `registry get` on the search hits.** The search result already carries every field the answer needs. `registry get` resolves ONE node's authoring identity, so running it per hit turns a one-second answer into a call per published model — measured at 80 calls and 127 seconds on a tenant with 40 of them. Fan it out only when authoring a specific node, and then for that node alone.
 - **Do NOT scaffold a solution, run `uip maestro flow init`, or write a `.flow.ts` or `.flow` file.** Listing is read-only Q&A.
-- **Do NOT mock.** If `Data: []`, answer directly that no IxP models are published on this tenant. The `mock()` fallback is for build-time planning, not for listing-time Q&A.
+- **Do NOT mock.** If `Data: []`, run `uip maestro flow registry pull --force` once and search again (registry reads are cached for 30 minutes); if it is still empty, answer directly that no IxP models are published on this tenant. The `mock()` fallback is for build-time planning, not for listing-time Q&A.
 <!--skill-flavor:ixp-no-login:start-->
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
 <!--skill-flavor:ixp-no-login:end-->
@@ -62,11 +61,10 @@ Treat it as "no extraction model published", and stop searching after that one b
 This is the AUTHORING path, for the one model a step will run.
 To answer "which models exist", see [Listing published models](#listing-published-models) instead — the search alone answers that, and `registry get` must not be fanned out across its hits.
 
-Refresh the registry first, then copy the complete node type and its companion
-defaults. The node type is tenant/version identity, not a string to reconstruct:
+Copy the complete node type and its companion defaults.
+The node type is tenant/version identity, not a string to reconstruct:
 
 ```bash
-uip maestro flow registry pull --force
 uip maestro flow registry search '<project hint>' \
   -f 'type:startsWith=uipath.ixp' \
   --output-filter '[?AvailableOnTenant].NodeType' --output json
@@ -74,6 +72,9 @@ uip maestro flow registry get '<node-type>' \
   --output-filter '{project:Node.nodeType,modelName:Node.inputDefaults.modelName,folderName:Node.inputDefaults.folderName,folderPath:Node.inputDefaults.model.folderPath,versionTag:Node.inputDefaults.versionTag,taxonomyProject:Node.inputDefaults.projectName}' \
   --output json
 ```
+
+Registry reads are cached for 30 minutes.
+If the model is missing from the search, run `uip maestro flow registry pull --force` once and search again.
 
 `registry get` is the authoring source of truth for ONE node. Copy `project`, `modelName`,
 `folderName`, `folderPath`, and `versionTag` from that response; do not switch to
