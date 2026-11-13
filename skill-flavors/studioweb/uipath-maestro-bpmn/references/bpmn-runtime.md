@@ -63,3 +63,7 @@
   Debug runs the open solution, so it starts the child project; before reporting that the pair
   works, read the child's returned values from the parent run (`debug-instances variables-all`).
 <!--skill-flavor:in-solution-debug:end-->
+
+<!--skill-flavor:sdk-check-baseline:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later. Studio Web ships its own SDK: when `check` refuses `--baseline` (`needs a @uipath/maestro-builder-sdk release that supports it`, or `unknown option '--baseline'`), this Studio Web build does not have it yet. Run `check --source` without `--baseline` and fix only the errors on elements you changed.
+<!--skill-flavor:sdk-check-baseline:end-->
