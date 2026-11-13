@@ -73,36 +73,36 @@ three entry points; each file's header spells the paths its rows resolve against
 
 ## Activation modes
 
-An SDD's `Activation Mode` column maps to the SDK's `runs-sequentially` rule and the `lane` parameter on `.task()`. **Do not use `selected-tasks-completed` for within-stage predecessor ordering** — that is a cross-stage concept. Within a stage, task-set grouping controls ordering:
+For an SDD `Activation Mode` column, use the SDK's `runs-sequentially` rule and the `lane` parameter on `.task()`. Within a stage, task-set grouping controls ordering:
 
 | SDD Activation Mode | SDK entry rule | `lane` param | Effect |
 |---|---|---|---|
 | `parallel` | `rule('current-stage-entered')` | omit | Task starts when the stage enters. Each task gets its own set. |
 | `parallel-after-predecessor` | `rule('runs-sequentially')` | shared index across siblings | Siblings share one set and start together after the predecessor set completes. |
-| `sequential` | `rule('runs-sequentially')` | omit (each task in its own set) | Strict chain: each task waits for the previous set. |
+| `sequential` | `rule('runs-sequentially')` | unique index per task | Strict chain: each task waits for the previous set. |
 
-`lane` is the set index in `data.tasks[][]`. **Omitting `lane` always puts a task alone in its own set** — the default is isolation, not grouping. Only tasks that share the same `lane` value AND have `runs-sequentially` are merged into one set. A task without `runs-sequentially` always gets its own set regardless of `lane`.
+`lane` is the set index in `data.tasks[][]`. **Omitting `lane` defaults to set 0** (`lane ?? 0` in the SDK). Tasks that share the same set index start together after the predecessor set completes. A task without `runs-sequentially` always gets its own set regardless of `lane`. To place a `runs-sequentially` task in a distinct set, give it a unique `lane` value.
 
-Pass `{ lane: N }` as the second argument to `.task()` (after the builder callback) ONLY on the siblings that start together. Every other task in the stage omits it:
+Pass `{ lane: N }` as the second argument to `.task()` (after the builder callback). Every task with `runs-sequentially` needs an explicit `lane` — omitting it defaults to 0:
 
 ```ts
 .stage('Issuing Permit', s => s
-  // Set 0: predecessor, alone (no lane)
+  // Set 0: predecessor alone
   .task('Collect Fees', t => t.process('collect').required()
-    .entryWhen(rule('runs-sequentially')))
-  // Set 1: two siblings grouped by lane: 1 — start together after set 0
+    .entryWhen(rule('runs-sequentially')), { lane: 0 })
+  // Set 1: two siblings start together after set 0
   .task('Wait For Confirmation', t => t.waitForTimer({ duration: 'PT1H' }).required()
     .entryWhen(rule('runs-sequentially')), { lane: 1 })
   .task('Track Deadline', t => t.waitForTimer({ duration: 'P5D' }).required()
     .entryWhen(rule('runs-sequentially')), { lane: 1 })
-  // Set 2: downstream, alone (no lane) — waits for set 1
+  // Set 2: downstream, waits for set 1
   .task('Generate Permit', t => t.process('generate').required()
-    .entryWhen(rule('runs-sequentially'))))
+    .entryWhen(rule('runs-sequentially')), { lane: 2 }))
 ```
 
-Emits `tasks: [[Collect Fees], [Wait, Track], [Generate]]` — three sets. Tasks without `{ lane }` (Collect Fees, Generate Permit) each get their own set. The two siblings sharing `{ lane: 1 }` merge into set 1.
+Emits `tasks: [[Collect Fees], [Wait, Track], [Generate]]` — three sets. The two siblings sharing `{ lane: 1 }` merge into set 1. Collect Fees (`lane: 0`) and Generate Permit (`lane: 2`) each occupy their own set.
 
-**Anti-pattern:** giving every task in the stage the same `lane` or omitting `lane` on all of them. Either collapses siblings into one flat chain or one flat group, losing the parallel-after-predecessor structure.
+**Anti-pattern:** omitting `lane` on all `runs-sequentially` tasks — they all default to set 0 and start together, losing the sequential structure. Giving every task the same explicit `lane` has the same effect.
 
 ## Document extraction
 
