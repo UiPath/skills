@@ -95,7 +95,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.
 5. **Fix what it rejects.** Exit 3 means the document is a schema but breaks a rule; `Data.Issues` lists each problem with the path it is at. Correct those and run the same command again.
 6. **Validate the flow:** `uip maestro flow validate <file> --output json` must come back `Valid`.
-7. **Report** what was created, pass on the processor warning if the output carries one, and say that taking the node live is the user's step in Studio Web.
+7. **Report** what was created, and pass on `Data.ProcessorSync`: it says whether this schema reaches the node's processor when the solution next packs or publishes. Name the file in `Data.ResourceFile` too: the write puts this schema there as well, and it has to be kept with the `.flow`. Taking the node live is the user's step.
 
 ## The document
 
@@ -267,7 +267,10 @@ Never write a replacement from scratch over a taxonomy that already has content.
 | `BusinessChecksDropped` | checks that were attached to an id no longer in the document, and went with it |
 | `DraftDiscarded` | an unsaved editor draft was thrown away |
 | `ReplacedLegacyDocument` | the node had been carrying the superseded `{taxonomy, fieldTypes}` form, so nothing kept an id |
-| `Warnings` | the node names a tenant-side processor that still holds the previous schema |
+| `ProcessorKey` | the processor this node's schema deploys through |
+| `ResourceFile` | the processor's own file under the solution, holding the copy of the schema that deploys. This write puts the schema there — creating the file for a node that had no processor, updating it in place for one that already had — so the file belongs in the same change as the `.flow` |
+| `ResourcePending` | the node gained a processor but no resource file was written, and why. Pass the reason on — it names what creates the file instead |
+| `ProcessorSync` | whether packing the solution rebuilds that processor from this node — it does not for a read-only mirror (`inputs.processorReadOnly`) or a processor published to the tenant (`inputs.processorFolderPath`), whose deployed schema this write never reaches |
 
 On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting success. A minted id where a rename was intended means the id was dropped, so the annotations stored against it no longer point at the field; business checks hang off those same ids, so a dropped id takes its checks with it.
 
@@ -287,4 +290,4 @@ On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 
 Everything here is offline. `set` and `flow validate` prove the taxonomy is well formed, that its references resolve and that its names and instructions fit — not that it extracts the right values. Only running the node against real documents shows that, and the taxonomy usually needs a round of tightening afterwards, mostly in the instructions.
 
-Two things this does not do. It does not update the tenant-side processor a node created in Studio Web points at, so a solution published before that flow is next saved there extracts with the previous taxonomy — the warning in `set`'s output says when this applies. And it does not take anything live: that stays a decision for the user, in Studio Web.
+Where `Data.ResourceFile` names a file, the write landed in two places: the node in the `.flow`, and the processor's own copy of the schema in that file. A debug run and a deployed extraction read that copy, so carry it with the `.flow`. A write that reports `Data.ResourcePending` wrote no second file. `Data.ProcessorSync` says when this schema never reaches the deployed extraction at all. Report whichever of these the write came back with. Taking the node live stays a decision for the user.

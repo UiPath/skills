@@ -16,7 +16,9 @@
  * Web cannot spawn the builder SDK that the current Flow skill authors with).
  * A pin only swaps the source of a skill `skills/` already ships, and every
  * `classic/skills/<skill>` must be pinned by some flavor, so a retained tree is
- * deleted as soon as its last host moves off it.
+ * deleted as soon as its last host moves off it, unless its
+ * `classic/skills/<skill>/.retained` says why it stays (graders and evals that
+ * still read it). An unpinned retained tree ships in no package.
  *
  * A flavor may also prepare a preview skill before promotion:
  * `preview/skill-flavors/<flavor>/` mirrors `preview/skills/<skill>/` with the
@@ -63,6 +65,7 @@ export const CLASSIC_DIRNAME = "classic";
 export const PREVIEW_DIRNAME = "preview";
 export const CANONICAL_PIN_FILENAME = ".canonical";
 export const CANONICAL_PIN_VALUE = "classic";
+export const RETAINED_MARKER_FILENAME = ".retained";
 export const PACKAGE_NAME_MAX_LENGTH = 214;
 export const ROOT_PACK_TRANSACTION_DIRNAME = ".root-pack-transaction";
 export const CUSTOM_PACKAGE_PUBLISH_CONFIG = Object.freeze({
@@ -646,9 +649,12 @@ export function createAllVariants(repoRoot = REPO_ROOT) {
     const pinned = new Set(variants.flatMap(({ plan }) => plan.pinnedSkills));
     for (const skill of discoverClassicSkills(repoRoot, findings)) {
       if (pinned.has(skill)) continue;
+      const retained = path.join(repoRoot, CLASSIC_DIRNAME, "skills", skill, RETAINED_MARKER_FILENAME);
+      if (existsSync(retained) && readFileSync(retained, "utf8").trim()) continue;
       findings.push(
         `${path.join(repoRoot, CLASSIC_DIRNAME, "skills", skill)}: no flavor pins this retained tree; ` +
-          `delete it, or pin it with ${FLAVORS_DIRNAME}/<flavor>/${skill}/${CANONICAL_PIN_FILENAME}`,
+          `delete it, pin it with ${FLAVORS_DIRNAME}/<flavor>/${skill}/${CANONICAL_PIN_FILENAME}, ` +
+          `or say why it stays in its ${RETAINED_MARKER_FILENAME}`,
       );
     }
   }

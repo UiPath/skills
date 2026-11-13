@@ -9,7 +9,7 @@ description: >
   The prompt uses "automate" as a verb on purpose: it is the common word in
   this domain, and reading it as the product name would silently change the
   project type.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, studio-web-unsupported, studio-web-unsupported:operate-json-profile]
 
 run_limits:
   expected_turns: 9

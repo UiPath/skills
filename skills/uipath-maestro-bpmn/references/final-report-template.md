@@ -37,16 +37,20 @@ Assumed: <...>  Unverified: <...>
 The first line names the mode as literal text, in place of `<draft|auto>`.
 Write `(draft mode)` for any run that stopped at a draft gate, including after *Build it*, and write `(auto mode)` only in a run that never stopped at a gate.
 Never write `(auto mode)` after a draft gate.
+<!--skill-flavor:final-status-rule:start-->
 Write `, uploaded` only when this turn's upload succeeded, and `, run` only when this turn ran the process with the user's consent.
 When the upload failed, say so in the first line's one sentence.
+<!--skill-flavor:final-status-rule:end-->
 
 When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
 Drop `Needs:` when nothing is missing.
 
+<!--skill-flavor:final-path-rule:start-->
 The path line belongs to this final message.
 A Studio Web link shown earlier in the turn, before a tool call, does not count: write it again here, on its own line.
 When the path line is the local path, write the plain path, such as `InvoiceIntake/InvoiceIntake.bpmn`, not a Markdown link with the file name as its text.
 
+<!--skill-flavor:final-path-rule:end-->
 Write every line in the user's words: say what each step now does.
 No element type ids (`Orchestrator.StartAgentJob`), connector keys, object or operation names, payload, binding or placeholder terms, and no file names other than the path line.
 
