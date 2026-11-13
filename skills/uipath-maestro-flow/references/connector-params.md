@@ -129,12 +129,12 @@ connector operation is never in the node registry and a node type is never in
 the library, so a miss in one is not evidence about the other.
 
 <!--skill-flavor:library-search:start-->
-Search that library for static contracts, then read a hit's page from its
-`MarkdownPath`:
+Search that library for static contracts, then read a hit's page.
+`<MARKDOWN_PATH>` is the hit's `MarkdownPath`, an absolute path into the cache:
 
 ```bash
-uip maestro registry search send email --limit 5 --output json
-sed -n '1,220p' "<MarkdownPath of the hit>"
+uip maestro registry search 'send email' --limit 5 --output json
+sed -n '1,220p' "<MARKDOWN_PATH>"
 ```
 <!--skill-flavor:library-search:end-->
 
