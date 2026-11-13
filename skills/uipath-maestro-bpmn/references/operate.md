@@ -53,6 +53,15 @@ The one exception is the Studio Web upload of a project this run created: a requ
    uip solution resources refresh --solution-folder <SolutionDir> --output json
    ```
 
+   When the process calls other Orchestrator processes, queues, agents or
+   connections, confirm the refreshed `bindings_v2.json` is the versioned object
+   `{ "version": "2.0", "resources": [ … ] }` with one entry per dependency, and
+   that `resources refresh` imported each one. An empty `resources` array is
+   right only for a process with no dependencies; with dependencies it means the
+   binding never reached the BPMN, so fix the `.binding()` in the source and
+   rebuild rather than writing the entry by hand. When an expected dependency was
+   not imported, say so in the reply.
+
 5. Confirm login:
 
    ```bash
@@ -150,6 +159,28 @@ uip maestro bpmn process publish <project-path> --folder-key <FOLDER_KEY> --wait
 `--folder-key` is required. `--wait` returns once the entry points are available.
 `Data.ProcessKey`, `Data.ProcessVersion` and `Data.ReleaseKey` feed `process run`; `<PROCESS_KEY>` is `<ProcessKey>:<ProcessVersion>`.
 Anything shipped with a solution still goes through the solution path above.
+
+## When pack, upload or import fails
+
+Capture the error category and the `Instructions` text, then correlate it with
+the four generated files before changing anything:
+
+| File | Check |
+| --- | --- |
+| `entry-points.json` | non-empty; each `filePath` is `/content/<Name>.bpmn#<start-id>` for a root start event in the compiled BPMN |
+| `bindings_v2.json` | one resource per `=bindings.<id>` the BPMN reads, including each connector's `Connection` |
+| `operate.json` | `main` names the compiled `.bpmn` |
+| `package-descriptor.json` | lists the `.bpmn` and the generated JSON under `content/` |
+
+- A file that disagrees with the compiled BPMN is stale: run `refresh` and retry.
+- A file that agrees with a wrong BPMN means the source is wrong: fix the
+  `.bpmn.ts`, recompile, format, validate, `refresh`, retry.
+- An unresolved connector — no connection binding, draft context — goes back
+  through the CLI's Integration Service enrichment, then `refresh`.
+- Never hand-edit a generated file to get past the error.
+
+[diagnose.md](diagnose.md) is for a process that has run; a pack or upload
+failure is fixed here.
 <!--skill-flavor:ship:end-->
 
 ## Debug — a controlled Studio Web run
@@ -252,6 +283,7 @@ When the action reveals a modeling or binding problem, the fix is in the
 ## Anti-patterns
 
 - **Never debug or run without the user's explicit consent for that run.**
+- **Never reuse a previous run's inputs silently.** Confirm the input set for each run, and redact secrets from the summary.
 <!--skill-flavor:publish-default:start-->
 - **Never deploy to Orchestrator because the user said "publish".** Studio Web upload is the default.
 <!--skill-flavor:publish-default:end-->

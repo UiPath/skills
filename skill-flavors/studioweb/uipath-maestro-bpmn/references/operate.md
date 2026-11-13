@@ -84,7 +84,9 @@ Pass no other flags.
 was found, the run logs and the execution trace. Exit 1 means `Faulted` or
 `Failed`. `TimedOut after <N>s` also exits 1, but the run is still going in
 Studio Web: do not troubleshoot it, and do not run it again. Tell the user to
-follow the run in Studio Web.
+follow the run in Studio Web. Run debug again only after a fresh consent
+question that says it executes the process again, possibly while the first run
+is still going.
 <!--skill-flavor:debug-run:end-->
 
 <!--skill-flavor:publish-default:start-->

@@ -37,6 +37,11 @@ Several descriptions below still describe the classic skill's mechanism.
 - `operate-diagnose/` covers diagnostic inspection and operate-action guidance
   using mocked CLI responses, matching the operate and diagnose capabilities the
   skill retains.
+- `diagnose/` covers single diagnose rules against mocked runs (stuck gateway,
+  root incident, scoped variables, deployed-asset drift, traces last).
+  `next_action_contract/` guards two rules ported from the classic skill:
+  literal reads with no loop, and a next action that names a read-only
+  re-check instead of a lifecycle step.
 - `_shared/` contains small Python helpers for durable XML shape assertions, plus every per-task `check_*.py` grader (reached only via `$REFERENCE_DIR`, never staged into the agent's sandbox).
 
 These tasks validate with `uip maestro bpmn validate <file>`, which runs the

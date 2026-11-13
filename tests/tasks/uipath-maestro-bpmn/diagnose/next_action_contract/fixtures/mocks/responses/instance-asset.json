@@ -1,0 +1,5 @@
+{
+  "instanceId": "inst-triage-001",
+  "assetType": "bpmn",
+  "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:uipath=\"http://uipath.org/schema/bpmn\" targetNamespace=\"http://uipath.com/synthetic/maestro-bpmn/operate-diagnose\"><bpmn:process id=\"Process_InvoiceTriage\" isExecutable=\"true\"><bpmn:startEvent id=\"Start_Manual\"/><bpmn:serviceTask id=\"Task_InvokeLegacyRpa\" name=\"Invoke legacy RPA\"><bpmn:extensionElements><uipath:activity service=\"Orchestrator.StartJob\"><uipath:binding name=\"folderPath\" expression=\"=bindings.LegacyRpaFolder\"/></uipath:activity></bpmn:extensionElements></bpmn:serviceTask><bpmn:endEvent id=\"End_Done\"/></bpmn:process></bpmn:definitions>"
+}
