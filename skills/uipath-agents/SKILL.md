@@ -24,7 +24,11 @@ user-invocable: true
 
 Determine the agent mode before proceeding:
 
-1. **First — confirm this is an agent, not a Coded Function.** If `uipath.json` declares a `functions` map — a Python entrypoint (e.g. `"functions": {"main": "main.py:main"}`, sibling `pyproject.toml`) or a JS/TS one (e.g. `"functions": {"invoice": "functions/invoice.ts:default"}`, sibling `package.json`) — the project is a **Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip function new/pack/publish/run`; `init` is Python-only).
+1. **First — confirm this is an agent, not a Coded Function.** It is a **Coded Function** when either holds:
+   - **The request is deterministic logic with no LLM reasoning** — exact computation, validation, data transforms, API calls with fixed logic, file upload/download — where every input has one correct output and no model decides anything. This applies even when the user calls it an "agent" or "coded agent", and even in an empty directory.
+   - **`uipath.json` declares a `functions` map** — a Python entrypoint (e.g. `"functions": {"main": "main.py:main"}`, sibling `pyproject.toml`) or a JS/TS one (e.g. `"functions": {"invoice": "functions/invoice.ts:default"}`, sibling `package.json`).
+
+   Then stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead — do NOT run `uip codedagent new` / `uip codedagent init`, even after loading it. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip function new/pack/publish/run`; `init` is Python-only). If an LLM chooses, classifies, generates, or decides anything, it is an agent — continue below.
 2. **Check for existing agent project files** in the working directory:
    - `pyproject.toml` + `.py` files + a framework dep (`uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents`) → **Coded**. The framework package already declares `uipath` as a dependency, so an explicit `uipath` entry is not required.
    - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**
