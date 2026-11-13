@@ -47,6 +47,12 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: file_exists
+    description: "The mock answered the check (mocks/check-answered exists), so the agent saw the faked status"
+    path: "mocks/check-answered"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "No .flow holds an Extract document node (or there is no .flow)"
     command: "! grep -rqF extract-document-builder --include='*.flow' ."

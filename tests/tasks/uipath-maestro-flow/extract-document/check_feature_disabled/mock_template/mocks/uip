@@ -3,6 +3,9 @@
 
 The test tenant has document extraction on, so this is the only way to see the
 skill's unavailable path. Every other call runs the real `uip` later on PATH.
+
+Answering creates mocks/check-answered, so the task can tell the agent got
+the fake answer and not the real one.
 """
 
 import json
@@ -10,6 +13,7 @@ import os
 import sys
 
 if sys.argv[1:5] == ["maestro", "flow", "extraction", "check"]:
+    open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "check-answered"), "w").close()
     print(json.dumps({
         "Result": "Success",
         "Code": "ExtractionCheckSuccess",

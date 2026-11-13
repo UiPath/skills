@@ -54,6 +54,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  - type: file_exists
+    description: "The mock answered the check (mocks/check-answered exists), so the agent saw the faked status"
+    path: "mocks/check-answered"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "LeaseReader.flow holds an Extract document node"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name LeaseReader '\"uipath.ixp.extract-document-builder\"'"
