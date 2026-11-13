@@ -68,7 +68,7 @@ success_criteria:
     description: "Every diagnostic read is a literal command: no loop, function or variable in its place"
     tool_name: "Bash"
     command_pattern: '(?:\b(?:for\s+\w+\s+in|while)\b(?:(?!\bdone\b).)*?(?:;|\s)do\s(?:(?!\bdone\b).)*?(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\b\w+\s*\(\)\s*\{[^}]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\balias\s+\w+=[\x22'']?(?:\buip|\$\{?UIP\}?)\s+maestro\b|\bxargs\b[^|;&\n]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:[\w-]+\s+)?[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:instances?|debug-instances?|incidents?|processes)\s+[\w-]+\s+[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+jobs?\s+(?:status|traces)\s+[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:instances?|jobs?|incidents?|processes)\s+[\w-]+\s+[\w.:-]+\s+(?:-f|--folder-key)[ =][\x22'']?\$)'
-    exclude_pattern: '(?:>{1,2}|\btee\s+(?:-a\s+)?)\s*[\x22'']?(?:\./)?diagnosis\.md\b'
+    exclude_pattern: '(?:>{1,2}|\btee\s+(?:-a\s+)?)\s*[\x22'']?(?:[^\s;&|<>\x22'']*/)?diagnosis\.md\b'
     min_count: 0
     max_count: 0
     weight: 2.0
@@ -78,7 +78,7 @@ success_criteria:
     description: "Agent ran no lifecycle, debug, run or ship command"
     tool_name: "Bash"
     command_pattern: '(?:\buip|\$\{?UIP\}?)\s+(?:maestro\s+bpmn\s+(?:instances?\s+(?:retry|cancel|pause|resume|migrate|goto|variables-set|elements?\s+(?:cancel|retry)|messages?\s+send)|debug-instances?\s+(?:cancel|continue|variables-set|breakpoints|create)|upload|publish|deploy|debug(?!-)|run|process\s+(?:run|publish))|solution\s+(?:upload|publish|delete|packages\s+delete|projects\s+publish|deploy\b(?!\s+(?:list|status|config\s+get)\b)))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
-    exclude_pattern: '(?:>{1,2}|\btee\s+(?:-a\s+)?)\s*[\x22'']?(?:\./)?diagnosis\.md\b'
+    exclude_pattern: '(?:>{1,2}|\btee\s+(?:-a\s+)?)\s*[\x22'']?(?:[^\s;&|<>\x22'']*/)?diagnosis\.md\b'
     min_count: 0
     max_count: 0
     weight: 2.0

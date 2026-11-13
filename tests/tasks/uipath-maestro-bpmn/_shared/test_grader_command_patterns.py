@@ -587,6 +587,13 @@ _DIAGNOSIS_HEREDOC = (
     f"Later, as an Operate decision: {_R} retry inst-triage-001 -f folder-public\nEOF"
 )
 
+# The same write with a path prefix (the review on #4704): absolute, $PWD, and tee.
+_DIAGNOSIS_PATH_WRITES = [
+    _DIAGNOSIS_HEREDOC.replace("cat > diagnosis.md", "cat > /workspace/run/diagnosis.md"),
+    _DIAGNOSIS_HEREDOC.replace("cat > diagnosis.md", 'cat > "$PWD/diagnosis.md"'),
+    _DIAGNOSIS_HEREDOC.replace("cat > diagnosis.md <<'EOF'", "tee /abs/diagnosis.md <<'EOF'"),
+]
+
 LITERAL_READS = [
     f"{_R} incidents inst-triage-001 -f folder-public --output json",
     # Chained one per line, as diagnose.md teaches, with harmless lines around them.
@@ -601,6 +608,7 @@ LITERAL_READS = [
     "uip maestro bpmn job status job-triage-001 --folder-key folder-public --output json | jq .Data",
     "for f in *.md; do echo $f; done",
     _DIAGNOSIS_HEREDOC,
+    *_DIAGNOSIS_PATH_WRITES,
 ]
 
 STAND_INS = [
@@ -648,6 +656,7 @@ NEXT_ACTION_READS = [
     "uip maestro bpmn debug --help",
     f"{_R} retry --help",
     _DIAGNOSIS_HEREDOC,
+    *_DIAGNOSIS_PATH_WRITES,
 ]
 
 
