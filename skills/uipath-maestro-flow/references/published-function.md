@@ -95,9 +95,10 @@ is not published yet, so it has no folder. Write it with
   `spec.entryPoints`
   holds the same schema as a JSON string. The rule in
   [Declaring what it returns](#declaring-what-it-returns) still applies.
-- `check` refuses an in-solution step with no `projectId`
-  (`FUNCTION_LOCAL_NO_PROJECT_ID`), a `projectId` that is not a GUID
-  (`FUNCTION_LOCAL_PROJECT_ID_NOT_GUID`), and a `folderPath` beside
+- `check` warns on an in-solution step with no `projectId`
+  (`FUNCTION_LOCAL_NO_PROJECT_ID`; the call resolves by `key`, so a decompiled
+  step without one is fine as is), and refuses a `projectId` that is not a GUID
+  (`FUNCTION_LOCAL_PROJECT_ID_NOT_GUID`) and a `folderPath` beside
   `location: 'in-solution'` (`FUNCTION_LOCAL_HAS_FOLDER`): the in-solution
   binding's folder is `''`, filled in at deploy.
 

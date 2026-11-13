@@ -50,7 +50,8 @@ deployed process), set `location: 'in-solution'` and `projectId`, and omit
   sibling may list no arguments, so write the names and casing the RPA
   project's own arguments use.
 
-`check` refuses the wrong shapes: `RPA_LOCAL_NO_PROJECT_ID` (no `projectId`),
+`check` warns on `RPA_LOCAL_NO_PROJECT_ID` (no `projectId`; the call resolves by
+`key`, so a decompiled step without one is fine as is) and refuses
 `RPA_LOCAL_PROJECT_ID_NOT_GUID` (`projectId` is not the project GUID — often
 the key or the name pasted by mistake), `RPA_LOCAL_HAS_FOLDER` (`folderPath`
 set as well; drop it, or drop `location` to call the published copy).
