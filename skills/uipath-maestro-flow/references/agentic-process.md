@@ -94,6 +94,5 @@ resolves by `key`, so a decompiled step without one is fine as is) and refuses
 `AGENTIC_LOCAL_PROJECT_ID_NOT_GUID` (`projectId` is not the
 project GUID), `AGENTIC_LOCAL_HAS_FOLDER` (`folderPath` set as well; drop it,
 or drop `location` to call the published copy). `AGENTIC_NO_FOLDER` applies to
-published steps only. If your SDK still reports `AGENTIC_LOCAL_NO_PROJECT_ID` as
-an error (releases before UiPath/builder-sdk#2002), add `projectId` from
-`resource.projectKey`.
+published steps only. If `check` reports `AGENTIC_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
+add `projectId` from `resource.projectKey`.

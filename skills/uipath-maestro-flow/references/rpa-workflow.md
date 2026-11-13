@@ -55,8 +55,7 @@ deployed process), set `location: 'in-solution'` and `projectId`, and omit
 `RPA_LOCAL_PROJECT_ID_NOT_GUID` (`projectId` is not the project GUID — often
 the key or the name pasted by mistake), `RPA_LOCAL_HAS_FOLDER` (`folderPath`
 set as well; drop it, or drop `location` to call the published copy).
-`RPA_NO_FOLDER` applies to published steps only. If your SDK still reports
-`RPA_LOCAL_NO_PROJECT_ID` as an error (releases before UiPath/builder-sdk#2002),
+`RPA_NO_FOLDER` applies to published steps only. If `check` reports `RPA_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
 add `projectId` from `resource.projectKey`.
 
 ## Tenant contract
