@@ -1,0 +1,40 @@
+task_id: skill-a2a-agents-create-apikey-asset
+description: |
+  Register a remote A2A agent whose fixed bearer token is kept, as the whole header value `Bearer <token>`, in an Orchestrator asset. Exercises Authentication and Critical Rule 4: the header is `Authorization=%ASSETS/VendorToken%`, never `Authorization=Bearer %ASSETS/VendorToken%` (which would send `Bearer ` twice) and never a literal token. From a CLI login a create from a card URL with an asset-backed header fails with a 403 (the mock answers it so), so the header lands with `remote-a2a-agent update --header` after a create without it. Graded from the uip mock's call log. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-a2a-agents, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Register the vendor's A2A agent in Agent Gateway, in the Shared folder,
+  with the name and slug vendor-agent, from its agent card at
+  https://agent.example.com/.well-known/agent-card.json. The vendor gave us a
+  bearer token that does not expire. It is stored in the Orchestrator asset
+  VendorToken in Shared, as the full header value: `Bearer <token>`.
+success_criteria:
+- type: run_command
+  description: 'One successful `remote-a2a-agent create --slug vendor-agent --agent-card-url <card URL>` without a connection, and a successful create or update that sent Authorization=%ASSETS/VendorToken% exactly (no Bearer prefix), every write in the Shared folder'
+  command: python3 $REFERENCE_DIR/check_create_apikey_asset.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT delete a remote A2A agent
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+remote-a2a-agent\s+delete\b(?![^\n]*--(dry-run|help))'
+- type: command_not_executed
+  description: Agent did NOT create, change or delete an Orchestrator asset
+  tool_name: Bash
+  command_pattern: 'uip\s+or\s+assets\s+(create|update|delete|set)\b(?![^\n]*--help)'
+run_limits: {max_turns: 60}

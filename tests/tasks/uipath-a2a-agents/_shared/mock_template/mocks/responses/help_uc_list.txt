@@ -1,0 +1,18 @@
+Usage: uip agenthub remote-a2a-agent-user-connections list [options]
+
+List the per-user connections of a remote A2A agent.
+
+Needs McpServers.Edit in the agent's folder. status is Active,
+RequiresAuth, Unavailable or Inactive.
+
+Options:
+  --agent <slug>              Remote A2A agent slug, not its display name.
+  --folder-key <key>          Orchestrator folder key (GUID). Use --folder-path
+                              for the folder name or fully-qualified path.
+  --folder-path <path>        Orchestrator folder display name or
+                              fully-qualified path (e.g. 'Shared' or
+                              'Foo/Shared'). Resolved to the folder key via the
+                              Orchestrator SDK.
+  --login-validity <minutes>  Override the interactive-login token lifetime for
+                              this call.
+  -h, --help                  display help for command

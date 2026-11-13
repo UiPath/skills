@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "POST",
+          "Target": "/api/remote-a2a-agents/vendor-agent/refresh-card"
+        }
+      ],
+      "Resolved": {
+        "Slug": "vendor-agent"
+      }
+    }
+  }
+}

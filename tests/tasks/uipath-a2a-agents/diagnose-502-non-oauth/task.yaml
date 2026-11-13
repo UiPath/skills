@@ -1,0 +1,81 @@
+task_id: skill-a2a-agents-diagnose-502-non-oauth
+description: |
+  The user's registration of a remote A2A agent with an Agent Gateway connection fails with `server_error` "HTTP 502: Received HTML instead of the expected JSON response.", and the CLI's Instructions say to retry. The connection is a Personal Access Token one, which the CLI cannot show. Exercises Critical Rule 3 and the troubleshooting guide: the agent does not keep retrying, asks about the connection's auth type (the simulated user says it is a PAT and that the token is also in an Orchestrator asset), and either stops there or registers the agent with `Authorization=%ASSETS/VendorToken%` instead of the connection. Graded from the uip mock's call log and an LLM judge. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-a2a-agents, smoke, 'mode:diagnose', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write, AskUserQuestion]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: I'm trying to register our vendor's A2A agent in Agent Gateway, in the
+  Shared folder, as vendor-agent, with our Agent 2 Agent connection "Vendor
+  Agent". This fails every time:
+
+    uip agenthub remote-a2a-agent create --name vendor-agent --slug vendor-agent --agent-card-url https://agent.example.com/.well-known/agent-card.json --connection-id 7a1b2c3d-0000-4000-8000-0000000000bb --folder-path Shared --output json
+
+  It says "HTTP 502: Received HTML instead of the expected JSON response." and
+  to retry. Fix it.
+success_criteria:
+- type: run_command
+  description: 'At most one more create with the PAT connection and no update setting it; any Authorization header is exactly %ASSETS/VendorToken%; either nothing registered, or vendor-agent registered with that header; every write in the Shared folder'
+  command: python3 $REFERENCE_DIR/check_diagnose_502_non_oauth.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT create, edit or delete an Integration Service connection
+  tool_name: Bash
+  command_pattern: 'uip\s+is\s+connections\s+(create|edit|delete|rename|set-default)\b'
+- type: llm_judge
+  description: The answer names the non-OAuth connection as the cause
+  weight: 2.0
+  pass_threshold: 0.7
+  include_reference: false
+  include_dialog: true
+  include_agent_output: true
+  prompt: |
+    The create failed with HTTP 502 because the Agent 2 Agent connection
+    "Vendor Agent" uses a Personal Access Token: Agent Gateway asks
+    Integration Service for the connection's OAuth token on every card fetch
+    and call, a PAT connection has none, and retrying gives the same 502.
+    The fix is a header with the credential (ideally `--header
+    "Authorization=%ASSETS/<asset>%"`, the asset holding the whole value) or
+    an OAuth connection. Grade the agent's final answer to the user:
+
+      1.0  Names the connection's type (Personal Access Token, not OAuth) as
+           the cause, says retrying does not help, and either registered the
+           agent with the asset-backed Authorization header or clearly offers
+           that (or an OAuth connection) as the fix.
+      0.7  Names the non-OAuth connection as the cause but is vague about the
+           fix, or names the fix without explaining the cause.
+      0.3  Blames something else first (the card URL, the network, a
+           transient service error), or suggests retrying.
+      0.0  Says the connection is fine or that a retry fixed it.
+
+    Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+run_limits: {max_turns: 60}
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath admin who ran the failing create. The "Vendor Agent"
+    Agent 2 Agent connection uses a Personal Access Token you pasted in. The
+    vendor's token is also stored in the Orchestrator asset VendorToken in the
+    Shared folder, as the full header value `Bearer <token>`.
+  goal: |
+    Get vendor-agent registered and working.
+  constraints:
+    - "If the agent asks what type the connection is, say it uses a Personal Access Token."
+    - "If the agent asks whether the token is available another way, or proposes using a header or an asset, say it is in the asset VendorToken in Shared, stored as `Bearer <token>`, and approve using it."
+    - "Never provide the token itself."
+    - "Keep replies short (one or two sentences)."
+  max_turns: 6

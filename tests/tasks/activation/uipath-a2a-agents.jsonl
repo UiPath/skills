@@ -1,0 +1,34 @@
+{"id": "uipath-a2a-agents-001", "prompt": "Register an external A2A agent in Agent Gateway from its agent card URL", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-002", "prompt": "Add our Salesforce Agentforce agent to Agent Gateway as a remote A2A agent", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-003", "prompt": "Register a Microsoft Foundry agent in UiPath Agent Gateway so our UiPath agents can call it over A2A", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-004", "prompt": "uip agenthub remote-a2a-agent create from this agent card JSON, Agent Gateway can't reach the card URL", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-005", "prompt": "List the remote A2A agents registered in my Shared folder", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-006", "prompt": "Show me the cached agent card and headers of the remote A2A agent vendor-agent", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-007", "prompt": "What URL do UiPath callers use for my remote A2A agent in Agent Gateway?", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-008", "prompt": "The vendor updated their agent card, fetch it again for my remote A2A agent", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-009", "prompt": "Delete the remote A2A agent pricing-agent from Agent Gateway", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-010", "prompt": "Authenticate my remote A2A agent with an OAuth Agent 2 Agent connection from Integration Service", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-011", "prompt": "The agent card says it needs an API key in the X-API-Key header, how do I set that on the A2A agent in Agent Gateway?", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-012", "prompt": "Store the A2A agent's API key in an Orchestrator asset and reference it from the agent's headers", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-013", "prompt": "My external A2A agent uses HTTP Basic auth, how do I register it in Agent Gateway?", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-014", "prompt": "Which auth should I use for this A2A agent based on the securitySchemes in its agent card?", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-015", "prompt": "Change the description of my remote A2A agent without touching its headers", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-016", "prompt": "Replace the headers on my remote A2A agent but keep the masked API key", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-017", "prompt": "Point my remote A2A agent at the vendor's new host", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-018", "prompt": "Swap the Integration Service connection on my remote A2A agent for a different one", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-019", "prompt": "Remove the connection from my Agent Gateway A2A agent and use a static header instead", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-020", "prompt": "Deactivate the remote A2A agent for now without deleting it", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-021", "prompt": "Our A2A agent runs inside the corporate network, route Agent Gateway to it through Relay", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-022", "prompt": "Turn off Relay on my remote A2A agent, it is public now", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-023", "prompt": "Set my own per-user connection on the remote A2A agent foundry-agent", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-024", "prompt": "Set a per-user Integration Service connection for jane@contoso.com on our Agentforce A2A agent", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-025", "prompt": "Which users have their own connections on my remote A2A agent?", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-026", "prompt": "Remove my per-user connection from the remote A2A agent so I use the agent's connection again", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-027", "prompt": "uip agenthub remote-a2a-agent create returns HTTP 502 Received HTML instead of the expected JSON response, why?", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-028", "prompt": "Can I use a Personal Access Token Agent 2 Agent connection for a remote A2A agent?", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-029", "prompt": "remote-a2a-agent says remote A2A agent management isn't supported on the connected environment, we're on Automation Suite", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-030", "prompt": "refresh-card fails with Forbidden 403 on my A2A agent that has a %ASSETS% header", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-031", "prompt": "Agent Gateway A2A: my update was refused because it moves the agent to another origin", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-032", "prompt": "The per-user connection set was refused because the connection is for a different URL than the agent card", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-033", "prompt": "Bring an agent from another vendor into UiPath through its A2A agent card", "expected_skill": "uipath-a2a-agents"}
+{"id": "uipath-a2a-agents-034", "prompt": "Dry-run registering a remote A2A agent before creating it", "expected_skill": "uipath-a2a-agents"}

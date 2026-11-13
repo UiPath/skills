@@ -57,7 +57,7 @@ import { sddFingerprint } from "./sdd-fingerprint.mjs";
 export const VALID_SKILLS = new Set([
   "uipath-rpa", "uipath-maestro-flow", "uipath-maestro-bpmn", "uipath-maestro-case",
   "uipath-agents", "uipath-functions", "uipath-api-workflow", "uipath-coded-apps",
-  "uipath-connector-builder", "uipath-ixp", "uipath-process-mining", "uipath-mcp-servers",
+  "uipath-connector-builder", "uipath-ixp", "uipath-process-mining", "uipath-mcp-servers", "uipath-a2a-agents",
   "uipath-solution", "uipath-human-in-the-loop", "uipath-rules",
 ]);
 export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / Deployment, never in Build With or Components

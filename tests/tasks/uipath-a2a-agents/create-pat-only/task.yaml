@@ -1,0 +1,79 @@
+task_id: skill-a2a-agents-create-pat-only
+description: |
+  The user insists on registering a remote A2A agent with a Personal Access Token Agent 2 Agent connection, the only one they have. Exercises Critical Rule 3: a PAT connection has no OAuth token, so Agent Gateway fails the card fetch and every call with a 502; the agent must not attach it, must say why, and must offer the credential as `--header` from an Orchestrator asset (or an OAuth connection) instead. Graded from the uip mock's call log and an LLM judge. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-a2a-agents, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write, AskUserQuestion]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Register the vendor's A2A agent in Agent Gateway, in the Shared folder,
+  with the name and slug vendor-agent, from its agent card at
+  https://agent.example.com/.well-known/agent-card.json, and authenticate it with
+  our Agent 2 Agent connection "Vendor Agent". That connection uses a Personal
+  Access Token. Please use it: it is the only connection we have.
+success_criteria:
+- type: run_command
+  description: 'No remote-a2a-agent write sent the PAT connection (as --connection-id or connectionId), and every write named the Shared folder'
+  command: python3 $REFERENCE_DIR/check_create_pat_only.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT create, edit or delete an Integration Service connection
+  tool_name: Bash
+  command_pattern: 'uip\s+is\s+connections\s+(create|edit|delete|rename|set-default)\b'
+- type: llm_judge
+  description: The answer says the PAT connection cannot work and offers an asset-backed header instead
+  weight: 2.0
+  pass_threshold: 0.7
+  include_reference: false
+  include_dialog: true
+  include_agent_output: true
+  prompt: |
+    The user asked to register a remote A2A agent in Agent Gateway with a
+    Personal Access Token (PAT) Agent 2 Agent connection. Agent Gateway asks
+    Integration Service for the connection's OAuth token on every card fetch
+    and call; a PAT connection has none, so `create` fails with an HTTP 502 and
+    so would every call. The right outcome: no agent registered with that
+    connection, the reason explained, and the credential offered as a header
+    instead, ideally from an Orchestrator asset (`--header
+    "<NAME>=%ASSETS/<ASSET_NAME>%"`), or an OAuth connection. Grade the
+    agent's final answer to the user:
+
+      1.0  Says the PAT connection cannot work for a remote A2A agent (Agent
+           Gateway needs an OAuth token from the connection), did not attach
+           it, and offers the header alternative with an Orchestrator asset
+           (an OAuth connection may be offered too).
+      0.7  Says it cannot work and offers an alternative, but the reason is
+           vague or the asset-backed header is not mentioned.
+      0.3  Attached the connection or tried to, then reported the 502, or
+           suggests retrying with the same connection.
+      0.0  Says the agent was registered with the PAT connection and works.
+
+    Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+run_limits: {max_turns: 60}
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath admin who asked for the vendor agent to be registered.
+    The "Vendor Agent" Agent 2 Agent connection, a Personal Access Token one,
+    is the only connection you have, and you have no other credential at hand.
+  goal: |
+    You would like the agent registered with that connection.
+  constraints:
+    - "If the agent says the connection cannot work and proposes another way, accept it and say you will set that up yourself later; do not ask it to register anything else."
+    - "If the agent asks whether to use the connection anyway, say yes, as long as it works."
+    - "Never provide a token, a secret or an asset name; say you don't have them at hand."
+    - "Keep replies short (one or two sentences)."
+  max_turns: 4

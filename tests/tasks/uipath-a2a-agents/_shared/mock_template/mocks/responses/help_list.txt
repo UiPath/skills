@@ -1,0 +1,16 @@
+Usage: uip agenthub remote-a2a-agent list [options]
+
+List remote A2A agents.
+
+Options:
+  --name <substr>             Filter by name substring.
+  --limit <number>            Page size.
+  --offset <number>           Offset.
+  --folder-key <key>          Orchestrator folder key (GUID). Use --folder-path
+                              for the folder name or fully-qualified path.
+  --folder-path <path>        Orchestrator folder display name or
+                              fully-qualified path (e.g. 'Shared' or
+                              'Foo/Shared'). Resolved to the folder key via the
+                              Orchestrator SDK.
+  --login-validity <minutes>  Interactive-login token lifetime.
+  -h, --help                  display help for command

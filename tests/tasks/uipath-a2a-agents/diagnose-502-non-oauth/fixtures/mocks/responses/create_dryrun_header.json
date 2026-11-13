@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "POST",
+          "Target": "/api/remote-a2a-agents"
+        }
+      ],
+      "Resolved": {
+        "Name": "vendor-agent",
+        "Slug": "vendor-agent",
+        "AgentCardUrl": "https://agent.example.com/.well-known/agent-card.json",
+        "Headers": "Authorization:%ASSETS/VendorToken%"
+      }
+    }
+  }
+}
