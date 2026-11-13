@@ -62,6 +62,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Script tasks | `script(fn \| body)` (SDK 6.81.0+) | [Script tasks](references/case-runtime.md#script-tasks) | `examples/ScriptCase.case.ts` |
 | Resolving SDD resources against the tenant | `uip maestro case registry pull`, `uip maestro case sdd resolve` | [Registry resolution](references/registry-resolution.md) | — |
 | Human work and its Action App | `action`; `app: { name, folder }` (SDK 6.46.4+) names the app (`actionCatalogName` is a task catalog, not the app) | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
+| HTTP requests | `httpRequest({ method, url or path, headers?, query?, body?, connector? })` (SDK 6.82.1+) | [HTTP requests](references/case-runtime.md#http-requests) | `examples/HttpRequestSingleCase.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | Timers | `waitForTimer` | [TimerSpecData](#api-index) | `examples/NightlyRollup.case.ts` |
