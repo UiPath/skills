@@ -43,6 +43,7 @@ Commands that differ in Studio Web:
 | `uip maestro flow validate`, `format` | Work. Never `format` a merged file. |
 | `uip maestro flow nodes …`, `edges …`, `variables …` | Work: they edit the target `.flow` in place; the canvas reloads the open file. |
 | `uip maestro flow registry get`, `search`, `list`, `pull` | Work: the product node registry. |
+| `uip maestro flow extraction check` | Works: it answers whether the tenant of the session can run an Extract document node. |
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
 | `uip maestro registry pull` | Answered by the CLI, with no effect: it confirms the library of the session, ignores its options, and writes no `./connectors/<key>.ts` modules. |
 | `uip maestro registry path` | Not available: there is no local library cache. |
