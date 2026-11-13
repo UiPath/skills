@@ -44,7 +44,9 @@ List every task box, in order, including a box that needs no resource, and nothi
 A box line is the box's label exactly as its `.task()` name spells it, `→ variable` suffix included, and never a branch condition, an arm label or a route: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`.
 After the label, write `: ` and exactly one status: the resource's name with its folder, the two candidates and which one, or one of the fixed phrases `none yet, create it or name one`, `not checked` and `no resource needed`, word for word.
 Give each box one short clause: no element type ids, no build-time plans, and no alternatives for the kind.
+<!--skill-flavor:gate-not-checked-rule:start-->
 Write `not checked` only for a box whose lookup ran and failed, or when this run found no `uip login`; a box you have not looked up is not a reply line yet, so run its lookup first.
+<!--skill-flavor:gate-not-checked-rule:end-->
 When a lookup failed, say why once, in the first line's one sentence, not on the box lines.
 
 ## Nothing else

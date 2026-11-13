@@ -11,7 +11,7 @@
 <!--skill-flavor:draft-steps:end-->
 
 <!--skill-flavor:draft-upload:start-->
-5. The canvas shows the target when the turn ends, so there is nothing to upload.
+   The canvas shows the target when the turn ends, so there is nothing to upload.
    Do not publish, debug or run anything.
    Those are separate decisions, and the user has not approved the shape yet.
 <!--skill-flavor:draft-upload:end-->
@@ -22,8 +22,16 @@ Each turn starts again at step 1 of the [Validation loop](../SKILL.md#validation
 <!--skill-flavor:draft-cloud-copy:end-->
 
 <!--skill-flavor:draft-change-it:start-->
-- **Change it**: start again at step 2 of [Steps](#steps), edit the fresh source, run the loop, and show it again as the gate does.
+- **Change it**: start again at step 2 of [Steps](#steps), edit the fresh source, run the loop, look the resources up again as step 5 says, and show it again as the gate does.
 <!--skill-flavor:draft-change-it:end-->
+
+<!--skill-flavor:lookup-no-login:start-->
+Run every lookup in **one** Bash call.
+<!--skill-flavor:lookup-no-login:end-->
+
+<!--skill-flavor:lookup-not-checked-rule:start-->
+Mark a box `not checked` only when its lookup ran and exited non-zero; never write it for a lookup you did not run.
+<!--skill-flavor:lookup-not-checked-rule:end-->
 
 <!--skill-flavor:final-upload:start-->
 When the built process validates, the canvas shows it, so there is nothing to upload.
