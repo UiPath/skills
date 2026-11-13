@@ -27,13 +27,20 @@ initial_prompt: |
 
   The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
   every node and an edge for every sequence flow. Make sure the process is
-  correct before you finish.
+  correct before you finish. Keep it local for now, don't upload it.
 
   The task is complete only once you have confirmed the file is correct with a
   local validation step. Do NOT ask for approval, confirmation, or feedback and
   do NOT pause between planning and implementation.
 
 success_criteria:
+  - type: command_not_executed
+    description: "Agent did not upload, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
+    pass_threshold: 1.0
+
   # Presence by the shared locator, not a root path: the v1 skill writes `PriorityRouting.bpmn`
   # where it stands, the builder-SDK skill scaffolds `PriorityRouting/PriorityRouting.bpmn` — both are the
   # task done. Same rule the grader below uses to find the file.
