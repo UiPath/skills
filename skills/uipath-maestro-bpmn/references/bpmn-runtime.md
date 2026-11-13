@@ -262,20 +262,25 @@ binding half, which is the same for every connector-backed node.
   With no `folder`, `prepare` searches every folder: it records a single match and names the folder to pin, and lists several without picking one.
 - `entity.folder` is the folder holding the ENTITY; the `folder` option stays the folder holding the CONNECTION.
   They are often the same folder and are still two options.
-- The record operations (`create`, `update`, `get`, `query`, `delete`) then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …) as a V1 task with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, plus the entity's two `Entity` bindings.
-  Only `_V3` takes a folder, and Studio Web's V2 catalog does not list it, so this task stays V1.
+- The record operations then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …), the only one that takes a folder.
+  `create`, `update`, `get` and `query` are the V2 task Studio Web's connector panel saves: `folderEntityName` is a solution-resource picker on the entity's two `resource="entity"` bindings, which the task reads, so a deploy can re-point the entity.
+  `delete` is a V1 task with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, the two bindings beside it; its V2 form cannot be built yet.
+<!--skill-flavor:sdk-df-folder-v2:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later; an older SDK writes every record operation on a folder entity as a V1 task, which still validates and runs, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again when a V2 task is asked for; do not hand-convert its rows.
+<!--skill-flavor:sdk-df-folder-v2:end-->
   A tenant entity's record operations are V2 tasks on the curated operations (`CreateEntityRecordCurated`, `UpdateEntityRecordV2`, `GetEntityRecordByIdCurated`, `QueryEntityRecordsCurated`, `DeleteEntityRecordCurated`), with the entity in the `pathParameters` row.
 <!--skill-flavor:folder-entity-resources:start-->
   Run `uip maestro bpmn refresh <project>` after `compile`, then, when the project has a solution, `uip solution resources refresh --solution-folder <SolutionDir>` (the folder holding the `.uipx`, `<Name>Solution/` in the default scaffold): the first turns the two bindings into the entity's row in `bindings_v2.json`, and the second declares the entity in the solution.
 <!--skill-flavor:folder-entity-resources:end-->
   Do not hand-fill the task through `.activity()`, and do not pass a folder entity's name as a plain `entity` string: that writes the tenant-scope operation, which validates but does not address the folder entity.
 - `entity: { name, folderKey }` is for a folder key already in hand.
-  It writes no `Entity` bindings, so `bpmn refresh` does not declare the entity in the solution; prefer `{ name, folder }` even with a key in hand.
-  A decompiled process shows a `{ name, folder }` task as an `.activity()` with its query rows and its two `Entity` bindings; it compiles back as it is.
+  It resolves the same way: `check` prints `uip maestro registry prepare --entity <name> --folder-key <key>`, which records the entity's own key; run it, then `check` again.
+  A folder key written as an `=`-expression cannot be recorded, so it writes the V1 task and declares nothing in the solution; prefer `{ name, folder }`.
+  A decompiled process shows a folder-entity task as an `.activity()` with its rows and the entity's two bindings; it compiles back as it is.
 - The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
   Tell the user the file operation is not supported on a folder-scoped entity; do not fall back to a plain entity name, which addresses a tenant-level entity instead, or hand-fill `.activity()`.
-- The entity and its folder are literals in the compiled task: the two `Entity` bindings declare the entity in the solution, and the task does not read them.
-  Do not add bindings by hand or promise per-environment re-pointing; tell the user the entity is fixed at compile time.
+- Do not add entity bindings by hand: compile writes the pair.
+  A V2 task reads it, so its entity can be re-pointed per environment at deploy; a `delete` task's entity is fixed at compile time.
 
 <!-- RULE:bpmn.connector.parameter-rows -->
 - `.connector()`, `.dataService()`, `.eventTrigger()` and `.waitForEvent()` write a V2 task (`activityConfigurationVersion: v2`), the shape Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds.
@@ -283,7 +288,7 @@ binding half, which is the same for every connector-backed node.
   Needs `@uipath/maestro-builder-sdk` 6.84.0 or later; an older SDK writes a new `.connector()` task with one `target="path"` / `target="query"` row per parameter and an `operation` context row, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again; do not hand-convert its rows.
 <!--skill-flavor:sdk-v2-connector:end-->
   Its path parameters are one json row, `pathParameters` (`target="pathParameters"`), and its query parameters another, `queryParameters` (`target="queryParameters"`), each keyed by the library's own parameter names (`send_as`, not `sendAs`); the request body is the one json `target="body"` row, and a multipart file part is its own `target="file"` row.
-  `.dataService()` has two exceptions, which it still writes as V1 tasks: the file operations (`downloadFile`, `uploadFile`, `deleteFile`), whose `_V3` operations have no field-name parameter, and every record operation on a folder-scoped entity (see the folder-entity rule above).
+  `.dataService()` still writes V1 tasks for the file operations (`downloadFile`, `uploadFile`, `deleteFile`), and for `delete` on a folder-scoped entity (see the folder-entity rule above).
 - An imported process can also carry V1 tasks, with one `target="path"` / `target="query"` row per parameter and an `operation` context row.
   Leave them as they are: a task you add beside them is V2, and a file may mix the two.
   Leave the process-level `uipath:intsvcActivityConfig` marker as you found it, as `registry get --input-details` instructs: a new workflow from `bpmn init` has it, and an existing workflow without it needs none.
