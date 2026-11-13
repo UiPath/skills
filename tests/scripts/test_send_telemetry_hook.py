@@ -14,11 +14,10 @@ What is left to pin on the plugin side is the WRAPPER contract:
   verbatim — the CLI must receive the exact payload bytes the host piped;
 * fail-soft: ``uip`` absent → exit 0; ``uip`` failing (e.g. a CLI predating
   ``--hook``, whose option parser rejects it) → exit 0 with NO output leaked;
-* the hand-off is inline (the wrapper foregrounds ``uip``), so the synchronous
-  SessionEnd registration still guarantees the last event is flushed before
-  session teardown;
+* the hand-off is inline (the wrapper foregrounds ``uip``), so synchronous
+  SessionEnd allows a bounded, best-effort flush before session teardown;
 * registration shape: async on every event EXCEPT SessionEnd, which is
-  synchronous with a 30s timeout, and all five events share one identical
+  synchronous with a 3s timeout, and all five events share one identical
   command string.
 
 POSIX-only: the stub ``uip`` is a shebang script on ``PATH``; the sh branch of
@@ -106,7 +105,7 @@ def test_async_everywhere_except_synchronous_session_end():
         assert entries[event][0].get("async") is True, f"{event} must be async"
     session_end = entries["SessionEnd"][0]
     assert "async" not in session_end, "SessionEnd must be synchronous"
-    assert session_end.get("timeout") == 30
+    assert session_end.get("timeout") == 3, "best-effort telemetry must not delay teardown for 30s"
 
 
 def test_wrapper_keeps_the_polyglot_shape():
