@@ -32,7 +32,7 @@ One verb. A genome is the markdown specification of an automation — what it do
 
 Checked in order; the first match decides.
 
-1. **A request that writes or changes a genome → invoke `uipath-planner` with the request, then stop.** Authoring one from an idea, a description, an SOP, a PDD, a TO-BE or an SDD; proposing scenarios for a goal; extracting one from a UiPath project or solution or another framework's export; editing one, partial re-extraction included — even when the request names the exact change. Make no change to the genome file here. When `uipath-planner` is not installed, say that writing or changing the genome needs it and stop.
+1. **A request that writes or changes a genome → invoke `uipath-planner` with the request, then stop.** Authoring one from an idea, a description, an SOP, a PDD, a TO-BE or an SDD; proposing scenarios for a goal; extracting one from a UiPath project or solution or another framework's export; editing one, partial re-extraction and applying the answers of its pre-build file included — even when the request names the exact change. Make no change to the genome file here. When `uipath-planner` is not installed, say that writing or changing the genome needs it and stop.
 2. **The user named a verb** → that verb.
 3. **A genome plus build intent** ("build", "execute", "implement", "follow", "run the migration", "execute the refactor") → `build`. A genome extracted from a UiPath source builds as a refactor; one from another framework as a migration, or a refactor when the request asks for one.
 4. **Check or validate a genome → invoke `uipath-planner` with the request, then stop.**

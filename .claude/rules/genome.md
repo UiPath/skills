@@ -25,6 +25,7 @@ Paths are relative to the skill folder.
 | Transactional Shape, the `Decided:` line and its project chain | `references/shared/transactional-shape-guide.md` |
 | Extraction pipeline, its questions (the refactor questions Retire, Fold and Target: § Step 6c), sizing, reading plan | `references/extract/extract-guide.md`; UiPath source facts: `references/extract/uipath-source-guide.md` with `uipath-rpa-signals-guide.md` and `uipath-non-rpa-signals-guide.md`; framework pack resolution: `references/extract/source-frameworks-guide.md`; extraction in parts: `references/shared/extraction-parts-guide.md` |
 | Defect verification | `references/shared/defect-verification-guide.md` |
+| Pre-build file: its items, when it is written and rewritten, where its answers go | `references/shared/prebuild-guide.md`; applying its answers: `references/edit/edit-guide.md` |
 | `author`: genome from an idea, PDD, TO-BE or SDD; scenario proposals | `references/author/author-guide.md`; from an agreed SDD: `references/author/genome-from-sdd-guide.md`; scenarios: `references/author/scenario-proposal-guide.md` |
 | `edit`: edit requests and what each updates, partial re-extraction | `references/edit/edit-guide.md` |
 | Skill mapping: Build With names, Decision Tree, target choice (a refactor's targets included), operate-only skills, common combinations | `references/shared/skill-mapping-guide.md` |
@@ -95,6 +96,7 @@ Each row is one fact written in both skills. A change to either side changes the
 | Source values: the kinds of value read from the source, and "not shown, never not set" | `references/shared/extracted-genome-guide.md` § Source values: the full rule, how extraction reads and writes each kind | `references/genome-reading-guide.md` § Source values: the kinds by name, the readings that decide what is built, the source followed on disagreement, the group report's deviation |
 | Secrets and attached applications across component boundaries | `references/shared/genome-format-guide.md` § Platform Dependencies, § Interface (component) | `references/genome-reading-guide.md` § Platform Dependencies, § Interface |
 | Genome file name slug | `references/shared/genome-format-guide.md` § File Naming and Location | `references/genome-reading-guide.md` § File Naming and Location |
+| Pre-build file: its name beside the genome; its Business decisions and Material to supply are genome edits, the rest the build's answers | `references/shared/prebuild-guide.md` § File and § Where Answers Go | `references/configuration-questions-guide.md` rule 4 |
 | Framework migration pack resolution | `references/extract/source-frameworks-guide.md` § Other frameworks — the framework migration pack | `references/source-frameworks-guide.md` § Other frameworks — the framework migration pack |
 | Running in parts: lead agent, brief and rulings, ledgers and resuming, read plans, return check, ownership, the two-at-once cap, cached waits | `references/shared/extraction-parts-guide.md` § Running in Parts items 1–8: the core, with the lead agent's model as the default | `references/execution-parts-guide.md` § Running in Parts items 1–8: the core, with the smaller model, the no-subagents option and its review, and the status script |
 
@@ -118,6 +120,7 @@ One change, every file in its row, same PR.
 | New genome section or content rule | planner `genome-format-guide.md` (+ both templates); Transactional Shape rule: `transactional-shape-guide.md`; Source Map, source-value or source-defect rule: `extracted-genome-guide.md`. Its build consequence: builder `genome-reading-guide.md` |
 | New edit request or edit rule | planner `edit-guide.md` |
 | Rule for verifying suspected source defects | planner `defect-verification-guide.md` |
+| New pre-build item | planner `prebuild-guide.md` |
 | Rule for extraction in parts | planner `extraction-parts-guide.md` |
 | Fact about reading a UiPath source or its deployed state | planner `uipath-source-guide.md` (or its RPA / non-RPA signals guide); what the build re-reads of the source: builder `source-migration-guide.md` |
 | New scaffolding question | builder `configuration-questions-guide.md` |
