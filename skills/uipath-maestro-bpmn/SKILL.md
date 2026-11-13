@@ -111,9 +111,10 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 ## Draft first
 
 When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
+Judge the intent, not the word: a "draft project" asking for source files to import later, with no upload or run, is a build, not the draft gate.
+<!--skill-flavor:draft-upload-summary:start-->
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
 The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
-<!--skill-flavor:draft-upload-summary:start-->
 Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with a second upload and a final report.
 <!--skill-flavor:draft-upload-summary:end-->
 
@@ -135,7 +136,7 @@ Match one name — do not read either end to end — then read the span it gives
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
-| Show the shape before building it (sketch, draft, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
+| Show the shape before building it (sketch it, show me first, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
 | A node's own output | the node's `outputRows` — **not** a `.var()` beside it | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
@@ -158,7 +159,9 @@ Match one name — do not read either end to end — then read the span it gives
 | Existing BPMN | `bpmn decompile`, `check`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 | Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
+<!--skill-flavor:evaluate-row:start-->
 | Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | `uip maestro bpmn eval` | [Evaluate](references/evaluate.md) | — |
+<!--skill-flavor:evaluate-row:end-->
 | A run failed or is stuck | `uip maestro bpmn job status` / `instance incidents` / `instance variables` / `instance asset` | [Diagnose](references/diagnose.md) | — |
 | Sanitize a file to share or commit; what notes and examples may contain | placeholders in the `.bpmn.ts`, then `decompile` / `merge` for an export | [Public safety](references/public-safety.md) | — |
 | A recurring process shape: review gate, approval chain, triage, external wait, batch, failure net, queue | `choose`, `race`, `subProcess` with `loop`, `eventSubProcess` | [Patterns](#patterns) | — |
@@ -210,8 +213,10 @@ export default bpmn('approval')
 
 - A boundary event is declared on the activity it guards, in that activity's body callback, so `attachedTo` is never written.
   An interrupting handler's path rejoins at the statement after the activity; a non-interrupting one runs beside the activity and must end its own path with an end event, `.goto()`, or an explicit flow.
+  On a `.fork()` branch's last activity, that statement is the fork's join, which then waits forever after the failure: end the handler's path in `.endEvent(<id>, { terminate: true })` or an `error` end, or follow the activity with another statement on its branch; a plain end stalls the join too ([draft-skeleton](references/draft-skeleton.md#what-a-skeleton-is) rule 9).
 - `choose` arms need `when` or `otherwise: true`; the fallback is the default flow, and no flow id is named.
   Arms rejoin at the next statement, through a join named `<id>_join` only when more than one arm reaches it.
+  Inside a `.fork()` branch, a `choose` or `race` arm that ends in a plain `.endEvent()`, or that jumps out with `.goto()` into a sibling branch, past the join, or into the join while the branch's own path also reaches it, stalls the fork's join; end it with `terminate: true` or an `error` end, or let it rejoin ([draft-skeleton](references/draft-skeleton.md#what-a-skeleton-is) rule 9); to retry the whole fork, `.goto()` the box before it, never the fork itself.
 - Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
 - An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.

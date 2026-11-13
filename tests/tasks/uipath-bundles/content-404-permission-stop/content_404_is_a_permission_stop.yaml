@@ -1,0 +1,206 @@
+task_id: skill-bundles-kb-content-404-is-a-permission-stop-smoke
+description: >
+  Smoke: content commands run on Orchestrator's generic /api/bundles routes,
+  which hide a bundle kind the caller cannot access. A caller who holds the
+  bundle record but not knowledge-bundle content permission gets 404
+  `BundleDto does not exist.` from `download`, while `get` on the same key
+  and folder still shows the bundle. The agent must make that `get` check,
+  then stop and report missing content permission. Re-creating or deleting
+  the bundle, logging in again, or re-running the download are the
+  failures. Criteria read actual CLI invocations, not a self-report; `--help`
+  calls are answered separately and never counted.
+tags: [uipath-bundles, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 5
+  max_turns: 20
+
+sandbox:
+  record_cli:
+    - tool: uip
+      responses:
+        # Help first, so no operation rule below answers `<verb> --help`.
+        - when:
+            verb: "or kb"
+            flags:
+              help: {present: true, aliases: [h]}
+          exit_code: 0
+          stdout: >-
+            Usage: uip or kb [options] [command]
+
+            Commands: list, get, create, publish, update, delete, share,
+            versions, history, download, archive, file, build, status, sync,
+            change-proposal
+
+        # The record route answers for the bundle the prompt names, in the
+        # folder the prompt names: the caller can see the record.
+        - when:
+            verb: "or kb get"
+            positional: ["a1b2c3d4-0000-0000-0000-000000000001"]
+            flags:
+              folder-path: "Shared"
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"KnowledgeBundleGet","Data":{
+            "Key":"a1b2c3d4-0000-0000-0000-000000000001","Name":"platform-concepts",
+            "Description":"How the platform fits together","LatestVersion":4,
+            "LastPublishedAt":"2026-09-16T10:12:00Z","Encrypted":false,
+            "StorageProvider":"Orchestrator","StorageContainer":"kb-a1b2c3d4",
+            "CreationTime":"2026-09-01T09:00:00Z"}}
+
+        # Any other key or folder: no such record there.
+        - when:
+            verb: "or kb get"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error getting knowledge bundle",
+            "Instructions":"HTTP 404: KnowledgeBundle does not exist.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":404}}
+
+        - when:
+            verb: "or kb list"
+            flags:
+              folder-path: "Shared"
+          exit_code: 0
+          stdout: >-
+            {"Result":"Success","Code":"KnowledgeBundleList","Data":[{
+            "Key":"a1b2c3d4-0000-0000-0000-000000000001","Name":"platform-concepts",
+            "Description":"How the platform fits together","LatestVersion":4,
+            "LastPublishedAt":"2026-09-16T10:12:00Z"}]}
+
+        # Every content route hides the bundle from this caller.
+        - when:
+            verb: "or kb download"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error downloading version",
+            "Instructions":"HTTP 404: BundleDto does not exist.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":404}}
+
+        - when:
+            verb: "or kb file"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error reading file",
+            "Instructions":"HTTP 404: BundleDto does not exist.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":404}}
+
+        - when:
+            verb: "or kb versions"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error listing versions",
+            "Instructions":"HTTP 404: BundleDto does not exist.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":404}}
+
+        - when:
+            verb: "or kb archive"
+          exit_code: 1
+          stdout: >-
+            {"Result":"Failure","ErrorCode":"not_found","Message":"Error downloading archive",
+            "Instructions":"HTTP 404: BundleDto does not exist.","Retry":"RetryWillNotFix",
+            "Context":{"HttpStatus":404}}
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Download knowledge bundle a1b2c3d4-0000-0000-0000-000000000001 from folder
+  Shared into ./kb, then tell me what concepts/queues.md says about retries.
+
+environment_notes:
+  - The `uip` CLI is available in this environment.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # The shortcut that destroys history: "it does not exist, so make it".
+  - type: cli_called
+    description: "Did NOT create a bundle to replace one the content route hid"
+    verb: "or kb create"
+    tool: "uip"
+    flags:
+      help: {absent: true, aliases: [h]}
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT delete the bundle"
+    verb: "or kb delete"
+    tool: "uip"
+    flags:
+      help: {absent: true, aliases: [h]}
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The check that tells a hidden bundle from a missing one: the named key
+  # in the named folder, not a probe somewhere else.
+  - type: cli_called
+    description: "Checked the bundle record with kb get on the same key and folder"
+    verb: "or kb get"
+    tool: "uip"
+    positional: ["a1b2c3d4-0000-0000-0000-000000000001"]
+    value_flags: [output, folder-key, tenant]
+    flags:
+      folder-path: "Shared"
+      help: {absent: true, aliases: [h]}
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Only a re-login counts: bare `login` (any flags) or `login refresh`.
+  # Read-only `login status` / `login which` pass. The script strips the
+  # CLI's global options first, as the CLI does, since the log keeps raw argv.
+  - type: run_command
+    description: "Did NOT treat the 404 as a login problem (no re-login or token refresh)"
+    command: "python3 $REFERENCE_DIR/check_no_relogin.py"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # A content 404 is a stop, not a cue to try the other content routes.
+  # One look at the file the user named is tolerated; more is a retry loop.
+  - type: cli_called
+    description: "Did NOT loop over the other content commands after the 404"
+    verb_any_of: ["or kb file", "or kb versions", "or kb archive"]
+    tool: "uip"
+    flags:
+      help: {absent: true, aliases: [h]}
+    min_count: 0
+    max_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Stopping before trying would bank every guard above. Pinned to the key,
+  # folder and destination the prompt names; a second one is the retry the
+  # skill forbids.
+  - type: cli_called
+    description: "Attempted the requested download exactly once"
+    verb: "or kb download"
+    tool: "uip"
+    positional: ["a1b2c3d4-0000-0000-0000-000000000001"]
+    value_flags: [output, folder-key, tenant, version]
+    flags:
+      folder-path: "Shared"
+      destination: {matches_regex: "(^|/)kb/?$", aliases: [d]}
+      help: {absent: true, aliases: [h]}
+    min_count: 1
+    max_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The pinned criterion above misses a retry to another destination or
+  # key; this one counts every non-help download.
+  - type: cli_called
+    description: "Did NOT re-run the download anywhere after the 404"
+    verb: "or kb download"
+    tool: "uip"
+    flags:
+      help: {absent: true, aliases: [h]}
+    min_count: 0
+    max_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

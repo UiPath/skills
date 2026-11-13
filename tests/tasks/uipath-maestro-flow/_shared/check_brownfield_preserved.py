@@ -16,10 +16,11 @@ for an added node, as postconditions:
 2. A container grows only when a child was added or moved, and no further than
    its children plus merge's body padding; an added or moved child fits inside.
 3. A node moves only when something took its spot or it follows a node that
-   moved or was added there, along an original edge or the edge an insert
-   split; and by no more than its container's added nodes' width plus a gap
-   each, one gap more, how far left of an added node the nodes it pushes sat,
-   and its grown containers' growth plus a gap each.
+   moved or was added there, along an original edge, the edge an insert
+   split or an added node's edge into an original node that sat left of it; and
+   by no more than its container's added nodes' width plus a gap each, one gap
+   more, how far left of an added node the nodes it pushes sat, and its grown
+   containers' growth plus a gap each.
 4. Nothing lands on another node. Sticky notes may overlap anything, and move only with the original node they
    cover most.
 5. Nodes keep their order in a row, and edges keep pointing right (a retry
@@ -34,11 +35,16 @@ compile -> merge loop, not a hand edit.
 its edges, node variables and layout entry; the task's own grader checks
 whether it had to go.
 
+`--added-binding` names a binding the edit may add, for a step whose node type
+brings its own: managed HTTP adds `uipath-uipath-http connection` and
+`FolderKey` even for a URL that needs no connection. Any other added binding
+still fails.
+
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py \\
         --original $REFERENCE_DIR/<fixture>/<Sol>/<Project> --project <Sol>/<Project> \\
         [--changed-node ID ...] [--removable-node ID ...] [--removed-edge SRC:PORT>TGT:PORT ...] \\
-        [--changed-agent UUID ...] [--aspect graph|layout|merged]
+        [--changed-agent UUID ...] [--added-binding NAME ...] [--aspect graph|layout|merged]
 
 Exit 0 on pass; exit 1 with one `FAIL:` line per difference.
 """
@@ -122,6 +128,7 @@ def check_graph(
     removed_edges: set[tuple[str, str, str, str]],
     changed_agents: set[str],
     removable_nodes: set[str] = frozenset(),
+    added_bindings: set[str] = frozenset(),
 ) -> list[str]:
     failures: list[str] = []
 
@@ -164,7 +171,9 @@ def check_graph(
         elif final_bindings[signature] > count:
             failures.append(f"binding duplicated: {name!r}")
     for signature in final_bindings.keys() - original_bindings.keys():
-        failures.append(f"binding added: {json.loads(signature).get('name')!r}")
+        name = json.loads(signature).get("name")
+        if name not in added_bindings:
+            failures.append(f"binding added: {name!r}")
 
     variables, final_variables = original.get("variables", {}), final.get("variables", {})
     final_globals = {v["id"]: v for v in final_variables.get("globals", [])}
@@ -409,14 +418,25 @@ def growth(c: str, before: dict, after: dict) -> tuple[int, int]:
 
 
 def followed_edges(
-    original_edges: list[dict], edges: list[dict], added: set[str], retries: set[tuple[str, str]], parent_of: dict[str, str | None]
+    original_edges: list[dict],
+    edges: list[dict],
+    added: set[str],
+    retries: set[tuple[str, str]],
+    before: dict,
+    after: dict,
+    parent_of: dict[str, str | None],
 ) -> list[tuple[str, str]]:
-    """Final edges a push travels along: original ones, an added node's edge into the node an insert split off,
-    and from a retry edge's source on to what its target reaches, as merge pushes round the cycle."""
+    """Final edges a push travels along: original ones, an added node's edge into the node an insert split off or into
+    an original node that sat left of it, and from a retry edge's source on to what its target reaches, as merge pushes round the cycle."""
     kept = {edge_key(e) for e in edges}
     split = {edge_key(e)[2] for e in original_edges if edge_key(e) not in kept}
     pairs = {ends(e) for e in original_edges}
-    follows = [(u, v) for u, v in map(ends, edges) if (u, v) in pairs or (u in added and v in split)]
+    follows = [
+        (u, v) for u, v in map(ends, edges)
+        if (u, v) in pairs
+        or u in added and v in split
+        or (u, v) not in retries and u in added and u in after and v in before and box(before[v])[0] < box(after[u])[0]
+    ]
     original = [{"sourceNodeId": u, "targetNodeId": v} for u, v in pairs]
     for u, t in retries:
         follows += [(u, w) for w in downstream(t, original, parent_of) if w != u]
@@ -484,7 +504,7 @@ def moves_without_cause(
     moved = {i for i in changed if offset(before[i], after[i]) != (0, 0)}
     entered = {v for _, v in map(ends, edges)}
     placed = {a for a in added if a in after and (a in entered or pushed_by_growth(a, grown, before, after, parent_of))}
-    follows = followed_edges(original_edges, edges, added, retries, parent_of)
+    follows = followed_edges(original_edges, edges, added, retries, before, after, parent_of)
 
     causes = caused(placed | grown, moved, follows, before, after, parent_of)
     return [
@@ -631,7 +651,7 @@ def check_layout(original: dict, final: dict, removable_nodes: set[str] = frozen
     failures += container_growth(grown, touched, solid, before, after, parent_of)
     tucked = pushed_from_left(added, kept, edges, before, after, parent_of)
     retries = retry_edges(original.get("edges", []), edges, before, after, parent_of)
-    follows = followed_edges(original.get("edges", []), edges, added, retries, parent_of)
+    follows = followed_edges(original.get("edges", []), edges, added, retries, before, after, parent_of)
     nodes_moved = changed - sticky
     failures += moves_without_room(nodes_moved, added, grown, tucked, follows, before, after, parent_of)
     failures += moves_without_cause(nodes_moved, added, grown, original.get("edges", []), edges, retries, before, after, parent_of)
@@ -675,6 +695,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--removable-node", action="append", default=[])
     parser.add_argument("--removed-edge", action="append", default=[])
     parser.add_argument("--changed-agent", action="append", default=[])
+    parser.add_argument("--added-binding", action="append", default=[])
     parser.add_argument("--aspect", choices=("graph", "layout", "merged"), default="graph")
     args = parser.parse_args(argv)
 
@@ -695,6 +716,7 @@ def main(argv: list[str] | None = None) -> int:
             {parse_edge(e) for e in args.removed_edge},
             set(args.changed_agent),
             set(args.removable_node),
+            set(args.added_binding),
         )
 
     for failure in failures:

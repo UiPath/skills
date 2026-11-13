@@ -6,8 +6,10 @@ Use this when the request asks for evaluation assets, or for a BPMN process to b
 Every `eval` command takes `--path <path>`: a Maestro BPMN project directory (`<Project>`, the directory `init` wrote), or a solution directory with exactly one BPMN project.
 It defaults to `.`.
 
+<!--skill-flavor:eval-host:start-->
 **Local `add` / `list` / `remove` edit project files and need no login.**
 Every `run` verb (`start`, `status`, `results`, `list`, `compare`) needs `uip login`; `run start` also deploys (see [Running a set deploys your solution](#running-a-set-deploys-your-solution--know-what-it-overwrites)).
+<!--skill-flavor:eval-host:end-->
 
 **Spellings.** `--help` lists each group by its plural name and `create` / `delete` (`evaluators create`, `sets delete`, `simulations create`, `runs start`).
 The singular names and `add` / `remove` used below (`evaluator add`, `set remove`, `simulation add`, `run start`) are aliases of the same commands; use them as written here.
