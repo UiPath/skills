@@ -13,9 +13,12 @@ Deliberately does NOT re-run `uip solution pack` here: the grading subprocess
 resolves the CLI's tool packages from its own environment, not the agent's, so
 a grade-time pack can fail for tool-resolution reasons unrelated to determinism
 (nightly 2026-07-10: sandbox had no @uipath/solution-tool next to the CLI; the
-agent self-installed into its npm prefix, invisible to this subprocess). The
-companion `command_executed` criterion in the task YAML guarantees the agent
-really packed twice rather than copying one package.
+agent self-installed into its npm prefix, invisible to this subprocess).
+Instead, the proof that the agent really packed twice (rather than copying one
+package) is here: every real pack mints a fresh solutionMetadata.json
+`spec.packageVersionKey`, so at least two distinct keys are required. (The
+command_executed criterion counts matching tool calls, not pack commands, so it
+cannot tell two packs in one Bash call from one pack.)
 
 Comparison, after replacing GUIDs -> <GUID> and ISO timestamps -> <TS>:
   - the set of entry paths must match across all packages, and
@@ -69,6 +72,20 @@ def fingerprint(zip_path: Path) -> tuple[list[str], dict]:
     return sorted(paths), jsons
 
 
+def package_version_key(zip_path: Path):
+    """solutionMetadata.json spec.packageVersionKey: fresh on every real pack,
+    unchanged when one package is copied."""
+    with zipfile.ZipFile(zip_path) as z:
+        try:
+            meta = json.loads(z.read("solutionMetadata.json"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return None
+    spec = meta.get("spec") if isinstance(meta, dict) else None
+    key = spec.get("packageVersionKey") if isinstance(spec, dict) else None
+    # Only a string counts as a version key; any other type is treated as missing.
+    return key if isinstance(key, str) else None
+
+
 # Cwd is the sandbox working directory the agent packed into. Skip hidden dirs
 # (.git, .local investigation state) — packages land in plain output folders.
 packages = sorted(
@@ -81,6 +98,16 @@ if len(packages) < 2:
         f"solutionMetadata.json) under the working directory, found "
         f"{[str(p) for p in packages]} — the agent must pack the fixture twice "
         f"into two separate output folders"
+    )
+
+version_keys = {package_version_key(p) for p in packages} - {None}
+if len(version_keys) < 2:
+    sys.exit(
+        f"FAIL: the packages {[str(p) for p in packages]} carry "
+        f"{len(version_keys)} distinct solutionMetadata.json packageVersionKey "
+        f"value(s); each `uip solution pack` mints a new one, so either one package "
+        f"was copied rather than packed twice or the CLI no longer writes "
+        f"spec.packageVersionKey"
     )
 
 base_paths, base_json = fingerprint(packages[0])
