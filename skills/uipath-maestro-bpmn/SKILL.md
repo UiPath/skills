@@ -211,9 +211,10 @@ export default bpmn('approval')
 - A boundary event is declared on the activity it guards, in that activity's body callback, so `attachedTo` is never written.
   An interrupting handler's path rejoins at the statement after the activity; a non-interrupting one runs beside the activity and must end its own path with an end event, `.goto()`, or an explicit flow.
   On a `.fork()` branch's last activity, that statement is the fork's join, which then waits forever after the failure: end the handler's path in `.endEvent(<id>, { terminate: true })`, or follow the activity with another statement on its branch ([draft-skeleton](references/draft-skeleton.md#what-a-skeleton-is) rule 9).
+  Inside a `.fork()` branch, an interrupting handler's path that ends must end with `terminate: true`: a plain end stalls the join.
 - `choose` arms need `when` or `otherwise: true`; the fallback is the default flow, and no flow id is named.
   Arms rejoin at the next statement, through a join named `<id>_join` only when more than one arm reaches it.
-  Inside a `.fork()` branch, an arm that ends in a plain `.endEvent()` stalls the fork's join; end it with `terminate: true`, or let it rejoin ([draft-skeleton](references/draft-skeleton.md#what-a-skeleton-is) rule 9).
+  Inside a `.fork()` branch, a `choose` or `race` arm that ends in a plain `.endEvent()`, or that jumps out with `.goto()`, stalls the fork's join; end it with `terminate: true`, or let it rejoin ([draft-skeleton](references/draft-skeleton.md#what-a-skeleton-is) rule 9).
 - Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
 - An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.

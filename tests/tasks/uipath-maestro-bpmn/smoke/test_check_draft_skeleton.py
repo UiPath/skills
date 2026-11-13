@@ -97,7 +97,7 @@ class ForkExitTests(unittest.TestCase):
                        "S>F F>A F>B A>G G>J G>Rejected B>J J>End")
         with self.assertRaises(SystemExit) as caught:
             skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
-        self.assertIn("['Rejected']", str(caught.exception))
+        self.assertIn("plain end event(s) ['Rejected']", str(caught.exception))
 
     def test_decision_arm_to_terminate_end_passes(self):
         root = process(FORK + '<bpmn:exclusiveGateway id="G" />' + end("Stop", "terminate"),

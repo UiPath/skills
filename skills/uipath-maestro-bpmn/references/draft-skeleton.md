@@ -35,6 +35,7 @@ A skeleton is not a working process and must never be reported as one.
    - Write decisions with `.choose()`: a `when` on every arm but one, and an `otherwise: true` arm for the default.
      Write a parallel split with `.fork()`.
      Arms rejoin at the next statement through a join gateway the builder adds, so every branch converges on one end event unless the request names separate outcomes.
+     Inside a `.fork()` branch, a separate outcome ends the process with `terminate: true` (rule 9).
      Do not simplify the branch structure the request describes.
    - When the request names a failure or a deadline on a step, declare it in that box's body callback: `onError((h) => ...)` for a failure, `onTimer('PT10M', (h) => ...)` for a deadline that cancels the step.
      A deadline that escalates while the step keeps running is non-interrupting: `onTimer('PT10M', { interrupting: false }, (h) => ...)`.
@@ -57,17 +58,21 @@ A skeleton is not a working process and must never be reported as one.
    Do not hand-roll a loop from a gateway and a `.goto()`, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
 9. **A path that leaves a `.fork()` branch early must end the process; every other path continues on its own branch to the join.**
    A parallel join fires only when every incoming flow has delivered a token.
-   Two shapes break that, and `check` and `validate` both pass them, so you must write the safe one yourself:
-   - A plain `.endEvent()` inside a branch, at the end of an interrupting `onError` or `onTimer` handler or of a `.choose()` arm such as a rejection, consumes the branch's token, so the join waits forever.
+   Three shapes break that, and `check` and `validate` all pass them:
+   - A plain `.endEvent()` anywhere inside a branch — on the branch's own path, in a `.choose()` or `.race()` arm such as a rejection, or at the end of an interrupting `onError` or `onTimer` handler — consumes the branch's token, so the join waits forever.
+   - A `.goto()` inside a branch that jumps out of it, to a shared exit or a sibling branch, takes the branch's token with it, so the join waits forever.
    - An interrupting handler whose path does not end rejoins at the statement after the activity, and for a branch's last activity that statement is the fork's join.
      The handler's path then becomes an extra input to the join: the activity's own flow never delivers because the handler cancelled it, so the join waits forever.
 
    Write the safe shape:
-   - When the failure or outcome stops the process, end its path in `.endEvent(<id>, { name, terminate: true })`.
-   - When the process carries on, give a `.choose()` arm no end event, so it rejoins at the next statement; for a handler, write another statement on the same branch after the activity, such as the next box, so the handler's path rejoins there and the branch reaches the join on one flow.
+   - When the failure or outcome stops the process, end its path in `.endEvent(<id>, { name, terminate: true })`, or in an error end event (`.endEvent(<id>, { name, error: '<ErrorName>' })`) when a caller or an event sub-process handles the error.
+     Never set both: `terminate: true` drops the error.
+   - When the process carries on after a `.choose()` or `.race()` arm, give the arm no end event and no `.goto()`, so it rejoins at the next statement.
+   - When the process carries on after a handler, write another statement on the same branch after the activity, such as the next box, so the handler's path rejoins there and the branch reaches the join on one flow.
      A bare `.exclusiveGateway()` inside a branch does not compile, so merge on a box.
 
    A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so this rule does not apply to it.
+   Nor does it apply to the end event that closes a `.subProcess()` body: the sub-process then continues on its branch.
 
 ### Box kinds
 
@@ -161,8 +166,9 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
    ```
 
    `validate` must report `Status: Valid`.
-   Before you compile, audit every `.fork()` for the two stalls rule 9 describes; neither `check` nor `validate` does it for you:
-   - In the `.bpmn.ts`, every `.endEvent(` inside a fork branch's callback, other than one ending a non-interrupting handler's path, carries `terminate: true`.
+   Before you compile, audit every `.fork()` for the stalls rule 9 describes; neither `check` nor `validate` does it for you:
+   - In the `.bpmn.ts`, every `.endEvent(` inside a fork branch's callback carries `terminate: true` or `error`, except one ending a non-interrupting handler's path or closing a `.subProcess()` body.
+   - In the `.bpmn.ts`, no `.goto()` inside a fork branch's callback targets an element outside that branch.
    - In the `check --graph` output, under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` has an `Incoming` no larger than the number of `Outgoing` entries on the `<fork>` node.
      A larger `Incoming` means a handler's path flows into the join; the join's extra source is a box inside an `onError` or `onTimer` handler.
 
