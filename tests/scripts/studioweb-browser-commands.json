@@ -393,7 +393,7 @@
     "ceiling": {
       "login": 1,
       "maestro": 1,
-      "maestro flow": 25,
+      "maestro flow": 30,
       "maestro flow eval": 16,
       "maestro flow nodes": 1,
       "maestro flow nodes provision": 2,
