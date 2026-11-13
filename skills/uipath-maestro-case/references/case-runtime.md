@@ -98,9 +98,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   `folder`. Ask the user if no match. `sdd resolve` does not resolve them.
   After discovery, add the deployment to the solution:
   `uip solution resources add --source remote --kind IxpDeployment
-  --name "<DeploymentTitle>" --solution-folder <solution> --output json`
-  Then refresh: `uip solution resources refresh --solution-folder <solution>
-  --output json`
+  --name "<DeploymentTitle>" --output json`
+<!--skill-flavor:docextraction-refresh:start-->
+  Then refresh:
+  `uip solution resources refresh --solution-folder <SOLUTION_DIR> --output json`
+<!--skill-flavor:docextraction-refresh:end-->
 
 <!-- RULE:case.docextraction.check -->
 - Compile refuses a missing `deploymentKey`; `check` reports blank model,
