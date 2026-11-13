@@ -479,6 +479,44 @@ def test_draft_gate_guard_allows_the_preflight(task: str, command: str) -> None:
     assert not _hits(_pattern(task, "no registry discovery"), command), command
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        'uip solution resources list --kind Process --search "Record Invoice" --output json',
+        'uip solution resources list --kind Process --search "invoice" --output json; '
+        'uip solution resources list --kind App --search "approval" --output json',
+        "uip is connections list --all-folders --output-filter "
+        "\"[?contains(ConnectorName,'Slack')].{Connector:ConnectorName}\" --output json",
+        'cd InvoiceIntakeSketchSolution && uip solution resources list --kind Process --search "invoice" --output json',
+        'uip solution resources list \\\n  --kind Process --search "invoice" --output json',
+        'OUT=$(uip solution resources list --kind Process --search "invoice" --output json)',
+        'for t in invoice record; do uip solution resources list --kind Process --search "$t" --output json; done',
+        'timeout 60 uip solution resources list --kind Process --search "invoice" --output json',
+        'NO_COLOR=1 /usr/local/bin/uip is connections list --all-folders --output json',
+    ],
+)
+def test_draft_resource_lookup_counts(command: str) -> None:
+    assert _hits(_pattern(_DRAFTS[0], "looked up the boxes' resources"), command), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip maestro bpmn validate InvoiceIntakeSketch/InvoiceIntakeSketch.bpmn --output json",
+        "uip is connectors list --output json",
+        "uip solution upload InvoiceIntakeSketchSolution --output json",
+        "uip solution resources list --help",
+        "uip is connections list -h",
+        'echo "uip solution resources list --kind Process --search invoice"',
+        'echo "/usr/bin/uip solution resources list --kind Process --search invoice"',
+        "uip solution resources list \\\n  --help",
+        "uip is connections list \\\n  --all-folders -h",
+    ],
+)
+def test_draft_resource_lookup_ignores_other_calls(command: str) -> None:
+    assert not _hits(_pattern(_DRAFTS[0], "looked up the boxes' resources"), command), command
+
+
 # --- query_params: the advisory connection-lookup row ---------------------------
 
 _QP = "connector_features/query_params/query_params.yaml"
