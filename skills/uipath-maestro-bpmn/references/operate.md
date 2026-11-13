@@ -63,8 +63,11 @@ The one exception is the Studio Web upload of a project this run created: a requ
    uip solution resources refresh --solution-folder <SolutionDir> --output json
    ```
 
-   Confirm `resources refresh` imported each dependency `bindings_v2.json`
-   lists; when one was not imported, say so in the reply.
+   Check that `Data.Created + Data.Imported + Data.Skipped` covers every
+   resource in `bindings_v2.json` and that `Data.Warnings` names none of them
+   (`Skipped` is a dependency already in the solution, `Created` one with no
+   Orchestrator match; neither is a failure). Otherwise name the missing one
+   in the reply.
 
 5. Confirm login:
 

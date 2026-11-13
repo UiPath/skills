@@ -58,17 +58,20 @@ success_criteria:
     pass_threshold: 1.0
 
   # The rule under test. The call log (above) counts a looped read like a
-  # literal one, so this has to grade the transcript. The exclude drops the
-  # Bash call that writes diagnosis.md: its heredoc holds prose ("while") and
-  # the named re-check or a deferred retry line, which are not commands run. Matches a `for`/`while`
+  # literal one, so this has to grade the transcript. Both guards start with
+  # the same prefix, which steps over every terminated heredoc body: the
+  # diagnosis.md write holds prose ("while") and the named re-check or a
+  # deferred retry line, which are not commands run. It skips only the body,
+  # not the call (tests/README.md: no call-wide exclude), so a loop or a retry
+  # batched beside the write still counts. Text after an unterminated `<<` is
+  # not graded. Matches a `for`/`while`
   # loop whose body runs `uip maestro bpmn`, a shell function wrapping it, and a
   # `uip maestro bpmn` command whose verb, id or folder key is a `$VAR` (text
   # after `>` or `|` is ignored, so `> "$TMP/out.json"` is fine).
   - type: command_executed
     description: "Every diagnostic read is a literal command: no loop, function or variable in its place"
     tool_name: "Bash"
-    command_pattern: '(?:\b(?:for\s+\w+\s+in|while)\b(?:(?!\bdone\b).)*?(?:;|\s)do\s(?:(?!\bdone\b).)*?(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\b\w+\s*\(\)\s*\{[^}]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\balias\s+\w+=[\x22'']?(?:\buip|\$\{?UIP\}?)\s+maestro\b|\bxargs\b[^|;&\n]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:[\w-]+\s+)?[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:instances?|debug-instances?|incidents?|processes)\s+[\w-]+\s+[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+jobs?\s+(?:status|traces)\s+[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:instances?|jobs?|incidents?|processes)\s+[\w-]+\s+[\w.:-]+\s+(?:-f|--folder-key)[ =][\x22'']?\$)'
-    exclude_pattern: '(?:>{1,2}|\btee\s+(?:-a\s+)?)\s*[\x22'']?(?:[^\s;&|<>\x22'']*/)?diagnosis\.md\b'
+    command_pattern: '\A(?:(?<!<)<<(?!<)-?\s*[\x22'']?(\w+)[\x22'']?.*?(?<!\S)\1(?!\S)|(?!(?<!<)<<(?!<)).)*?(?:(?:\b(?:for\s+\w+\s+in|while)\b(?:(?!\bdone\b).)*?(?:;|\s)do\s(?:(?!\bdone\b).)*?(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\b\w+\s*\(\)\s*\{[^}]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\balias\s+\w+=[\x22'']?(?:\buip|\$\{?UIP\}?)\s+maestro\b|\bxargs\b[^|;&\n]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:[\w-]+\s+)?[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:instances?|debug-instances?|incidents?|processes)\s+[\w-]+\s+[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+jobs?\s+(?:status|traces)\s+[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:instances?|jobs?|incidents?|processes)\s+[\w-]+\s+[\w.:-]+\s+(?:-f|--folder-key)[ =][\x22'']?\$))'
     min_count: 0
     max_count: 0
     weight: 2.0
@@ -77,8 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran no lifecycle, debug, run or ship command"
     tool_name: "Bash"
-    command_pattern: '(?:\buip|\$\{?UIP\}?)\s+(?:maestro\s+bpmn\s+(?:instances?\s+(?:retry|cancel|pause|resume|migrate|goto|variables-set|elements?\s+(?:cancel|retry)|messages?\s+send)|debug-instances?\s+(?:cancel|continue|variables-set|breakpoints|create)|upload|publish|deploy|debug(?!-)|run|process\s+(?:run|publish))|solution\s+(?:upload|publish|delete|packages\s+delete|projects\s+publish|deploy\b(?!\s+(?:list|status|config\s+get)\b)))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
-    exclude_pattern: '(?:>{1,2}|\btee\s+(?:-a\s+)?)\s*[\x22'']?(?:[^\s;&|<>\x22'']*/)?diagnosis\.md\b'
+    command_pattern: '\A(?:(?<!<)<<(?!<)-?\s*[\x22'']?(\w+)[\x22'']?.*?(?<!\S)\1(?!\S)|(?!(?<!<)<<(?!<)).)*?(?:(?:\buip|\$\{?UIP\}?)\s+(?:maestro\s+bpmn\s+(?:instances?\s+(?:retry|cancel|pause|resume|migrate|goto|variables-set|elements?\s+(?:cancel|retry)|messages?\s+send)|debug-instances?\s+(?:cancel|continue|variables-set|breakpoints|create)|upload|publish|deploy|debug(?!-)|run|process\s+(?:run|publish))|solution\s+(?:upload|publish|delete|packages\s+delete|projects\s+publish|deploy\b(?!\s+(?:list|status|config\s+get)\b)))\b(?![^\n;&|]*\s(?:--help|-h)\b))'
     min_count: 0
     max_count: 0
     weight: 2.0

@@ -55,7 +55,7 @@ V1_RULES = [
     ("references/operate.md", "Never hand-edit a generated file to get past the error"),
     ("references/operate.md", '`{ "version": "2.0", "resources": [ … ] }` with one entry per dependency'),
     ("references/operate.md", "An empty `resources` array is right only for a process with no dependencies"),
-    ("references/operate.md", "when one was not imported, say so in the reply"),
+    ("references/operate.md", "`Data.Created + Data.Imported + Data.Skipped` covers every resource in `bindings_v2.json`"),
     ("references/operate.md", "**Never reuse a previous run's inputs silently.**"),
     ("references/operate.md", "Never retry a faulted instance before reading its incidents and deployed asset"),
     ("references/operate.md", "After every lifecycle command, fetch the instance again"),

@@ -564,9 +564,9 @@ def test_no_content_check_is_pinned_to_the_root_file(task: str) -> None:
 
 # --- next_action_contract: literal reads, no lifecycle, a named re-check ----------
 #
-# Both command guards carry an exclude for the Bash call that writes diagnosis.md,
-# applied the way CommandExecutedChecker applies it: a command whose raw or
-# normalized form matches the exclude does not count.
+# Both command guards step over heredoc bodies (the diagnosis.md write) but not
+# the rest of the call. `_counts` still applies an exclude_pattern the way
+# CommandExecutedChecker does, should one be added back.
 
 
 def _counts(task: str, description_part: str, command: str) -> bool:
@@ -609,6 +609,8 @@ LITERAL_READS = [
     "for f in *.md; do echo $f; done",
     _DIAGNOSIS_HEREDOC,
     *_DIAGNOSIS_PATH_WRITES,
+    "cat > diagnosis.md <<EOF\nrun: uip maestro bpmn instance retry inst-triage-001 -f folder-public\nEOF",
+    'cat <<< "$X" > notes.txt',
 ]
 
 STAND_INS = [
@@ -622,6 +624,10 @@ STAND_INS = [
     f"{_R} get $(cat id.txt) -f folder-public --output json",
     "for c in a b; do $UIP maestro bpmn instance $c x -f y; done",
     "uip maestro bpmn job status $JOB --folder-key folder-public --output json",
+    # Batched with the diagnosis.md write (the review on #4704): the heredoc body
+    # is skipped, the call is not.
+    f"for v in incidents asset; do {_R} $v inst-triage-001 -f folder-public; done; {_DIAGNOSIS_HEREDOC}",
+    f"{_DIAGNOSIS_HEREDOC}\nfor v in incidents asset; do {_R} $v inst-triage-001 -f folder-public; done",
 ]
 
 
@@ -647,6 +653,8 @@ NEXT_ACTION_MUTATIONS = [
     "uip maestro bpmn process run p:1.0.0 --folder-key folder-public --release-key r",
     "uip solution upload S --output json",
     "$UIP maestro bpmn instance retry inst-triage-001 -f folder-public",
+    f"{_R} retry inst-triage-001 -f folder-public; {_DIAGNOSIS_HEREDOC}",
+    f"{_DIAGNOSIS_HEREDOC}\n{_R} retry inst-triage-001 -f folder-public",
 ]
 
 NEXT_ACTION_READS = [
@@ -657,6 +665,8 @@ NEXT_ACTION_READS = [
     f"{_R} retry --help",
     _DIAGNOSIS_HEREDOC,
     *_DIAGNOSIS_PATH_WRITES,
+    "cat > diagnosis.md <<EOF\nrun: uip maestro bpmn instance retry inst-triage-001 -f folder-public\nEOF",
+    'cat <<< "$X" > notes.txt',
 ]
 
 
