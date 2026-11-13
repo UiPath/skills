@@ -405,12 +405,12 @@
       {
         "file": "SKILL.md",
         "command": "or folders explore",
-        "reason": "Prose inside a numbered workflow for another user's personal workspace connection — Node-only, not an instruction for Studio Web."
+        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
       },
       {
         "file": "SKILL.md",
         "command": "or folders stop-exploring",
-        "reason": "Prose inside a numbered workflow for another user's personal workspace connection — Node-only, not an instruction for Studio Web."
+        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
       }
     ],
     "ceiling": {
