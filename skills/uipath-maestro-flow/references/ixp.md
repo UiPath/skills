@@ -33,7 +33,6 @@ One search answers them:
 <!--skill-flavor:ixp-list-commands:start-->
 ```bash
 uip login status --output json      # without login, tenant IxP nodes are hidden
-uip maestro flow registry pull --force
 uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
 ```
 <!--skill-flavor:ixp-list-commands:end-->
@@ -62,11 +61,10 @@ Treat it as "no extraction model published", and stop searching after that one b
 This is the AUTHORING path, for the one model a step will run.
 To answer "which models exist", see [Listing published models](#listing-published-models) instead — the search alone answers that, and `registry get` must not be fanned out across its hits.
 
-Refresh the registry first, then copy the complete node type and its companion
-defaults. The node type is tenant/version identity, not a string to reconstruct:
+Copy the complete node type and its companion defaults.
+The node type is tenant/version identity, not a string to reconstruct:
 
 ```bash
-uip maestro flow registry pull --force
 uip maestro flow registry search '<project hint>' \
   -f 'type:startsWith=uipath.ixp' \
   --output-filter '[?AvailableOnTenant].NodeType' --output json
@@ -74,6 +72,9 @@ uip maestro flow registry get '<node-type>' \
   --output-filter '{project:Node.nodeType,modelName:Node.inputDefaults.modelName,folderName:Node.inputDefaults.folderName,folderPath:Node.inputDefaults.model.folderPath,versionTag:Node.inputDefaults.versionTag,taxonomyProject:Node.inputDefaults.projectName}' \
   --output json
 ```
+
+Registry reads are cached for 30 minutes.
+If a model deployed in that window is missing from the search, run `uip maestro flow registry pull --force` and search again.
 
 `registry get` is the authoring source of truth for ONE node. Copy `project`, `modelName`,
 `folderName`, `folderPath`, and `versionTag` from that response; do not switch to

@@ -48,10 +48,12 @@ Two shapes, and the request decides which.
 When the request names an agent that may already exist, look for it first.
 
 ```bash
-uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.agent" --output json
 uip maestro flow registry get "uipath.core.agent.<key>" --output json
 ```
+
+Registry reads are cached for 30 minutes.
+If an agent you know was published in that window is missing, or you redeployed it with a new schema, run `uip maestro flow registry pull --force` and look again.
 
 `registry get` is also how you learn the agent's own argument names and its
 return shape — `inputDefinition.properties` and `outputDefinition`.

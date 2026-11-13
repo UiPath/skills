@@ -22,10 +22,11 @@ cannot make: which node, which topology, what an output means, and what to ask.
    keeps the credential in the flow, outside `uip is connections list`), and an
    RPA workflow only when there is no API at all (a desktop app, a terminal). For a
    tenant resource (agent, process, API workflow, IxP model) run the family's
-   `uip maestro flow registry search`; it only returns published resources, so
-   `uip maestro flow registry pull --force` first, and check the solution's own
-   projects with `uip maestro flow registry list --local` before concluding a
-   resource is missing. `mock()` marks a capability both searches proved
+   `uip maestro flow registry search`; it only returns published resources.
+   Before concluding a resource is missing, check the solution's own projects
+   with `uip maestro flow registry list --local`, and if it was published in the
+   last 30 minutes, run `uip maestro flow registry pull --force` and search
+   again (registry reads are cached). `mock()` marks a capability both searches proved
    absent; it is never a stand-in for one they found.
 2. **Read the node's reference before writing the step.** The router table in
    [SKILL.md](../SKILL.md#supported-node-types) names one reference and one
