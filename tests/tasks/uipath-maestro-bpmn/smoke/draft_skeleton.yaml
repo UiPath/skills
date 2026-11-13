@@ -166,18 +166,19 @@ success_criteria:
   # argument, so an `echo` of the lookup does not count either.
   # A separator inside quotes is data, not a command boundary, but coder_eval
   # also matches the quote-stripped form, where `echo "x; uip ..."` reads as
-  # two commands. So exclude_pattern drops a call whose lookup sits after a
-  # separator inside an open quote (a `#` comment's apostrophe is not one;
-  # `$(` inside double quotes still runs; a `sh -c` script quote is a
-  # wrapper, not data; an apostrophe inside a word (`robot's`) opens no quote:
-  # the exclusion also runs on the quote-stripped form, where a double-quoted
-  # apostrophe is left bare). The exclusion drops the whole call, so a real lookup
-  # in the same call as such an echo does not count.
+  # two commands. So exclude_pattern drops a call only when, read quote-aware,
+  # a lookup sits after a separator inside an open quote AND no lookup sits at
+  # an unquoted command position anywhere in the call, so a quoted echo never
+  # vetoes a real lookup batched with it. Read quote-aware: a `#` comment's
+  # apostrophe opens no quote; an apostrophe inside a word (`robot's`) opens
+  # no quote, since the exclusion also runs on the quote-stripped form, where
+  # a double-quoted apostrophe is left bare; `$(` inside double quotes still
+  # runs; a `sh -c` script quote is a wrapper, not data.
   - type: command_executed
     description: "Agent looked up the boxes' resources before the gate"
     tool_name: "Bash"
     command_pattern: '(?:^|[;&|(`{\n])\s*(?:(?:do|then|else|time|!|env|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b(?!(?:\\\n|(?<= )\n|[^\n;&|])*?\s(?:--help|-h)\b)'
-    exclude_pattern: '\A(?:[^"''\\#]|(?<=\w)''|(?<=[^\s;&|(])#|(?<![^\s;&|(])#[^\n]*(?=\n|\Z)|\\.|(?<!\w)''[^'']*''|"(?:[^"\\]|\\.)*")*?(?<!-c\s)(?<!-\wc\s)(?:(?<!\w)''[^'']*?[;&|{(`\n]|"(?:[^"\\]|\\.)*?(?:[;&|{\n]|(?<!\$)\())\s*(?:(?:do|then|else|time|!|env|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b'
+    exclude_pattern: '\A(?=(?:[^"''\\#]|(?<=\w)''|(?<=[^\s;&|(])#|(?<![^\s;&|(])#[^\n]*(?=\n|\Z)|\\.|(?<!\w)''[^'']*''|"(?:[^"\\]|\\.)*")*?(?<!-c\s)(?<!-\wc\s)(?:(?<!\w)''[^'']*?[;&|{(`\n]|"(?:[^"\\]|\\.)*?(?:[;&|{\n]|(?<!\$)\())\s*(?:(?:do|then|else|time|!|env|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b)(?:(?!(?:\A|[;&|(`{\n])\s*(?:(?:do|then|else|time|!|env|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b(?!(?:\\\n|(?<= )\n|[^\n;&|])*?\s(?:--help|-h)\b))(?:[^"''\\#]|(?<=\w)''|(?<=[^\s;&|(])#|(?<![^\s;&|(])#[^\n]*(?=\n|\Z)|\\.|(?<!\w)''[^'']*''|"(?:(?!\$\(\s*(?:(?:do|then|else|time|!|env|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b(?!(?:\\\n|(?<= )\n|[^\n;&|])*?\s(?:--help|-h)\b))[^"\\]|\\.)*"))*\Z'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
