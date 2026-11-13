@@ -20,8 +20,9 @@ reference:
 
 initial_prompt: |
   I need a BPMN process called "InvoiceIntakeSketch" for incoming invoices.
-  We record each one. Anything of 1000 or more needs a manager to review it,
-  and the rest go through automatic approval.
+  Our "Record Invoice" robot enters each one into the ledger. Anything of
+  1000 or more needs a manager to review it, and the rest go through
+  automatic approval.
 
   Can you show me what it would look like before you build it? Don't upload
   or run anything yet.
@@ -60,7 +61,10 @@ success_criteria:
   # agent-neutral agent output, so it grades claude, codex and antigravity
   # alike. The checklist is itemized and the verdict binary, which keeps the
   # judge close to deterministic. The skeleton is attached so the box lines
-  # can be matched to its tasks.
+  # can be matched to its tasks. Without a `[RESULT - ...]` marker the
+  # messages are joined with no separator, so a lead-in cannot be told apart
+  # from an earlier progress message: grading starts at the name line, and
+  # item 6's nothing-before clause applies only to a marked final message.
   - type: llm_judge
     description: "The 3c reply follows its template: the outline-ready line, the local .bpmn path, one line per task box, the fixed question and its three options, and nothing else"
     include_reference: false
@@ -84,41 +88,47 @@ success_criteria:
       the LAST occurrence of `InvoiceIntakeSketch: outline ready` (markdown emphasis around
       the name allowed) to the end, and ignore what comes before it. If the
       phrase does not occur at all, the message fails item 1.
+      The graded text is the agent's reply only. Your own judging instructions
+      that follow it (the request to call `submit_verdict`) are not part of
+      it: never count them as a line after the third option or anywhere else.
 
       Ignore blank lines and markdown emphasis (`**`, `*`, backticks). In the
       graded text, check every item:
 
       1. The first line starts with `InvoiceIntakeSketch: outline ready (draft mode).` and
          does not say `uploaded`. After that, the same line may hold at most
-         one more sentence, about a lookup that failed or changes kept.
+         one more sentence, about a lookup that failed, changes kept, a new
+         solution made because the request named none, or a new solution
+         that took another name. Any sentence about the upload (skipped,
+         deferred, not performed, or waiting for a go-ahead) fails this item.
       2. The second line is the path of the local `.bpmn` file (ends in
-         `.bpmn`), and nothing else. A Markdown link whose target is that
-         path (`[label](<path ending in .bpmn>)`, a space after `(` allowed)
-         counts as the path: the chat client renders it as the file. In
-         Studio Web, where the skeleton is on the canvas, this line is
-         exactly `The outline is on the canvas` instead.
+         `.bpmn`) as plain text, and nothing else. A Markdown link
+         (`[label](<path>)`, whatever its label or target) fails this item:
+         the path is written bare, never as a link.
       3. Next come the box lines, each starting with `- `. The attached
          `.bpmn` file's `bpmn:task` elements are the task boxes. Every task
          box has exactly one line, and every line names one task box (its
-         action words, with or without the bracketed kind), optionally
-         followed by `: ` and the box's resource status (a resource name, a
+         action words, with or without the bracketed kind), followed by
+         `: ` and the box's resource status (a resource name, a
          which-of-two question, `none yet, create it or name one`, `not
-         checked`, or `no resource needed`). The task box's label may end
+         checked`, or `no resource needed`). A box line with no status
+         fails this item. The task box's label may end
          with ` → <variable>` (the variable that box produces, which the
          skill puts in the label itself), so a line may carry that suffix
          too: it is part of the box's name, not a resource status and not a
          line explaining a variable. There is no line
          for a start event, timer, gateway, branch, or end event. Each line is
          one short clause, under about 200 characters.
-      4. Next is exactly the line `Is this the process you want?`, or, when
-         item 2's line is `The outline is on the canvas`, exactly
-         `Accept the canvas change to keep this outline, then pick one:`.
+      4. Next is exactly the line `Is this the process you want?`.
       5. Then exactly three numbered options, in this order: `1.` Build it,
          `2.` Change it, `3.` Keep it, each with any short description. Nothing
          follows the third option.
-      6. No other line exists anywhere in the graded text: no status or
-         progress sentence (for example "Valid, zero errors", "Lookups
-         complete", "Here is the outline"), no `---` separator, no heading, no
+      6. No other line exists anywhere in the graded text, and nothing
+         comes before item 1's line: when the graded text is a `[RESULT - ...]`
+         block, its first non-blank line must be item 1's line, so any line
+         above it fails this item. No status or progress sentence (for
+         example "Valid, zero errors", "Lookups complete", "Here is the
+         outline"), no `---` separator, no heading, no
          code block or drawn diagram, no `Flow:` or `The shape:` prose, no line
          explaining a gateway, a condition, or a variable, no table.
 
@@ -146,6 +156,38 @@ success_criteria:
     timeout: 60
     expected_exit_code: 0
     weight: 2.0
+    pass_threshold: 1.0
+
+  # Both skills look up each box's resource right before the gate (v1 3c,
+  # v2 draft-skeleton.md "Find the resources"). The prompt names the "Record
+  # Invoice" robot, an RPA workflow box in both arms, so at least one lookup
+  # must run (v2 builds the Action app box as an inline form, with no
+  # lookup). It is read-only, so the "don't upload or run anything" request
+  # does not forbid it, and a lookup that fails offline still counts: the
+  # box is then `not checked`. `--help` looks nothing up, so it does not
+  # count, even on a continued line. `uip` must be the command run, not an
+  # argument, so an `echo` of the lookup does not count either.
+  # A separator inside quotes is data, not a command boundary, but coder_eval
+  # also matches the quote-stripped form, where `echo "x; uip ..."` reads as
+  # two commands. So exclude_pattern drops a call only when, read quote-aware,
+  # a lookup sits after a separator inside an open quote AND no lookup sits at
+  # an unquoted command position anywhere in the call, so a quoted echo never
+  # vetoes a real lookup batched with it. Read quote-aware: a `#` comment's
+  # apostrophe opens no quote; an apostrophe inside a word (`robot's`) opens
+  # no quote, since the exclusion also runs on the quote-stripped form, where
+  # a double-quoted apostrophe is left bare; `$(` or a backtick inside double
+  # quotes still runs; a `sh -c` script quote is a wrapper, not data.
+  # Known limit: a lookup quoted inside a `sh -c` script (Codex's `bash -lc`
+  # wrapper) still counts, since the wrapper's quote is skipped and the
+  # stripped form has no quotes left. A lookup line inside a heredoc body also
+  # counts, since the exclusion reads quotes, not heredocs.
+  - type: command_executed
+    description: "Agent looked up the boxes' resources before the gate"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[;&|(`{\n])\s*(?:(?:do|then|else|time|!|env|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b(?!(?:\\\n|(?<= )\n|[^\n;&|])*?\s(?:--help|-h)\b)'
+    exclude_pattern: '\A(?=(?:[^"''\\#]|(?<=\w)''|(?<=[^\s;&|(])#|(?<![^\s;&|(])#[^\n]*(?=\n|\Z)|\\.|(?<!\w)''[^'']*''|"(?:[^"\\]|\\.)*")*?(?<!-c\s)(?<!-\wc\s)(?:(?<!\w)''[^'']*?[;&|{(`\n]|"(?:[^"\\]|\\.)*?(?:[;&|{\n]|(?<!\$)\())\s*(?:(?:do|then|else|time|!|env|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b)(?:(?!(?:\A|[;&|(`{\n])\s*(?:(?:do|then|else|time|!|env|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b(?!(?:\\\n|(?<= )\n|[^\n;&|])*?\s(?:--help|-h)\b))(?:[^"''\\#]|(?<=\w)''|(?<=[^\s;&|(])#|(?<![^\s;&|(])#[^\n]*(?=\n|\Z)|\\.|(?<!\w)''[^'']*''|"(?:(?!(?:\$\(|`)\s*(?:(?:do|then|else|time|!|env|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*(?:[^\s;&|"'']*/)?(?:uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list)\b(?!(?:\\\n|(?<= )\n|[^\n;&|])*?\s(?:--help|-h)\b))[^"\\]|\\.)*"))*\Z'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   # Tenants hold thousands of processes: a 3c lookup without --search lists

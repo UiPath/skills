@@ -1,7 +1,7 @@
 <!--skill-flavor:loop-choice:start-->
-Studio Web has one loop: the round trip in
-[SKILL.md — Lifecycle](../SKILL.md#lifecycle). It merges every change into the
-target `.flow` and validates that file. The emit-only mode and the packaged-SDK
+Studio Web's loop is in [SKILL.md — Lifecycle](../SKILL.md#lifecycle): a new
+flow compiles straight into its `.flow`, an edit merges into the target `.flow`, and
+both validate that file. The emit-only mode and the packaged-SDK
 local gates below are for a terminal; do not use them here.
 <!--skill-flavor:loop-choice:end-->
 
@@ -13,10 +13,11 @@ copy.
 
 <!--skill-flavor:local-gates:start-->
 Studio Web does not use these gates. Its loop is
-[SKILL.md — Lifecycle](../SKILL.md#lifecycle): `check --source --baseline`
-against the canvas copy, each `prepare` it names, `compile` into
-`/tmp/flow-draft/<Project>/<Name>/edited/`, `merge` into the target `.flow`,
-then `validate`. There is no compiled-artifact `check`; `validate` is that rung.
+[SKILL.md — Lifecycle](../SKILL.md#lifecycle). An edit runs
+`check --source --baseline` against the canvas copy, each `prepare` it names,
+`compile` into `/tmp/flow-draft/<Project>/<Name>/edited/`, `merge` into the
+target `.flow`, then `validate`. A new flow runs `check --source`, each
+`prepare` it names, `compile` into its `.flow`, `format`, then `validate`. There is no compiled-artifact `check`; `validate` is that rung.
 
 Warnings require deliberate review; whether one blocks a release comes from the
 surrounding task or release policy.
