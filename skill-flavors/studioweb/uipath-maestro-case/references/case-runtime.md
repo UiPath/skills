@@ -32,9 +32,11 @@ uip maestro case check .flow-sdk/<Project>.case.ts --source --baseline .flow-sdk
 
 <!--skill-flavor:check-baseline-sdk-upgrade:start-->
 Needs `@uipath/maestro-builder-sdk` 6.97.0 or later in Studio Web. If `check`
-answers `unknown option '--baseline'`, this Studio Web build ships an older SDK,
-which Studio Web owns, so tell the user. Until it is upgraded, run `check
---source` without `--baseline` and fix only the errors on stages and tasks you
-changed. If a compile then stops on a task you did not change, stop: name the
+answers `unknown option '--baseline'`, or `--baseline on case check needs a
+@uipath/maestro-builder-sdk release that supports it`, this Studio Web build
+ships an older SDK, which Studio Web owns, so tell the user. Until it is
+upgraded, run `check --source` without `--baseline`, and in this fallback only,
+fix only the errors on stages and tasks you changed, even though the exit code
+stays non-zero. If a compile then stops on a task you did not change, stop: name the
 task and its code to the user.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->

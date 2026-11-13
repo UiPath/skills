@@ -104,7 +104,7 @@ Steps 2 and 3, repeated until clean:
 ```bash
 cd /solution/<Project>
 # 2. Edit .flow-sdk/<Project>.case.ts narrowly, then check until clean
-uip maestro case check .flow-sdk/<Project>.case.ts --source
+uip maestro case check .flow-sdk/<Project>.case.ts --source --baseline .flow-sdk/original/<Plan>
 # 3. Compile back into the target, then the product's own check
 uip maestro case compile .flow-sdk/<Project>.case.ts -o <Plan>
 uip maestro case validate <Plan> --strict --sdd <sdd.md> --output json  # SDD supplied

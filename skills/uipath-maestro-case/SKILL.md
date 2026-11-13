@@ -102,6 +102,7 @@ export default casePlan('loan-approval')
 <!--skill-flavor:validation-loop:start-->
 ```bash
 uip maestro case check <Name>.case.ts --source
+uip maestro case check <Name>.case.ts --source --baseline .flow-sdk/original/<plan>  # editing an existing plan
 uip maestro case compile <Name>.case.ts -o <project>/<plan>
 uip maestro case validate <project>/<plan> --strict --sdd <sdd.md> --output json  # SDD supplied
 uip maestro case validate <project>/<plan> --strict --output json                 # no SDD

@@ -243,7 +243,9 @@ whether your edit caused it.
 The baseline must be the plan as it was before your first compile: compile
 writes back into the same plan, so after it the file on disk is your edit.
 <!--skill-flavor:check-baseline-original:start-->
-Copy it aside once, before the first compile, and check against the copy:
+At the start of each editing session, before its first compile, copy it aside
+and check against the copy. Overwrite any copy an earlier session left: an old
+copy would count that session's changes as yours.
 
 ```bash
 mkdir -p .flow-sdk/original && cp <project>/<plan> .flow-sdk/original/
@@ -251,7 +253,7 @@ uip maestro case check <Name>.case.ts --source --baseline .flow-sdk/original/<pl
 ```
 <!--skill-flavor:check-baseline-original:end-->
 
-```
+```text
 ✗ [TASK_NO_ENTRY] Task "Escalate" in stage "Intake" has no entry rule — ... (edited)
 ⚠ [TASK_NO_ENTRY] Task "Archive" in stage "Intake" has no entry rule — ... (pre-existing, not counted)
 check: 1 error(s) in edited parts of the case, 0 pre-existing SDK defect(s), 1 pre-existing warning(s).
