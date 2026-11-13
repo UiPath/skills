@@ -1,0 +1,94 @@
+task_id: skill-flow-conversational-port-appearance
+description: >
+  Rebuild a low-code conversational agent as a Flow and keep its chat's
+  appearance. The source `agent.json` sets a welcome title, a welcome
+  description, two starting prompts whose `actualPrompt` differs from the
+  `displayPrompt`, and `personalWorkspaceConnectionsOnly: false`. Grades that
+  all of it lands on the conversation trigger (`conversationTrigger({...})`,
+  trigger 1.3), which is the only place a Flow's chat reads it from. A port
+  that drops the appearance still validates, so validate alone does not catch
+  it. Needs a login: flow-core emits inline agent nodes only for an
+  authenticated client.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:conversational]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  LibraryDeskAgent/ is an existing low-code conversational agent. Rebuild it as
+  a UiPath Flow project named "LibraryDesk" that holds the same text chat: it
+  starts when a conversation begins, waits for the user's message, and has an
+  AI agent answer, then goes back to waiting. Build the agent inside the flow
+  project, with the same system prompt. Users must see the same chat as before.
+
+  Leave LibraryDeskAgent/ as it is. Registry reads are fine, but do NOT pack,
+  deploy, or upload.
+
+  The task is NOT complete until `uip maestro flow validate` passes on the
+  generated flow.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The headline check: the port carried welcome text, prompts (display and
+  # actual), and the connections switch onto the trigger.
+  - type: run_command
+    description: "Conversation trigger carries the agent's welcome title, description, starting prompts and personalWorkspaceConnectionsOnly"
+    command: "python3 $REFERENCE_DIR/conversational_port_appearance/check_port_appearance.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The rebuilt chat must keep going, as the source agent's did. Same checks as
+  # conversational_chat_loop: node presence alone passes a flow that answers once
+  # and stops, or that reads history off the wrong node.
+  - type: run_command
+    description: "Conversation trigger replaced the manual one, and the agent loops back to the wait node on its continuation port"
+    command: "python3 $REFERENCE_DIR/conversational/check_conversational_flow.py loop"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "conversationalAgentSettings carries all five keys, each a jsExpression off the same wait node's conversationContext"
+    command: "python3 $REFERENCE_DIR/conversational/check_conversational_flow.py settings"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run flow debug, which uploads the solution and hands off to Studio Web"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    weight: 2.0
+    pass_threshold: 1.0

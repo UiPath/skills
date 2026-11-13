@@ -1,0 +1,61 @@
+{
+  "version": "1.2.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "conversational-v1",
+    "maxIterations": 8,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": true,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are the library help desk. Answer questions about loans, renewals and holds in two sentences or fewer.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are the library help desk. Answer questions about loans, renewals and holds in two sentences or fewer."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "",
+      "contentTokens": []
+    }
+  ],
+  "appearance": {
+    "welcomeTitle": "Library desk",
+    "welcomeDescription": "Ask about loans, renewals and holds.",
+    "startingPrompts": [
+      {
+        "id": "7d1f2c3a-5b6e-4f80-9a1b-2c3d4e5f6a70",
+        "displayPrompt": "Renew my loans",
+        "actualPrompt": "Renew every loan I have that is due this week."
+      },
+      {
+        "id": "8e2a3d4b-6c7f-4a91-8b2c-3d4e5f6a7b81",
+        "displayPrompt": "Place a hold",
+        "actualPrompt": "I want to place a hold on a book."
+      }
+    ],
+    "personalWorkspaceConnectionsOnly": false
+  },
+  "projectId": "3f6c2a1e-9b4d-4e7a-8c5f-1a2b3c4d5e6f"
+}
