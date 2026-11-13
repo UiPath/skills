@@ -10,27 +10,6 @@
 //   component          name, version, directory, setupExtensionsPath
 // Exit:  0 found, 1 unsupported OS, 3 anything else. No dependencies. Node 18+.
 
-import { existsSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { emit, requireUpdater } from './connected-installer.mjs';
+import { emit, requireExtensionsComponent } from './connected-installer.mjs';
 
-const { scope, updaterAppPath } = requireUpdater();
-// The Updater is at <platform root>\Updater\<exe>; a product is at <platform root>\<name>\<version>.
-const platformRoot = dirname(dirname(updaterAppPath));
-
-// The component folder may be named BrowserExtensions or DriverExtensions.
-for (const name of ['BrowserExtensions', 'DriverExtensions']) {
-  let versions = [];
-  try {
-    versions = readdirSync(join(platformRoot, name));
-  } catch {
-    continue;
-  }
-  // Intentionally not sorted: the first version folder that holds SetupExtensions.exe is used.
-  for (const version of versions) {
-    const directory = join(platformRoot, name, version);
-    const setupExtensionsPath = join(directory, 'SetupExtensions.exe');
-    if (existsSync(setupExtensionsPath)) emit({ status: 'ok', scope, updaterAppPath, component: { name, version, directory, setupExtensionsPath } }, 0);
-  }
-}
-emit({ status: 'component-missing', scope, updaterAppPath }, 3);
+emit({ status: 'ok', ...requireExtensionsComponent() }, 0);
