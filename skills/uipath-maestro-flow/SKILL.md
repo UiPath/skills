@@ -122,14 +122,14 @@ In brownfield work, preserve the supplied source, step names, and unaffected wir
 `decompile` stamps the source's first line; `merge` reads it, derives the baseline from the original in memory, and writes over the original:
 
 ```bash
-( cd "<Solution>/<Name>" && [ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name '<Name>.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} + )   # an older loop's leftovers
+( cd "<Solution>/<Name>" && [ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name '<Name>.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} + )
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
 # edit .flow-sdk/<Name>.flow.ts narrowly; keep its first line; no .layout() for added steps (builder-sdk#1320)
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error; `unknown option`: brownfield.md
 ( head -n 1 .flow-sdk/<Name>.flow.ts | grep -q '^// @decompiled-from ' || { echo 'no stamp (SDK<6.96.0): NOT merged' >&2; exit 1; }; uip maestro flow merge .flow-sdk/<Name>.flow.ts --original <Name>.flow )
 ```
 
-Only `merge` writes the `.flow`; a refusal writes nothing. Then validate as in [Lifecycle](#lifecycle); if it fails, fix the source and run `check` and `merge` again (merge restamped it). `no stamp` or `MERGE_ORIGINAL_CHANGED`: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
+Only `merge` writes the `.flow`; a refusal writes nothing. Validate as in [Lifecycle](#lifecycle); on failure, fix the source and `check` and `merge` again (merge restamped it). `no stamp` or `MERGE_ORIGINAL_CHANGED`: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
 **True-brownfield procedure:** **[`references/brownfield.md`](references/brownfield.md)**.
 <!--skill-flavor:sdk-editing:end-->
 
