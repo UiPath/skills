@@ -68,6 +68,8 @@ and `projectId` instead of `folderPath`:
   (`APIWF_LOCAL_PROJECT_ID_NOT_GUID`) and a `folderPath` beside
   `location: 'in-solution'` (`APIWF_LOCAL_HAS_FOLDER`): the in-solution
   binding's folder is `''`, filled in at deploy.
+  If your SDK still reports it as an error (releases before
+  UiPath/builder-sdk#2002), add `projectId` from `resource.projectKey`.
 - A decompiled in-solution step (folder `''`) comes back as
   `location: 'in-solution'`. Keep it that way when editing; never add a
   `folderPath`.
