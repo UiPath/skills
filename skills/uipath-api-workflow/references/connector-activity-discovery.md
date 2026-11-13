@@ -162,6 +162,8 @@ Never use Http kind with a vendor UUID, the simple `call: "http"` form, or a ven
 
 `with.method` is always `POST`; `with.endpoint` is always `/http-request`. Put the actual request in `bodyParameters`: `authentication` (`"manual"` or `"connector"`), actual `method`, `url`, `headers`, `body`, and other inputs. Output is an envelope; use `Data.ExportBucketKey`, then `.content`, `.statusCode`, `.headers`, etc.
 
+Set a JSON `body` to the object, e.g. `"${{ <FIELD>: $workflow.input.<INPUT_NAME> }}"` or `"${$context.outputs.<ACTIVITY>}"`, never to a `JSON.stringify(...)` string: the activity JSON-encodes `body`, so a string arrives as a quoted JSON string (`"{\"<FIELD>\":...}"`) that an API expecting an object rejects.
+
 Example: stub the HTTP Request activity with `--inputs '{"url":"https://api.example.com/facts/random","method":"GET"}'`.
 
 <!--skill-flavor:http-example-execution-proof:start-->

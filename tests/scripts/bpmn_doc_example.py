@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE = (
     ROOT
+    / "classic"
     / "skills"
     / "uipath-maestro-bpmn"
     / "references"
@@ -53,6 +54,7 @@ def minimal_example() -> ET.Element:
 
 REGISTRY_REFERENCE = (
     ROOT
+    / "classic"
     / "skills"
     / "uipath-maestro-bpmn"
     / "references"

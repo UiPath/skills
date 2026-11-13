@@ -125,10 +125,6 @@ uip codedapp pack <dist> [options]
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | Content type: `webapp`, `library`, `process` | `webapp` |
 | `--dry-run` | Preview packaging without creating the file | `false` |
-| `--base-url <url>` | UiPath base URL | From `uip login` session |
-| `--org-id <id>` | Organization ID | From `uip login` session |
-| `--tenant-id <id>` | Tenant ID | From `uip login` session |
-| `--access-token <token>` | Access token | From `uip login` session |
 
 **Examples:**
 
@@ -146,7 +142,7 @@ uip codedapp pack dist -o ./packages
 uip codedapp pack dist --dry-run
 
 # Pack with all options
-uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "Production app" --main-file app.html
+uip codedapp pack dist -n my-webapp --version 1.0.0 --author "My Team" --description "Production app" --main-file app.html
 ```
 
 **Output:**

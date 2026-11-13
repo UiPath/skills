@@ -4,7 +4,7 @@ description: >
   discovers entities, selects the right one, then wires both an
   NL-to-SQL tool for freeform queries and an SDK write tool for a
   fixed operation — with prompt forwarding and lazy init.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities, studio-web-unsupported, studio-web-unsupported:coded-agent]
 sandbox:
   template_sources:
     - type: template_dir
@@ -32,8 +32,8 @@ pre_run:
 
 initial_prompt: |
   Build me a coded agent called `order-manager` that works with our
-  order data in Data Fabric — the entity is named exactly `Order`;
-  find it by listing what's available. It needs to handle two things:
+  order data. The data lives in Data Fabric — find the right entity
+  by listing what's available. It needs to handle two things:
   1. Users asking freeform questions about orders — anything from
      totals to customer lookups. I can't predict these ahead of time.
   2. Marking a specific order as delivered by setting its Status to

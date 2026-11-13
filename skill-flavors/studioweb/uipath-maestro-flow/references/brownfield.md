@@ -7,8 +7,9 @@ nothing to install with `cp`, and nothing to delete: the project file system
 refuses deletes.
 
 Never write or patch the `.flow` yourself. Merge renumbers every edge
-(`edge_0`, `edge_1`, ...), may reorder nodes, and adds default fields: that is
-its normal output, not drift to undo. The changes to act on are the
+(`edge_0`, `edge_1`, ...), may reorder nodes, and adds default fields, and moves
+original nodes right or down to make room for an added one: that is its normal
+output, not drift to undo. Never move them back. The changes to act on are the
 [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
 Validate the target `.flow`, not `/tmp/flow-draft/<Project>/<Name>/edited/`: that folder holds only
@@ -37,6 +38,10 @@ and Studio Web owns the SDK copy, so tell the user. Until it is upgraded, run
 changed. If a compile then stops on a node you did not change, stop: name the
 node and its code to the user.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
+
+<!--skill-flavor:check-baseline-uip-version:start-->
+
+<!--skill-flavor:check-baseline-uip-version:end-->
 
 <!--skill-flavor:install-agent-files:start-->
 `merge -o` into the target writes the `.flow` and every agent file merge

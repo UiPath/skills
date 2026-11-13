@@ -7,7 +7,7 @@ Ported from Flow
 ``_shared/check_connector_node_shape.py`` (connector-shape criterion),
 translated from a JSON node/``inputs.detail`` walk to an XML walk over the
 registry-driven ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Node
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Node
 classification helpers are copied from the passing sibling port
 ``connector_features/datafabric_connector/contractregistry_crud_filters/``'s
 ``check_df_contractregistry_crud_filters.py`` for this batch's consistency.

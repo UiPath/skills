@@ -10,3 +10,6 @@ That page names the connector *UiPath Data Fabric*, gives the HTTP route
 (`POST /v2/{entityName}/CreateEntityRecord`), and prints the exact
 `-f entityName=<value>` prepare to run — before any of it has to be inferred.
 <!--skill-flavor:operation-doc:end-->
+<!--skill-flavor:data-fabric-entity-ref-sdk:start-->
+so tell the user: Studio Web owns the SDK copy and the CLI.
+<!--skill-flavor:data-fabric-entity-ref-sdk:end-->

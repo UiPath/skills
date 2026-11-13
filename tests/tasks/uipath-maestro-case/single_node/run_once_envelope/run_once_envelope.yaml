@@ -141,8 +141,8 @@ success_criteria:
 
   # Graded on behavior: the run-once flag is honored where the SDD states it, and neither the
   # No row nor the unspecified row comes out run-once. `!= true` treats an omitted key the same
-  # as false — omitting a falsy default is a serialization choice (and it varies run to run),
-  # while re-running or not is the behavior this PR changed.
+  # as false, because the product does: the case converter maps an omitted `shouldRunOnlyOnce`
+  # to `runOnlyOnce: false`, the same rules it emits for an explicit `false`.
   - type: json_check
     description: "shouldRunOnlyOnce is read from the SDD: Yes stays true; No and the unspecified row are not run-once"
     path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.[cj][as][so][en]"
@@ -164,18 +164,3 @@ success_criteria:
         expected: 3
     weight: 3.0
     pass_threshold: 1.0
-
-  # Advisory. implementation.md says to WRITE the default rather than omit it; a run that omits
-  # the falsy key still behaves correctly, so this is recorded, not gated.
-  - type: json_check
-    description: "Advisory: the non-run-once tasks emit shouldRunOnlyOnce explicitly instead of omitting it"
-    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.[cj][as][so][en]"
-    assertions:
-      - expression: "nodes[].data.tasks[][] | [?displayName=='Reminder Ping'] | [0].shouldRunOnlyOnce"
-        operator: equals
-        expected: false
-      - expression: "nodes[].data.tasks[][] | [?displayName=='Escalation Hold'] | [0].shouldRunOnlyOnce"
-        operator: equals
-        expected: false
-    weight: 1.0
-    pass_threshold: 0

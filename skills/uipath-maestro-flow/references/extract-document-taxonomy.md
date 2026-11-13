@@ -89,7 +89,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 
 ## The loop
 
-1. **Collect the samples.** Documents the user uploaded through Studio Web live under the flow project and need decoding first ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). Otherwise ask which documents are representative if the user has not said. Prefer variety over volume — a handful covering the layouts that differ tells you more than twenty of the same one.
+1. **Collect the samples.** Check for documents uploaded to the node; they need decoding first ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). With none, ask for a few representative documents, even when the user listed the fields — variety over volume. With none supplied, design from the stated fields and say so in the report.
 2. **Read them.** One full `Read` per decoded document returns text and image for both digital and scanned files, so no PDF tooling is needed.
 3. **Design the taxonomy** against the rules below and write it to a JSON file.
 4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.
@@ -239,13 +239,15 @@ Nothing here is enforced by the CLI, but a taxonomy that ignores it tends to ext
 
 **It checks the document before writing anything.** A document that is not a schema at all, or that breaks a limit, is refused with exit 3 and changes nothing on disk.
 
-**It refuses to destroy an unsaved draft.** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops rather than overwriting it. `--discard-draft` proceeds and throws the draft away — only on the user's say-so.
+**It refuses to destroy an unsaved draft.** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops rather than overwriting it. `--discard-draft` proceeds and throws the draft away. Pass it only when the user asked for it in this conversation. With no one to ask (headless, CI), leave the node as it is, report the draft and `DraftIssueMessages`, and stop; the request is not done. Never hand-edit `inputs.schemaDocument` to get around the refusal.
 
 ## Editing a taxonomy that already exists
 
 `get` first, always. Then change what needs changing and send the whole document back, under two rules.
 
 **Keep the ids.** Every id that came back from `get` stays on its entry, including through a rename — an id is what connects a field to the annotations and evaluator settings recorded against it, and the readers fall back to matching by position when one is missing. A rename that drops the id quietly re-points stored annotations at whatever field now sits in that place.
+
+**Keep the text.** Send every existing group and field with its `description`, type and id exactly as `get` returned them. Put new information in new groups, new fields or the document `prompt`; never reword an existing description.
 
 **Send everything back.** `set` replaces the document rather than patching it, so anything you leave out is gone: other field groups, the `$defs` catalogue, the overall prompt.
 
@@ -273,10 +275,10 @@ On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 
 | Exit | Message | What to do |
 | --- | --- | --- |
-| 3 | `Schema document failed validation` | Content problems arrive under this message. Read `Data.Issues`: each entry names the path and the problem. A missing parent is reported here too (`Nested field group "<key>" has no parent group "<parent>"`) — a group named `Parent > Child` needs `Parent` defined in the same document. |
+| 3 | `Schema document failed validation` | Content problems arrive under this message. Read `Data.Issues`: each entry names the path and the problem. A missing parent is reported here too (`Nested field group "<key>" has no parent group "<parent>"`) — a group named `Parent > Child` needs `Parent` defined in the same document. When an existing group was clearly meant as the parent, rename one of the two so the keys match; never add an empty parent group. |
 | 3 | `Invalid schema document` | The document is not a schema — it needs `prompt` and `outputSchema`. |
 | 3 | `Legacy schema document shape` | The document sent uses the superseded `{taxonomy, fieldTypes}` form; send `{ prompt, outputSchema }`. A legacy document already on the node is simply replaced, reported as `ReplacedLegacyDocument: true`. |
-| 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. |
+| 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. Headless: stop and report. |
 | 1 | `Invalid --schema JSON` | The argument did not parse. Prefer `--schema @<file>` for anything sizeable; shells mangle inline JSON. |
 | 1 | `Cannot read the schema file` | The path after `@` does not exist or could not be read. This is a wrong path, not a malformed schema. |
 | 1 | node not found, or wrong node type | `uip maestro flow nodes list <file>` gives the ids and types. Only Extract document nodes carry a taxonomy. |

@@ -8,7 +8,7 @@ description: >
   spread into create_agent(), uses Text+Code entities, a POST stage (IP is
   output-only), an LLM/Agent scope (NOT Tool), and a BlockAction. Closes the
   coded intellectual_property gap (untested in both coded and low-code before).
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
@@ -46,7 +46,7 @@ success_criteria:
 
   - type: run_command
     description: "Intellectual property middleware guardrail correctly added to graph.py"
-    command: "python3 $REFERENCE_DIR/_shared/check_intellectual_property_coded.py"
+    command: "python3 $REFERENCE_DIR/_shared/guardrails/check_intellectual_property_coded.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

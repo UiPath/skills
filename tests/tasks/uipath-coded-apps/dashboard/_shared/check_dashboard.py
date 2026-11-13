@@ -12,6 +12,7 @@ Usage:
   python3 check_dashboard.py
       [--min-metrics N] [--min-widgets N]
       [--require-substr S ...] [--forbid-substr S ...]
+      [--forbid-sourcetype-filter]
       [--require-starttime] [--require-state] [--tsc]
 
 Exit 0 = all checks pass. Exit 1 = failure with details on stdout.
@@ -46,6 +47,17 @@ UUID_RE = re.compile(
     r'["\']([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})["\']'
 )
 
+# sourceType is the trigger origin, not the agent discriminator (sdk/orchestrator.md).
+# Flag it only when used to classify jobs: OData `SourceType eq|ne`, or a ===/!== comparison.
+SOURCETYPE_MISUSE_RES = (
+    re.compile(r"\bsource(?:type)?\s+(?:eq|ne)\s", re.I),
+    re.compile(r"""(?:\.|\[\s*['"`])sourcetype(?:['"`]\s*\])?\s*[!=]==?(?!\s*(?:null|undefined)\b)""", re.I),
+    re.compile(r"""(?<![!=])[!=]==?\s*(?!null\b|undefined\b)[\w$?.]*?(?:\.|\[\s*['"`])sourcetype\b""", re.I),
+)
+# A string literal (kept: OData filters live in strings) or a comment (dropped).
+TS_STRING_OR_COMMENT_RE = re.compile(
+    r"""("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|/\*.*?\*/|//[^\n]*""", re.S)
+
 
 def fail(msg: str) -> None:
     print(f"FAIL: {msg}", flush=True)
@@ -55,6 +67,17 @@ def fail(msg: str) -> None:
 def check(condition: bool, msg: str) -> None:
     if not condition:
         fail(msg)
+
+
+def sourcetype_misuse(files) -> list:
+    """'path:line: code' wherever sourceType classifies jobs. Comments are ignored; line numbers kept."""
+    hits = []
+    for p in files:
+        code = TS_STRING_OR_COMMENT_RE.sub(lambda m: m.group(1) or " " + "\n" * m.group(0).count("\n"),
+                                           p.read_text(encoding="utf-8", errors="ignore"))
+        hits += [f"{p.as_posix()}:{n}: {line.strip()[:160]}" for n, line in enumerate(code.splitlines(), 1)
+                 if any(r.search(line) for r in SOURCETYPE_MISUSE_RES)]
+    return hits
 
 
 def find_project_root(start: Path) -> Path:
@@ -124,6 +147,8 @@ def main() -> None:
                         help="Substring that MUST appear across metric modules / generated code (repeatable)")
     parser.add_argument("--forbid-substr", action="append", default=[],
                         help="Substring that must NOT appear across metric modules / generated code (repeatable)")
+    parser.add_argument("--forbid-sourcetype-filter", action="store_true",
+                        help="Fail if code classifies jobs on sourceType (comments and display columns allowed)")
     parser.add_argument("--require-starttime", action="store_true",
                         help="A named time constant must appear in metric modules (not inline Date arithmetic)")
     parser.add_argument("--require-state", action="store_true",
@@ -166,6 +191,7 @@ def main() -> None:
     # has no schemaVersion and would fail the v2 assertion below).
     intent_files = [f for f in find_files(Path.cwd(), "intent.json") if f.name == "intent.json"]
     check(len(intent_files) >= 1, "intent.json not found — build did not author intent metadata")
+    intent_modules = set()  # module stems the intent's metrics resolve to (build-dashboard.mjs rule)
     for f in intent_files:
         raw = f.read_text(encoding="utf-8", errors="ignore")
         check("fnBody" not in raw,
@@ -176,12 +202,19 @@ def main() -> None:
             fail(f"{f.as_posix()} is not valid JSON: {e}")
         check(data.get("schemaVersion") == 2,
               f"{f.as_posix()} must declare \"schemaVersion\": 2 (found {data.get('schemaVersion')!r})")
+        for m in data.get("metrics") or []:
+            if isinstance(m, dict) and (m.get("module") or m.get("name")):
+                intent_modules.add(Path(m.get("module") or f"{m['name']}.ts").stem)
 
-    # 4. Metric modules — .ts under a metrics/ folder, each exporting fetchData
+    # 4. Metric modules — .ts under a metrics/ folder, each exporting fetchData.
+    # Only files an intent metric resolves to must export it; another .ts there is a
+    # shared helper the metrics import. No named metrics → every file is checked.
     metric_files = [p for p in find_files(cwd, ".ts") if "/metrics/" in p.as_posix()]
     check(len(metric_files) >= args.min_metrics,
           f"Expected >= {args.min_metrics} metric module(s) under a metrics/ folder, found {len(metric_files)}")
     for p in metric_files:
+        if intent_modules and p.stem not in intent_modules:
+            continue
         body = p.read_text(encoding="utf-8", errors="ignore")
         check("fetchData" in body,
               f"Metric module {p.as_posix()} does not export fetchData")
@@ -211,6 +244,9 @@ def main() -> None:
     for s in args.forbid_substr:
         check(s not in code_surface,
               f"Forbidden substring present in metric modules / generated code: {s!r}")
+    if args.forbid_sourcetype_filter:
+        hits = sourcetype_misuse(scan_files)
+        check(not hits, "sourceType used to classify jobs (use packageType eq 'Agent'):\n  " + "\n  ".join(hits[:5]))
 
     # 7. startTime constants in metric modules
     if args.require_starttime:

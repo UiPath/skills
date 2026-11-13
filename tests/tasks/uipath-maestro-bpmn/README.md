@@ -1,7 +1,10 @@
 # Maestro BPMN Skill Eval Tasks
 
-These tasks exercise the `uipath-maestro-bpmn` skill — a registry-driven,
-authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
+These tasks exercise the `uipath-maestro-bpmn` skill. Since the promotion,
+`skills/uipath-maestro-bpmn` is the builder-SDK skill (author `<Name>.bpmn.ts`,
+compile to `.bpmn`); the previous registry-driven XML skill lives in
+`classic/skills/uipath-maestro-bpmn` and ships only in the Studio Web flavor.
+Several descriptions below still describe the classic skill's mechanism.
 
 - `smoke/` covers the core registry-driven authoring loop.
   `registry_discovery.yaml` checks that the agent discovers extension types via
@@ -39,12 +42,13 @@ authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
 These tasks validate with `uip maestro bpmn validate <file>`, which runs the
 full PO.Frontend canvas rule set offline (added in UiPath/cli#3135). If the CLI
 is unavailable, they fall back to parsing the BPMN for well-formedness and
-walking the structural checklist in the skill's `references/structural-bpmn.md`.
+walking the structural checklist in the classic skill's `references/structural-bpmn.md`.
 
 ## Arm neutrality — two invariants these tasks must keep
 
-Every task here is shared by both comparison arms: the shipped `skills/uipath-maestro-bpmn`
-(registry + raw XML) and `preview/skills/uipath-maestro-bpmn` (the TypeScript builder SDK),
+Every task here is shared by both comparison arms: the classic `classic/skills/uipath-maestro-bpmn`
+(registry + raw XML; Studio Web's pinned generation) and the shipped `skills/uipath-maestro-bpmn`
+(the TypeScript builder SDK; `preview/skills/uipath-maestro-bpmn` is a symlink to it),
 selected by `agent.plugins` in the experiment, not by the task.
 Two things therefore have to stay out of the task YAMLs, or a run measures the fixture instead of the skill.
 
@@ -78,8 +82,8 @@ The exception is a task that grades registry usage itself (`smoke/registry_disco
 There the registry IS the subject under test, so naming it is correct.
 
 **3. Never name a `references/*.md` file in a prompt.**
-`preview/skills/uipath-maestro-bpmn/references/` holds exactly one file, `bpmn-runtime.md`.
-`structural-bpmn.md`, `public-safety.md`, `expression-authoring.md` and `registry-workflow.md` exist only under `skills/uipath-maestro-bpmn/`, so "per the skill's structural reference" dangles under the SDK arm.
+The two generations name their references differently: the SDK skill's `references/` holds `bpmn-runtime.md`, `connectors.md`, `diagnose.md`, `draft-skeleton.md`, `operate.md` and `patterns/`.
+`structural-bpmn.md`, `public-safety.md`, `expression-authoring.md` and `registry-workflow.md` exist only under `classic/skills/uipath-maestro-bpmn/`, so "per the skill's structural reference" dangles under the SDK arm.
 Read those documents as a task AUTHOR; write what the output must contain, and let each arm's skill decide how.
 
 **4. Grade the artifact where the arm's workflow puts it, and by what it is, not by the v1 mechanism.**
@@ -90,6 +94,7 @@ a variable matched by `name` alone (the SDK writes `id` = what expressions read,
 and `command_executed` on `registry get … --object-name` alone — also accept the SDK arm's `uip is resources describe`.
 A fifth shape (2026-09-27, `-script-jint-guidance`): grading the canvas script-task TEMPLATE — a task-scoped `scriptResponse` variable, a task-scoped `Error`, whole-state `args` (`{vars, metadata}`) with its inputSchema, and start/end bridge mappings — where the runtime contract is only the `=result.response` row and the args keys.
 The SDK writes per-input args, lands `=result.response` in the public output, and writes no Error unless asked; `check_script_jint_guidance.py` now grades that the values FLOW (each input reaches the script under some name, the result reaches `riskScore`, an Error row when written is the platform envelope) and accepts either spelling.
+It also accepts the SDK's other typed-error design, an error boundary on the script task that ends its own path, and a row reading one field of the result (`=result.response.<field>`) (builder-sdk#1884).
 `patterns/` and `_shared/check_*.py` in the sibling repo UiPath/flow-builder-sdk vendor these graders byte for byte; change them there in the same PR.
 
 **What is still open.** `flow-v2-preview.yaml`'s `extra_mounts` binds the repo root read-only, so the v1 skill tree stays *readable* from inside the preview container even though the working-directory copy is gone.
