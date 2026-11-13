@@ -19,8 +19,19 @@ sandbox:
       mount_point: LicenceReader
     - type: template_dir
       path: ../_fixtures/licence_taxonomy
+    - type: template_dir
+      path: ../../_setup/extraction_check_shim
+  mock_path_dirs:
+    - .uip-fake
 reference:
   directory: ../..
+
+# The skill runs `uip maestro flow extraction check` before it authors this node.
+# The shim answers it with Available, so the grade does not depend on the
+# tenant's configuration or on the CLI release that ships the command.
+pre_run:
+  - command: "printf Available > .uip-fake/extraction-status"
+    timeout: 10
 
 initial_prompt: |
   Apply the taxonomy I wrote in ./licence_taxonomy.json to the Extract document
