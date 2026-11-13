@@ -318,6 +318,7 @@ For problems with nothing greppable (no exception, no error code — silent fail
 | Symptom | Domain | Entry |
 |---|---|---|
 | Job/run Successful but the action had no effect or output is wrong | The acting activity's package (ui-automation, classic, word, excel, gsuite, o365, database, system) | Activity-level trace logs — look for zero-count lines ("Replaced 0 occurrence"), Simulate/inert-verify configurations, provider quirks |
+| UiPath extension for a browser, Java, or a remote-desktop client to check, troubleshoot, install, upgrade, or uninstall, one extension or all — no job or error given (Windows) | ui-automation | [extension-installation-status.md](./activity-packages/ui-automation/playbooks/extension-installation-status.md) — the local machine is the anchor; reads the extension status, hands over to the component playbook when the extension tooling is not on the machine, and to the install/uninstall playbook when the extension is missing or outdated |
 | Job stuck Pending | orchestrator | `PendingReasons` on the job record — its error codes ARE greppable signatures; re-grep after fetching |
 | Job/instance stuck Running | orchestrator (plain job) / maestro (BPMN instance) | Child-job states + open incidents; a Maestro instance with an Open incident is blocked until the incident is resolved |
 | Works in Debug, fails deployed | maestro | Debug-vs-deploy silent playbook |
