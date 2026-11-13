@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """`uip` mock for the Extract document tasks.
 
-Answers `uip maestro flow extraction check` with the status in
-mocks/extraction-status, which the task's pre_run writes. The answer has the
-shape the CLI prints (UiPath/cli packages/flow-tool/src/commands/extraction.ts).
-Every other call runs the real `uip` later on PATH.
+Answers `uip maestro flow extraction check` with `Available`, or with the
+status in mocks/extraction-status when a task's pre_run writes one. The answer
+has the shape the CLI prints (UiPath/cli
+packages/flow-tool/src/commands/extraction.ts). Every other call runs the real
+`uip` later on PATH.
 
 Why mock: the CLI that ships the command is not released yet, and the test
 tenant's answer is not pinned. Faking only this one call keeps the rest of the
@@ -36,8 +37,11 @@ def log(args):
 
 
 def extraction_check():
-    with open(os.path.join(MOCK_DIR, "extraction-status"), encoding="utf-8") as f:
-        status = f.read().strip()
+    status_file = os.path.join(MOCK_DIR, "extraction-status")
+    status = "Available"
+    if os.path.exists(status_file):
+        with open(status_file, encoding="utf-8") as f:
+            status = f.read().strip()
     reason = REASONS[status]
     available = status == "Available"
     if available:

@@ -24,13 +24,6 @@ sandbox:
 reference:
   directory: ../..
 
-# The skill runs `uip maestro flow extraction check` before it authors this node.
-# The mock answers it with Available, so the grade does not depend on the
-# tenant's configuration or on the CLI release that ships the command.
-pre_run:
-  - command: "printf Available > mocks/extraction-status"
-    timeout: 10
-
 initial_prompt: |
   My PermitDesk flow takes a permit document. Add an Extract document step
   that pulls out the permit number, the holder's name and the expiry date.

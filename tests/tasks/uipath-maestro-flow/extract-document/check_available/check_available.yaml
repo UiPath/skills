@@ -6,7 +6,7 @@ description: >
   and leaves a flow that validates.
 
   The verdict is faked: the `uip` mock (`_setup/extraction_check_mock`)
-  answers `extraction check` with the status pre_run writes and passes every
+  answers `extraction check` with `Available`, its default, and passes every
   other call to the real CLI, logging each call to `mocks/calls.log`. That
   keeps the grade off the CI tenant's configuration and off the CLI release
   that ships the command. The node's file input, edges and taxonomy are graded
@@ -23,10 +23,6 @@ sandbox:
 
 reference:
   directory: ../..
-
-pre_run:
-  - command: "printf Available > mocks/extraction-status"
-    timeout: 10
 
 initial_prompt: |
   Build a UiPath Flow called "PermitReader" that takes a building permit PDF as

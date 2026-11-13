@@ -23,13 +23,6 @@ sandbox:
 reference:
   directory: ../..
 
-# The skill runs `uip maestro flow extraction check` before it authors this node.
-# The mock answers it with Available, so the grade does not depend on the
-# tenant's configuration or on the CLI release that ships the command.
-pre_run:
-  - command: "printf Available > mocks/extraction-status"
-    timeout: 10
-
 initial_prompt: |
   Extend the Extract document node in my InvoiceReader flow so it also
   extracts every line item on the invoice (its description, quantity and line
