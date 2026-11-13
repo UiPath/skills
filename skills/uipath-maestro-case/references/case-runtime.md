@@ -85,6 +85,36 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Outputs are the fixed four: `code`, `headers`, `body`, `Error`.
   `.outputs({ v: '=response.body' })` maps one to a case variable.
 
+## Document extraction
+
+<!-- RULE:case.docextraction.discovery -->
+- Discovery: `uip ixp projects list --output json` first. Pass the project's
+  **`Name`** (not `Title`) to `uip ixp deployments list <Name> --output json`.
+  That listing gives model (`DeploymentName`), deployment (`DeploymentTitle`),
+  and `folderKey`. For `deploymentKey` and `folder`: run
+  `uip solution resources list --kind IxpDeployment --source remote
+  --output json` and take the row whose `Name` equals `DeploymentTitle` and
+  whose `FolderKey` matches — its `Key` is `deploymentKey`, its `Folder` is
+  `folder`. Ask the user if no match. `sdd resolve` does not resolve them.
+  After discovery, add the deployment to the solution:
+  `uip solution resources add --source remote --kind IxpDeployment
+  --name "<DeploymentTitle>" --solution-folder <solution> --output json`
+  Then refresh: `uip solution resources refresh --solution-folder <solution>
+  --output json`
+
+<!-- RULE:case.docextraction.check -->
+- Compile refuses a missing `deploymentKey`; `check` reports blank model,
+  deployment, folder, folderKey, and file individually.
+
+<!-- RULE:case.docextraction.legacy -->
+- Decompile emits `.savedDocumentExtraction()` for the older flat format.
+  It is read-only: no `.outputs()`, no deployment edit. `check` warns
+  `DOCUMENT_EXTRACTION_OLDER_SHAPE`.
+
+<!-- RULE:case.docextraction.floor -->
+- `uip maestro case validate` needs uip 1.206.0+ for document-extraction
+  tasks. Older versions reject with `CASE_MGMT_BINDING_PAIR_INCOMPLETE`.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
