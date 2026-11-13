@@ -49,8 +49,11 @@ The one exception is the Studio Web upload of a project this run created: a requ
    connections, `bindings_v2.json` must be the versioned object
    `{ "version": "2.0", "resources": [ … ] }` with one entry per dependency. An
    empty `resources` array is right only for a process with no dependencies;
-   with dependencies it means the binding never reached the BPMN, so fix the
-   `.binding()` in the source and rebuild rather than writing the entry by hand.
+   with dependencies it means the binding never reached the BPMN: fix the
+   `.binding()` in the source, or swap a Data Fabric `entity: { name, folderKey }`
+   (which writes no binding) for `{ name, folder }`
+   ([Connectors and bindings](bpmn-runtime.md#connectors-and-bindings)), and
+   rebuild rather than writing the entry by hand.
 <!--skill-flavor:preflight-host:start-->
 4. Refresh the solution's declared resources when the project sits in the
    solution `bpmn init` scaffolded (it does unless `--skip-solution-registration`

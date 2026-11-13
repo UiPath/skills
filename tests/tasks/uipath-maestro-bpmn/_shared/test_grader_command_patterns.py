@@ -288,9 +288,13 @@ def test_stuck_gateway_reuses_the_fault_triage_read_guard() -> None:
         return found[0]
 
     assert guard(_STUCK) == guard("operate-diagnose/minimal_fault_triage.yaml")
+    assert guard("diagnose/next_action_contract/next_action_contract.yaml") == guard(_STUCK)
 
 
-@pytest.mark.parametrize("task", [_STUCK, "operate-diagnose/minimal_fault_triage.yaml"])
+@pytest.mark.parametrize(
+    "task",
+    [_STUCK, "operate-diagnose/minimal_fault_triage.yaml", "diagnose/next_action_contract/next_action_contract.yaml"],
+)
 def test_reference_dir_tasks_declare_a_reference(task: str) -> None:
     """coder-eval skips a task whose criteria read $REFERENCE_DIR with no `reference:` block."""
     raw = yaml.safe_load((_SUITE / task).read_text(encoding="utf-8"))
@@ -303,6 +307,7 @@ def test_reference_dir_tasks_declare_a_reference(task: str) -> None:
 # --- stuck_gateway and fault_triage: no shell write into the mock call log ----------
 
 _FAULT_TRIAGE = "operate-diagnose/minimal_fault_triage.yaml"
+_NEXT_ACTION = "diagnose/next_action_contract/next_action_contract.yaml"
 
 CALL_LOG_WRITES = [
     # The forged line that satisfies every call-log row.
@@ -329,13 +334,13 @@ CALL_LOG_SAFE = [
 ]
 
 
-@pytest.mark.parametrize("task", [_STUCK, _FAULT_TRIAGE])
+@pytest.mark.parametrize("task", [_STUCK, _FAULT_TRIAGE, _NEXT_ACTION])
 @pytest.mark.parametrize("command", CALL_LOG_WRITES)
 def test_call_log_write_guard_fires(task: str, command: str) -> None:
     assert _hits(_pattern(task, "mock call log"), command), command
 
 
-@pytest.mark.parametrize("task", [_STUCK, _FAULT_TRIAGE])
+@pytest.mark.parametrize("task", [_STUCK, _FAULT_TRIAGE, _NEXT_ACTION])
 @pytest.mark.parametrize("command", CALL_LOG_SAFE)
 def test_call_log_write_guard_is_silent_on_normal_work(task: str, command: str) -> None:
     assert not _hits(_pattern(task, "mock call log"), command), command
@@ -343,6 +348,7 @@ def test_call_log_write_guard_is_silent_on_normal_work(task: str, command: str) 
 
 def test_call_log_write_guard_is_one_pattern() -> None:
     assert _pattern(_STUCK, "mock call log").pattern == _pattern(_FAULT_TRIAGE, "mock call log").pattern
+    assert _pattern(_NEXT_ACTION, "mock call log").pattern == _pattern(_STUCK, "mock call log").pattern
 
 
 # --- lifecycle guards: switch, subprocess, terminate and the three e2e tasks ------
@@ -554,3 +560,132 @@ def test_present_contains_fails_on_a_missing_needle(tmp_path: Path) -> None:
 @pytest.mark.parametrize("task", _PACK_FORBIDDEN)
 def test_no_content_check_is_pinned_to_the_root_file(task: str) -> None:
     assert not [c for c in _criteria(task) if c["type"] == "file_contains"], task
+
+
+# --- next_action_contract: literal reads, no lifecycle, a named re-check ----------
+#
+# Both command guards carry an exclude for the Bash call that writes diagnosis.md,
+# applied the way CommandExecutedChecker applies it: a command whose raw or
+# normalized form matches the exclude does not count.
+
+
+def _counts(task: str, description_part: str, command: str) -> bool:
+    crit = [c for c in _criteria(task) if "command_pattern" in c and description_part in c["description"]]
+    assert len(crit) == 1
+    pattern = re.compile(crit[0]["command_pattern"], re.DOTALL)
+    exclude = re.compile(crit[0]["exclude_pattern"], re.DOTALL) if crit[0].get("exclude_pattern") else None
+    haystacks = _match_haystacks(command)
+    if exclude is not None and any(exclude.search(h) for h in haystacks):
+        return False
+    return any(pattern.search(h) for h in haystacks)
+
+
+_R = "uip maestro bpmn instance"
+_DIAGNOSIS_HEREDOC = (
+    "cat > diagnosis.md <<'EOF'\nIt faulted while resolving the binding.\n"
+    f"Re-read: `{_R} incidents inst-triage-001 -f folder-public --output json`\n"
+    f"Later, as an Operate decision: {_R} retry inst-triage-001 -f folder-public\nEOF"
+)
+
+LITERAL_READS = [
+    f"{_R} incidents inst-triage-001 -f folder-public --output json",
+    # Chained one per line, as diagnose.md teaches, with harmless lines around them.
+    f"{_R} incidents inst-triage-001 -f folder-public --output json\n"
+    f"{_R} asset inst-triage-001 -f folder-public --output json",
+    f'{_R} cursors inst-triage-001 -f folder-public --output json\nls "$TMPDIR"',
+    f'{_R} get inst-triage-001 -f folder-public --output json\necho "status: ${{PIPESTATUS[0]}}"',
+    f'{_R} asset inst-triage-001 -f folder-public --output json\njq . "$OUT"',
+    f'{_R} asset inst-triage-001 -f folder-public --output json > "$TMPDIR/asset.json"',
+    f'{_R} get inst-triage-001 -f folder-public --output json && echo "rc=$?"',
+    f'echo "Checking while waiting"\n{_R} get inst-triage-001 -f folder-public --output json',
+    "uip maestro bpmn job status job-triage-001 --folder-key folder-public --output json | jq .Data",
+    "for f in *.md; do echo $f; done",
+    _DIAGNOSIS_HEREDOC,
+]
+
+STAND_INS = [
+    f"for c in incidents variables asset; do {_R} $c inst-triage-001 -f folder-public --output json; done",
+    f'for c in incidents variables\ndo\n  {_R} "$c" inst-triage-001 -f folder-public --output json\ndone',
+    f"F=folder-public; {_R} incidents inst-triage-001 -f $F --output json",
+    f'ID=inst-triage-001; {_R} incidents "$ID" -f folder-public --output json',
+    f'r() {{ {_R} "$1" inst-triage-001 -f folder-public --output json; }}; r incidents',
+    "alias r='uip maestro bpmn instance'",
+    f'printf "incidents\\nasset" | xargs -I{{}} {_R} {{}} inst-triage-001 -f folder-public',
+    f"{_R} get $(cat id.txt) -f folder-public --output json",
+    "for c in a b; do $UIP maestro bpmn instance $c x -f y; done",
+    "uip maestro bpmn job status $JOB --folder-key folder-public --output json",
+]
+
+
+@pytest.mark.parametrize("command", LITERAL_READS)
+def test_literal_read_guard_passes_literal_reads(command: str) -> None:
+    assert not _counts(_NEXT_ACTION, "literal command", command), command
+
+
+@pytest.mark.parametrize("command", STAND_INS)
+def test_literal_read_guard_catches_stand_ins(command: str) -> None:
+    assert _counts(_NEXT_ACTION, "literal command", command), command
+
+
+NEXT_ACTION_MUTATIONS = [
+    f"{_R} retry inst-triage-001 -f folder-public --output json",
+    "uip maestro bpmn instances cancel inst-triage-001 -f folder-public",
+    f"{_R} variables-set inst-triage-001 -f folder-public --variables '{{}}'",
+    f"{_R} elements retry inst-triage-001 Task_InvokeLegacyRpa -f folder-public",
+    f"{_R} element cancel inst-triage-001 Task_InvokeLegacyRpa -f folder-public",
+    f"{_R} messages send inst-triage-001 -f folder-public",
+    "uip maestro bpmn debug-instances continue dbg-1",
+    "uip maestro bpmn debug . --output json",
+    "uip maestro bpmn process run p:1.0.0 --folder-key folder-public --release-key r",
+    "uip solution upload S --output json",
+    "$UIP maestro bpmn instance retry inst-triage-001 -f folder-public",
+]
+
+NEXT_ACTION_READS = [
+    f"{_R} get inst-triage-001 -f folder-public --output json",
+    f"{_R} variables inst-triage-001 -f folder-public --output json",
+    "uip maestro bpmn debug-instance variables dbg-1 --output json",
+    "uip maestro bpmn debug --help",
+    f"{_R} retry --help",
+    _DIAGNOSIS_HEREDOC,
+]
+
+
+@pytest.mark.parametrize("command", NEXT_ACTION_MUTATIONS)
+def test_next_action_lifecycle_guard_fires(command: str) -> None:
+    assert _counts(_NEXT_ACTION, "lifecycle, debug, run or ship", command), command
+
+
+@pytest.mark.parametrize("command", NEXT_ACTION_READS)
+def test_next_action_lifecycle_guard_is_silent_on_reads(command: str) -> None:
+    assert not _counts(_NEXT_ACTION, "lifecycle, debug, run or ship", command), command
+
+
+def _recheck() -> re.Pattern[str]:
+    checks = [c for c in _criteria(_NEXT_ACTION) if c["type"] == "file_check" and "re-check" in c["description"]]
+    assert len(checks) == 1
+    return re.compile(checks[0]["patterns"][0]["pattern"])
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "then re-read `uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json`",
+        'uip maestro bpmn instances incidents -f "folder-public" inst-triage-001 --output json',
+        "uip maestro bpmn jobs status job-triage-001 --folder-key=folder-public",
+    ],
+)
+def test_recheck_accepts_a_named_read(text: str) -> None:
+    assert _recheck().search(text), text
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "uip maestro bpmn instance incidents inst-triage-001 --output json",
+        "uip maestro bpmn instance retry inst-triage-001 -f folder-public",
+        "re-read the incidents once the folder is fixed",
+    ],
+)
+def test_recheck_rejects_anything_else(text: str) -> None:
+    assert not _recheck().search(text), text
