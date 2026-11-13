@@ -55,6 +55,8 @@ flowchart TB
 
 Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file or mail.
 
+*Only when the Source Map holds an as-is process map — otherwise delete this line:* The source as it runs, and what each of its parts becomes: Source Map, As-is process map.
+
 *When the customer needs a formal model, add a BPMN 2.0 sidecar `{process-slug}-process.bpmn` authored from this Process Map with `uipath-maestro-bpmn`, and link it here.*
 
 ## Handoffs
@@ -220,7 +222,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Source framework | {`UiPath` for a UiPath source, else the framework name as the migration pack's README spells it} {version the source states} | |
 | Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
 | Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each refactor-question decision — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
-| {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {ambiguity or unresolved reference} |
+| {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {the source units whose actions became its steps' activities; ambiguity or unresolved reference} |
 | Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because nothing reaches it and the Unused parts answer kept to what runs or it only works a technology UiPath's activities cover, or the request named others} |
 | Unused | {workflows, pages and helpers no caller invokes that extraction left out — `{Name}` ({id})} | {what each does} |
 | Excluded / unreachable | {objects the source guide excludes; dead code, superseded copies, objects reached only through disabled calls — by name} | {why} |
@@ -228,15 +230,23 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
-### Today
+### As-is process map
 
-What the rebuild replaces, as the source runs (extracted genome guide § Source Map, the Today view).
+*Only when the rebuild changes the source's shape (extracted genome guide § Source Map, the as-is process map); otherwise delete this block.*
+
+The source as it runs, and what each of its parts becomes.
 
 ```mermaid
-flowchart LR
-  S1["{source process}"] -->|"{adds items}"| SQ[("{source store}")]
-  SQ -->|"{takes items}"| S2["{source process}"]
-  S2 --> L1["{source library or object}<br/>{n} actions"]
+flowchart TB
+  S1["⏰ {source unit}<br/>→ [1]"]
+  SQ[("{source queue}")]
+  S2["{n} {source units}<br/>→ [2]"]
+  S3["{source unit}<br/>→ part of [1]"]
+  S4["{source unit}<br/>→ not rebuilt: {row}"]
+  S1 -->|"{adds items}"| SQ
+  SQ -->|"{takes items}"| S2
+  S1 -->|"{call}"| S3
+  S2 -.->|"{file or mail passed}"| S4
 ```
 
-- `{source unit}` ({n} actions) → {component {Name} / folded into {Name}'s steps / the activities of its callers / not rebuilt: the {row} row} — {why}
+Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another unit. → [n]: becomes component n · part of [n]: folded into component n's steps · not rebuilt: the Source Map row that says why. Solid arrow: adds to or takes from a queue, or calls a unit; dotted arrow: a handoff through a file or mail.

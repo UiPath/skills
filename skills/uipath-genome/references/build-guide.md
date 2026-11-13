@@ -29,10 +29,10 @@ A later `build` reads both sections with the rest of the file: a question with a
 
 ### The Architecture decisions section
 
-The decisions that shape what gets built, each with the build's proposal: the Recommended option, from the preflight and each owning skill's way for its capability. What the genome already shows — its Process Map and Components, Platform Dependencies, the Transactional Shape, Deployment, the Source Map's Today view — is named by section where a decision rests on it, never redrawn. Four groups, in this order, a group with no decision left out:
+The decisions that shape what gets built, each with the build's proposal: the Recommended option, from the preflight and each owning skill's way for its capability. What the genome already shows — its Process Map and Components, Platform Dependencies, the Transactional Shape, Deployment, the Source Map — is named by section where a decision rests on it, never redrawn. Four groups, in this order, a group with no decision left out:
 
 1. **Processes and their work items** — for each flow of the Transactional Shape without a `Decided:` line, its split questions ([transactional-execution-guide.md § Split questions](transactional-execution-guide.md)), each `Context:` naming the flow and the facts of its As-is the answer rests on.
-2. **Libraries and reusable parts** — the Library layout question, its `Context:` naming the libraries and what the Source Map's Today view says each source unit becomes.
+2. **Libraries and reusable parts** — the Library layout question, its `Context:` naming the libraries and the source units each is built from, as the Source Map names them.
 3. **Technology per capability** — one decision per capability the automation uses, in the order step 4 lists them: `Today:` how the source does it (the application, the client, the protocol), as the genome states it; `Recommended:` the owning skill's way — the activity package, connector or API by name; `Instead:` each alternative with when it fits (for mail: Microsoft 365 activities over Graph, the desktop Outlook activities, IMAP and SMTP). A migration keeps the source's technology unless an option names a gain the source never had and what it requires (a connection, a licence, an app registration); a choice a Configuration Question already asks is named there, never asked twice.
 4. **Other decisions** — Target framework, Settings store, Workflow type, Source fidelity, Log target and, in a refactor, the refactor questions.
 
@@ -43,7 +43,7 @@ Each decision has a `Recorded in:` line naming the genome section that states it
 
 Usually answered by: the engineer, with the customer's architect.
 
-Prepared <YYYY-MM-DD> by `uipath-genome` `prepare`. What gets built is the genome's Process Map and Components; what it replaces, the Source Map's Today view. Each decision carries the build's proposal: confirm it, or change it.
+Prepared <YYYY-MM-DD> by `uipath-genome` `prepare`. What gets built is the genome's Process Map and Components; what it replaces, the Source Map. Each decision carries the build's proposal: confirm it, or change it.
 
 Confirmed:
 
@@ -59,7 +59,7 @@ Confirmed:
 ### Libraries and reusable parts
 
 <n>. **<The Library layout question>**
-   - Context: <the libraries, and what each source unit becomes>
+   - Context: <the libraries, and the source units each is built from>
    - Recommended: …
    - Instead: …
    - Recorded in: the build

@@ -59,8 +59,8 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-planner** | Solution planner, designer and genome writer, driven by verbs — `design` an SDD from a Process Definition Document, `decompose` a multi-project request into a multi-skill task list, `author`, `extract`, `edit` or `check` an automation genome (`*-genome.md`) — the spec `uipath-genome` builds — and keep it current when its SDD changes. Guide for people: [working with UiPath genomes](docs/guides/working-with-uipath-genome.md). |
-| **uipath-genome** | Builds an automation from its genome (`*-genome.md`) through the owning skills — including refactors of a UiPath project and migrations from another framework. Supervising a live build: [live healing pass](docs/guides/live-healing-pass.md). |
+| **uipath-planner** | Solution planner, designer and genome writer, driven by verbs — `design` an SDD from a Process Definition Document, `decompose` a multi-project request into a multi-skill task list, `author`, `extract`, `edit` or `check` an automation genome (`*-genome.md`) — the spec `uipath-genome` builds — with its readiness file (`*-readiness.md`) of what to settle before the build, and keep it current when its SDD changes. Guide for people: [working with UiPath genomes](docs/guides/working-with-uipath-genome.md). |
+| **uipath-genome** | Builds an automation from its genome (`*-genome.md`) through the owning skills — including refactors of a UiPath project and migrations from another framework — and, with `prepare`, writes the architecture decisions and every question the build would ask into the genome's readiness file ahead of the build. Supervising a live build: [live healing pass](docs/guides/live-healing-pass.md). |
 | **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
 
