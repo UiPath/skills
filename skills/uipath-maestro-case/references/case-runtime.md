@@ -276,12 +276,24 @@ check: 1 error(s) in edited parts of the case, 0 pre-existing SDK defect(s), 1 p
   defect to report at <https://github.com/UiPath/builder-sdk/issues>.
 - **`CHECK_INCOMPLETE`**: check stopped before it judged the whole case. Fix
   the error it names, even if the original has it too, then check again.
+- **`--baseline ... is not the plan this source was decompiled from`** (exit
+  2): the file you passed is not the original, most often the plan after a
+  compile wrote your edit into it. Pass the copy you made before the first
+  compile. If you no longer have it, decompile the current plan again and use
+  that plan as the baseline from now on.
 
 <!--skill-flavor:check-baseline-sdk-upgrade:start-->
-Needs `@uipath/maestro-builder-sdk` 6.97.0 or later. An older SDK answers
-`error: unknown option '--baseline'`, and a newer `uip` refuses it with
-`--baseline on case check needs a @uipath/maestro-builder-sdk release that
-supports it`. Either way, upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+Needs two releases: `@uipath/maestro-builder-sdk` 6.97.0 or later, and the
+`uip` release that carries UiPath/cli#6081 (`uip` 1.205.0 does not).
+- `unknown option '--baseline'` means `uip` is too old, whatever the SDK
+  version. Upgrade `uip`. Upgrading the SDK alone gives the same error again.
+- `--baseline on case check needs a @uipath/maestro-builder-sdk release that
+  supports it` means `uip` is new enough and the SDK is not. Upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`.
+
+Until both are upgraded, run `check --source` without `--baseline`. In this
+fallback only, fix only the errors on stages and tasks you changed, even
+though the exit code stays non-zero.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
 
 ## Product boundary
