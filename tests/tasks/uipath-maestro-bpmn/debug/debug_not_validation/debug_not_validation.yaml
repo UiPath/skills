@@ -5,7 +5,7 @@ description: >
   it's correct" bar, the agent must confirm correctness with LOCAL validation
   (`uip maestro bpmn validate`, or a well-formed-XML parse if the CLI is
   unavailable) and must NOT reach for a cloud debug session to prove correctness.
-  Authoring only — no cloud side effects.
+  Authoring only; the only cloud effect is the build's own Studio Web upload, deleted in post_run.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
 
 sandbox:
