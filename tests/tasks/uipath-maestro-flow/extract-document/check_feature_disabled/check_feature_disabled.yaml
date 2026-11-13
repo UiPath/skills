@@ -6,27 +6,24 @@ description: >
   `uipath.ixp.extract-document-builder` node, and looks for a published IXP
   model before it gives up.
 
-  The verdict is faked by the `uip` mock (`_setup/extraction_check_mock`),
-  which logs every call to `mocks/calls.log`. The registry search goes to the real
-  CLI, so whether a fitting published model turns up depends on the tenant:
-  the task passes either way, as long as the flow holds no Extract document
-  node. Passes whether or not the run produces a `.flow`.
+  The test tenant has document extraction on, so the `uip` mock in
+  `mock_template/mocks/` answers `extraction check` with `FeatureDisabled` and
+  passes every other call to the real CLI. The registry search is real, so
+  whether a fitting published model turns up depends on the tenant: the task
+  passes either way, as long as the flow holds no Extract document node.
+  Passes whether or not the run produces a `.flow`.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, node:extract-document]
 
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../_setup/extraction_check_mock
+      path: mock_template
   mock_path_dirs:
     - mocks
 
 reference:
   directory: ../..
-
-pre_run:
-  - command: "printf FeatureDisabled > mocks/extraction-status"
-    timeout: 10
 
 initial_prompt: |
   Build a UiPath Flow called "ClaimIntake" that takes an insurance claim form
@@ -45,10 +42,11 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: file_matches_regex
-    description: "uip maestro flow extraction check ran"
-    path: "mocks/calls.log"
-    pattern: '(?m)^uip maestro flow extraction check\b'
+  - type: command_executed
+    description: "Agent ran uip maestro flow extraction check"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+extraction\s+check\b'
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
@@ -66,10 +64,11 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  - type: command_executed
     description: "Agent looked for a published IXP model before giving up"
-    path: "mocks/calls.log"
-    pattern: '(?m)^uip maestro flow registry (?:search|list)\b[^\n]*ixp'
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b[^\n]*ixp'
+    min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
