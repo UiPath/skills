@@ -1,3 +1,7 @@
+<!--skill-flavor:check-source:start-->
+3. **Check**: `uip maestro flow check .flow-sdk/new.flow.ts --source` (a new flow). It names each
+<!--skill-flavor:check-source:end-->
+
 <!--skill-flavor:not-in-library-pull:start-->
      If the operation is newer than the library, tell the user: Studio Web
      cannot refresh the library of the session.
