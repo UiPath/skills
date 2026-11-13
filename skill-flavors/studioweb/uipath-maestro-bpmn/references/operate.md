@@ -108,3 +108,6 @@ publish, debug and deployed runs, job and instance inspection, and instance
 lifecycle. These actions may contact UiPath services and external systems. You
 are already signed in to the tenant of the user, so there is no `uip login`.
 <!--skill-flavor:operate-scope:end-->
+
+<!--skill-flavor:upload-consent:start-->
+<!--skill-flavor:upload-consent:end-->
