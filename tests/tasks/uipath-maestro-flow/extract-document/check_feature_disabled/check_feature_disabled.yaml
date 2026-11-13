@@ -1,0 +1,80 @@
+task_id: skill-flow-extract-document-check-feature-disabled
+description: >
+  Negative smoke: the user names the Extract document node and the tenant
+  check answers `FeatureDisabled`. Tests that the agent runs
+  `uip maestro flow extraction check`, adds no
+  `uipath.ixp.extract-document-builder` node, and looks for a published IXP
+  model before it gives up.
+
+  The verdict is faked by the `uip` shim (`_setup/extraction_check_shim`),
+  which logs every call to `.uip-cmdlog`. The registry search goes to the real
+  CLI, so whether a fitting published model turns up depends on the tenant:
+  the task passes either way, as long as the flow holds no Extract document
+  node. Passes whether or not the run produces a `.flow`.
+
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, node:extract-document]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup/extraction_check_shim
+  mock_path_dirs:
+    - .uip-fake
+
+reference:
+  directory: ../..
+
+pre_run:
+  - command: "printf FeatureDisabled > .uip-fake/extraction-status"
+    timeout: 10
+
+initial_prompt: |
+  Build a UiPath Flow called "ClaimIntake" that takes an insurance claim form
+  PDF as input and uses the Extract document node to pull out the claim number,
+  the policy number and the claimed amount.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow extraction check ran (.uip-cmdlog)"
+    command: python3 $REFERENCE_DIR/_shared/check_extraction_check.py ran
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No .flow holds an Extract document node (or there is no .flow)"
+    command: "! grep -rqF extract-document-builder --include='*.flow' ."
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not create an Extract document node"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+nodes\s+(create|add)\b[^\n]*extract-document-builder'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent looked for a published IXP model before giving up (.uip-cmdlog)"
+    command: python3 $REFERENCE_DIR/_shared/check_extraction_check.py searched-ixp
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 15
+  max_turns: 25
+  turn_timeout: 600
+  task_timeout: 600

@@ -1,0 +1,86 @@
+#!/bin/sh
+# uip PATH shim for the Extract document availability tasks.
+#
+# Answers `uip maestro flow extraction check` with the verdict named in
+# .uip-fake/extraction-status (the task's pre_run writes it; Available when the
+# file is missing), in the CLI's ExtractionCheckSuccess envelope
+# (UiPath/cli packages/flow-tool/src/commands/extraction.ts). Every other call
+# goes to the real CLI. Every call, faked or not, is appended to
+# <sandbox>/.uip-cmdlog so check_extraction_check.py can read what ran and in
+# what order.
+#
+# Faked so the grade depends on neither the CI tenant's configuration nor the
+# CLI release that ships the command. Wired into a task via:
+#   sandbox.template_sources: [{type: template_dir, path: ../../_setup/extraction_check_shim}]
+#   sandbox.mock_path_dirs: [.uip-fake]
+here="$(cd "$(dirname "$0")" && pwd)"
+printf 'uip %s\n' "$*" >> "${here%/.uip-fake}/.uip-cmdlog"
+
+case " $* " in
+  *" maestro flow extraction check "*)
+    status="Available"
+    if [ -f "$here/extraction-status" ]; then
+      status="$(tr -d ' \r\n' < "$here/extraction-status")"
+    fi
+    tenant="DefaultTenant"
+    prev=""
+    for arg in "$@"; do
+      case "$prev" in -t | --tenant) tenant="$arg" ;; esac
+      case "$arg" in --tenant=*) tenant="${arg#--tenant=}" ;; esac
+      prev="$arg"
+    done
+    available=false
+    case "$status" in
+      Available)
+        available=true
+        reason="Document extraction is available on this tenant." ;;
+      FeatureDisabled)
+        reason="Document extraction is turned off for this tenant." ;;
+      ServiceUnavailable)
+        reason="This environment does not serve document extraction." ;;
+      ModelUnavailable)
+        reason="This tenant offers no model to extract with." ;;
+      Unknown)
+        reason="The extraction service answered 403, so availability could not be determined." ;;
+      *)
+        echo "uip extraction-check shim: unknown status '$status' in $here/extraction-status" >&2
+        exit 127 ;;
+    esac
+    if [ "$available" = true ]; then
+      instructions="Add an Extract document node with 'uip maestro flow nodes create'."
+    else
+      instructions="$reason Tell the user, and do not add an Extract document node to the flow."
+    fi
+    cat <<EOF
+{
+  "Result": "Success",
+  "Code": "ExtractionCheckSuccess",
+  "Data": {
+    "Available": $available,
+    "Status": "$status",
+    "Reason": "$reason",
+    "Tenant": "$tenant"
+  },
+  "Instructions": "$instructions"
+}
+EOF
+    exit 0
+    ;;
+esac
+
+real=""
+old_ifs="$IFS"
+IFS=:
+for d in $PATH; do
+  case "$d" in "$here" | "") continue ;; esac
+  if [ -x "$d/uip" ]; then
+    real="$d/uip"
+    break
+  fi
+done
+IFS="$old_ifs"
+if [ -z "$real" ]; then
+  echo "uip extraction-check shim: real uip not found on PATH" >&2
+  exit 127
+fi
+exec "$real" "$@"
