@@ -160,6 +160,7 @@ Run each lookup exactly as written, adding no flag: `uip` rejects `--output-filt
 `--search` matches names only, and tenants hold thousands of processes, so never list a kind unfiltered, not even after a search came back empty.
 Put every search in the one lookup call: the user's own words for the resource, and one or two keywords from the box's label (`review`, `approval` for `Manager review [Action app]`).
 When a lookup fails, mark its boxes `not checked`, say why in the one sentence the reply's first line allows, and do not retry.
+Mark a box `not checked` only when its lookup ran and exited non-zero, or when this run already found no `uip login`; never write it for a lookup you did not run.
 A failed lookup proves nothing is missing: say "Couldn't check your Slack connections", never "No Slack connection in this tenant", and never name a connector key, a kind or a CLI term.
 
 Then give each box one status:
