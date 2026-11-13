@@ -57,7 +57,7 @@ A skeleton is not a working process and must never be reported as one.
    When the step stops early ("stop at the first failed document"), add `completion: '=vars.<flag>'` and declare that boolean flag too.
    Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
 9. **A path that leaves a `.fork()` branch early must end the process; every other path continues on its own branch to the join.**
-   A parallel join fires only when every incoming flow has delivered a token.
+   A parallel gateway, the fork as well as the join, fires only when every incoming flow has delivered a token.
    Four shapes break that, and `check` and `validate` all pass them:
    - A plain `.endEvent()` anywhere inside a branch — on the branch's own path, in a `.choose()` or `.race()` arm such as a rejection, or at the end of an interrupting `onError` or `onTimer` handler — consumes the branch's token, so the join waits forever.
    - A `.goto()` inside a branch that jumps into a sibling branch, past the join, or into the join while the branch's own path also reaches it, breaks the join's count: the branch's own input to the join never delivers, or the join gets an input that never delivers, so the join waits forever.
@@ -74,7 +74,7 @@ A skeleton is not a working process and must never be reported as one.
    - To retry the whole parallel block, `.goto()` the box just before the `.fork()`, never the fork: the box merges the loop, and the fork keeps one incoming flow.
      When the fork directly follows the start event, add that box first, such as the step that prepares the retry.
 
-   A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so this rule does not apply to it.
+   A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so rule 9 lets it end separately; a `.goto()` on its path still must not target the fork or a node that reaches `<fork>_join`.
    Nor does it apply to the end event that closes a `.subProcess()` body: the sub-process then continues on its branch.
 
 ### Box kinds
