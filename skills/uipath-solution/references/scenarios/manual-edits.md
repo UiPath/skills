@@ -116,7 +116,8 @@ Same principle, looser rules. The deploy config is **per-deployment**, not per-s
       },
       "linkToResource": {                    // ← safe to add/remove/edit by hand
         "name": "ProductionAsset",
-        "folderPath": "Shared/Production"
+        "folderPath": "Shared/Production",
+        "deleteInstalledCopy": false         // ← false or omitted: keeps the copy the previous version installed; true: deletes it with its data. Applies to deploy run --config-file onto an existing deployment
       }
     }
   ]
