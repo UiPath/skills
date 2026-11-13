@@ -15,6 +15,10 @@
  *     node validate-action-schema.js <path/to/action-schema.json>
  *     node validate-action-schema.js -        # read JSON from stdin
  *     node validate-action-schema.js --show-types
+ *     node validate-action-schema.js --upgrade <file | ->
+ *         Existing, already-published action app: report shared root names
+ *         as warnings (exit 0) instead of errors. Renaming them would break
+ *         tasks created against the published schema.
  *
  * Exit codes:
  *     0  valid
@@ -174,15 +178,62 @@ function validateSection(schema, name, errors) {
   }
 }
 
-/** Return a list of error strings. Empty list == valid. */
-function validateActionSchema(schema) {
+function joinWithAnd(items) {
+  return items.length > 1
+    ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+    : items[0];
+}
+
+/**
+ * Root field names used in more than one section, in first-seen order:
+ * [{ name, sections: ['inputs', 'outputs'] }]. Malformed sections are skipped
+ * (validateSection already reports them).
+ */
+function findSharedRootNames(schema) {
+  const sectionsByName = new Map();
+  if (!isPlainObject(schema)) return [];
+  for (const section of SECTIONS) {
+    const props = isPlainObject(schema[section]) ? schema[section].properties : undefined;
+    if (!isPlainObject(props)) continue;
+    for (const name of Object.keys(props)) {
+      if (!sectionsByName.has(name)) sectionsByName.set(name, []);
+      sectionsByName.get(name).push(section);
+    }
+  }
+  return [...sectionsByName]
+    .filter(([, sections]) => sections.length > 1)
+    .map(([name, sections]) => ({ name, sections }));
+}
+
+function describeSharedRootName({ name, sections }) {
+  return (
+    `'${name}' is used in ${joinWithAnd(sections)}; a root field name can be used only once ` +
+    `across ${joinWithAnd(SECTIONS)} (rename it, or model a pre-filled editable field as one inOuts field)`
+  );
+}
+
+/**
+ * Return a list of error strings. Empty list == valid.
+ * Options: { upgrade: true } moves shared root names from errors to
+ * `errors.warnings` (existing published app; renaming breaks live tasks).
+ */
+function validateActionSchema(schema, options = {}) {
   const errors = createErrors();
+  errors.warnings = [];
   if (!isPlainObject(schema)) {
     errors.add('root', 'action-schema must be a JSON object');
     return errors;
   }
   for (const name of SECTIONS) {
     validateSection(schema, name, errors);
+  }
+  for (const shared of findSharedRootNames(schema)) {
+    const message = describeSharedRootName(shared);
+    if (options.upgrade) {
+      errors.warnings.push(`  - ${shared.name}: ${message}`);
+    } else {
+      errors.add(shared.name, message);
+    }
   }
   return errors;
 }
@@ -204,13 +255,15 @@ function main(argv) {
     return 0;
   }
 
-  const args = argv.filter((a) => !a.startsWith('-'));
-  if (args.length !== 1 && !(argv.length === 1 && argv[0] === '-')) {
-    process.stderr.write('usage: validate-action-schema.js <action-schema.json | ->\n');
+  const upgrade = argv.includes('--upgrade');
+  const rest = argv.filter((a) => a !== '--upgrade');
+  const args = rest.filter((a) => !a.startsWith('-'));
+  if (args.length !== 1 && !(rest.length === 1 && rest[0] === '-')) {
+    process.stderr.write('usage: validate-action-schema.js [--upgrade] <action-schema.json | ->\n');
     return 2;
   }
 
-  const source = argv.length ? argv[0] : '-';
+  const source = rest[0];
   let raw;
   try {
     raw = source === '-' ? readStdin() : fs.readFileSync(source, 'utf8');
@@ -227,7 +280,11 @@ function main(argv) {
     return 2;
   }
 
-  const errors = validateActionSchema(schema);
+  const errors = validateActionSchema(schema, { upgrade });
+  if (errors.warnings.length) {
+    process.stderr.write('Warning (kept because --upgrade; the service publishes it and logs a warning):\n');
+    process.stderr.write(errors.warnings.join('\n') + '\n');
+  }
   if (errors.length) {
     process.stderr.write('Invalid action-schema.json:\n');
     process.stderr.write(errors.join('\n') + '\n');
@@ -242,4 +299,4 @@ if (require.main === module) {
   process.exit(main(process.argv.slice(2)));
 }
 
-module.exports = { validateActionSchema, SUPPORTED_TYPES, SUPPORTED_FORMATS };
+module.exports = { validateActionSchema, findSharedRootNames, SUPPORTED_TYPES, SUPPORTED_FORMATS };

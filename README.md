@@ -59,10 +59,10 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-planner** | Solution planner & designer — turn a Process Definition Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
+| **uipath-planner** | Solution planner, designer and genome writer, driven by verbs — `design` an SDD from a Process Definition Document, `decompose` a multi-project request into a multi-skill task list, `author`, `extract`, `edit` or `check` an automation genome (`*-genome.md`) — the spec `uipath-genome` builds — and keep it current when its SDD changes. Guide for people: [working with UiPath genomes](docs/guides/working-with-uipath-genome.md). |
+| **uipath-genome** | Builds an automation from its genome (`*-genome.md`) through the owning skills — including refactors of a UiPath project and migrations from another framework. Supervising a live build: [live healing pass](docs/guides/live-healing-pass.md). |
 | **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
-| **uipath-genome** | Automation blueprints (`*-genome.md`) — extract one from an existing project, solution, or another framework's export; author one from a described idea; execute one to build or migrate the automation through the owning skills. |
 
 ### Platform & Operations
 

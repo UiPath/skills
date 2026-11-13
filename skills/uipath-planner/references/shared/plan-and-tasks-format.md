@@ -1,0 +1,217 @@
+# Plan and Tasks Format
+
+Format spec for the `decompose` plan file, `<feature>.md`: lightweight architecture notes plus the task list.
+
+## Header schema
+
+### `decompose` (`<feature>.md`)
+
+```markdown
+# <Feature Name> Implementation Plan
+
+**Goal:** <one sentence summarizing what the automation does>
+**Source:** None — planned from user request
+**Project type:** <XAML / C# coded / AI Agent / Flow / BPMN / Case / API Workflow / Application>
+**Expression language:** VB.NET (XAML only; N/A for coded / AI Agent / Flow / Application)
+**Approach:** <explore-first / simultaneous>
+**Execution autonomy:** <autonomous / interactive>
+**Packaging:** <standalone / solution>  <!-- every plan with a generation skill; decides the deploy skill -->
+**Delivery model:** <cloud / automation-suite <version> / standalone / unspecified>
+**App type:** <web / desktop / citrix / N/A>
+**App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
+**UI targeting:** <agent-builds-you-review / user-indicates / N/A>
+
+## Understanding
+
+<2–4 sentences: interpretation of the request, key inputs and outputs, assumptions
+or ambiguities resolved during elicitation.>
+
+## Decisions & Trade-offs
+
+- Why this project type
+- Why specific skills are loaded in this order
+- Trade-offs and risks
+
+## Stop conditions
+
+<Only populate when `Execution autonomy` is `autonomous`. List the concrete hard blockers that MUST interrupt execution — everything else is handled without asking the user. Examples:
+- Authentication fails and cannot be recovered without user credentials
+- The target application is unresponsive after a reasonable retry window
+- A UI element cannot be captured reliably after 3 selector-improvement attempts
+- The plan references a file, package, or resource that does not exist and cannot be created
+- A pre-existing record would block idempotent execution and cleanup is ambiguous
+
+In `interactive` mode this section is optional — the user is available to resolve ambiguity as it arises.
+
+"Scope feels large", "many tool calls used", "natural pause point", and "partial result looks usable" are NOT stop conditions. If it is not in this list, the executor continues.>
+```
+
+## Task row schema
+
+Every task uses this exact structure. The fields below are load-bearing for the regenerate-with-preservation flow (see "Regenerate logic" below).
+
+```markdown
+## Task T<N> — <skill-name> — <short description>
+
+**Identity:** `<skill>:<project>:<subject>`
+**Status:** [ ] pending  *(or [~] in_progress / [x] completed / [!] blocked)*
+**Completed:** <YYYY-MM-DD by agent|human>  *(only present when Status = [x])*
+**Blocked by:** <T1, T2 / none>
+**Skill prompt:**
+
+> <Imperative prompt that activates the specialist skill. End with the
+>  anti-hallucination rule.>
+
+- [ ] <concrete sub-step: action + file paths / activity names / commands>
+- [ ] <concrete sub-step: expected outcome or verification>
+- [ ] **Validate:** <compile / build / lint / run check>
+```
+
+### Field rules
+
+| Field | Required | Notes |
+|---|---|---|
+| `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
+<!--skill-flavor:task-row-skill-field:start-->
+| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The planner names this skill in the live task it creates with the task-list tool. |
+<!--skill-flavor:task-row-skill-field:end-->
+| `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
+| `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
+<!--skill-flavor:task-row-tool-fields:start-->
+| `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its task status update flips the checkbox; `human` only when the user manually edits the file. |
+| `Blocked by` | yes | Comma-separated task IDs, or `none`. Drives the live blocked-by links. |
+| `Skill prompt` | yes | Imperative prompt the planner pastes into the live task's description. Must end with the anti-hallucination rule (below). |
+<!--skill-flavor:task-row-tool-fields:end-->
+| Sub-steps | yes | Concrete, checkable actions. One clear action per checkbox. No "TBD", no "as needed". |
+| `Validate:` sub-step | yes | Every generation task ends with a build/lint/compile check. |
+
+## Anti-hallucination rule (mandatory in every Skill prompt)
+
+Append this exact line to every `Skill prompt` block:
+
+<!--skill-flavor:decompose-plan-reference:start-->
+Reference the plan file **by path** — never "this plan" (prompts are copied verbatim into the live tasks):
+
+```
+Use values, mappings, and structure exactly as documented in the plan at <PLAN_FILE_PATH>. Do not infer or guess.
+```
+<!--skill-flavor:decompose-plan-reference:end-->
+
+## Testing task is mandatory
+
+Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-agents`, `uipath-coded-apps`, `uipath-api-workflow`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops). A header field whose question was skipped reads `N/A`.
+
+Plans that build a **custom connector** (`uipath-connector-builder`), an **IXP model** (`uipath-ixp`), a **decision table** (`uipath-rules`) or a **Coded Function** (`uipath-functions`) also get a validation task per artifact — connector validate/import check, IXP model metrics review, rule or function validate — placed immediately after that build task and **before** any consumer's build task.
+
+```markdown
+## Task T<N> — <generation-skill> — Testing (MANDATORY)
+
+**Identity:** `<skill>:<project>:testing`
+**Status:** [ ] pending
+**Blocked by:** <generation task IDs>
+**Skill prompt:**
+
+> Load <generation-skill> and run its testing workflow end-to-end. Always thorough:
+> happy path + edge cases + error scenarios + (for Master Projects) end-to-end pipeline tests.
+> See that skill's testing references for commands, test-case authoring, and best practices.
+> Do not describe the testing procedure here — the specialist owns it.
+
+- [ ] Run testing workflow per <generation-skill>'s testing reference
+- [ ] **Validate:** all tests pass; record results
+```
+
+## Regenerate logic
+
+When the user picks "Regenerate from the current request" on the resume question, preserve completed work via identity matching.
+
+### Algorithm
+
+```
+1. Read old plan file → list of (identity_tuple, status, completed_by, completed_date)
+2. Parse the (possibly updated) request → list of new tasks with identities
+3. For each new task:
+   - Match against old tasks by identity_tuple
+   - matched & old status == [x] completed → preserve as completed (carry over Completed line)
+   - matched & old status == [~] in_progress → preserve as in_progress
+   - matched & old status == [ ] pending → keep pending (no change)
+   - unmatched (new in request) → pending
+4. Old tasks unmatched in new request → write to "Archive" footer (see below)
+5. Renumber tasks T1..TN in the new order
+6. Write the new plan file
+7. Show user a summary diff (preserved counts, added, archived)
+<!--skill-flavor:regenerate-emit:start-->
+8. Create the live tasks with the task-list tool per the new plan file
+<!--skill-flavor:regenerate-emit:end-->
+```
+
+### Archive footer format
+
+When the new request removes tasks that existed in the old plan, append them to a section at the bottom of the file:
+
+```markdown
+---
+
+## Archive — Tasks removed from plan
+
+| Old ID | Identity | Status before removal | Removed on |
+|---|---|---|---|
+| T7 | `rpa:VendorInvoice_OldReporting:Main.xaml` | [x] completed | <YYYY-MM-DD> |
+
+> These tasks existed in a previous version of this file but are no longer in the request.
+> Completed work is not deleted — historical record only.
+```
+
+### Summary message
+
+After regeneration, output a one-block summary:
+
+```
+Regenerated <feature>.md from the request.
+- 4 tasks preserved as completed
+- 1 task preserved as in_progress
+- 3 tasks unchanged pending
+- 2 tasks added (new in request)
+- 1 task archived (removed from request)
+- Requirements may have changed since completed tasks ran. Sanity-check those
+  implementations against the current request before continuing.
+```
+
+<!--skill-flavor:live-tasks-and-plan-mode:start-->
+## Task-list mapping
+
+The planner creates live tasks with the task-list tool that mirror the file. Map each field to the closest field your task-list tool offers:
+
+| File field | Live task field |
+|---|---|
+| `Task T<N> — <skill> — <description>` | title = `<skill> — <description>` |
+| `Status: [ ] pending` | initial status `pending` |
+| `Status: [~] in_progress` | status `in_progress` |
+| `Status: [x] completed` | status `completed` |
+| `Identity:` | metadata `identity` (so future runs can match) |
+| `Skill prompt:` | description (verbatim, including anti-hallucination rule) |
+| `Blocked by:` | blocked-by links (after all tasks are created) |
+| `Completed:` | metadata `completed_by`, `completed_date` |
+
+**Task-list calls are best-effort:** if one fails, log a single warning, continue without live tasks, and do not retry. The markdown plan file is the authoritative deliverable.
+
+## Plan-mode integration
+
+- **Explore-first:** enter plan mode with the full `<feature>.md` content. User approves → exit plan mode → create the live tasks with the task-list tool.
+- **Simultaneous:** skip plan mode. Emit the file as text, then immediately create the live tasks with the task-list tool.
+<!--skill-flavor:live-tasks-and-plan-mode:end-->
+
+## Quality rules (applied during self-review before saving)
+
+1. **No placeholders.** Every sub-step has concrete details. Never "TBD", "as needed", "similar to Task N".
+2. **Granular sub-steps.** One clear action per step.
+3. **Checkbox syntax.** `- [ ]` on every sub-step.
+4. **Identity tuple is stable and unique** within the file.
+5. **Every generation task ends with a `Validate:` sub-step.**
+6. **Every generation skill has a dedicated Testing task** placed before any deploy task. Testing is mandatory — never a `Validate:` sub-step substitute.
+7. **Anti-hallucination rule** appended to every Skill prompt.
+8. **Skill order is correct** — RPA before platform deploy; integrated components before consumers; testing before deploy.
+9. **No specialist-internal flow leakage.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe the skill's internal flow (target-configuration, OR registration, XAML authoring pipelines, auth flows, testing procedures). Each specialist's own docs own those details.
+10. **Autonomous plans MUST include a populated Stop conditions section.** Without concrete stop items, downstream specialists have no way to distinguish "keep going" from "ask the user" and will default to asking — defeating autonomous mode. Populate with hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources); never leave a generic placeholder.
+11. **Authoring surfaces are never plan fields.** Studio, Studio Web, VS Code are presentation layers — no plan-header field, task condition, or routing decision references them; each specialist owns its surface. A user-stated surface preference travels as ordinary requirement prose inside the relevant task prompt.
+12. **Coverage.** Every requirement of the request appears in at least one task.
+13. **Gap markers.** A gap the request leaves open is `[DEFAULT]` or `[SME REVIEW]`, written per [sdd-writing-guide.md § Gap Markers](../design/sdd-writing-guide.md#gap-markers).

@@ -72,6 +72,9 @@ make from syntax alone. Exact signatures remain in the generated API.
   Read it as `=result.response` for a scalar, or `=result.response.<field>` for one field of a returned object; never `=result.<field>`, which reads nothing.
   Write `return value;`, not `return { response: value };`, which double-wraps to `result.response.response`.
   `check` reports `=result.<field>` on a v2-or-later script as `SCRIPT_RESULT_NOT_RESPONSE` and names the corrected expression; `compile` and `validate` accept it, and the run then completes with the output empty.
+<!--skill-flavor:sdk-script-result:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.93.7 or later; an older `check` does not report it, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:sdk-script-result:end-->
 
   ```ts
   .scriptTask('score', { script: 'return vars.amount * 0.01;', outputs: { riskScore: '=result.response' } })
@@ -84,6 +87,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   Its mapping type is always `BPMN.Variables`, the default; any other value replaces the script's extension type, so the script never runs and its outputs read back null.
   `registry get BPMN.ScriptTask` lists `BPMN.ScriptTask`, and that listing is not a value to pass.
   The builder refuses any other value with `BPMN_SCRIPT_TASK_TYPE_INVALID`; drop `type`.
+  `.activity(id, 'BPMN.ScriptTask', …)` is refused too (`BPMN_ACTIVITY_SCRIPT_TASK_TYPE`); write the script with `.scriptTask()`.
+<!--skill-flavor:sdk-script-type:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.93.8 or later; an older SDK writes whatever `type` says, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:sdk-script-type:end-->
 
 <!-- RULE:bpmn.script.error-row -->
 - "Typed error handling" on a script task means the task-scoped `Error` output row: `source: '=Error'`, type `jsonSchema`, writing a variable whose schema is the platform error envelope.
@@ -91,20 +98,19 @@ make from syntax alone. Exact signatures remain in the generated API.
   `.scriptTask()` has no `errorVar`, so spell both rows with `outputRows`, which replaces `outputs`:
 
   ```ts
-  const errorEnvelope = { type: 'object', properties: {
-    code: { type: 'string' }, message: { type: 'string' }, detail: { type: 'string' },
-    category: { type: 'string' }, status: { type: 'number' }, element: { type: 'string' } } };
+  import { bpmn, errorSchema } from '@uipath/maestro-builder-sdk/bpmn';
 
   .scriptTask('score', {
     script: 'return vars.amount * 0.01;',
     outputRows: [
       { name: 'scriptResponse', type: 'double', var: 'riskScore', source: '=result.response' },
-      { name: 'Error', type: 'jsonSchema', var: 'score_Error', source: '=Error', varSchema: errorEnvelope },
+      { name: 'Error', type: 'jsonSchema', var: 'score_Error', source: '=Error', varSchema: errorSchema },
     ],
   })
   ```
 
   Each row declares its own variable (`score_Error` is scoped to the task), so add no `.var()` for either.
+  The row is spelled as the platform's script-task template writes it and passes `compile` and `validate`; no run has yet shown a failing script fill it, so when no live run showed it, report the `Error` mapping as unverified.
 
 ## Events and timers
 
@@ -151,6 +157,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   It writes the request in manual mode with the `ImplicitConnection` binding Studio Web uses, so nothing on the tenant has to exist.
   `outputVar` (default `<id>_response`) holds the response body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
   `check` warns `HTTP_MANUAL_V1` on the old manual form (`mode="manual"` with the request as context rows), which the runtime faults with 102018 "Body cannot be null"; rewrite it as `.http()` and compile.
+<!--skill-flavor:sdk-http-manual:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.93.9 or later; an older SDK still writes the old manual form, with `outputVar` holding the whole response and no `HTTP_MANUAL_V1` warning, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again.
+  From 6.93.9, `outputVar` is the body, so read `vars.<id>_response.x`, not `vars.<id>_response.body.x`, which read the old form's whole response.
+<!--skill-flavor:sdk-http-manual:end-->
 
 <!-- RULE:bpmn.orchestrator.business-rule -->
 - A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.

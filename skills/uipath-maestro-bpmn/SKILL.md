@@ -105,6 +105,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 <!--skill-flavor:workflow-merge:start-->
 8. Edit an existing process with `merge`, which takes the edited source and the original: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
    No `.bpmn` other than the target goes in the workspace: no intermediate copy, probe or second scaffold.
+   When the project sits in a solution this run did not scaffold, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
 
 ## Draft first
@@ -112,6 +113,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
 The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
+<!--skill-flavor:draft-upload-summary:start-->
+Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with a second upload and a final report.
+<!--skill-flavor:draft-upload-summary:end-->
 
 ## API index
 
@@ -141,9 +145,9 @@ Match one name — do not read either end to end — then read the span it gives
 | Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Decision, parallel split, or wait-for-first, written in place | `choose`, `fork`, `race`, `goto` | [ChooseArm](#api-index) | `examples/InvoiceEscalation.bpmn.ts` |
 | Safety net for a whole scope | `eventSubProcess` | [Event sub-process scope](references/bpmn-runtime.md#events-and-timers) | `examples/InvoiceEscalation.bpmn.ts` |
-| Script and assignment tasks | `scriptTask`, `task` | [Script tasks](references/bpmn-runtime.md#script-tasks) | `examples/NotifyChannel.bpmn.ts` |
-| HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
-| Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
+| Script and assignment tasks | `scriptTask`, `task` | [Script tasks](references/bpmn-runtime.md#script-tasks) | `examples/ContractRegistry.bpmn.ts` |
+| HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/InvoiceEscalation.bpmn.ts` |
+| Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/InvoiceApproval.bpmn.ts` |
 | A deployed business rule | `businessRule` | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | — |
 | Human work — always an inline form; the SDK cannot yet write an app-backed task | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/InvoiceEscalation.bpmn.ts` |
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connectors](references/connectors.md) | `examples/NotifyChannel.bpmn.ts` |
@@ -274,13 +278,10 @@ required input, an unresolved `lookup()`, an unprepared object or a self-naming 
 ## Operating a process
 
 <!--skill-flavor:operating:start-->
-Refresh the package metadata, pack, upload to Studio Web (what "publish" means
-unless the user names Orchestrator), debug a real run, run a deployed process,
-inspect a job, and drive an instance's lifecycle. All of it needs `uip login`;
-`uip maestro bpmn refresh <project-path>` comes before every cloud action, and
-`bpmn debug` is a REAL run, not a validation step. Every mutation needs the
-user's decision for that action. Read
-**[`references/operate.md`](references/operate.md)**.
+Refresh the package metadata, pack, upload to Studio Web (what "publish" means unless the user names Orchestrator), debug a real run, run a deployed process, inspect a job, and drive an instance's lifecycle.
+All of it needs `uip login`; `uip maestro bpmn refresh <project-path>` comes before every cloud action, and `bpmn debug` is a REAL run, not a validation step.
+Every mutation needs the user's decision for that action, except the Studio Web upload of a project this run created, which a request to build or draft the process authorizes.
+Read **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:operating:end-->
 
 ## Evaluating a process

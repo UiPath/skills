@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-11T04:06:16Z",
-  "cli_version": "1.207.0-dev.9787",
+  "generated_at": "2026-11-12T04:06:35Z",
+  "cli_version": "1.207.0-dev.9816",
   "verbs": [
     "admin",
     "admin audit",
@@ -1059,6 +1059,7 @@
     "maestro flow nodes create",
     "maestro flow nodes delete",
     "maestro flow nodes list",
+    "maestro flow nodes provision",
     "maestro flow nodes schema",
     "maestro flow nodes schema get",
     "maestro flow nodes schema set",
