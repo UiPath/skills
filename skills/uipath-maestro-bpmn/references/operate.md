@@ -16,7 +16,7 @@ all but the reads need `uip login`.
 > A failed or stuck run is investigated in [diagnose.md](diagnose.md), and the fix goes back into the `.bpmn.ts`.
 
 <!--skill-flavor:upload-consent:start-->
-The one exception is the Studio Web upload of a project this run created: a request to build or draft the process authorizes the upload that shows it ([Studio Web upload](#studio-web-upload)).
+Two Studio Web uploads are the exceptions, as [Studio Web upload](#studio-web-upload) says: a project this run created, because a request to build or draft the process authorizes the upload that shows it, and a project in an existing solution the user picked from a question that said the upload overwrites its cloud copy.
 <!--skill-flavor:upload-consent:end-->
 
 ## Pre-flight, before any cloud action
@@ -93,6 +93,8 @@ Report the Studio Web URL (`Data.DesignerUrl`) or solution id; when the CLI retu
 **Consent.** Unless the request forbids upload, a request to build or draft the process authorizes the upload that shows it, so upload without asking when this run created the solution (its `bpmn init` or `uip solution init` made it).
 Confirm first when it did not — the project went into a solution that already existed, or an existing project was edited in place — because `upload` overwrites the cloud solution that matches the `SolutionId` in the local `.uipx`.
 Ask once, before the first upload, and say in the question that the upload replaces the Studio Web copy.
+One exception: when the user picked the existing solution from the solution question in [SKILL.md](../SKILL.md#workflow) step 1, and that question said a later upload overwrites its cloud copy, that pick is the consent, so do not ask again.
+Either way, [check the cloud copy](#check-the-cloud-copy-before-editing) before uploading over a solution this run did not create.
 
 **Each later upload overwrites the same solution.**
 The first upload writes the cloud solution id back into the local `.uipx`, so each upload after it reports `Data.Action: "Overwritten"` with the same `SolutionId` and `DesignerUrl`.

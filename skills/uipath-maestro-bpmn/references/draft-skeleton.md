@@ -112,7 +112,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 4. **Upload it, so the user sees it on the canvas**, unless the request forbids upload: `uip solution upload <SolutionDir> --output json`, where `<SolutionDir>` is the solution `init` scaffolded (`<Name>Solution/`) or registered the project in.
    The gate reply carries the returned `Data.DesignerUrl`.
    Do not ask first when this run created the solution (its `init` or `uip solution init` made it): the request to draft the process authorizes the upload that shows it, and a consent question per iteration would defeat the draft.
-   Confirm first when the solution already existed, and check its cloud copy before uploading over it, as [Studio Web upload](operate.md#studio-web-upload) says.
+   When the solution already existed, check its cloud copy before uploading over it, and confirm first unless the user picked it from the solution question, which already said the upload overwrites its cloud copy, as [Studio Web upload](operate.md#studio-web-upload) says.
    The skeleton needs none of that section's other pre-flight steps: it keeps `Event_start`, so it needs no `refresh`, and it binds no resource.
    When the request forbids upload, or the project has no solution (the user named its path and chose none), do not upload and do not create a solution to show a draft: the gate reply carries the local path.
    Do not pack, debug or run anything.
