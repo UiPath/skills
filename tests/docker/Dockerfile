@@ -282,7 +282,7 @@ RUN set -euo pipefail && \
     if [ "$sdk_status" = available ]; then \
       registry_status=failed; \
       if registry_output="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
-        uip maestro registry pull --force ${connectors_library_url:+--url "$connectors_library_url"} --output json 2>&1)"; then \
+        uip maestro registry pull ${connectors_library_url:+--url "$connectors_library_url"} --output json 2>&1)"; then \
         printf '%s\n' "$registry_output"; \
         registry_snapshot=''; \
         if [ -f "$UIP_MAESTRO_REGISTRY_HOME/current.json" ]; then \
