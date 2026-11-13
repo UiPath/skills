@@ -172,7 +172,7 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
    - In the `check --graph` output, under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` has an `Incoming` no larger than the number of `Outgoing` entries on the `<fork>` node.
      A larger `Incoming` means a handler's path flows into the join; the join's extra source is a box inside an `onError` or `onTimer` handler.
 
-   Fix either as rule 9 says before you compile.
+   Fix any of them as rule 9 says before you compile.
    Because the start event kept the id `Event_start`, the `init`-generated `entry-points.json` still matches and the skeleton needs no `refresh`.
    If `validate` fails with `entry-points.json references start event "Event_start"`, the id was renamed: put `Event_start` back.
 <!--skill-flavor:draft-upload:start-->
