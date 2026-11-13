@@ -1,4 +1,4 @@
-task_id: skill-kb-conflict-recovery-smoke
+task_id: skill-bundles-kb-conflict-recovery-smoke
 description: >
   Smoke: a change proposal comes back conflicted because the file it touches
   moved in a newer version. The recovery is to download the bundle again,
@@ -8,7 +8,7 @@ description: >
   but strands the existing comments on the old id, so it is the shortcut this
   task grades against. Criteria read actual CLI invocations, not a
   self-report.
-tags: [uipath-knowledge-bundles, smoke, mode:operate]
+tags: [uipath-bundles, smoke, mode:operate]
 
 run_limits:
   expected_turns: 8
