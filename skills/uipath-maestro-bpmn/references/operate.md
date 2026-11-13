@@ -1,10 +1,12 @@
 # Operate — package, ship, run and manage a BPMN process
 
+<!--skill-flavor:operate-scope:start-->
 Everything past `validate` that prepares a project for the cloud or touches the
 cloud: package metadata, `.nupkg` packaging, Studio Web upload, Orchestrator
 publish, debug and deployed runs, job and instance inspection, and instance
 lifecycle. These actions may contact UiPath services and external systems, and
 all but the reads need `uip login`.
+<!--skill-flavor:operate-scope:end-->
 
 > **Ask before every cloud-side mutation.** Upload, publish, deploy, debug,
 > process run, pause, resume, cancel, retry, migrate and cursor movement each

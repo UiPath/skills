@@ -709,6 +709,11 @@ test("invalid pins and unpinned classic trees are rejected", (t) => {
 
   rmSync(join(studio, "uipath-flow", ".canonical"));
   expectFlavorError(() => createAllVariants(repo), /no flavor pins this retained tree/);
+
+  writeFileSync(join(repo, "classic", "skills", "uipath-flow", ".retained"), "\n");
+  expectFlavorError(() => createAllVariants(repo), /no flavor pins this retained tree/);
+  writeFileSync(join(repo, "classic", "skills", "uipath-flow", ".retained"), "Graders still read it.\n");
+  assert.doesNotThrow(() => createAllVariants(repo));
 });
 
 function addPreviewSkill(repo, name, body = "Preview guidance.\n") {
