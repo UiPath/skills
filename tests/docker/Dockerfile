@@ -149,6 +149,14 @@ RUN --mount=type=secret,id=npm_auth_token \
         printf '%s\n' "$resolved_sdk_version" > "$PREVIEW_FLOW_SDK_ROOT/flow-sdk.version"; \
         printf '%s\n' available > "$PREVIEW_FLOW_SDK_ASSETS_ROOT/sdk-install.status"; \
         echo "Installed ${FLOW_SDK_PKG_NAME}@${resolved_sdk_version}"; \
+        # Also install that exact build globally. The Flow skill tells agents the SDK
+        # is installed with `npm install -g` and checks `npm ls -g`; with only the
+        # prefix copy, 94 Flow/BPMN tasks in the 2026-11-12 nightly spent a
+        # turn installing `@latest` themselves, which also let the version drift
+        # from the one this image smoke-checks.
+        npm install -g --no-audit --no-fund --userconfig "$npmrc" \
+          "${FLOW_SDK_PKG_NAME}@${resolved_sdk_version}" || \
+          echo "WARN: global ${FLOW_SDK_PKG_NAME}@${resolved_sdk_version} install failed; agents will install it themselves"; \
       else \
         echo "WARN: ${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION} installed incompletely; Flow tasks will fail at runtime"; \
       fi; \
