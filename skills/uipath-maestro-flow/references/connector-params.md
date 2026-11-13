@@ -129,12 +129,12 @@ connector operation is never in the node registry and a node type is never in
 the library, so a miss in one is not evidence about the other.
 
 <!--skill-flavor:library-search:start-->
-Search that library for static contracts:
+Search that library for static contracts, then read a hit's page from its
+`MarkdownPath`:
 
 ```bash
-jq '.entries[] | select(.label | test("send email"; "i")) | {label,nodeType,path}' \
-  "$FLOW_SDK_LIBRARY_MD/index.json"
-sed -n '1,220p' "$FLOW_SDK_LIBRARY_MD/<path-from-index>"
+uip maestro registry search send email --limit 5 --output json
+sed -n '1,220p' "<MarkdownPath of the hit>"
 ```
 <!--skill-flavor:library-search:end-->
 

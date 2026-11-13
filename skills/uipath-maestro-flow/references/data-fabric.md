@@ -187,9 +187,9 @@ rather than emitting an input the 1.0 definition does not declare.
 ## Paging a list query
 
 `limit` is always applied — omitting it resolves to **100** — and **1000 is a
-hard ceiling**: a larger value truncates silently rather than erroring. Cover a
-bigger entity by paging with `skip`, and pair any limit with `sort` or the slice
-is arbitrary.
+hard ceiling**: `check` refuses a larger value (`DATAFABRIC_LIMIT_RANGE`),
+because the run would silently return only 1000. Cover a bigger entity by
+paging with `skip`, and pair any limit with `sort` or the slice is arbitrary.
 
 ```ts
 .step('page1', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',

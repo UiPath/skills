@@ -122,10 +122,14 @@ import { RecordCreated, RecordUpdated } from './connectors/uipath-uipath-dataser
 }))
 ```
 
-The objects come from the bound connection, never from a guess:
+The objects come from the bound connection, never from a guess. Prepare the
+event for the object, as for any event (above); prepare matches the name
+against the connection's objects. Without `--object` it refuses with
+`EVENT_OBJECT_REQUIRED` and lists the objects the connection has:
 
 ```bash
-uip is triggers objects uipath-uipath-dataservice CREATED --connection-id <id> --output json
+uip maestro registry prepare uipath-uipath-dataservice --action record-updated \
+  --object FileUploadVerify_20260618
 ```
 
 The emitted node carries the object as `inputs.detail.objectName` (and inside
