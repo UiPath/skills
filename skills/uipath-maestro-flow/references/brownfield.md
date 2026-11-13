@@ -40,15 +40,16 @@ PROJECT=Solution/Deployed
 CANONICAL="$PROJECT/Deployed.flow"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
-head -n 1 "$PROJECT/Deployed.flow.ts"   # // @decompiled-from Deployed.flow sha256:... (else: SDK too old, below)
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids and its first line.
 # Leave added steps out of .layout(...): merge places them (builder-sdk#1320).
 # Check against the original until no (edited) error is left:
 uip maestro flow check "$PROJECT/Deployed.flow.ts" --source --baseline "$CANONICAL"
 
 BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "$PROJECT/." "$BACKUP/"
-uip maestro flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL"
-# Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
+# Merge only a stamped source; without the stamp the SDK is too old (below):
+head -n 1 "$PROJECT/Deployed.flow.ts" | grep -q '^// @decompiled-from ' \
+  && uip maestro flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL"
+# Then delete each path merge listed as `flow-merge: remove <path> ...`.
 uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}"
 ```
 
@@ -75,19 +76,22 @@ The first line reads `// @decompiled-from Deployed.flow sha256:<64 hex> scripts=
   nothing was written. Decompile again and redo the edit on the new source.
   Never edit the first line to get past it.
 - `MERGE_SOURCE_STAMP_UNREADABLE`: the first line was edited. Decompile again.
+- A split original (`$ref` part files) is written back as one file. Merge lists
+  each part file it no longer reads under `remove`; delete them too.
 - After a merge, `merge` rewrites the first line for the merged `.flow`, so a
   further edit merges again with the same command.
 - Needs `@uipath/maestro-builder-sdk` 6.96.0 or later. An older `decompile`
   writes no first line, and an older `merge` given an unstamped source takes
   the edited graph with no baseline and writes `merged.flow` into the current
-  directory, leaving the original unchanged. So when `head -n 1` does not show
-  `// @decompiled-from`, do not merge: upgrade with
+  directory, leaving the original unchanged while every later check passes.
+  That is why the loop merges only when `grep` finds the stamp. When it does
+  not, the merge did not run and the edit is not in the `.flow`: upgrade with
   `npm install -g @uipath/maestro-builder-sdk@latest` and decompile again, or
   use [the same loop by hand](#the-same-loop-by-hand).
 <!--skill-flavor:safe-project-loop:end-->
 
-Compile the baseline before the edit, never after: merge diffs edited against
-it, so a baseline of the edited source drops your change.
+In the by-hand loops below, compile the baseline before the edit, never after:
+merge diffs edited against it, so a baseline of the edited source drops your change.
 
 With an edited `.flow.ts` and `--baseline-from`, `merge` runs `check` on the edited source and refuses the write on an error in a node or subflow the edit changed (`N error(s) in nodes merge takes from the edited flow`), and on one it cannot place that the edit introduced.
 An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; an untouched node the SDK cannot compile at all is kept as saved too and prints as `LOWERING_NODE_KEPT` (a probable SDK defect: tell the user; 6.64.0 or later); a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
