@@ -39,7 +39,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    Ask this for a draft and for a plain build alike; an edit of an existing `.bpmn` runs no `init` and skips the scan.
    - When the scan finds nothing, or only a solution this run created, run `init` without asking.
    - When the request names the solution to use (an existing one, or a new one by name), use it without asking.
-   - When the request names no solution and says nobody will answer questions, do not ask: put the project in a new solution, never an existing one, and say so in the reply.
+   - When the request names no solution and says nobody will answer questions, do not ask: put the project in a new solution, never an existing one, and say so: in a draft, in the gate reply's one sentence; in a build, on the final report's `Assumed:` line.
    - Otherwise stop and ask the user which to use, as a pick list if the host has one: one option per solution found, named by its folder, plus "Create a new solution".
      Do not run `init` until the user answers, and never silently adopt an existing solution: `init` registers the project in a solution above it without asking.
      Unless the request forbids upload, say in the question that adopting a solution means a later upload overwrites its cloud copy.
@@ -52,7 +52,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
      Either way, check its cloud copy before uploading over it.
    - A new solution: its name is the user's, else `<Name>Solution`, and nothing by that name may exist in the directory you create it from, because `uip solution init` on an existing solution succeeds but replaces its `SolutionId` and empties its `Projects`, unregistering every project in it.
      Create it with the guard in the same command, never `uip solution init` alone: `test ! -e <SolutionName> && uip solution init <SolutionName> --output json`.
-     When the guard fails, ask the user for another name; when nobody will answer, retry with `<SolutionName>2`, `<SolutionName>3`, and so on until one succeeds, and say so in the reply (in a draft, in the gate reply's one sentence).
+     When the guard fails because the name exists, ask the user for another name; when nobody will answer, retry with `<SolutionName>2`, `<SolutionName>3`, and so on until a free one succeeds, and say so: in a draft, in the gate reply's one sentence; in a build, on the final report's `Assumed:` line.
+     When `uip solution init` itself fails, stop and report its error; do not retry under another name.
      Then `cd <SolutionName>` and run `init` there; this works even inside another solution, which stays untouched.
      This run created it, so upload without confirming.
 
