@@ -33,6 +33,10 @@ Run every lookup in **one** Bash call.
 Mark a box `not checked` only when its lookup ran and exited non-zero; never write it for a lookup you did not run.
 <!--skill-flavor:lookup-not-checked-rule:end-->
 
+<!--skill-flavor:gate-one-round:start-->
+This gate is the one round for structure and resource questions.
+<!--skill-flavor:gate-one-round:end-->
+
 <!--skill-flavor:final-upload:start-->
 When the built process validates, the canvas shows it, so there is nothing to upload.
 <!--skill-flavor:final-upload:end-->

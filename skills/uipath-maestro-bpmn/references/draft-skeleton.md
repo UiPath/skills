@@ -182,7 +182,9 @@ A row fits only when both hold: its kind is the box's kind (match `Type` as abov
 A name that merely shares a keyword does not fit: a process called `invoice-cleanup` in an unrelated project's folder is not the invoice-recording step.
 When you cannot tell that a row serves the step, treat the box as having none, and never bind to that row.
 Run the lookup again at every gate, so a resource the user created since the last gate shows up.
+<!--skill-flavor:gate-one-round:start-->
 This gate is the one round for structure and resource questions; a question the skill asks before the skeleton exists, such as which solution to use, still comes before it.
+<!--skill-flavor:gate-one-round:end-->
 
 ## Show the shape and stop
 
