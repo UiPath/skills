@@ -135,7 +135,7 @@ Each public workflow is an API surface. Apply every rule:
 2. **Public arguments: PascalCase, NO `in_`/`out_`/`io_` prefixes** — `InvoiceId`, `RecipientEmail`, `NotificationResult`. Argument names become activity property names; prefixes become noise on the property grid. Private workflows follow SKILL.md Common Rule 4c.
 3. **Describe every public argument** via its `sap2010:Annotation.AnnotationText` — descriptions ship as property tooltips. For display names, placeholders, widgets, and grouping, add the layout sidecar ([§ Activity Layout](#activity-layout--the-sidecar-file)).
 4. **Expect — and keep — the analyzer naming warnings.** `build`/`pack` emit `Argument <Name> does not respect the set pattern ^in_...` for prefix-free library arguments, and a public DataTable argument also draws `doesn't have datatable prefix` (ST-NMG-011). The warnings are non-blocking. Do NOT rename arguments to silence them, `dt_` included.
-5. **Return application handles.** A workflow that opens or attaches to an app outputs the window/browser object; downstream public workflows accept it as an input argument instead of reopening.
+5. **No application handle crosses the library boundary.** A public workflow neither returns the window/browser it opens or attaches to nor accepts one from its caller; each activity gets the application through its own Use Application/Browser card where it uses it.
 6. **Post-authoring audit:** before packing, re-check every public workflow against rules 1-3 — name form, argument naming, argument descriptions.
 
 ## Error Contract
