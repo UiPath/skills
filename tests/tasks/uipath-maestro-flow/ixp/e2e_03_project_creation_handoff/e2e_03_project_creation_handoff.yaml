@@ -59,8 +59,8 @@ run_limits:
 # Hook timeouts must exceed handoff.UIP_TIMEOUT_SECONDS (45), or the harness
 # kills the wrapper mid-`uip` call and the failure reads as a skill defect. 300
 # is the harness's hard cap; seed fits well under it now that the registry
-# pull/search/get cycle is gone, leaving a help probe, one list, one create and
-# a delete per swept project. Arithmetic at handoff.py's UIP_TIMEOUT_SECONDS.
+# get cycle is gone, leaving a help probe, one list, one registry pull and
+# search, one create and a delete per swept project. Arithmetic at handoff.py's UIP_TIMEOUT_SECONDS.
 pre_run:
   - command: "python3 _setup/handoff.py seed"
     timeout: 300
