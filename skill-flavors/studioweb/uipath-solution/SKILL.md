@@ -57,3 +57,15 @@ Studio Web runs the post-rename CLI — use the commands and flags as documented
 
 <!--skill-flavor:existing-solution:start-->
 <!--skill-flavor:existing-solution:end-->
+
+<!--skill-flavor:debug-flow-row:start-->
+   | `Flow` | `uip flow debug "<PROJECT_NAME>" --output json` (Studio Web verb; the argument is the project name in the open solution, not a path) | `uipath-maestro-flow` |
+<!--skill-flavor:debug-flow-row:end-->
+
+<!--skill-flavor:debug-process-row:start-->
+   | `Process` (RPA) | `uip rpa run` (host-served; `uip rpa debug start` is not available in Studio Web) | `uipath-rpa` |
+<!--skill-flavor:debug-process-row:end-->
+
+<!--skill-flavor:debug-api-row:start-->
+   | `Api` | The `RunProject` host operation, after an explicit user "yes" (read `/skills/synthetic/proxy-tools-Api/SKILL.md` and the live `RunProject` schema first; `uip api-workflow run` is not the Studio Web execution route) | `uipath-api-workflow` |
+<!--skill-flavor:debug-api-row:end-->
