@@ -7,7 +7,11 @@ The skeleton's own gate reply is a different template ([gate reply](draft-skelet
 
 <!--skill-flavor:final-upload:start-->
 When the built process validates, the request allows an upload and the project has a solution (`.uipx`), run the [pre-flight](operate.md#pre-flight-before-any-cloud-action), which also stops the upload while a connector's enrichment is unresolved, then `uip solution upload <SolutionDir> --output json` returns the `Data.DesignerUrl`.
-When this run's `init` did not scaffold the solution, the upload first needs the user's confirmation and the cloud-copy check that [Studio Web upload](operate.md#studio-web-upload) describes; when either is missing, do not ask in this reply: skip the upload and say in the first line's one sentence that it waits for the user's go-ahead.
+When this run did not create the solution (neither its `uip solution init` nor its `bpmn init` made it), the upload first needs the user's confirmation and the cloud-copy check that [Studio Web upload](operate.md#studio-web-upload) describes.
+When the confirmation is missing, do not ask in this reply: skip the upload and say in the first line's one sentence that it waits for the user's go-ahead.
+When the [cloud-copy check](operate.md#check-the-cloud-copy-before-editing) fails for a reason other than a missing cloud copy (offline, not logged in, a timeout), retry the download before the upload.
+When it still fails, skip the upload even if the user already allowed it, and say in the first line's one sentence that the Studio Web copy could not be checked, so nothing was uploaded, and that uploading would replace it unseen.
+Only a go-ahead given after the user was told the check failed allows that replacement; consent to upload given before does not.
 When the request forbids upload, or there is no solution, skip it.
 <!--skill-flavor:final-upload:end-->
 
