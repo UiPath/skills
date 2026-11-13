@@ -16,17 +16,6 @@
    Those are separate decisions, and the user has not approved the shape yet.
 <!--skill-flavor:draft-upload:end-->
 
-<!--skill-flavor:gate-first-line:start-->
-<Name>: outline ready (draft mode). <One sentence if you kept the user's canvas edits.>
-<!--skill-flavor:gate-first-line:end-->
-
-<!--skill-flavor:gate-path-line:start-->
-<the target path, such as /solution/<Project>/<Name>.bpmn, as plain text, never a link>
-<!--skill-flavor:gate-path-line:end-->
-
-<!--skill-flavor:gate-uploaded-rule:start-->
-<!--skill-flavor:gate-uploaded-rule:end-->
-
 <!--skill-flavor:draft-cloud-copy:start-->
 The user may have changed the outline on the canvas before answering.
 Each turn starts again at step 1 of the [Validation loop](../SKILL.md#validation-loop), which decompiles the target, so their edits are the base; say so in the reply's one sentence.
