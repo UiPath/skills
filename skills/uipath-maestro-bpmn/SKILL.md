@@ -42,18 +42,18 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    - When the request names no solution and says nobody will answer questions, do not ask: put the project in a new solution, never an existing one, and say so in the reply.
    - Otherwise stop and ask the user which to use, as a pick list if the host has one: one option per solution found, named by its folder, plus "Create a new solution".
      Do not run `init` until the user answers, and never silently adopt an existing solution: `init` registers the project in a solution above it without asking.
-     Unless the request forbids upload, say in the question that adopting a solution means a later upload overwrites its cloud copy; a user who then picks that solution has consented to that upload.
+     Unless the request forbids upload, say in the question that adopting a solution means a later upload overwrites its cloud copy.
      When the request asks for a new solution without naming it, ask only for its name, offering `<Name>Solution` as the default, or a free name by the rule below when that one is taken.
 
    Then place the project in the chosen solution:
    - An existing solution: run `init` from that solution's directory, so the project lands in it as `<SolutionDir>/<Name>/`.
      When the user picked it from the question above, and that question said a later upload overwrites its cloud copy, upload without asking again.
-     When the request named it instead, confirm before the first upload, as [Operate](references/operate.md#studio-web-upload) requires.
+     When the request named it instead, confirm before the first upload, as [Operate](references/operate.md#studio-web-upload) requires; a draft holds the upload instead, as [Draft skeleton](references/draft-skeleton.md#steps) says.
      Either way, check its cloud copy before uploading over it.
-   - A new solution: its name is the user's, else `<Name>Solution`, and it must be free: nothing by that name may exist in the directory you run `uip solution init` from.
-     Check with `test -e <SolutionName>` first, because `uip solution init` on an existing solution succeeds but replaces its `SolutionId` and empties its `Projects`, unregistering every project in it.
-     When the name is taken, ask the user for another one; when nobody will answer, use the first free name of `<SolutionName>2`, `<SolutionName>3`, and so on, and say so in the reply.
-     Then run `uip solution init <SolutionName> --output json`, `cd <SolutionName>`, and run `init` there; this works even inside another solution, which stays untouched.
+   - A new solution: its name is the user's, else `<Name>Solution`, and nothing by that name may exist in the directory you create it from, because `uip solution init` on an existing solution succeeds but replaces its `SolutionId` and empties its `Projects`, unregistering every project in it.
+     Create it with the guard in the same command, never `uip solution init` alone: `test ! -e <SolutionName> && uip solution init <SolutionName> --output json`.
+     When the guard fails, ask the user for another name; when nobody will answer, retry with `<SolutionName>2`, `<SolutionName>3`, and so on until one succeeds, and say so in the reply (in a draft, in the gate reply's one sentence).
+     Then `cd <SolutionName>` and run `init` there; this works even inside another solution, which stays untouched.
      This run created it, so upload without confirming.
 
    When the user named where the `.bpmn` goes, run the command the table below gives for that path, from the workspace root, instead.

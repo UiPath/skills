@@ -112,7 +112,8 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
 4. **Upload it, so the user sees it on the canvas**, unless the request forbids upload: `uip solution upload <SolutionDir> --output json`, where `<SolutionDir>` is the solution `init` scaffolded (`<Name>Solution/`) or registered the project in.
    The gate reply carries the returned `Data.DesignerUrl`.
    Do not ask first when this run created the solution (its `init` or `uip solution init` made it): the request to draft the process authorizes the upload that shows it, and a consent question per iteration would defeat the draft.
-   When the solution already existed, check its cloud copy before uploading over it, and confirm first unless the user picked it from the solution question, which already said the upload overwrites its cloud copy, as [Studio Web upload](operate.md#studio-web-upload) says.
+   When the solution already existed, check its cloud copy before uploading over it, as [Studio Web upload](operate.md#studio-web-upload) says.
+   Upload without asking only when the user picked it from the solution question, which already said the upload overwrites its cloud copy; otherwise do not upload, because the gate asks no other question: its one sentence says the upload waits for the user's go-ahead.
    The skeleton needs none of that section's other pre-flight steps: it keeps `Event_start`, so it needs no `refresh`, and it binds no resource.
    When the request forbids upload, or the project has no solution (the user named its path and chose none), do not upload and do not create a solution to show a draft: the gate reply carries the local path.
    Do not pack, debug or run anything.
@@ -131,7 +132,7 @@ Reply in this shape, and end the turn:
 
 ```text
 <!--skill-flavor:gate-first-line:start-->
-<Name>: outline ready<, uploaded> (draft mode). <One sentence if the upload failed or you kept the user's Studio Web edits.>
+<Name>: outline ready<, uploaded> (draft mode). <One sentence if the upload failed or waits for the user's go-ahead, you kept the user's Studio Web edits, or the new solution took another name because its default was taken.>
 <!--skill-flavor:gate-first-line:end-->
 <!--skill-flavor:gate-path-line:start-->
 <the Studio Web link (Data.DesignerUrl) on its own line when it uploaded, else the local <Project>/<Name>.bpmn path as plain text, never a link>
@@ -150,7 +151,7 @@ The reply is the template and nothing else: no line before it, between its parts
 Write `, uploaded` only when this turn's upload succeeded.
 <!--skill-flavor:gate-uploaded-rule:end-->
 When the path line is the local path, write the plain path, such as `InvoiceIntake/InvoiceIntake.bpmn`, not as a Markdown link with the file name as its text.
-That rules out a status or validation line (`Valid`, `zero errors`, `Uploaded`), an explanation of a warning, a note about a default you chose, and a question of your own (a time zone, which app); anything the user should settle waits for *Change it*.
+That rules out a status or validation line (`Valid`, `zero errors`, `Uploaded`), an explanation of a warning, a note about a default you chose (beyond the first line's one sentence), and a question of your own (a time zone, which app); anything the user should settle waits for *Change it*.
 List every task box, in order, and nothing else: not the start event, a gateway or the end event.
 A box line is the box's label exactly as its `.task()` name spells it, `→ variable` suffix included, and never a branch condition, an arm label or a route: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`.
 Unlike v1, which appends `: <resource status>` to a box label, v2 adds no status suffix after the label.
