@@ -20,7 +20,7 @@ Run a published Intelligent eXtraction Platform project on an attachment.
 
 Signature: `ixpExtract({ project, modelName, name, folderName, fileRef, pageRange?, versionTag?, folderPath? })`.
 
-Copy identity fields from a freshly pulled tenant registry; never construct them.
+Copy identity fields from what the tenant registry returns; never construct them.
 
 Asking WHICH models exist ("what document extractors can I add?") is read-only Q&A, not a build: one `registry search 'uipath.ixp'` is the whole answer, and `registry get` is never fanned out across its hits.
 
@@ -44,7 +44,7 @@ Rules for the listing path:
 
 - **Do NOT call `registry get` on the search hits.** The search result already carries every field the answer needs. `registry get` resolves ONE node's authoring identity, so running it per hit turns a one-second answer into a call per published model — measured at 80 calls and 127 seconds on a tenant with 40 of them. Fan it out only when authoring a specific node, and then for that node alone.
 - **Do NOT scaffold a solution, run `uip maestro flow init`, or write a `.flow.ts` or `.flow` file.** Listing is read-only Q&A.
-- **Do NOT mock.** If `Data: []`, answer directly that no IxP models are published on this tenant. The `mock()` fallback is for build-time planning, not for listing-time Q&A.
+- **Do NOT mock.** If `Data: []`, run `uip maestro flow registry pull --force` once and search again (registry reads are cached for 30 minutes); if it is still empty, answer directly that no IxP models are published on this tenant. The `mock()` fallback is for build-time planning, not for listing-time Q&A.
 <!--skill-flavor:ixp-no-login:start-->
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
 <!--skill-flavor:ixp-no-login:end-->
@@ -74,7 +74,7 @@ uip maestro flow registry get '<node-type>' \
 ```
 
 Registry reads are cached for 30 minutes.
-If a model deployed in that window is missing from the search, run `uip maestro flow registry pull --force` and search again.
+If the model is missing from the search, run `uip maestro flow registry pull --force` once and search again.
 
 `registry get` is the authoring source of truth for ONE node. Copy `project`, `modelName`,
 `folderName`, `folderPath`, and `versionTag` from that response; do not switch to

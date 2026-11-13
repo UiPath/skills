@@ -44,8 +44,8 @@ Three fields, none of them derivable:
 - **`key`** — the function's GUID; it becomes the node type's suffix, so a wrong
   one emits a node the tenant cannot resolve. Find it with
   `uip maestro flow registry search "uipath.core.function"`. Registry reads are
-  cached for 30 minutes: if a function published in that window is missing,
-  run `registry pull --force` and search again.
+  cached for 30 minutes: if the function is missing, run `registry pull --force`
+  once and search again.
 - **`name`** — the function's own name in Orchestrator.
 - **`folderPath`** — the folder it is deployed in. **A function is usually
   deployed into a folder of its OWN name** (`'Shared/acme-echo'`, not
