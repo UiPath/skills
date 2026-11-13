@@ -252,8 +252,9 @@ That emits BOTH halves the artifact must carry: the runtime query at
 `inputs.detail.queryParameters.where`, and the design-time tree at
 `essentialConfiguration.savedFilterTrees.where` inside the node's
 `configuration`. Studio Web renders the FilterBuilder from the tree; product
-validation rejects a filter that has only one of the two, so a string alone
-fails `validate` even though the run would have worked.
+validation rejects a literal filter that has only one of the two, so a
+hand-written literal without its tree fails `validate` even though the run
+would have worked (a runtime `js` filter is exempt; see below).
 
 If the task also asks for the filter tree as a separate review artifact,
 compile first and copy the emitted
@@ -278,11 +279,13 @@ Three spellings are compile errors here rather than a tenant-side
 | `accountNumber = "ACC123"` | double quotes mark a COLUMN reference | `accountNumber = 'ACC123'` |
 | `status eq 'Open'` | `eq`/`ne`/`gt`/`ge`/`lt`/`le` are OData | `status = 'Open'` |
 
-**A filter built from a runtime value keeps the runtime half only.** The tree
-holds literals, so a `js` template in `where` emits the query and no tree — which
-`validate` rejects. Where the filter must vary per run, filter server-side on
-what is constant and narrow the rest downstream, or accept the design-time gap
-deliberately.
+**A filter built from a runtime value has no filter tree, and that is valid.**
+The tree holds literals only, so a `js` template in `where` (for example
+``js`displayName = '${$vars.start.output.name}'` ``) emits the query with no tree.
+`validate` accepts it, and the runtime resolves the whole value. The only cost is
+at design time: the Studio Web filter widget shows no tree for that step. If the
+widget must show the constant terms, put them in a literal filter and narrow the
+rest downstream.
 
 ## Schema-dynamic operations: the parent-field loop
 
