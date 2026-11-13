@@ -82,7 +82,7 @@ The exception is a task that grades registry usage itself (`smoke/registry_disco
 There the registry IS the subject under test, so naming it is correct.
 
 **3. Never name a `references/*.md` file in a prompt.**
-The two generations name their references differently: the SDK skill's `references/` holds `bpmn-runtime.md`, `connectors.md`, `diagnose.md`, `draft-skeleton.md`, `operate.md` and `patterns/`.
+The two generations name their references differently: the SDK skill's `references/` holds `bpmn-runtime.md`, `connectors.md`, `diagnose.md`, `draft-skeleton.md`, `final-report-template.md`, `operate.md` and `patterns/`.
 `structural-bpmn.md`, `public-safety.md`, `expression-authoring.md` and `registry-workflow.md` exist only under `classic/skills/uipath-maestro-bpmn/`, so "per the skill's structural reference" dangles under the SDK arm.
 Read those documents as a task AUTHOR; write what the output must contain, and let each arm's skill decide how.
 

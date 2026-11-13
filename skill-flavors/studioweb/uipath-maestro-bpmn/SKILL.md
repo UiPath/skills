@@ -177,5 +177,5 @@ When the user asks to evaluate a process, tell them that evaluations run from th
 <!--skill-flavor:draft-upload-summary:start-->
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated target `.bpmn` on the canvas is.
 The skeleton goes into the open target and makes no `registry` calls.
-The canvas shows it, so there is no upload: the gate reply names the target path, and *Build it* ends with a final report.
+The canvas shows it, so there is no upload: the gate reply names the target path, and *Build it* ends with the [final report](references/final-report-template.md).
 <!--skill-flavor:draft-upload-summary:end-->

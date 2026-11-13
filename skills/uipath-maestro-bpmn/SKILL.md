@@ -140,6 +140,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    No `.bpmn` other than the target goes in the workspace: no intermediate copy, probe or second scaffold.
    When the project sits in a solution this run did not create, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
+9. **End every build with the final report.**
+   A plain request to build or edit a process (`(auto mode)`) and *Build it* after a [draft gate](#draft-first) (`(draft mode)`) both end the turn with **[`references/final-report-template.md`](references/final-report-template.md)**.
+   It ends the turn too when validation fails only because tenant resources are missing.
 
 ## Draft first
 
@@ -148,7 +151,7 @@ Judge the intent, not the word: a "draft project" asking for source files to imp
 <!--skill-flavor:draft-upload-summary:start-->
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
 The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
-Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with a second upload and a final report.
+Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with the final report, which uploads again when [its rules](references/final-report-template.md#upload-the-built-process) allow.
 <!--skill-flavor:draft-upload-summary:end-->
 
 ## API index

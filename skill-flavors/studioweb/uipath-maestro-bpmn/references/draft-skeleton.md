@@ -40,14 +40,3 @@ Mark a box `not checked` only when its lookup ran and exited non-zero; never wri
 This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
-<!--skill-flavor:final-upload:start-->
-When the built process validates, the canvas shows it, so there is nothing to upload.
-<!--skill-flavor:final-upload:end-->
-
-<!--skill-flavor:final-first-line:start-->
-<Name>: built, validated (draft mode). <One sentence if you kept the user's canvas edits.>
-<!--skill-flavor:final-first-line:end-->
-
-<!--skill-flavor:final-path-line:start-->
-<the target path, such as /solution/<Project>/<Name>.bpmn>
-<!--skill-flavor:final-path-line:end-->
