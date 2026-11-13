@@ -6,7 +6,7 @@ Reply in this shape and keep every line; only the first line's second sentence i
 
 ```text
 <!--skill-flavor:gate-first-line:start-->
-<Name>: outline ready<, uploaded> (draft mode). <One sentence if the upload or a lookup failed, the upload waits for the user's go-ahead, you kept the user's Studio Web edits, or the new solution took another name because its default was taken.>
+<Name>: outline ready<, uploaded> (draft mode). <One sentence if the upload or a lookup failed, the upload to an existing solution waits for the user's go-ahead, you kept the user's Studio Web edits, or the new solution took another name because its default was taken.>
 <!--skill-flavor:gate-first-line:end-->
 <!--skill-flavor:gate-path-line:start-->
 <the Studio Web link (Data.DesignerUrl) on its own line when it uploaded, else the local <Project>/<Name>.bpmn path as plain text, never a link>
@@ -30,6 +30,7 @@ This reply is your whole final message, and its first characters are the process
 When your last tool call returns, do not comment on its result: your next words are the `<Name>:` line.
 Write nothing before that line: not a status or validation sentence (`Valid`, `zero errors`, `Uploaded`, "Presenting the gate"), not an introduction ("Here is the outline:"), and not a `---` separator.
 What a lookup found goes on the box lines, and why it failed goes in the first line's one sentence; steps you ran or skipped are not reported at all, except what the first line's one sentence carries.
+When the request forbids upload, the one sentence never mentions the upload: no sentence that it was skipped, deferred or not performed.
 A progress note belongs in a message before your last tool call; the message after it holds the gate reply and nothing else.
 
 ## The path line
