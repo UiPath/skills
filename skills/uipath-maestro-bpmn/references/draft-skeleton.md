@@ -75,7 +75,7 @@ A skeleton is not a working process and must never be reported as one.
      When the fork directly follows the start event, add that box first, such as the step that prepares the retry.
 
    A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so rule 9 lets it end separately; a `.goto()` on its path still must not target the fork or a node that reaches `<fork>_join`.
-   Nor does it apply to the end event that closes a `.subProcess()` body: the sub-process then continues on its branch.
+   Rule 9 also does not apply to the end event that closes a `.subProcess()` body: the sub-process then continues on its branch.
 
 ### Box kinds
 
