@@ -21,3 +21,20 @@
   copy `.flow-sdk/original/<Plan>` back over the target and tell the user that this
   Studio Web build cannot keep a Designer-saved plan's binding map yet.
 <!--skill-flavor:sdk-upgrade:end-->
+
+<!--skill-flavor:check-baseline-original:start-->
+Studio Web already keeps it as the undo copy `.flow-sdk/original/<Plan>`:
+
+```bash
+uip maestro case check .flow-sdk/<Project>.case.ts --source --baseline .flow-sdk/original/<Plan>
+```
+<!--skill-flavor:check-baseline-original:end-->
+
+<!--skill-flavor:check-baseline-sdk-upgrade:start-->
+Needs `@uipath/maestro-builder-sdk` 6.97.0 or later in Studio Web. If `check`
+answers `unknown option '--baseline'`, this Studio Web build ships an older SDK,
+which Studio Web owns, so tell the user. Until it is upgraded, run `check
+--source` without `--baseline` and fix only the errors on stages and tasks you
+changed. If a compile then stops on a task you did not change, stop: name the
+task and its code to the user.
+<!--skill-flavor:check-baseline-sdk-upgrade:end-->
