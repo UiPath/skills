@@ -516,6 +516,12 @@ def test_draft_gate_guard_allows_the_preflight(task: str, command: str) -> None:
         'echo "Looking up the robot\'s process"; uip solution resources list --kind Process --search invoice --output json',
         'grep -q "don\'t" f || uip solution resources list --kind Process --search invoice --output json',
         "cat > notes.md <<'EOF'\nthe robot's job\nEOF\nuip solution resources list --kind Process --search invoice --output json",
+        # A quoted echo of the lookup does not veto a real one in the same call.
+        'echo "Next: uip solution resources list"; uip solution resources list --kind Process --output json',
+        'uip solution resources list --kind Process --search invoice --output json; echo "done; uip solution resources list"',
+        'echo "x; uip is connections list"\nOUT="$(uip is connections list --all-folders --output json)"',
+        # A backtick inside double quotes runs too.
+        'echo "x; uip is connections list"; OUT="`uip solution resources list --kind Process --search invoice --output json`"',
         # The codex wrapper's script quote is not data.
         '/bin/bash -lc "cd InvoiceIntakeSketchSolution && uip solution resources list --search invoice --output json"',
     ],
@@ -542,6 +548,13 @@ def test_draft_resource_lookup_counts(command: str) -> None:
         "echo 'Next step:\nuip is connections list --all-folders'",
         'grep "x; uip solution resources list" file',
         "grep -n 'a && uip solution resources list' notes.md",
+        # A real-looking lookup only as --help next to a quoted one still looks nothing up.
+        'echo "x; uip solution resources list"; uip solution resources list --help',
+        # Known limit: data quoted inside a `sh -c` script is not seen.
+        pytest.param(
+            '/bin/bash -lc "echo \'Next; uip solution resources list --kind Process\'"',
+            marks=pytest.mark.xfail(strict=True, reason="wrapper-quoted data is not seen"),
+        ),
     ],
 )
 def test_draft_resource_lookup_ignores_other_calls(command: str) -> None:
