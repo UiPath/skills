@@ -173,3 +173,9 @@ When the user asks to evaluate a process, tell them that evaluations run from th
 <!--skill-flavor:evaluate-row:start-->
 | Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | Not available in Studio Web | [Evaluate](references/evaluate.md) says what to tell the user | — |
 <!--skill-flavor:evaluate-row:end-->
+
+<!--skill-flavor:draft-upload-summary:start-->
+Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated target `.bpmn` on the canvas is.
+The skeleton goes into the open target and makes no `registry` calls.
+The canvas shows it, so there is no upload: the gate reply names the target path, and *Build it* ends with a final report.
+<!--skill-flavor:draft-upload-summary:end-->
