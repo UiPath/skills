@@ -117,21 +117,20 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 ## Editing an existing flow
 
 <!--skill-flavor:sdk-editing:start-->
-In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless the task supplied source, decompile the `.flow` fresh, compile the baseline, edit narrowly, and merge the delta into the original. Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source).
+In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless the task supplied source, decompile the `.flow` fresh, edit narrowly, and merge the edited source back into the original. Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source).
 
-For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which runs the loop in two invocations. It keeps its baseline, edited and merged `.flow` files in `.flow-sdk/` too:
+`merge` checks the first line `decompile` stamps, then writes over the original:
 
 ```bash
 ( cd "<Solution>/<Name>" && [ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name '<Name>.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} + )
-uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
-node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
-# edit .flow-sdk/<Name>.flow.ts narrowly; no .layout() for added steps (builder-sdk#1320)
+uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
+# edit .flow-sdk/<Name>.flow.ts narrowly; keep its first line; no .layout() for added steps (builder-sdk#1320)
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error; `unknown option`: brownfield.md
-node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
+( head -n 1 .flow-sdk/<Name>.flow.ts | grep -q '^// @decompiled-from ' || { echo 'no stamp (SDK<6.96.0): NOT merged' >&2; exit 1; }; uip maestro flow merge .flow-sdk/<Name>.flow.ts --original <Name>.flow )
 ```
 
-Back up the project to `mktemp -d`, `cp` the merge output over it whole, validate it there (not the edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`.
-Source that must stay inside the project (relative sidecars): [the safe project loop](references/brownfield.md#the-safe-project-loop).
+Back up first (`mktemp -d`), validate after a successful merge, restore on failure. Only `merge` writes the `.flow`. `no stamp` or `MERGE_ORIGINAL_CHANGED`: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
+Source kept in the project (relative sidecars): [the safe project loop](references/brownfield.md#the-safe-project-loop).
 **True-brownfield procedure:** **[`references/brownfield.md`](references/brownfield.md)**.
 <!--skill-flavor:sdk-editing:end-->
 
