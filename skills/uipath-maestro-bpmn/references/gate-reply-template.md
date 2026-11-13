@@ -41,7 +41,6 @@ When the path line is the local path, write the plain path, such as `InvoiceInta
 ## The box lines
 
 List every task box, in order, including a box that needs no resource, and nothing else: not the start event, a timer, a gateway or the end event.
-A box left off is a step the user never sees.
 A box line is the box's label exactly as its `.task()` name spells it, `→ variable` suffix included, and never a branch condition, an arm label or a route: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`.
 After the label, write `: ` and exactly one status: the resource's name with its folder, the two candidates and which one, or one of the fixed phrases `none yet, create it or name one`, `not checked` and `no resource needed`, word for word.
 Give each box one short clause: no element type ids, no build-time plans, and no alternatives for the kind.
