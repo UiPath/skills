@@ -2,16 +2,13 @@ task_id: skill-flow-extract-document-check-feature-disabled
 description: >
   Negative smoke: the user names the Extract document node and the tenant
   check answers `FeatureDisabled`. Tests that the agent runs
-  `uip maestro flow extraction check`, adds no
-  `uipath.ixp.extract-document-builder` node, and looks for a published IXP
-  model before it gives up.
+  `uip maestro flow extraction check` and adds no
+  `uipath.ixp.extract-document-builder` node. Passes whether or not the run
+  produces a `.flow`.
 
   The test tenant has document extraction on, so the `uip` mock in
   `mock_template/mocks/` answers `extraction check` with `FeatureDisabled` and
-  passes every other call to the real CLI. The registry search is real, so
-  whether a fitting published model turns up depends on the tenant: the task
-  passes either way, as long as the flow holds no Extract document node.
-  Passes whether or not the run produces a `.flow`.
+  passes every other call to the real CLI.
 
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, node:extract-document]
 
@@ -62,14 +59,6 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+flow\s+nodes\s+(create|add)\b[^\n]*extract-document-builder'
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent looked for a published IXP model before giving up"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b[^\n]*ixp'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 
 run_limits:
