@@ -62,6 +62,21 @@ Any other failure (a timeout, a mirror refusing the package) is the user's netwo
 When `uip` reports the SDK is below its minimum version, run the command its `Instructions` give: it names `-g` or `--save-dev` depending on which copy it found.
 Fetching connector definitions through `uip` needs `@uipath/maestro-builder-sdk` 6.97.0 or later, whether it runs through `uip` or the SDK's own `flow-sdk` bin.
 When `uip` says the installed SDK cannot fetch connector definitions through uip, run the upgrade its message names (`npm install -g @uipath/maestro-builder-sdk@latest`, or `--save-dev` for a workspace copy); on cloud, `uip maestro registry pull` also works.
+
+To ask the installed SDK what it supports, run `npx --no flow-sdk capabilities` (`--no` stops npx from downloading anything; it uses the workspace copy, else the global one).
+It prints the name and version, then one feature name per line; `--json` prints one object instead:
+
+```
+$ npx --no flow-sdk capabilities
+@uipath/maestro-builder-sdk 6.97.0 (gitref 1a2b3c4)
+...
+flow-check-baseline
+flow-pipeline-strict
+```
+
+Test a feature with `npx --no flow-sdk capabilities | grep -qx flow-check-baseline`.
+To pin one SDK floor for a project, add `"flowSdk": { "minVersion": "<version>" }` to its `package.json`; then `compile`, `check`, `decompile` and `merge` refuse an older SDK with exit 2 and print the `npm install` command that upgrades it.
+Both need `@uipath/maestro-builder-sdk` 6.97.0 or later (UiPath/builder-sdk#1991): an older SDK answers `unknown command 'capabilities'` and ignores `minVersion`, so upgrade it.
 <!--skill-flavor:install-package:end-->
 
 ## Local authoring hard gates
