@@ -33,13 +33,13 @@ Tenant settings are dot-notation key-value pairs that control tenant behavior. U
 | `uip or settings get <key>` | Get a single setting value by key. |
 | `uip or settings update <key> <value>` | Update a setting value. |
 | `uip or settings execution` | Get execution settings with display names, types, and allowed values. Use `--scope 0` (Global) or `--scope 1` (Robot). |
-| `uip or settings timezones` | List all valid timezone IDs as `{Name, Value}` rows — pass the `Value` to `Abp.Timing.TimeZone`. |
+| `uip or settings timezones` | List all valid timezone IDs as `{Name, Value}` rows — pass the `Value` to `Abp.Timing.TimeZone` or `triggers create --time-zone`. The IDs are Windows time zone IDs (`GTB Standard Time`), not IANA names. |
 
 **Common setting keys:**
 
 | Key | Category | Example value |
 |-----|----------|---------------|
-| `Abp.Timing.TimeZone` | General | `UTC`, `Europe/Bucharest` |
+| `Abp.Timing.TimeZone` | General | `UTC`, `GTB Standard Time` |
 | `Abp.Localization.DefaultLanguageName` | General | `en`, `fr`, `de` |
 | `Alerts.Email.Enabled` | Email | `true` / `false` |
 | `Triggers.DisableWhenFailedCount` | Triggers | `10` (consecutive failures to auto-disable) |
@@ -52,7 +52,7 @@ uip or settings get "Abp.Timing.TimeZone" --output json
 
 # Change tenant timezone
 uip or settings timezones --output json   # find valid ID first
-uip or settings update "Abp.Timing.TimeZone" "Europe/Bucharest" --output json
+uip or settings update "Abp.Timing.TimeZone" "GTB Standard Time" --output json
 
 # View execution settings with allowed values
 uip or settings execution --scope 0 --output json
