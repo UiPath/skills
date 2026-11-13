@@ -133,8 +133,10 @@ Act only on errors, and do not report the warning: it appears on every skeleton,
 ## Find the resources
 
 A box whose kind runs a deployed resource cannot be built without one: every kind in [Box kinds](#box-kinds) except `Action app`, `Execute script` and `Execute HTTP request`, including Business rule, plus a queue, a Data Fabric entity, and a connector box's connection.
+<!--skill-flavor:lookup-no-login:start-->
 When this run already found no `uip login` (the upload failed for it), skip the lookup and mark each such box `not checked`.
 Otherwise run every lookup in **one** Bash call.
+<!--skill-flavor:lookup-no-login:end-->
 The lookups only read the tenant, so a request that forbids uploading or running anything does not forbid them.
 It is the turn's last tool call: read [gate-reply-template.md](gate-reply-template.md) and send any progress note before it, and when it returns, send the gate reply as your next and final message, starting with its first line.
 
@@ -163,7 +165,9 @@ Run each lookup exactly as written, adding no flag: `uip` rejects `--output-filt
 `--search` matches names only, and tenants hold thousands of processes, so never list a kind unfiltered, not even after a search came back empty.
 Put every search in the one lookup call: the user's own words for the resource, and one or two keywords from the box's label (`invoice`, `extract` for `Extract invoice data [RPA workflow]`).
 When a lookup fails, mark its boxes `not checked`, say why in the one sentence the reply's first line allows, and do not retry.
+<!--skill-flavor:lookup-not-checked-rule:start-->
 Mark a box `not checked` only when its lookup ran and exited non-zero, or when this run already found no `uip login`; never write it for a lookup you did not run.
+<!--skill-flavor:lookup-not-checked-rule:end-->
 A failed lookup proves nothing is missing: say "Couldn't check your Slack connections", never "No Slack connection in this tenant", and never name a connector key, a kind or a CLI term.
 
 Then give each box one status:
