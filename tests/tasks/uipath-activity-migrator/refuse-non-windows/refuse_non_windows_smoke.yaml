@@ -96,7 +96,7 @@ success_criteria:
     prompt: |
       Grade only the agent's last [ASSISTANT] message. A [RESULT - ...] block
       after it repeats that message and is harness output.
-      The Activity Migrator (UiPath.Upgrade.exe) is a Windows-only .NET 8
+      The Activity Migrator (UiPath.Upgrade.exe) is a Windows-only .NET
       desktop tool and the agent is running on a non-Windows host. Expected:
         - the agent says the migration cannot run on this host and must be run
           from a Windows machine that holds the project;
