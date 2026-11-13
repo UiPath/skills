@@ -31,8 +31,11 @@ Every derived element is named `derived from <anchor control> — <pattern>` in 
 
 - **Open a browser at a URL:** the application card opens it, at the URL on its Object Repository screen. Not Start Process: the card starts the browser with flags that keep a minimised or covered window taking input and that suppress the first-run, search-engine and profile-picker prompts and the debugger banner.
 - **Start a desktop application:** the application card opens it, with the file path, arguments and working directory on its screen. A path the source does not record stays empty, a row of the live checks; until it is set, the card only attaches.
+- **Attach, or open when not open:** one card whose Open option opens the application only when no instance is open. An attach the source tries before a launch, a launch after a failed attach, and a test that chooses between them (whether the process runs, its window is open, the session is attached) are that card's work: no attempt in a Try/Catch, no test and no flag recording which way it went.
+- **Close the application where its work ends:** the Close option of the card around that work, at the point the source closes it.
 - **Force-close a process:** Kill Process.
-- **Maximise, activate or close a window:** Window Operations inside a card attached to a window-level screen (a screen with no elements).
+- **Bring a window to the front:** the Activate option of the activity that next acts in it, as for keystrokes; never a step of its own.
+- **Maximise a window, or close one elsewhere:** Window Operations inside a card attached to a window-level screen (a screen with no elements).
 - **Desktop screenshot on error:** Take Screenshot with no target.
 - **"The dialog appears within N seconds":** the first activity that targets the dialog, with N as its timeout. Add a Check App State on the dialog's captured button or on the window-level screen only where the source branched on the dialog or no later step acts on it ([ui-verification-guide.md](ui-verification-guide.md)).
 
