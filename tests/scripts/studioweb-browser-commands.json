@@ -403,6 +403,7 @@
       "maestro flow": 25,
       "maestro flow eval": 16,
       "maestro flow nodes": 1,
+      "maestro flow nodes provision": 2,
       "solution pack": 2
     }
   },
