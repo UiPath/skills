@@ -14,6 +14,9 @@
   package entry.
 <!--skill-flavor:orphan-cleanup:end-->
 
+<!--skill-flavor:docextraction-refresh:start-->
+<!--skill-flavor:docextraction-refresh:end-->
+
 <!--skill-flavor:sdk-upgrade:start-->
   Needs `@uipath/maestro-builder-sdk` 6.50.1 or later, which resolves the decompiled
   labels (for example `bOC1`) against that plan's own `bindings` array. Studio Web
