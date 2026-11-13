@@ -69,6 +69,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
 | Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
+| Task activation modes (parallel, parallel-after-predecessor, sequential) | `rule('runs-sequentially')`, `.task(name, fn, { lane })` | [Activation modes](references/case-runtime.md#activation-modes) | `examples/PermitIssuance.case.ts` |
 
 ## Minimal shape
 

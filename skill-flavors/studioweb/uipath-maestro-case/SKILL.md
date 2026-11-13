@@ -34,9 +34,9 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip maestro case check`, `compile`, `decompile` | Work, inside the page. |
 | `uip maestro case validate` | Works, with `--strict` and `--sdd`. |
 | `uip maestro case sdd convert` | **Do not use as a build path.** Output has flat connector inputs (`CASE_MGMT_CONNECTOR_INPUT_FLATTENED`), unresolved cross-task references, and no `registry prepare` — `validate` will reject it. If used as a seed, decompile its output, author the TypeScript source, then check → compile → validate. Never submit the convert output directly. |
-| `uip maestro case registry pull` | Works: the tenant resource indexes ([`references/registry-resolution.md`](references/registry-resolution.md)). |
+| `uip maestro case registry pull` | Works — **this is the one you need** for case resource discovery (action apps, processes, agents). Pulls tenant resource indexes to `~/.uip/case-resources/`. Not the same as `uip maestro registry pull` below. |
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
-| `uip maestro registry pull` | Answered by the CLI, with no effect: the library of the session is always loaded. |
+| `uip maestro registry pull` | **No-op in Studio Web** (the connector library of the session is always loaded). Not the same as `uip maestro case registry pull` above — that one pulls case resources and works. |
 | `uip solution resources add`, `list` | Work. |
 | `uip solution resources refresh`, `remove` | Not available: no local `.uipx`. Add connections with `resources add` (the [Validation loop](#validation-loop)). |
 | `uip solution publish`, `uip solution deploy run` | Work. Studio Web packages and signs in for `publish`. |

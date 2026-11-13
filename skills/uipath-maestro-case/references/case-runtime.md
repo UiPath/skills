@@ -192,6 +192,29 @@ make from syntax alone. Exact signatures remain in the generated API.
   are the common case: an `exceptionStage(...)` that gates normal completion is
   almost never what was meant.
 
+## Activation modes
+
+<!-- RULE:case.activation.lane -->
+- For an SDD `Activation Mode` column, use `runs-sequentially` and `lane`.
+  `lane` is the third argument to `.task()`: `.task(name, fn, { lane: N })`.
+  It sets the set index in `data.tasks[][]` (`lane ?? 0` in the SDK).
+  Tasks that share a lane start together after the predecessor set completes.
+
+  | SDD Activation Mode | SDK entry rule | `lane` | Effect |
+  |---|---|---|---|
+  | `parallel` | `rule('current-stage-entered')` | omit | Task starts at stage entry, in its own set. |
+  | `parallel-after-predecessor` | `rule('runs-sequentially')` | shared | Siblings share a set; start together after the predecessor set. The predecessor also uses `runs-sequentially`. |
+  | `sequential` | `rule('runs-sequentially')` | unique per task | Strict chain: each task waits for the previous set. |
+
+  A task without `runs-sequentially` gets its own set regardless of `lane`.
+  See `examples/PermitIssuance.case.ts` for a three-set stage.
+
+<!-- RULE:case.activation.anti-pattern -->
+- Omitting `lane` on all `runs-sequentially` tasks defaults them to set 0 —
+  they start together, losing sequential structure. The same happens when every
+  task gets the same explicit `lane`. Every `runs-sequentially` task needs an
+  explicit `lane`.
+
 ## Design fidelity
 
 <!-- RULE:case.sdd.declared-shapes -->
