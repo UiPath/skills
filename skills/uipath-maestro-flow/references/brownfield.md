@@ -46,11 +46,13 @@ uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipe
 uip maestro flow check "$PROJECT/Deployed.flow.ts" --source --baseline "$CANONICAL"
 
 BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "$PROJECT/." "$BACKUP/"
-# Merge only a stamped source; without the stamp the SDK is too old (below):
-head -n 1 "$PROJECT/Deployed.flow.ts" | grep -q '^// @decompiled-from ' \
-  && uip maestro flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL"
+# Merge only a stamped source (no stamp: the SDK is too old, below), and
+# validate and drop the backup only after the merge succeeded:
+( head -n 1 "$PROJECT/Deployed.flow.ts" | grep -q '^// @decompiled-from ' \
+    || { echo "no stamp: SDK older than 6.96.0, the edit was NOT merged" >&2; exit 1; }
+  uip maestro flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL" \
+    && uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}" )
 # Then delete each path merge listed as `flow-merge: remove <path> ...`.
-uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}"
 ```
 
 Only `merge` writes the `.flow`. Never write or patch it yourself, and never
@@ -84,8 +86,9 @@ The first line reads `// @decompiled-from Deployed.flow sha256:<64 hex> scripts=
   writes no first line, and an older `merge` given an unstamped source takes
   the edited graph with no baseline and writes `merged.flow` into the current
   directory, leaving the original unchanged while every later check passes.
-  That is why the loop merges only when `grep` finds the stamp. When it does
-  not, the merge did not run and the edit is not in the `.flow`: upgrade with
+  That is why the loop merges only when `grep` finds the stamp, and otherwise
+  prints `no stamp: ... the edit was NOT merged` and exits 1 with the backup
+  kept. The edit is not in the `.flow`: upgrade with
   `npm install -g @uipath/maestro-builder-sdk@latest` and decompile again, or
   use [the same loop by hand](#the-same-loop-by-hand).
 <!--skill-flavor:safe-project-loop:end-->
