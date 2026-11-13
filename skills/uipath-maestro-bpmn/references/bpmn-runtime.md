@@ -391,7 +391,7 @@ binding half, which is the same for every connector-backed node.
   "Unchanged" means the element builds the same from your source as from a fresh decompile of the original, payload included; wiring is not part of it. So keep line 1 of the `.bpmn.ts` (the decompile stamp): `check` decompiles the original with the options it records.
   Pass the original, not a compiled baseline. On the first `check` of an unedited decompile, every finding is pre-existing, so run that one without `--baseline` when you need to see the original's own problems.
 <!--skill-flavor:sdk-check-baseline:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later and `uip` 1.208.0 or later. `uip` refuses an older SDK with `--baseline on bpmn check needs a @uipath/maestro-builder-sdk release that supports it`; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`. For `error: unknown option '--baseline'`, check the SDK version first (`npm ls -g @uipath/maestro-builder-sdk`): below 6.97.0, upgrade it. Only when it is 6.97.0 or later and the error persists is `uip` too old; until a newer `uip` is installed, run `check --source` without `--baseline` and fix only the errors on elements you changed.
+  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later. When `check` refuses `--baseline` (a ConfigError naming `--baseline on bpmn check`, or `error: unknown option '--baseline'`), the SDK `uip` runs is too old: run the install command the ConfigError prints, then check again. For `unknown option`, which prints none, upgrade the SDK the project resolves (its own `@uipath/maestro-builder-sdk` when it has one, else the global one).
 <!--skill-flavor:sdk-check-baseline:end-->
 
 <!-- RULE:bpmn.brownfield.nested-style -->
