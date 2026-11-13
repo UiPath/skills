@@ -7,7 +7,8 @@ description: >
   step 1; ported from the classic skill's phase 1b scan and 2a question.
   Single turn: nobody answers, so the run ends at the question. The
   answer-honoring half (the user picks a new named solution) is
-  interactive/solution_select.
+  interactive/solution_select; a new solution whose default name is taken
+  is smoke/new_solution_name_taken.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", studio-web-unsupported, "studio-web-unsupported:solution-selection"]
 
 run_limits:

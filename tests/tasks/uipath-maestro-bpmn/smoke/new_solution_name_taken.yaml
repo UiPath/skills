@@ -1,0 +1,57 @@
+task_id: skill-bpmn-smoke-new-solution-name-taken
+description: >
+  Collision case of the solution pick (smoke/ask_which_solution). The
+  workspace already holds ReturnsIntakeSolution/, a solution with its own
+  registered project (ReturnsLabels), under the exact name SKILL.md defaults a
+  new solution to for a process called ReturnsIntake. The user names no
+  solution and will not answer questions, so SKILL.md Workflow step 1 puts the
+  project in a new solution under a free name. `uip solution init` over the
+  taken folder succeeds but replaces its SolutionId and empties its Projects,
+  and a bare `bpmn init` from the root appends to it; both leave side effects
+  on the taken `.uipx`, which is what this grades.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", studio-web-unsupported, "studio-web-unsupported:solution-selection"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 45
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures/new_solution_name_taken
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Can you build me a BPMN process called "ReturnsIntake"? When a return
+  request comes in, check whether it was made within 30 days of purchase. If
+  it was, approve it automatically; otherwise send it to manual review. I'm
+  heading into meetings and won't see any questions, so go with your best
+  judgment. Don't upload or run anything.
+
+success_criteria:
+  - type: json_check
+    description: "The existing ReturnsIntakeSolution keeps its SolutionId and only its own project"
+    path: "ReturnsIntakeSolution/ReturnsIntakeSolution.uipx"
+    assertions:
+      - expression: "SolutionId"
+        operator: "equals"
+        expected: "a1b2c3d4-4444-4ddd-8eee-000000000004"
+      - expression: "length(Projects)"
+        operator: "equals"
+        expected: 1
+      - expression: "Projects[0].ProjectRelativePath"
+        operator: "equals"
+        expected: "ReturnsLabels/project.uiproj"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "ReturnsIntake was built in a new solution under a free name"
+    command: "python3 $REFERENCE_DIR/smoke/check_fresh_solution.py ReturnsIntake --taken ReturnsIntakeSolution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
