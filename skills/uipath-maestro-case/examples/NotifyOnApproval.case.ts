@@ -44,9 +44,9 @@ export default casePlan('notify-on-approval')
           .connector(
             'uipath-salesforce-slack',
             'send-message-to-user',
-            // Connector inputs are the op's fields by name (discover them in the
-            // markdown library at $FLOW_SDK_LIBRARY_MD). `send_as` is a query
-            // parameter; `channel` / `messageToSend` are body fields.
+            // Connector inputs are the op's fields by name (discover them with
+            // `uip maestro registry describe uipath.connector.uipath-salesforce-slack.send-message-to-user`).
+            // `send_as` is a query parameter; `channel` / `messageToSend` are body fields.
             { channel: '@requester', messageToSend: 'Your request was approved.', send_as: 'bot' },
             { connection: 'slack', folder: 'shared' },
           )

@@ -114,7 +114,7 @@ All of that needs a logged-in `uip`.
 With neither a library nor a login, connector work stops at a message that says so; run `uip login`.
 `$FLOW_SDK_LIBRARY_JSON`, when an environment sets it, points at a staged library and wins over the cache.
 
-The four library verbs are `pull`, `search`, `path` and `prepare`.
+The library verbs are `pull`, `search`, `describe`, `path` and `prepare`.
 Like the authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace.
 `uip` is the entry point and is what delivers these skills, so it is present wherever this guidance is being read.
 (The package also exposes a `flow-sdk` bin for invoking the same commands directly, which is what the printed remedies fall back to when nothing sets `FLOW_SDK_INVOKED_AS`.)
@@ -644,9 +644,8 @@ wants a not-found answer; otherwise failing loud can be intentional.
 
 <!--skill-flavor:output-names:start-->
 Output field names are case-sensitive and `check` does not verify them:
-`out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is
-`webUrl`. Copy each name from the operation's `## Outputs` in
-`$FLOW_SDK_LIBRARY_MD`.
+`out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is `webUrl`.
+Copy each name from the operation's `## Outputs` in `uip maestro registry describe <nodeType>`.
 <!--skill-flavor:output-names:end-->
 
 For a response with no declared fields, read the whole output into a script
