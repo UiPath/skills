@@ -18,7 +18,7 @@ all but the reads need `uip login`.
 > A failed or stuck run is investigated in [diagnose.md](diagnose.md), and the fix goes back into the `.bpmn.ts`.
 
 <!--skill-flavor:upload-consent:start-->
-The one exception is the Studio Web upload of a project this run created: a request to build or draft the process authorizes the upload that shows it ([Studio Web upload](#studio-web-upload)).
+Two Studio Web uploads are the exceptions, as [Studio Web upload](#studio-web-upload) says: a project this run created, because a request to build or draft the process authorizes the upload that shows it, and a project in an existing solution the user picked from a question that said the upload overwrites its cloud copy.
 <!--skill-flavor:upload-consent:end-->
 
 ## Pre-flight, before any cloud action
@@ -87,14 +87,16 @@ uip solution upload <SolutionDir> --output json
 The project's solution directory is what `bpmn init` scaffolded around it
 (`<Name>Solution/`), or the solution it was initialized inside.
 A project initialized with `--skip-solution-registration` has no solution, and upload and deploy both require one.
-Create one beside it with `uip solution init <SolutionName> --output json`, `cd <SolutionName>`, run `uip solution projects import <project-path> --output json` with `<project-path>` relative to that folder (for example `../A/B`), and upload the solution.
+Create one beside it with `test ! -e <SolutionName> && uip solution init <SolutionName> --output json` (on a taken name, pick another by the rule in [SKILL.md](../SKILL.md#workflow) step 1, because `uip solution init` over an existing solution empties its `Projects`), `cd <SolutionName>`, run `uip solution projects import <project-path> --output json` with `<project-path>` relative to that folder (for example `../A/B`), and upload the solution.
 Ask before doing this when the user named the project's path, because the uploaded copy lives in the new solution folder, not at that path.
 When the solution declares resource dependencies, refresh them with the solution tooling the installed CLI offers (check `uip solution --help` rather than inventing a verb) and confirm the generated resource files match.
 Report the Studio Web URL (`Data.DesignerUrl`) or solution id; when the CLI returns none, write `Studio Web URL: <not returned by CLI>` rather than omitting it.
 
-**Consent.** Unless the request forbids upload, a request to build or draft the process authorizes the upload that shows it, so upload without asking when this run's `bpmn init` scaffolded the solution.
+**Consent.** Unless the request forbids upload, a request to build or draft the process authorizes the upload that shows it, so upload without asking when this run created the solution (its `bpmn init` or `uip solution init` made it).
 Confirm first when it did not — the project went into a solution that already existed, or an existing project was edited in place — because `upload` overwrites the cloud solution that matches the `SolutionId` in the local `.uipx`.
 Ask once, before the first upload, and say in the question that the upload replaces the Studio Web copy.
+One exception: when the user picked the existing solution from the solution question in [SKILL.md](../SKILL.md#workflow) step 1, and that question said a later upload overwrites its cloud copy, that pick is the consent, so do not ask again.
+Either way, [check the cloud copy](#check-the-cloud-copy-before-editing) before uploading over a solution this run did not create.
 
 **Each later upload overwrites the same solution.**
 The first upload writes the cloud solution id back into the local `.uipx`, so each upload after it reports `Data.Action: "Overwritten"` with the same `SolutionId` and `DesignerUrl`.
@@ -103,7 +105,7 @@ The first upload writes the cloud solution id back into the local `.uipx`, so ea
 ### Check the cloud copy before editing
 
 An upload replaces the cloud copy with the local one, so it would erase edits made in Studio Web.
-Check the cloud copy before you start editing a project in a solution this run did not scaffold, so you build on the current copy, and again before each edit after this run's own first upload: the user may have changed the canvas between turns.
+Check the cloud copy before you start editing a project in a solution this run did not create, so you build on the current copy, and again before each edit after this run's own first upload: the user may have changed the canvas between turns.
 Download the solution by the `SolutionId` in its `.uipx`, into a fresh directory outside the workspace:
 
 ```bash

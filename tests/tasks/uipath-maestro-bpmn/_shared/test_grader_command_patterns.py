@@ -58,6 +58,17 @@ def _hits(pattern: re.Pattern[str], command: str) -> bool:
     return any(pattern.search(h) for h in _match_haystacks(command))
 
 
+def _counts(task: str, description_part: str, command: str) -> bool:
+    """The criterion counts the call: its pattern hits and its exclude_pattern does not."""
+    found = [c for c in _criteria(task) if "command_pattern" in c and description_part in c["description"]]
+    assert len(found) == 1, f"{task}: expected one criterion matching {description_part!r}, got {len(found)}"
+    haystacks = _match_haystacks(command)
+    if not any(re.search(found[0]["command_pattern"], h, re.DOTALL) for h in haystacks):
+        return False
+    exclude = found[0].get("exclude_pattern")
+    return exclude is None or not any(re.search(exclude, h, re.DOTALL) for h in haystacks)
+
+
 # --- timer_start: the well-formed-XML check --------------------------------------
 
 _TIMER = "single_node/timer_start/timer_start.yaml"
@@ -477,6 +488,82 @@ def test_draft_gate_guard_fires_on_a_registry_lookup(task: str, command: str) ->
 @pytest.mark.parametrize("command", PRE_GATE_ALLOWED)
 def test_draft_gate_guard_allows_the_preflight(task: str, command: str) -> None:
     assert not _hits(_pattern(task, "no registry discovery"), command), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'uip solution resources list --kind Process --search "Record Invoice" --output json',
+        'uip solution resources list --kind Process --search "invoice" --output json; '
+        'uip solution resources list --kind App --search "approval" --output json',
+        "uip is connections list --all-folders --output-filter "
+        "\"[?contains(ConnectorName,'Slack')].{Connector:ConnectorName}\" --output json",
+        'cd InvoiceIntakeSketchSolution && uip solution resources list --kind Process --search "invoice" --output json',
+        'uip solution resources list \\\n  --kind Process --search "invoice" --output json',
+        'OUT=$(uip solution resources list --kind Process --search "invoice" --output json)',
+        'for t in invoice record; do uip solution resources list --kind Process --search "$t" --output json; done',
+        'timeout 60 uip solution resources list --kind Process --search "invoice" --output json',
+        'NO_COLOR=1 /usr/local/bin/uip is connections list --all-folders --output json',
+        # A quoted argument before the lookup is not an open quote around it.
+        'cd "a b" && uip solution resources list --kind Process --output json',
+        "grep -q 'x; y' notes.txt; uip solution resources list --kind Process --search invoice --output json",
+        # `$(` inside double quotes still runs the lookup.
+        'OUT="$(uip solution resources list --kind Process --search invoice --output json)"',
+        # An apostrophe in a comment opens no quote.
+        "# look up the robot's process\nuip solution resources list --kind Process --search invoice --output json",
+        # An apostrophe inside a word opens no quote, even once the grader strips
+        # the double quotes around it.
+        'echo "Looking up the robot\'s process"; uip solution resources list --kind Process --search invoice --output json',
+        'grep -q "don\'t" f || uip solution resources list --kind Process --search invoice --output json',
+        "cat > notes.md <<'EOF'\nthe robot's job\nEOF\nuip solution resources list --kind Process --search invoice --output json",
+        # A quoted echo of the lookup does not veto a real one in the same call.
+        'echo "Next: uip solution resources list"; uip solution resources list --kind Process --output json',
+        'uip solution resources list --kind Process --search invoice --output json; echo "done; uip solution resources list"',
+        'echo "x; uip is connections list"\nOUT="$(uip is connections list --all-folders --output json)"',
+        # A backtick inside double quotes runs too.
+        'echo "x; uip is connections list"; OUT="`uip solution resources list --kind Process --search invoice --output json`"',
+        # The codex wrapper's script quote is not data.
+        '/bin/bash -lc "cd InvoiceIntakeSketchSolution && uip solution resources list --search invoice --output json"',
+    ],
+)
+def test_draft_resource_lookup_counts(command: str) -> None:
+    assert _counts(_DRAFTS[0], "looked up the boxes' resources", command), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip maestro bpmn validate InvoiceIntakeSketch/InvoiceIntakeSketch.bpmn --output json",
+        "uip is connectors list --output json",
+        "uip solution upload InvoiceIntakeSketchSolution --output json",
+        "uip solution resources list --help",
+        "uip is connections list -h",
+        'echo "uip solution resources list --kind Process --search invoice"',
+        'echo "/usr/bin/uip solution resources list --kind Process --search invoice"',
+        "uip solution resources list \\\n  --help",
+        "uip is connections list \\\n  --all-folders -h",
+        # Separators inside quotes are data, not command boundaries.
+        'echo "Example; uip solution resources list --kind Process --search invoice"',
+        'echo "Next step:\nuip solution resources list --kind Process --search invoice"',
+        "echo 'Next step:\nuip is connections list --all-folders'",
+        'grep "x; uip solution resources list" file',
+        "grep -n 'a && uip solution resources list' notes.md",
+        # A real-looking lookup only as --help next to a quoted one still looks nothing up.
+        'echo "x; uip solution resources list"; uip solution resources list --help',
+        # Known limit: data quoted inside a `sh -c` script is not seen.
+        pytest.param(
+            '/bin/bash -lc "echo \'Next; uip solution resources list --kind Process\'"',
+            marks=pytest.mark.xfail(strict=True, reason="wrapper-quoted data is not seen"),
+        ),
+        # Known limit: a heredoc body is data, but the exclusion reads only quotes.
+        pytest.param(
+            "cat <<EOF\nx; uip solution resources list\nEOF",
+            marks=pytest.mark.xfail(strict=True, reason="heredoc bodies are not seen"),
+        ),
+    ],
+)
+def test_draft_resource_lookup_ignores_other_calls(command: str) -> None:
+    assert not _counts(_DRAFTS[0], "looked up the boxes' resources", command), command
 
 
 # --- query_params: the advisory connection-lookup row ---------------------------
