@@ -14,9 +14,7 @@ Reply in this shape and keep every line; only the first line's second sentence i
 
 - <each box's label, in order>
 
-<!--skill-flavor:gate-question:start-->
 Is this the process you want?
-<!--skill-flavor:gate-question:end-->
 1. **Build it**: make every step work.
 2. **Change it**: tell me what to add, remove, or move.
 3. **Keep it**: stop here with this outline.
