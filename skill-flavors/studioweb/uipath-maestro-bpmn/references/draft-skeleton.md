@@ -10,6 +10,9 @@
    `validate` must report `Status: Valid`.
 <!--skill-flavor:draft-steps:end-->
 
+<!--skill-flavor:draft-steps-no-refresh:start-->
+<!--skill-flavor:draft-steps-no-refresh:end-->
+
 <!--skill-flavor:draft-upload:start-->
 5. The canvas shows the target when the turn ends, so there is nothing to upload.
    Do not publish, debug or run anything.

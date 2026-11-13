@@ -167,6 +167,7 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
    ```
 
    `validate` must report `Status: Valid`.
+<!--skill-flavor:draft-steps:end-->
    Before you compile, audit every `.fork()` for the stalls rule 9 describes; neither `check` nor `validate` does it for you:
    - In the `.bpmn.ts`, every `.endEvent(` inside a fork branch's callback carries `terminate: true` or `error`, except one ending a non-interrupting handler's path or closing a `.subProcess()` body.
    - In the `.bpmn.ts`, no `.goto()` inside a fork branch's callback targets an element outside that branch.
@@ -174,9 +175,10 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
      A larger `Incoming` means a handler's path flows into the join; the join's extra source is a box inside an `onError` or `onTimer` handler.
 
    Fix any of them as rule 9 says before you compile.
+<!--skill-flavor:draft-steps-no-refresh:start-->
    Because the start event kept the id `Event_start`, the `init`-generated `entry-points.json` still matches and the skeleton needs no `refresh`.
    If `validate` fails with `entry-points.json references start event "Event_start"`, the id was renamed: put `Event_start` back.
-<!--skill-flavor:draft-steps:end-->
+<!--skill-flavor:draft-steps-no-refresh:end-->
 <!--skill-flavor:draft-upload:start-->
 4. **Upload it, so the user sees it on the canvas**, unless the request forbids upload: `uip solution upload <SolutionDir> --output json`, where `<SolutionDir>` is the solution `init` scaffolded (`<Name>Solution/`) or registered the project in.
    The gate reply carries the returned `Data.DesignerUrl`.
