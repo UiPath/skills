@@ -23,7 +23,7 @@ In every reference, `<Project>` is the target's folder, `<Name>` its file name w
 
 **The target `.flow` is the single source of truth.** The user can change it on the canvas between turns, so never reuse an earlier turn's `.flow.ts`: decompile a fresh one.
 
-**Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `original/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` are throw-away: each turn rebuilds them; a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
+**Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `undo/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` are throw-away: each turn rebuilds them; a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
 
 **Never delete or rename a file under `/solution`:** the file system refuses both; overwrite it instead.
 
@@ -106,15 +106,15 @@ An empty `new.flow` fails `decompile`, and a rule 4 flow has no file yet: write 
 
 ```bash
 cd /solution/<Project>
-mkdir -p .flow-sdk/original <Draft>/baseline <Draft>/edited
+mkdir -p .flow-sdk/undo <Draft>/baseline <Draft>/edited
 # 1. Seed, every turn: target copy, fresh source, pristine baseline
-cp <Name>.flow .flow-sdk/original/<Name>.flow
+cp <Name>.flow .flow-sdk/undo/<Name>.flow
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Draft>/baseline/<Name>.flow
 # 2. Edit .flow-sdk/<Name>.flow.ts narrowly (no .layout() for added steps: merge places them), then check until clean
 #    (refused, or step 1 stopped: references/brownfield.md#check-only-what-you-changed-check---baseline)
-uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline .flow-sdk/original/<Name>.flow
-# 3. Compile the edit (step 2 is the gate), then merge into the target
+uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline .flow-sdk/undo/<Name>.flow
+# 3. Compile the edit (step 2 is the gate), then merge into the target, never a copy
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Draft>/edited/<Name>.flow
 uip maestro flow merge <Draft>/edited/<Name>.flow --original <Name>.flow --baseline <Draft>/baseline/<Name>.flow -o <Name>.flow
 # 4. Validate the file the canvas shows
@@ -123,7 +123,7 @@ uip maestro flow validate <Name>.flow --output json
 
 **A flow holding an Extract document node skips this round trip** — its baseline compile fails on that node; use the direct commands ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
-Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If an edit fails `validate`, fix the source and rerun steps 2 to 4. To undo the merge, copy `.flow-sdk/original/<Name>.flow` back over the target.
+Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If an edit fails `validate`, fix the source and rerun steps 2 to 4. To undo the merge, copy `.flow-sdk/undo/<Name>.flow` back over the target.
 
 - **An edit always ends with the merge into the target.** About 400 ms after a write, the canvas reloads the open file. Never run `format` on the merged file: it re-lays out the user's canvas.
 - **A baseline compile that refuses a draft node** (a generic operation with no object picked) stops the round trip: [`references/brownfield.md`](references/brownfield.md#flows-with-draft-nodes-let-merge-compile).
@@ -134,7 +134,7 @@ Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "
 <!--skill-flavor:sdk-lifecycle:end-->
 
 <!--skill-flavor:sdk-editing:start-->
-In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Edit the decompiled source narrowly and let the merge carry only that delta back ([Lifecycle](#lifecycle)). Validate the merged target `.flow`, never `<Draft>/edited/`. Studio Web has no pipeline helper: `decompile` here never writes one.
+In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Edit the decompiled source narrowly and let the merge carry only that delta back ([Lifecycle](#lifecycle)). Validate the merged target `.flow`, never `<Draft>/edited/`. A `.flow-sdk/original/` left by an older turn is stale: never pass it to merge. Studio Web has no pipeline helper: `decompile` here never writes one.
 
 **True-brownfield procedure:**
 **[`references/brownfield.md`](references/brownfield.md)** — read its judgments. Its shell sequences assume a terminal, so use the round trip above instead.
