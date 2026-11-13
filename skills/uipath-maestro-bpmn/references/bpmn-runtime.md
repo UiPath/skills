@@ -356,7 +356,8 @@ binding half, which is the same for every connector-backed node.
 
   ```bash
   uip maestro bpmn decompile <Project>/<Name>.bpmn -o <Name>.bpmn.ts --style nested
-  # edit <Name>.bpmn.ts, then run check --source until it is clean
+  # edit <Name>.bpmn.ts, then run check --source --baseline <Project>/<Name>.bpmn until no (edited) error is left
+  # (bpmn.brownfield.check-baseline)
   uip maestro bpmn merge <Name>.bpmn.ts --original <Project>/<Name>.bpmn
   ```
 
@@ -368,6 +369,30 @@ binding half, which is the same for every connector-backed node.
   Needs `@uipath/maestro-builder-sdk` 6.95.0 or later; on an older SDK `merge` stops with a ConfigError asking for an upgrade, so run the install command the ConfigError prints and merge again.
 <!--skill-flavor:brownfield-merge-form:end-->
   Then `format` (only when the edit added elements; see `bpmn.brownfield.format`), `refresh` and `validate` the target as in the validation loop.
+
+<!-- RULE:bpmn.brownfield.check-baseline -->
+- Check only what you changed: pass the original `.bpmn` to `check` as `--baseline`.
+  Without it, `check` judges the whole process, so a defect the original already has on an element you did not touch fails every edit.
+  For instance, an import whose connector tasks name no connection gets one `INTSVC_CONNECTION_MISSING` error per task, and a one-word fix in a script task can never get a clean check.
+  With `--baseline`, `check` decompiles the original, checks it the same way, and marks each finding:
+
+  ```
+  $ uip maestro bpmn check <Name>.bpmn.ts --source --baseline <Project>/<Name>.bpmn
+    ✗ [EXPR_UNDECLARED_REF] in scriptTask "Task_A" input: Expression references `vars.ghost`, ... (edited)
+    ⚠ [INTSVC_CONNECTION_MISSING] "Activity_x" (Intsvc.ActivityExecution) names no connection ... (pre-existing, not counted)
+  check: 1 error(s) in edited elements, 0 pre-existing SDK defect(s), 1 pre-existing warning(s).
+  ```
+
+  - **`(edited)`** (JSON `origin: "edited"`): fix it. It is on an element you changed or added, or on an untouched element your edit broke (the original does not have it). A renamed element is a new element: its findings count. The exit code is 1 only while one is left.
+  - **`(pre-existing, not counted)`**: the original already has it, on an element you did not change. It is a warning. Leave it unless the user asked you to fix it.
+  - **`(pre-existing)` worded as a probable SDK defect** (JSON `class: "lowering"`): `compile` cannot write that element, so `merge` refuses too. Do not edit the element to get around it; tell the user it is a probable SDK defect to report at <https://github.com/UiPath/builder-sdk/issues>.
+  - **`CHECK_INCOMPLETE`**: check stopped at a refusal about the whole process (two elements with one id), so the rest was not judged. Fix that refusal first, even if the original has it, then check again.
+
+  "Unchanged" means the element builds the same from your source as from a fresh decompile of the original, payload included; wiring is not part of it. So keep line 1 of the `.bpmn.ts` (the decompile stamp): `check` decompiles the original with the options it records.
+  Pass the original, not a compiled baseline. On the first `check` of an unedited decompile, every finding is pre-existing, so run that one without `--baseline` when you need to see the original's own problems.
+<!--skill-flavor:sdk-check-baseline:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later and `uip` 1.208.0 or later. `uip` refuses an older SDK with `--baseline on bpmn check needs a @uipath/maestro-builder-sdk release that supports it`; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`. An older `uip` answers `error: unknown option '--baseline'`: until it is upgraded, run `check --source` without `--baseline` and fix only the errors on elements you changed.
+<!--skill-flavor:sdk-check-baseline:end-->
 
 <!-- RULE:bpmn.brownfield.nested-style -->
 - `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in `flowMode('sequence')`, and prints why each region it left flat stayed flat; the lifted source is written only after it has been compiled and its graph verified identical to the flat form's. The flow ids the constructs imply are KEPT: each is pinned back with `.flowIds([{ source, target, id }])`, emitted once at the top of the chain, so the recompiled artifact carries the ids it arrived with. This is what makes the lift safe for brownfield editing — `uip maestro bpmn merge` keys every process child by id with no filter for kind, so renaming a flow made the merge treat it as new, delete the original along with its `BPMNEdge`, and leave an untouched gateway's `default` naming an id that no longer exists (`MISSING_CONDITION_EXPRESSION` at validate). Measured on a three-flow fixture, a no-edit round trip now merges back byte-identical. `--keep-flow-ids` confines the lift to regions whose ids already match the derived form, for source with no pin table.

@@ -30,3 +30,7 @@
   Needs `@uipath/maestro-builder-sdk` 6.93.9 or later. Studio Web ships its own SDK: when `compile` writes the old manual form (`mode="manual"` with the request as context rows), the run faults, so tell the user that this Studio Web build cannot write a plain HTTP call yet.
   From 6.93.9, `outputVar` is the body, so read `vars.<id>_response.x`, not `vars.<id>_response.body.x`, which read the old form's whole response.
 <!--skill-flavor:sdk-http-manual:end-->
+
+<!--skill-flavor:sdk-check-baseline:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later. Studio Web ships its own SDK: when `check` refuses `--baseline` (`needs a @uipath/maestro-builder-sdk release that supports it`, or `unknown option '--baseline'`), this Studio Web build does not have it yet. Run `check --source` without `--baseline` and fix only the errors on elements you changed.
+<!--skill-flavor:sdk-check-baseline:end-->
