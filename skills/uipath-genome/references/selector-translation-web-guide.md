@@ -109,6 +109,17 @@ On a single-page web application, one scope for its tab (rule 9) is the differen
 
 **`url` values are case-sensitive** (only `app`, and `tag` on `webctrl`, are not), so `url='*Site*'` and `url='*site*'` are different selectors and at most one of them matches. The driver's own default for a browser tab is `<html app='chrome.exe' title='*<App>*' url='https://<host>/<tenant path>*' />` — host plus the first path segment, title reduced to the application's word; take that shape.
 
+## Rule 10 — web
+
+SAP's web frameworks build their ids from the screen, not from a hash, so rule 10 keeps more of them than their look suggests:
+
+| Id | What it is | On `webctrl` |
+|---|---|---|
+| SAP Web GUI DOM `id` (also `sapweb-lsid`): a field's `M0:46:::1:34`, a toolbar button's `M0:50::btn[8]` | the control's place on its screen — window (`M0` the main window, `M1` the first pop-up), area, then a field's row and column or a button's function code | a field's: `id` as recorded, medium confidence, when nothing better was recorded — the same screen gives the same id on every system, a different layout of it other ids; the live pass replaces it with `sapweb-id`. A toolbar button's: `sapweb-id='wnd[0]/tbar[*]/btn[8]'` — the window and the function code carry over, the toolbar number does not |
+| SAP Web GUI `sapweb-id`: `wnd[0]/usr/ctxtMS_MATNR-LOW` | the SAP GUI scripting id — window, area, control-type prefix and the screen field's name; the id `<sap id>` holds for the same control in SAP GUI | taken whenever seen; a field's is not derivable from its DOM id |
+| SAP Fiori: `<view id>--<local id>`, the view id carrying the app (`application-…-component---…view.Main`, `…::…ListReport::C_PurchaseOrderTP`) | the view's id, `--`, the control's id in its view, which the driver gives as `ui5-view-local-id` | `ui5-view-local-id` with the part after the view's `--`; an id ending `-inner` is the `INPUT` inside the control whose id precedes it — the control's `ui5-*` attributes, `ui5-label` among them, sit on the control's element, the field's `labeledby` on the inner `INPUT`, two nodes (rule 14) |
+
+A recorded text or name that is one character from U+E000–U+F8FF is an icon font's glyph, not a name: a button that shows only an icon holds it as its inner text, and its name is in `aria-label`, else in `uipath-html-title`.
 ## Rule 14 — web
 
 The merge rule 14 forbids, on a Workday prompt:
