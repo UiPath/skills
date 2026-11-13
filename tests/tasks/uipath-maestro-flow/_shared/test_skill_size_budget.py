@@ -59,7 +59,10 @@ STUDIOWEB_OVERRIDE = os.path.join(_REPO, "skill-flavors", "studioweb", "uipath-m
 # longer lints, and points to the fallback for a refused `--baseline`.
 # +~400 in UV-17734 (31,594): Studio Web scaffolds Maestro Automate with
 # `--automate` and fills the open project instead of creating one.
-MAX_BYTES = 31_650
+# +50 for the missing-IXP-model stop rule (31,654, +~47 tok): without it the
+# agent adds an Extract document node or hands off to uipath-ixp, which Studio
+# Web does not offer.
+MAX_BYTES = 31_700
 MAX_LINES = 320
 
 # Per H2, ported from flow-builder-sdk skill-router-docs.test.ts.
@@ -89,8 +92,9 @@ SECTION_BUDGETS = {
 # with a pointer for a refused `--baseline` (Studio Web owns its SDK copy, so
 # the agent cannot upgrade its way out and would otherwise stop at step 2 on
 # every edit turn).
-# Project layout 9,600 -> 10,000 for the `--automate` rule in UV-17734 (9,963).
-STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 10_000, "Lifecycle": 3_700}
+# Project layout 9,600 -> 10,000 for the `--automate` rule in UV-17734 (9,963),
+# then 10,000 -> 10,150 for the missing-IXP-model stop rule (10,107).
+STUDIOWEB_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 10_150, "Lifecycle": 3_700}
 
 BYTES_PER_TOKEN = 2.56
 
