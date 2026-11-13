@@ -242,6 +242,8 @@ whether your edit caused it.
 
 The baseline must be the plan as it was before your first compile: compile
 writes back into the same plan, so after it the file on disk is your edit.
+Never pass that plan itself as `--baseline`: the edit compared with itself
+reports every finding as pre-existing, so `check` passes with errors in it.
 <!--skill-flavor:check-baseline-original:start-->
 At the start of each editing session, before its first compile, copy it aside
 and check against the copy. Overwrite any copy an earlier session left: an old

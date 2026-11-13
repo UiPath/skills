@@ -30,7 +30,7 @@ Use this as a router: read only the capability reference you need, then let Type
 4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
 <!--skill-flavor:workflow-build:start-->
 5. Seed the source by decompiling the plan `case init` seeded (`caseplan.case`, or an older `caseplan.json`) instead of hand-writing the skeleton: `uip maestro case decompile <project>/<plan> -o <Name>.case.ts --no-pipeline`. It carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned; `entry-points.json` references that trigger id. Compile back into that same `<plan>`, never a second plan beside it: pack and debug read only one. Compile with plain `-o <project>/<plan>` and no `--bindings <plan>`; it needs `@uipath/maestro-builder-sdk` 6.50.1 or later to keep a Designer-saved plan's binding map ([Brownfield](references/case-runtime.md#brownfield-editing)). Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
-6. Run `uip maestro case check <Name>.case.ts --source` before every compile, gate edits included (`skipWhen`, a rule `expression`); fix every error (non-zero exit) first. For instance, `check` reports a `vars.<id>` read of an undeclared variable as `EXPR_UNDECLARED_REF`. Editing an existing plan, add `--baseline <the original plan>` so defects the plan already had on stages and tasks you did not touch do not fail the check ([Brownfield](references/case-runtime.md#check-only-what-you-changed-check---baseline)).
+6. Run `uip maestro case check <Name>.case.ts --source` before every compile, gate edits included (`skipWhen`, a rule `expression`); fix every error (non-zero exit) first. For instance, `check` reports a `vars.<id>` read of an undeclared variable as `EXPR_UNDECLARED_REF`. Editing an existing plan, copy it aside once per editing session before your first compile (`mkdir -p .flow-sdk/original && cp <project>/<plan> .flow-sdk/original/`), then add `--baseline .flow-sdk/original/<plan>` so defects the plan already had on stages and tasks you did not touch do not fail the check. Never pass `<project>/<plan>` itself: after the first compile it is your edit, and checking it against itself hides every error ([Brownfield](references/case-runtime.md#check-only-what-you-changed-check---baseline)).
 7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
 8. Run live debug only when requested and tenant resources are available.
 <!--skill-flavor:workflow-build:end-->
@@ -102,6 +102,7 @@ export default casePlan('loan-approval')
 <!--skill-flavor:validation-loop:start-->
 ```bash
 uip maestro case check <Name>.case.ts --source
+mkdir -p .flow-sdk/original && cp <project>/<plan> .flow-sdk/original/  # editing an existing plan: once, before the first compile
 uip maestro case check <Name>.case.ts --source --baseline .flow-sdk/original/<plan>  # editing an existing plan
 uip maestro case compile <Name>.case.ts -o <project>/<plan>
 uip maestro case validate <project>/<plan> --strict --sdd <sdd.md> --output json  # SDD supplied
