@@ -55,14 +55,16 @@ A skeleton is not a working process and must never be reported as one.
    Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
    When the step stops early ("stop at the first failed document"), add `completion: '=vars.<flag>'` and declare that boolean flag too.
    Do not hand-roll a loop from a gateway and a `.goto()`, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
-9. **An interrupting error path out of a `.fork()` branch must end the process or merge back onto its own branch before the join.**
+9. **A path that leaves a `.fork()` branch early must end the process; every other path continues on its own branch to the join.**
    A parallel join fires only when every incoming flow has delivered a token.
-   An interrupting `onError` or `onTimer` handler whose path does not end rejoins at the statement after the activity, and for a branch's last activity that statement is the fork's join.
-   The handler's path then becomes an extra input to the join: the activity's own flow never delivers because the handler cancelled it, so the join waits forever.
-   `check` and `validate` both pass this shape, so you must write the safe one yourself:
-   - When the failure stops the process, end the handler's path in `.endEvent(<id>, { name, terminate: true })`.
-     A plain `.endEvent()` ends only the handler's path, so the join still waits.
-   - When the process carries on, write another statement on the same branch after the activity, such as the next box, so the handler's path rejoins there and the branch reaches the join on one flow.
+   Two shapes break that, and `check` and `validate` both pass them, so you must write the safe one yourself:
+   - A plain `.endEvent()` inside a branch, at the end of an interrupting `onError` or `onTimer` handler or of a `.choose()` arm such as a rejection, consumes the branch's token, so the join waits forever.
+   - An interrupting handler whose path does not end rejoins at the statement after the activity, and for a branch's last activity that statement is the fork's join.
+     The handler's path then becomes an extra input to the join: the activity's own flow never delivers because the handler cancelled it, so the join waits forever.
+
+   Write the safe shape:
+   - When the failure or outcome stops the process, end its path in `.endEvent(<id>, { name, terminate: true })`.
+   - When the process carries on, give a `.choose()` arm no end event, so it rejoins at the next statement; for a handler, write another statement on the same branch after the activity, such as the next box, so the handler's path rejoins there and the branch reaches the join on one flow.
      A bare `.exclusiveGateway()` inside a branch does not compile, so merge on a box.
 
    A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so this rule does not apply to it.
@@ -159,10 +161,12 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
    ```
 
    `validate` must report `Status: Valid`.
-   Before you compile, check every `.fork()` in the `check --graph` output, which neither `check` nor `validate` does for you.
-   Under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` must have an `Incoming` no larger than the number of `Outgoing` entries on the `<fork>` node.
-   A larger `Incoming` means a handler's path flows into the join, the stall rule 9 describes; the join's extra source is a box inside an `onError` or `onTimer` handler.
-   Fix it as rule 9 says before you compile.
+   Before you compile, audit every `.fork()` for the two stalls rule 9 describes; neither `check` nor `validate` does it for you:
+   - In the `.bpmn.ts`, every `.endEvent(` inside a fork branch's callback, other than one ending a non-interrupting handler's path, carries `terminate: true`.
+   - In the `check --graph` output, under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` has an `Incoming` no larger than the number of `Outgoing` entries on the `<fork>` node.
+     A larger `Incoming` means a handler's path flows into the join; the join's extra source is a box inside an `onError` or `onTimer` handler.
+
+   Fix either as rule 9 says before you compile.
    Because the start event kept the id `Event_start`, the `init`-generated `entry-points.json` still matches and the skeleton needs no `refresh`.
    If `validate` fails with `entry-points.json references start event "Event_start"`, the id was renamed: put `Event_start` back.
 <!--skill-flavor:draft-upload:start-->

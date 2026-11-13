@@ -91,6 +91,19 @@ class ForkExitTests(unittest.TestCase):
         # A's fallback runs through B, so A's own flow into J never delivers.
         self.assert_stalls(boundary("Err", "A") + '<bpmn:task id="X" />', "Err>X X>B", "instead of its own branch")
 
+    def test_decision_arm_to_plain_end_stalls(self):
+        # A → G → J, with G's rejection arm ending at a plain end inside the branch.
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" />' + end("Rejected"),
+                       "S>F F>A F>B A>G G>J G>Rejected B>J J>End")
+        with self.assertRaises(SystemExit) as caught:
+            skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+        self.assertIn("['Rejected']", str(caught.exception))
+
+    def test_decision_arm_to_terminate_end_passes(self):
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" />' + end("Stop", "terminate"),
+                       "S>F F>A F>B A>G G>J G>Stop B>J J>End")
+        skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+
     def test_non_interrupting_escalation_to_plain_end_passes(self):
         self.assert_safe(boundary("Late", "A", interrupting=False, kind="timer") + '<bpmn:task id="Esc" />'
                          + end("Escalated"), "Late>Esc Esc>Escalated")
