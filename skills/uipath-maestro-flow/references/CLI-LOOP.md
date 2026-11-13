@@ -60,7 +60,6 @@ Only if it fails with E401 or E404 **and** `npm config get @uipath:registry` nam
 If it fails with EACCES (npm's global folder is not writable), do not use `sudo`; install into the workspace instead with `npm install --save-dev @uipath/maestro-builder-sdk`, which `uip` also finds.
 Any other failure (a timeout, a mirror refusing the package) is the user's network or registry to fix, so report it rather than routing around it.
 When `uip` reports the SDK is below its minimum version, run the command its `Instructions` give: it names `-g` or `--save-dev` depending on which copy it found.
-"Already installed" is not "recent enough" for connector work without a pulled library: only an SDK that fetches connector definitions through `uip` works without one.
 When `uip` says the installed SDK cannot fetch connector definitions through uip, it predates that: connector work then needs `uip maestro registry pull` first, or the upgrade its message names (`npm install -g @uipath/maestro-builder-sdk@latest`, or `--save-dev` for a workspace copy).
 <!--skill-flavor:install-package:end-->
 
