@@ -133,7 +133,7 @@ run it on a merged brownfield file; it re-lays out the author's canvas.
 <!--skill-flavor:misshapen-format:end-->
 When the source sets `.layout()`, the misshapen node is the one with no entry, an entry at the wrong coordinates, an agent node (`inlineAgent`, `conversationalAgent`, `voiceAgent`) without `dim(288, 96)`, or a container whose `dim()` no longer holds a body that grew.
 In a greenfield source: add or move its `at(x, y)`, resize with `dim(width, height)`, and recompile rather than running `format`, which would discard every other entry too.
-In a merged brownfield file only an added node's entry lands; fix an existing node's position or size in the merged `.flow`'s `layout.nodes` ([`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim), [`brownfield.md`](brownfield.md#the-same-loop-by-hand)).
+In a merged brownfield file only an added node's entry lands; fix an existing node's position or size in the merged `.flow`'s `layout.nodes` ([`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim), [`brownfield.md`](brownfield.md#designer-shapes-decompile-keeps)).
 
 **Green `validate`, faulted `debug`.** Structural correctness and runtime
 correctness are different claims. `validate` proves the emitted `.flow` is well

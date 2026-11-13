@@ -76,12 +76,6 @@ Studio Web has no generated pipeline: `decompile` writes no pipeline helper
 here. Use the round trip in [SKILL.md — Lifecycle](../SKILL.md#lifecycle).
 <!--skill-flavor:generated-pipeline:end-->
 
-<!--skill-flavor:hand-loop:start-->
-In Studio Web this loop is the round trip in
-[SKILL.md — Lifecycle](../SKILL.md#lifecycle). It keeps every draft in
-`.flow-sdk/` and merges straight into the target `.flow`.
-<!--skill-flavor:hand-loop:end-->
-
 <!--skill-flavor:resource-ids-sdk-upgrade:start-->
 so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:resource-ids-sdk-upgrade:end-->
