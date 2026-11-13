@@ -53,7 +53,7 @@ that lives in Studio Web and has to be pulled down first — ask them for its UR
 
 ## Not available everywhere
 
-The feature is new and tenant-gated, so not every tenant has it yet. Nothing in the CLI shows the difference — creating and validating succeed either way, and `registry search` reports `AvailableOnTenant: false` for this node on every tenant — but the Studio Web node picker lists **Extract document** where it is enabled. Keep the gating in mind as a possible cause of errors. Where the tenant turns out not to have the feature, or on Automation Suite, where structured extraction ships switched off, go to [When Extract document is not available](#when-extract-document-is-not-available).
+The feature is new and tenant-gated, so not every tenant has it yet. Nothing in the CLI shows the difference — creating and validating succeed either way, and `registry search` reports `AvailableOnTenant: false` for this node on every tenant — but the Studio Web node picker lists **Extract document** where it is enabled. Keep the gating in mind as a possible cause of errors. Where the tenant turns out not to have the feature, go to [When Extract document is not available](#when-extract-document-is-not-available).
 
 ## Adding the node
 
